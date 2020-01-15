@@ -9,11 +9,14 @@ Usage
 
 usage: rnaseq_light.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                        [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
-                       [--json] [--report] [--clean]
-                       [-l {debug,info,warning,error,critical}] [-d DESIGN]
-                       [-t {cufflinks,stringtie}] [-r READSETS] [-v]
+                       [--no-json] [--report] [--clean]
+                       [-l {debug,info,warning,error,critical}]
+                       [--sanity-check]
+                       [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
+                       [-d DESIGN] [-t {cufflinks,stringtie}] [-r READSETS]
+                       [-v]
 
-Version: 3.1.4
+Version: 3.1.5
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -31,8 +34,9 @@ optional arguments:
                         job scheduler type (default: slurm)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
-  --json                create a JSON file per analysed sample to track the
-                        analysis status (default: false)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -44,10 +48,16 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  --sanity-check        run the pipeline in `sanity check mode` to verify that
+                        all the input files needed for the pipeline to run are
+                        available on the system (default: false)
+  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
+                        run pipeline inside a container providing a container
+                        image path or accessible docker/singularity hub path
   -d DESIGN, --design DESIGN
                         design file
   -t {cufflinks,stringtie}, --type {cufflinks,stringtie}
-                        Type of RNA-seq assembly method (default cufflinks)
+                        Type of RNA-seq assembly method (default stringtie)
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
@@ -96,8 +106,6 @@ Run Kallisto on fastq files for a fast esimate of abundance.
 
 kallisto_count_matrix
 ---------------------
-Produce a count matrix using the kallisto pseudo-alignment and the corresponding annotation file.
-
 gq_seq_utils_exploratory_analysis_rnaseq_light
 ----------------------------------------------
 Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight
@@ -107,5 +115,6 @@ sleuth_differential_expression
 Performs differential gene expression analysis using [Sleuth](http://pachterlab.github.io/sleuth/). 
 Analysis are performed both at a transcript and gene level, using two different tests: LRT and WT. 
 
+Still in development, use with caution. 
 
 
