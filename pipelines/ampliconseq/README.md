@@ -13,11 +13,13 @@ Usage
 
 usage: ampliconseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                       [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
-                      [--json] [--report] [--clean]
+                      [--no-json] [--report] [--clean]
                       [-l {debug,info,warning,error,critical}]
+                      [--sanity-check]
+                      [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
                       [-t {qiime,dada2}] [-d DESIGN] [-r READSETS] [-v]
 
-Version: 3.1.4
+Version: 3.1.5
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -35,8 +37,9 @@ optional arguments:
                         job scheduler type (default: slurm)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
-  --json                create a JSON file per analysed sample to track the
-                        analysis status (default: false)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -48,6 +51,12 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  --sanity-check        run the pipeline in `sanity check mode` to verify that
+                        all the input files needed for the pipeline to run are
+                        available on the system (default: false)
+  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
+                        run pipeline inside a container providing a container
+                        image path or accessible docker/singularity hub path
   -t {qiime,dada2}, --type {qiime,dada2}
                         AmpliconSeq analysis type
   -d DESIGN, --design DESIGN
@@ -119,7 +128,7 @@ trimmomatic16S
 MiSeq raw reads adapter & primers trimming and basic QC is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
 If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
 it is used first. Else, Adapter1, Adapter2, Primer1 and Primer2 columns from the readset file are used to create
-an adapter FASTA file, given then to Trimmomatic. Sequences are reversed-complemented and swapped. 
+an adapter FASTA file, given then to Trimmomatic. Sequences are reversed-complemented and swapped.
 
 This step takes as input files:
 1. MiSeq paired-End FASTQ files from the readset file

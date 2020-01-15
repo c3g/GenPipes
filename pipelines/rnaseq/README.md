@@ -41,11 +41,13 @@ Usage
 #!text
 
 usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f] [--json]
-                 [--report] [--clean] [-l {debug,info,warning,error,critical}]
+                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
+                 [--no-json] [--report] [--clean]
+                 [-l {debug,info,warning,error,critical}] [--sanity-check]
+                 [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
                  [-d DESIGN] [-t {cufflinks,stringtie}] [-r READSETS] [-v]
 
-Version: 3.1.4
+Version: 3.1.5
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -63,8 +65,9 @@ optional arguments:
                         job scheduler type (default: slurm)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
-  --json                create a JSON file per analysed sample to track the
-                        analysis status (default: false)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -76,10 +79,16 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  --sanity-check        run the pipeline in `sanity check mode` to verify that
+                        all the input files needed for the pipeline to run are
+                        available on the system (default: false)
+  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
+                        run pipeline inside a container providing a container
+                        image path or accessible docker/singularity hub path
   -d DESIGN, --design DESIGN
                         design file
   -t {cufflinks,stringtie}, --type {cufflinks,stringtie}
-                        Type of RNA-seq assembly method (default cufflinks)
+                        Type of RNA-seq assembly method (default stringtie)
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
@@ -117,7 +126,7 @@ cufflinks:
 22- differential_expression
 23- differential_expression_goseq
 24- ihec_metrics
-25- verify_bam_id
+25- cram_output
 ----
 ```
 ![rnaseq stringtie workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_stringtie.resized.png)
@@ -143,6 +152,7 @@ stringtie:
 17- stringtie_abund
 18- ballgown
 19- differential_expression
+20- cram_output
 
 ```
 picard_sam_to_fastq
@@ -273,33 +283,30 @@ ihec_metrics
 ------------
 Generate IHEC's standard metrics.
 
-verify_bam_id
--------------
-verifyBamID is a software that verifies whether the reads in particular file match previously known
-genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
-as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
-genotypes are available. When external genotypes are not available, verifyBamID still robustly
-detects sample swaps.
+cram_output
+-----------
+Generate long term storage version of the final alignment files in CRAM format
+Using this function will include the orginal final bam file into the  removable file list 
 
 stringtie
 ---------
 Assemble transcriptome using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-
+Warning: Still in testing.
 
 stringtie_merge
 ---------------
 Merge assemblies into a master teranscriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-
+Warning: still in testing
 
 stringtie_abund
 ---------------
 Assemble transcriptome and compute RNA-seq expression using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-
+Warning: Still in testing.
 
 ballgown
 --------
 [Ballgown](https://bioconductor.org/packages/release/bioc/html/ballgown.html) is used to calculate differential transcript and gene expression levels and test them for significant differences.
 
-
+Warning: still in testing
 
 
