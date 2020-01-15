@@ -228,8 +228,8 @@ class Pipeline(object):
             self._argparser.add_argument("--container",
                                          help="Run inside a container providing a valid"
                                               "singularity image path", action=ValidateContainer,
-                                         nargs=2, metavar=("{wrapper, singularity}",
-                                                           "<IMAGE PATH>"))
+                                              metavar=("{wrapper, singularity}",
+                                                       "<IMAGE PATH>"))
 
         return self._argparser
 
@@ -508,4 +508,5 @@ class ValidateContainer(argparse.Action):
         if c_type not in self.VALID_TYPE:
             raise ValueError('{} is not supported, choose from {}'.format(c_type, self.VALID_TYPE))
         Container = collections.namedtuple('container', 'type name')
+
         setattr(args, self.dest, Container(c_type, container))
