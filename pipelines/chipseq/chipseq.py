@@ -20,10 +20,12 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
 import re
+import subprocess
 import sys
 import csv
 
@@ -1182,8 +1184,7 @@ if __name__ == '__main__':
 
     argv = sys.argv
     if '--wrap' in argv:
-        import argparse
-        import subprocess
+
         parser = argparse.ArgumentParser(conflict_handler='resolve')
         parser.add_argument('--wrap', type=str, help="path to the genpipe cvmfs wrapper script")
         args, argv = parser.parse_known_args(argv)

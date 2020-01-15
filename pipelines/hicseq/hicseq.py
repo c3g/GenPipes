@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
@@ -825,8 +826,6 @@ class HicSeq(common.Illumina):
 if __name__ == '__main__':
     argv = sys.argv
     if '--wrap' in argv:
-        import argparse
-        import subprocess
 
         parser = argparse.ArgumentParser(conflict_handler='resolve')
         parser.add_argument('--wrap', type=str, help="path to the genpipe cvmfs wrapper script")

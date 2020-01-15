@@ -20,12 +20,14 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
 import re
 import sys
 import itertools
+import subprocess
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -944,8 +946,6 @@ pandoc \\
 if __name__ == '__main__':
     argv = sys.argv
     if '--wrap' in argv:
-        import argparse
-        import subprocess
 
         parser = argparse.ArgumentParser(conflict_handler='resolve')
         parser.add_argument('--wrap', type=str, help="path to the genpipe cvmfs wrapper script")

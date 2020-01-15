@@ -21,11 +21,13 @@
 
 # Python Standard Modules
 from __future__ import print_function, division, unicode_literals, absolute_import
+import argparse
 import os
 import sys
 import itertools
 import xml.etree.ElementTree as Xml
 import math
+import subprocess
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -1059,8 +1061,6 @@ def distance(str1, str2):
 if __name__ == '__main__':
     argv = sys.argv
     if '--wrap' in argv:
-        import argparse
-        import subprocess
 
         parser = argparse.ArgumentParser(conflict_handler='resolve')
         parser.add_argument('--wrap', type=str, help="path to the genpipe cvmfs wrapper script")
