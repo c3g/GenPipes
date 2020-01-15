@@ -226,10 +226,10 @@ class Pipeline(object):
                                                                 "are available on the system (default: false)",
                                          action="store_true")
             self._argparser.add_argument("--container",
-                                         help="run pipeline inside a container providing a container image path or "
-                                              "accessible docker/singularity hub path", action=ValidateContainer,
-                                         nargs=2, metavar=("{docker, singularity}",
-                                                           "{<CONTAINER PATH>, <CONTAINER NAME>}"))
+                                         help="Run inside a container providing a valid"
+                                              "singularity image path", action=ValidateContainer,
+                                         nargs=2, metavar=("{wrapper, singularity}",
+                                                           "<IMAGE PATH>"))
 
         return self._argparser
 
@@ -501,7 +501,7 @@ def parse_range(astr):
 
 class ValidateContainer(argparse.Action):
 
-    VALID_TYPE = ('docker', 'singularity', 'wrapper')
+    VALID_TYPE = ('singularity', 'wrapper')
 
     def __call__(self, parser, args, values, option_string=None):
         c_type, container = values
