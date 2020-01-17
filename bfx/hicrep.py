@@ -40,7 +40,7 @@ def calculate_reproducible_score( output_dir, sample1, sample2, file1_path, file
         ],
         command="""\
         mkdir -p {output_dir} &&
-Rscript /lb/project/C3G/projects/pubudu/hicrep.R \\
+Rscript $R_TOOLS/hicrep.R \\
   -s1 {sample1} \\
   -s2 {sample2} \\
   -f1 {file1_path} \\
@@ -79,7 +79,9 @@ def merge_tmp_files( input_files, output_files, temp_out_dir, resolution, smooth
         command="""\
         cd {temp_out_dir} &&
         for d in */ ; do 
-        awk -v OFS="_" 'NR==0 {{print; next}} FNR==0 {{next}} {{print FILENAME, $0}}' "$d"hicrep*_{resolution}_res_{smooth}_{bound_width}_{down_sampling}*.tmp |  awk -F "_" 'BEGIN{{printf "chr\\tSCC\\tSD\\tSmoothing\\n"}}{{printf $(NF-6)"\\t"$NF"\\n"}}' > "${{d%/*}}"_res_{resolution}_{smooth}_{bound_width}_{down_sampling}.tsv 
+        awk -v OFS="_" 'NR==0 {{print; next}} FNR==0 {{next}} {{print FILENAME, $0}}' "$d"hicrep*_{resolution}_res_{smooth}_{bound_width}_{down_sampling}*.tmp |  \\
+        awk -F "_" 'BEGIN{{printf "chr\\tSCC\\tSD\\tSmoothing\\n"}}{{printf $(NF-6)"\\t"$NF"\\n"}}' > \\
+        "${{d%/*}}"_res_{resolution}_{smooth}_{bound_width}_{down_sampling}.tsv 
         done
         """.format(
         temp_out_dir=temp_out_dir,

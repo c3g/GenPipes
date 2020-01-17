@@ -377,7 +377,7 @@ class HicSeq(common.Illumina):
         #If there is only one sample, an step will skip by giving a warning
         if len(self.samples) > 1:
 
-            output_dir = "hicrep_reproducibility_scores"
+            output_dir = "reproducibility_scores"
             for res in res_chr:
                 for sample in pairwise_sample_combination:
                     #create a job list inorder to create a concat jobs (create one job for all chrms for one sample pair
