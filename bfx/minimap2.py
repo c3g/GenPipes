@@ -29,7 +29,8 @@ from core.job import *
 
 def minimap2_ont(readset_name,
                  read_fastq_dir,
-                 output_directory):
+                 output_directory,
+                 read_group):
     """
     Align nanopore reads to a reference using minimap2.
 
@@ -51,12 +52,13 @@ def minimap2_ont(readset_name,
          ["minimap2", "module_samtools"]],
         command="""\
 mkdir -p {output_directory} && \\
-minimap2 -ax {minimap_preset} {other_options} {genome_fasta} {read_fastq_dir}/*.fastq > {out_sam} && \\
+minimap2 -ax {minimap_preset} -R {read_group} {other_options} {genome_fasta} {read_fastq_dir}/*.fastq > {out_sam} && \\
 samtools view -b {out_sam} -@ 8 | samtools sort -@ 6 --reference {genome_fasta} -T {output_directory} > {out_bam} && \\ 
 samtools index {out_bam} {out_bai}
         """.format(
             output_directory=output_directory,
             minimap_preset=minimap_preset,
+            read_group=read_group,
             other_options=config.param('minimap2_align', 'other_options', required=False),
             genome_fasta=genome_fasta,
             read_fastq_dir=read_fastq_dir,
