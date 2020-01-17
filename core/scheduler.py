@@ -503,6 +503,7 @@ exit \$MUGQIC_STATE" | \\
                     # Write job parameters in job list file
                     cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST\n"
 
+                    cmd += "\necho \"$" + job.id + "\t$JOB_NAME submitted \n"
                     #add 0.2s sleep to let slurm submiting the job correctly
                     cmd += "\nsleep 0.1\n"
 
