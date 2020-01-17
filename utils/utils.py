@@ -171,7 +171,7 @@ def container_wrapper_argparse(argv):
 
     wrap_option = ['--container', 'wrapper', args.wrap]
 
-    if (args.wrap and 'batch' is argv) and '--no-json' not in argv:
+    if (args.wrap and 'batch' in argv) and '--no-json' not in argv:
         parser.error("--wrap and -j batch requires --no-json")
 
     sys.stderr.write('wrapping\n')

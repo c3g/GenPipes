@@ -140,9 +140,9 @@ class Scheduler(object):
             return ""
 
 
-    def print_header(self, pipeline):
+    def print_header(self, pipeline,shebang='/bin/bash'):
         print("""\
-#!/bin/bash
+#!{shebang}
 # Exit immediately on error
 {scheduler.disable_modulercfile}
 set -eu -o pipefail
@@ -155,6 +155,7 @@ set -eu -o pipefail
 {steps}
 {separator_line}"""
             .format(
+                shebang=shebang,
                 separator_line=separator_line,
                 pipeline=pipeline,
                 scheduler=self,
@@ -366,6 +367,8 @@ class BatchScheduler(Scheduler):
         self.name = 'Batch'
 
     def submit(self, pipeline):
+        logger.info('\n\t To run the script use: \n\t"{}  ./<command>.sh"'.format(
+            self.container_line))
         self.print_header(pipeline)
         if pipeline.jobs:
             print("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`")
@@ -379,18 +382,25 @@ class BatchScheduler(Scheduler):
 {separator_line}
 JOB_NAME={job.name}
 JOB_DONE={job.done}
+COMMAND=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.sh
+cat << '{limit_string}' > $COMMAND
+#!/bin/bash
+set -eu -o pipefail
+{job.command_with_modules}
+{limit_string}
+chmod 755 $COMMAND
 printf "\\n$SEPARATOR_LINE\\n"
 echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
-rm -f $JOB_DONE && {job2json_start} {container_line}\\
-{job.command_with_modules}
-MUGQIC_STATE=$PIPESTATUS
+rm -f $JOB_DONE 
+{job2json_start} $COMMAND
+MUGQIC_STATE=$?
 echo "End MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`"
 echo MUGQICexitStatus:$MUGQIC_STATE
 {job2json_end}
 if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
 """.format(
                             job=job,
-                            container_line=self.container_line,
+                            limit_string=os.path.basename(job.done),
                             separator_line=separator_line,
                             job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                             job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')
