@@ -61,7 +61,7 @@ def restructure_matrix(input_file_path, output_file_path,  output_dir):
             mkdir -p {output_dir}/temp &&
             awk -v OFS="\\t" '{{print $1":"$2"-"$3,$0}}' {input_file} | \\
             cut -f2,3,4 --complement | \\
-            Rscript -e 'library(data.table); a <- fread("file:///dev/stdin", data.table=F,sep="\\t", na.strings=c("",NA,"NULL")); a[is.na(a)] <- 0; rownames(a)<-a[,1]; a<- a[,-1]; if(!all(as.matrix(a)%%1==0)){{a<-a[,] *10;}};  a<-trunc(a[,]); write.table(a,"file:///dev/stdout",row.names=TRUE,col.names=FALSE,sep="\\t",quote=FALSE)' | \\
+            Rscript -e 'library(data.table); a <- fread("file:///dev/stdin", data.table=F,sep="\\t", na.strings=c("",NA,"NULL")); a[is.na(a)] <- 0; rownames(a)<-a[,1]; a<- a[,-1]; if(!all(as.matrix(a)%%1==0)){{a<-a[,] *10;}};  write.table(a,"file:///dev/stdout",row.names=TRUE,col.names=FALSE,sep="\\t",quote=FALSE)' | \\
             awk '{{ printf $1"\\t"; for( i = 2; i <= NF; i++) {{ printf "%.0f\\t", $i;  }} printf "\\n"}}' > \\
             {output_file}""".format(
             input_file=input_file_path,
