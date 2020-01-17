@@ -98,7 +98,8 @@ class Nanopore(common.MUGQICPipeline):
                 [reads_fastq_dir],
                 [os.path.join(blast_directory, readset.name + "blastHit_20MF_species.txt")],
                 [["blastqc", "module_mugqic_tools"],
-                 ["blastqc", "module_blast"]],
+                 ["blastqc", "module_blast"],
+                 ["blastqc", "module_python"]],
                 command="""\
 mkdir -p {output_directory} && \\ 
 cat {reads_fastq_dir}/*.fastq >> {output_directory}/full_input.tmp.fastq && \\
@@ -144,7 +145,15 @@ grep ">" {output_directory}/subsample_input.trim.blastres | awk ' {{ print $2 "_
             else:
                 _raise(SanitycheckError("Error: FASTQ file not available for readset \"" + readset.name + "\"!"))
 
-            job = minimap2.minimap2_ont(readset.name, reads_fastq_dir, alignment_directory)
+            read_group = "'@RG" + \
+                         "\\tID:" + readset.name + \
+                         "\\tSM:" + readset.sample.name + \
+                         "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
+                         ("\\tPU:run" + readset.run if readset.run else "") + \
+                         "\\tPL:Nanopore" + \
+                         "'"
+
+            job = minimap2.minimap2_ont(readset.name, reads_fastq_dir, alignment_directory, read_group)
             job.name = "minimap2_align." + readset.name
             job.samples = [readset.sample]
             jobs.append(job)
