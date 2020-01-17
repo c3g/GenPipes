@@ -305,7 +305,7 @@ For more information about a specific pipeline, visit:
 ### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/)
 ### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/)
 ### [Illumina Run Processing Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/illumina_run_processing/)
-
+### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore/)
 
 Readset File
 ------------
@@ -355,6 +355,25 @@ Example:
     sampleA	readset2	F_01_2	105503472	150000	path/to/readset2.bas.h5	path/to/readset2.1.bax.h5,path/to/readset2.2.bax.h5,path/to/readset2.3.bax.h5
     sampleB	readset3	G_01_1	118603200	150000	path/to/readset3.bas.h5	path/to/readset3.1.bax.h5,path/to/readset3.2.bax.h5,path/to/readset3.3.bax.h5
     sampleB	readset4	G_01_2	104239488	150000	path/to/readset4.bas.h5	path/to/readset4.1.bax.h5,path/to/readset4.2.bax.h5,path/to/readset4.3.bax.h5
+
+### Nanopore
+
+* Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; mandatory; 
+* Readset: a unique readset name with the same allowed characters as above; mandatory;
+* Run: a unique ONT run name, usually has a structure similar to `PAE0000_a1b2c3d`; 
+* Flowcell: code of the type of flowcell used, for example: the code for PromethION Flow Cell (R9.4) is `FLO-PRO002`;
+* Library: code of the type of library preparation kit used, for example: the code for the Ligation Sequencing Kit is `SQK-LSK109`;
+* Summary: path to the `sequencing_summary.txt` file outputted by the ONT basecaller; mandatory;
+* FASTQ: path to the `fastq_pass` **directory**, that is usually created by the basecaller; mandatory;
+* FAST5: path to the **directory** containing the raw fast5 files, before basecalling; 
+
+Example: 
+
+    Sample  Readset Run Flowcell    Library Summary FASTQ   FAST5
+    sampleA readset1    PAE00001_abcd123    FLO-PRO002  SQK-LSK109 path/to/readset1_sequencing_summary.txt path/to/readset1/fastq_pass   path/to/readset1/fast5_pass 
+    sampleA readset2    PAE00002_abcd456    FLO-PRO002  SQK-LSK109 path/to/readset2_sequencing_summary.txt path/to/readset2/fastq_pass   path/to/readset2/fast5_pass 
+    sampleA readset3    PAE00003_abcd789    FLO-PRO002  SQK-LSK109 path/to/readset3_sequencing_summary.txt path/to/readset3/fastq_pass   path/to/readset3/fast5_pass 
+    sampleA readset4    PAE00004_abcd246    FLO-PRO002  SQK-LSK109 path/to/readset4_sequencing_summary.txt path/to/readset4/fastq_pass   path/to/readset4/fast5_pass 
 
 
 ### For abacus users with Nanuq readsets
