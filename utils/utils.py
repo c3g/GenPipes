@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import ConfigParser
 import glob
 import logging
@@ -28,6 +29,7 @@ import re
 import string
 import sys
 import shutil
+import subprocess
 import datetime
 
 
@@ -135,3 +137,47 @@ def expandvars(path, skip_escaped=False):
         return os.environ.get(m.group(2) or m.group(1), '')
     reVar = (r'(?<!\\)' if skip_escaped else '') + r'\$(\w+|\{([^}]*)\})'
     return re.sub(reVar, replace_var, path)
+
+
+def container_wrapper_argparse(argv):
+    """
+        This method start the pipeline inside de system put in place by the genpipe_in_a_container
+        cvmfs/container wrapper.
+
+    Args:
+        argv: Any valid Genpipes option plus --wrap.
+    Returns: Return code of the subprocess
+
+    """
+
+    help = False
+    if '-h' in argv:
+        try:
+            argv.remove('-h')
+        except ValueError:
+            pass
+        help = True
+
+    script_dir_current = os.path.dirname(os.path.realpath(__file__))
+    parser = argparse.ArgumentParser(conflict_handler='resolve')
+    parser.add_argument('--wrap', type=str, help="Path to the genpipe cvmfs wrapper script.\n"
+                                                 "Default is genpipes/ressources/container/bin/container_wrapper.sh",
+                        nargs='?')
+    args, argv = parser.parse_known_args(argv)
+    if args.wrap is None:
+        genpipes_home = '/'.join(script_dir_current.split('/')[:-1])
+        default_wrapper = '{}/resources/container/bin/container_wrapper.sh'.format(genpipes_home)
+        args.wrap = default_wrapper
+
+    wrap_option = ['--container', 'wrapper', args.wrap]
+
+    if (args.wrap and 'batch' is argv) and '--no-json' not in argv:
+        parser.error("--wrap and -j batch requires --no-json")
+
+    sys.stderr.write('wrapping\n')
+    # call in the wrapper
+    if help:
+        argv.append('--help')
+    # sys.stderr.write('{} {} {}'.format([args.wrap], argv, wrap_option))
+    return subprocess.call([args.wrap] + argv + wrap_option)
+

@@ -37,7 +37,7 @@ def create_scheduler(s_type, config_files, container=None):
     if s_type == "pbs":
         return PBSScheduler(config_files, container=container)
     elif s_type == "batch":
-        return BatchScheduler(config_files)
+        return BatchScheduler(config_files, container=container)
     elif s_type == "daemon":
         return DaemonScheduler(config_files)
     elif s_type == "slurm":
@@ -69,7 +69,7 @@ class Scheduler(object):
         if self._host_cvmfs_cache is None:
 
             self._host_cvmfs_cache = config.param("container", 'host_cvmfs_cache'
-                                            , required=False, type="string")
+                                                  , required=False, type="string")
 
             if not self._host_cvmfs_cache:
 
@@ -381,7 +381,7 @@ JOB_NAME={job.name}
 JOB_DONE={job.done}
 printf "\\n$SEPARATOR_LINE\\n"
 echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
-rm -f $JOB_DONE && {job2json_start} \\
+rm -f $JOB_DONE && {job2json_start} {container_line}\\
 {job.command_with_modules}
 MUGQIC_STATE=$PIPESTATUS
 echo "End MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`"
@@ -390,6 +390,7 @@ echo MUGQICexitStatus:$MUGQIC_STATE
 if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
 """.format(
                             job=job,
+                            container_line=self.container_line,
                             separator_line=separator_line,
                             job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                             job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')

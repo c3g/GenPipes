@@ -225,11 +225,11 @@ class Pipeline(object):
                                                                 " all the input files needed for the pipeline to run "
                                                                 "are available on the system (default: false)",
                                          action="store_true")
-            self._argparser.add_argument("--container",
+            self._argparser.add_argument("--container", nargs=2,
                                          help="Run inside a container providing a valid"
-                                              "singularity image path", action=ValidateContainer,
-                                              metavar=("{wrapper, singularity}",
-                                                       "<IMAGE PATH>"))
+                                         "singularity image path", action=ValidateContainer,
+                                          metavar=("{wrapper, singularity}",
+                                                   "<IMAGE PATH>"))
 
         return self._argparser
 

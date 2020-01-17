@@ -33,6 +33,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 from bfx.readset import parse_pacbio_readset_file
+import utils.utils
 
 from bfx import blast
 from bfx import circlator
@@ -836,13 +837,6 @@ pandoc --to=markdown \\
 if __name__ == '__main__':
     argv = sys.argv
     if '--wrap' in argv:
-
-        parser = argparse.ArgumentParser(conflict_handler='resolve')
-        parser.add_argument('--wrap', type=str, help="path to the genpipe cvmfs wrapper script")
-        args, argv = parser.parse_known_args(argv)
-        wrap_option = ['--container', 'wrapper', args.wrap]
-        sys.stderr.write('wrapping\n')
-        # call in the wrapper
-        subprocess.call([args.wrap] + argv + wrap_option)
+        utils.utils.container_wrapper_argparse(argv)
     else:
         PacBioAssembly()

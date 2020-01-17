@@ -20,14 +20,12 @@
 ################################################################################
 
 # Python Standard Modules
-import argparse
 import logging
 import math
 import os
 import re
 import sys
 import itertools
-import subprocess
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -35,6 +33,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
+import utils.utils
 from bfx.readset import parse_illumina_readset_file
 
 from bfx import bvatools
@@ -944,38 +943,9 @@ pandoc \\
         ]
 
 if __name__ == '__main__':
+
     argv = sys.argv
     if '--wrap' in argv:
-        help = False
-        if '-h' in argv or '--help' in argv:
-            try:
-                argv.remove('-h')
-            except ValueError:
-                pass
-            try:
-                argv.remove('--help')
-            except ValueError:
-                pass
-            help = True
-
-        script_dir_current = os.path.dirname(os.path.realpath(__file__))
-        parser = argparse.ArgumentParser(conflict_handler='resolve')
-        parser.add_argument('--wrap', type=str, help="path to the genpipe cvmfs wrapper script",
-                            nargs='?')
-        args, argv = parser.parse_known_args(argv)
-        if args.wrap is None:
-            genpipes_home = '/'.join(script_dir_current.split('/')[:-2])
-            default_wrapper = '{}/resources/container/bin/container_wrapper.sh'.format(genpipes_home)
-            args.wrap = default_wrapper
-
-        wrap_option = ['--container', 'wrapper', args.wrap]
-
-        sys.stderr.write('wrapping\n')
-        # call in the wrapper
-        if help:
-            argv.append('--help')
-
-        subprocess.call([args.wrap] + argv + wrap_option)
+        utils.utils.container_wrapper_argparse(argv)
     else:
-        print sys.argv
         MethylSeq()
