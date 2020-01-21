@@ -164,7 +164,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
         ped_file = os.path.join(directory, tumor_pair.name + ".ped")
         ped_job = Job(
             command="""\
-`cat > {ped_file} << END
+`cat > {ped_file}
+ END
 #Family_ID\tIndividual_ID\tPaternal_ID\tMaternal_ID\tSex\tPhenotype\tEthnicity
 1\t{normal}\t-9\t-9\t0\t1\t-9
 1\t{tumor}\t-9\t-9\t0\t2\t-9
