@@ -26,9 +26,9 @@ import os
 from core.config import *
 from core.job import *
 
-def ensemble(input_lumpy, input_manta, input_cnvkit, input_wham, input_delly, input_breakseq, input_gatk, input_bam, sample_name, workdir, outdir, isize_mean, isize_sd, output_vcf):
+def ensemble(lumpy, manta, cnvkit, wham, delly, gatk, bam, sample_name, workdir, outdir, isize_mean, isize_sd, output_vcf, breakseq=None):
     return Job(
-        [input_lumpy, input_manta, input_cnvkit, input_wham, input_delly, input_breakseq, input_gatk, input_bam],
+        [lumpy, manta, cnvkit, wham, delly, breakseq, gatk, bam],
         [output_vcf],
         [
             #['metasv_ensemble', 'module_spades'],
@@ -40,13 +40,13 @@ def ensemble(input_lumpy, input_manta, input_cnvkit, input_wham, input_delly, in
 run_metasv.py {options} \\
   --num_threads {threads} \\
   --reference {genome} \\
-  --lumpy_vcf {input_lumpy} \\
-  --manta_vcf {input_manta} \\
-  {input_cnvkit} \\
-  {input_wham} \\
-  {input_delly} \\
-  {input_gatk} \\
-  --bam {input_bam} \\
+  --lumpy_vcf {lumpy} \\
+  --manta_vcf {manta} \\
+  {cnvkit} \\
+  {wham} \\
+  {delly} \\
+  {gatk} \\
+  --bam {bam} \\
   --sample {sample_name} \\
   --spades $SPAdes_BIN/spades.py \\
   --age $AGE_BIN/age_align \\
@@ -57,14 +57,14 @@ run_metasv.py {options} \\
         options=config.param('metasv_ensemble','options'),
         threads=config.param('metasv_ensemble','threads'),
         genome=config.param('metasv_ensemble','genome_fasta',type='filepath'),        
-        input_lumpy=input_lumpy,
-        input_manta=input_manta,
-        input_wham="--wham_vcf " + input_wham if input_wham else "",
-        input_delly="--delly_vcf " + input_delly if input_delly else "",
-        input_gatk="--gatk_vcf " + input_gatk if input_gatk else "",
-        input_cnvkit="--cnvkit_vcf " + input_cnvkit if input_cnvkit else "",
-        input_breakseq="--breakseq_vcf " + input_breakseq if input_breakseq else "",
-        input_bam=input_bam,
+        lumpy=lumpy,
+        manta=manta,
+        wham="--wham_vcf " + wham if wham else "",
+        delly="--delly_vcf " + delly if delly else "",
+        gatk="--gatk_vcf " + gatk if gatk else "",
+        cnvkit="--cnvkit_vcf " + cnvkit if cnvkit else "",
+        breakseq="--breakseq_vcf " + breakseq if breakseq else "",
+        bam=bam,
         sample_name=sample_name,
         workdir=workdir,
         outdir=outdir,

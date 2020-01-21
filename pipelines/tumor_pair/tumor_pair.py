@@ -2263,9 +2263,8 @@ END`""".format(
 
             jobs.append(concat_jobs([
                 mkdir_job,
-                Job([seqz_input], [merged_seqz], command="cat <(zcat " + seqz_input + " | head -1 ) \\\n <(zcat " + " \\\n  ".join(seqz_outputs) +
-                                                         " \\\n  | grep -v 'chrom' | grep -Ev \"MT|chrM\" ) | gzip -cf > " +  merged_seqz),
-                    #Job([tmp_output], [merged_seqz], command="zcat " + header + " " + tmp_output + " | gzip -cf > " + merged_seqz),
+                Job(seqz_outputs, [merged_seqz],
+                    command="zcat " + " \\\n".join(seqz_outputs) + " \\\n | gawk 'FNR==1 && NR==1{print;}{ if($1!=\"chromosome\" && $1!=\"MT\" && $1!=\"chrMT\") {print $0} }' | \\\n   gzip -cf > " + merged_seqz),
             ], name="sequenza.merge_binned_seqz." + tumor_pair.name))
 
             jobs.append(concat_jobs([
@@ -2704,6 +2703,7 @@ END`""".format(
             gzip_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.vcf.gz")
 
             genotype_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.genotyped.vcf")
+            genotype_gzip = os.path.join(pair_directory, tumor_pair.name + ".lumpy.genotyped.vcf.gz")
 
             mkdir_job = Job(command="mkdir -p " + lumpy_directory, removable_files=[lumpy_directory], samples = [tumor_pair.normal, tumor_pair.tumor])
 
@@ -2749,6 +2749,7 @@ END`""".format(
                     vt.sort("-", os.path.join(pair_directory, tumor_pair.name + ".lumpy.sorted.vcf"), "-m full"),
                 ]),
                 svtyper.genotyper(inputTumor, inputNormal, os.path.join(pair_directory, tumor_pair.name + ".lumpy.sorted.vcf"), genotype_vcf),
+                htslib.bgzip(genotype_vcf, genotype_gzip),
             ], name="lumpy_paired_sv_calls.genotype." + tumor_pair.name))
 
         return jobs
@@ -3052,15 +3053,11 @@ END`""".format(
             pair_directory = os.path.join("SVariants", tumor_pair.name)
             ensemble_directory = os.path.join("SVariants", "ensemble", tumor_pair.name)
 
-            inputTumor = os.path.join("alignment", tumor_pair.tumor.name,
-                                      tumor_pair.tumor.name + ".sorted.dup.recal.bam")
-            isize_file = os.path.join("metrics", "dna", tumor_pair.tumor.name,
-                                      "picard_metrics.all.metrics.insert_size_metrics")
-            gatk_vcf = os.path.join("pairedVariants", "ensemble", tumor_pair.name,
-                                    tumor_pair.name + ".ensemble.somatic.flt.vcf.gz")
-            gatk_pass = os.path.join("pairedVariants", "ensemble", tumor_pair.name,
-                                     tumor_pair.name + ".ensemble.somatic.flt.pass.vcf.gz")
-            lumpy_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.vcf.gz")
+            inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            isize_file = os.path.join("metrics", "dna", tumor_pair.tumor.name, "picard_metrics.all.metrics.insert_size_metrics")
+            gatk_vcf = os.path.join("pairedVariants", "ensemble", tumor_pair.name, tumor_pair.name + ".ensemble.somatic.flt.vcf.gz")
+            gatk_pass = os.path.join("pairedVariants", "ensemble", tumor_pair.name, tumor_pair.name + ".ensemble.somatic.flt.pass.vcf.gz")
+            lumpy_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.genotyped.vcf.gz")
             manta_vcf = os.path.join(pair_directory, tumor_pair.name + ".manta.somatic.vcf.gz")
             wham_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.merged.genotyped.vcf.gz")
             delly_vcf= os.path.join(pair_directory, tumor_pair.name + ".delly.merge.sort.flt.vcf.gz")
@@ -3082,11 +3079,15 @@ END`""".format(
             if os.path.isfile(delly_vcf):
                 input_delly = delly_vcf
 
+            input_cnvkit = None
+            if os.path.isfile(cnvkit_vcf):
+                input_cnvkit = cnvkit_vcf
+
             gatk_pass = None
             if os.path.isfile(gatk_vcf):
                 jobs.append(concat_jobs([
                     mkdir_job,
-                    vcflib.vcffilter(gatk_vcf, gatk_pass, config.param('metasv_ensemble', 'filter_pass_options')),
+                    bcftools.view(gatk_vcf, gatk_pass, config.param('metasv_ensemble', 'filter_pass_options')),
                 ], name="metasv_ensemble.gatk_pass." + tumor_pair.name))
             
             jobs.append(concat_jobs([
@@ -3096,7 +3097,6 @@ END`""".format(
                                 os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory,
                                 isize_mean=str(isize_mean), isize_sd=str(isize_sd),
                                 output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz")),
-                # input_wham=input_wham, input_gatk=gatk_pass, output_vcf=[]),
             ], name="metasv_ensemble." + tumor_pair.name))
 
         return jobs
@@ -3274,8 +3274,8 @@ END`""".format(
         return [
             [
                 self.picard_sam_to_fastq,
-                self.trimmomatic,
-                self.merge_trimmomatic_stats,
+                #self.trimmomatic,
+                # self.merge_trimmomatic_stats,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,

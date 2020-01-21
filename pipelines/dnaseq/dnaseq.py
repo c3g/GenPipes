@@ -3350,9 +3350,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 
             jobs.append(concat_jobs([
                 mkdir_job,
-	            metasv.ensemble(lumpy_vcf, abs_manta, input_cnvkit, input_wham, input_delly, breakseq_vcf, gatk_pass, inputTumor,
+	            metasv.ensemble(lumpy_vcf, abs_manta, input_cnvkit, input_wham, input_delly, gatk_pass, inputTumor,
 	                    sample.name, os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory,
-	                    isize_mean=str(isize_mean), isize_sd=str(isize_sd), output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz")),
+	                    isize_mean=str(isize_mean), isize_sd=str(isize_sd), output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"), breakseq=breakseq_vcf),
             ], name="metasv_ensemble." + sample.name))
 	        
         return jobs
