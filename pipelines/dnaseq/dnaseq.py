@@ -3538,11 +3538,18 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 ], name="metasv_ensemble.gatk_pass." + sample.name))
                 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(ensemble_directory, remove=True),
 	            metasv.ensemble(lumpy_vcf, abs_manta, input_cnvkit, wham_vcf, delly_vcf, input_gatk, inputTumor, sample.name,
                                 os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory, isize_mean=str(isize_mean),
                                 isize_sd=str(isize_sd), output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"),
                                 breakseq=breakseq_vcf),
+=======
+                mkdir_job,
+	            metasv.ensemble(lumpy_vcf, abs_manta, input_cnvkit, input_wham, input_delly, gatk_pass, inputTumor,
+	                    sample.name, os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory,
+	                    isize_mean=str(isize_mean), isize_sd=str(isize_sd), output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"), breakseq=breakseq_vcf),
+>>>>>>> fixes to metasv for tumor pair
             ], name="metasv_ensemble." + sample.name))
 	        
         return jobs
