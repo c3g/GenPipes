@@ -508,7 +508,7 @@ exit \$MUGQIC_STATE" | \\
                     cmd += "\nsleep 0.1\n"
 
                     print cmd
-
+        logger.info("\nAll submitted\"")
         # Check cluster maximum job submission
         cluster_max_jobs = config.param('DEFAULT', 'cluster_max_jobs', type='posint', required=False)
         if cluster_max_jobs and len(pipeline.jobs) > cluster_max_jobs:
