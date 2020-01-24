@@ -539,7 +539,7 @@ END
     
         return jobs
 
-    def bwakit_sambamba_sort_sam(self):
+    def bwakit_picard_sort_sam(self):
         """
         The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
         The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
@@ -583,25 +583,28 @@ END
         
             job = concat_jobs([
                 Job(command="mkdir -p " + os.path.dirname(readset_bam), samples=[readset.sample]),
-                bwakit.mem(
-                    fastq1,
-                    fastq2,
-                    os.path.join("alignment", readset.sample.name, readset.name, readset.name),
-                    read_group="'@RG" + \
-                                "\tID:" + readset.name + \
-                                "\tSM:" + readset.sample.name + \
-                                "\tLB:" + (readset.library if readset.library else readset.sample.name) + \
-                                (
-                                    "\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                                ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem',
-                                                                                                        'sequencing_center',
-                                                                                                        required=False) else "") + \
-                                "\tPL:Illumina" + \
-                                "'"
-                ),
-                sambamba.sort(os.path.join(alignment_directory, readset.name, readset.name + ".aln.bam"), readset_bam, alignment_directory),
+                pipe_jobs([
+                    bwa.mem(
+                        fastq1,
+                        fastq2,
+                        read_group="'@RG" + \
+                                    "\tID:" + readset.name + \
+                                    "\tSM:" + readset.sample.name + \
+                                    "\tLB:" + (readset.library if readset.library else readset.sample.name) + \
+                                    ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                                    ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem','sequencing_center', required=False) else "") + \
+                                    "\tPL:Illumina" + \
+                                    "'"
+                    ),
+                    bwakit.bwa_postalt("/dev/stdin", "/dev/stdout"),
+                    picard.sort_sam(
+                        "/dev/stdin",
+                        readset_bam,
+                        "coordinate"
+                    )
+                ])
             ])
-            job.name = "bwakit_sambamba_sort_sam." + readset.name
+            job.name = "bwakit_picard_sort_sam." + readset.name
             job.samples = [readset.sample]
         
             jobs.append(job)
@@ -3798,7 +3801,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 ], name="metasv_ensemble.gatk_pass." + sample.name))
                 
             jobs.append(concat_jobs([
-<<<<<<< HEAD
                 bash.mkdir(
                     ensemble_directory,
                     remove=True
@@ -3819,12 +3821,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"),
                     breakseq=breakseq_vcf
                 ),
-=======
-                mkdir_job,
-	            metasv.ensemble(lumpy_vcf, abs_manta, input_cnvkit, input_wham, input_delly, gatk_pass, inputTumor,
-	                    sample.name, os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory,
-	                    isize_mean=str(isize_mean), isize_sd=str(isize_sd), output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"), breakseq=input_breakseq),
->>>>>>> ad92eb21 (fixes to metasv for tumor pair)
             ], name="metasv_ensemble." + sample.name))
 	        
         return jobs
