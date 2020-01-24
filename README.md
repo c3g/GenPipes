@@ -17,7 +17,7 @@ Software requirement
 GenPipes have been tested with Python 2.7.
 
 
-Quick setup for abacus, guillimin and mammouth users
+Quick setup for abacus, Beluga, graham, cedar and mammouth users
 ----------------------------------------------------
 Genomes and modules used by the pipelines are already installed on a CVMFS partition mounted on all those clusters in `/cvmfs/soft.mugqic/CentOS6`.
 To access them, add the following lines to your *$HOME/.bash_profile*:
@@ -26,7 +26,7 @@ To access them, add the following lines to your *$HOME/.bash_profile*:
 #!bash
 umask 0002
 
-## MUGQIC genomes and modules 
+## MUGQIC genomes and modules
 
 export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6
 
@@ -38,15 +38,15 @@ For MUGQIC analysts, add the following lines to your *$HOME/.bash_profile*:
 ```
 #!bash
 umask 0002
-     
+
 ## MUGQIC genomes and modules for MUGQIC analysts
-    
+
 HOST=`hostname`;
-    
+
 DNSDOMAIN=`dnsdomainname`;
 
 export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6
-    
+
 if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/lb/project/mugqic/analyste_dev
@@ -59,13 +59,13 @@ elif [[ $HOST == cedar* || $DNSDOMAIN == cedar.computecanada.ca ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
 
-  
+
 elif [[ $HOST == beluga* || $DNSDOMAIN == beluga.computecanada.ca ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
 
 fi
-    
+
 module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
 export RAP_ID=<my-rap-id>
 ```    
@@ -110,8 +110,26 @@ git clone git@bitbucket.org:mugqic/genpipes.git
 
 #### GenPipes' Container:
 
-To download and use the GenPipes' Docker container, please visit [genpipes_in_a_container](https://bitbucket.org/mugqic/genpipes_in_a_container/src/master).
+A new installation with a better taste:
 
+Make sure that you have fuse installed on your system,  if `ls /dev/fuse` returns no error, you are all set.
+
+Onece the genpipes repo has been cloned, run the following command to install the container and wrapper code for the fuse libraries.
+
+```
+#!bash
+./genpipes/resources/container/get_wrapper.sh
+```
+
+You can access the the Genpipes container  by typing  
+
+```
+#!bash
+./genpipes/resources/container/bin/container_wrapper.sh`
+
+```
+
+You can get more information to run [Genpipes with containers here](https://github.com/c3g/genpipes_in_a_container)
 
 ### Setup
 
@@ -126,9 +144,9 @@ First, set `MUGQIC_INSTALL_HOME` to the directory where you want to install thos
 ```
 #!bash
 ## MUGQIC genomes and modules
-    
+
 export MUGQIC_INSTALL_HOME=/path/to/your/local/mugqic_resources
-    
+
 module use $MUGQIC_INSTALL_HOME/modulefiles
 ```
 
@@ -537,5 +555,5 @@ You can also report bugs at [pipelines@computationalgenomics.ca](mailto:pipeline
 * Messages should not be sent directly to our team members. The generic e-mail addresses above are viewable by all of us and facilitate the follow-up of your request.
 * Choose a meaningful subject for your message.
 * Include the pipeline version number in your message (and the commit number if applicable).
-* Provide the following information relevant to the problem encountered: the python command, the bash submission script, the output (job_outputs/*/*.o) file, 
+* Provide the following information relevant to the problem encountered: the python command, the bash submission script, the output (job_outputs/*/*.o) file,
 * An error message or code snippet illustrating your request is normally very useful.
