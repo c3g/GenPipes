@@ -3533,23 +3533,37 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 
                 jobs.append(concat_jobs([
 	                bash.mkdir(ensemble_directory, remove=True),
-	                bcftools.view(gatk_vcf, gatk_pass, config.param('metasv_ensemble', 'filter_pass_options')),
-                    htslib.tabix(gatk_pass),
+	                bcftools.view(
+                        gatk_vcf,
+                        gatk_pass,
+                        config.param('metasv_ensemble', 'filter_pass_options')
+                    ),
+                    htslib.tabix(
+                        gatk_pass
+                    ),
                 ], name="metasv_ensemble.gatk_pass." + sample.name))
                 
             jobs.append(concat_jobs([
-<<<<<<< HEAD
-                bash.mkdir(ensemble_directory, remove=True),
-	            metasv.ensemble(lumpy_vcf, abs_manta, input_cnvkit, wham_vcf, delly_vcf, input_gatk, inputTumor, sample.name,
-                                os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory, isize_mean=str(isize_mean),
-                                isize_sd=str(isize_sd), output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"),
-                                breakseq=breakseq_vcf),
-=======
-                mkdir_job,
-	            metasv.ensemble(lumpy_vcf, abs_manta, input_cnvkit, input_wham, input_delly, gatk_pass, inputTumor,
-	                    sample.name, os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory,
-	                    isize_mean=str(isize_mean), isize_sd=str(isize_sd), output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"), breakseq=breakseq_vcf),
->>>>>>> fixes to metasv for tumor pair
+                bash.mkdir(
+                    ensemble_directory,
+                    remove=True
+                ),
+	            metasv.ensemble(
+                    lumpy_vcf,
+                    abs_manta,
+                    input_cnvkit,
+                    wham_vcf,
+                    delly_vcf,
+                    input_gatk,
+                    inputTumor,
+                    sample.name,
+                    os.path.join(ensemble_directory, "rawMetaSV"),
+                    ensemble_directory,
+                    isize_mean=str(isize_mean),
+                    isize_sd=str(isize_sd),
+                    output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"),
+                    breakseq=breakseq_vcf
+                ),
             ], name="metasv_ensemble." + sample.name))
 	        
         return jobs
