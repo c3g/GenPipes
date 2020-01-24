@@ -49,6 +49,7 @@ from bfx.sequence_dictionary import *
 from bfx import adapters
 from bfx import bvatools
 from bfx import bwa
+#from bfx import bwakit
 from bfx import gatk4
 from bfx import gatk
 from bfx import igvtools
@@ -417,6 +418,79 @@ END
                     samples=[readset.sample]
                     )
                 )
+            
+        return jobs
+
+    def bwakit_picard_sort_sam(self):
+        """
+        The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
+        The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+        BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
+
+        This step takes as input files:
+
+        1. Trimmed FASTQ files if available
+        2. Else, FASTQ files from the readset file if available
+        3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+        """
+    
+        jobs = []
+        for readset in self.readsets:
+            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            alignment_directory = os.path.join("alignment", readset.sample.name)
+            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+        
+            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.sorted.bam$|\.bam$", ".pair1.fastq.gz", readset.bam),
+                                                  re.sub("\.sorted.bam$|\.bam$", ".pair2.fastq.gz", readset.bam)])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+        
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.sorted.bam$|\.bam$", ".single.fastq.gz", readset.bam)])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
+        
+            else:
+                raise Exception("Error: run type \"" + readset.run_type +
+                                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+        
+            job = concat_jobs([
+                Job(command="mkdir -p " + os.path.dirname(readset_bam), samples=[readset.sample]),
+                pipe_jobs([
+                    bwa.mem(
+                        fastq1,
+                        fastq2,
+                        read_group="'@RG" + \
+                                    "\tID:" + readset.name + \
+                                    "\tSM:" + readset.sample.name + \
+                                    "\tLB:" + (readset.library if readset.library else readset.sample.name) + \
+                                    ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                                    ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem','sequencing_center', required=False) else "") + \
+                                    "\tPL:Illumina" + \
+                                    "'"
+                    ),
+                    bwakit.bwa_postalt("/dev/stdin", "/dev/stdout"),
+                    picard.sort_sam(
+                        "/dev/stdin",
+                        readset_bam,
+                        "coordinate"
+                    )
+                ])
+            ])
+            job.name = "bwakit_picard_sort_sam." + readset.name
+            job.samples = [readset.sample]
+        
+            jobs.append(job)
+    
         return jobs
 
     def sambamba_merge_sam_files(self):
@@ -3398,7 +3472,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             pair_directory = os.path.join("SVariants", sample.name)
 
             jobs.append(concat_jobs([
-                snpeff.compute_effects(os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.vcf.gz"), os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf")),
+                Job([os.path.abspath(pair_directory) + ".svaba.germline.vcf"], [os.path.abspath(pair_directory) + ".svaba.germline.flt.vcf"],
+                    command="cat <(grep \"^#\" " + os.path.abspath(pair_directory) + ".svaba.germline.vcf) <(grep -v \"^#\" " + os.path.abspath(pair_directory) + ".svaba.germline.vcf | cut -f1-9,13-14) > "
+                            + os.path.abspath(pair_directory) + ".svaba.germline.flt.vcf"),
+                snpeff.compute_effects(os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.flt.vcf.gz"), os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf")),
                 htslib.bgzip_tabix(os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf"), os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf.gz")),
                 #annotations.structural_variants(pair_directory + ".svaba.germline.snpeff.vcf", pair_directory + ".svaba.germline.snpeff.annot.vcf"),
                 #vawk.sv(pair_directory + ".svaba.germline.snpeff.annot.vcf", tumor_pair.normal.name, tumor_pair.tumor.name, "SVABA",

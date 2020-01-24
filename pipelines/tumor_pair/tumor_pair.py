@@ -3223,14 +3223,20 @@ END`""".format(
             pair_directory = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
 
             jobs.append(concat_jobs([
-                snpeff.compute_effects(os.path.abspath(pair_directory) + ".svaba.somatic.vcf", pair_directory + ".svaba.somatic.snpeff.vcf"),
+                Job([os.path.abspath(pair_directory) + ".svaba.somatic.vcf"], [os.path.abspath(pair_directory) + ".svaba.somatic.flt.vcf"],
+                    command="cat <(grep \"^#\" " + os.path.abspath(pair_directory) + ".svaba.somatic.vcf) <(grep -v \"^#\" " + os.path.abspath(pair_directory) + ".svaba.somatic.vcf | cut -f1-9,13-14) > "
+                            + os.path.abspath(pair_directory) + ".svaba.somatic.flt.vcf"),
+                snpeff.compute_effects(os.path.abspath(pair_directory) + ".svaba.somatic.flt.vcf", pair_directory + ".svaba.somatic.snpeff.vcf"),
                 annotations.structural_variants(pair_directory + ".svaba.somatic.snpeff.vcf", pair_directory + ".svaba.somatic.snpeff.annot.vcf"),
                 vawk.sv(pair_directory + ".svaba.somatic.snpeff.annot.vcf", tumor_pair.normal.name, tumor_pair.tumor.name, "SVABA",
                         pair_directory + ".svaba.somatic.prioritize.tsv"),
             ], name="sv_annotation.svaba_somatic." + tumor_pair.name))
 
             jobs.append(concat_jobs([
-                snpeff.compute_effects(os.path.abspath(pair_directory) + ".svaba.germline.vcf", pair_directory + ".svaba.germline.snpeff.vcf"),
+                Job([os.path.abspath(pair_directory) + ".svaba.germline.vcf"], [os.path.abspath(pair_directory) + ".svaba.germline.flt.vcf"],
+                    command="cat <(grep \"^#\" " + os.path.abspath(pair_directory) + ".svaba.germline.vcf) <(grep -v \"^#\" " + os.path.abspath(pair_directory) + ".svaba.germline.vcf | cut -f1-9,13-14) > "
+                            + os.path.abspath(pair_directory) + ".svaba.germline.flt.vcf"),
+                snpeff.compute_effects(os.path.abspath(pair_directory) + ".svaba.germline.flt.vcf", pair_directory + ".svaba.germline.snpeff.vcf"),
                 annotations.structural_variants(pair_directory + ".svaba.germline.snpeff.vcf", pair_directory + ".svaba.germline.snpeff.annot.vcf"),
                 vawk.sv(pair_directory + ".svaba.germline.snpeff.annot.vcf", tumor_pair.normal.name, tumor_pair.tumor.name, "SVABA",
                         pair_directory + ".svaba.germline.prioritize.tsv"),
