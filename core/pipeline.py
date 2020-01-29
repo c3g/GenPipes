@@ -225,11 +225,11 @@ class Pipeline(object):
                                                                 " all the input files needed for the pipeline to run "
                                                                 "are available on the system (default: false)",
                                          action="store_true")
-            self._argparser.add_argument("--container",
-                                         help="run pipeline inside a container providing a container image path or "
-                                              "accessible docker/singularity hub path", action=ValidateContainer,
-                                         nargs=2, metavar=("{docker, singularity}",
-                                                           "{<CONTAINER PATH>, <CONTAINER NAME>}"))
+            self._argparser.add_argument("--container", nargs=2,
+                                         help="Run inside a container providing a valid"
+                                         "singularity image path", action=ValidateContainer,
+                                          metavar=("{wrapper, singularity}",
+                                                   "<IMAGE PATH>"))
 
         return self._argparser
 
@@ -501,11 +501,12 @@ def parse_range(astr):
 
 class ValidateContainer(argparse.Action):
 
-    VALID_TYPE = ('docker', 'singularity')
+    VALID_TYPE = ('singularity', 'wrapper')
 
     def __call__(self, parser, args, values, option_string=None):
         c_type, container = values
         if c_type not in self.VALID_TYPE:
             raise ValueError('{} is not supported, choose from {}'.format(c_type, self.VALID_TYPE))
         Container = collections.namedtuple('container', 'type name')
+
         setattr(args, self.dest, Container(c_type, container))

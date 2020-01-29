@@ -25,6 +25,7 @@ import glob
 import logging
 import os
 import re
+import subprocess
 import sys
 
 # Append mugqic_pipelines directory to Python library path
@@ -33,6 +34,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
+import utils.utils
 
 from bfx import differential_expression
 from bfx import gq_seq_utils
@@ -987,4 +989,8 @@ pandoc --to=markdown \\
         ]
 
 if __name__ == '__main__':
-    RnaSeqDeNovoAssembly()
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        RnaSeqDeNovoAssembly()

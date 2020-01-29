@@ -33,6 +33,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
+import utils.utils
 
 from pipelines import common
 from bfx import tools
@@ -2161,4 +2162,9 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
         ]
 
 if __name__ == '__main__':
-    AmpliconSeq(protocol=['qiime', 'dada2'])
+
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        AmpliconSeq(protocol=['qiime', 'dada2'])
