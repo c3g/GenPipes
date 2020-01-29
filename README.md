@@ -114,7 +114,7 @@ A new installation with a better taste:
 
 Make sure that you have fuse installed on your system,  if `ls /dev/fuse` returns no error, you are all set.
 
-Onece the genpipes repo has been cloned, run the following command to install the container and wrapper code for the fuse libraries.
+Once the genpipes repo has been cloned, run the following command to install the container and wrapper code for the fuse libraries.
 
 ```
 #!bash
