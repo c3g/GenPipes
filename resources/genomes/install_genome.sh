@@ -21,7 +21,7 @@ module_kallisto=mugqic/kallisto/0.44.0
 HOST=`hostname`
 
 # Ensure to use 'grep' from CVMFS to avoid errors caused by different grep versions
-alias grep=/cvmfs/soft.mugqic/yum/centos7/1.0/usr/bin/grep
+grep_cvmfs=/cvmfs/soft.mugqic/yum/centos7/1.0/usr/bin/grep
 
 init_install() {
   # '$MUGQIC_INSTALL_HOME_DEV' for development, '$MUGQIC_INSTALL_HOME' for production
@@ -336,6 +336,7 @@ create_samtools_index() {
     echo
     module load $module_samtools
     samtools faidx $GENOME_DIR/$GENOME_FASTA > $LOG_DIR/samtools_$TIMESTAMP.log 2>&1
+    awk '{print $1\t$2}' $GENOME_DIR/$GENOME_FASTA.fai > $GENOME_DIR/$GENOME_FASTA.tsv
   else
     echo
     echo "Genome SAMtools FASTA index up to date... skipping"
@@ -725,7 +726,7 @@ copy_files() {
     then
       if ! is_up2date $ANNOTATIONS_DIR/$RRNA
       then
-        grep -Pzoi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
+        $grep_cvmfs -Pzoi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
       fi
     fi
 
@@ -763,7 +764,7 @@ copy_files() {
       then
         if ! is_up2date $ANNOTATIONS_DIR/$RRNA
         then
-          grep -Pzoi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
+          $grep_cvmfs -Pzoi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
         fi
       fi
     fi

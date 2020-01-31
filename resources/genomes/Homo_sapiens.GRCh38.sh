@@ -50,7 +50,7 @@ get_vcf_dbsnp() {
 
 # Download dbNSFP and generate vcfs required to run VerifyBamId
 get_dbNSFP() {
-    DBSNSFP_VERSION=dbNSFP4.0b2a 
+    DBSNSFP_VERSION=dbNSFP4.0b2a
     DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/${DBSNSFP_VERSION}.zip
     DBSNSFP=$ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION
     if ! is_up2date $DBSNSFP.txt.gz
@@ -137,7 +137,7 @@ install_genome() {
   create_genome_ini_file
 
   # Add permissions
-  chmod -R ug+rwX,o+rX $INSTALL_DIR
+  chmod -R ug+rwX,o+rX,g+s $INSTALL_DIR
 }
 
 install_genome "$SPECIES" "$COMMON_NAME" "$ASSEMBLY" "$ASSEMBLY_SYNONYMS" "$SOURCE" "$VERSION"
