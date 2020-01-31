@@ -19,42 +19,38 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+# Python Standard Modules
 import os
+import re
 
 from core.job import *
 
-def bigWigToBedGraph(input_dir, bigWigFile, output_dir):
+def bigWigToBedGraph(bigWigFile, output_bedgraph):
     # Remove the chr_ prefix to convert on whole genome or change chrom number to convert only for specified chromosome
-    bigWigFile_name = os.path.basename(bigWigFile)
-    output_bedgraph = os.path.join(output_dir, "chr1_"+bigWigFile_name+".bedgraph")
+    # bigWigFile_name = os.path.basename(bigWigFile)
+    # output_bedgraph = os.path.join(output_dir, "chr1_"+bigWigFile_name+".bedgraph")
 
     return Job(
-        [input_dir],
-        [output_dir],
+        [bigWigFile],
+        [],
         [['ucsc', 'module_ucsc']],
-        name = "bigwig_to_bedgraph",
-        command = """\
-bigWigToBedGraph \\
-  {bigwig} \\
-  {output_file} 2> {stderr}; [ -s {stderr} ] || rm -f {stderr}""".format( # If there are no errors, we delete the stderr file
-        bigwig = bigWigFile,
-        output_file = output_bedgraph,
-        stderr = os.path.join(output_dir+"_error", bigWigFile_name+".error")
+        name="bigwig_to_bedgraph",
+        command="""bigWigToBedGraph {bigwig} {output_file}""".format(
+            bigwig=bigWigFile,
+            output_file=output_bedgraph
+            )
         )
-    )
 
-def bigWigInfo(input_dir, bigWigFile, output_dir):
+def bigWigInfo(bigWigFile, output_dir):
     output = os.path.join(output_dir, "bigwiginfo_"+ os.path.basename(bigWigFile) + ".txt")
 
     return Job(
-        [input_dir],
+        [bigWigFile],
         [output],
         [['ucsc', 'module_ucsc']],
-        name = "bigwiginfo",
-        command = """\
-bigWigInfo \\
-  {bigWigFile} &> {output}""".format(
-        bigWigFile = bigWigFile,
-        output = output
+        name="bigwiginfo",
+        command="""bigWigInfo {bigWigFile} &> {output}""".format(
+            bigWigFile=bigWigFile,
+            output=output
+            )
         )
-    )
