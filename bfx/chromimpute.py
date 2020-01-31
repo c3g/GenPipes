@@ -19,131 +19,133 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+# Python Standard Modules
 import os
 
+# MUGQIC Modules
 from core.job import *
 from core.config import *
 
-def convert(input_dir, output_dir, inputinfofile, mark):
+def convert(input_dir, output_dir, output_files, inputinfofile, histone_mark, sample):
+    # input = input_files.extend(inputinfofile)
     return Job(
-        ['chromimpute_train_dir', input_dir],
-        [output_dir],
+        [inputinfofile],
+        output_files,
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_convert."+mark,
-        command = """\
+        name="chromimpute_convert." + sample + "." + histone_mark,
+        command="""\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
-  Convert \\
-  {chrom} \\
-  -m {mark} \\
-  {resolution} \\
+  Convert {chrom} \\
+  -m {histone_mark} \\
+  -l {convertsample} \\
+  -r {resolution} \\
   {path_to_dataset} \\
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
-        java_other_options = config.param('DEFAULT', 'java_other_options'),
-        ram = config.param('chromimpute', 'ram'),
-        chrom = config.param('chromimpute','chrom'),
-        mark = mark,
-        resolution = config.param('chromimpute', 'resolution'),
-        path_to_dataset = config.param('chromimpute', 'dataset'),
-        inputinfofile = inputinfofile,
-        chrom_sizes = config.param('chromimpute', 'chromsizes'),
-        output_dir = output_dir
-        )
+      java_other_options=config.param('DEFAULT', 'java_other_options'),
+      ram=config.param('chromimpute', 'ram'),
+      chrom="-c " + config.param('chromimpute', 'chrom') if config.param('chromimpute', 'chrom') else "",
+      histone_mark=histone_mark,
+      convertsample=sample,
+      resolution=config.param('chromimpute', 'resolution'),
+      path_to_dataset=input_dir,
+      inputinfofile=inputinfofile,
+      chrom_sizes="<(awk '{print $1\"\\t\"$2}' %s)" % (config.param('chromimpute', 'chromosome_size')),# config.param('chromimpute', 'chrominfofile')
+      output_dir=output_dir
+      )
     )
 
-def compute_global_dist(input_dir, output_dir, inputinfofile, mark):
+def compute_global_dist(input_files, output_dir, output_files, converteddir, inputinfofile, histone_mark):
     return Job(
-        [input_dir],
-        [output_dir],
+        input_files,
+        output_files,
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_compute_global_dist."+mark,
-        command = """\
+        name="chromimpute_compute_global_dist." + histone_mark,
+        command="""\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   ComputeGlobalDist \\
-  -m {mark} \\
-  {resolution} \\
+  -m {histone_mark} \\
+  -r {resolution} \\
   {converteddir} \\
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
-        java_other_options = config.param('DEFAULT', 'java_other_options'),
-        ram = config.param('chromimpute', 'ram'),
-        mark = mark,
-        resolution = config.param('chromimpute', 'resolution'),
-        converteddir = input_dir,
-        inputinfofile = inputinfofile,
-        chrom_sizes = config.param('chromimpute', 'chromsizes'),
-        output_dir = output_dir
-        )
+      java_other_options=config.param('DEFAULT', 'java_other_options'),
+      ram=config.param('chromimpute', 'ram'),
+      histone_mark=histone_mark,
+      resolution=config.param('chromimpute', 'resolution'),
+      converteddir=converteddir,
+      inputinfofile=inputinfofile,
+      chrom_sizes="<(awk '{print $1\"\\t\"$2}' %s)" % (config.param('chromimpute', 'chromosome_size')),# config.param('chromimpute', 'chrominfofile')
+      output_dir=output_dir
+      )
     )
 
-def generate_train_data(input_dir, output_dir, converteddir, inputinfofile, mark):
+def generate_train_data(input_files, output_dir, output_files, converteddir, distancedir, inputinfofile, histone_mark):
     return Job(
-        [input_dir],
-        [output_dir],
+        input_files,
+        output_files,
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_generate_train_data."+mark,
-        command = """\
+        name="chromimpute_generate_train_data." + histone_mark,
+        command="""\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   GenerateTrainData \\
-  {chrom} \\
-  {resolution} \\
+  -r {resolution} \\
   {converteddir} \\
   {distancedir} \\
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir} \\
-  {mark}""".format(
-        java_other_options = config.param('DEFAULT', 'java_other_options'),
-        ram = config.param('chromimpute', 'ram'),
-        chrom = config.param('chromimpute','chrom'),
-        resolution = config.param('chromimpute', 'resolution'),
-        converteddir = converteddir,
-        distancedir = input_dir,
-        inputinfofile = inputinfofile,
-        chrom_sizes = config.param('chromimpute', 'chromsizes'),
-        output_dir = output_dir,
-        mark = mark
-        )
+  {histone_mark}""".format(
+      java_other_options=config.param('DEFAULT', 'java_other_options'),
+      ram=config.param('chromimpute', 'ram'),
+      # chrom=chrom,#config.param('chromimpute', 'chrom'),
+      resolution=config.param('chromimpute', 'resolution'),
+      converteddir=converteddir,
+      distancedir=distancedir,
+      inputinfofile=inputinfofile,
+      chrom_sizes="<(awk '{print $1\"\\t\"$2}' %s)" % (config.param('chromimpute', 'chromosome_size')),# config.param('chromimpute', 'chrominfofile')
+      output_dir=output_dir,
+      histone_mark=histone_mark
+      )
     )
 
 
-def train(input_dir, output_dir, inputinfofile, sample, mark):
+def train(input_files, output_dir, output_files, traindatadir, inputinfofile, sample, histone_mark):
     return Job(
-        [input_dir],
-        [output_dir],
+        input_files,
+        output_files,
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_train."+sample+"_"+mark,
-        command = """\
+        name="chromimpute_train." + sample + "_" + histone_mark,
+        command="""\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   Train \\
   {traindatadir} \\
   {inputinfofile} \\
   {predictordir} \\
   {sample} \\
-  {mark}""".format(
-        java_other_options = config.param('DEFAULT', 'java_other_options'),
-        ram = config.param('chromimpute', 'ram'),
-        traindatadir = input_dir,
-        inputinfofile = inputinfofile,
-        predictordir = output_dir,
-        sample = sample,
-        mark = mark
-        )
+  {histone_mark}""".format(
+      java_other_options=config.param('DEFAULT', 'java_other_options'),
+      ram=config.param('chromimpute', 'ram'),
+      traindatadir=traindatadir,
+      inputinfofile=inputinfofile,
+      predictordir=output_dir,
+      sample=sample,
+      histone_mark=histone_mark
+      )
     )
 
-def apply(input_dir, output, converteddir, distancedir, predictordir, inputinfofile, output_dir, sample, mark):
+def apply(input_files, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample, mark):
     return Job(
-        ['chromimpute_metrics_dir', converteddir, distancedir, predictordir],
-        [output],
+        input_files,
+        [output_dir],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_apply."+sample+"_"+mark,
-        command = """\
+        name="chromimpute_apply."+sample+"_"+mark,
+        command="""\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
     Apply \\
-    {chrom} \\
-    {resolution} \\
+    -r {resolution} \\
     {converteddir} \\
     {distancedir} \\
     {predictordir} \\
@@ -152,18 +154,18 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
     {output_dir} \\
     {sample} \\
     {mark}""".format(
-        java_other_options = config.param('DEFAULT', 'java_other_options'),
-        ram = config.param('chromimpute', 'ram'),
-        chrom = config.param('chromimpute','chrom'),
-        resolution = config.param('chromimpute', 'resolution'),
-        converteddir = converteddir,
-        distancedir = distancedir,
-        predictordir = predictordir,
-        inputinfofile = inputinfofile,
-        chrom_sizes = config.param('chromimpute', 'chromsizes'),
-        output_dir = output_dir,
-        sample = sample,
-        mark = mark
+        java_other_options=config.param('DEFAULT', 'java_other_options'),
+        ram=config.param('chromimpute', 'ram'),
+        # chrom=config.param('chromimpute', 'chrom'),
+        resolution=config.param('chromimpute', 'resolution'),
+        converteddir=converteddir,
+        distancedir=distancedir,
+        predictordir=predictordir,
+        inputinfofile=inputinfofile,
+        chrom_sizes="<(awk '{print $1\"\\t\"$2}' %s)" % (config.param('chromimpute', 'chromosome_size')),# config.param('chromimpute', 'chrominfofile')
+        output_dir=output_dir,
+        sample=sample,
+        mark=mark
         )
     )
 
@@ -172,8 +174,8 @@ def eval(input_dir, percent1, percent2, converteddir, converted_file, output_dir
         [input_dir],
         [output_path],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_eval."+converted_file+"."+imputed_file,
-        command = """\
+        name="chromimpute_eval."+converted_file+"."+imputed_file,
+        command="""\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
     Eval \\
     -p {percent1} {percent2} \\
@@ -182,18 +184,15 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
     {output_dir} \\
     {imputed_file} \\
     {chrom_sizes} > {output_path}""".format(
-        java_other_options = config.param('DEFAULT', 'java_other_options'),
-        ram = config.param('chromimpute', 'ram'),
-        percent1 = percent1,
-        percent2 = percent2,
-        converteddir = converteddir,
-        converted_file = converted_file,
-        output_dir = output_dir,
-        imputed_file = imputed_file,
-        chrom_sizes = config.param('chromimpute', 'chromsizes'),
-        output_path = output_path
+        java_other_options=config.param('DEFAULT', 'java_other_options'),
+        ram=config.param('chromimpute', 'ram'),
+        percent1=percent1,
+        percent2=percent2,
+        converteddir=converteddir,
+        converted_file=converted_file,
+        output_dir=output_dir,
+        imputed_file=imputed_file,
+        chrom_sizes=config.param('chromimpute', 'chrominfofile'),
+        output_path=output_path
         )
     )
-
-
-
