@@ -9,13 +9,13 @@ module_java=mugqic/java/openjdk-jdk1.8.0_72
 module_mugqic_tools=mugqic/mugqic_tools/2.2.2
 module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.5
 module_picard=mugqic/picard/2.0.1
-module_R=mugqic/R_Bioconductor/3.5.1_3.7
+module_R=mugqic/R_Bioconductor/3.6.0_3.9
 module_samtools=mugqic/samtools/1.3.1
-module_star=mugqic/star/2.5.4b
+module_star=mugqic/star/2.7.2b
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
 module_ucsc=mugqic/ucsc/v359
-module_hicup=mugqic/hicup/v0.5.9
+module_hicup=mugqic/hicup/v0.7.2
 module_kallisto=mugqic/kallisto/0.44.0
 
 HOST=`hostname`
@@ -289,7 +289,10 @@ is_up2date() {
 
 cmd_or_job() {
   CMD=$1
+  CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
   JOB_PREFIX=${3:-$CMD}  # Job prefix = 3rd param if defined else cmd name
+  JOB_NAME=$JOB_PREFIX 
+  MEMORY=${4:-31G}
 
   # If genome is too big, run command in a separate job since login node memory is limited
   if is_genome_big
@@ -297,11 +300,13 @@ cmd_or_job() {
     echo
     echo "Submitting $JOB_PREFIX as job..."
     echo
-    if [[ $HOST == "ip03" ]]; then
-      echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -q qfat256 -l pmem=256000m -l walltime=24:00:0 -l nodes=1:ppn=1
+    if [[ $HOST == abacus* ]]; then
+      echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_NAME -q qfat256 -l pmem=256000m -l walltime=12:00:0 -l nodes=1:ppn=$CORES
     else
-      CORES=${2:-1}  # Nb cores = 2nd param if defined else 1
-      echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_PREFIX.$GENOME_FASTA -l pmem=10000m -l walltime=24:00:0 -l nodes=1:ppn=$CORES
+      echo sbatch --mail-type=END,FAIL --mail-user=$JOB_MAIL -A $RAP_ID -D $INSTALL_DIR -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -J $JOB_NAME --time=12:00:0 --mem=$MEMORY -N 1 -n $CORES
+      echo "#! /bin/bash 
+      echo ${!CMD}" | \
+      sbatch --mail-type=END,FAIL --mail-user=$JOB_MAIL -A $RAP_ID -D $INSTALL_DIR -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -J $JOB_NAME --time=12:00:0 -n $CORES -N 1 --mem=$MEMORY
     fi
   else
     echo
@@ -345,6 +350,7 @@ create_samtools_index() {
 
 create_bismark_genome_reference() {
   BISMARK_INDEX_DIR=$GENOME_DIR/bismark_index
+  BISMARK_GENOME_DICT=$BISMARK_INDEX_DIR/${GENOME_FASTA/.fa/.dict}
   if ! is_up2date $BISMARK_INDEX_DIR/$GENOME_FASTA
   then
     echo
@@ -352,21 +358,22 @@ create_bismark_genome_reference() {
     echo
     BISMARK_CMD="\
 mkdir -p $BISMARK_INDEX_DIR && \
-cat $GENOME_DIR/$GENOME_FASTA.fa ${!INSTALL_HOME}/genomes/lamba_phage.fa ${!INSTALL_HOME}/pUC19.fa > $BISMARK_INDEX_DIR/$GENOME_FASTA.fa && \
+cat $GENOME_DIR/$GENOME_FASTA ${!INSTALL_HOME}/genomes/lambda_phage.fa ${!INSTALL_HOME}/genomes/pUC19.fa > $BISMARK_INDEX_DIR/$GENOME_FASTA && \
 module load $module_samtools && \
 SAM_LOG=$LOG_DIR/samtools_for_bismark_$TIMESTAMP.log && \
-samtools faidx $GENOME_DIR/bismark_index/$GENOME_FASTA > $SAM_LOG 2>&1 && \
+samtools faidx $BISMARK_INDEX_DIR/$GENOME_FASTA > \$SAM_LOG 2>&1 && \
 module load $module_picard $module_java && \
 PIC_LOG=$LOG_DIR/picard_for_bismark_$TIMESTAMP.log && \
-java -jar $PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$BISMARK_INDEX_DIR/bismark_index/$GENOME_FASTA OUTPUT=$BISMARK_INDEX_DIR/{$GENOME_FASTA/.fa/.dict} GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $PIC_LOG 2>&1 && \
+java -jar \$PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$BISMARK_INDEX_DIR/$GENOME_FASTA OUTPUT=$BISMARK_GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > \$PIC_LOG 2>&1 && \
 module load mugqic/bismark mugqic/bowtie2 && \
-BIS_LOG=$LOG_DIR/bismark_genokme_preparation_$TIMESTAMP.log && \
-bismark_genome_preparation $BISMARK_INDEX_DIR > $BIS_LOG 2>&1 && \
-module load $module_mugqic_tools && \
+BIS_LOG=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.log && \
+BIS_ERR=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.err && \
+bismark_genome_preparation $BISMARK_INDEX_DIR > \$BIS_LOG 2> \$BIS_ERR && \
+module load $module_mugqic_tools mugqic/python/2.7.14 && \
 BIN_LOG=$LOG_DIR/wgbs_bin100bp_GC_$TIMESTAMP.log && \
-$PYTHON_TOOLS/getFastaBinedGC.py -s 100 -r $BISMARK_INDEX_DIR/$GENOME_FASTA.fa -o $ANNOTATION_DIR/${ASSEMBLY}_wgbs_bin100bp_GC.bed > $BIN_LOG 2>&1 && \
-chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$SAM_LOG \$PIC_LOG \$BIS_LOG \$BIN_LOG"
-    cmd_or_job BISMARK_CMD 8
+\$PYTHON_TOOLS/getFastaBinedGC.py -s 100 -r $BISMARK_INDEX_DIR/$GENOME_FASTA -o $ANNOTATIONS_DIR/${ASSEMBLY}_wgbs_bin100bp_GC.bed > \$BIN_LOG 2>&1 && \
+chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$SAM_LOG \$PIC_LOG \$BIS_LOG \$BIS_ERR \$BIN_LOG"
+    cmd_or_job BISMARK_CMD 8 BISMARK_CMD 128G
   else
     echo
     echo "Bisulfite Genome Reference with Bismark is up to date... skipping"
@@ -416,7 +423,7 @@ chmod -R ug+rwX,o+rX $BOWTIE_INDEX_DIR \$LOG \$ERR"
   cmd_or_job BOWTIE_CMD 4
   else
     echo
-    echo "Genome Bowtie index and gtf TopHat index up to date... skipping"
+    echo "Genome Bowtie index up to date... skipping"
     echo
   fi
 }
@@ -458,7 +465,7 @@ chmod -R ug+rwX,o+rX \$TOPHAT_INDEX_DIR \$LOG \$ERR"
 create_star_index() {
   if is_genome_big
   then
-    runThreadN=6
+    runThreadN=20
   else
     runThreadN=1
   fi
@@ -478,7 +485,7 @@ LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
 ERR=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.err && \
 STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --genomeSAindexNbases 4 --limitGenomeGenerateRAM 92798303616 --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2> \$ERR && \
 chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG \$ERR"
-      cmd_or_job STAR_CMD $runThreadN STAR_${sjdbOverhang}_CMD
+      cmd_or_job STAR_CMD $runThreadN STAR_${sjdbOverhang}_CMD 360G 
     else
       echo
       echo "STAR index with sjdbOverhang $sjdbOverhang up to date... skipping"
@@ -553,7 +560,7 @@ create_transcripts2genes_file() {
   if is_up2date $ANNOTATION_GTF
   then
     ANNOTATION_TX2GENES=$ANNOTATIONS_DIR/cdna_kallisto_index/${GTF/.gtf/.tx2gene}
-    if ! is_up2date ANNOTATION_TX2GENES
+    if ! is_up2date $ANNOTATION_TX2GENES
     then
       module load $module_R
       module load $module_mugqic_R_packages
@@ -725,7 +732,7 @@ copy_files() {
     then
       if ! is_up2date $ANNOTATIONS_DIR/$RRNA
       then
-        grep -Pzoi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
+        grep -Ezoi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
       fi
     fi
 
@@ -763,7 +770,7 @@ copy_files() {
       then
         if ! is_up2date $ANNOTATIONS_DIR/$RRNA
         then
-          grep -Pzoi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
+          grep -Ezoi "^>.*rRNA[^>]*" $ANNOTATIONS_DIR/$NCRNA | grep -v "^$" > $ANNOTATIONS_DIR/$RRNA
         fi
       fi
     fi
@@ -791,16 +798,17 @@ create_genome_digest() {
     then
       echo
       echo "Creating ${enzyme} genome digest..."
-      echo "mv Digest_${ASSEMBLY//-/_}_${enzyme}_None_*.txt $GENOME_DIGEST_FILE"
+      echo "mv Digest_${ASSEMBLY//[-.]/_}_*${enzyme}_None_*.txt $GENOME_DIGEST_FILE"
       echo
-      Digest_CMD="mkdir -p $GENOME_DIGEST && \
-      cd $GENOME_DIGEST  && \
-      ln -s -f -t $GENOME_DIGEST ../$GENOME_FASTA && \
-      module load $module_hicup && \
-      LOG=$LOG_DIR/${enzyme}_digest_$TIMESTAMP.log && \
-      hicup_digester --genome ${ASSEMBLY//-/_} --re1 ${enzymes[$enzyme]},${enzyme} $GENOME_DIGEST/$GENOME_FASTA > \$LOG 2>&1 && \
-      mv Digest_${ASSEMBLY//-/_}_${enzyme}_None_*.txt $GENOME_DIGEST_FILE && \
-      chmod -R ug+rwX,o+rX $GENOME_DIGEST \$LOG"
+      Digest_CMD="\
+mkdir -p $GENOME_DIGEST && \
+cd $GENOME_DIGEST  && \
+ln -s -f -t $GENOME_DIGEST ../$GENOME_FASTA && \
+module load $module_hicup && \
+LOG=$LOG_DIR/${enzyme}_digest_$TIMESTAMP.log && \
+hicup_digester --genome ${ASSEMBLY//[-.]/_} --re1 ${enzymes[$enzyme]},${enzyme} $GENOME_DIGEST/$GENOME_FASTA > \$LOG 2>&1 && \
+mv Digest_${ASSEMBLY//[-.]/_}_*${enzyme}_None_*.txt $GENOME_DIGEST_FILE && \
+chmod -R ug+rwX,o+rX $GENOME_DIGEST \$LOG"
       cmd_or_job Digest_CMD 2
     else
       echo
@@ -820,6 +828,8 @@ build_files() {
   create_bwa_index
   create_star_index
   create_genome_digest
+  create_bismark_genome_reference
+  create_bowtie_index
 
   if is_up2date $ANNOTATIONS_DIR/$NCRNA
   then
@@ -845,7 +855,6 @@ build_files() {
 
   if is_up2date $ANNOTATIONS_DIR/$GTF
   then
-    create_bowtie_index
     create_bowtie2_tophat_index
     create_gene_annotations
     create_gene_annotations_flat
