@@ -40,7 +40,7 @@ get_vcf_dbsnp() {
 get_dbNSFP() {
     DBSNSFP_VERSION=dbNSFP4.0c 
     DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/${DBSNSFP_VERSION}.zip
-    DBSNSFP=$ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION.txt.gz
+    DBSNSFP=$ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION
     if ! is_up2date $DBSNSFP.txt.gz
         then
         mkdir -p $ANNOTATIONS_DIR/$DBSNSFP_VERSION/
@@ -118,8 +118,8 @@ install_genome() {
   fi
   if ! is_up2date $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.$SOURCE$VERSION.rrna.interval_list
   then
-   cut -f1,2 $GENOME_DIR/$GENOME_FASTA.fai | perl -lane 'print "\@SQ\tSN:$F[0]\tLN:$F[1]\tAS:GRCh38"' |  grep -v _ > $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.$SOURCE$VERSION.rrna.interval_list
-   grep 'gene_biotype "rRNA"' $ANNOTATIONS_DIR/$GTF | awk '$3 == "transcript"' | cut -f1,4,5,7,9 | perl -lane '/transcript_id "([^"]+)"/ or die "no transcript_id on $."; print join "\t", (@F[0,1,2,3], $1)' | sort -k1V -k2n -k3n >> $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.$SOURCE$VERSION.rrna.interval_list
+    cut -f1,2 $GENOME_DIR/$GENOME_FASTA.fai | perl -lane 'print "\@SQ\tSN:$F[0]\tLN:$F[1]\tAS:GRCh38"' |  grep -v _ > $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.$SOURCE$VERSION.rrna.interval_list
+    grep 'gene_biotype "rRNA"' $ANNOTATIONS_DIR/$GTF | awk '$3 == "transcript"' | cut -f1,4,5,7,9 | perl -lane '/transcript_id "([^"]+)"/ or die "no transcript_id on $."; print join "\t", (@F[0,1,2,3], $1)' | sort -k1V -k2n -k3n >> $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.$SOURCE$VERSION.rrna.interval_list
   fi
   build_files
   create_genome_ini_file

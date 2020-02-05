@@ -101,7 +101,7 @@ def send_files(options, sample_name, details):
         data = read_json(filepath)
     except Exception as e:
         print(e)
-        print(red('Failed to read file "%s": ' % filename))
+        print(red('Failed to read file "%s": ' % filepath))
         return
 
     previous_data = None

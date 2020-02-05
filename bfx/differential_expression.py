@@ -117,8 +117,8 @@ def sleuth(
         [count_matrix],
         [os.path.join(output_dir, "results.wt.gene.csv")],
         [
-            ['differential_expression_sleuth', 'module_mugqic_tools'],
-            ['differential_expression_sleuth', 'module_R']
+            ['sleuth_differential_expression', 'module_mugqic_tools'],
+            ['sleuth_differential_expression', 'module_R']
         ],
         command="""\
 Rscript $R_TOOLS/sleuth.R \\

@@ -77,11 +77,11 @@ def runChicago(design_dir, sample, output_dir, design_file_prefix, other_options
     -o {output}\\
     {input} \\
     {output_prefix}""" .format(
-        other_options = other_options,
-        design_dir = design_dir,
-        output = os.path.join(output_dir, sample),
-        input = os.path.join(design_dir, sample, sample + ".chinput"),
-        output_prefix = sample
+        other_options=other_options,
+        design_dir=design_dir,
+        output=os.path.join(output_dir, sample),
+        input=os.path.join(design_dir, sample, sample + ".chinput"),
+        output_prefix=sample
         )
 
     return Job(input_files = [os.path.join(design_dir, design_file_prefix + ".baitmap"),

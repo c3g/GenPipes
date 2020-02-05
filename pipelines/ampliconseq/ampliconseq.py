@@ -33,6 +33,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
+import utils.utils
 
 from pipelines import common
 from bfx import tools
@@ -549,7 +550,9 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
         filter_log = os.path.join(filter_directory, "seqs_chimeras_filtered.log")
 
         for readset in self.readsets:
-            flash_log = self.select_input_files([[os.path.join("merge", readset.sample.name, readset.name + ".flash_pass2.log")],[os.path.join("merge", readset.sample.name, readset.name + ".flash.log")]])
+            flash_log = self.select_input_files(
+                [[os.path.join("merge", readset.sample.name, readset.name + ".flash_pass2.log")],
+                 [os.path.join("merge", readset.sample.name, readset.name + ".flash.log")]])
 
             job = concat_jobs([
                 job,
@@ -576,7 +579,7 @@ printf '{sample}\t{readset}\t' \\
   -s {sample} \\
   >> {stats}""".format(
                         filter_log=filter_log,
-                        flash_log=flash_log,
+                        flash_log=flash_log[0],
                         sample=str(readset.sample.name),
                         stats=readset_merge_uchime_stats
                     )
@@ -2159,4 +2162,9 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
         ]
 
 if __name__ == '__main__':
-    AmpliconSeq(protocol=['qiime', 'dada2'])
+
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        AmpliconSeq(protocol=['qiime', 'dada2'])

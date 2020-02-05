@@ -3,10 +3,10 @@
 set -eu -o pipefail
 
 SOFTWARE=trinity
-VERSION=2.2.0
+VERSION=2.8.6
 ARCHIVE=${SOFTWARE}rnaseq-$VERSION.tar.gz
 ARCHIVE_URL=https://github.com/trinityrnaseq/trinityrnaseq/archive/v$VERSION.tar.gz
-SOFTWARE_DIR=${SOFTWARE}rnaseq_$VERSION
+SOFTWARE_DIR=${SOFTWARE}rnaseq-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically

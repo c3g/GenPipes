@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
@@ -37,6 +38,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import config, SanitycheckError, _raise
 from core.job import Job, concat_jobs, pipe_jobs
 from pipelines import common
+import utils.utils
 
 from bfx import picard
 from bfx import samtools
@@ -638,8 +640,9 @@ class HicSeq(common.Illumina):
         jobs = []
         design_dir = self.output_dirs['chicago_input_files']
         output_dir = self.output_dirs['chicago_output_directory']
-        design_file_prefix = os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme)
-        other_options = config.param('runChicago', 'other_options', required = False)
+        design_file_prefix = os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed"))
+                                              + "_" + self.enzyme)
+        other_options = config.param('runChicago', 'other_options', required=False)
 
         for sample in self.samples:
             job = chicago.runChicago(design_dir, sample.name, output_dir, design_file_prefix, other_options)
@@ -822,4 +825,8 @@ class HicSeq(common.Illumina):
         ]
 
 if __name__ == '__main__':
-    HicSeq(protocol=['hic','capture'])
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        HicSeq(protocol=['hic','capture'])

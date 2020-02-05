@@ -3,10 +3,10 @@
 set -eu -o pipefail
 
 SOFTWARE=rsem
-VERSION=1.2.8
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=http://deweylab.biostat.wisc.edu/rsem/src/$ARCHIVE
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+VERSION=1.3.1
+ARCHIVE=${SOFTWARE^^}-$VERSION.tar.gz
+ARCHIVE_URL=https://github.com/deweylab/${SOFTWARE}/archive/v${VERSION}.tar.gz
+SOFTWARE_DIR=${SOFTWARE^^}-$VERSION
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -17,6 +17,7 @@ build() {
 
   cd $SOFTWARE_DIR
   make -j12
+  make ebseq
 
   # Install software
   cd $INSTALL_DOWNLOAD

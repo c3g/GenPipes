@@ -20,11 +20,13 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
 import re
 import sys
+import subprocess
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -32,6 +34,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
+import utils.utils
 
 from bfx import gq_seq_utils
 from bfx import picard
@@ -205,7 +208,7 @@ cp \\
                     design_file = os.path.relpath(self.args.design.name, self.output_dir)
             output_directory = "sleuth" 
             count_matrix = os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv")
-            tx2gene = config.param('sleuth', 'tx2gene')
+            tx2gene = config.param('sleuth_differential_expression', 'tx2gene')
             
             sleuth_job = differential_expression.sleuth(design_file, count_matrix, tx2gene, output_directory)
             sleuth_job.output_files = [os.path.join(output_directory, contrast.name, "results.wt.gene.csv") for contrast in self.contrasts]
@@ -231,5 +234,9 @@ cp \\
             ]
 
 if __name__ == '__main__':
-    RnaSeqLight()
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        RnaSeqLight()
 

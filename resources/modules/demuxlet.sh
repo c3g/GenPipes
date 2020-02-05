@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #!/bin/bash
+=======
+#!/usr/bin/env bash
+>>>>>>> 1f66c6c99a2d466df7259210d21d3c202295b58f
 # Exit immediately on error
 set -eu -o pipefail
 
@@ -25,7 +29,7 @@ build() {
 
   # Now install demuxlet
   cd ..  
-  git clone https://github.com/statgen/demuxlet.git
+  git clone --recursive https://github.com/statgen/demuxlet.git
   cd demuxlet
   autoreconf -vfi
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
@@ -42,7 +46,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/source
+prepend-path    PATH                \$root/bin
 "
 }
 

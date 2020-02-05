@@ -20,10 +20,12 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
 import re
+import subprocess
 import sys
 
 # Append mugqic_pipelines directory to Python library path
@@ -34,6 +36,7 @@ from core.config import config
 from core.job import Job, concat_jobs, pipe_jobs
 from bfx.sample_tumor_pairs import parse_tumor_pair_file
 from bfx.sequence_dictionary import split_by_size, parse_sequence_dictionary_file
+import utils.utils
 
 from bfx import picard
 from bfx import sambamba
@@ -1735,4 +1738,8 @@ sed 's/\t/|/g' report/HumanVCFformatDescriptor.tsv | sed '2i-----|-----' >> {rep
         ]
 
 if __name__ == '__main__':
-    TumorPair()
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        TumorPair()
