@@ -18,7 +18,7 @@ module_star=mugqic/star/2.7.2b
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
 module_ucsc=mugqic/ucsc/v359
-module_hicup=mugqic/HiCUP/v0.7.2
+module_hicup=mugqic/hicup/v0.7.2
 module_kallisto=mugqic/kallisto/0.44.0
 
 HOST=`hostname`
@@ -352,6 +352,7 @@ create_samtools_index() {
 
 create_bismark_genome_reference() {
   BISMARK_INDEX_DIR=$GENOME_DIR/bismark_index
+  BISMARK_GENOME_DICT=$BISMARK_INDEX_DIR/${GENOME_FASTA/.fa/.dict}
   if ! is_up2date $BISMARK_INDEX_DIR/$GENOME_FASTA
   then
     echo
@@ -395,12 +396,23 @@ create_bismark_genome_reference() {
     echo "Creating Bisulfite Genome Reference with Bismark..."
     echo
     BISMARK_CMD="\
-module load $module_bismark $module_bowtie2 && \
-LOG=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.log && \
-ERR=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.err &&\
-bismark_genome_preparation $BISMARK_INDEX_DIR > \$LOG 2> \$ERR && \
-chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
-    cmd_or_job BISMARK_CMD 8
+mkdir -p $BISMARK_INDEX_DIR && \
+cat $GENOME_DIR/$GENOME_FASTA ${!INSTALL_HOME}/genomes/lambda_phage.fa ${!INSTALL_HOME}/genomes/pUC19.fa > $BISMARK_INDEX_DIR/$GENOME_FASTA && \
+module load $module_samtools && \
+SAM_LOG=$LOG_DIR/samtools_for_bismark_$TIMESTAMP.log && \
+samtools faidx $BISMARK_INDEX_DIR/$GENOME_FASTA > \$SAM_LOG 2>&1 && \
+module load $module_picard $module_java && \
+PIC_LOG=$LOG_DIR/picard_for_bismark_$TIMESTAMP.log && \
+java -jar \$PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$BISMARK_INDEX_DIR/$GENOME_FASTA OUTPUT=$BISMARK_GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > \$PIC_LOG 2>&1 && \
+module load mugqic/bismark mugqic/bowtie2 && \
+BIS_LOG=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.log && \
+BIS_ERR=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.err && \
+bismark_genome_preparation $BISMARK_INDEX_DIR > \$BIS_LOG 2> \$BIS_ERR && \
+module load $module_mugqic_tools mugqic/python/2.7.14 && \
+BIN_LOG=$LOG_DIR/wgbs_bin100bp_GC_$TIMESTAMP.log && \
+\$PYTHON_TOOLS/getFastaBinedGC.py -s 100 -r $BISMARK_INDEX_DIR/$GENOME_FASTA -o $ANNOTATIONS_DIR/${ASSEMBLY}_wgbs_bin100bp_GC.bed > \$BIN_LOG 2>&1 && \
+chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$SAM_LOG \$PIC_LOG \$BIS_LOG \$BIS_ERR \$BIN_LOG"
+    cmd_or_job BISMARK_CMD 8 BISMARK_CMD 128G
   else
     echo
     echo "Bismark Bisulfite Genome Reference is up to date... skipping"
@@ -466,7 +478,7 @@ chmod -R ug+rwX,o+rX $BOWTIE_INDEX_DIR \$LOG \$ERR"
   cmd_or_job BOWTIE_CMD 4
   else
     echo
-    echo "Genome Bowtie index and gtf TopHat index up to date... skipping"
+    echo "Genome Bowtie index up to date... skipping"
     echo
   fi
 }
@@ -477,12 +489,14 @@ create_bowtie2_tophat_index() {
   TOPHAT_INDEX_DIR=$ANNOTATIONS_DIR/gtf_tophat_index
   TOPHAT_INDEX_PREFIX=$TOPHAT_INDEX_DIR/${GTF/.gtf}
 
-  if ! is_up2date $BOWTIE2_INDEX_PREFIX.[1-4].bt2 $BOWTIE2_INDEX_PREFIX.rev.[12].bt2 $TOPHAT_INDEX_PREFIX.[1-4].bt2 $TOPHAT_INDEX_PREFIX.rev.[12].bt2
+  if is_up2date $ANNOTATIONS_DIR/$GTF
   then
-    echo
-    echo "Creating genome Bowtie 2 index and gtf TopHat index..."
-    echo
-    BOWTIE2_TOPHAT_CMD="\
+    if ! is_up2date $BOWTIE2_INDEX_PREFIX.[1-4].bt2 $BOWTIE2_INDEX_PREFIX.rev.[12].bt2 $TOPHAT_INDEX_PREFIX.[1-4].bt2 $TOPHAT_INDEX_PREFIX.rev.[12].bt2
+    then
+      echo
+      echo "Creating genome Bowtie 2 index and gtf TopHat index..."
+      echo
+      BOWTIE2_TOPHAT_CMD="\
 mkdir -p $BOWTIE2_INDEX_DIR && \
 ln -s -f -t $BOWTIE2_INDEX_DIR ../$GENOME_FASTA && \
 module load $module_bowtie2 && \
@@ -497,18 +511,39 @@ LOG=$LOG_DIR/gtf_tophat_$TIMESTAMP.log && \
 ERR=$LOG_DIR/gtf_tophat_$TIMESTAMP.err && \
 tophat --output-dir $TOPHAT_INDEX_DIR/tophat_out --GTF $TOPHAT_INDEX_DIR/$GTF --transcriptome-index=$TOPHAT_INDEX_PREFIX $BOWTIE2_INDEX_PREFIX > \$LOG 2> \$ERR && \
 chmod -R ug+rwX,o+rX \$TOPHAT_INDEX_DIR \$LOG \$ERR"
-  cmd_or_job BOWTIE2_TOPHAT_CMD 4
+      cmd_or_job BOWTIE2_TOPHAT_CMD 4
+    else
+      echo
+      echo "Genome Bowtie 2 index and gtf TopHat index up to date... skipping"
+      echo
+    fi
   else
-    echo
-    echo "Genome Bowtie 2 index and gtf TopHat index up to date... skipping"
-    echo
+    if ! is_up2date $BOWTIE2_INDEX_PREFIX.[1-4].bt2 $BOWTIE2_INDEX_PREFIX.rev.[12].bt2
+    then
+      echo
+      echo "Creating genome Bowtie 2 index..."
+      echo
+      BOWTIE2_CMD="\
+mkdir -p $BOWTIE2_INDEX_DIR && \
+ln -s -f -t $BOWTIE2_INDEX_DIR ../$GENOME_FASTA && \
+module load $module_bowtie2 && \
+LOG=$LOG_DIR/bowtie2_$TIMESTAMP.log && \
+ERR=$LOG_DIR/bowtie2_$TIMESTAMP.err && \
+bowtie2-build $BOWTIE2_INDEX_DIR/$GENOME_FASTA $BOWTIE2_INDEX_PREFIX > \$LOG 2> \$ERR && \
+chmod -R ug+rwX,o+rX $BOWTIE2_INDEX_DIR \$LOG \$ERR"
+      cmd_or_job BOWTIE2_CMD 4
+    else
+      echo
+      echo "Genome Bowtie 2 index up to date... skipping"
+      echo
+    fi
   fi
 }
 
 create_star_index() {
   if is_genome_big
   then
-    runThreadN=6
+    runThreadN=20
   else
     runThreadN=1
   fi
@@ -528,7 +563,7 @@ LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
 ERR=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.err && \
 STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --genomeSAindexNbases 4 --limitGenomeGenerateRAM 92798303616 --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2> \$ERR && \
 chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG \$ERR"
-      cmd_or_job STAR_CMD $runThreadN STAR_${SPECIES}_${ASSEMBLY}_${sjdbOverhang}_CMD 120G
+      cmd_or_job STAR_CMD $runThreadN STAR_${SPECIES}_${ASSEMBLY}_${sjdbOverhang}_CMD 360G 
     else
       echo
       echo "STAR index with sjdbOverhang $sjdbOverhang up to date... skipping"
@@ -869,6 +904,8 @@ build_files() {
   create_bwa_index
   create_genome_digest
   create_bismark_genome_reference
+  create_bowtie_index
+  create_bowtie2_tophat_index
 
   if is_up2date $ANNOTATIONS_DIR/$NCRNA
   then
@@ -894,15 +931,12 @@ build_files() {
 
   if is_up2date $ANNOTATIONS_DIR/$GTF
   then
-    create_bowtie_index
-    create_bowtie2_tophat_index
     create_star_index
     create_gene_annotations
     create_gene_annotations_flat
   else
     echo "Could not find $ANNOTATIONS_DIR/$GTF..."
-    echo "No bowtie tophat index will be created... this step is skipped..."
-    echo "No bowtie2 tophat index will be created... this step is skipped..."
+    echo "No tophat index will be created... this step is skipped..."
     echo "No gene annotations will be performed... this step is skipped..."
     echo "You might consider to manually download a gtf file from UCSC table browser (http://genome.ucsc.edu/cgi-bin/hgTables)"
   fi

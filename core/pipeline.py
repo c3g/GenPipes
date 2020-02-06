@@ -225,11 +225,11 @@ class Pipeline(object):
                                                                 " all the input files needed for the pipeline to run "
                                                                 "are available on the system (default: false)",
                                          action="store_true")
-            self._argparser.add_argument("--container",
-                                         help="run pipeline inside a container providing a container image path or "
-                                              "accessible docker/singularity hub path", action=ValidateContainer,
-                                         nargs=2, metavar=("{docker, singularity}",
-                                                           "{<CONTAINER PATH>, <CONTAINER NAME>}"))
+            self._argparser.add_argument("--container", nargs=2,
+                                         help="Run inside a container providing a valid"
+                                         "singularity image path", action=ValidateContainer,
+                                          metavar=("{wrapper, singularity}",
+                                                   "<IMAGE PATH>"))
 
         return self._argparser
 
@@ -388,19 +388,21 @@ class Pipeline(object):
 
         # Now create the json dumps for all the samples if not already done
         if self.json:
-            for sample in self.sample_list:
-                self.sample_paths.append(jsonator.create(self, sample))
-
             # Check if portal_output_dir is set from a valid environment variable
             self.portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
             if self.portal_output_dir.startswith("$") and os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) is None:
                 if self.portal_output_dir == "$PORTAL_OUTPUT_DIR":
                     self.portal_output_dir = ""
-                    log.debug(" --> PORTAL_OUTPUT_DIR environment variable is not set... sending JSON files to the GenPipes analysis portal will be ignored...\n")
+                    log.info(" --> PORTAL_OUTPUT_DIR environment variable is not set... no JSON file will be generated during analysis...\n")
+                    self._json = False
                 else:
                     _raise(SanitycheckError("Environment variable \"" + re.search("^\$(.*)\/?", self.portal_output_dir).group(1) + "\" does not exist or is not valid!"))
             elif not os.path.isdir(os.path.expandvars(self.portal_output_dir)):
                 _raise(SanitycheckError("Directory path \"" + self.portal_output_dir + "\" does not exist or is not a valid directory!"))
+            else:
+                for sample in self.sample_list:
+                    self.sample_paths.append(jsonator.create(self, sample))
+
 
         log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
@@ -501,11 +503,12 @@ def parse_range(astr):
 
 class ValidateContainer(argparse.Action):
 
-    VALID_TYPE = ('docker', 'singularity')
+    VALID_TYPE = ('singularity', 'wrapper')
 
     def __call__(self, parser, args, values, option_string=None):
         c_type, container = values
         if c_type not in self.VALID_TYPE:
             raise ValueError('{} is not supported, choose from {}'.format(c_type, self.VALID_TYPE))
         Container = collections.namedtuple('container', 'type name')
+
         setattr(args, self.dest, Container(c_type, container))

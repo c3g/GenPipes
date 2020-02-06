@@ -20,10 +20,12 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
 import re
+import subprocess
 import sys
 
 # Append mugqic_pipelines directory to Python library path
@@ -34,6 +36,7 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 from pipelines import common
 from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
+import utils.utils
 
 from bfx import adapters
 from bfx import bvatools
@@ -1930,4 +1933,8 @@ class DnaSeq(DnaSeqRaw):
         super(DnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
-    DnaSeq(protocol=['mugqic', 'mpileup', "light"])
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        DnaSeq(protocol=['mugqic', 'mpileup', "light"])

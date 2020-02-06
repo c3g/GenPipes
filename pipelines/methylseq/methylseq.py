@@ -33,6 +33,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
+import utils.utils
 from bfx.readset import parse_illumina_readset_file
 
 from bfx import bvatools
@@ -941,5 +942,10 @@ pandoc \\
             self.cram_output,
         ]
 
-if __name__ == '__main__': 
-    MethylSeq()
+if __name__ == '__main__':
+
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        MethylSeq()

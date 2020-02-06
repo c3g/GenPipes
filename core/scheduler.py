@@ -37,7 +37,7 @@ def create_scheduler(s_type, config_files, container=None):
     if s_type == "pbs":
         return PBSScheduler(config_files, container=container)
     elif s_type == "batch":
-        return BatchScheduler(config_files)
+        return BatchScheduler(config_files, container=container)
     elif s_type == "daemon":
         return DaemonScheduler(config_files)
     elif s_type == "slurm":
@@ -69,7 +69,7 @@ class Scheduler(object):
         if self._host_cvmfs_cache is None:
 
             self._host_cvmfs_cache = config.param("container", 'host_cvmfs_cache'
-                                            , required=False, type="string")
+                                                  , required=False, type="string")
 
             if not self._host_cvmfs_cache:
 
@@ -131,13 +131,18 @@ class Scheduler(object):
 
                 return ("singularity run {b_opt} {name}   "
                         .format(b_opt=b_opt, name=self.container.name))
+
+            elif self.container.type == 'wrapper':
+
+                return ("{name} ".format(name=self.container.name))
         else:
+
             return ""
 
 
-    def print_header(self, pipeline):
+    def print_header(self, pipeline,shebang='/bin/bash'):
         print("""\
-#!/bin/bash
+#!{shebang}
 # Exit immediately on error
 {scheduler.disable_modulercfile}
 set -eu -o pipefail
@@ -150,6 +155,7 @@ set -eu -o pipefail
 {steps}
 {separator_line}"""
             .format(
+                shebang=shebang,
                 separator_line=separator_line,
                 pipeline=pipeline,
                 scheduler=self,
@@ -361,6 +367,8 @@ class BatchScheduler(Scheduler):
         self.name = 'Batch'
 
     def submit(self, pipeline):
+        logger.info('\n\t To run the script use: \n\t"{}  ./<command>.sh"'.format(
+            self.container_line))
         self.print_header(pipeline)
         if pipeline.jobs:
             print("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`")
@@ -374,17 +382,25 @@ class BatchScheduler(Scheduler):
 {separator_line}
 JOB_NAME={job.name}
 JOB_DONE={job.done}
+COMMAND=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.sh
+cat << '{limit_string}' > $COMMAND
+#!/bin/bash
+set -eu -o pipefail
+{job.command_with_modules}
+{limit_string}
+chmod 755 $COMMAND
 printf "\\n$SEPARATOR_LINE\\n"
 echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
-rm -f $JOB_DONE && {job2json_start} \\
-{job.command_with_modules}
-MUGQIC_STATE=$PIPESTATUS
+rm -f $JOB_DONE 
+{job2json_start} $COMMAND
+MUGQIC_STATE=$?
 echo "End MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`"
 echo MUGQICexitStatus:$MUGQIC_STATE
 {job2json_end}
 if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
 """.format(
                             job=job,
+                            limit_string=os.path.basename(job.done),
                             separator_line=separator_line,
                             job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                             job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')
@@ -487,11 +503,12 @@ exit \$MUGQIC_STATE" | \\
                     # Write job parameters in job list file
                     cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST\n"
 
+                    cmd += "\necho \"$" + job.id + "\t$JOB_NAME submitted\""
                     #add 0.2s sleep to let slurm submiting the job correctly
                     cmd += "\nsleep 0.1\n"
 
                     print cmd
-
+        logger.info("\nAll submitted\"")
         # Check cluster maximum job submission
         cluster_max_jobs = config.param('DEFAULT', 'cluster_max_jobs', type='posint', required=False)
         if cluster_max_jobs and len(pipeline.jobs) > cluster_max_jobs:

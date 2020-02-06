@@ -21,11 +21,13 @@
 
 # Python Standard Modules
 from __future__ import print_function, division, unicode_literals, absolute_import
+import argparse
 import os
 import sys
 import itertools
 import xml.etree.ElementTree as Xml
 import math
+import subprocess
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -1057,4 +1059,8 @@ def distance(str1, str2):
 
 
 if __name__ == '__main__':
-    pipeline = IlluminaRunProcessing()
+    argv = sys.argv
+    if '--wrap' in argv:
+utils.utils.container_wrapper_argparse(argv)
+    else:
+        pipeline = IlluminaRunProcessing()

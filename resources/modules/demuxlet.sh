@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+#!/bin/bash
+=======
 #!/usr/bin/env bash
+>>>>>>> 1f66c6c99a2d466df7259210d21d3c202295b58f
 # Exit immediately on error
 set -eu -o pipefail
 
@@ -13,6 +17,18 @@ SOFTWARE_DIR=${SOFTWARE}-$VERSION
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
+
+  # first install htslib in the same parent folder as demuxlet
+  git clone https://github.com/samtools/htslib.git
+  cd htslib
+  autoheader     # If using configure, generate the header template...
+  autoconf       # ...and configure script (or use autoreconf to do both)
+  ./configure    # Optional but recommended, for choosing extra functionality
+  make
+  make install
+
+  # Now install demuxlet
+  cd ..  
   git clone --recursive https://github.com/statgen/demuxlet.git
   cd demuxlet
   autoreconf -vfi
@@ -30,7 +46,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/source
+prepend-path    PATH                \$root/bin
 "
 }
 

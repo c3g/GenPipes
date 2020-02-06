@@ -373,6 +373,7 @@ END
                 Job(
                     [trim_log],
                     [readset_merge_trim_stats],
+                    module_entries=[['merge_trimmomatic_stats', 'module_perl']],
                     # Create readset trimming stats TSV file with paired or single read count using ugly awk
                     command="""\
 grep ^Input {trim_log} | \\
