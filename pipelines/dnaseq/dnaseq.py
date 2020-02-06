@@ -143,8 +143,8 @@ class DnaSeqRaw(common.Illumina):
             if readset.run_type == "PAIRED_END":
                 if readset.fastq1 and readset.fastq2:
                     sym_link_job= concat_jobs([
-                        deliverables.sym_link(readset.fastq1, readset, type="raw_reads"),
-                        deliverables.sym_link(readset.fastq2, readset, type="raw_reads"),
+                        deliverables.sym_link(readset.fastq1, readset, self.output_dir, type="raw_reads"),
+                        deliverables.sym_link(readset.fastq2, readset, self.output_dir, type="raw_reads"),
                     ], name="sym_link_fastq.pair_end." + readset.name, samples=[readset.sample])
 
                 elif not readset.fastq1:
@@ -152,21 +152,21 @@ class DnaSeqRaw(common.Illumina):
                         fastq1 = prefix + ".pair1.fastq.gz"
                         fastq2 = prefix + ".pair2.fastq.gz"
                         sym_link_job = concat_jobs([
-                            deliverables.sym_link(fastq1, readset, type="raw_reads"),
-                            deliverables.sym_link(fastq2, readset, type="raw_reads"),
+                            deliverables.sym_link(fastq1, readset, self.output_dir, type="raw_reads"),
+                            deliverables.sym_link(fastq2, readset, self.output_dir, type="raw_reads"),
                         ], name="sym_link_fastq.pair_end." + readset.name, samples=[readset.sample])
 
             elif readset.run_type == "SINGLE_END":
                 if readset.fastq1:
                     sym_link_job = concat_jobs([
-                        deliverables.sym_link(readset.fastq1, readset, type="raw_reads"),
+                        deliverables.sym_link(readset.fastq1, readset, self.output_dir, type="raw_reads"),
                     ], name="sym_link_fastq.single_end." + readset.name, samples=[readset.sample])
 
                 elif not readset.fastq1:
                     if readset.bam:
                         fastq1 = prefix + ".pair1.fastq.gz"
                         sym_link_job = concat_jobs([
-                            deliverables.sym_link(fastq1, readset, type="raw_reads"),
+                            deliverables.sym_link(fastq1, readset, self.output_dir, type="raw_reads"),
                         ], name="sym_link_fastq.single_end." + readset.name, samples=[readset.sample])
 
             else:
@@ -689,9 +689,9 @@ class DnaSeqRaw(common.Illumina):
             inputs = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal")
 
             jobs.append(concat_jobs([
-                deliverables.md5sum(inputs + ".bam",inputs + ".bam.md5"),
-                deliverables.sym_link(inputs + ".bam", sample, type="alignment"),
-                deliverables.sym_link(inputs + ".bai", sample, type="alignment"),
+                deliverables.md5sum(inputs + ".bam", inputs + ".bam.md5"),
+                deliverables.sym_link(inputs + ".bam", sample, self.output_dir, type="alignment"),
+                deliverables.sym_link(inputs + ".bai", sample, self.output_dir, type="alignment"),
                 deliverables.sym_link(inputs + ".bam.md5", sample, type="alignment")
             ], name="sym_link_final_bam." + sample.name))
 
