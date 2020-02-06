@@ -695,7 +695,7 @@ class DnaSeqRaw(common.Illumina):
                 deliverables.md5sum(inputs + ".bam", inputs + ".bam.md5"),
                 deliverables.sym_link(inputs + ".bam", sample, self.output_dir, type="alignment"),
                 deliverables.sym_link(inputs + ".bai", sample, self.output_dir, type="alignment"),
-                deliverables.sym_link(inputs + ".bam.md5", sample, type="alignment")
+                deliverables.sym_link(inputs + ".bam.md5", sample, self.output_dir, type="alignment")
             ], name="sym_link_final_bam." + sample.name))
 
         return jobs
