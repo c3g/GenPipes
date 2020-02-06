@@ -388,19 +388,21 @@ class Pipeline(object):
 
         # Now create the json dumps for all the samples if not already done
         if self.json:
-            for sample in self.sample_list:
-                self.sample_paths.append(jsonator.create(self, sample))
-
             # Check if portal_output_dir is set from a valid environment variable
             self.portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
             if self.portal_output_dir.startswith("$") and os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) is None:
                 if self.portal_output_dir == "$PORTAL_OUTPUT_DIR":
                     self.portal_output_dir = ""
-                    log.debug(" --> PORTAL_OUTPUT_DIR environment variable is not set... sending JSON files to the GenPipes analysis portal will be ignored...\n")
+                    log.info(" --> PORTAL_OUTPUT_DIR environment variable is not set... no JSON file will be generated during analysis...\n")
+                    self._json = False
                 else:
                     _raise(SanitycheckError("Environment variable \"" + re.search("^\$(.*)\/?", self.portal_output_dir).group(1) + "\" does not exist or is not valid!"))
             elif not os.path.isdir(os.path.expandvars(self.portal_output_dir)):
                 _raise(SanitycheckError("Directory path \"" + self.portal_output_dir + "\" does not exist or is not a valid directory!"))
+            else:
+                for sample in self.sample_list:
+                    self.sample_paths.append(jsonator.create(self, sample))
+
 
         log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
