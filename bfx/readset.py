@@ -401,8 +401,6 @@ def parse_illumina_raw_readset_files(
             else:
                 _raise(SanityCheckError("Could not find protocol "+line['LibraryProcess']+" (from event file "+readset_file+") in protocol library file " + protocol_file + " Aborting..."))
 
-            readset._index = get_index()
-
             readset._genomic_database = line['Reference']
 
             readset._run = Xml.parse(os.path.join(run_dir, "RunInfo.xml")).getroot().find('Run').get('Number')
