@@ -311,13 +311,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self._readset_file
 
     @property
-    def bcl2fastq_job_input(self):
-        if self.protocol == "clarity":
-            return self.clarity_event_file
-        else:
-            return self.casava_sheet_file
-
-    @property
     def number_of_mismatches(self):
         return self.args.number_of_mismatches if (self.args.number_of_mismatches is not None) else 1
 
@@ -365,6 +358,35 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         if not hasattr(self, "_seqtype"):
             self._seqtype = self.get_seqtype()
         return self._seqtype
+
+    @property
+    def index1cycles(self):
+        if not hasattr(self, "_index1cycles"):
+            [self._index1cycles, self._index2cycles] = self.get_indexcycles()
+        return self._index1cycles
+
+    @property
+    def index2cycles(self):
+        if not hasattr(self, "_index2cycles"):
+            [self._index1cycles, self._index2cycles] = self.get_indexcycles()
+        return self._index2cycles
+
+    @property
+    def indexes_from_lims(self):
+        # Define in generate_clarity_sample_sheet() 
+        return self._indexes_from_lims
+
+    @property
+    def seqtype(self):
+        if not hasattr(self, "_seqtype"):
+            self._seqtype = self.get_seqtype()
+        return self._seqtype
+
+    @property
+    def instrument(self):
+        if not hasattr(self, "_instrument"):
+            self._instrument = self.get_instrument()
+        return self._instrument
 
     @property
     def read_infos(self):
@@ -2035,6 +2057,7 @@ def distance(
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
     return sum(itertools.imap(unicode.__ne__, str1, str2))
+
 
 if __name__ == '__main__':
 
