@@ -1310,7 +1310,7 @@ wc -l >> {output}""".format(
         Parse the RunInfo.xml file for the instrument name the run has been running on
         """
         return Xml.parse(os.path.join(self.run_dir, "RunInfo.xml")).getroot().find('Run').find('Instrument').text
-    
+
     def generate_illumina_lane_sample_sheet(self):
         """
         Create a sample sheet to use with the BCL2FASTQ software.
@@ -1371,10 +1371,10 @@ wc -l >> {output}""".format(
                 indexes = readset.index.split("-")
                 nb_index = len(indexes)
 
-                #if has_single_index:
-                    ## we have a mixed of index in the sample, there are samples with 1 or 2 index,
-                    ## ignore the second index in the samplesheet
-                    #nb_index = 1
+                if has_single_index:
+                    # we have a mixed of index in the sample, there are samples with 1 or 2 index,
+                    # ignore the second index in the samplesheet
+                    nb_index = 1
 
                 for i in range(0, nb_index):
                     nb_ignored_leading_bases = 0
@@ -2016,6 +2016,7 @@ def distance(str1, str2):
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
     return sum(itertools.imap(unicode.__ne__, str1, str2))
+
 
 if __name__ == '__main__':
     argv = sys.argv
