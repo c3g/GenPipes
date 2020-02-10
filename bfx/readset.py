@@ -283,6 +283,10 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._library_source
 
     @property
+    def lib_type(self):
+        return self._lib_type
+
+    @property
     def library_type(self):
         return self._library_type
 
@@ -364,6 +368,7 @@ def parse_illumina_raw_readset_files(
 
             for protocol_line in protocol_csv:
                 if protocol_line['Clarity Step Name'] == line['LibraryProcess']:
+                    readset._lib_type = line['LibraryProcess']
                     readset._library_source = protocol_line['Processing Protocol Name']
                     readset._library_type = protocol_line['Library Structure']
 
@@ -396,15 +401,14 @@ def parse_illumina_raw_readset_files(
             else:
                 _raise(SanityCheckError("Could not find protocol "+line['LibraryProcess']+" (from event file "+readset_file+") in protocol library file " + protocol_file + " Aborting..."))
 
-            readset._index = get_index()
-
             readset._genomic_database = line['Reference']
 
             readset._run = Xml.parse(os.path.join(run_dir, "RunInfo.xml")).getroot().find('Run').get('Number')
             readset._lane = current_lane
             readset._sample_number = str(len(readsets) + 1)
 
-            readset._flow_cell = Xml.parse(os.path.join(run_dir, "RunParameters.xml")).getroot().find('RfidsInfo').find('FlowCellSerialBarcode').text
+            readset._flow_cell = Xml.parse(os.path.join(run_dir, "RunInfo.xml")).getroot().find('Run').find('Flowcell').text
+                                #Xml.parse(os.path.join(run_dir, "RunParameters.xml")).getroot().find('RfidsInfo').find('FlowCellSerialBarcode').text
             readset._control = "N"
             readset._recipe = None
             readset._operator = None
