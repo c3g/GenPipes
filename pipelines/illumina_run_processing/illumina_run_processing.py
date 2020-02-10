@@ -311,13 +311,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self._readset_file
 
     @property
-    def bcl2fastq_job_input(self):
-        if self.protocol == "clarity":
-            return self.clarity_event_file
-        else:
-            return self.casava_sheet_file
-
-    @property
     def number_of_mismatches(self):
         return self.args.number_of_mismatches if (self.args.number_of_mismatches is not None) else 1
 
@@ -2135,6 +2128,7 @@ def distance(
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
     return sum(itertools.imap(unicode.__ne__, str1, str2))
+
 
 if __name__ == '__main__':
 
