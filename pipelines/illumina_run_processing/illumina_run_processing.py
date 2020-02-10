@@ -202,13 +202,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             _raise(SanitycheckError("Error: missing '-r/--readsets' argument !"))
 
     @property
-    def bcl2fastq_job_input(self):
-        if self.protocol == "clarity":
-            return self.clarity_event_file
-        else:
-            return self.casava_sheet_file
-
-    @property
     def number_of_mismatches(self):
         return self.args.number_of_mismatches if (self.args.number_of_mismatches is not None) else 1
 
@@ -484,16 +477,11 @@ bcl2fastq\\
         An optional notification command can be launched to notify the start of the
         fastq generation with the calculated mask.
         """
-        
+        jobs = []
 
-        input = self.bcl2fastq_job_input
+        input = self.clarity_event_file
 
-        [
-            fastq_outputs,
-            output_dir,
-            bcl2fastq_extra_option
-            
-        ] = self.prepare_bcl2fastq_inputs()
+        fastq_outputs = self.generate_fastq_outputs(merge)
 
         bcl2fastq_job = run_processing_tools.bcl2fastq(
             input,
@@ -508,8 +496,6 @@ bcl2fastq\\
             mask=mask,
         )
 
-        
-
         aggregate_fastq_jobs = None
         for readset in self.readsets:
             if re.search("tenX", readset.library_type) or merge_undetermined:
@@ -523,12 +509,8 @@ bcl2fastq\\
 
         if generate_umi:
 
-            
-
             output_dir_noindex = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number) + ".noindex")
             casava_sample_sheet_noindex = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".noindex.csv")
-
-            
 
             jobs.append(
                 concat_jobs([
@@ -537,20 +519,19 @@ bcl2fastq\\
                         merge_undetermined
                 )]
             ))
-            
-                    run_processing_tools.bcl2fastq(
-                        input,
-                        fastq_outputs,
-                        output_dir_noindex,
-                        casava_sample_sheet_noindex,
-                        self.run_dir,
-                        self.lane_number,
-                        bcl2fastq_extra_option
-                    ),
-                name="fastq." + self.run_id + "." + str(self.lane_number),
-                samples=self.samples
-            ))
-        
+
+            run_processing_tools.bcl2fastq(
+                input,
+                fastq_outputs,
+                output_dir_noindex,
+                casava_sample_sheet_noindex,
+                self.run_dir,
+                self.lane_number,
+                bcl2fastq_extra_option
+            ),
+            name="fastq." + self.run_id + "." + str(self.lane_number),
+            samples=self.samples
+
         else:
             output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
             casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
@@ -569,10 +550,8 @@ bcl2fastq\\
                     mismatches=self.number_of_mismatches,
                     mask=mask,
             ))
-                name="fastq." + self.run_id + "." + str(self.lane_number),
-        samples=self.samples
-            
-
+            name="fastq." + self.run_id + "." + str(self.lane_number),
+            samples=self.samples
 
         # don't depend on notification commands
         self.add_copy_job_inputs(jobs)
@@ -1604,7 +1583,7 @@ wc -l >> {output}""".format(
         """
         return Xml.parse(os.path.join(self.run_dir, "RunInfo.xml")).getroot().find('Run').find('Instrument').text
 
-    def generate_illumina_lane_nanuq_sample_sheet(self):
+    def generate_illumina_lane_sample_sheet(self):
         """
         Create a sample sheet to use with the BCL2FASTQ software.
 
@@ -1664,10 +1643,10 @@ wc -l >> {output}""".format(
                 indexes = readset.index.split("-")
                 nb_index = len(indexes)
 
-                #if has_single_index:
-                    ## we have a mixed of index in the sample, there are samples with 1 or 2 index,
-                    ## ignore the second index in the samplesheet
-                    #nb_index = 1
+                if has_single_index:
+                    # we have a mixed of index in the sample, there are samples with 1 or 2 index,
+                    # ignore the second index in the samplesheet
+                    nb_index = 1
 
                 for i in range(0, nb_index):
                     nb_ignored_leading_bases = 0
@@ -2292,6 +2271,7 @@ def distance(str1, str2):
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
     return sum(itertools.imap(unicode.__ne__, str1, str2))
+
 
 if __name__ == '__main__':
     argv = sys.argv
