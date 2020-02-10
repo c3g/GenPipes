@@ -144,21 +144,8 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     @property
     def readsets(self):
         if not hasattr(self, "_readsets"):
-            if self.protocol == "clarity":
-                self._readsets = parse_illumina_raw_readset_files(
-                    self.output_dir,
-                    self.run_dir,
-                    "PAIRED_END" if self.is_paired_end else "SINGLE_END",
-                    self.clarity_event_file,
-                    None,
-                    self.args.lane_number,
-                    config.param('DEFAULT', 'genomes_home', type="dirpath"),
-                    self.get_sequencer_minimum_read_length(),
-                    self.protocol
-                )
-            elif self.protocol == "nanuq":
-                self._readsets = self.load_readsets()
-                self.generate_illumina_lane_nanuq_sample_sheet()
+            self._readsets = self.load_readsets()
+            self.generate_illumina_lane_sample_sheet
         return self._readsets
 
     @property
@@ -222,13 +209,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             return self.casava_sheet_file
 
     @property
-    def bcl2fastq_job_input(self):
-        if self.protocol == "clarity":
-            return self.clarity_event_file
-        else:
-            return self.casava_sheet_file
-
-    @property
     def number_of_mismatches(self):
         return self.args.number_of_mismatches if (self.args.number_of_mismatches is not None) else 1
 
@@ -245,6 +225,35 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         if not hasattr(self, "_mask"):
             self._mask = self.get_mask()
         return self._mask
+
+    @property
+    def index1cycles(self):
+        if not hasattr(self, "_index1cycles"):
+            [self._index1cycles, self._index2cycles] = self.get_indexcycles()
+        return self._index1cycles
+
+    @property
+    def index2cycles(self):
+        if not hasattr(self, "_index2cycles"):
+            [self._index1cycles, self._index2cycles] = self.get_indexcycles()
+        return self._index2cycles
+
+    @property
+    def indexes_from_lims(self):
+        # Define in generate_clarity_sample_sheet() 
+        return self._indexes_from_lims
+
+    @property
+    def seqtype(self):
+        if not hasattr(self, "_seqtype"):
+            self._seqtype = self.get_seqtype()
+        return self._seqtype
+
+    @property
+    def instrument(self):
+        if not hasattr(self, "_instrument"):
+            self._instrument = self.get_instrument()
+        return self._instrument
 
     @property
     def read_infos(self):
@@ -306,6 +315,9 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                 name="index." + self.run_id + "." + str(self.lane_number)
                 samples=self.samples
             ))
+
+        # Prepare Index Validation jobs
+        indexes_from_lims = self.lims_index
 
         self.add_copy_job_inputs(jobs)
         return jobs
@@ -448,16 +460,11 @@ bcl2fastq\\
         An optional notification command can be launched to notify the start of the
         fastq generation with the calculated mask.
         """
-        
+        jobs = []
 
-        input = self.bcl2fastq_job_input
+        input = self.clarity_event_file
 
-        [
-            fastq_outputs,
-            output_dir,
-            bcl2fastq_extra_option
-            
-        ] = self.prepare_bcl2fastq_inputs()
+        fastq_outputs = self.generate_fastq_outputs(merge)
 
         bcl2fastq_job = run_processing_tools.bcl2fastq(
             input,
@@ -472,8 +479,6 @@ bcl2fastq\\
             mask=mask,
         )
 
-        
-
         aggregate_fastq_jobs = None
         for readset in self.readsets:
             if re.search("tenX", readset.library_type) or merge_undetermined:
@@ -487,12 +492,8 @@ bcl2fastq\\
 
         if generate_umi:
 
-            
-
             output_dir_noindex = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number) + ".noindex")
             casava_sample_sheet_noindex = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".noindex.csv")
-
-            
 
             jobs.append(
                 concat_jobs([
@@ -501,20 +502,19 @@ bcl2fastq\\
                         merge_undetermined
                 )]
             ))
-            
-                    run_processing_tools.bcl2fastq(
-                        input,
-                        fastq_outputs,
-                        output_dir_noindex,
-                        casava_sample_sheet_noindex,
-                        self.run_dir,
-                        self.lane_number,
-                        bcl2fastq_extra_option
-                    ),
-                name="fastq." + self.run_id + "." + str(self.lane_number),
-                samples=self.samples
-            ))
-        
+
+            run_processing_tools.bcl2fastq(
+                input,
+                fastq_outputs,
+                output_dir_noindex,
+                casava_sample_sheet_noindex,
+                self.run_dir,
+                self.lane_number,
+                bcl2fastq_extra_option
+            ),
+            name="fastq." + self.run_id + "." + str(self.lane_number),
+            samples=self.samples
+
         else:
             output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
             casava_sheet_prefix = config.param('fastq', 'casava_sample_sheet_prefix')
@@ -533,10 +533,8 @@ bcl2fastq\\
                     mismatches=self.number_of_mismatches,
                     mask=mask,
             ))
-                name="fastq." + self.run_id + "." + str(self.lane_number),
-        samples=self.samples
-            
-
+            name="fastq." + self.run_id + "." + str(self.lane_number),
+            samples=self.samples
 
         # don't depend on notification commands
         self.add_copy_job_inputs(jobs)
@@ -1261,163 +1259,51 @@ wc -l >> {output}""".format(
                 mask += 'Y' + str(read_info.nb_cycles)
         return mask
 
-    def prepare_bcl2fastq_inputs(self):
+    def get_indexcycles(self):
+        for read in self.read_infos if read.is_index:
+            if read.number in [1, 2]:
+                index1cycles = read.nb_cycles
+            if read.number in [3, 4]:
+                index2cycles = read.nb_cycles
+        return [index1cycles, index2cycles]
+
+    def get_seqtype(self):
         """
-        Prepare all the arguments and parameters to properly execute bcl2fastq
+        Determine which kind of sequencing (iseq, miseq, novaseq, hiseqx, hiseq4000 or hiseq2500) was performed,
+        depending on the instrument used for the run
         """
 
-        mkdir_job = bash.mkdir(os.path.join(self.output_dir, "Unaligned." + readset.lane, 'Project_' + readset.project, 'Sample_' + readset.name))
+        instrument = self.instrument
+        instrument_file = config.param('DEFAULT', 'instrument_list_file', type='filepath', required='false')
+        if not (instrument_file and os.path.isfile(instrument_file)):
+            instrument_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'instrument_list.csv')
 
-        mask = self.mask
-        overmask = ""
-        overindex1 = None
-        overindex2 = None
-        merge_undetermined = False
-        generate_umi = False
-        dualindex_demultiplexing = False    # This is not the sequencing demultiplexing flag
+        return subprocess.check_output("grep -m1 '"+instrument+"' %s | awk -F',' '{print $3}'" % instrument_file, shell=True).strip()
 
-        # barcode validation
-        if re.search("I", mask):
-            self.validate_barcodes()
+    def get_instrument(self):
+        """
+        Parse the RunInfo.xml file for the instrument name the run has been running on
+        """
+        return Xml.parse(os.path.join(self.run_dir, "RunInfo.xml")).getroot().find('Run').find('Instrument').text
 
-        # If only one library on the lane
-        if len(self.readsets) == 1:
-            merge_undetermined = True
-
-        # IDT - UMI9 in index2
-        if re.search(",I17", mask):
-            generate_umi = True
-            overmask = re.sub(",I17,", ",I8n*,", mask)
-            overindex1=8
-            overindex2=8
-
-        # HaloPlex - UMI8 in index2 alone
-        bcl2fastq_extra_option = ""
-        if sum(1 for readset in [readset for readset in self.readsets if re.search("HaloPlex", readset.index)]) > 0:
-            if "DUALINDEX" in set([readset.index_type for readset in self.readsets]) :
-                _raise(SanityCheckError("HaloPlex libraries cannot be mixed with DUAL INDEX libraries"))
-            overmask=$(echo "$MASK" | sed 's/,I8,I10,/,I8,Y10,/g')
-            overindex1=8
-            overindex2=0
-            bcl2fastq_extra_option="--mask-short-adapter-reads 10"
-
-        # If SINGLEINDEX only
-        if "DUALINDEX" not in set([readset.index_type for readset in self.readsets]):
-            if re.search("I", mask.split(",")[2]):
-                split_mask = mask.split(",") if overmask == "" else overmask.split(",")
-                overmask=','.join(split_mask[0], split_mask[1], "n*", split_mask[3])
-                overindex1=8
-                overindex2=0
-
-        final_mask = mask if overmask == "" else overmask
-
-        mask = config.param('fastq', 'overmask') if config.param('fastq', 'overmask', required=False, type='string') else final_mask
-        index1 = config.param('fastq', 'overindex1') if config.param('fastq', 'overindex1', required=False, type='int') else overindex1
-        index2 = config.param('fastq', 'overindex2') if config.param('fastq', 'overindex2', required=False, type='int') else overindex2
-        merge = config.param('fastq', 'merge_undetermined') if config.param('fastq', 'merge_undetermined', required=False, type='boolean') else merge_undetermined
-
-        # If the second index exists
-        if index2 != 0:
-            dualindex_demultiplexing = True
-
-        # In case of HaloPlex-like masks, R2 is actually I2 (while R3 is R2),
-        # Proceed to dualindex demultiplexing
-        if ''.join(i for i in mask if not i.isdigit()) == "Y,I,Y,Y":
-            dualindex_demultiplexing = True
-
-        output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
-        casava_sample_sheet = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".indexed.csv")
-
-        read_inputs = []
-        index_inputs = []
-        read_outputs = []
-        index_outputs = []
-
-#        bcl2fastq_outputs = [readset.fastq1 for readset in self.readsets]
-#        if self.is_paired_end:
-#        bcl2fastq_outputs += [readset.fastq2 for readset in self.readsets]
-        bcl2fastq_outputs = []
-        for readset in self.readsets:
-
-            # If 10X libraries : 4 indexes per sample
-            if re.search("tenX", readset.library_type):
-                count = 0
-                for fastq in bcl2fastq_outputs:
-                    fastq = os.path.basename(fastq)
-                    count += 1
-                    counta = count
-                    bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_A_" + counta + "_", fastq))
-                    countb = count + 1
-                    bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_B_" + countb + "_", fastq))
-                    countc = count + 2
-                    bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_C_" + countc + "_", fastq))
-                    countd = count + 3
-                    bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_D_" + countd + "_", fastq))
-                    # If True, then merge the 'Undetermined' reads
-                    if merge:
-                        bcl2fastq_outputs.append(re.sub(readset.name, "Undetermined_S0", fastq))
-
-                    # For paired-end sequencing, fastq2 has already been appended to do bcl2fastq_outputs at this point
-                    # So it will be treated as well in this loop
-
-                    # Add the fastq of first index
-                    if re.search("R1", fastq):
-                        idx_fastq = re.sub("R1", "I1", fastq)
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_A_" + counta + "_", idx_fastq))
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_B_" + countb + "_", idx_fastq))
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_C_" + countc + "_", idx_fastq))
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_D_" + countd + "_", idx_fastq))
-                        # If True, then merge the 'Undetermined' reads
-                        if merge:
-                            bcl2fastq_outputs.append(re.sub(readset.name, "Undetermined_S0", idx_fastq))
-
-                    # For dual index demultiplexing, do not forget the fastq of the second index
-                    if dualindex_demultiplexing and re.search("R2", fastq):
-                        idx_fastq = re.sub("R2", "I2", fastq)
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_A_" + counta + "_", idx_fastq))
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_B_" + countb + "_", idx_fastq))
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_C_" + countc + "_", idx_fastq))
-                        bcl2fastq_outputs.append(re.sub(readset.name, readset.name + "_D_" + countd + "_", idx_fastq))
-                        # If True, then merge the 'Undetermined' reads
-                        if merge:
-                            bcl2fastq_outputs.append(re.sub(readset.name, "Undetermined_S0", idx_fastq))
-
-                    count = countd
-            
-            # not a 10X library : 1 index per sample
-            else:
-                # If ask to merge the Undeternined reads
-                if merge:
-                
-                    cat 2 files > 1 file (R1)
-                    cat 2 files > 1 file (I1)
-                    # For paired-end sequencing, do not forget the fastq of the reverse reads
-                    if readset.run_type == "PAIRED_END" :
-                        cat 2 files > 1 file (R2)
-                    # For dual index multiplexing, do not forget the fastq of the second index
-                    if index2 != 0 :
-                        cat 2 files > 1 file (I2)
-
-        if generate_umi:
-
-            output_dir_noindex = output_dir + ".noindex")
-            casava_sample_sheet_noindex = re.sub(".indexed.", ".noindex.", casava_sample_sheet) 
-
-        inputs = read_inputs + index_inputs
-        fastq_outputs = read_outputs + index_outputs
-        
-        return [
-            fastq_outputs,
-            output_dir,
-            bcl2fastq_extra_option
-        ]
-
-    def generate_illumina_lane_nanuq_sample_sheet(self):
+    def generate_illumina_lane_sample_sheet(self):
         """
         Create a sample sheet to use with the BCL2FASTQ software.
 
         Only the samples of the chosen lane will be in the file.
         The sample indexes are trimmed according to the mask used.
+        """
+
+        if self.protocol == "nanuq":
+            jobs = self.generate_nanuq_sample_sheet()
+        else:
+            jobs = self.generate_clarity_sample_sheet()
+        
+        return jobs
+
+    def generate_nanuq_sample_sheet(self):
+        """
+        Create a sample sheet for bcl2fastq from the Nanuq data
         """
 
         read_masks = self.mask.split(",")
@@ -1460,10 +1346,10 @@ wc -l >> {output}""".format(
                 indexes = readset.index.split("-")
                 nb_index = len(indexes)
 
-                #if has_single_index:
-                    ## we have a mixed of index in the sample, there are samples with 1 or 2 index,
-                    ## ignore the second index in the samplesheet
-                    #nb_index = 1
+                if has_single_index:
+                    # we have a mixed of index in the sample, there are samples with 1 or 2 index,
+                    # ignore the second index in the samplesheet
+                    nb_index = 1
 
                 for i in range(0, nb_index):
                     nb_ignored_leading_bases = 0
@@ -1963,48 +1849,63 @@ wc -l >> {output}""".format(
         readsets.
         """
 
-        # Casava sheet download
-        if not self.args.casava_sheet_file or self.args.force_download:
-            if not os.path.exists(self.casava_sheet_file) or self.args.force_download:
-                command = config.param('DEFAULT', 'fetch_casava_sheet_command').format(
-                    output_directory=self.output_dir,
-                    run_id=self.run_id,
-                    filename=self.casava_sheet_file
-                )
-                log.info(command)
-                return_code = subprocess.call(
-                    command,
-                    shell=True
-                )
-                if return_code != 0:
-                    _raise(SanitycheckError("Unable to download the Casava Sheet."))
+        if self.protocol == "nanuq":
+            # Casava sheet download
+            if not self.args.casava_sheet_file or self.args.force_download:
+                if not os.path.exists(self.casava_sheet_file) or self.args.force_download:
+                    command = config.param('DEFAULT', 'fetch_casava_sheet_command').format(
+                        output_directory=self.output_dir,
+                        run_id=self.run_id,
+                        filename=self.casava_sheet_file
+                    )
+                    log.info(command)
+                    return_code = subprocess.call(
+                        command,
+                        shell=True
+                    )
+                    if return_code != 0:
+                        _raise(SanitycheckError("Unable to download the Casava Sheet."))
 
-        # Nanuq readset file download
-        if not self.args.readsets or self.args.force_download:
-            if not os.path.exists(self.nanuq_readset_file) or self.args.force_download:
-                command = config.param('DEFAULT', 'fetch_nanuq_sheet_command').format(
-                    output_directory=self.output_dir,
-                    run_id=self.run_id,
-                    filename=self.nanuq_readset_file
-                )
-                return_code = subprocess.call(
-                    command,
-                    shell=True
-                )
-                if return_code != 0:
-                    _raise(SanitycheckError("Unable to download the Nanuq readset file."))
+            # Nanuq readset file download
+            if not self.args.readsets or self.args.force_download:
+                if not os.path.exists(self.nanuq_readset_file) or self.args.force_download:
+                    command = config.param('DEFAULT', 'fetch_nanuq_sheet_command').format(
+                        output_directory=self.output_dir,
+                        run_id=self.run_id,
+                        filename=self.nanuq_readset_file
+                    )
+                    return_code = subprocess.call(
+                        command,
+                        shell=True
+                    )
+                    if return_code != 0:
+                        _raise(SanitycheckError("Unable to download the Nanuq readset file."))
 
-        return parse_illumina_raw_readset_files(
-            self.output_dir,
-            self.run_dir,
-            "PAIRED_END" if self.is_paired_end else "SINGLE_END",
-            self.nanuq_readset_file,
-            self.casava_sheet_file,
-            self.args.lane_number,
-            config.param('DEFAULT', 'genomes_home', type="dirpath"),
-            self.get_sequencer_minimum_read_length(),
-            self.protocol
-        )
+            return parse_illumina_raw_readset_files(
+                self.output_dir,
+                self.run_dir,
+                "PAIRED_END" if self.is_paired_end else "SINGLE_END",
+                self.nanuq_readset_file,
+                self.casava_sheet_file,
+                self.args.lane_number,
+                config.param('DEFAULT', 'genomes_home', type="dirpath"),
+                self.get_sequencer_minimum_read_length(),
+                self.protocol
+            )
+        
+        else:
+            return parse_illumina_raw_readset_files(
+                self.output_dir,
+                self.run_dir,
+                "PAIRED_END" if self.is_paired_end else "SINGLE_END",
+                self.clarity_event_file,
+                None,
+                self.args.lane_number,
+                config.param('DEFAULT', 'genomes_home', type="dirpath"),
+                self.get_sequencer_minimum_read_length(),
+                self.protocol
+            )
+
 
     def submit_jobs(self):
         super(IlluminaRunProcessing, self).submit_jobs()
@@ -2074,6 +1975,7 @@ def distance(str1, str2):
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
     return sum(itertools.imap(unicode.__ne__, str1, str2))
+
 
 if __name__ == '__main__':
     argv = sys.argv
