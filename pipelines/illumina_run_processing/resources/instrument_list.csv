@@ -1,0 +1,22 @@
+Instrument ID,Instrument ID,Instrument type,Instrument name
+
+NS01,A00266,novaseq,NovaScotia
+
+HS13,D00280,hiseq2500,Bermudes
+HS14,D00278,hiseq2500,Fidji
+HS15,D00279,hiseq2500,Madagascar
+HS16,D00707,hiseq2500,Bali
+
+HS20,E00430,hiseqx,Skye
+HS21,E00432,hiseqx,Capri
+HS22,E00433,hiseqx,Margarita
+HS23,E00434,hiseqx,Faroe
+HS24,E00435,hiseqx,Tasmania
+
+HS19,K00271,hiseq4000,Santorini
+
+MS1,M00833,miseq,Staffa
+MS2,M03555,miseq,Mykonos
+MS3,M03992,miseq,Mahe
+
+IS1,FS10000133,iSeq,janick
