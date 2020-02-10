@@ -37,6 +37,10 @@ def index(
     mask
     ):
 
+    barcode_file = config.param('index', 'barcode_file', type='filepath', required='false')
+    if not (barcode_file and os.path.isfile(barcode_file)):
+        barcode_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'resources', 'barcode.mergedup.txt')
+
     return Job(
         [input],
         [output],
@@ -63,7 +67,7 @@ java -Djava.io.tmpdir={tmp_dir} \\
             jar=config.param('index', 'jar'),
             mismatches=mismatches,
             threads=config.param('index', 'threads'),
-            barcode_file=config.param('index', 'barcode_file'),
+            barcode_file=barcode_file,
             basecalls_dir=basecalls_dir,
             lane_number=lane,
             read_structure=mask,
