@@ -86,12 +86,13 @@ class Config(ConfigParser.SafeConfigParser):
         # for module in modules:
 
         cmd = ' '.join(cmd_query_module + modules)
-        p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+        os.environ['MODULES_PAGER'] = ''
+        p = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
         dout, derr = p.communicate()
-        if p.returncode != 0:
-            _raise(SanitycheckError("Error in config file(s) with:\n" + derr))
+        if p.returncode != 0 or 'ERROR' in dout:
+            _raise(SanitycheckError("Error in config file(s) with:\n{}".format(dout)))
 
-        log.info("Module check finished\n")
+        log.info("module check finished\n")
 
     # Retrieve param in config files with optional definition check and type validation
     # By default, parameter is required to be defined in one of the config file
