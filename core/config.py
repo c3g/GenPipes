@@ -89,7 +89,7 @@ class Config(ConfigParser.SafeConfigParser):
         os.environ['MODULES_PAGER'] = ''
         p = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
         dout, derr = p.communicate()
-        if p.returncode != 0 or 'ERROR' in dout:
+        if p.returncode != 0 or ':ERROR:' in dout:
             _raise(SanitycheckError("Error in config file(s) with:\n{}".format(dout)))
 
         log.info("module check finished\n")
