@@ -48,7 +48,7 @@ ln -s -f \\
   {target_file} \\
   {link} && \\
 ls {folder}""".format(
-            target_file=target_file,
+            target_file=os.path.relpath(target_file, folder),
             link=link,
             folder=folder
         ),
