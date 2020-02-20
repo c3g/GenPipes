@@ -50,6 +50,11 @@ def create(pipeline, sample):
             'library_type' : config.param("DEFAULT", 'library_type'),
             'blast_db' : config.param("DEFAULT", 'blast_db')
         }
+    elif pipeline.__class__.__name__ == "Nanopore":
+        general_info = {
+            'instrument': config.param("DEFAULT", 'instrument_type'),
+            'blast_db': config.param("DEFAULT", 'blast_db')
+        }
     elif pipeline.__class__.__name__ == "RnaSeqDeNovoAssembly":
         general_info = {
             'swissprot_db' : config.param("DEFAULT", 'swissprot_db'),

@@ -1,3 +1,4 @@
 *.pyc
 resources/container/*
 !resources/container/get_wrapper.sh
+.idea

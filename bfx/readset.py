@@ -446,6 +446,10 @@ def parse_pacbio_readset_file(pacbio_readset_file):
 class NanoporeReadset(Readset):
 
     @property
+    def sample(self):
+        return self._sample
+
+    @property
     def run(self):
         return self._run
 
@@ -502,6 +506,7 @@ def parse_nanopore_readset_file(nanopore_readset_file):
                     abs_files.append(os.path.normpath(file))
                 line[format] = ",".join(abs_files)
 
+        readset._sample = Sample(sample_name)
         readset._run = line.get('Run', None)
         readset._flowcell = line.get('Flowcell', None)
         readset._library = line.get('Library', None)

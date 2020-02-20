@@ -42,17 +42,16 @@ def pycoqc(readset_name,
 
     in_bam = ' --bam_file ' + input_bam
 
-    out_html = readset_name + ".html"
-    out_json = readset_name + ".json"
+    out_html = os.path.join(output_directory, readset_name + ".html")
+    out_json = os.path.join(output_directory, readset_name + ".json")
 
     return Job(
-        [input_summary],
-        [os.path.join(output_directory, out_html),
-         os.path.join(output_directory, out_json)],
+        [input_summary, input_bam],
+        [out_html,
+         out_json],
         [["pycoqc", "module_python3"]],
         command="""\
 mkdir -p {output_directory} && \\
-cd {output_directory} && \\
 pycoQC --verbose {other_options} --summary_file {input_summary}{in_bam} \\
     --report_title {readset_name} \\
     --min_pass_qual {min_qual} \\
@@ -67,5 +66,6 @@ pycoQC --verbose {other_options} --summary_file {input_summary}{in_bam} \\
             min_qual=min_qual,
             out_html=out_html,
             out_json=out_json
-        )
+        ),
+        removable_files=[out_json]
     )

@@ -27,38 +27,46 @@ from core.config import *
 from core.job import *
 
 
-def minimap2_ont(read_fastq_dir,
-                 output_directory,
-                 sort_bam=True):
+def minimap2_ont(readset_name,
+                 read_fastq_dir,
+                 output_directory):
     """
     Align nanopore reads to a reference using minimap2.
 
     :return: a job for nanopore alignment
     """
 
-    genome_fasta = config.param('minimap2', 'genome_fasta', required=True)
+    genome_fasta = config.param('minimap2_align', 'genome_fasta', required=True)
 
-    minimap_preset = config.param('minimap2', 'preset')
+    minimap_preset = config.param('minimap2_align', 'preset')
 
-    bam_name = "Aligned.sortedByCoord.out.bam"
+    out_sam = os.path.join(output_directory, "Aligned.out.sam")
+
+    bam_name = readset_name + ".sorted.bam"
     out_bam = os.path.join(output_directory, bam_name)
+
+    bai_name = readset_name + ".sorted.bai"
+    out_bai = os.path.join(output_directory, bai_name)
 
     return Job(
         [read_fastq_dir],
-        [out_bam],
-        [["minimap2", "module_minimap2"]],
+        [out_bam, out_bai, out_sam],
+        [["minimap2", "module_minimap2"],
+         ["minimap2", "module_samtools"]],
         command="""\
 mkdir -p {output_directory} && \\
 cd {output_directory} && \\
 minimap2 -ax {minimap_preset} {other_options} {genome_fasta} {read_fastq_dir}/*.fastq > Aligned.out.sam && \\
 samtools view -b Aligned.out.sam -@ 8 | samtools sort -@ 6 --reference {genome_fasta} > {bam_name} && \\ 
-samtools index {bam_name}
+samtools index {bam_name} {bai_name}
         """.format(
             output_directory=output_directory,
             minimap_preset=minimap_preset,
-            other_options=config.param('minimap2', 'other_options', required=False),
+            other_options=config.param('minimap2_align', 'other_options', required=False),
             genome_fasta=genome_fasta,
             read_fastq_dir=read_fastq_dir,
-            bam_name=bam_name
-        )
+            bam_name=bam_name,
+            bai_name=bai_name
+        ),
+        removable_files=[out_sam]
     )
