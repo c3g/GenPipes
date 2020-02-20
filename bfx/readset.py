@@ -496,7 +496,7 @@ def parse_nanopore_readset_file(nanopore_readset_file):
 
         # Readset file paths are either absolute or relative to the readset file
         # Convert them to absolute paths
-        for format in ("FASTQ", "FAST5"):
+        for format in ("Summary", "FASTQ", "FAST5"):
             if line.get(format, None):
                 abs_files = []
                 for file in line[format].split(","):
