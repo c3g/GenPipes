@@ -41,7 +41,7 @@ def calculate_reproducible_score( output_dir, sample1, sample2, file1_path, file
         ],
         command="""\
         mkdir -p {output_dir} &&
-Rscript /lb/project/C3G/projects/pubudu/mugqic_tools/R-tools/hicrep.R \\
+Rscript R_TOOLS/hicrep.R \\
   -s1 {sample1} \\
   -s2 {sample2} \\
   -f1 {file1_path} \\
