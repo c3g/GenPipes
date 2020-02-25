@@ -158,7 +158,7 @@ class DnaSeqRaw(common.Illumina):
                         )
                     ])
                 sym_link_job.name = "sym_link_fastq.paired_end." + readset.name
-
+                
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
