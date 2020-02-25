@@ -158,7 +158,7 @@ class DnaSeqRaw(common.Illumina):
                         )
                     ])
                 sym_link_job.name = "sym_link_fastq.paired_end." + readset.name
-
+                
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
@@ -393,7 +393,7 @@ class DnaSeqRaw(common.Illumina):
                         bash.ln(
                             readset_bam,
                             sample_bam
-                        ),
+                            ),
                         bash.ln(
                             readset_index,
                             sample_index,
@@ -615,6 +615,7 @@ class DnaSeqRaw(common.Illumina):
 
         return jobs
 
+
     def fix_mate_by_coordinate_samtools(self):
         """
         Fix the read mates. Once local regions are realigned, the read mate coordinates of the aligned reads
@@ -751,6 +752,7 @@ class DnaSeqRaw(common.Illumina):
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
             output = alignment_file_prefix + "sorted.dup.bam"
+
             job = sambamba.markdup(
                 input,
                 output,
@@ -808,14 +810,18 @@ class DnaSeqRaw(common.Illumina):
                     jobs.append(job)
                     created_interval_lists.append(interval_list)
 
-            job = gatk4.base_recalibrator(
-                input,
-                base_recalibrator_output,
-                intervals=interval_list
+            jobs.append(
+                concat_jobs([
+                    gatk4.base_recalibrator(
+                        input,
+                        base_recalibrator_output,
+                        intervals=interval_list
+                        )
+                    ],
+                    name="gatk_base_recalibrator."+sample.name,
+                    samples=[sample]
+                    )
                 )
-            job.name = "gatk_base_recalibrator." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
 
             if config.param('gatk_apply_bqsr', 'module_gatk').split("/")[2] > "3":
                 jobs.append(
@@ -827,23 +833,27 @@ class DnaSeqRaw(common.Illumina):
                             ),
                         sambamba.index(
                             print_reads_output,
-                            print_reads_output + ".bai"
+                            print_reads_output+".bai"
                             )
                         ],
-                        name="gatk_print_reads." + sample.name,
+                        name="gatk_print_reads."+sample.name,
                         samples=[sample]
                         )
                     )
 
             else:
-                job = gatk4.print_reads(
-                    input,
-                    print_reads_output,
-                    base_recalibrator_output
+                jobs.append(
+                    concat_jobs([
+                        gatk4.print_reads(
+                            input,
+                            print_reads_output,
+                            base_recalibrator_output
+                            )
+                        ],
+                        name="gatk_print_reads."+sample.name,
+                        samples=[sample]
+                        )
                     )
-                job.name = "gatk_print_reads." + sample.name
-                job.samples = [sample]
-                jobs.append(job)
 
         return jobs
 
@@ -1480,23 +1490,31 @@ class DnaSeqRaw(common.Illumina):
 
                 gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
-                job = gatk4.cat_variants(
-                    gvcfs_to_merge,
-                    output_haplotype_file_prefix + ".hc.g.vcf.gz"
+                jobs.append(
+                    concat_jobs([
+                        gatk4.cat_variants(
+                            gvcfs_to_merge,
+                            output_haplotype_file_prefix+".hc.g.vcf.gz"
+                            )
+                        ],
+                        name="merge_and_call_individual_gvcf.merge."+sample.name,
+                        samples=[sample]
+                        )
                     )
-                job.name = "merge_and_call_individual_gvcf.merge." + sample.name
-                job.samples = [sample]
-                jobs.append(job)
 
-                job = gatk4.genotype_gvcf(
-                    output_haplotype_file_prefix + ".hc.g.vcf.gz",
-                    output_haplotype_file_prefix + ".hc.vcf.gz",
-                    config.param('gatk_genotype_gvcf', 'options')
+                jobs.append(
+                    concat_jobs([
+                        gatk4.genotype_gvcf(
+                            output_haplotype_file_prefix+".hc.g.vcf.gz",
+                            output_haplotype_file_prefix+".hc.vcf.gz",
+                            config.param('gatk_genotype_gvcf', 'options')
+                            )
+                        ],
+                        name="merge_and_call_individual_gvcf.call."+sample.name,
+                        samples=[sample]
+                        )
                     )
-                job.name = "merge_and_call_individual_gvcf.call." + sample.name
-                job.samples = [sample]
-                jobs.append(job)
-
+            
         return jobs
 
     def combine_gvcf(self):
@@ -1615,7 +1633,7 @@ class DnaSeqRaw(common.Illumina):
                             )
 
                     # Create one last job to process the last remaining sequences and 'others' sequences
-                    job=gatk4.combine_gvcf(
+                    job = gatk4.combine_gvcf(
                         [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in batch],
                         os.path.join("variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.gz"),
                         exclude_intervals=unique_sequences_per_job_others
@@ -2328,7 +2346,7 @@ pandoc \\
 
         job = self.dbnsfp_annotation(
             "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
-            "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
+            "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz",
             "dbnsfp_annotation"
         )
         return job
