@@ -149,16 +149,16 @@ class DnaSeqRaw(common.Illumina):
                         readset,
                         self.output_dir,
                         type="raw_reads"
-                        ),
+                    ),
                     deliverables.sym_link(
                         fastq2,
                         readset,
                         self.output_dir,
                         type="raw_reads"
-                        )
-                    ])
-                sym_link_job.name = "sym_link_fastq.paired_end." + readset.name
-
+                    )
+                ])
+                sym_link_job.name="sym_link_fastq.paired_end." + readset.name
+                
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
