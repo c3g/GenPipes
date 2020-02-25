@@ -238,11 +238,11 @@ class DnaSeqRaw(common.Illumina):
 
         return jobs
 
-    def bwa_mem_picard_sort_sam(self):
+    def bwa_mem_sambamba_sort_sam(self):
         """
         The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
         The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-        BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
+        BWA output BAM files are then sorted by coordinate using Sambamba.
 
         This step takes as input files:
 
@@ -306,14 +306,14 @@ class DnaSeqRaw(common.Illumina):
                             "\tPL:Illumina" + \
                             "'"
                     ),
-                    picard.sort_sam(
+                    sambamba.sort(
                         "/dev/stdin",
                         readset_bam,
-                        "coordinate"
+                        config.param('sambamba_sort', 'tmp_dir', required=True)
                     )
                 ])
             ])
-            job.name = "bwa_mem_picard_sort_sam." + readset.name
+            job.name = "bwa_mem_sambamba_sort_sam." + readset.name
             job.samples = [readset.sample]
 
             jobs.append(job)
@@ -322,18 +322,18 @@ class DnaSeqRaw(common.Illumina):
 
     def sambamba_merge_sam_files(self):
         """
-        BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+        BAM readset files are merged into one file per sample. Merge is done using Sambamba.
 
         This step takes as input files:
 
-        1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
+        1. Aligned and sorted BAM output files from previous bwa_mem_sambamba_sort_sam step if available
         2. Else, BAM files from the readset file
         """
 
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
+            # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
             readset_bams = self.select_input_files([[os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets], [readset.bam for readset in sample.readsets]])
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
@@ -346,9 +346,9 @@ class DnaSeqRaw(common.Illumina):
                     target_readset_bam = readset_bam
                 else:
                     target_readset_bam = os.path.abspath(readset_bam)
-                readset_index = re.sub("\.bam$", ".bai", readset_bam)
-                target_readset_index = re.sub("\.bam$", ".bai", target_readset_bam)
-                sample_index = re.sub("\.bam$", ".bai", sample_bam)
+                readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
+                target_readset_index = re.sub("\.bam$", ".bam.bai", target_readset_bam)
+                sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
 
                 job = concat_jobs([
                     mkdir_job,
@@ -362,55 +362,6 @@ class DnaSeqRaw(common.Illumina):
                     sambamba.merge(readset_bams, sample_bam)
                 ])
                 job.name = "sambamba_merge_sam_files." + sample.name
-
-            jobs.append(job)
-
-        return jobs
-
-    def picard_merge_sam_files(self):
-        """
-        BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
-
-        This step takes as input files:
-
-        1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
-        2. Else, BAM files from the readset file
-        """
-
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
-            readset_bams = self.select_input_files([[os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets], [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets], [readset.bam for readset in sample.readsets]])
-            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-
-            mkdir_job = Job(command="mkdir -p " + os.path.dirname(sample_bam), samples=[sample])
-
-            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            if len(sample.readsets) == 1:
-                readset_bam = readset_bams[0]
-                if os.path.isabs(readset_bam):
-                    target_readset_bam = readset_bam
-                else:
-                    target_readset_bam = os.path.relpath(readset_bam, alignment_directory)
-                readset_index = re.sub("\.bam$", ".bai", readset_bam)
-                target_readset_index = re.sub("\.bam$", ".bai", target_readset_bam)
-                sample_index = re.sub("\.bam$", ".bai", sample_bam)
-
-                job = concat_jobs([
-                    mkdir_job,
-                    Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam, removable_files=[sample_bam]),
-                    Job([readset_index], [sample_index], command="ln -s -f " + target_readset_index + " " + sample_index + " && sleep 180", removable_files=[sample_index])
-                ], name="symlink_readset_sample_bam." + sample.name)
-                job.samples=[sample]
-
-            elif len(sample.readsets) > 1:
-                job = concat_jobs([
-                    mkdir_job,
-                    gatk4.merge_sam_files(readset_bams, sample_bam)
-                ])
-                job.samples=[sample]
-                job.name = "picard_merge_sam_files." + sample.name
 
             jobs.append(job)
 
@@ -629,7 +580,7 @@ class DnaSeqRaw(common.Illumina):
             input = self.select_input_files([[alignment_file_prefix + "matefixed.sorted.bam"],[alignment_file_prefix + "realigned.sorted.bam"],[alignment_file_prefix + "sorted.bam"]])[0]
             output = alignment_file_prefix + "sorted.dup.bam"
 
-            job = sambamba.markdup(input, output, config.param('sambamba_mark_duplicates', 'tmp_dir',required=True))
+            job = sambamba.markdup(input, output, config.param('sambamba_mark_duplicates', 'tmp_dir', required=True))
             job.name = "sambamba_mark_duplicates." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -1823,7 +1774,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.skewer_trimming,
-                self.bwa_mem_picard_sort_sam,
+                self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
@@ -1862,7 +1813,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.skewer_trimming,
-                self.bwa_mem_picard_sort_sam,
+                self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
@@ -1895,7 +1846,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
-                self.bwa_mem_picard_sort_sam,
+                self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
