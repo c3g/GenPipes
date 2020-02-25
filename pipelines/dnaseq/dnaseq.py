@@ -755,7 +755,6 @@ class DnaSeqRaw(common.Illumina):
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
             output = alignment_file_prefix + "sorted.dup.bam"
-
             job = sambamba.markdup(
                 input,
                 output,
