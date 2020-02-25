@@ -337,12 +337,11 @@ class DnaSeqRaw(common.Illumina):
                             readset_bam,
                             config.param('sambamba_sort', 'tmp_dir', required=True)
                         )
-                    ],
+                    ]),
                     sambamba.index(
                         readset_bam,
                         index_bam
                         )
-                    )
                 ],
                 name="bwa_mem_sambamba_sort_sam." + readset.name,
                 samples=[readset.sample]
