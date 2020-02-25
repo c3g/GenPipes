@@ -280,6 +280,7 @@ class DnaSeqRaw(common.Illumina):
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join("alignment", readset.sample.name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -295,7 +296,7 @@ class DnaSeqRaw(common.Illumina):
                     )
                     candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-            
+
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
                 if readset.fastq1:
@@ -310,7 +311,7 @@ class DnaSeqRaw(common.Illumina):
                     candidate_input_files.append([prefix + ".single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
-            
+
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
@@ -335,11 +336,18 @@ class DnaSeqRaw(common.Illumina):
                             "/dev/stdin",
                             readset_bam,
                             config.param('sambamba_sort', 'tmp_dir', required=True)
-                    )],
-                )],
+                        )
+                    ],
+                    sambamba.index(
+                        readset_bam,
+                        index_bam
+                        )
+                    )
+                ],
                 name="bwa_mem_sambamba_sort_sam." + readset.name,
                 samples=[readset.sample]
-            ))
+                )
+            )
 
         return jobs
 
