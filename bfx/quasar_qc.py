@@ -27,7 +27,7 @@ import os
 from core.config import *
 from core.job import *
 
-def create_fend_object(chromosome_lengths_file, output_file,output_dir, res_chr):
+def create_fend_object(chromosome_lengths_file, output_file,output_dir, res_chr, temp_dir):
 
     return Job(
         [chromosome_lengths_file],
@@ -36,7 +36,7 @@ def create_fend_object(chromosome_lengths_file, output_file,output_dir, res_chr)
             ['quality_scores', 'module_python']
         ],
         command="""\
-            mkdir -p {output_dir} &&
+            mkdir -p {output_dir}/{temp_dir} &&
             hifive fends \\
             -L {chromosome_lengths} \\
             --binned={res_chr} \\
@@ -44,41 +44,45 @@ def create_fend_object(chromosome_lengths_file, output_file,output_dir, res_chr)
             chromosome_lengths=chromosome_lengths_file,
             output_file=output_file,
             res_chr=res_chr,
-            output_dir=output_dir
+            output_dir=output_dir,
+            temp_dir=temp_dir
         ))
 
 
-def restructure_matrix(input_file_path, output_file_path,  output_dir):
+def restructure_matrix(input_file_path, output_file_path,  output_dir, bin, temp_dir):
 
     return Job(
 #awk '{{ printf $1"\\t"; for( i = 2; i <= NF; i++) {{ if(( $i ~ /[0-9]+/ )) {{ printf "%.0f\\t", $i*10; }} else {{ printf 0"\\t";}} }} printf "\\n"}}' > \\
+
+        #awk '{split($1,a,"-"); print a[1],a[2]}' HTD_AC_Arima_chr10_20000_rawRN.txt
+        #awk -v OFS="\t" -v bin=$bin '{if(NR!=1) {split($1,a,"-"); print a[1]":"a[2]"-"bin+a[2],$0}else{print "V1",$0}}' HTD_AC_Arima_chr10_20000_rawRN.txt | cut -f2 --complement > /lb/project/C3G/projects/pubudu/testdata_hicseq/hicseq/sample.txt
         [input_file_path],
         [output_file_path],
         [
             ['quality_scores', 'module_python']
         ],
         command="""\
-            mkdir -p {output_dir}/temp &&
-            awk -v OFS="\\t" '{{print $1":"$2"-"$3,$0}}' {input_file} | \\
-            cut -f2,3,4 --complement | \\
+            mkdir -p {output_dir}/{temp_dir} &&
+            awk -v OFS="\\t" '{{if(NR!=1) {{split($1,a,"-"); print a[1]":"a[2]"-"{bin}+a[2],$0 }} else {{print "V1",$0}} }}' {input_file} | \\
+            cut -f2 --complement | \\
             Rscript -e 'library(data.table); a <- fread("file:///dev/stdin", data.table=F,sep="\\t", na.strings=c("",NA,"NULL")); a[is.na(a)] <- 0; rownames(a)<-a[,1]; a<- a[,-1]; if(!all(as.matrix(a)%%1==0)){{a<-a[,] *10;}};  write.table(a,"file:///dev/stdout",row.names=TRUE,col.names=FALSE,sep="\\t",quote=FALSE)' | \\
             awk '{{ printf $1"\\t"; for( i = 2; i <= NF; i++) {{ printf "%.0f\\t", $i;  }} printf "\\n"}}' > \\
             {output_file}""".format(
             input_file=input_file_path,
             output_file=output_file_path,
-            output_dir=output_dir
+            output_dir=output_dir,
+            bin=bin,
+            temp_dir=temp_dir
         ))
 
 
-def quality_analysis(quasr_temp_files, input_files, output_file_path, output_dir, fend_file, quasar_res, quasar_coverage):
+def quality_analysis(quasr_temp_files, input_files, output_file_path, output_dir, fend_file, quasar_res, quasar_coverage, report_file):
     output_data_file = "_".join((
                     output_file_path, "hic.data"))
 
     output_project_file = "_".join((
                     output_file_path, "hic.project"))
 
-    report_file="_".join((
-                    output_file_path, "report.txt"))
     quasar_file="_".join((
                     output_file_path, "hic.quasar"))
     return Job(
@@ -101,5 +105,37 @@ def quality_analysis(quasr_temp_files, input_files, output_file_path, output_dir
             quasar_file=quasar_file,
             res=quasar_res,
             coverage=quasar_coverage
+        ))
+
+
+def merge_all_reports(out_dir, input_files, output_file, res, enzyme, quasr_prefix,temp_dir, q_res ):
+
+    return Job(
+        input_files,
+        [output_file],
+        [
+            ['quality_scores', 'module_python']
+        ],
+        command="""\
+            if test -f "{output_file}"; then
+            rm {output_file} 
+            fi &&
+            i=1 &&
+            for f in {out_dir}/{temp_dir}/*_{quasr_prefix}_{res}_{enzyme}_report.txt ;do awk -v OFS="\\t" '{{if($1=="Resolution") {{print $0}} else {{print FILENAME,$0 }} }}' $f | \\
+            tr -d " \\r" | \\
+            awk -v OFS="\\t" '{{if(NF>3){{print $0}} }}' | \\
+            awk -v i="$i" -v OFS="\\t" '{{if(NR==1 && i==1){{print "Sample","Sample",$0}} else {{if($2=="{quasar_resolution}") {{split($1,fname,"_{quasr_prefix}_"); split(fname[1],sname,"{out_dir}/{temp_dir}/"); print sname[2], $0}} }} }}' | \\
+            cut -f2 --complement >> \\
+            {output_file}; i=$(($i+1)); done
+            """.format(
+            input_files=input_files,
+            output_file=output_file,
+            res=res,
+            enzyme=enzyme,
+            out_dir=out_dir,
+            quasr_prefix=quasr_prefix,
+            temp_dir=temp_dir,
+            quasar_resolution=q_res
+
         ))
 
