@@ -419,7 +419,6 @@ class DnaSeqRaw(common.Illumina):
                         samples=[sample]
                         )
                     )
-
         return jobs
 
     def gatk_indel_realigner(self):
@@ -848,14 +847,18 @@ class DnaSeqRaw(common.Illumina):
                     )
 
             else:
-                job = gatk4.print_reads(
-                    input,
-                    print_reads_output,
-                    base_recalibrator_output
+                jobs.append(
+                    concat_jobs([
+                        gatk4.print_reads(
+                            input,
+                            print_reads_output,
+                            base_recalibrator_output
+                            )
+                        ],
+                        name="gatk_print_reads."+sample.name,
+                        samples=[sample]
+                        )
                     )
-                job.name = "gatk_print_reads." + sample.name
-                job.samples = [sample]
-                jobs.append(job)
 
         return jobs
 
