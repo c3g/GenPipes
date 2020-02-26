@@ -335,7 +335,7 @@ class DnaSeqRaw(common.Illumina):
                         sambamba.sort(
                             "/dev/stdin",
                             readset_bam,
-                            config.param('sambamba_sort', 'tmp_dir', required=True)
+                            config.param('sambamba_sort_sam', 'tmp_dir', required=True)
                         )
                     ]),
                     sambamba.index(
