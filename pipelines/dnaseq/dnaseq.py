@@ -1806,7 +1806,7 @@ pandoc \\
                     output = os.path.join(mpileup_directory, sample.name + "." + sequence['name'] + ".mpileup.gz")
                     jobs.append(
                         concat_jobs([
-                            mkdir_job(mpileup_directory),
+                            bash.mkdir(mpileup_directory),
                             pipe_jobs([
                                 samtools.mpileup(
                                     input,
