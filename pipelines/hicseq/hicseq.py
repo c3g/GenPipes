@@ -483,8 +483,6 @@ class HicSeq(common.Illumina):
             chrs = chrs.split(",")
 
         # Restrutcturing interaction matrices suitable for QUASAR-QC input
-        # First need to add a lable as (chr_number:bin_start - bin_end) and set it as the row name (first column)
-        # Remove the exisiting column headers and first 3 columns
         # loop through all the samples and chromsomes
         # these files will be used in next steps
         quasr_temp_files = []
@@ -541,11 +539,13 @@ class HicSeq(common.Illumina):
                 job_qusarqc.name = "_".join(("quality_scores.quasarqc", sample.name, res, self.enzyme))
                 jobs.append(job_qusarqc)
 
-        # to edit
         for res in res_chr:
             for q_res in quasr_res.split(","):
+                #reformat a resolution value like 10000 to 10kb and 20000 to 20kb
                 q_res = int(q_res) / 1000
                 q_res = "".join((str(q_res), "Kb"))
+                #filetring the set of specific input files to merge from the list of quasr_report_files based on
+                # reslution and enzyme used
                 input_files = [s for s in quasr_report_files if "_".join((quasr_prefix, res, self.enzyme)) in s]
                 output_file = ".".join((os.path.join(output_dir, "_".join((
                     "quasar_qc_final_report_res", res, "quasarqc_res", q_res, self.enzyme))), "tsv"))
