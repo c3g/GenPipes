@@ -119,7 +119,7 @@ sambamba view {options} \\
   {output} {chr}""".format(
         options=options,
         input=input_bam,
-        output="-o " + output_bam,
+        output="-o " + output_bam if output_bam else "",
         chr=chr if chr else "",
         )
     )
