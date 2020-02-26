@@ -75,7 +75,17 @@ samtools flagstat \\
         removable_files=[output]
         )
 
-def mpileup(input_bams, output, other_options="", region=None, regionFile=None, ini_section='rawmpileup'):
+def mpileup(
+    input_bams,
+    output,
+    other_options="",
+    region=None,
+    regionFile=None,
+    ini_section='rawmpileup'
+    ):
+
+    if not isinstance(input_bams, list):
+        input_bams=[input_bams]
 
     if not isinstance(input_bams, list):
         input_bams = [input_bams]
@@ -91,7 +101,11 @@ def mpileup(input_bams, output, other_options="", region=None, regionFile=None, 
         ],
         command="""\
 samtools mpileup {other_options} \\
+<<<<<<< HEAD
   {reference_fasta} \\
+=======
+  -f {reference_fasta} \\
+>>>>>>> DNA-Seq - Fix update including input_file_revision_eh changes on samtools
   {region} \\
   {regionFile} \\
   {input_bams} \\
