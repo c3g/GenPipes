@@ -2044,7 +2044,6 @@ pandoc \\
             alignment_directory = os.path.join("alignment", sample.name)
 
             [input] = self.select_input_files([
-
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
