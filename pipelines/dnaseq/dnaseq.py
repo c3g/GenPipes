@@ -332,6 +332,10 @@ class DnaSeqRaw(common.Illumina):
                                 "\tPL:Illumina" + \
                                 "'"
                         ),
+                        sambamba.view(
+                            input_bam="/dev/stdin",
+                            options="-S -f BAM"
+                        ),
                         sambamba.sort(
                             "/dev/stdin",
                             readset_bam,
