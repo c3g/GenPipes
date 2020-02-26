@@ -52,12 +52,12 @@ def create_fend_object(chromosome_lengths_file, output_file,output_dir, res_chr,
 def restructure_matrix(input_file_path, output_file_path,  output_dir, bin, temp_dir):
 
     return Job(
-#awk '{{ printf $1"\\t"; for( i = 2; i <= NF; i++) {{ if(( $i ~ /[0-9]+/ )) {{ printf "%.0f\\t", $i*10; }} else {{ printf 0"\\t";}} }} printf "\\n"}}' > \\
 
-        #awk '{split($1,a,"-"); print a[1],a[2]}' HTD_AC_Arima_chr10_20000_rawRN.txt
-        #awk -v OFS="\t" -v bin=$bin '{if(NR!=1) {split($1,a,"-"); print a[1]":"a[2]"-"bin+a[2],$0}else{print "V1",$0}}' HTD_AC_Arima_chr10_20000_rawRN.txt | cut -f2 --complement > /lb/project/C3G/projects/pubudu/testdata_hicseq/hicseq/sample.txt
-        [input_file_path],
-        [output_file_path],
+        # Restrutcturing interaction matrices suitable for QUASAR-QC input
+        # First need to add a lable as (chr_number:bin_start - bin_end) and set it as the row name (first column)
+        # Remove the exisiting column headers and first 3 columns
+
+        # all the temp files are stored in temp directory
         [
             ['quality_scores', 'module_python']
         ],
@@ -110,6 +110,10 @@ def quality_analysis(quasr_temp_files, input_files, output_file_path, output_dir
 
 def merge_all_reports(out_dir, input_files, output_file, res, enzyme, quasr_prefix,temp_dir, q_res ):
 
+    #usually hic-seq analysis has one or more resolution
+    #But QuASR-QC also has a different resolution value to determine the sample resolution limits.
+    #When user has specified multiple values for these resolutions multiple files will be created with the specific resolution pair
+    #The script reads all the reports and create final combined report files for each resolution pair in .tsv format
     return Job(
         input_files,
         [output_file],
