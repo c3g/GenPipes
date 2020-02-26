@@ -38,7 +38,7 @@ samtools index \\
   {input}""".format(
             input=input
             )
-    )
+        )
 
 def faidx(input, filter=None):
 
@@ -55,7 +55,7 @@ samtools faidx \\
             input=input,
             filter=filter if filter else ""
             )
-    )
+        )
 
 def flagstat(input, output):
 
@@ -73,9 +73,19 @@ samtools flagstat \\
             output=output
             ),
         removable_files=[output]
-    )
+        )
 
-def mpileup(input_bams, output, other_options="", region=None, regionFile=None, ini_section='rawmpileup'):
+def mpileup(
+    input_bams,
+    output,
+    other_options="",
+    region=None,
+    regionFile=None,
+    ini_section='rawmpileup'
+    ):
+
+    if not isinstance(input_bams, list):
+        input_bams=[input_bams]
 
     if not isinstance(input_bams, list):
         input_bams = [input_bams]
@@ -100,7 +110,7 @@ samtools mpileup {other_options} \\
             input_bams="\\\n  ".join([input_bam for input_bam in input_bams]),
             output="> " + output if output else ""
             )
-    )
+        )
 
 def merge(sample_output, input_bams):
     """
@@ -117,10 +127,10 @@ def merge(sample_output, input_bams):
 samtools merge \\
   {sample_output} \\
   {input_bams}""".format(
-      sample_output=sample_output,
-      input_bams=" ".join(map(str.strip, input_bams))
-      )
-    )
+            sample_output=sample_output,
+            input_bams=" ".join(map(str.strip, input_bams))
+            )
+        )
 
 def sort(input_bam, output_prefix, sort_by_name=False):
     output_bam = output_prefix + ".bam"
@@ -141,7 +151,7 @@ samtools sort \\
             output_prefix=output_prefix if config.param('samtools_sort', 'module_samtools').split("/")[2] == "0.1.19" else "> " + output_bam
             ),
         removable_files=[output_bam]
-    )
+        )
 
 def view(input, output=None, options="", removable=True):
 
@@ -180,7 +190,7 @@ samtools fixmate \\
             input=input,
             output="> " + output if output else "-"
             )
-    )
+        )
 
 def bcftools_cat(inputs, output):
 
@@ -200,7 +210,7 @@ bcftools concat \\
             inputs="\\\n  ".join(inputs),
             output="> " + output if output else ""
             )
-    )
+        )
 
 def bcftools_view(input, output, options="", pair_calling=False):
 
@@ -220,7 +230,7 @@ bcftools view \\
             input=input,
             output="> " + output if output else ""
             )
-    )
+        )
 
 def bcftools_call(input, output, options="", pair_calling=False):
 
@@ -240,7 +250,7 @@ bcftools call \\
             input=input,
             output="> " + output if output else ""
             )
-    )
+        )
 
 def bcftools_call_pair(input, output, options="", pair_calling=False):
 
@@ -260,7 +270,7 @@ $BCFTOOLS_BIN/bcftools view \\
             input=input,
             output="> " + output if output else ""
             )
-    )
+        )
 
 def bcftools_cat_pair(inputs, output):
 
@@ -280,7 +290,7 @@ $BCFTOOLS_BIN/bcftools cat \\
             inputs="\\\n  ".join(inputs),
             output="> " + output if output else ""
             )
-    )
+        )
 
 def bcftools_view_pair(input, output, options="", pair_calling=False):
 
@@ -300,7 +310,7 @@ $BCFTOOLS_BIN/bcftools view \\
             input=input,
             output="> " + output if output else ""
             )
-    )
+        )
 
 
 def mapped_count(bam, output=None, bed=None, options=None):
@@ -322,4 +332,4 @@ samtools view -F4 {options} -c \\
             target_option="-L " + bed if bed else " "
             ),
         removable_files=[output]
-    )
+        )
