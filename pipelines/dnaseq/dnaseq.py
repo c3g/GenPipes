@@ -335,7 +335,7 @@ class DnaSeqRaw(common.Illumina):
                         sambamba.view(
                             "/dev/stdin",
                             None,
-                            "-S -f BAM"
+                            "-S -f bam"
                         ),
                         sambamba.sort(
                             "/dev/stdin",
