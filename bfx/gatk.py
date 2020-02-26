@@ -223,7 +223,9 @@ def haplotype_caller(
 
     if not isinstance(inputs, list):
         inputs = [inputs]
-
+    if interval_list:
+        inputs.append(interval_list)
+        
     if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] >= "4":
         return gatk4.haplotype_caller(
             inputs,
