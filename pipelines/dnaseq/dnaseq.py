@@ -2057,7 +2057,6 @@ pandoc \\
                     jobs.append(
                         concat_jobs([
                             bash.mkdir(mpileup_directory),
-
                             pipe_jobs([
                                 samtools.mpileup(
                                     input,
