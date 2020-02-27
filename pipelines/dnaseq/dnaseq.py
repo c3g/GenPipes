@@ -2490,7 +2490,6 @@ pandoc \\
         job = self.dbnsfp_annotation(
             "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
             "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
-
             "dbnsfp_annotation"
         )
         return job
