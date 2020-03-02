@@ -100,7 +100,7 @@ sambamba markdup {options} \\
   --tmpdir {temp} \\
   {output}""".format(
         options=config.param('sambamba_mark_duplicates', 'options', required=False),
-	   temp=config.param('sambamba_mark_duplicate', 'tmp_dir'),
+        temp=config.param('sambamba_mark_duplicate', 'tmp_dir'),
         input=input_bam,
         output=output_bam,
         )
