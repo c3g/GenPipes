@@ -825,6 +825,9 @@ class DnaSeqRaw(common.Illumina):
                     samples=[sample]
                     )
                 )
+            job.name="gatk_base_recalibrator." + sample.name,
+            job.samples=[sample]
+            jobs.append(job)
 
             if config.param('gatk_apply_bqsr', 'module_gatk').split("/")[2] > "3":
                 jobs.append(
@@ -845,15 +848,14 @@ class DnaSeqRaw(common.Illumina):
                     )
 
             else:
-                jobs.append(
-                    gatk4.print_reads(
-                        input,
-                        print_reads_output,
-                        base_recalibrator_output
-                        ),
-                    name="gatk_print_reads." + sample.name,
-                    samples=[sample]
+                job = gatk4.print_reads(
+                    input,
+                    print_reads_output,
+                    base_recalibrator_output
                     )
+                job.name="gatk_print_reads." + sample.name,
+                job.samples=[sample]
+                jobs.append(job)
 
         return jobs
 
@@ -1504,24 +1506,22 @@ class DnaSeqRaw(common.Illumina):
 
                 gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
-                jobs.append(
-                    gatk4.cat_variants(
-                        gvcfs_to_merge,
-                        output_haplotype_file_prefix+".hc.g.vcf.gz"
-                        ),
-                    name="merge_and_call_individual_gvcf.merge." + sample.name,
-                    samples=[sample]
+                job = gatk4.cat_variants(
+                    gvcfs_to_merge,
+                    output_haplotype_file_prefix+".hc.g.vcf.gz"
                     )
+                job.name="merge_and_call_individual_gvcf.merge." + sample.name,
+                job.samples=[sample]
+                jobs.append(job)
 
-                jobs.append(
-                    gatk4.genotype_gvcf(
-                        output_haplotype_file_prefix+".hc.g.vcf.gz",
-                        output_haplotype_file_prefix+".hc.vcf.gz",
-                        config.param('gatk_genotype_gvcf', 'options')
-                        ),
-                    name="merge_and_call_individual_gvcf.call."+sample.name,
-                    samples=[sample]
+                job = gatk4.genotype_gvcf(
+                    output_haplotype_file_prefix+".hc.g.vcf.gz",
+                    output_haplotype_file_prefix+".hc.vcf.gz",
+                    config.param('gatk_genotype_gvcf', 'options')
                     )
+                job.name="merge_and_call_individual_gvcf.call."+sample.name,
+                job.samples=[sample]
+                jobs.append(job)
 
         return jobs
 
