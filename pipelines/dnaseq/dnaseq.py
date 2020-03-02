@@ -158,7 +158,7 @@ class DnaSeqRaw(common.Illumina):
                         )
                     ])
                 sym_link_job.name = "sym_link_fastq.paired_end." + readset.name
-                
+
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
@@ -602,12 +602,11 @@ class DnaSeqRaw(common.Illumina):
                 pipe_jobs([
                     bvatools.groupfixmate(
                         input,
-                        "/dev/stdout"
+                        output_prefix + ".tmp.bam"
                         ),
-                    sambamba.sort(
-                        "/dev/stdin",
-                        output_bam,
-                        config.param('sambamba_sort_sam', 'tmp_dir', required=True)
+                    gatk4.sort_sam(
+                        output_prefix + ".tmp.bam",
+                        output_prefix + ".bam"
                         )
                     ],
                     name="fix_mate_by_coordinate." + sample.name,
@@ -814,21 +813,14 @@ class DnaSeqRaw(common.Illumina):
                     created_interval_lists.append(interval_list)
 
             jobs.append(
-                concat_jobs([
-                    gatk4.base_recalibrator(
-                        input,
-                        base_recalibrator_output,
-                        intervals=interval_list
-                        )
-                    ],
-                    name="gatk_base_recalibrator."+sample.name,
-                    samples=[sample]
-                    )
+                gatk4.base_recalibrator(
+                    input,
+                    base_recalibrator_output,
+                    intervals=interval_list
+                    ),
+                name="gatk_base_recalibrator." + sample.name,
+                samples=[sample]
                 )
-            job.name = "gatk_base_recalibrator." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
-
 
             if config.param('gatk_apply_bqsr', 'module_gatk').split("/")[2] > "3":
                 jobs.append(
@@ -849,14 +841,15 @@ class DnaSeqRaw(common.Illumina):
                     )
 
             else:
-                job = gatk4.print_reads(
-                    input,
-                    print_reads_output,
-                    base_recalibrator_output
+                jobs.append(
+                    gatk4.print_reads(
+                        input,
+                        print_reads_output,
+                        base_recalibrator_output
+                        ),
+                    name="gatk_print_reads." + sample.name,
+                    samples=[sample]
                     )
-                job.name = "gatk_print_reads." + sample.name
-                job.samples = [sample]
-                jobs.append(job)
 
         return jobs
 
@@ -1456,7 +1449,6 @@ class DnaSeqRaw(common.Illumina):
                         )
                     )
 
-
         return jobs
 
     def merge_and_call_individual_gvcf(self):
@@ -1484,12 +1476,12 @@ class DnaSeqRaw(common.Illumina):
                 jobs.append(
                     concat_jobs([
                         bash.ln(
-                            haplotype_file_prefix + ".hc.g.vcf.gz",
-                            output_haplotype_file_prefix + ".hc.g.vcf.gz"
+                            os.path.abspath(haplotype_file_prefix+".hc.g.vcf.gz"),
+                            output_haplotype_file_prefix+".hc.g.vcf.gz"
                             ),
                         bash.ln(
-                            haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
-                            output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi"
+                            os.path.abspath(haplotype_file_prefix+".hc.g.vcf.gz.tbi"),
+                            output_haplotype_file_prefix+".hc.g.vcf.gz.tbi"
                             ),
                         gatk4.genotype_gvcf(
                             output_haplotype_file_prefix + ".hc.g.vcf.gz",
@@ -1508,23 +1500,24 @@ class DnaSeqRaw(common.Illumina):
 
                 gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
-                job = gatk4.cat_variants(
-                    gvcfs_to_merge,
-                    output_haplotype_file_prefix + ".hc.g.vcf.gz"
+                jobs.append(
+                    gatk4.cat_variants(
+                        gvcfs_to_merge,
+                        output_haplotype_file_prefix+".hc.g.vcf.gz"
+                        ),
+                    name="merge_and_call_individual_gvcf.merge." + sample.name,
+                    samples=[sample]
                     )
-                job.name = "merge_and_call_individual_gvcf.merge." + sample.name
-                job.samples = [sample]
-                jobs.append(job)
 
-                job = gatk4.genotype_gvcf(
-                    output_haplotype_file_prefix + ".hc.g.vcf.gz",
-                    output_haplotype_file_prefix + ".hc.vcf.gz",
-                    config.param('gatk_genotype_gvcf', 'options')
+                jobs.append(
+                    gatk4.genotype_gvcf(
+                        output_haplotype_file_prefix+".hc.g.vcf.gz",
+                        output_haplotype_file_prefix+".hc.vcf.gz",
+                        config.param('gatk_genotype_gvcf', 'options')
+                        ),
+                    name="merge_and_call_individual_gvcf.call."+sample.name,
+                    samples=[sample]
                     )
-                job.name = "merge_and_call_individual_gvcf.call." + sample.name
-                job.samples = [sample]
-                jobs.append(job)
-
 
         return jobs
 
