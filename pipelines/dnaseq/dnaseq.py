@@ -158,7 +158,7 @@ class DnaSeqRaw(common.Illumina):
                         )
                     ])
                 sym_link_job.name = "sym_link_fastq.paired_end." + readset.name
-                
+
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
@@ -836,26 +836,23 @@ class DnaSeqRaw(common.Illumina):
                             ),
                         sambamba.index(
                             print_reads_output,
-                            print_reads_output+".bai"
+                            print_reads_output + ".bai"
                             )
                         ],
-                        name="gatk_print_reads."+sample.name,
+                        name="gatk_print_reads." + sample.name,
                         samples=[sample]
                         )
                     )
 
             else:
                 jobs.append(
-                    concat_jobs([
-                        gatk4.print_reads(
-                            input,
-                            print_reads_output,
-                            base_recalibrator_output
-                            )
-                        ],
-                        name="gatk_print_reads."+sample.name,
-                        samples=[sample]
-                        )
+                    gatk4.print_reads(
+                        input,
+                        print_reads_output,
+                        base_recalibrator_output
+                        ),
+                    name="gatk_print_reads." + sample.name,
+                    samples=[sample]
                     )
 
         return jobs
@@ -1508,30 +1505,24 @@ class DnaSeqRaw(common.Illumina):
                 gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
                 jobs.append(
-                    concat_jobs([
-                        gatk4.cat_variants(
-                            gvcfs_to_merge,
-                            output_haplotype_file_prefix+".hc.g.vcf.gz"
-                            )
-                        ],
-                        name="merge_and_call_individual_gvcf.merge."+sample.name,
-                        samples=[sample]
-                        )
+                    gatk4.cat_variants(
+                        gvcfs_to_merge,
+                        output_haplotype_file_prefix+".hc.g.vcf.gz"
+                        ),
+                    name="merge_and_call_individual_gvcf.merge." + sample.name,
+                    samples=[sample]
                     )
 
                 jobs.append(
-                    concat_jobs([
-                        gatk4.genotype_gvcf(
-                            output_haplotype_file_prefix+".hc.g.vcf.gz",
-                            output_haplotype_file_prefix+".hc.vcf.gz",
-                            config.param('gatk_genotype_gvcf', 'options')
-                            )
-                        ],
-                        name="merge_and_call_individual_gvcf.call."+sample.name,
-                        samples=[sample]
-                        )
+                    gatk4.genotype_gvcf(
+                        output_haplotype_file_prefix+".hc.g.vcf.gz",
+                        output_haplotype_file_prefix+".hc.vcf.gz",
+                        config.param('gatk_genotype_gvcf', 'options')
+                        ),
+                    name="merge_and_call_individual_gvcf.call."+sample.name,
+                    samples=[sample]
                     )
-            
+
         return jobs
 
     def combine_gvcf(self):
