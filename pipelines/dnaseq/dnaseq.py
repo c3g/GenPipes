@@ -600,6 +600,45 @@ class DnaSeqRaw(common.Illumina):
 
         return jobs
 
+    def fix_mate_by_coordinate_samtools(self):
+        """
+        Fix the read mates. Once local regions are realigned, the read mate coordinates of the aligned reads
+        need to be recalculated since the reads are realigned at positions that differ from their original alignment.
+        Fixing the read mate positions is done using [BVATools](https://bitbucket.org/mugqic/bvatools).
+        """
+
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
+            readset = sample.readsets[0]
+
+            [input] = self.select_input_files([
+                [alignment_file_prefix + "realigned.sorted.bam"],
+                [alignment_file_prefix + "sorted.bam"],
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
+            ])
+            output_prefix = alignment_file_prefix + "matefixed.sorted"
+            jobs.append(
+                pipe_jobs([
+                    samtools.fixmate(
+                        input,
+                        None,
+                        config.param('fix_mate_by_coordinate_samtools', 'options')
+                    ),
+                    sambamba.sort(
+                            "/dev/stdin",
+                            output_prefix + ".bam",
+                            config.param('sambamba_sort_sam', 'tmp_dir', required=True)
+                        )],
+                name="fix_mate_by_coordinate_samtools." + sample.name,
+                samples=[sample]
+                )
+            )
+
+        return jobs
+
     def picard_mark_duplicates(self):
         """
         Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
@@ -2425,7 +2464,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                self.fix_mate_by_coordinate,
+                # self.fix_mate_by_coordinate,
+                self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.sym_link_final_bam,
@@ -2464,7 +2504,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                self.fix_mate_by_coordinate,
+                # self.fix_mate_by_coordinate,
+                self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.sym_link_final_bam,
