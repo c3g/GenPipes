@@ -859,6 +859,7 @@ class DnaSeqRaw(common.Illumina):
                         name="gatk_print_reads."+sample.name,
                         samples=[sample]
                         )
+                    )
 
         return jobs
 
