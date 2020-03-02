@@ -58,6 +58,8 @@ def restructure_matrix(input_file_path, output_file_path,  output_dir, bin, temp
         # Remove the exisiting column headers and first 3 columns
 
         # all the temp files are stored in temp directory
+        [input_file_path],
+        [output_file_path],
         [
             ['quality_scores', 'module_python']
         ],
