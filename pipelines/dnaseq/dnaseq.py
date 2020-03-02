@@ -686,7 +686,7 @@ class DnaSeqRaw(common.Illumina):
                 pipe_jobs([
                     samtools.fixmate(
                         input,
-                        None,
+                        "-",
                         config.param('fix_mate_by_coordinate_samtools', 'options')
                         ),
                     sambamba.sort(
