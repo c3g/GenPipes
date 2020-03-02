@@ -37,13 +37,10 @@ def index(input):
 samtools index \\
   {input}""".format(
             input=input
-        )
+            )
     )
 
-def faidx(
-    input,
-    filter=None
-    ):
+def faidx(input, filter=None):
 
     return Job(
         [input],
@@ -57,13 +54,10 @@ samtools faidx \\
   {filter}""".format(
             input=input,
             filter=filter if filter else ""
-        )
+            )
     )
 
-def flagstat(
-    input,
-    output
-    ):
+def flagstat(input, output):
 
     return Job(
         [input],
@@ -77,21 +71,14 @@ samtools flagstat \\
   > {output}""".format(
             input=input,
             output=output
-        ),
+            ),
         removable_files=[output]
     )
 
-def mpileup(
-    input_bams,
-    output,
-    other_options="",
-    region=None,
-    regionFile=None,
-    ini_section='rawmpileup'
-    ):
+def mpileup(input_bams, output, other_options="", region=None, regionFile=None, ini_section='rawmpileup'):
 
     if not isinstance(input_bams, list):
-        input_bams=[input_bams]
+        input_bams = [input_bams]
 
     return Job(
         input_bams,
@@ -112,13 +99,10 @@ samtools mpileup {other_options} \\
             regionFile="-l " + regionFile if regionFile else "",
             input_bams="\\\n  ".join([input_bam for input_bam in input_bams]),
             output="> " + output if output else ""
-        )
+            )
     )
 
-def merge(
-    sample_output,
-    input_bams
-    ):
+def merge(sample_output, input_bams):
     """
     merges an array of bams into a single bam
     """
@@ -133,20 +117,16 @@ def merge(
 samtools merge \\
   {sample_output} \\
   {input_bams}""".format(
-            sample_output=sample_output, 
-            input_bams=" ".join(map(str.strip, input_bams))
-        )
+      sample_output=sample_output,
+      input_bams=" ".join(map(str.strip, input_bams))
+      )
     )
 
-def sort(
-    input_bam,
-    output_prefix,
-    sort_by_name=False
-    ):
-
+def sort(input_bam, output_prefix, sort_by_name=False):
+    output_bam = output_prefix + ".bam"
     return Job(
         [input_bam],
-        [output_prefix + ".bam"],
+        [output_bam],
         [
             ['samtools_sort', 'module_samtools']
         ],
@@ -158,17 +138,12 @@ samtools sort \\
             other_options=config.param('samtools_sort', 'other_options', required=False),
             sort_by_name="-n" if sort_by_name else "",
             input_bam=input_bam,
-            output_prefix=output_prefix if config.param('samtools_sort', 'module_samtools').split("/")[2] == "0.1.19" else "> " + output_prefix + ".bam"
-        ),
+            output_prefix=output_prefix if config.param('samtools_sort', 'module_samtools').split("/")[2] == "0.1.19" else "> " + output_bam
+            ),
         removable_files=[output_bam]
     )
 
-def view(
-    input,
-    output=None,
-    options="",
-    removable=True
-    ):
+def view(input, output=None, options="", removable=True):
 
     return Job(
         [input],
@@ -184,17 +159,33 @@ samtools view \\
             options=options,
             input=input,
             output="> " + output if output else ""
-        ),
+            ),
         removable_files=[output if removable else ""]
     )
 
-def bcftools_cat(
-    inputs,
-    output
-    ):
+def fixmate(input, output=None, options=""):
+
+    return Job(
+        [input],
+        [output],
+        [
+            ['samtools_fixmate', 'module_samtools']
+        ],
+        command="""\
+samtools fixmate \\
+  {options} \\
+  {input} \\
+  {output}""".format(
+            options=options,
+            input=input,
+            output="> " + output if output else ""
+            )
+    )
+
+def bcftools_cat(inputs, output):
 
     if not isinstance(inputs, list):
-        inputs=[inputs]
+        inputs = [inputs]
 
     return Job(
         inputs,
@@ -208,15 +199,10 @@ bcftools concat \\
   {output}""".format(
             inputs="\\\n  ".join(inputs),
             output="> " + output if output else ""
-        )
+            )
     )
 
-def bcftools_view(
-    input,
-    output,
-    options="",
-    pair_calling=False
-    ):
+def bcftools_view(input, output, options="", pair_calling=False):
 
     return Job(
         [input],
@@ -233,15 +219,10 @@ bcftools view \\
             pair_calling="-T pair" if pair_calling else "",
             input=input,
             output="> " + output if output else ""
-        )
+            )
     )
 
-def bcftools_call(
-    input,
-    output,
-    options="",
-    pair_calling=False
-    ):
+def bcftools_call(input, output, options="", pair_calling=False):
 
     return Job(
         [input],
@@ -258,15 +239,10 @@ bcftools call \\
             pair_calling="-T pair" if pair_calling else "",
             input=input,
             output="> " + output if output else ""
-        )
+            )
     )
-  
-def bcftools_call_pair(
-    input,
-    output,
-    options="",
-    pair_calling=False
-    ):
+
+def bcftools_call_pair(input, output, options="", pair_calling=False):
 
     return Job(
         [input],
@@ -283,13 +259,10 @@ $BCFTOOLS_BIN/bcftools view \\
             pair_calling="-T pair" if pair_calling else "",
             input=input,
             output="> " + output if output else ""
-        )
+            )
     )
 
-def bcftools_cat_pair(
-    inputs,
-    output
-    ):
+def bcftools_cat_pair(inputs, output):
 
     if not isinstance(inputs, list):
         inputs = [inputs]
@@ -306,15 +279,10 @@ $BCFTOOLS_BIN/bcftools cat \\
   {output}""".format(
             inputs="\\\n  ".join(inputs),
             output="> " + output if output else ""
-        )
+            )
     )
 
-def bcftools_view_pair(
-    input,
-    output,
-    options="",
-    pair_calling=False
-    ):
+def bcftools_view_pair(input, output, options="", pair_calling=False):
 
     return Job(
         [input],
@@ -331,16 +299,11 @@ $BCFTOOLS_BIN/bcftools view \\
             pair_calling="-T pair" if pair_calling else "",
             input=input,
             output="> " + output if output else ""
-        )
+            )
     )
 
 
-def mapped_count(
-    bam,
-    output=None,
-    bed=None,
-    options=None
-    ):
+def mapped_count(bam, output=None, bed=None, options=None):
 
     return Job(
         [bam],
@@ -357,6 +320,6 @@ samtools view -F4 {options} -c \\
             input=bam,
             output="> " + output if output else " ",
             target_option="-L " + bed if bed else " "
-        ),
+            ),
         removable_files=[output]
     )
