@@ -75,17 +75,10 @@ samtools flagstat \\
         removable_files=[output]
         )
 
-def mpileup(
-    input_bams,
-    output,
-    other_options="",
-    region=None,
-    regionFile=None,
-    ini_section='rawmpileup'
-    ):
+def mpileup(input_bams, output, other_options="", region=None, regionFile=None, ini_section='rawmpileup'):
 
     if not isinstance(input_bams, list):
-        input_bams=[input_bams]
+        input_bams = [input_bams]
 
     if not isinstance(input_bams, list):
         input_bams = [input_bams]
@@ -278,6 +271,7 @@ $BCFTOOLS_BIN/bcftools view \\
             )
         )
 
+
 def bcftools_cat_pair(inputs, output):
 
     if not isinstance(inputs, list):
@@ -297,6 +291,7 @@ $BCFTOOLS_BIN/bcftools cat \\
             output="> " + output if output else ""
             )
         )
+
 
 def bcftools_view_pair(input, output, options="", pair_calling=False):
 
