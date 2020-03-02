@@ -158,7 +158,7 @@ class DnaSeqRaw(common.Illumina):
                         )
                     ])
                 sym_link_job.name = "sym_link_fastq.paired_end." + readset.name
-                
+
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
@@ -516,7 +516,6 @@ class DnaSeqRaw(common.Illumina):
                             )
                         )
 
-
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 realign_prefix = os.path.join(realign_directory)
                 realign_intervals = os.path.join(realign_prefix, sample.name + ".sorted.realigned.others.intervals")
@@ -541,7 +540,6 @@ class DnaSeqRaw(common.Illumina):
                         samples=[sample]
                         )
                     )
-
 
         return jobs
 
@@ -785,16 +783,17 @@ class DnaSeqRaw(common.Illumina):
                         input,
                         None,
                         config.param('fix_mate_by_coordinate_samtools', 'options')
-                    ),
+                        ),
                     sambamba.sort(
-                            "/dev/stdin",
-                            output_prefix + ".bam",
-                            config.param('sambamba_sort_sam', 'tmp_dir', required=True)
-                        )],
-                name="fix_mate_by_coordinate_samtools." + sample.name,
-                samples=[sample]
+                        "/dev/stdin",
+                        output_prefix + ".bam",
+                        config.param('sambamba_sort_sam', 'tmp_dir', required=True)
+                        )
+                    ],
+                    name="fix_mate_by_coordinate_samtools." + sample.name,
+                    samples=[sample]
+                    )
                 )
-            )
 
         return jobs
 
@@ -855,7 +854,6 @@ class DnaSeqRaw(common.Illumina):
             ])
             output = alignment_file_prefix + "sorted.dup.bam"
             metrics_file = alignment_file_prefix + "sorted.dup.metrics"
-
 
             job = gatk4.mark_duplicates(
                 input,
@@ -1019,7 +1017,6 @@ class DnaSeqRaw(common.Illumina):
                         input_bam,
                         input_bam + ".md5"
                         ),
-
                     deliverables.sym_link(
                         input_bam,
                         sample,
@@ -1032,7 +1029,6 @@ class DnaSeqRaw(common.Illumina):
                         self.output_dir,
                         type="alignment"
                         ),
-
                     deliverables.sym_link(
                         input_bam + ".md5",
                         sample,
@@ -1044,7 +1040,6 @@ class DnaSeqRaw(common.Illumina):
                     samples=[sample]
                     )
                 )
-
 
         return jobs
 
@@ -1092,7 +1087,6 @@ class DnaSeqRaw(common.Illumina):
                     )
                 )
 
-
             jobs.append(
                 concat_jobs([
                     mkdir_job,
@@ -1105,7 +1099,6 @@ class DnaSeqRaw(common.Illumina):
                     samples=[sample]
                     )
                 )
-
 
             jobs.append(
                 concat_jobs([
@@ -1121,7 +1114,6 @@ class DnaSeqRaw(common.Illumina):
                     samples=[sample]
                     )
                 )
-
 
         return jobs
 
@@ -1158,7 +1150,6 @@ class DnaSeqRaw(common.Illumina):
                         qualimap_directory,
                         remove=True
                         ),
-
                     qualimap.bamqc(
                         input,
                         qualimap_directory,
@@ -1170,7 +1161,6 @@ class DnaSeqRaw(common.Illumina):
                     samples=[sample]
                     )
                 )
-
 
         return jobs
 
@@ -1197,7 +1187,6 @@ class DnaSeqRaw(common.Illumina):
                         flagstat_directory,
                         remove=True
                         ),
-
                     sambamba.flagstat(
                         input,
                         output,
@@ -1208,7 +1197,6 @@ class DnaSeqRaw(common.Illumina):
                     samples=[sample]
                     )
                 )
-
 
         return jobs
 
@@ -1247,7 +1235,6 @@ class DnaSeqRaw(common.Illumina):
                         output_dir,
                         remove=True
                         ),
-
                     adapter_job,
                     fastqc.fastqc(
                         input,
@@ -1261,7 +1248,6 @@ class DnaSeqRaw(common.Illumina):
                     samples=[sample]
                     )
                 )
-
 
         return jobs
 
@@ -1298,7 +1284,6 @@ class DnaSeqRaw(common.Illumina):
             output,
             input_dep
             )
-
         job.name = "multiqc_all_samples"
         job.samples = self.samples
 
@@ -1449,7 +1434,6 @@ class DnaSeqRaw(common.Illumina):
                 input,
                 alignment_file_prefix + "callable.bed",
                 alignment_file_prefix + "callable.summary.txt"
-
             )
             job.name = "gatk_callable_loci." + sample.name
             job.samples = [sample]
@@ -1576,7 +1560,6 @@ class DnaSeqRaw(common.Illumina):
             else:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
 
-
                 # Create one separate job for each of the first sequences
                 for idx, sequences in enumerate(unique_sequences_per_job):
                     jobs.append(
@@ -1682,6 +1665,7 @@ class DnaSeqRaw(common.Illumina):
                 job.samples = [sample]
                 jobs.append(job)
 
+
         return jobs
 
     def combine_gvcf(self):
@@ -1716,6 +1700,7 @@ class DnaSeqRaw(common.Illumina):
                         samples=self.samples
                         )
                     )
+
             else:
 
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
@@ -1739,7 +1724,6 @@ class DnaSeqRaw(common.Illumina):
                                 ]
                             )
                         )
-
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 job = gatk4.combine_gvcf(
@@ -1779,7 +1763,6 @@ class DnaSeqRaw(common.Illumina):
                             )
                         )
                 else:
-
                     unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
 
                     # Create one separate job for each of the first sequences
@@ -1828,13 +1811,11 @@ class DnaSeqRaw(common.Illumina):
                     os.path.join("variants", "allSamples.hc.g.vcf.bgz")
                 )
                 job.name = "gatk_combine_gvcf.AllSamples.batches"
-
                 job.samples = self.samples
 
                 jobs.append(job)
 
             else:
-
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
 
                 # Create one separate job for each of the first sequences
@@ -1845,7 +1826,6 @@ class DnaSeqRaw(common.Illumina):
                         intervals=sequences
                     )
                     job.name = "gatk_combine_gvcf.AllSample" + "." + str(idx)
-
                     job.samples = self.samples
                     job.removable_files=[
                         os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz",
@@ -1955,7 +1935,6 @@ class DnaSeqRaw(common.Illumina):
                     variant_recal_snps_prefix + ".R",
                     small_sample_check=True
                     ),
-
                 gatk4.variant_recalibrator(
                     os.path.join(output_directory, "allSamples.hc.vcf.gz"),
                     recal_indels_other_options,
@@ -1969,7 +1948,6 @@ class DnaSeqRaw(common.Illumina):
                 samples=self.samples
                 )
             )
-
 
         #aply the recalibration
         apply_snps_other_options = config.param('variant_recalibrator', 'apply_other_options_snps')
@@ -1987,7 +1965,6 @@ class DnaSeqRaw(common.Illumina):
                     apply_snps_other_options,
                     variant_apply_snps_prefix + "_raw_indels.vqsr.vcf.gz"
                     ),
-
                 gatk4.apply_recalibration(
                     variant_apply_snps_prefix + "_raw_indels.vqsr.vcf.gz",
                     variant_apply_indels_prefix + ".recal",
@@ -2000,7 +1977,6 @@ class DnaSeqRaw(common.Illumina):
                 samples=self.samples
                 )
             )
-
 
         return jobs
 
@@ -2103,7 +2079,6 @@ pandoc \\
                                     config.param('rawmpileup', 'mpileup_other_options'),
                                     sequence['name']
                                     ),
-
                                 Job(
                                     output_files=[output],
                                     command="gzip -1 -c > " + output,
@@ -2115,7 +2090,6 @@ pandoc \\
                             samples=[sample]
                             )
                         )
-
 
         return jobs
 
@@ -2137,7 +2111,6 @@ pandoc \\
                 name="rawmpileup_cat." + sample.name,
                 samples=[sample]
                 )
-
             jobs.append(job)
 
         return jobs
@@ -2244,7 +2217,6 @@ pandoc \\
                 samples=self.samples
                 )
             )
-
 
         return jobs
 
@@ -2622,7 +2594,6 @@ pandoc \\
         return job
 
     def metrics_snv_graph_metrics(self, variants_file_prefix="variants/allSamples.merged.flt.mil.snpId", snv_metrics_prefix="metrics/allSamples.SNV", job_name="metrics_snv_graph"):
-
         """
         """
 
