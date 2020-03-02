@@ -941,7 +941,6 @@ class DnaSeqRaw(common.Illumina):
                         coverage_bed,
                         interval_list
                         )
-
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
                     created_interval_lists.append(interval_list)
