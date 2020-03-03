@@ -684,8 +684,14 @@ class DnaSeqRaw(common.Illumina):
             output_prefix = alignment_file_prefix + "matefixed.sorted"
             jobs.append(
                 pipe_jobs([
-                    samtools.fixmate(
+                    sambamba.sort(
                         input,
+                        "/dev/stdout",
+                        config.param('sambamba_sort_sam', 'tmp_dir', required=True),
+                        sort_by_name=True
+                        ),
+                    samtools.fixmate(
+                        "/dev/stdin",
                         None,
                         config.param('fix_mate_by_coordinate_samtools', 'options')
                         ),
