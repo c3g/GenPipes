@@ -178,7 +178,7 @@ samtools fixmate \\
   {output}""".format(
             options=options,
             input=input,
-            output="> " + output if output else ""
+            output="> " + output if output else "-"
             )
     )
 
