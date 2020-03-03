@@ -602,11 +602,11 @@ class DnaSeqRaw(common.Illumina):
                 pipe_jobs([
                     bvatools.groupfixmate(
                         input,
-                        None
+                        "/dev/stdout"
                         ),
                     sambamba.sort(
                         "/dev/stdin",
-                        output_prefix + ".bam",
+                        output_bam,
                         config.param('sambamba_sort_sam', 'tmp_dir', required=True)
                         )
                     ],
