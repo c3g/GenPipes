@@ -595,16 +595,16 @@ class DnaSeqRaw(common.Illumina):
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
-            output_prefix = alignment_file_prefix + "matefixed.sorted"
+            output_bam = alignment_file_prefix + "matefixed.sorted.bam"
             jobs.append(
                 pipe_jobs([
                     bvatools.groupfixmate(
                         input,
-                        None
+                        "/dev/stdout"
                         ),
                     sambamba.sort(
                         "/dev/stdin",
-                        output_prefix + ".bam",
+                        output_bam,
                         config.param('sambamba_sort_sam', 'tmp_dir', required=True)
                         )
                     ],
@@ -637,8 +637,14 @@ class DnaSeqRaw(common.Illumina):
             output_prefix = alignment_file_prefix + "matefixed.sorted"
             jobs.append(
                 pipe_jobs([
-                    samtools.fixmate(
+                    sambamba.sort(
                         input,
+                        "/dev/stdout",
+                        config.param('sambamba_sort_sam', 'tmp_dir', required=True),
+                        sort_by_name=True
+                        ),
+                    samtools.fixmate(
+                        "/dev/stdin",
                         None,
                         config.param('fix_mate_by_coordinate_samtools', 'options')
                         ),
@@ -873,7 +879,7 @@ class DnaSeqRaw(common.Illumina):
                         type="alignment"
                         ),
                     deliverables.sym_link(
-                        re.sub(".bam", ".bai", input_bam),
+                        re.sub(".bam", ".bam.bai", input_bam),
                         sample,
                         self.output_dir,
                         type="alignment"
