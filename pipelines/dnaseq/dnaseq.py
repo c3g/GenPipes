@@ -597,14 +597,15 @@ class DnaSeqRaw(common.Illumina):
             ])
             output_prefix = alignment_file_prefix + "matefixed.sorted"
             jobs.append(
-                concat_jobs([
+                pipe_jobs([
                     bvatools.groupfixmate(
                         input,
-                        output_prefix + ".tmp.bam"
+                        None
                         ),
-                    gatk4.sort_sam(
-                        output_prefix + ".tmp.bam",
-                        output_prefix + ".bam"
+                    sambamba.sort(
+                        "/dev/stdin",
+                        output_prefix + ".bam",
+                        config.param('sambamba_sort_sam', 'tmp_dir', required=True)
                         )
                     ],
                     name="fix_mate_by_coordinate." + sample.name,
@@ -618,7 +619,7 @@ class DnaSeqRaw(common.Illumina):
         """
         Fix the read mates. Once local regions are realigned, the read mate coordinates of the aligned reads
         need to be recalculated since the reads are realigned at positions that differ from their original alignment.
-        Fixing the read mate positions is done using [BVATools](https://bitbucket.org/mugqic/bvatools).
+        Fixing the read mate positions is done using [Samtools](http://samtools.sourceforge.net/) and [Sambamba](http://lomereiter.github.io/sambamba/index.html).
         """
 
         jobs = []
@@ -638,7 +639,7 @@ class DnaSeqRaw(common.Illumina):
                 pipe_jobs([
                     samtools.fixmate(
                         input,
-                        "-",
+                        None,
                         config.param('fix_mate_by_coordinate_samtools', 'options')
                         ),
                     sambamba.sort(
@@ -2517,8 +2518,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                # self.fix_mate_by_coordinate,
-                self.fix_mate_by_coordinate_samtools,
+                self.fix_mate_by_coordinate,
+                # self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.sym_link_final_bam,
@@ -2557,8 +2558,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                # self.fix_mate_by_coordinate,
-                self.fix_mate_by_coordinate_samtools,
+                self.fix_mate_by_coordinate,
+                # self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.sym_link_final_bam,
