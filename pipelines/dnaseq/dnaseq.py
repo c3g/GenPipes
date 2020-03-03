@@ -602,11 +602,12 @@ class DnaSeqRaw(common.Illumina):
                 pipe_jobs([
                     bvatools.groupfixmate(
                         input,
-                        output_prefix + ".tmp.bam"
+                        None
                         ),
-                    gatk4.sort_sam(
-                        output_prefix + ".tmp.bam",
-                        output_prefix + ".bam"
+                    sambamba.sort(
+                        "/dev/stdin",
+                        output_prefix + ".bam",
+                        config.param('sambamba_sort_sam', 'tmp_dir', required=True)
                         )
                     ],
                     name="fix_mate_by_coordinate." + sample.name,
@@ -2544,8 +2545,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                # self.fix_mate_by_coordinate,
-                self.fix_mate_by_coordinate_samtools,
+                self.fix_mate_by_coordinate,
+                # self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.sym_link_final_bam,
@@ -2584,8 +2585,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                # self.fix_mate_by_coordinate,
-                self.fix_mate_by_coordinate_samtools,
+                self.fix_mate_by_coordinate,
+                # self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.sym_link_final_bam,
