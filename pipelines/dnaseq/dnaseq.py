@@ -729,7 +729,7 @@ class DnaSeqRaw(common.Illumina):
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
-            output_prefix = alignment_file_prefix + "matefixed.sorted"
+            output_bam = alignment_file_prefix + "matefixed.sorted.bam"
             jobs.append(
                 pipe_jobs([
                     sambamba.sort(
@@ -745,7 +745,7 @@ class DnaSeqRaw(common.Illumina):
                         ),
                     sambamba.sort(
                         "/dev/stdin",
-                        output_prefix + ".bam",
+                        output_bam,
                         config.param('sambamba_sort_sam', 'tmp_dir', required=True)
                         )
                     ],
