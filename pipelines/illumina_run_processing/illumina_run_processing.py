@@ -28,6 +28,8 @@ import itertools
 import subprocess
 import xml.etree.ElementTree as Xml
 import math
+import subprocess
+import csv
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -232,9 +234,9 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self._index2cycles
 
     @property
-    def indexes_from_lims(self):
+    def index_per_readset(self):
         # Define in generate_clarity_sample_sheet() 
-        return self._indexes_from_lims
+        return self._index_per_readset
 
     @property
     def seqtype(self):
@@ -309,14 +311,131 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                 samples=self.samples
             ))
 
-        # Prepare Index Validation jobs
-        indexes_from_lims = self.lims_index
+        # Index Validation
+        # First prepare both index lists to compare : indexes from LIMS vs. actual sequenced indexes
+        index_per_readset = self.index_per_readset
+
+        # Parse the index file (i.e. output from `index` job`), skipping the comment lines
+        index_file = csv.DictReader(filter(lambda row: row[0]!='#', open(output, 'rb')), delimiter='\t', quotechar='"')
+
+        # First identify all the expected indexes as well as all the unfound indexes
+        pf_read_count = 0
+        index_cluster_count = 0
+        found_index = {}
+        found_barcode = {}
+        unfound_index = []
+        expected = 0
+        unexpected = []
+        for readset_name, indexes in index_per_readset.items():
+            # For the current readset, retrieve all the possible indexes (from LIMS)
+            # and store them as tuples along their index_name in the indexes_to_test list
+            indexes_to_test = []
+            if len(indexes) > 1 :
+                for index in indexes:
+                    expected++
+                    (index['INDEX1'] != "") and indexes_to_test.append((index['INDEX1'], index['INDEX_NAME']))
+                    (index['INDEX2'] != "") and indexes_to_test.append((index['INDEX2'], index['INDEX_NAME']))
+            else:
+                index = indexes[0]
+                expected++
+                if re.search("-", index['INDEX_NAME']):
+                    expected++
+                    (index['INDEX1'] != "") and indexes_to_test.append((index['INDEX1'], index['INDEX_NAME'].split("-")[0]))
+                    (index['INDEX2'] != "") and indexes_to_test.append((index['INDEX2'], index['INDEX_NAME'].split("-")[1]))
+                else:
+                    (index['INDEX1'] != "") and indexes_to_test.append((index['INDEX1'], index['INDEX_NAME']))
+                    (index['INDEX2'] != "") and indexes_to_test.append((index['INDEX2'], index['INDEX_NAME']))
+
+            # Once all indexes of current readset have been retrieved,
+            # compare them with all the indexes found
+            for row in index_file:
+
+                # Increment the count of PF (Passed Filter) reads
+                pf_read_count += int(row['PF_READS'])
+                for (idx_seq, idx_name) in indexes_to_test:
+
+                    # If current sequences match with at most "self.number_of_mismatches" AND # passed filter reads > 0
+                    if ((distance(row['BARCODE'], idx_seq) < self.number_of_mismatches + 1) and row['PF_READS'] > 0):
+                        # Consider current index as found and set or update its # PF_READS
+                        (found_index[idx_name]) and found_index[idx_name] += int(row['PF_READS']) or found_index[idx_name] = int(row['PF_READS'])
+
+                        # remove current row from unexpected list if it were already put in
+                        if (row in unexpected):
+                            del(unexpected[unexpected.index(row)])
+                        # set the current 'BARCODE_NAMES' as found
+                        found_barcode[row['BARCODE_NAMES']] = True
+
+                    # If there is no match but # passed filter reads > 0 AND current 'BARCODE_NAMES' have not been found yet
+                    elif (row['PF_READS'] > 0) and (! found_barcode[row['BARCODE_NAMES']]):
+                        # push current row to the unexpected list
+                        unexpected.append(row)
+
+            # Once whole index file has been read,
+            # check if all indexes of current readset were actually found
+            for (idx_seq, idx_name) in indexes_to_test:
+                # if not, push index to unfound list
+                if (found_index[idx_name]):
+                    index_cluster_count += found_index[idx_name]
+                else:
+                    unfound_index.append(idx_name)
+
+        # Compute spread
+        spread = max(found_index.values()) / min(found_index.values())
+
+        # Count the number of undetermined index reads
+        unexpected_read_count = 0
+        unexpected_index = 0
+        for row in unexpected:
+            unexpected_read_count += row['PF_READS']
+            (row['BARCODE_NAMES'] != "") and unexpected_index++
+
+        # % of undetermined index reads
+        unexpected_ratio = unexpected_read_count / pf_read_count
+
+        # % expected indices
+        expected_ratio = len(found_index.keys()) / expected
+
+        # Count the number of raw reads
+        raw_read_count = self.interop_getrawreads()
+
+        # Now build the hash table which will be printed into a JSON report file
+        index_validation_hash = {
+            '#_raw_reads': raw_read_count,
+            '#_pf_reads': pf_read_count,
+            '#__index_clusters': index_cluster_count,
+            '%_pf_reads': (pf_read_count / raw_read_count) * 100,
+            'spread' : max(found_index.values()) / min(found_index.values()),
+            '%_undetermined_idx_reads' : unexpected_ratio * 100,
+            '%_expected_indices' : expected_ratio * 100,
+            'found' : [{
+                "#_pf" : readset.name,
+                "%total" : readset.run,
+                "0_mismatch" : readset.smartcell,
+                "1_mismatch" : readset.protocol,
+                "index" : readset.nb_base_pairs,
+                "name" : readset.estimated_genome_size,
+                "library_name" : [os.path.realpath(bas) for bas in readset.bas_files]
+            } for readset in sample.readsets],
+            'not_found' : [{
+                "index" : ,
+                "name" : 
+            } for readset in sample.readsets],
+            'unexpected' : [{
+                "#_pf" : readset.name,
+                "%total" : readset.run,
+                "0_mismatch" : readset.smartcell,
+                "1_mismatch" : readset.protocol,
+                "index" : readset.nb_base_pairs,
+                "name" : readset.estimated_genome_size,
+                "library_name" : [os.path.realpath(bas) for bas in readset.bas_files]
+            } for readset in sample.readsets],
+        }
+        
 
         self.add_copy_job_inputs(jobs)
         return jobs
 
     def fastq(self):
-        
         """
         Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
         software.
@@ -337,7 +456,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             jobs = self.nanuq_fastq()
         else:
             jobs = self.clarity_fastq()
-        
+
         return jobs
 
     def nanuq_fastq(self):
@@ -1034,7 +1153,8 @@ awk -v nbReads={nb_blast_to_do} \\
                 )
 
                 # subsample the reads and output to a temp fasta
-                command = """samtools view \\
+                command = """\
+samtools view \\
   -s $subsampling \\
   -F 0x0180 \\
   {input} | \\
@@ -1152,7 +1272,7 @@ echo '{db}' \\
                     
                 )
 
-                command = """
+                command = """\
 grep ">" {result_file} | \\
 wc -l >> {output}""".format(
                     result_file=rrna_result_file,
@@ -1167,7 +1287,7 @@ wc -l >> {output}""".format(
                     )
                 )
 
-                command = """
+                command = """\
 grep ">" {fasta_file} | \\
 wc -l >> {output}""".format(
                     fasta_file=fasta_file,
@@ -1486,6 +1606,36 @@ wc -l >> {output}""".format(
         """
         return min(read.nb_cycles for read in [read for read in self.read_infos if (not read.is_index)])
 
+    def get_indexcycles(self):
+        """
+        Returns the number of cycles for each index of the run.
+        """
+        for read in self.read_infos if read.is_index:
+            if read.number in [1, 2]:
+                index1cycles = read.nb_cycles
+            if read.number in [3, 4]:
+                index2cycles = read.nb_cycles
+        return [index1cycles, index2cycles]
+
+    def get_seqtype(self):
+        """
+        Determine which kind of sequencing (iseq, miseq, novaseq, hiseqx, hiseq4000 or hiseq2500) was performed,
+        depending on the instrument used for the run
+        """
+
+        instrument = self.instrument
+        instrument_file = config.param('DEFAULT', 'instrument_list_file', type='filepath', required='false')
+        if not (instrument_file and os.path.isfile(instrument_file)):
+            instrument_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'instrument_list.csv')
+
+        return subprocess.check_output("grep -m1 '"+instrument+"' %s | awk -F',' '{print $3}'" % instrument_file, shell=True).strip()
+
+    def get_instrument(self):
+        """
+        Parse the RunInfo.xml file for the instrument name the run has been running on
+        """
+        return Xml.parse(os.path.join(self.run_dir, "RunInfo.xml")).getroot().find('Run').find('Instrument').text
+
     def validate_barcodes(self):
         """
         Validate all index sequences against each other to ensure they aren't in collision according to the chosen
@@ -1555,33 +1705,6 @@ wc -l >> {output}""".format(
                 # Normal read
                 mask += 'Y' + str(read_info.nb_cycles)
         return mask
-
-    def get_indexcycles(self):
-        for read in self.read_infos if read.is_index:
-            if read.number in [1, 2]:
-                index1cycles = read.nb_cycles
-            if read.number in [3, 4]:
-                index2cycles = read.nb_cycles
-        return [index1cycles, index2cycles]
-
-    def get_seqtype(self):
-        """
-        Determine which kind of sequencing (iseq, miseq, novaseq, hiseqx, hiseq4000 or hiseq2500) was performed,
-        depending on the instrument used for the run
-        """
-
-        instrument = self.instrument
-        instrument_file = config.param('DEFAULT', 'instrument_list_file', type='filepath', required='false')
-        if not (instrument_file and os.path.isfile(instrument_file)):
-            instrument_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'instrument_list.csv')
-
-        return subprocess.check_output("grep -m1 '"+instrument+"' %s | awk -F',' '{print $3}'" % instrument_file, shell=True).strip()
-
-    def get_instrument(self):
-        """
-        Parse the RunInfo.xml file for the instrument name the run has been running on
-        """
-        return Xml.parse(os.path.join(self.run_dir, "RunInfo.xml")).getroot().find('Run').find('Instrument').text
 
     def generate_illumina_lane_sample_sheet(self):
         """
@@ -1802,18 +1925,13 @@ wc -l >> {output}""".format(
         casava_sample_sheet = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".indexed.csv")
 
         count = 0
-        index_per_sample = []
+        index_per_readset = {}
         for readset in self.readsets:
             count += 1
             readset_indexes = self.get_index(readset)
+            index_per_readset[readset.name] = readset_indexes
 
-            indexes = []
             for readset_index in readset_indexes:
-                    indexes.append({
-                        readset.description : [index['INDEX1'])
-
-                index_array = [readset_index['INDEX1'], readset_index['INDEX2']]
-                indexes.append({readset.description : index_array})
 
                 fastq_file_pattern = os.path.join(
                     self.output_dir,
@@ -1834,8 +1952,8 @@ wc -l >> {output}""".format(
                     "Sample_ID": "Sample_" + readset_index['BC2LFASTQ_NAME'],
                     "Sample_Name": readset_index['BC2LFASTQ_NAME'],
                     "SampleRef": "",
-                    "Index": index_array[0],
-                    "Index2": index_array[1],
+                    "Index": readset_index['INDEX1'],
+                    "Index2": readset_index['INDEX2'],
                     "Description": readset.description + ' - ' + readset.lib_type + ' - ' + readset.library_source
                     "Control": readset.control,
                     "Recipe": readset.recipe,
@@ -1843,8 +1961,8 @@ wc -l >> {output}""".format(
                     "Sample_Project": "Project_" + readset.project
                 }
                 writer.writerow(csv_dict)
-            index_per_sample.append({readset.name : indexes})
-        self._indexes_from_lims = index_per_sample
+            
+        self._index_per_readset = index_per_readset
 
     def generate_fastq_outputs(self, merge=False):
         bcl2fastq_outputs = []
@@ -1959,6 +2077,7 @@ wc -l >> {output}""".format(
         """
 
         indexes = []
+        idx_seq_array = []
         index1 = ""
         index2 = ""
         index1seq = ""
@@ -1978,59 +2097,68 @@ wc -l >> {output}""".format(
                 [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = self.sub_get_index(readset, index1seq, index2seq)
                 indexes.append({
                     'BC2LFASTQ_NAME': readset.name + char,
+                    'INDEX_NAME': readset.description,
                     'INDEX1': actual_index1seq,
                     'INDEX2': actual_index2seq,
                     'ADAPTERi7' : adapteri7,
                     'ADAPTERi5' : adapteri5
                 })
+                (actual_index1seq != "") and idx_seq_array.append(actual_index1seq)
+                (actual_index2seq != "") and idx_seq_array.append(actual_index2seq)
+            truc.append({readset.description : idx_seq_array})
 
         elif readset.library_type == "tenX_sc_RNA_v1" :
-            index2 = readset.description 
+            index2 = readset.description
 
+            
             for idx, char in enumerate(['_A', '_B', '_C', '_D']):
                 index2seq = subprocess.check_output(index_seq_pattern % (index2, index_file, idx+2), shell=True).strip()
                 [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = self.sub_get_index(readset, index1seq, index2seq)
                 indexes.append({
                     'BC2LFASTQ_NAME': readset.name + char,
+                    'INDEX_NAME': readset.description,
                     'INDEX1': actual_index1seq,
                     'INDEX2': actual_index2seq,
                     'ADAPTERi7' : adapteri7,
                     'ADAPTERi5' : adapteri5
                 })
-
-        elif re.search("-", readset.description):
-            index1 = readset.description.split("-")[0]
-            index2 = readset.description.split("-")[1]
-
-            index1seq = subprocess.check_output(index_seq_pattern % (index1, index_file, 2), shell=True).strip()
-            index2seq = subprocess.check_output(index_seq_pattern % (index2, index_file, 2), shell=True).strip()
-
-            [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = self.sub_get_index(readset, index1seq, index2seq)
-            indexes.append({
-                'BC2LFASTQ_NAME': readset.name,
-                'INDEX1': actual_index1seq,
-                'INDEX2': actual_index2seq,
-                'ADAPTERi7' : adapteri7,
-                'ADAPTERi5' : adapteri5
-            })
+                (actual_index1seq != "") and idx_seq_array.append(actual_index1seq)
+                (actual_index2seq != "") and idx_seq_array.append(actual_index2seq)
+            truc.append({readset.description : idx_seq_array})
 
         else:
-            index1 = readset.description
-            
-            index1seq = subprocess.check_output(index_seq_pattern % (index1, index_file, 2), shell=True).strip()
+            if re.search("-", readset.description):
+                index1 = readset.description.split("-")[0]
+                index2 = readset.description.split("-")[1]
+
+                index1seq = subprocess.check_output(index_seq_pattern % (index1, index_file, 2), shell=True).strip()
+                index2seq = subprocess.check_output(index_seq_pattern % (index2, index_file, 2), shell=True).strip()
+
+            else:
+                index1 = readset.description
+
+                index1seq = subprocess.check_output(index_seq_pattern % (index1, index_file, 2), shell=True).strip()
 
             [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = self.sub_get_index(readset, index1seq, index2seq)
             indexes.append({
                 'BC2LFASTQ_NAME': readset.name,
+                'INDEX_NAME': readset.description,
                 'INDEX1': actual_index1seq,
                 'INDEX2': actual_index2seq,
                 'ADAPTERi7' : adapteri7,
                 'ADAPTERi5' : adapteri5
             })
+            (actual_index1seq != "") and idx_seq_array.append(actual_index1seq)
+            (actual_index2seq != "") and idx_seq_array.append(actual_index2seq)
+            if index2:
+                truc.append({index1 : [actual_index1seq]})
+                truc.append({index2 : [actual_index2seq]})
+            else:
+                truc.append({readset.description : idx_seq_array})
 
         return indexes
 
-    def sub_get_index(self, readset, index1seq, index2seq)
+    def sub_get_index(self, readset, index1seq, index2seq):
         """
         """
 
@@ -2083,7 +2211,7 @@ wc -l >> {output}""".format(
                 main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, indexn2_primer), shell=True).strip()
 
                 if seqtype == "hiseqx" or seqtype == "hiseq4000" or seqtype == "iSeq" :
-                    actual_index2seq = subprocess.check_output(actual_seq_pattern.replace("| cut -c", "| rev | cut -c") % (main_seq, indexn2_primer, 1, "s/\[i5c\]/$(echo "+index2seq+" | tr 'ATGC' 'TACG' )/g", int(indexn2_primeroffset) + 1 - int(indexn2_primeroffset) + int(self.self.index2cycles)), shell=True).strip()
+                    actual_index2seq = subprocess.check_output(actual_seq_pattern.replace("| cut -c", "| rev | cut -c") % (main_seq, indexn2_primer, 1, "s/\[i5c\]/$(echo "+index2seq+" | tr 'ATGC' 'TACG' )/g", int(indexn2_primeroffset) + 1 - int(indexn2_primeroffset) + int(self.index2cycles)), shell=True).strip()
                 else :
                     actual_index2seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn2_primer, 2, "s/\[i5\]/index2seq/g", int(indexn2_primeroffset) + 1 - int(indexn2_primeroffset) + int(self.index2cycles)), shell=True).strip()
 
@@ -2132,6 +2260,23 @@ wc -l >> {output}""".format(
             run_index_lengths[i] = min(min_sample_index_length, run_index_lengths[i])
 
         return run_index_lengths
+
+    def interop_getrawreads(self)
+        """
+        Parse the InterOp .bin files (within the run folder) to retrieve the # raw reads
+        """
+        run_metrics = py_interop_run_metrics.run_metrics()
+
+        valid_to_load = py_interop_run.uchar_vector(py_interop_run.MetricCount, 0)
+        py_interop_run_metrics.list_index_metrics_to_load(valid_to_load)
+        run_metrics.read(self.run_dir, valid_to_load)
+
+        summary = py_interop_summary.index_flowcell_summary()
+        py_interop_summary.summarize_index_metrics(run_metrics, summary)
+
+        lane_summary = summary.at(self.lane_number - 1)
+        
+        return lane_summary.total_reads()
 
     def parse_run_info_file(self):
         """
