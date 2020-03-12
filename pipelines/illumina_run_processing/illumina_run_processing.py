@@ -372,9 +372,9 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self._index2cycles
 
     @property
-    def indexes_from_lims(self):
+    def index_per_readset(self):
         # Define in generate_clarity_sample_sheet() 
-        return self._indexes_from_lims
+        return self._index_per_readset
 
     @property
     def seqtype(self):
@@ -536,7 +536,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return jobs
 
     def fastq(self):
-        
         """
         Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
         software.
@@ -1952,6 +1951,23 @@ wc -l >> {output}""".format(
             run_index_lengths[i] = min(min_sample_index_length, run_index_lengths[i])
 
         return run_index_lengths
+
+    def interop_getrawreads(self)
+        """
+        Parse the InterOp .bin files (within the run folder) to retrieve the # raw reads
+        """
+        run_metrics = py_interop_run_metrics.run_metrics()
+
+        valid_to_load = py_interop_run.uchar_vector(py_interop_run.MetricCount, 0)
+        py_interop_run_metrics.list_index_metrics_to_load(valid_to_load)
+        run_metrics.read(self.run_dir, valid_to_load)
+
+        summary = py_interop_summary.index_flowcell_summary()
+        py_interop_summary.summarize_index_metrics(run_metrics, summary)
+
+        lane_summary = summary.at(self.lane_number - 1)
+        
+        return lane_summary.total_reads()
 
     def parse_run_info_file(self):
         """
