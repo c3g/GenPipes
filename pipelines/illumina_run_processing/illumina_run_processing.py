@@ -560,7 +560,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return jobs
 
     def fastq(self):
-        
         """
         Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
         software.
@@ -2129,7 +2128,6 @@ def distance(
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
     return sum(itertools.imap(unicode.__ne__, str1, str2))
-
 
 if __name__ == '__main__':
 
