@@ -372,9 +372,9 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self._index2cycles
 
     @property
-    def indexes_from_lims(self):
+    def index_per_readset(self):
         # Define in generate_clarity_sample_sheet() 
-        return self._indexes_from_lims
+        return self._index_per_readset
 
     @property
     def seqtype(self):
@@ -536,7 +536,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return jobs
 
     def fastq(self):
-        
         """
         Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
         software.
