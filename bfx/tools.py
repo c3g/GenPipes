@@ -433,6 +433,7 @@ def fix_genotypes_strelka(input, output, normal, tumor):
                 tumor=tumor,
             )
         )
+
 def cpg_cov_stats(input, output):
     return Job(
         [input],
@@ -448,6 +449,30 @@ python $PYTHON_TOOLS/CpG_coverageStats.py \\
             input=input,
             output=output
          )
+    )
+
+def index_validation(
+    indexes,
+    index_file,
+    mismatches
+    ):
+    output_json = os.path.join(os.path.dirname(index_file), "index_validation_report.json")
+    return Job(
+        [index_file],
+        [output_json],
+        [
+            ['index_validation', 'module_mugqic_tools'],
+            ['index_validation', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/run_processing_index_validation.py \\
+  {index_hash} \\
+  {index_file} \\
+  {mismatches}""".format(
+            index_hash=indexes,
+            index_file=index_file,
+            mismatches=mismatches
+        )
     )
 
 ## functions for perl tools ##
@@ -802,7 +827,7 @@ def sh_sample_tag_stats(
         [output_file],
         [
             ['sample_tag', 'module_mugqic_tools']
-        ],,
+        ],
         command="""\
 bash ${TOOLS}/createSampleTagStats.sh \\
   {input} \\
