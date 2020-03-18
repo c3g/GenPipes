@@ -360,6 +360,28 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self._seqtype
 
     @property
+    def umi(self):
+        if not hasattr(self, "umi"):
+            return False
+        return self._umi
+
+    @property
+    def merge_undetermined(self):
+        merge = False
+        # If only one library on the lane
+        if len(self.readsets) == 1:
+            merge = True
+        if config.param('fastq', 'merge_undetermined', required=False, type='boolean'):
+            merge = config.param('fastq', 'merge_undetermined')
+        return merge
+
+    @property
+    def bcl2fastq_extra_option(self):
+        if not hasattr(self, "_bcl2fastq_extra_option"):
+            return ""
+        return self._bcl2fastq_extra_option
+
+    @property
     def index1cycles(self):
         if not hasattr(self, "_index1cycles"):
             [self._index1cycles, self._index2cycles] = self.get_indexcycles()
@@ -373,6 +395,8 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
 
     @property
     def index_per_readset(self):
+        if not hasattr(self, "_index_per_readset"):
+            return ""
         # Define in generate_clarity_sample_sheet() 
         return self._index_per_readset
 
@@ -1650,7 +1674,6 @@ wc -l >> {output}""".format(
             # If 10X libraries : 4 indexes per sample
             if re.search("tenX", readset.library_type):
                 fastq1 = os.path.basename(readset.fastq1)
-
                 counta = count
                 fastq1a=os.path.join(fastq_output_dir + "_A", re.sub(readset.name + "_S" + readset.sample_number, readset.name + "_A_S" + str(counta), fastq1))
                 bcl2fastq_outputs.append(fastq1a)
@@ -1676,7 +1699,6 @@ wc -l >> {output}""".format(
                             fastq1d
                         ],
                         readset.fastq1
-                ))
                 # If True, then merge the 'Undetermined' reads
                 if merge:
                     undet_fastq1 = os.path.join(output_dir, re.sub(readset.name, "Undetermined_S0", fastq1))
@@ -1952,7 +1974,7 @@ wc -l >> {output}""".format(
 
         return run_index_lengths
 
-    def interop_getrawreads(self)
+    def interop_getrawreads(self):
         """
         Parse the InterOp .bin files (within the run folder) to retrieve the # raw reads
         """
