@@ -77,7 +77,6 @@ def mv(
     return Job(
         [source],
         [target],
-        [],
         command="""\
 mv {force}{source} \\
    {dest}""".format(
@@ -230,6 +229,135 @@ def awk(
         [output],
         command="""\
 awk {instructions} {input}{append}{output}""".format(
+            instructions=instructions,
+            input=input if input else "",
+            append=" >" if append else " ",
+            output="> " + output if output else "",
+        )
+    )
+
+def gzip(
+    input,
+    output,
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+gzip {input}{output}""".format(
+            input=input if input else "",
+            output=" > " + output if output else "",
+        )
+    )
+
+def touch(
+    target
+    ):
+
+    return Job(
+        [],
+        [],
+        command="""\
+touch {target}""".format(
+            target=target
+        )
+    )
+
+def md5sum(
+    inputs,
+    output,
+    check=False
+    ):
+
+    if not isinstance(inputs, list):
+        inputs = [inputs]
+
+    return Job(
+        inputs,
+        [output],
+        command="""\
+md5sum {check}{input}{output}""".format(
+            check="-c " if check else "",
+            input=" ".join(["'"+os.path.abspath(input)+"'" for input in inputs]),
+            output=" > " + os.path.abspath(output) if output else ""
+        )
+    )
+
+def cat(
+    input,
+    output,
+    zip=False,
+    append=False
+    ):
+
+    if not isinstance(input, list):
+        inputs=[input]
+    else:
+        inputs=input
+
+    cat_call = "cat"    
+    if zip:
+        cat_call = "zcat"
+
+    return Job(
+        inputs,
+        [output],
+        command="""\
+{cat} {input} {append}{output}""".format(
+            cat=cat_call,
+            input=" ".join(inputs) if input else "",
+            append=">" if append else "",
+            output="> " + output if output else ""
+        )
+    )
+
+def cut(
+    input,
+    output,
+    options
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+cut {options} {input}{output}""".format(
+            options=options,
+            input=input if input else "",
+            output=" > " + output if output else "",
+        )
+    )
+
+def paste(
+    input,
+    output,
+    options
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+paste {options} {input}{output}""".format(
+            options=options,
+            input=input if input else "",
+            output=" > " + output if output else "",
+        )
+    )
+
+def awk(
+    input,
+    output,
+    instructions,
+    append=False
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+awk {instructions} {input}{output}""".format(
             instructions=instructions,
             input=input if input else "",
             append=" >" if append else " ",

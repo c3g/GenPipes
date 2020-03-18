@@ -433,568 +433,6 @@ def fix_genotypes_strelka(input, output, normal, tumor):
                 tumor=tumor,
             )
         )
-
-def cpg_cov_stats(input, output):
-    return Job(
-        [input],
-        [output],
-        [
-            ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/CpG_coverageStats.py \\
- -i {input} \\
- -o {output}""".format(
-            input=input,
-            output=output
-         )
-    )
-
-def index_validation(
-    index_json_file,
-    index_metrics_file,
-    bcl2fastq_html_report,
-    lane,
-    mismatches
-    ):
-
-    output_json = os.path.join(os.path.dirname(index_json_file), "index_validation_report.json")
-    return Job(
-        [index_metrics_file, bcl2fastq_html_report],
-        [output_json],
-        [
-            ['index_validation', 'module_mugqic_tools'],
-            ['index_validation', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/runProcessingIndexValidation.py \\
-  -j {index_json} \\
-  -f {index_file} \\
-  -r {bcl2fastq_html_report} \\
-  -l {lane} \\
-  -m {mismatches}""".format(
-            index_json=index_json_file,
-            index_file=index_metrics_file,
-            bcl2fastq_html_report=bcl2fastq_html_report,
-            lane=lane,
-            mismatches=mismatches
-        )
-    )
-
-def edit_index_stats(
-    readset_json_file,
-    stats_json_file,
-    outfile
-    ):
-
-    return Job(
-        [
-            readset_json_file,
-            stats_json_file
-        ],
-        [outfile],
-        [
-            ['index_validation', 'module_mugqic_tools'],
-            ['index_validation', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/runProcessingEditIndexStatsFile.py \\
-  -r {readset_json} \\
-  -s {stats_json} \\
-  -o {output_json}""".format(
-            readset_json=readset_json_file,
-            stats_json=stats_json_file,
-            output_json=outfile
-        )
-    )
-
-def convert_fastq_headers(
-    inputs,
-    outputs,
-    instrument,
-    run
-    ):
-
-    convert_input_path = os.path.dirname(inputs[0])
-
-    return Job(
-        inputs,
-        outputs,
-        [
-            ['fastq', 'module_mugqic_tools'],
-            ['fastq', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/convertFastqHeaders.py \\
-  -i {input_path} \\
-  -r {run} \\
-  -s {sequencer}""".format(
-            input_path=convert_input_path,
-            run=run,
-            sequencer=instrument
-        ),
-        removable_files=outputs
-    )
-
-def run_validation_sample_report(
-    readset,
-    report_inputs,
-    out_file,
-    main_json=None
-    ):
-
-    inputs = [
-        report_inputs['qc'][readset.name],
-        report_inputs['blast'][readset.name]
-    ]
-    if report_inputs.get('index'):
-        inputs.append(report_inputs['index'])
-    if report_inputs.get('sample_tag'):
-        inputs.append(report_inputs['sample_tag'][readset.name])
-    if readset.bam:
-        inputs.append(report_inputs['mark_dup'][readset.name])
-        inputs.extend(report_inputs['align'][readset.name])
-
-    return Job(
-        inputs,
-        [out_file],
-        [
-            ['sample_report', 'module_mugqic_tools'],
-            ['sample_report', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/runProcessingSampleReport.py \\
-  -p {project} \\
-  -s {sample} \\
-  -n {lane_sample} \\
-  -l {library} \\
-  {index} \\
-  {main_json} \\
-  {sample_tag} \\
-  -q {qc} \\
-  -b {blast} \\
-  {align} \\
-  -g {gender} \\
-  -o {outfile}""".format(
-            project=readset.project_id,
-            sample=readset.sample.name,
-            lane_sample=readset.lane + "_" + readset.sample_number,
-            library=readset.library,
-            index="-i " + report_inputs['index'] if report_inputs.get('index') else "",
-            main_json="-m " + main_json if main_json else "",
-            sample_tag="-k " + report_inputs['sample_tag'][readset.name] if report_inputs.get('sample_tag') else "",
-            qc=report_inputs['qc'][readset.name],
-            blast=report_inputs['blast'][readset.name],
-            align="-a " + os.path.dirname(report_inputs['mark_dup'][readset.name]) if readset.bam else "",
-            gender=readset.gender,
-            outfile=out_file
-        )
-    )
-
-def run_validation_aggregate_report(
-    main_json,
-    inputs,
-    outfile
-    ):
-
-    input_files = inputs
-    input_files.append(main_json)
-
-    return Job(
-        input_files,
-        [outfile],
-        [
-            ['report', 'module_mugqic_tools'],
-            ['report', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/runProcessingAggregateReports.py \\
-  -m {main_json} \\
-  -s {input_dir} \\
-  -o {outfile}""".format(
-            main_json=main_json,
-            input_dir=os.path.dirname(inputs[0]),
-            outfile=outfile
-        )
-    )
-
-def fix_genotypes_strelka(input, output, normal, tumor):
-        return Job(
-            [input],
-            [output],
-            [
-                ['DEFAULT', 'module_mugqic_tools'],
-                ['DEFAULT', 'module_python']
-            ],
-            command="""\
-	python $PYTHON_TOOLS/update_genotypes_strelka.py \\
-	    -i {input} \\
-	    -o {output} \\
-	    -n {normal} \\
-	    -t {tumor}""".format(
-                input=input if input else "",
-                output=output if input else "",
-                normal=normal,
-                tumor=tumor,
-            )
-        )
-
-def cpg_cov_stats(input, output):
-    return Job(
-        [input],
-        [output],
-        [
-            ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/CpG_coverageStats.py \\
- -i {input} \\
- -o {output}""".format(
-            input=input,
-            output=output
-         )
-    )
-
-def index_validation(
-    index_json_file,
-    index_metrics_file,
-    bcl2fastq_html_report,
-    lane,
-    mismatches
-    ):
-
-    output_json = os.path.join(os.path.dirname(index_json_file), "index_validation_report.json")
-    return Job(
-        [index_metrics_file, bcl2fastq_html_report],
-        [output_json],
-        [
-            ['index_validation', 'module_mugqic_tools'],
-            ['index_validation', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/runProcessingIndexValidation.py \\
-  -j {index_json} \\
-  -f {index_file} \\
-  -r {bcl2fastq_html_report} \\
-  -l {lane} \\
-  -m {mismatches}""".format(
-            index_json=index_json_file,
-            index_file=index_metrics_file,
-            bcl2fastq_html_report=bcl2fastq_html_report,
-            lane=lane,
-            mismatches=mismatches
-        )
-    )
-
-def edit_index_stats(
-    readset_json_file,
-    stats_json_file,
-    outfile
-    ):
-
-    return Job(
-        [
-            readset_json_file,
-            stats_json_file
-        ],
-        [outfile],
-        [
-            ['index_validation', 'module_mugqic_tools'],
-            ['index_validation', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/runProcessingEditIndexStatsFile.py \\
-  -r {readset_json} \\
-  -s {stats_json} \\
-  -o {output_json}""".format(
-            readset_json=readset_json_file,
-            stats_json=stats_json_file,
-            output_json=outfile
-        )
-    )
-
-def run_validation_sample_report(
-    readset,
-    report_inputs,
-    out_file,
-    main_json=None
-    ):
-
-    inputs = [
-        report_inputs['qc'][readset.name],
-        report_inputs['blast'][readset.name]
-    ]
-    if report_inputs.get('index'):
-        inputs.append(report_inputs['index'])
-    if report_inputs.get('sample_tag'):
-        inputs.append(report_inputs['sample_tag'][readset.name])
-    if readset.bam:
-        inputs.append(report_inputs['mark_dup'][readset.name])
-        inputs.extend(report_inputs['align'][readset.name])
-
-    return Job(
-        inputs,
-        [out_file],
-        [
-            ['sample_report', 'module_mugqic_tools'],
-            ['sample_report', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/runProcessingSampleReport.py \\
-  -p {project} \\
-  -s {sample} \\
-  -n {lane_sample} \\
-  -l {library} \\
-  {index} \\
-  {main_json} \\
-  {sample_tag} \\
-  -q {qc} \\
-  -b {blast} \\
-  {align} \\
-  -g {gender} \\
-  -o {outfile}""".format(
-            project=readset.project,
-            sample=readset.sample.name,
-            lane_sample=readset.lane + "_" + readset.sample_number,
-            library=readset.library,
-            index="-i " + report_inputs['index'] if report_inputs.get('index') else "",
-            main_json="-m " + main_json if main_json else "",
-            sample_tag="-k " + report_inputs['sample_tag'][readset.name] if report_inputs.get('sample_tag') else "",
-            qc=report_inputs['qc'][readset.name],
-            blast=report_inputs['blast'][readset.name],
-            align="-a " + os.path.dirname(report_inputs['mark_dup'][readset.name]) if readset.bam else "",
-            gender=readset.gender,
-            outfile=out_file
-        )
-    )
-
-def run_validation_aggregate_report(
-    main_json,
-    inputs,
-    outfile
-    ):
-
-    input_files = inputs
-    input_files.append(main_json)
-
-    return Job(
-        input_files,
-        [outfile],
-        [
-            ['report', 'module_mugqic_tools'],
-            ['report', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/runProcessingAggregateReports.py \\
-  -m {main_json} \\
-  -s {input_dir} \\
-  -o {outfile}""".format(
-            main_json=main_json,
-            input_dir=os.path.dirname(inputs[0]),
-            outfile=outfile
-        )
-    )
-
-def fix_genotypes_strelka(input, output, normal, tumor):
-        return Job(
-            [input],
-            [output],
-            [
-                ['DEFAULT', 'module_mugqic_tools'],
-                ['DEFAULT', 'module_python']
-            ],
-            command="""\
-	python $PYTHON_TOOLS/update_genotypes_strelka.py \\
-	    -i {input} \\
-	    -o {output} \\
-	    -n {normal} \\
-	    -t {tumor}""".format(
-                input=input if input else "",
-                output=output if input else "",
-                normal=normal,
-                tumor=tumor,
-            )
-        )
-
-def cpg_cov_stats(input, output):
-    return Job(
-        [input],
-        [output],
-        [
-            ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/CpG_coverageStats.py \\
- -i {input} \\
- -o {output}""".format(
-            input=input,
-            output=output
-         )
-    )
-
-def index_validation(
-    index_json_file,
-    index_metrics_file,
-    bcl2fastq_html_report,
-    lane,
-    mismatches
-    ):
-
-    output_json = os.path.join(os.path.dirname(index_json_file), "index_validation_report.json")
-    return Job(
-        [index_metrics_file, bcl2fastq_html_report],
-        [output_json],
-        [
-            ['index_validation', 'module_mugqic_tools'],
-            ['index_validation', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/runProcessingIndexValidation.py \\
-  -j {index_json} \\
-  -f {index_file} \\
-  -r {bcl2fastq_html_report} \\
-  -l {lane} \\
-  -m {mismatches}""".format(
-            index_json=index_json_file,
-            index_file=index_metrics_file,
-            bcl2fastq_html_report=bcl2fastq_html_report,
-            lane=lane,
-            mismatches=mismatches
-        )
-    )
-
-def edit_index_stats(
-    readset_json_file,
-    stats_json_file,
-    outfile
-    ):
-
-    return Job(
-        [
-            readset_json_file,
-            stats_json_file
-        ],
-        [outfile],
-        [
-            ['index_validation', 'module_mugqic_tools'],
-            ['index_validation', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/runProcessingEditIndexStatsFile.py \\
-  -r {readset_json} \\
-  -s {stats_json} \\
-  -o {output_json}""".format(
-            readset_json=readset_json_file,
-            stats_json=stats_json_file,
-            output_json=outfile
-        )
-    )
-
-def run_validation_sample_report(
-    readset,
-    report_inputs,
-    out_file,
-    main_json=None
-    ):
-
-    inputs = [
-        report_inputs['qc'][readset.name],
-        report_inputs['blast'][readset.name]
-    ]
-    if report_inputs.get('index'):
-        inputs.append(report_inputs['index'])
-    if report_inputs.get('sample_tag'):
-        inputs.append(report_inputs['sample_tag'][readset.name])
-    if readset.bam:
-        inputs.append(report_inputs['mark_dup'][readset.name])
-        inputs.extend(report_inputs['align'][readset.name])
-
-    return Job(
-        inputs,
-        [out_file],
-        [
-            ['sample_report', 'module_mugqic_tools'],
-            ['sample_report', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/runProcessingSampleReport.py \\
-  -p {project} \\
-  -s {sample} \\
-  -n {lane_sample} \\
-  -l {library} \\
-  {index} \\
-  {main_json} \\
-  {sample_tag} \\
-  -q {qc} \\
-  -b {blast} \\
-  {align} \\
-  -g {gender} \\
-  -o {outfile}""".format(
-            project=readset.project_id,
-            sample=readset.sample.name,
-            lane_sample=readset.lane + "_" + readset.sample_number,
-            library=readset.library,
-            index="-i " + report_inputs['index'] if report_inputs.get('index') else "",
-            main_json="-m " + main_json if main_json else "",
-            sample_tag="-k " + report_inputs['sample_tag'][readset.name] if report_inputs.get('sample_tag') else "",
-            qc=report_inputs['qc'][readset.name],
-            blast=report_inputs['blast'][readset.name],
-            align="-a " + os.path.dirname(report_inputs['mark_dup'][readset.name]) if readset.bam else "",
-            gender=readset.gender,
-            outfile=out_file
-        )
-    )
-
-def run_validation_aggregate_report(
-    main_json,
-    inputs,
-    outfile
-    ):
-
-    input_files = inputs
-    input_files.append(main_json)
-
-    return Job(
-        input_files,
-        [outfile],
-        [
-            ['report', 'module_mugqic_tools'],
-            ['report', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/runProcessingAggregateReports.py \\
-  -m {main_json} \\
-  -s {input_dir} \\
-  -o {outfile}""".format(
-            main_json=main_json,
-            input_dir=os.path.dirname(inputs[0]),
-            outfile=outfile
-        )
-    )
-
-def fix_genotypes_strelka(input, output, normal, tumor):
-        return Job(
-            [input],
-            [output],
-            [
-                ['DEFAULT', 'module_mugqic_tools'],
-                ['DEFAULT', 'module_python']
-            ],
-            command="""\
-	python $PYTHON_TOOLS/update_genotypes_strelka.py \\
-	    -i {input} \\
-	    -o {output} \\
-	    -n {normal} \\
-	    -t {tumor}""".format(
-                input=input if input else "",
-                output=output if input else "",
-                normal=normal,
-                tumor=tumor,
-            )
-        )
 def cpg_cov_stats(input, output):
     return Job(
         [input],
@@ -1314,19 +752,21 @@ def sh_sample_tag_summary(
     nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', type='int', required=True)
     align_size = config.param('sample_tag', 'align_size', type='int', required=True)
     mismatches = config.param('sample_tag', 'mismatches', type='int', required=True)
-    identity = config.param('sample_tag', 'identity', type='int', required=True)
+    identity = config.param('sample_tag', 'identity', type='float', required=True)
+    database_file = config.param('sample_tag', 'database', type='filepath', required=True)
 
-    output_base_name = os.path.basebname(fastq_in)+".subSampled_"+nreads_sample_tag+".blast.tsv."+align_size+"bp_"+mismatches+"MM_"+identity+"id.tsv.summary.tsv"
+    output_base_name = os.path.basename(fastq_in) + ".subSampled_" + str(nreads_sample_tag) + ".blast.tsv."+ str(align_size) + "bp_" + str(mismatches) + "MM_" + str(int(100*identity)) + "id.tsv.summary.tsv"
     output_file = os.path.join(output_dir, output_base_name)
-
     return Job(
         [fastq_in],
         [output_file],
         [
-            ['sample_tag_summary', 'module_mugqic_tools']
+            ['sample_tag', 'module_mugqic_tools'],
+            ['sample_tag', 'module_blast'],
+            ['sample_tag', 'module_R']
         ],
         command="""\
-bash ${TOOLS}/estimateSpikeInCount.sh \\
+bash $TOOLS/estimateSpikeInCount.sh \\
   {nreads_sample_tag} \\
   {output_dir} \\
   {fastq} \\
@@ -1345,33 +785,35 @@ bash ${TOOLS}/estimateSpikeInCount.sh \\
     )
 
 def sh_sample_tag_stats(
-    input_prefix,
+    fastq_in,
     output_dir,
     sample_tag,
     readset_name
     ):
 
+    input_prefix = os.path.join(output_dir, os.path.basename(fastq_in))
+
     nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', type='int', required=True)
     align_size = config.param('sample_tag', 'align_size', type='int', required=True)
     mismatches = config.param('sample_tag', 'mismatches', type='int', required=True)
-    identity = config.param('sample_tag', 'identity', type='int', required=True)
+    identity = int(100 * config.param('sample_tag', 'identity', type='float', required=True))
 
-    input_file = input_prefix + ".subSampled_" + nreads_sample_tag + ".blast.tsv." + align_size + "bp_" + mismatches + "MM_" + identity + "id.tsv.summary.tsv"
+    input_file = input_prefix + ".subSampled_" + str(nreads_sample_tag) + ".blast.tsv." + str(align_size) + "bp_" + str(mismatches) + "MM_" + str(identity) + "id.tsv.summary.tsv"
     output_file = os.path.join(output_dir, readset_name + ".sample_tag_stats.csv")
 
     return Job(
-        [input_file],
+        [fastq_in],
         [output_file],
         [
             ['sample_tag', 'module_mugqic_tools']
-        ],,
+        ],
         command="""\
-bash ${TOOLS}/createSampleTagStats.sh \\
+bash $TOOLS/createSampleTagStats.sh \\
   {input} \\
   {output} \\
   {tag} \\
   {readset}""".format(
-            input=input,
+            input=input_file,
             output=output_file,
             tag=sample_tag,
             readset=readset_name
