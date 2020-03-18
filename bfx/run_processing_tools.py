@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import sys
 import os
 import re
 
@@ -121,7 +122,7 @@ def bcl2fastq(
     sample_sheet,
     run,
     lane,
-    extra_option
+    extra_option,
     demultiplex=False,
     mismatches=None,
     mask=None,
