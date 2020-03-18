@@ -63,7 +63,7 @@ class MUGQICPipeline(Pipeline):
         self.argparser.description = "Version: " + self.version + "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/"
         self.argparser.add_argument("-v", "--version", action="version", version="genpipes " + self.version, help="show the version information and exit")
 
-        super(MUGQICPipeline, self).__init__(protocol)
+        super(MUGQICPipeline, self).__init__()
 
     @property
     def readsets(self):

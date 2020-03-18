@@ -77,7 +77,6 @@ def mv(
     return Job(
         [source],
         [target],
-        [],
         command="""\
 mv {force}{source} \\
    {dest}""".format(
