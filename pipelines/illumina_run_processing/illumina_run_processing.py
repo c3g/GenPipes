@@ -340,13 +340,14 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             ))
 
         # Index Validation
-        jobs.append(
-            tools.index_validation(
-                self.index_per_readset,
-                output,
-                self.number_of_mismatches
-            )
+        idx_val_job = tools.index_validation(
+            self.index_per_readset,
+            output,
+            self.number_of_mismatches
         )
+        idx_val_job.name = "index_validation." + self.run_id + "." + str(self.lane_number)
+        idx_val_job.samples = self.samples
+        jobs.append(idx_val_job)
 
         self.add_copy_job_inputs(jobs)
         return jobs
@@ -1482,13 +1483,7 @@ wc -l >> {output}""".format(
         overindex2 = None
 
         dualindex_demultiplexing = False    # This is not the sequencing demultiplexing flag, but really the index demultiplexing flag
-        merge_undetermined = False
         self._umi = False
-
-        # If only one library on the lane
-        if len(self.readsets) == 1:
-            merge_undetermined = True
-        merge = config.param('fastq', 'merge_undetermined') if config.param('fastq', 'merge_undetermined', required=False, type='boolean') else merge_undetermined
 
         # barcode validation
         if re.search("I", mask):
@@ -2202,9 +2197,10 @@ def distance(str1, str2):
 
 
 if __name__ == '__main__':
+
     argv = sys.argv
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        pipeline = IlluminaRunProcessing(protocol=['clarity', 'nanuq'])
+        IlluminaRunProcessing(protocol=['clarity', 'nanuq'])
 
