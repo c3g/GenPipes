@@ -20,6 +20,7 @@
 # Python Standard Modules
 import logging
 import os
+import re
 
 # MUGQIC Modules
 from core.config import config
