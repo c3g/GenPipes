@@ -52,7 +52,7 @@ def minimap2_ont(readset_name,
          ["minimap2", "module_samtools"]],
         command="""\
 mkdir -p {output_directory} && \\
-minimap2 -ax {minimap_preset} -R {read_group} {other_options} {genome_fasta} {read_fastq_dir}/*.fastq > {out_sam} && \\
+minimap2 -ax {minimap_preset} -R {read_group} {other_options} {genome_fasta} {read_fastq_dir}/*.fastq* > {out_sam} && \\
 samtools view -b {out_sam} -@ 8 | samtools sort -@ 6 --reference {genome_fasta} -T {output_directory} > {out_bam} && \\ 
 samtools index {out_bam} {out_bai}
         """.format(

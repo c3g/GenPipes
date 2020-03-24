@@ -126,12 +126,14 @@ class Nanopore(common.MUGQICPipeline):
                  ["blastqc", "module_python"]],
                 command="""\
 mkdir -p {output_directory} && \\ 
-cat {reads_fastq_dir}/*.fastq >> {output_directory}/full_input.tmp.fastq && \\
+file -L {reads_fastq_dir}/*.fa* | head >> {output_directory}/fastq_file_type.tmp && \\
+if grep -q "gzip" {output_directory}/fastq_file_type.tmp; then zcat {reads_fastq_dir}/*.fastq.gz >> {output_directory}/full_input.tmp.fastq; fi && \\
+if grep -q "ASCII" {output_directory}/fastq_file_type.tmp; then cat {reads_fastq_dir}/*.fastq >> {output_directory}/full_input.tmp.fastq; fi && \\
 Nseq=$(cat {output_directory}/full_input.tmp.fastq | awk ' {{ if (substr($0,0,1) == "+") {{ print $0}} }}' | wc -l) && \\
 thrC=$(echo " scale=6; 1000 / $Nseq" | bc) && \\
 if [ $thrC == 0 ]; then thrC=0.000001; fi  && \\
 fastqPickRandom.pl --threshold 0$thrC --input1 {output_directory}/full_input.tmp.fastq --out1 {output_directory}/subsample_input.fastq && \\
-rm {output_directory}/full_input.tmp.fastq && \\
+rm {output_directory}/full_input.tmp.fastq {output_directory}/fastq_file_type.tmp && \\
 trim_nanopore.py -i {output_directory}/subsample_input.fastq -o {output_directory}/subsample_input.trim.fastq -s 1000 && \\
 fastq2FastaQual.pl {output_directory}/subsample_input.trim.fastq {output_directory}/subsample_input.trim.fasta {output_directory}/subsample_input.trim.qual && \\
 blastn -query {output_directory}/subsample_input.trim.fasta -db nt -out {output_directory}/subsample_input.trim.blastres -perc_identity 80 -num_descriptions 1 -num_alignments 1 && \\
