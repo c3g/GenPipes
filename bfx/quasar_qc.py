@@ -59,7 +59,7 @@ def restructure_matrix(input_file_path, output_file_path,  output_dir, bin, temp
         [input_file_path],
         [output_file_path],
         [
-            ['quality_scores', 'module_python']
+            ['quality_scores', 'module_R']
         ],
         command="""\
             mkdir -p {output_dir}/{temp_dir} &&
