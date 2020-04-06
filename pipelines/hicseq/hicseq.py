@@ -158,10 +158,10 @@ class HicSeq(common.Illumina):
                 candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam.strip())])
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-            job_fastq1 = tools.sh_fastq_readname_edit(fastq1, "fastq_readName_Edit.fq1." + readset.name)
+            job_fastq1 = tools.sh_fastq_readname_edit(fastq1, self.output_dir, "fastq_readName_Edit.fq1." + readset.name)
             job_fastq1.samples = [readset.sample]
 
-            job_fastq2 = tools.sh_fastq_readname_edit(fastq2, "fastq_readName_Edit.fq2." + readset.name)
+            job_fastq2 = tools.sh_fastq_readname_edit(fastq2, self.output_dir, "fastq_readName_Edit.fq2." + readset.name)
             job_fastq2.samples = [readset.sample]
 
             jobs.extend([job_fastq1, job_fastq2])

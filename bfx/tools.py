@@ -604,7 +604,11 @@ IHEC_chipseq_metrics_max.sh \\
         removable_files=[output_fingerprints,output_fingerprints_png,output_dedup_chip_bam,output_dedup_chip_bam,output_dedup_chip_bai,output_dedup_input_bam,output_dedup_input_bai,output_flagstats]
     )
 
-def sh_fastq_readname_edit(fastq, job_name):
+def sh_fastq_readname_edit(
+    fastq,
+    working_dir,
+    job_name
+    ):
     return Job(
         [fastq],
         [fastq + ".edited.gz"],
@@ -616,9 +620,9 @@ bash FastqReadNameEdit.sh \\
   -i {input_fastq} \\
   -o {output_fastq} \\
   -p {fastq_abs_path}""".format(
-            input_fastq=fastq,
-            output_fastq=fastq + ".edited.gz",
-            fastq_abs_path=os.path.abspath(fastq)
+            input_fastq=fastq if os.path.isabs(fastq) else os.path.join(working_dir, fastq),
+            output_fastq=fastq + ".edited.gz" if os.path.isabs(fastq) else os.path.join(working_dir, fastq + ".edited.gz"),
+            fastq_abs_path=fastq if os.path.isabs(fastq) else os.path.join(working_dir, fastq)
         ),
         name=job_name,
         removable_files = [fastq + ".edited.gz"]
