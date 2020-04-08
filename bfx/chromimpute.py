@@ -26,6 +26,23 @@ import os
 from core.job import *
 from core.config import *
 
+def modify_inputinfofile(input_file, sample, histone,  output_inputinfo_file):
+    return Job(
+        [input_file, output_inputinfo_file],
+        [output_inputinfo_file],
+        [],
+        command="""\
+        echo -e "{sample}\\t{histone}\\t{sample}.bedgraph.gz" >> {inputinfofile}
+        """.format(
+            input_files=input_file,
+            sample=sample,
+            histone=histone,
+            inputinfofile=output_inputinfo_file
+
+        )
+    )
+
+
 def convert(input_dir, output_dir, output_files, inputinfofile, histone_mark, sample):
     # input = input_files.extend(inputinfofile)
     return Job(
@@ -100,7 +117,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
   {histone_mark}""".format(
       java_other_options=config.param('DEFAULT', 'java_other_options'),
       ram=config.param('chromimpute', 'ram'),
-      # chrom=chrom,#config.param('chromimpute', 'chrom'),
+      # chrom=chrom,#ddddd.param('chromimpute', 'chrom'),
       resolution=config.param('chromimpute', 'resolution'),
       converteddir=converteddir,
       distancedir=distancedir,
