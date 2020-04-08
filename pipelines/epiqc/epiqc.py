@@ -52,7 +52,7 @@ class EpiQC(common.Illumina):
         ==============
 
         EpiQC is a quality control pipeline for signal files (bigwig) generated from ChIP-Seq. The pipeline does a series of calculations on
-        these files to determine wether or not they can be considered good.Four metrics are computed from a single bigwig file.
+        these files to determine whether or not they can be considered good. Four metrics are computed from a single bigwig file.
         With BigWigInfo it is determined if there are missing chromosomes, if the chromosome count is lower than 23 it raises a high level alert.
         ChromImpute imputes signal tracks for the first chromosome and using these imputed files EpiQC computes 2 other metrics.
         And finally the pipeline creates a heatmap from the correlation matrix obtained with EpiGeEC.
@@ -159,13 +159,20 @@ class EpiQC(common.Illumina):
             Runs the tool bigWigInfo on bigwig files
 
             If an EpiQC readset is given to the pipeline, we search for the BIGWIG column to get the files
-            If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT OF THE CHIPSEQ PIPELINE)
+            If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location
+             of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT OF THE CHIPSEQ PIPELINE)
         """
         jobs = []
 
         output_dir = self.output_dirs['bigwiginfo_output_directory']
 
         log.debug("bigwiginfo_creating_jobs")
+
+        #obtain samples names for only histone marks (not inputs) from design
+        sample_name_list = []
+        sample_name_list = [sample.name for contrast in self.contrasts if contrast.treatments for sample in
+                            contrast.treatments]
+
         for sample in self.samples:
             for readset in sample.readsets:
                 if readset.bigwig: # Check if the readset has a BIGWIG column != None
@@ -173,15 +180,19 @@ class EpiQC(common.Illumina):
                 else:                      # If not, we search for the path from a chipseq pipeline
                     prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
                     bigwig_file = os.path.join(prefix_path, "tracks", sample.name, "bigWig", sample.name + ".bw") # Create path to bigwig file
-
                 file_ext = bigwig_file.split(".")[-1]
-                if file_ext not in ("bigWig", "bw"):# != "bigWig" and file_ext != "bw":
-                    raise Exception("Error : " + os.path.basename(bigwig_file) + " not a bigWig file !")
+                #This is not a good way. we need to accept this and write a descriptive warning in job output without raising an error the job
+                #Becuase bigwinfoinfo it self can identify the filee type without the extension
+             #   if file_ext not in ("bigWig", "bw"):# != "bigWig" and file_ext != "bw":
+             #       raise Exception("Error : " + os.path.basename(bigwig_file) + " not a bigWig file !")
+            #chekcking whether samples are only histone marks. Need to remove input chip-seq samples from the EpiQC analysis
+            if sample.name in sample_name_list:
                 job = concat_jobs([
                     Job(command="mkdir -p " + output_dir),
                     bigwiginfo.bigWigInfo(bigwig_file, self.output_dirs['bigwiginfo_output_directory'])
-                    ])
+                ])
                 job.name = "bigwiginfo." + readset.name
+                job.samples = self.samples
                 jobs.append(job)
 
         return jobs
@@ -189,8 +200,22 @@ class EpiQC(common.Illumina):
     def bigwig_to_bedgraph(self):
         """
             Converts bigwig files in readset to bedgraph files (Used to train ChromImpute)
+            If you already have bigwig for samples create a new column and name it as "BIGWIG"
+            add the corresponding bigwigs for each samples
+            If you have multiple readsets paste the link for same bigwig
+            If you do not have bigwigs script searches for bigwigs in chipseq output folder
+            Since this pipeline is intended to run after the chipseq pipeline either way you should have bigwig files to start
+            #If you have bedgraph files create a new folder
         """
         jobs = []
+
+        #select histone mark sample names removing input chip-seq samples from desgin file
+        sample_name_list = [sample.name for contrast in self.contrasts if contrast.treatments for sample in contrast.treatments]
+        # print(sample_name_list)
+        # for contrast in self.contrasts:
+        #     for sample in contrast.treatments:
+        #         sample_name_list.append(sample.name)
+        # print(sample_name_list)
 
 # /!\ gz bedgraph to save space
 
@@ -213,18 +238,20 @@ class EpiQC(common.Illumina):
                 else:                      # If not, we search for the path from a chipseq pipeline
                     prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
                     bigwig_file = os.path.join(prefix_path, "tracks", sample.name, "bigWig", sample.name + ".bw") # Create path to bigwig file
-
+            #checking the file extension and writing a warning in job output should be also done here
             output_bedgraph = os.path.join(self.output_dirs['bedgraph_converted_directory'], sample.name + ".bedgraph")
             output_bedgraph_gz = os.path.join(self.output_dirs['bedgraph_converted_directory'], sample.name + ".bedgraph.gz")
 
-            job = concat_jobs([
-                Job(command="mkdir -p " + self.output_dirs['bedgraph_converted_directory']),
-                bigwiginfo.bigWigToBedGraph(bigwig_file, output_bedgraph),
-                Job(output_files=[output_bedgraph_gz], command="gzip -f " + output_bedgraph)
-                ])
-            job.name = "bigwig_to_bedgraph." + sample.name
-            jobs.append(job)
-            # jobs.append(bigwiginfo.bigWigToBedGraph(bigwig_file, self.output_dirs['bedgraph_converted_directory']))
+            if sample.name in sample_name_list:
+                job = concat_jobs([
+                    Job(command="mkdir -p " + self.output_dirs['bedgraph_converted_directory']),
+                    bigwiginfo.bigWigToBedGraph(bigwig_file, output_bedgraph),
+                    Job(output_files=[output_bedgraph_gz], command="gzip -f " + output_bedgraph)
+                    ])
+                job.name = "bigwig_to_bedgraph." + sample.name
+                jobs.append(job)
+                # jobs.append(bigwiginfo.bigWigToBedGraph(bigwig_file, self.output_dirs['bedgraph_converted_directory']))
+
 
         return jobs
 
@@ -240,14 +267,62 @@ class EpiQC(common.Illumina):
             If the readset file has a BIGWIG column, we use these files for the pipeline
             If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT OF THE CHIPSEQ PIPELINE)
         """
+        #for now there is no way we can start from bedgraph files without creating a folder names "bedgraph_info" and put all the
+        #files there
+        #there should be a way to define it in the readset file. or use a specific readset file for epiqc
+        #for now pipeline does not support that
         jobs = []
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], "inputinfofile.ChromImpute.txt")
-        bedgraph_converted_files = []
-        for sample in self.samples:
-            bedgraph_converted_files.append(os.path.join(self.output_dirs['bedgraph_converted_directory'], sample.name + ".bedgraph.gz"))
 
-        job = concat_jobs([
+        bedgraph_converted_files = []
+
+        for contrast in self.contrasts:
+            for sample in contrast.treatments:
+
+                bedgraph_converted_files.append(os.path.join(self.output_dirs['bedgraph_converted_directory'], sample.name + ".bedgraph.gz"))
+        #
+        # job = concat_jobs([
+        #     Job(input_files=bedgraph_converted_files,
+        #         command="""\
+        # mkdir -p \\
+        # {output_dir}/{converteddir} \\
+        # {output_dir}/{compute_global_dist} \\
+        # {output_dir}/{generate_train_data} \\
+        # {output_dir}/{train} \\
+        # {output_dir}/{apply} \\
+        # {output_dir}/{eval}""".format(
+        #             output_dir=self.output_dirs['chromimpute_output_directory'],
+        #             converteddir=self.output_dirs['chromimpute_converted_directory'],
+        #             compute_global_dist=self.output_dirs['chromimpute_distance_directory'],
+        #             generate_train_data=self.output_dirs['chromimpute_traindata_directory'],
+        #             train=self.output_dirs['chromimpute_predictor_directory'],
+        #             apply=self.output_dirs['chromimpute_apply'],
+        #             eval=self.output_dirs['chromimpute_eval'])
+        #         ),
+        #     Job(output_files=[inputinfofile],
+        #         command="""\
+        #                 if test -f "{inputinfofile}"; then
+        #             rm {inputinfofile}
+        #             fi &&
+        # cp {ihec_inputinfofile} {inputinfofile} && \\
+        # for contrast in {contrasts}
+        # do
+        #   for sample in {samples}
+        #   do
+        #     echo -e "$sample\\t$contrast\\t$sample.bedgraph.gz" >> {inputinfofile}
+        #   done
+        # done""".format(
+        #             inputinfofile=inputinfofile,
+        #             ihec_inputinfofile="/project/6007512/C3G/projects/pubudu/epiQC_main/inputinfofile.txt",
+        #             contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.treatments]),
+        #             samples=" ".join([sample.name for contrast in self.contrasts if contrast.treatments for sample in
+        #                               contrast.treatments]),
+        #             path=self.output_dirs['bedgraph_converted_directory'])
+        #         )
+        # ])
+
+        job_folder_create = concat_jobs([
             Job(input_files=bedgraph_converted_files,
                 command="""\
 mkdir -p \\
@@ -267,26 +342,32 @@ mkdir -p \\
             ),
             Job(output_files=[inputinfofile],
                 command="""\
-cp /dev/null {inputinfofile} && \\
-for contrast in {contrasts}
-do
-  for sample in {samples}
-  do
-    echo -e "$sample\\t$contrast\\t$sample.bedgraph.gz" >> {inputinfofile}
-  done
-done""".format(
+                if test -f "{inputinfofile}"; then
+            rm {inputinfofile} 
+            fi &&
+cp {ihec_inputinfofile} {inputinfofile}""".format(
     inputinfofile=inputinfofile,
-    contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.treatments]),
-    samples=" ".join([sample.name for contrast in self.contrasts if contrast.treatments for sample in contrast.treatments]),
-    path=self.output_dirs['bedgraph_converted_directory'])
+    ihec_inputinfofile= "/project/6007512/C3G/projects/pubudu/epiQC_main/inputinfofile.txt")
             )
-        ])
+        ],
 
-        job.name = "chromimpute_preprocess_train_step"
+        )
+       # jobs.append(job_folder_create)
+        job_folder_create.name = "chromimpute_preprocess"
+        job=[]
+        for contrast in self.contrasts:
+            for sample in contrast.treatments:
+                input_file = os.path.join(self.output_dirs['bedgraph_converted_directory'], sample.name + ".bedgraph.gz")
+                job_sample = chromimpute.modify_inputinfofile(input_file, sample.name, contrast.real_name, inputinfofile)
+                job_sample.samples = [sample]
+                job.append(job_sample)
+                job_inputinfo = concat_jobs(job)
+                job_inputinfo.name = "chromimpute_preprocess.inputinfo"
 
-        jobs.append(job)
 
-
+        #job_inputinfo.name = "chromimpute_preprocess.inputinfo"
+        jobs.extend([job_folder_create, job_inputinfo])
+       # jobs.extend([job_folder_create, job_inputinfo])
         return jobs
 
 
@@ -432,7 +513,6 @@ done""".format(
         jobs.extend(self.chromimpute_train())
 
         return jobs
-
 
     def chromimpute_apply(self):
         """
