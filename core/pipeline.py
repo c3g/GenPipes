@@ -115,7 +115,7 @@ class Pipeline(object):
             config.filepath = os.path.abspath(config_trace.name)
 
         self._output_dir = os.path.abspath(self.args.output_dir)
-        self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config)
+        self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config, container=self.args.container)
 
         self._json = True
         if self.args.no_json:
@@ -196,17 +196,40 @@ class Pipeline(object):
                     conflict_handler='resolve')
 
             # Common options for all pipelines
-            self._argparser.add_argument("--help", help="show detailed description of pipeline and steps", action="store_true")
-            self._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are overwritten based on files order", nargs="+", type=file)
+            self._argparser.add_argument("--help", help="show detailed description of pipeline and steps",
+                                         action="store_true")
+            self._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are "
+                                                                "overwritten based on files order", nargs="+", type=file)
             self._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'")
-            self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
-            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: slurm)", choices=["pbs", "batch", "daemon", "slurm"], default="slurm")
-            self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
-            self._argparser.add_argument("--no-json", help="do not create JSON file per analysed sample to track the analysis status (default: false i.e. JSON file will be created)", action="store_true")
-            self._argparser.add_argument("--report", help="create 'pandoc' command to merge all job markdown report files in the given step range into HTML, if they exist; if --report is set, --job-scheduler, --force, --clean options and job up-to-date status are ignored (default: false)", action="store_true")
-            self._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given step range, if they exist; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default: false)", action="store_true")
-            self._argparser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
-            self._argparser.add_argument("--sanity-check", help="run the pipeline in `sanity check mode` to verify that all the input files needed for the pipeline to run are available on the system (default: false)", action="store_true")
+            self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)",
+                                         default=os.getcwd())
+            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: slurm)",
+                                         choices=["pbs", "batch", "daemon", "slurm"], default="slurm")
+            self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date "
+                                                               "(default: false)", action="store_true")
+            self._argparser.add_argument("--no-json", help="do not create JSON file per analysed sample to track the "
+                                                           "analysis status (default: false i.e. JSON file will be "
+                                                           "created)", action="store_true")
+            self._argparser.add_argument("--report", help="create 'pandoc' command to merge all job markdown report "
+                                                          "files in the given step range into HTML, if they exist; if "
+                                                          "--report is set, --job-scheduler, --force, --clean options "
+                                                          "and job up-to-date status are ignored (default: false)",
+                                         action="store_true")
+            self._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given"
+                                                         " step range, if they exist; if --clean is set,"
+                                                         " --job-scheduler, --force options and job up-to-date status "
+                                                         "are ignored (default: false)", action="store_true")
+            self._argparser.add_argument("-l", "--log", help="log level (default: info)",
+                                         choices=["debug", "info", "warning", "error", "critical"], default="info")
+            self._argparser.add_argument("--sanity-check", help="run the pipeline in `sanity check mode` to verify that"
+                                                                " all the input files needed for the pipeline to run "
+                                                                "are available on the system (default: false)",
+                                         action="store_true")
+            self._argparser.add_argument("--container", nargs=2,
+                                         help="Run inside a container providing a valid"
+                                         "singularity image path", action=ValidateContainer,
+                                          metavar=("{wrapper, singularity}",
+                                                   "<IMAGE PATH>"))
 
         return self._argparser
 
@@ -365,19 +388,23 @@ class Pipeline(object):
 
         # Now create the json dumps for all the samples if not already done
         if self.json:
-            for sample in self.sample_list:
-                self.sample_paths.append(jsonator.create(self, sample))
-
             # Check if portal_output_dir is set from a valid environment variable
             self.portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
-            if self.portal_output_dir.startswith("$") and os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) is None:
+            log.info(self.portal_output_dir.startswith("$"))
+            log.info(os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)))
+            if self.portal_output_dir.startswith("$") and (os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) is None or os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) == ""):
                 if self.portal_output_dir == "$PORTAL_OUTPUT_DIR":
                     self.portal_output_dir = ""
-                    log.debug(" --> PORTAL_OUTPUT_DIR environment variable is not set... sending JSON files to the GenPipes analysis portal will be ignored...\n")
+                    log.info(" --> PORTAL_OUTPUT_DIR environment variable is not set... no JSON file will be generated during analysis...\n")
+                    self._json = False
                 else:
                     _raise(SanitycheckError("Environment variable \"" + re.search("^\$(.*)\/?", self.portal_output_dir).group(1) + "\" does not exist or is not valid!"))
             elif not os.path.isdir(os.path.expandvars(self.portal_output_dir)):
                 _raise(SanitycheckError("Directory path \"" + self.portal_output_dir + "\" does not exist or is not a valid directory!"))
+            else:
+                for sample in self.sample_list:
+                    self.sample_paths.append(jsonator.create(self, sample))
+
 
         log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
@@ -474,3 +501,16 @@ def parse_range(astr):
         x = part.split('-')
         result.update(range(int(x[0]), int(x[-1]) + 1))
     return sorted(result)
+
+
+class ValidateContainer(argparse.Action):
+
+    VALID_TYPE = ('singularity', 'wrapper')
+
+    def __call__(self, parser, args, values, option_string=None):
+        c_type, container = values
+        if c_type not in self.VALID_TYPE:
+            raise ValueError('{} is not supported, choose from {}'.format(c_type, self.VALID_TYPE))
+        Container = collections.namedtuple('container', 'type name')
+
+        setattr(args, self.dest, Container(c_type, container))

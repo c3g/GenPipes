@@ -7,20 +7,8 @@ COMMON_NAME="Human"
 ASSEMBLY=GRCh38
 ASSEMBLY_SYNONYMS=hg38
 SOURCE=Ensembl
-#VERSION=77
-#BIOMART_HOST=oct2014.archive.ensembl.org
-#VERSION=83
-#BIOMART_HOST=dec2015.archive.ensembl.org
-#VERSION=84
-#BIOMART_HOST=mar2016.archive.ensembl.org
-#VERSION=85
-#BIOMART_HOST=jul2016.archive.ensembl.org
-#VERSION=86
-#BIOMART_HOST=oct2016.archive.ensembl.org
-#VERSION=87
-#BIOMART_HOST=dec2016.archive.ensembl.org
-VERSION=90
-BIOMART_HOST=aug2017.archive.ensembl.org
+VERSION=99
+BIOMART_HOST=jan2020.archive.ensembl.org
 
 module_snpeff=mugqic/snpEff/4.3
 module_tabix=mugqic/tabix/0.2.6
@@ -31,7 +19,7 @@ source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
 
 # Download dbSNP directly from NCBI since it is more up to date
 get_vcf_dbsnp() {
-  DBSNP_VERSION=150
+  DBSNP_VERSION=151
 #  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/archive/human_9606_b${DBSNP_VERSION}_GRCh38p7/VCF/All.vcf.gz
   DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh38p7/VCF/00-All.vcf.gz
   DBSNP=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
@@ -50,7 +38,7 @@ get_vcf_dbsnp() {
 
 # Download dbNSFP and generate vcfs required to run VerifyBamId
 get_dbNSFP() {
-    DBSNSFP_VERSION=dbNSFP4.0b2a 
+    DBSNSFP_VERSION=dbNSFP4.0c 
     DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/${DBSNSFP_VERSION}.zip
     DBSNSFP=$ANNOTATIONS_DIR/$DBSNSFP_VERSION/$DBSNSFP_VERSION
     if ! is_up2date $DBSNSFP.txt.gz
@@ -73,7 +61,7 @@ get_dbNSFP() {
     if ! is_up2date $DBSNP_ANNOTATED; then
         module load $module_snpeff $module_java
         java -Xmx8G -jar $SNPEFF_HOME/SnpSift.jar dbnsfp -v -db $DBSNSFP.txt.gz $DBSNP > $DBSNP_ANNOTATED
-        for POP_FREQ in 1000Gp1_EUR_AF 1000Gp1_AFR_AF 1000Gp1_ASN_AF;
+        for POP_FREQ in 1000Gp3_EUR_AF 1000Gp3_AFR_AF 1000Gp3_ASN_AF;
         do
             cat $DBSNP_ANNOTATED | sed -e 's/dbNSFP_'$POP_FREQ'/AF/g' > $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf
             module load $module_tabix
@@ -82,7 +70,7 @@ get_dbNSFP() {
         done
     fi
     # set the default allele frequency for a population (hapmap CEU)
-    population_AF=1000Gp1_EUR_AF
+    population_AF=1000Gp3_EUR_AF
 }
 
 # Overwrite install_genome since NCBI genome is used instead of Ensembl

@@ -26,6 +26,7 @@ import logging
 import os
 import re
 import sys
+import subprocess
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -33,6 +34,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
+import utils.utils
 
 from bfx import bedtools
 from bfx import bwa
@@ -384,7 +386,7 @@ echo "Sample\tBamFile\tNote
         jobs.append(
             Job(
                 [metrics_file],
-                [report_file],
+                [report_file, report_metrics_file],
                 [['rnaseqc', 'module_python'], ['rnaseqc', 'module_pandoc']],
                 # Ugly awk to merge sample metrics with trim metrics if they exist; knitr may do this better
                 command="""\
@@ -1201,4 +1203,8 @@ done""".format(
         ]
 
 if __name__ == '__main__':
-    RnaSeq(protocol=['cufflinks','stringtie'])
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        RnaSeq(protocol=['cufflinks','stringtie'])

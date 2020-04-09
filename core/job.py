@@ -156,7 +156,7 @@ class Job(object):
     def command_with_modules(self):
         command = self.command
         if self.modules:
-            command = "module load " + " ".join(self.modules) + " && \\\n" + command
+            command = "module purge && \\\n" + "module load " + " ".join(self.modules) + " && \\\n" + command
         return command
 
     def abspath(self, file):
@@ -205,16 +205,14 @@ class Job(object):
         return True
 
 # Create a new job by concatenating a list of jobs together
-def concat_jobs(jobs, name="", samples=[]):
+def concat_jobs(jobs, name="", samples=[], removable_files = []):
 
     # Merge all input/output/report/removable files and modules
     input_files = []
     output_files = []
     report_files = []
     multiqc_files = []
-    removable_files = []
     modules = []
-    sample_list = samples
     for job_item in jobs:
         input_files.extend([input_file for input_file in job_item.input_files if input_file not in input_files and input_file not in output_files])
         output_files.extend([output_file for output_file in job_item.output_files if output_file not in output_files])
@@ -222,9 +220,9 @@ def concat_jobs(jobs, name="", samples=[]):
         multiqc_files.extend([multiqc_file for multiqc_file in job_item.multiqc_files if multiqc_file not in multiqc_files])
         removable_files.extend([removable_file for removable_file in job_item.removable_files if removable_file not in removable_files])
         modules.extend([module for module in job_item.modules if module not in modules])
-        sample_list.extend([sample for sample in job_item.samples if sample not in sample_list])
+        samples.extend([sample for sample in job_item.samples if sample not in samples])
 
-    job = Job(input_files, output_files, name=name, report_files=report_files, multiqc_files=multiqc_files, removable_files=removable_files, samples=sample_list)
+    job = Job(input_files, output_files, name=name, report_files=report_files, multiqc_files=multiqc_files, removable_files=removable_files, samples=samples)
     job.modules = modules
 
     # Merge commands

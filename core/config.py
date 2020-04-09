@@ -82,16 +82,17 @@ class Config(ConfigParser.SafeConfigParser):
             log.warn("* Checking modules...")
         else:
             log.info("Check modules...")
-        cmd_query_module = "module {query_module} ".format(query_module  = query_module)
-        for module in modules:
-            # Bash shell must be invoked in order to find "module" cmd
-            module_show_output = subprocess.check_output(["bash", "-c", cmd_query_module + module], stderr=subprocess.STDOUT)
-            ## "Error" result for module show while "error" for module spider. seems to be handeled well by re.IGNORECASE
-            if re.search("Error", module_show_output, re.IGNORECASE):
-                _raise(SanitycheckError("Error in config file(s) with " + module + ":\n" + module_show_output))
-            else:
-                log.info("Module " + module + " OK")
-        log.info("Module check finished\n")
+        cmd_query_module = ["module", query_module]
+        # for module in modules:
+
+        cmd = ' '.join(cmd_query_module + modules)
+        os.environ['MODULES_PAGER'] = ''
+        p = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+        dout, derr = p.communicate()
+        if p.returncode != 0 or ':ERROR:' in dout:
+            _raise(SanitycheckError("Error in config file(s) with:\n{}".format(dout)))
+
+        log.info("module check finished\n")
 
     # Retrieve param in config files with optional definition check and type validation
     # By default, parameter is required to be defined in one of the config file

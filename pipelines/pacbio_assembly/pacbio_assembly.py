@@ -20,9 +20,11 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import os
 import sys
+import subprocess
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -31,6 +33,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 from bfx.readset import parse_pacbio_readset_file
+import utils.utils
 
 from bfx import blast
 from bfx import circlator
@@ -832,4 +835,8 @@ pandoc --to=markdown \\
         ]
 
 if __name__ == '__main__':
-    PacBioAssembly()
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        PacBioAssembly()

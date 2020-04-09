@@ -86,7 +86,7 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
             if (not args_run) or (line['Run'] in args_run):
                 log.info("Parsing Nanuq run " + line['Run'] + " ...")
 
-                elif seq_type == "Pacbio":
+                if seq_type == "Pacbio":
                     mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if line.has_key('Sample Group') and line['Sample Group'] != "" else line['Name']
                     mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Well']])
 

@@ -143,6 +143,9 @@ BAM files of regions of realigned reads are merged per sample using [Picard](htt
 
 picard_fixmate
 --------------
+Verify mate-pair information between mates and fix if needed.
+This ensures that all mate-pair information is in sync between each read and its mate pair.
+Fix is done using [Picard](http://broadinstitute.github.io/picard/).
 
 metrics
 -------

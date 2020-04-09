@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import re
 
 # MUGQIC Modules
 from core.job import *
@@ -212,12 +213,27 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def haplotype_caller(inputs, output, intervals=[], exclude_intervals=[], interval_list=None):
+def haplotype_caller(
+    inputs,
+    output,
+    intervals=[],
+    exclude_intervals=[],
+    interval_list=None
+    ):
+
     if not isinstance(inputs, list):
-        inputs=[inputs, interval_list]
+        inputs = [inputs]
+    if interval_list:
+        inputs.append(interval_list)
         
     if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] >= "4":
-        return gatk4.haplotype_caller(inputs, output, intervals, exclude_intervals, interval_list)
+        return gatk4.haplotype_caller(
+            inputs,
+            output,
+            intervals=intervals,
+            exclude_intervals=exclude_intervals,
+            interval_list=interval_list
+        )
     else:
         return Job(
             inputs,

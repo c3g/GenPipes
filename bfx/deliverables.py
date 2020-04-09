@@ -26,7 +26,7 @@ import os
 from core.config import *
 from core.job import *
 
-def sym_link(input, readset, type=None):
+def sym_link(input, readset, outdir, type=None):
     sample = ""
     if type == "raw_reads":
         sample = readset.sample.name
@@ -35,7 +35,7 @@ def sym_link(input, readset, type=None):
         sample = readset.name
 
 
-    prefix = os.path.join("deliverables", sample, config.param('DEFAULT','experiment_type_abrev'), type)
+    prefix = os.path.join(outdir, "deliverables", sample, config.param('DEFAULT','experiment_type_abrev'), type)
     input_postfix = input.split("/")[-1]
 
     output = os.path.join(prefix, input_postfix)
@@ -54,7 +54,7 @@ ln -sf \\
         )
     )
 
-def sym_link_pair(input, tumor_pair, type=None, sample=None, profyle=False):
+def sym_link_pair(input, tumor_pair, out_dir, type=None, sample=None, profyle=False):
     
     if profyle == True:
         pair = ""
@@ -62,17 +62,17 @@ def sym_link_pair(input, tumor_pair, type=None, sample=None, profyle=False):
             pair = tumor_pair.pair_profyle + "/"
 
         if sample == "Normal":
-            prefix = os.path.join("analyses", tumor_pair.name, tumor_pair.normal_profyle, config.param('DEFAULT','experiment_type_abrev'), pair + type)
+            prefix = os.path.join(out_dir, "analyses", tumor_pair.name, tumor_pair.normal_profyle, config.param('DEFAULT','experiment_type_abrev'), pair + type)
 
         else:
-            prefix = os.path.join("analyses", tumor_pair.name, tumor_pair.tumor_profyle, config.param('DEFAULT','experiment_type_abrev'), pair + type)
+            prefix = os.path.join(out_dir, "analyses", tumor_pair.name, tumor_pair.tumor_profyle, config.param('DEFAULT','experiment_type_abrev'), pair + type)
 
     else:
         if sample == "Normal":
-            prefix = os.path.join("deliverables", tumor_pair.name, tumor_pair.normal.name, config.param('DEFAULT','experiment_type_abrev'), type)
+            prefix = os.path.join(out_dir, "deliverables", tumor_pair.name, tumor_pair.normal.name, config.param('DEFAULT','experiment_type_abrev'), type)
 
         else:
-            prefix = os.path.join("deliverables", tumor_pair.name, tumor_pair.tumor.name, config.param('DEFAULT','experiment_type_abrev'), type)
+            prefix = os.path.join(out_dir, "deliverables", tumor_pair.name, tumor_pair.tumor.name, config.param('DEFAULT','experiment_type_abrev'), type)
 
     
     input_postfix = input.split("/")[-1]
