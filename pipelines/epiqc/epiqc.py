@@ -355,6 +355,7 @@ mkdir -p \\
        # jobs.append(job_folder_create)
         #job_folder_create.name = "chromimpute_preprocess"
         job=[]
+        #
         #copy histone mark, sample and file paths in user's samples into inputinfo file (avoid input histone files)
         for contrast in self.contrasts:
             for sample in contrast.treatments:
