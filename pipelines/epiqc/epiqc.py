@@ -362,9 +362,9 @@ mkdir -p \\
                 job_sample = chromimpute.modify_inputinfofile(input_file, sample.name, contrast.real_name, inputinfofile)
                 job_sample.samples = [sample]
                 job.append(job_sample)
-                #job_inputinfo = concat_jobs(job)
+                job_inputinfo = concat_jobs(job)
                 #job_inputinfo.name = "chromimpute_preprocess.inputinfo"
-        jobs.append(concat_jobs([job_folder_create, job_copy_inputinfo, job], name="chromimpute_preprocess"))
+        jobs.append(concat_jobs([job_folder_create, job_copy_inputinfo, job_inputinfo], name="chromimpute_preprocess"))
        #todo #add samples info to the above job,
 
 
