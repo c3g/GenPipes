@@ -322,8 +322,7 @@ class EpiQC(common.Illumina):
         #         )
         # ])
 
-        job_folder_create = concat_jobs([
-            Job(input_files=bedgraph_converted_files,
+        job_folder_create = Job(input_files=bedgraph_converted_files,
                 command="""\
 mkdir -p \\
 {output_dir}/{converteddir} \\
@@ -339,34 +338,40 @@ mkdir -p \\
     train=self.output_dirs['chromimpute_predictor_directory'],
     apply=self.output_dirs['chromimpute_apply'],
     eval=self.output_dirs['chromimpute_eval'])
-            ),
-            Job(output_files=[inputinfofile],
-                command="""\
-                if test -f "{inputinfofile}"; then
-            rm {inputinfofile} 
-            fi &&
-cp {ihec_inputinfofile} {inputinfofile}""".format(
-    inputinfofile=inputinfofile,
-    ihec_inputinfofile= "/project/6007512/C3G/projects/pubudu/epiQC_main/inputinfofile.txt")
             )
-        ],
 
-        )
+
+        #copy IHEC inputinfor file from the cvmfs and paste it in the chromimpute folder
+        job_copy_inputinfo= Job(output_files=[inputinfofile],
+            command="""\
+                        if test -f "{inputinfofile}"; then
+                    rm {inputinfofile} 
+                    fi &&
+        cp {ihec_inputinfofile} {inputinfofile}""".format(
+                inputinfofile=inputinfofile,
+                ihec_inputinfofile="/project/6007512/C3G/projects/pubudu/epiQC_main/inputinfofile.txt")
+            )
+
        # jobs.append(job_folder_create)
-        job_folder_create.name = "chromimpute_preprocess"
+        #job_folder_create.name = "chromimpute_preprocess"
         job=[]
+        #copy histone mark, sample and file paths in user's samples into inputinfo file (avoid input histone files)
         for contrast in self.contrasts:
             for sample in contrast.treatments:
                 input_file = os.path.join(self.output_dirs['bedgraph_converted_directory'], sample.name + ".bedgraph.gz")
                 job_sample = chromimpute.modify_inputinfofile(input_file, sample.name, contrast.real_name, inputinfofile)
                 job_sample.samples = [sample]
                 job.append(job_sample)
-                job_inputinfo = concat_jobs(job)
-                job_inputinfo.name = "chromimpute_preprocess.inputinfo"
+                #job_inputinfo = concat_jobs(job)
+                #job_inputinfo.name = "chromimpute_preprocess.inputinfo"
+        jobs.append(concat_jobs([job_folder_create, job_copy_inputinfo, job], name="chromimpute_preprocess"))
+       #todo #add samples info to the above job,
+
+
 
 
         #job_inputinfo.name = "chromimpute_preprocess.inputinfo"
-        jobs.extend([job_folder_create, job_inputinfo])
+        #jobs.extend([job_folder_create, job_inputinfo])
        # jobs.extend([job_folder_create, job_inputinfo])
         return jobs
 
