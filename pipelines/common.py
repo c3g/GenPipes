@@ -503,6 +503,7 @@ pandoc \\
         )
 
         return jobs
+<<<<<<< HEAD
     
     def cram_output(self):
         """
@@ -547,3 +548,5 @@ pandoc \\
             
         return jobs    
  
+=======
+>>>>>>> EpiQC - Added bigwig column to readset.py, bigwiginfo checks if there is bigwig column in readset, if not searches for bigwig file chipseq run
