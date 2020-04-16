@@ -22,67 +22,169 @@
 import os
 
 from core.job import *
+from core.config import *
 
-def createInputInfo(samples, output_path):
-    output = open(os.path.join(output_path, "inputinfo.txt"), "w+")
-    for sample in samples:
-        for readset in sample.readsets:
-            if readset.bigwig != None:
-                file = readset.bigwig
-                sample = file.split(".")[2]
-                mark = file.split(".")[-3]
-                output.write(sample+"\t"+mark+"\t"+file+"\n")
-    output.close()
-
-    # filename = os.path.join(output, "inputinfo.txt")
-    # output = open(filename, "w+")
-    # for filename in os.listdir(path_to_dataset):
-    #     parsed_file = filename.split(".")
-    #     sample = parsed_file[2]
-    #     mark = parsed_file[-3]
-    #     output.write(sample+"\t"+mark+"\t"+filename+"\n")
-    # output.close()
-
-#Only run once for every IHEC freeze or if user puts their own dataset
-def convert(self, path_to_dataset):
-    createInputInfo(path_to_dataset, ".")
-
+def convert(input_dir, output_dir):
     return Job(
-        [path_to_dataset,"inputinfo.txt"],
-        ['converteddir'],
-        [
-            ['chromimpute','module_java']
-            ['chromimpute','module_chromimpute']
-        ],
-        name = "ChromImpute Convert",
+        [input_dir],
+        [output_dir],
+        [['java', 'module_java']],
+        name = "chromimpute_convert",
         command = """\
-mkdir ChromImpute \\
-java {java_options} ChromImpute.jar \\
+java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
   Convert \\
   -c {chrom} \\
+  -r {resolution} \\
   {path_to_dataset} \\
-  inputinfo.txt \\
+  {inputinfofile} \\
   {chrom_sizes} \\
-  converteddir""".format(
-        chrom = congif.param('chromimpute','chrom'),
-        path_to_dataset = path_to_dataset,
-        chrom_sizes = chrom_sizes
+  {output_dir}""".format(
+        java_options = config.param('DEFAULT', 'java_options'),
+        chrom = config.param('chromimpute','chrom'),
+        resolution = config.param('chromimpute', 'resolution'),
+        path_to_dataset = config.param('chromimpute', 'dataset'),
+        inputinfofile = config.param('chromimpute', 'inputinfofile'),
+        chrom_sizes = config.param('chromimpute', 'chromsizes'),
+        output_dir = output_dir
         )
     )
 
-# def compute_global_dist(converteddir, inputinfo):
+def compute_global_dist(input_dir, output_dir):
+    return Job(
+        [input_dir],
+        [output_dir],
+        [['java', 'module_java']],
+        name = "chromimpute_compute_global_dist",
+        command = """\
+java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+  ComputeGlobalDist \\
+  -r {resolution} \\
+  {converteddir} \\
+  {inputinfofile} \\
+  {chrom_sizes} \\
+  {output_dir}""".format(
+        java_options = config.param('DEFAULT', 'java_options'),
+        resolution = config.param('chromimpute', 'resolution'),
+        converteddir = input_dir,
+        inputinfofile = config.param('chromimpute', 'inputinfofile'),
+        chrom_sizes = config.param('chromimpute', 'chromsizes'),
+        output_dir = output_dir
+        )
+    )
 
 
-# def generate_train_data(converteddir, distancedir, inputinfo, mark):
+def generate_train_data(input_dir, converteddir, output_dir, mark):
+    return Job(
+        [input_dir],
+        [output_dir],
+        [['java', 'module_java']],
+        name = "chromimpute_generate_train_data",
+        command = """\
+java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+  GenerateTrainData \\
+  -c {chrom} \\
+  -r {resolution} \\
+  {converteddir} \\
+  {distancedir} \\
+  {inputinfofile} \\
+  {chrom_sizes} \\
+  {output_dir} \\
+  {mark}""".format(
+        java_options = config.param('DEFAULT', 'java_options'),
+        chrom = config.param('chromimpute','chrom'),
+        resolution = config.param('chromimpute', 'resolution'),
+        converteddir = converteddir,
+        distancedir = input_dir,
+        inputinfofile = config.param('chromimpute', 'inputinfofile'),
+        chrom_sizes = config.param('chromimpute', 'chromsizes'),
+        output_dir = output_dir,
+        mark = mark
+        )
+    )
 
 
-# def train(traindatadir, inputinfo, sample, mark):
+def train(input_dir, output_dir, sample, mark):
+    return Job(
+        [input_dir],
+        [output_dir],
+        [['java', 'module_java']],
+        name = "chromimpute_train",
+        command = """\
+java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+  Train \\
+  {traindatadir} \\
+  {inputinfofile} \\
+  {predictordir} \\
+  {sample} \\
+  {mark}""".format(
+        java_options = config.param('DEFAULT', 'java_options'),
+        traindatadir = input_dir,
+        inputinfofile = config.param('chromimpute', 'inputinfofile'),
+        predictordir = output_dir,
+        sample = sample,
+        mark = mark
+        )
+    )
 
+def apply(input_dir, converteddir, distancedir, predictordir, output_dir, sample, mark):
+    return Job(
+        [input_dir],
+        [output_dir],
+        [['java', 'module_java']],
+        name = "chromimpute_apply",
+        command = """\
+java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+    Apply \\
+    -c {chrom} \\
+    -r {resolution} \\
+    {converteddir} \\
+    {distancedir} \\
+    {predictordir} \\
+    {inputinfofile} \\
+    {chrom_sizes} \\
+    {output_dir} \\
+    {sample} \\
+    {mark}""".format(
+        java_options = config.param('DEFAULT', 'java_options'),
+        chrom = config.param('chromimpute','chrom'),
+        resolution = config.param('chromimpute', 'resolution'),
+        converteddir = converteddir,
+        distancedir = distancedir,
+        predictordir = predictordir,
+        inputinfofile = config.param('chromimpute', 'inputinfofile'),
+        chrom_sizes = config.param('chromimpute', 'chromsizes'),
+        output_dir = output_dir,
+        sample = sample,
+        mark = mark
+        )
+    )
 
-# def apply(converteddir, distancedir, predictordir, inputinfo, sample, mark):
-
-
-# def eval(converteddir, convertedFile, imputedir, imputeFile):
+def eval(input_dir, percent1, percent2, converteddir, convertedFile, imputedFile, output_path):
+    return Job(
+        [input_dir],
+        [],
+        [['java', 'module_java']],
+        name = "chromimpute_eval",
+        command = """\
+java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+    Eval \\
+    -p {percent1} {percent2} \\
+    {converteddir} \\
+    {convertedfile} \\
+    {input_dir} \\
+    {imputedfile} \\
+    {chrom_sizes} > {output_path}""".format(
+        java_options = config.param('DEFAULT', 'java_options'),
+        percent1 = percent1,
+        percent2 = percent2,
+        converteddir = converteddir,
+        convertedfile = convertedFile,
+        input_dir = input_dir,
+        imputedfile = imputedFile,
+        chrom_sizes = config.param('chromimpute', 'chromsizes'),
+        output_path = output_path
+        )
+    )
 
 
 
