@@ -36,7 +36,7 @@ wigToBigWig \\
   {chromSizes} \\
   {bigWigFile}""".format(
         wigFile=wigFile,
-        chromSizes=chromSizes,
+        chromSizes=config.param('DEFAULT','chromsizes'),
         bigWigFile=output_bigWig
         )
     )
@@ -45,7 +45,7 @@ def bigWigInfo(bigWigFile, output_dir):
     output = os.path.join(output_dir, "bigwiginfo_"+ os.path.basename(bigWigFile) + ".txt")
 
     return Job(
-        [bigWigFile],
+        ["bigwiginfo"],
         [output],
         [['ucsc', 'module_ucsc']],
         name="bigwiginfo",
