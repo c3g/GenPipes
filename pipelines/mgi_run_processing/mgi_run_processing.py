@@ -841,6 +841,15 @@ class MGIRunProcessing(common.MUGQICPipeline):
             jobs.extend(lane_jobs)
         return self.throttle_jobs(jobs)
 
+        input = self.clarity_event_file
+        fastq_outputs, final_fastq_jobs = self.generate_fastq_outputs()
+        output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
+        casava_sample_sheet = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".indexed.csv")
+
+        if self.umi:
+            output_dir_noindex = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number) + ".noindex")
+            casava_sample_sheet_noindex = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".noindex.csv")
+
     def fastqc(self):
         """
         """
