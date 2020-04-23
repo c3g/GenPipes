@@ -527,6 +527,226 @@ def parse_illumina_raw_readset_files(
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
+class MGIReadset(Readset):
+    
+    def __init__(self, name, run_type):
+        super(MGIReadset, self).__init__(name)
+
+        if run_type in ("PAIRED_END", "SINGLE_END"):
+            self._run_type = run_type
+        else:
+            raise Exception("Error: readset run_type \"" + run_type +
+                "\" is invalid (should be \"PAIRED_END\" or \"SINGLE_END\")!")
+
+        self.fastq1 = None
+        self.fastq2 = None
+
+    @property
+    def run_type(self):
+        return self._run_type
+
+    @property
+    def bam(self):
+        if not hasattr(self, "_bam"):
+            return None
+        else:
+            return self._bam
+
+    @property
+    def umi(self):
+        if not hasattr(self, "_umi"):
+            return None
+        else:
+            return self._umi
+
+    @property
+    def library(self):
+        return self._library
+
+    @property
+    def run(self):
+        return self._run
+
+    @property
+    def lane(self):
+        return self._lane
+
+    @property
+    def adapter1(self):
+        return self._adapter1
+
+    @property
+    def adapter2(self):
+        return self._adapter2
+
+    @property
+    def primer1(self):
+        if not hasattr(self, "_primer1"):
+            return None
+        else:
+            return self._primer1
+
+    @property
+    def primer2(self):
+        if not hasattr(self, "_primer2"):
+            return None
+        else:
+            return self._primer2
+
+    @property
+    def quality_offset(self):
+        return self._quality_offset
+
+    @property
+    def beds(self):
+        return self._beds
+
+def parse_mgi_readset_file(
+    mgi_readset_file
+    ):
+
+    readsets = []
+    samples = []
+
+    log.info("Parsing MGI readset file " + mgi_readset_file + " ...")
+    readset_csv = csv.DictReader(open(illumina_readset_file, 'rb'), delimiter='\t')
+    for line in readset_csv:
+        sample_name = line['Sample']
+        sample_names = [sample.name for sample in samples]
+        if sample_name in sample_names:
+            # Sample already exists
+            sample = samples[sample_names.index(sample_name)]
+        else:
+            # Create new sample
+            sample = Sample(sample_name)
+            samples.append(sample)
+
+        # Create readset and add it to sample
+        readset = MGIReadset(line['Readset'], line['RunType'])
+
+        # Readset file paths are either absolute or relative to the readset file
+        # Convert them to absolute paths
+        for format in ("BAM", "FASTQ1", "FASTQ2"):
+            if line.get(format, None):
+                line[format] = os.path.expandvars(line[format])
+                if not os.path.isabs(line[format]):
+                    line[format] = os.path.dirname(os.path.abspath(os.path.expandvars(illumina_readset_file))) + os.sep + line[format]
+                line[format] = os.path.normpath(line[format])
+
+        readset._bam = line.get('BAM', None)
+        readset._umi = line.get('UMI', None)
+        readset.fastq1 = line.get('FASTQ1', None)
+        readset.fastq2 = line.get('FASTQ2', None)
+        readset._library = line.get('Library', None)
+        readset._run = line.get('Run', None)
+        readset._lane = line.get('Lane', None)
+        readset._adapter1 = line.get('Adapter1', None)
+        readset._adapter2 = line.get('Adapter2', None)
+        #ASVA add-on
+        readset._primer1 = line.get('primer1', None)
+        readset._primer2 = line.get('primer2', None)
+        #remove the adapter from the primer sequences
+        if readset._primer1 :
+            readset._primer1 = readset._primer1.replace(readset._adapter1,"")
+        if readset._primer2 :
+            readset._primer2 = readset._primer2.replace(readset._adapter2,"")
+
+        readset._quality_offset = int(line['QualityOffset']) if line.get('QualityOffset', None) else None
+        readset._beds = line['BED'].split(";") if line.get('BED', None) else []
+
+        readsets.append(readset)
+        sample.add_readset(readset)
+
+    log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
+    log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
+    return readsets
+
+class MGIRawReadset(MGIReadset):
+
+    def __init__(self, name, run_type):
+        super(MGIRawReadset, self).__init__(name, run_type)
+
+    @property
+    def index(self):
+        return self._index_name
+
+    @property
+    def sample_number(self):
+        return self._sample_number
+
+    @property
+    def aligner(self):
+        return self._aligner
+
+    @property
+    def aligner_reference_index(self):
+        return self._aligner_reference_index
+
+    @property
+    def reference_file(self):
+        return self._reference_file
+
+    @property
+    def is_rna(self):
+        return self._is_rna
+
+    @property
+    def annotation_files(self):
+        if not hasattr(self, "_annotation_files"):
+            return None
+        else:
+            return self._annotation_files
+
+    @property
+    def genomic_database(self):
+        return self._genomic_database
+
+    @property
+    def project(self):
+        return self._project_id
+
+    @property
+    def flow_cell(self):
+        return self._fcid
+
+def parse_mgi_raw_readset_files(
+    readset_file
+    lane,
+    run_type
+    ):
+
+    readsets = []
+    # Parsing MGI readset sheet
+    log.info("Parse MGI readset file " + readset_file + " ...")
+
+    readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter=',', quotechar='"')
+
+    for line in readset_csv:
+        current_lane = line['Lane']
+
+        if int(current_lane) != lane:
+            continue
+
+        sample_name = line['Sample name']
+
+        # Always create a new sample
+        sample = Sample(sample_name)
+        samples.append(sample)
+
+        # Create readset and add it to sample
+        readset = MGIRawReadset(line['Sample name'] + "_" + line['Library ID'], run_type)
+        readset._library_id = line['Library ID']
+        readset._index_name = line['Index name']
+        readset._project_name = line['Project ID']
+        readset._project_name = line['Project name']
+
+        readset._fcid = line['FCID']
+        readset._lane = current_lane
+        readset._sample_number = str(len(readsets) + 1)
+
+    return readsets
+
+
 class PacBioReadset(Readset):
 
     @property
