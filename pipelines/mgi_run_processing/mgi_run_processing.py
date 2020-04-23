@@ -26,7 +26,6 @@ import logging
 import os
 import re
 import sys
-import itertools
 import subprocess
 import xml.etree.ElementTree as Xml
 import math
@@ -100,7 +99,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
     def __init__(self, protocol=None):
         self._protocol=protocol
         self.copy_job_inputs = {}
-        self.argparser.add_argument("-r", "--readsets", help="Sample sheet for the MGI run to process (mandatory)", type=file, required=False)
+        self.argparser.add_argument("-r", "--readsets", help="Sample sheet for the MGI run to process (mandatory)", type=argparse.FileType('r'), required=False)
         self.argparser.add_argument("-d", "--run", help="Run directory (mandatory)", required=False, dest="run_dir")
         self.argparser.add_argument("--run-id", help="Run ID. Default is parsed from the run folder", required=False, dest="run_id")
         self.argparser.add_argument("--flowcell-id", help="Flowcell ID. Default is parsed from the run folder", required=False, dest="flowcell_id")
@@ -143,7 +142,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             if self.lane_number:
                 self._lanes = [str(self.lane_number)]
             else:
-                self._lanes = [lane for lane in list(set([line['Position'].split(":")[0] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter='\t', quotechar='"')]))]
+                self._lanes = [lane for lane in list(set([line['Position'].split(":")[0] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))]
             for lane in self._lanes:
                 self.copy_job_inputs[lane] = []
         return self._lanes
@@ -279,7 +278,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         Get year of the from sample sheet
         """
         if not hasattr(self, "_year"):
-            dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter='\t', quotechar='"')]))])
+            dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))])
             if len(list(dates)) > 1:
                 _raise(SanitycheckError("More than one date were found in the sample sheet for the run \"" + self._run_id + "\""))
             else:
@@ -292,7 +291,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         Get whole date of the run from sample sheet
         """
         if not hasattr(self, "_date"):
-            dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter='\t', quotechar='"')]))])
+            dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))])
             if len(list(dates)) > 1:
                 _raise(SanitycheckError("More than one date were found in the sample sheet for the run \"" + self._run_id + "\""))
             else:
@@ -419,7 +418,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         if not hasattr(self, "_bioinfo_hash"):
             self._bioinfo_hash = {}
             for lane in self.lanes:
-                bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
+                bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'r'))
                 self._bioinfo_hash[lane] = dict(bioinfo_csv)
         return self._bioinfo_hash
 
@@ -1395,6 +1394,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             general_information_file = os.path.join(self.output_dir, "L0" + lane, self.run_id + "." + lane + ".general_information.json")
             if not os.path.exists(os.path.dirname(general_information_file)):
                 os.makedirs(os.path.dirname(general_information_file))
+            log.error(self.report_hash[lane])
             with open(general_information_file, 'w') as out_json:
                 json.dump(self.report_hash[lane], out_json, indent=4)
     
@@ -1763,7 +1763,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         if not (instrument_file and os.path.isfile(instrument_file)):
             instrument_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'instrument_list.csv')
 
-        return subprocess.check_output("grep -m1 '"+instrument+"' %s | awk -F',' '{print $3}'" % instrument_file, shell=True).strip()
+        return subprocess.check_output("grep -m1 '"+instrument+"' %s | awk -F',' '{print $3}'" % instrument_file, shell=True, text=True).strip()
 
     def validate_barcodes(self, lane):
         """
@@ -1858,7 +1858,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         if not os.path.exists(os.path.dirname(csv_file)):
             os.makedirs(os.path.dirname(csv_file))
         writer = csv.DictWriter(
-            open(csv_file, 'wb'),
+            open(csv_file, 'w'),
             delimiter=str(','),
             fieldnames=csv_headers
         )
@@ -2385,7 +2385,7 @@ def distance(
     """
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
-    return sum(itertools.imap(str.__ne__, str1, str2))
+    return sum(map(str.__ne__, str1, str2))
 
 if __name__ == '__main__':
 
