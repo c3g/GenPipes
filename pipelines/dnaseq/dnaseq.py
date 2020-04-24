@@ -1482,12 +1482,12 @@ class DnaSeqRaw(common.Illumina):
                 jobs.append(
                     concat_jobs([
                         bash.ln(
-                            os.path.abspath(haplotype_file_prefix+".hc.g.vcf.gz"),
-                            output_haplotype_file_prefix+".hc.g.vcf.gz"
+                            haplotype_file_prefix + ".hc.g.vcf.gz",
+                            output_haplotype_file_prefix + ".hc.g.vcf.gz"
                             ),
                         bash.ln(
-                            os.path.abspath(haplotype_file_prefix+".hc.g.vcf.gz.tbi"),
-                            output_haplotype_file_prefix+".hc.g.vcf.gz.tbi"
+                            haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
+                            output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi"
                             ),
                         gatk4.genotype_gvcf(
                             output_haplotype_file_prefix + ".hc.g.vcf.gz",
@@ -1557,9 +1557,7 @@ class DnaSeqRaw(common.Illumina):
                         samples=self.samples
                         )
                     )
-
             else:
-
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
 
                 # Create one separate job for each of the first sequences
