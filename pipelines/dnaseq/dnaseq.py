@@ -1066,7 +1066,6 @@ class DnaSeqRaw(common.Illumina):
 
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
@@ -1130,7 +1129,6 @@ class DnaSeqRaw(common.Illumina):
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
@@ -1177,7 +1175,6 @@ class DnaSeqRaw(common.Illumina):
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
@@ -1213,7 +1210,6 @@ class DnaSeqRaw(common.Illumina):
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
@@ -1320,7 +1316,6 @@ class DnaSeqRaw(common.Illumina):
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
@@ -1342,7 +1337,6 @@ class DnaSeqRaw(common.Illumina):
             job = gatk4.depth_of_coverage(
                 input,
                 input_file_prefix + "all.coverage",
-
                 bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             )
             job.name = "gatk_depth_of_coverage." + sample.name + ".genome"
@@ -1363,7 +1357,6 @@ class DnaSeqRaw(common.Illumina):
             job = igvtools.compute_tdf(
                 input,
                 re.sub("\.bam$", ".tdf", input)
-
             )
             job.name = "igvtools_compute_tdf." + sample.name
             job.samples = [sample]
@@ -1387,7 +1380,6 @@ class DnaSeqRaw(common.Illumina):
 
                 if not interval_list in created_interval_lists:
                     job = picard2.bed2interval_list(
-
                         None,
                         coverage_bed,
                         interval_list
@@ -1399,7 +1391,6 @@ class DnaSeqRaw(common.Illumina):
                 alignment_directory = os.path.join("alignment", sample.name)
                 [input] = self.select_input_files([
                     [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-
                     [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                     [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
@@ -1516,7 +1507,6 @@ class DnaSeqRaw(common.Illumina):
 
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
@@ -1537,7 +1527,6 @@ class DnaSeqRaw(common.Illumina):
 
                 if not interval_list in created_interval_lists:
                     job = picard2.bed2interval_list(
-
                         None,
                         coverage_bed,
                         interval_list
