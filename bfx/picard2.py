@@ -477,7 +477,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
 
     if config.param('picard_collect_rna_metrics', 'module_picard').split("/")[2] < "2":
-        return picard.collect_rna_metrics(input, output, annotation_flat,reference_sequence)
+        return picard.collect_rna_metrics(input, output, annotation_flat, reference_sequence)
     else:
         return Job(
             [input],
@@ -549,5 +549,35 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
                 processing_unit=processing_unit,
                 sample=sample,
                 sequencing_center=("RGCN=\"" + config.param('picard_add_read_groups', 'sequencing_center') + "\"" if config.param('picard_add_read_groups', 'sequencing_center', required=False) else "")
+            )
+        )
+
+
+def bed2interval_list(dictionary, bed, output):
+    if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
+        return picard.bed2interval_list(
+            dictionary,
+            bed,
+            output
+            )
+
+    return Job(
+        [dictionary, bed],
+        [output],
+        [
+            ['picard_bed2interval_list', 'module_java'],
+            ['picard_bed2interval_list', 'module_picard']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar BedToIntervalList \\
+  INPUT={bed} \\
+  SEQUENCE_DICTIONARY={dictionary} \\
+  OUTPUT={output}""".format(
+            tmp_dir=config.param('picard_bed2interval_list', 'tmp_dir'),
+            java_other_options=config.param('picard_bed2interval_list', 'java_other_options'),
+            ram=config.param('picard_bed2interval_list', 'ram'),
+            dictionary=dictionary if dictionary else config.param('picard_bed2interval_list', 'genome_dictionary', type='filepath'),
+            bed=bed,
+            output=output
             )
         )

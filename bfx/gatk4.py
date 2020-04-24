@@ -383,8 +383,6 @@ def haplotype_caller(
 
     if not isinstance(inputs, list):
         inputs = [inputs]
-    if interval_list:
-        inputs.append(interval_list)
 
     if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
         return gatk.haplotype_caller(
@@ -397,7 +395,7 @@ def haplotype_caller(
     else:
         return Job(
             inputs,
-            [output],
+            [output, output + ".tbi"],
             [
                 ['gatk_haplotype_caller', 'module_java'],
                 ['gatk_haplotype_caller', 'module_gatk']
@@ -1037,7 +1035,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --TMP_DIR={tmp_dir} \\
   --INPUT={input} \\
   --OUTPUT={output} \\
-  --DB_SNP={dbsnp} \\
+  {dbsnp} \\
   --REFERENCE_SEQUENCE={reference} \\
   --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
                 tmp_dir=config.param('picard_collect_oxog_metrics', 'tmp_dir'),
@@ -1045,7 +1043,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 ram=config.param('picard_collect_oxog_metrics', 'ram'),
                 input=input,
                 output=output,
-                dbsnp=config.param('picard_collect_oxog_metrics', 'known_variants'),
+                dbsnp="--DB_SNP=" + config.param('picard_collect_oxog_metrics', 'known_variants') if config.param('picard_collect_oxog_metrics', 'known_variants') else "",
                 reference=reference_sequence if reference_sequence else config.param('picard_collect_oxog_metrics', 'genome_fasta'),
                 max_records_in_ram=config.param('picard_collect_oxog_metrics', 'max_records_in_ram', type='int')
         ))
@@ -1442,3 +1440,34 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             reference=reference_sequence if reference_sequence else config.param('picard_collect_rna_metrics', 'genome_fasta'),
             max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', type='int')
     ))
+
+
+def bed2interval_list(dictionary, bed, output):
+    if config.param('picard_bed2interval_list', 'module_gatk').split("/")[2] < "4":
+        return picard2.bed2interval_list(
+            dictionary,
+            bed,
+            output
+            )
+
+    return Job(
+        [dictionary, bed],
+        [output],
+        [
+            ['picard_bed2interval_list', 'module_java'],
+            ['picard_bed2interval_list', 'module_picard']
+        ],
+        command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  BedToIntervalList \\
+  --INPUT={bed} \\
+  --SEQUENCE_DICTIONARY={dictionary} \\
+  --OUTPUT={output}""".format(
+            tmp_dir=config.param('picard_bed2interval_list', 'tmp_dir'),
+            java_other_options=config.param('picard_bed2interval_list', 'java_other_options'),
+            ram=config.param('picard_bed2interval_list', 'ram'),
+            dictionary=dictionary if dictionary else config.param('picard_bed2interval_list', 'genome_dictionary', type='filepath'),
+            bed=bed,
+            output=output
+            )
+        )

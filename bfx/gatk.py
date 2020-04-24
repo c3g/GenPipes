@@ -223,9 +223,7 @@ def haplotype_caller(
 
     if not isinstance(inputs, list):
         inputs = [inputs]
-    if interval_list:
-        inputs.append(interval_list)
-        
+
     if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] >= "4":
         return gatk4.haplotype_caller(
             inputs,
@@ -237,7 +235,7 @@ def haplotype_caller(
     else:
         return Job(
             inputs,
-            [output,output+".tbi"],
+            [output, output + ".tbi"],
             [
                 ['gatk_haplotype_caller', 'module_java'],
                 ['gatk_haplotype_caller', 'module_gatk']
@@ -642,3 +640,23 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
             output=output
         )
     )
+
+def bed2interval_list(dictionary, bed, output):
+    if config.param('picard_bed2interval_list', 'module_gatk').split("/")[2] >= "4":
+        return gatk4.bed2interval_list(
+            dictionary,
+            bed,
+            output
+            )
+    if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
+        return picard.bed2interval_list(
+            dictionary,
+            bed,
+            output
+            )
+    if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] >= "2":
+        return picard2.bed2interval_list(
+            dictionary,
+            bed,
+            output
+            )
