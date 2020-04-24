@@ -56,9 +56,8 @@ cutadapt {adapter_5p_fwd} \\
   {output_fwd} \\
   {output_rev} \\
   {inputs}""".format(
-<<<<<<< HEAD
-      adapter_5p_fwd="-g " + config.param('cutadapt', 'adapter_5p_fwd'),
-      adapter_5p_rev="-G " + config.param('cutadapt', 'adapter_5p_rev') if input2 else "",
+      adapter_5p_fwd="-g " + config.param('cutadapt', 'adapter_5p_fwd') if config.param('cutadapt', 'adapter_5p_fwd') else "",
+      adapter_5p_rev="-G " + config.param('cutadapt', 'adapter_5p_rev') if input2 and config.param('cutadapt', 'adapter_5p_fwd') else "",
       adapter_3p_fwd="-a " + adapter_3p_fwd,
       adapter_3p_rev="-A " + adapter_3p_rev if input2 else "",
       options=config.param('cutadapt', 'options'),
@@ -67,16 +66,4 @@ cutadapt {adapter_5p_fwd} \\
       output_fwd="-o " + output_pair1,
       output_rev="-p " + output_pair2 if input2 else ""
       ),
-=======
-        adapter_5p_fwd="-g " + config.param('cutadapt', 'adapter_5p_fwd'),
-        adapter_5p_rev="-G " + config.param('cutadapt', 'adapter_5p_rev') if input2 else "",
-        adapter_3p_fwd="-a " + adapter_3p_fwd,
-        adapter_3p_rev="-A " + adapter_3p_rev if input2 else "",
-        options=config.param('cutadapt', 'options'),
-        nthread="-j " + config.param('cutadapt', 'threads'),
-        inputs=" \\\n  ".join(inputs),
-        output_fwd="-o " + output_pair1,
-        output_rev="-p " + output_pair2 if input2 else ""
-        ),
->>>>>>> MGI-Seq - First commit
     )
