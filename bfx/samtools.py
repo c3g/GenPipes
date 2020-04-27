@@ -88,13 +88,13 @@ def mpileup(input_bams, output, other_options="", region=None, regionFile=None, 
         ],
         command="""\
 samtools mpileup {other_options} \\
-  -f {reference_fasta} \\
+  {reference_fasta} \\
   {region} \\
   {regionFile} \\
   {input_bams} \\
   {output}""".format(
             other_options=other_options,
-            reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),
+            reference_fasta="-f " + config.param('samtools_mpileup', 'genome_fasta', type='filepath') if config.param('samtools_mpileup', 'genome_fasta', type='filepath') else "",
             region="-r " + region if region else "",
             regionFile="-l " + regionFile if regionFile else "",
             input_bams="\\\n  ".join([input_bam for input_bam in input_bams]),

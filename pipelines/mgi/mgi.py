@@ -39,9 +39,9 @@ from pipelines.dnaseq import dnaseq
 from bfx import cutadapt
 from bfx import fgbio
 # from bfx import gatk4
-# from bfx import igvtools
+from bfx import ivar
 from bfx import multiqc
-# from bfx import sambamba
+from bfx import samtools
 # from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
@@ -281,6 +281,41 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
         return jobs
 
+    def ivar_create_consensus(self):
+        """
+        Remove primer sequences to individual bam files using fgbio
+        """
+
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")
+            output_prefix = os.path.join(alignment_directory, sample.name)
+
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + os.path.dirname(output_prefix)),
+                    pipe_jobs([
+                        samtools.mpileup(
+                            input_bams=input_bam,
+                            output=None,
+                            other_options=config.param('ivar_create_consensus', 'mpileup_options'),
+                            region=None,
+                            regionFile=None,
+                            ini_section='ivar_create_consensus'
+                            ),
+                        ivar.create_consensus(
+                            output_prefix
+                            )
+                        ])
+                    ],
+                    name="ivar_create_consensus." + sample.name,
+                    samples=[sample]
+                    )
+                )
+
+        return jobs
+
     def run_multiqc(self):
 
         jobs = []
@@ -330,7 +365,8 @@ class MGISeq(dnaseq.DnaSeqRaw):
             self.sambamba_merge_sam_files,
             self.fgbio_trim_primers,
             self.mgi_metrics,
-            self.mgi_calling
+            self.mgi_calling,
+            self.ivar_create_consensus
             # self.run_multiqc
         ]
 
