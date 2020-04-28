@@ -19,139 +19,175 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+# Python Standard Modules
 import os
 
+# MUGQIC Modules
 from core.job import *
 from core.config import *
 
-<<<<<<< HEAD
-def convert(input_dir, output_dir):
-=======
-def convert(input_dir, output_dir, inputinfofile, mark):
->>>>>>> EpiQC - Added epiqc_report in bfx and in main file. Modified chromimpute and bigwiginfo
+def modify_inputinfofile(input_file, sample, histone,  output_inputinfo_file):
     return Job(
-        [input_dir],
-        [output_dir],
-        [['java', 'module_java']],
-        name = "chromimpute_convert",
-        command = """\
-java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+        [input_file, output_inputinfo_file],
+        [output_inputinfo_file],
+        [],
+        command="""\
+        echo -e "{sample}\\t{histone}\\t{sample}.bedgraph.gz" >> {inputinfofile}""".format(
+            input_files=input_file,
+            sample=sample,
+            histone=histone,
+            inputinfofile=output_inputinfo_file
+
+        )
+    )
+
+def generate_chr_sizes(chr_sizes_file, chr_sizes, chr):
+    return Job(
+        command="""\
+        awk -v OFS="\\t" '{{  if($1=="{chr}") {{print $1,$2}}  }}' {chr_sizes} >> {chr_sizes_file}""".format(
+            chr_sizes_file=chr_sizes_file,
+            chr_sizes=chr_sizes,
+            chr=chr )
+    )
+
+def convert_chr_bedgraph(input_file, output_file, chr, outputdir):
+    return Job(
+        [input_file, outputdir],
+        [output_file],
+        [],
+        command="""\
+          zless {input_file} | awk '{{ if($1=="{chr}") {{print $0}}  }}' | gzip -cf > {output_file}""".format(
+            input_files=input_file,
+            input_file=input_file,
+            output_file=output_file,
+            chr=chr
+
+        )
+
+    )
+
+
+def convert(input_dir, input_file, output_dir, output_files, inputinfofile, histone_mark, sample, chr_sizes_file):
+    # input = input_files.extend(inputinfofile)
+
+    return Job(
+        [inputinfofile, input_file],
+        output_files,
+        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
+        name="chromimpute_convert." + sample + "." + histone_mark,
+        command="""\
+java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   Convert \\
-  -c {chrom} \\
+  -m {histone_mark} \\
+  -l {convertsample} \\
   -r {resolution} \\
   {path_to_dataset} \\
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
-        java_options = config.param('DEFAULT', 'java_options'),
-        chrom = config.param('chromimpute','chrom'),
-        resolution = config.param('chromimpute', 'resolution'),
-        path_to_dataset = config.param('chromimpute', 'dataset'),
-        inputinfofile = inputinfofile,
-        chrom_sizes = config.param('chromimpute', 'chromsizes'),
-        output_dir = output_dir
-        )
+      java_other_options=config.param('chromimpute_convert', 'other_options'),
+      ram=config.param('chromimpute', 'ram'),
+      chrom="-c " + config.param('chromimpute_preprocess', 'chromosomes') if config.param('chromimpute_preprocess', 'chromosomes') else "",
+      histone_mark=histone_mark,
+      convertsample=sample,
+      resolution=config.param('chromimpute', 'resolution'),
+      path_to_dataset=input_dir,
+      inputinfofile=inputinfofile,
+      chrom_sizes=chr_sizes_file,
+      output_dir=output_dir
+      )
     )
 
-<<<<<<< HEAD
-def compute_global_dist(input_dir, output_dir):
-=======
-def compute_global_dist(input_dir, output_dir, inputinfofile, mark):
->>>>>>> EpiQC - Added epiqc_report in bfx and in main file. Modified chromimpute and bigwiginfo
+def compute_global_dist(input_files, output_dir, output_files, converteddir, inputinfofile, histone_mark, chr_sizes_file):
     return Job(
-        [input_dir],
-        [output_dir],
-        [['java', 'module_java']],
-        name = "chromimpute_compute_global_dist",
-        command = """\
-java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+        input_files,
+        output_files,
+        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
+        name="chromimpute_compute_global_dist." + histone_mark,
+        command="""\
+java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   ComputeGlobalDist \\
+  -m {histone_mark} \\
   -r {resolution} \\
   {converteddir} \\
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
-        java_options = config.param('DEFAULT', 'java_options'),
-        resolution = config.param('chromimpute', 'resolution'),
-        converteddir = input_dir,
-        inputinfofile = inputinfofile,
-        chrom_sizes = config.param('chromimpute', 'chromsizes'),
-        output_dir = output_dir
-        )
+      java_other_options=config.param('DEFAULT', 'java_other_options'),
+      ram=config.param('chromimpute', 'ram'),
+      histone_mark=histone_mark,
+      resolution=config.param('chromimpute', 'resolution'),
+      converteddir=converteddir,
+      inputinfofile=inputinfofile,
+      chrom_sizes=chr_sizes_file,
+      output_dir=output_dir
+      )
     )
 
-<<<<<<< HEAD
-
-def generate_train_data(input_dir, converteddir, output_dir, mark):
-=======
-def generate_train_data(input_dir, output_dir, converteddir, inputinfofile, mark):
->>>>>>> EpiQC - Added epiqc_report in bfx and in main file. Modified chromimpute and bigwiginfo
+def generate_train_data(input_files, output_dir, output_files, converteddir, distancedir, inputinfofile, histone_mark, chr_sizes_file, chr):
     return Job(
-        [input_dir],
+        input_files,
         [output_dir],
-        [['java', 'module_java']],
-        name = "chromimpute_generate_train_data",
-        command = """\
-java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
+        name="chromimpute_generate_train_data." + chr + "_" + histone_mark,
+        command="""\
+java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   GenerateTrainData \\
-  -c {chrom} \\
   -r {resolution} \\
+  -c {chr} \\
   {converteddir} \\
   {distancedir} \\
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir} \\
-  {mark}""".format(
-        java_options = config.param('DEFAULT', 'java_options'),
-        chrom = config.param('chromimpute','chrom'),
-        resolution = config.param('chromimpute', 'resolution'),
-        converteddir = converteddir,
-        distancedir = input_dir,
-        inputinfofile = inputinfofile,
-        chrom_sizes = config.param('chromimpute', 'chromsizes'),
-        output_dir = output_dir,
-        mark = mark
-        )
+  {histone_mark}""".format(
+      java_other_options=config.param('DEFAULT', 'java_other_options'),
+      ram=config.param('chromimpute', 'ram'),
+      resolution=config.param('chromimpute', 'resolution'),
+      converteddir=converteddir,
+      distancedir=distancedir,
+      inputinfofile=inputinfofile,
+      chrom_sizes=chr_sizes_file,
+      output_dir=output_dir,
+      histone_mark=histone_mark,
+      chr=chr
+      )
     )
 
 
-def train(input_dir, output_dir, inputinfofile, sample, mark):
+def train(input_files, output_dir, output_files, traindatadir, inputinfofile, sample, histone_mark):
     return Job(
-        [input_dir],
-        [output_dir],
-        [['java', 'module_java']],
-        name = "chromimpute_train",
-        command = """\
-java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+        input_files,
+        output_files,
+        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
+        name="chromimpute_train." + sample + "_" + histone_mark,
+        command="""\
+java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   Train \\
   {traindatadir} \\
   {inputinfofile} \\
   {predictordir} \\
   {sample} \\
-  {mark}""".format(
-        java_options = config.param('DEFAULT', 'java_options'),
-        traindatadir = input_dir,
-        inputinfofile = inputinfofile,
-        predictordir = output_dir,
-        sample = sample,
-        mark = mark
-        )
+  {histone_mark}""".format(
+      java_other_options=config.param('DEFAULT', 'java_other_options'),
+      ram=config.param('chromimpute', 'ram'),
+      traindatadir=traindatadir,
+      inputinfofile=inputinfofile,
+      predictordir=output_dir,
+      sample=sample,
+      histone_mark=histone_mark
+      )
     )
 
-<<<<<<< HEAD
-def apply(input_dir, converteddir, distancedir, predictordir, output_dir, sample, mark):
-=======
-def apply(input_dir, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample, mark):
->>>>>>> EpiQC - Added epiqc_report in bfx and in main file. Modified chromimpute and bigwiginfo
+def apply(input_files, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample, mark):
     return Job(
-        [input_dir],
+        input_files,
         [output_dir],
-        [['java', 'module_java']],
-        name = "chromimpute_apply",
-        command = """\
-java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
+        name="chromimpute_apply."+sample+"_"+mark,
+        command="""\
+java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
     Apply \\
-    -c {chrom} \\
     -r {resolution} \\
     {converteddir} \\
     {distancedir} \\
@@ -161,59 +197,45 @@ java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute
     {output_dir} \\
     {sample} \\
     {mark}""".format(
-        java_options = config.param('DEFAULT', 'java_options'),
-        chrom = config.param('chromimpute','chrom'),
-        resolution = config.param('chromimpute', 'resolution'),
-        converteddir = converteddir,
-        distancedir = distancedir,
-        predictordir = predictordir,
-        inputinfofile = inputinfofile,
-        chrom_sizes = config.param('chromimpute', 'chromsizes'),
-        output_dir = output_dir,
-        sample = sample,
-        mark = mark
+        java_other_options=config.param('DEFAULT', 'java_other_options'),
+        ram=config.param('chromimpute', 'ram'),
+        # chrom=config.param('chromimpute', 'chrom'),
+        resolution=config.param('chromimpute', 'resolution'),
+        converteddir=converteddir,
+        distancedir=distancedir,
+        predictordir=predictordir,
+        inputinfofile=inputinfofile,
+        chrom_sizes="<(awk '{print $1\"\\t\"$2}' %s)" % (config.param('chromimpute', 'chromosome_size')),# config.param('chromimpute', 'chrominfofile')
+        output_dir=output_dir,
+        sample=sample,
+        mark=mark
         )
     )
 
-def eval(input_dir, percent1, percent2, converteddir, convertedFile, imputedFile, output_path):
+def eval(input_dir, percent1, percent2, converteddir, converted_file, output_dir, imputed_file, output_path):
     return Job(
         [input_dir],
-<<<<<<< HEAD
-        [],
-        [['java', 'module_java']],
-        name = "chromimpute_eval",
-=======
         [output_path],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_eval_"+converted_file+"_vs_"+imputed_file,
->>>>>>> EpiQC - Added epiqc_report in bfx and in main file. Modified chromimpute and bigwiginfo
-        command = """\
-java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+        name="chromimpute_eval."+converted_file+"."+imputed_file,
+        command="""\
+java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
     Eval \\
     -p {percent1} {percent2} \\
     {converteddir} \\
-    {convertedfile} \\
-    {input_dir} \\
-<<<<<<< HEAD
-    {imputedfile} \\
-    {chrom_sizes} > {output_path}""".format(
-        java_options = config.param('DEFAULT', 'java_options'),
-=======
+    {converted_file} \\
+    {output_dir} \\
     {imputed_file} \\
     {chrom_sizes} > {output_path}""".format(
-        java_other_options = config.param('DEFAULT', 'java_other_options'),
-        ram = config.param('chromimpute', 'ram'),
->>>>>>> EpiQC - Added epiqc_report in bfx and in main file. Modified chromimpute and bigwiginfo
-        percent1 = percent1,
-        percent2 = percent2,
-        converteddir = converteddir,
-        convertedfile = convertedFile,
-        input_dir = input_dir,
-        imputedfile = imputedFile,
-        chrom_sizes = config.param('chromimpute', 'chromsizes'),
-        output_path = output_path
+        java_other_options=config.param('DEFAULT', 'java_other_options'),
+        ram=config.param('chromimpute', 'ram'),
+        percent1=percent1,
+        percent2=percent2,
+        converteddir=converteddir,
+        converted_file=converted_file,
+        output_dir=output_dir,
+        imputed_file=imputed_file,
+        chrom_sizes=config.param('chromimpute', 'chrominfofile'),
+        output_path=output_path
         )
     )
-
-
-

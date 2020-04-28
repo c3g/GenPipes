@@ -44,7 +44,6 @@ from bfx import trimmomatic
 from bfx import samtools
 from bfx import rmarkdown
 from bfx import jsonator
-from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
 
@@ -55,8 +54,8 @@ class MUGQICPipeline(Pipeline):
         self.version = open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r').read().split('\n')[0]
         self._protocol=protocol
         # Add pipeline specific arguments
-        self.argparser.description = "Version: " + self.version + "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/"
-        self.argparser.add_argument("-v", "--version", action="version", version="genpipes " + self.version, help="show the version information and exit")
+        self.argparser.description = "Version: " + self.version + "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/"
+        self.argparser.add_argument("-v", "--version", action="version", version="mugqic_pipelines " + self.version, help="show the version information and exit")
 
         super(MUGQICPipeline, self).__init__()
 
@@ -168,31 +167,13 @@ class Illumina(MUGQICPipeline):
             # If readset FASTQ files are available, skip this step
             if not readset.fastq1:
                 if readset.bam:
-                    sortedBamDirectory = os.path.join(
-                        self.output_dir,
-                        "temporary_bams",
-                        readset.sample.name
-                    )
-                    sortedBamPrefix = os.path.join(
-                        sortedBamDirectory,
-                        readset.name + ".sorted"
-                    )
+                    sortedBamPrefix = re.sub("\.bam$", ".sorted", readset.bam.strip())
 
-                    mkdir_job = bash.mkdir(sortedBamDirectory, remove=True)
-
-                    sort_job = samtools.sort(
-                        readset.bam,
-                        sortedBamPrefix,
-                        sort_by_name = True
-                    )
-                    sort_job.removable_files = [sortedBamPrefix + ".bam"]
-
-                    jobs.append(
-                        concat_jobs([
-                            mkdir_job,
-                            sort_job
-                        ], name="samtools_bam_sort."+readset.name, samples=[readset.sample])
-                    )
+                    job = samtools.sort(readset.bam, sortedBamPrefix, sort_by_name = True)
+                    job.name = "samtools_bam_sort." + readset.name
+                    job.removable_files = [sortedBamPrefix + ".bam"]
+                    job.samples = [readset.sample]
+                    jobs.append(job)
                 else:
                     _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
         return jobs
@@ -209,44 +190,23 @@ class Illumina(MUGQICPipeline):
             if not readset.fastq1:
                 if readset.bam:
                     ## check if bam file has been sorted:
-                    sortedBam = os.path.join(
-                        self.output_dir,
-                        "temporary_bams",
-                        readset.sample.name,
-                        readset.name + ".sorted.bam"
-                    )
-                    candidate_input_files = [
-                        [sortedBam],
-                        [readset.bam]
-                    ]                    
+                    sortedBam = re.sub("\.bam", ".sorted.bam", readset.bam.strip())
+                    candidate_input_files = [[sortedBam], [readset.bam]]
                     [bam] = self.select_input_files(candidate_input_files)
-
-                    rawReadsDirectory = os.path.join(
-                        self.output_dir,
-                        "raw_reads",
-                        readset.sample.name,
-                    )
                     if readset.run_type == "PAIRED_END":
-                        fastq1 = os.path.join(rawReadsDirectory, readset.name + ".pair1.fastq.gz")
-                        fastq2 = os.path.join(rawReadsDirectory, readset.name + ".pair2.fastq.gz")
+                        fastq1 = re.sub("\.sorted.bam$|\.bam$", ".pair1.fastq.gz", bam.strip())
+                        fastq2 = re.sub("\.sorted.bam$|\.bam$", ".pair2.fastq.gz", bam.strip())
                     elif readset.run_type == "SINGLE_END":
-                        fastq1 = os.path.join(rawReadsDirectory, readset.name + ".single.fastq.gz")
+                        fastq1 = re.sub("\.sorted.bam$|\.bam$", ".single.fastq.gz", bam.strip())
                         fastq2 = None
                     else:
                         _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                         "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
-                    mkdir_job = bash.mkdir(rawReadsDirectory)
-                    jobs.append(
-                        concat_jobs([
-                            mkdir_job,
-                            picard.sam_to_fastq(
-                                bam,
-                                fastq1,
-                                fastq2
-                            )
-                        ], name="picard_sam_to_fastq."+readset.name, samples=[readset.sample])
-                    )
+                    job = picard.sam_to_fastq(bam, fastq1, fastq2)
+                    job.name = "picard_sam_to_fastq." + readset.name
+                    job.samples = [readset.sample]
+                    jobs.append(job)
 
                 else:
                     _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
@@ -305,9 +265,7 @@ END
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
-                    candidate_fastq1 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")
-                    candidate_fastq2 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")
-                    candidate_input_files.append([candidate_fastq1, candidate_fastq2])
+                    candidate_input_files.append([re.sub("\.sorted.bam$|\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.sorted.bam$|\.bam$", ".pair2.fastq.gz", readset.bam)])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic(
                     fastq1,
@@ -324,7 +282,7 @@ END
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
-                    candidate_input_files.append([os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".single.fastq.gz")])
+                    candidate_input_files.append([re.sub("\.sorted.bam$|\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic(
                     fastq1,
@@ -373,7 +331,6 @@ END
                 Job(
                     [trim_log],
                     [readset_merge_trim_stats],
-                    module_entries=[['merge_trimmomatic_stats', 'module_perl']],
                     # Create readset trimming stats TSV file with paired or single read count using ugly awk
                     command="""\
 grep ^Input {trim_log} | \\
@@ -503,50 +460,3 @@ pandoc \\
         )
 
         return jobs
-<<<<<<< HEAD
-    
-    def cram_output(self):
-        """
-        Generate long term storage version of the final alignment files in CRAM format
-        Using this function will include the orginal final bam file into the  removable file list 
-        """
-
-
-        jobs = []
-
-        for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")]] #DNAseq; TumorPair
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")]) #DNAseq; ChIPseq; MethylSeq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.mdup.bam")]) # RnaSeq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")]) # TumorPair
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".merded.mdup.bam")]) # ChIPseq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + "matefixed.sorted.bam")]) # DNAseq_high_coverage
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")]) # TumorPair; DNAseq_high_coverage
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".merged.bam")]) # ChIPSeq; HiCseq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")]) # ChIPseq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted_noRG.bam")]) # MethylSeq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.UMI.bam")]) # MethylSeq
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.bam")]) # raw bam
-            input_bam = self.select_input_files(candidate_input_files)[0]
-
-            output_cram = re.sub("\.bam$", ".cram", input_bam)
-            
-            # Run samtools
-            job = samtools.view(
-                input_bam,
-                output_cram,
-                options=config.param('samtools_cram_output', 'options'),
-                removable=False
-            )
-            job.name = "cram_output." + sample.name
-            job.samples = [sample]
-            job.removable_files = input_bam
-
-            jobs.append(job)
-            
-        return jobs    
- 
-=======
->>>>>>> EpiQC - Added bigwig column to readset.py, bigwiginfo checks if there is bigwig column in readset, if not searches for bigwig file chipseq run
