@@ -32,6 +32,7 @@ import xml.etree.ElementTree as Xml
 import math
 import subprocess
 import csv
+import collections
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -64,36 +65,44 @@ class MGIRunProcessing(common.MUGQICPipeline):
     -------------
 
     The pipeline uses one input sample sheet.
-    CURRENTLY BASED ON HAIG'S MGI PROCESSING SHEET
-    A csv file having the following columns (no headers):
+    CURRENTLY BASED ON MGI RUN PROCESSING GOOGLE SHEET
+    A csv file having the following columns :
 
-    - `FCID` (flowcell ID)
-    - `Year`
-    - `Lane`
-    - `Sample name`
-    - `Library ID`
-    - `Index name`
-    - `Project ID`
-    - `Project name` (not used)
+    - Sample
+    - Readset
+    - Library
+    - Project
+    - Project ID
+    - Protocol
+    - Index
+    - Pool ID
+    - Run ID
+    - Flowcell ID
+    - Lane
+    - Sequencer
+    - Sequencer ID
 
     Example:
-        V300039753,2020,1,L05A,2-658952,SI-GA-A4,FER703,CRUK
-        V300039753,2020,1,L05B,2-658953,SI-GA-A5,FER703,CRUK
-        V300039753,2020,2,CITE_Seq_GEX,2-750713,SI-GA-C3,LAN879,David_Langlais
-        V300039753,2020,2,Total_Cells,2-750714,SI-GA-G10,PRA876,Prat_Single_Cell
-        V300039753,2020,3,E15A,2-750715,SI-GA-B6,FER703,CRUK
-        V300039753,2020,3,E15B,2-750716,SI-GA-B7,FER703,CRUK
-        V300039753,2020,4,E15C,2-751611,SI-GA-B8,FER703,CRUK
-        V300039753,2020,4,E15D,2-751118,SI-GA-B9,FER703,CRUK
+        Sample,Readset,Library,Project,Project ID,Protocol,Index,PoolID,RunID,FlowcellID,Lane,Sequencer,SequencerID
+        LSPQ_Viral_Culture_dil_10-1_10cycles,LSPQ_Viral_Culture_dil_10-1_10cycles_PROD_000034-A01,PROD_000034-A01,LSPQ,,CleanPlex_MGI,1,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+        LSPQ_Viral_Culture_dil_10-2_10cycles,LSPQ_Viral_Culture_dil_10-2_10cycles_PROD_000034-B01,PROD_000034-B01,LSPQ,,CleanPlex_MGI,2,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+        LSPQ_Viral_Culture_dil_10-3_10cycles,LSPQ_Viral_Culture_dil_10-3_10cycles_PROD_000034-C01,PROD_000034-C01,LSPQ,,CleanPlex_MGI,3,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+        LSPQ_Nasal_Swab_Neg_ctl_10cycles,LSPQ_Nasal_Swab_Neg_ctl_10cycles_PROD_000034-A02,PROD_000034-A02,LSPQ,,CleanPlex_MGI,25,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+        LSPQ_Viral_Culture_dil_10-4_13cycles,LSPQ_Viral_Culture_dil_10-4_13cycles_PROD_000034-A03,PROD_000034-A03,LSPQ,,CleanPlex_MGI,28,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+        LSPQ_Viral_Culture_dil_10-5_13cycles,LSPQ_Viral_Culture_dil_10-5_13cycles_PROD_000034-B03,PROD_000034-B03,LSPQ,,CleanPlex_MGI,29,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+        L00241026_dil_10-1_13cycles,L00241026_dil_10-1_13cycles_PROD_000034-E03,PROD_000034-E03,LSPQ,,CleanPlex_MGI,33,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+        L00241026_dil_10-2_13cycles,L00241026_dil_10-2_13cycles_PROD_000034-F03,PROD_000034-F03,LSPQ,,CleanPlex_MGI,34,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+        Arctic_RT_reaction_13cycles,Arctic_RT_reaction_13cycles_PROD_000034-B04,PROD_000034-B04,LSPQ,,CleanPlex_MGI,4,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
 
     """
 
     def __init__(self, protocol=None):
         self._protocol=protocol
         self.copy_job_inputs = []
-        self.argparser.add_argument("-d", "--run", help="Run directory", required=False, dest="run_dir")
-        self.argparser.add_argument("--lane", help="Lane number", type=int, required=False, dest="lane_number")
-        self.argparser.add_argument("-r", "--readsets", help="Sample sheet for the MGI run to process (mandatory). *** format still TBD ***", type=file, required=False)
+        self.argparser.add_argument("-d", "--run_dir", help="Run directory (mandatory)", required=True, dest="run_dir")
+        self.argparser.add_argument("-i", "--run_id", help="Run ID (mandatory)", required=True, dest="run_id")
+        self.argparser.add_argument("--lane", help="Lane number (mandatory)", type=int, required=True, dest="lane_number")
+        self.argparser.add_argument("-r", "--readsets", help="Sample sheet for the MGI run to process (mandatory)", type=file, required=True)
 
         super(MGIRunProcessing, self).__init__(protocol)
 
@@ -105,28 +114,17 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
     @property
     def run_id(self):
-        """
-        The run id from the run folder.
-        Supports both default folder name configuration and GQ's globaly unique name convention.
-        """
-        if not hasattr(self, "_run_id"):
-            if re.search(".*_\d+HS\d\d[AB]", self.run_dir):
-                m = re.search(".*/(\d+_[^_]+_\d+_[^_]+_(\d+)HS.+)", self.run_dir)
-                self._run_id = m.group(2)
-            elif re.search(".*\d+_[^_]+_\d+_.+", self.run_dir):
-                m = re.search(".*/(\d+_([^_]+_\d+)_.*)", self.run_dir)
-                self._run_id = m.group(2)
-            else:
-                log.warn("Unsupported folder name: " + self.run_dir)
-
-        return self._run_id
+        if self.args.run_id:
+            return self.args.run_id
+        else:
+            _raise(SanitycheckError("Error: missing '-i/--run_id' option!"))
 
     @property
     def run_dir(self):
         if self.args.run_dir:
             return self.args.run_dir
         else:
-            _raise(SanitycheckError("Error: missing '-d/--run' option!"))
+            _raise(SanitycheckError("Error: missing '-d/--run_dir' option!"))
 
     @property
     def lane_number(self):
@@ -135,11 +133,49 @@ class MGIRunProcessing(common.MUGQICPipeline):
         else:
             _raise(SanitycheckError("Error: missing '--lane' option!"))
 
+    @property
     def readset_file(self):
         if self.args.readsets:
             return self.args.readsets.name
-        else
+        else:
             _raise(SanitycheckError("Error: missing '-r/--readsets' argument !"))
+
+    def fastq(self):
+        """
+        Generate the fastq files from the raw fast5 files.
+        If fastq files are already generated by the sequencer then only link fastq files to the processing folder
+        """
+        fastq_job = Job()
+
+        # For now, fastq files are geneared by the sequencer, we only link them to the Unaligned folder
+        for readset in self.readsets:
+            output_dir = os.path.join(self.output_dir, "Unaligned." + readset.lane, 'Project_' + readset.project, 'Sample_' + readset.name)
+
+            fastq_file_pattern = os.path.join(
+                self.output_dir,
+                readset.flowcell + "_L0" + readset.lane + "_" + readset.index + "_{read_number}.fq.gz"
+            )
+            readset.fastq1 = fastq_file_pattern.format(read_number=1)
+            readset.fastq2 = fastq_file_pattern.format(read_number=2) if readset.run_type == "PAIRED_END" else None
+
+            fastq_job = concat_jobs([
+                fastq_job,
+                bash.mkdir(output_dir),
+                bash.ln(
+                    os.path.join(self.run_dir, "L0" + readset.lane, readset.flowcell + "_L0" + readset.lane + "_" + readset.index + "_1.fq.gz"),
+                    readset.fastq1
+                ),
+                bash.ln(
+                    os.path.join(self.run_dir, "L0" + readset.lane, readset.flowcell + "_L0" + readset.lane + "_" + readset.index + "_2.fq.gz"),
+                    readset.fastq2
+                ) if readset.run_type == "PAIRED_END" else None,
+            ])
+        fastq_job.name = "fastq_ln." + self.run_id + "." + str(self.lane_number)
+        fastq_job.samples = self.samples
+        log.error(fastq_job.name)
+
+        self.add_copy_job_inputs([fastq_job])
+        return [fastq_job]
 
     def qc_graphs(self):
         """ 
@@ -188,7 +224,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         """
         """
         jobs = []
-        for sample in self.samples:
+        for readset in self.readsets:
             fastqc_directory = os.path.join(self.output_dir, "Unaligned." + readset.lane, 'Project_' + readset.project, 'Sample_' + readset.name, "fastqc.R1")  
             input = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
             output = os.path.join(fastqc_directory, sample.name + ".sorted.dup_fastqc.zip")
@@ -688,8 +724,9 @@ wc -l >> {output}""".format(
 
         return parse_mgi_raw_readset_files(
             self.readset_file,
-            self.lane_number,
-            self.run_type
+            self.run_dir,
+            self.run_id,
+            int(self.lane_number)
         )
 
     def submit_jobs(self):
@@ -728,15 +765,15 @@ wc -l >> {output}""".format(
     @property
     def steps(self):
         return [
-            [
-                self.qc_graphs,
-                self.fastqc,
-                self.blast,
-                self.align,
-                self.picard_mark_duplicates,
-                self.metrics,
-                self.md5
-            ]
+            self.fastq,
+            self.qc_graphs,
+            self.fastqc,
+            self.blast,
+            self.align,
+            self.picard_mark_duplicates,
+            self.metrics,
+            self.md5,
+        #    self.copy
         ]
 
 if __name__ == '__main__':
