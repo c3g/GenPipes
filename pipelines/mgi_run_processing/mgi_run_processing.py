@@ -44,6 +44,7 @@ from core.job import Job, concat_jobs, pipe_jobs
 from bfx.readset import parse_mgi_raw_readset_files
 from bfx import bvatools
 from bfx import picard
+from bfx import fastqc
 from bfx import tools
 from bfx import run_processing_tools
 from bfx import bash_cmd as bash
@@ -153,7 +154,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
             fastq_file_pattern = os.path.join(
                 self.output_dir,
-                readset.flowcell + "_L0" + readset.lane + "_" + readset.index + "_{read_number}.fq.gz"
+                readset.name + "_" + readset.flowcell + "_L0" + readset.lane + "_" + readset.index + "_{read_number}.fq.gz"
             )
             readset.fastq1 = fastq_file_pattern.format(read_number=1)
             readset.fastq2 = fastq_file_pattern.format(read_number=2) if readset.run_type == "PAIRED_END" else None
@@ -193,7 +194,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
         for readset in self.readsets:
             output_dir = os.path.join(os.path.dirname(readset.fastq1), "qc")
-            region_name = readset.name + "_" + readset.sample_number + "_L00" + readset.lane
+            region_name = readset.name + "_" + readset.flowcell + "_L0" + readset.lane + "_" + readset.index
 
             file1 = readset.fastq1
             file2 = readset.fastq2
@@ -225,17 +226,16 @@ class MGIRunProcessing(common.MUGQICPipeline):
         """
         jobs = []
         for readset in self.readsets:
-            fastqc_directory = os.path.join(self.output_dir, "Unaligned." + readset.lane, 'Project_' + readset.project, 'Sample_' + readset.name, "fastqc.R1")  
-            input = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")
-            output = os.path.join(fastqc_directory, sample.name + ".sorted.dup_fastqc.zip")
+            output_dir = os.path.join(os.path.dirname(readset.fastq1), "fastqc.R1")
+            input = readset.fastq1
+            output = os.path.join(output_dir, ".fastq.gz" + "_fastqc.zip", input)
 
             jobs.append(
                 concat_jobs([
                     bash.mkdir(
-                        fastqc_directory,
+                        output_dir,
                         remove=True
                     ),
-                    adapter_job,
                     fastqc.fastqc(
                         input,
                         None,
@@ -243,9 +243,33 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         adapter_file=None,
                         use_tmp=True
                 )],
-                name="fastqc." + sample.name,
-                samples=[sample]
+                name="fastqc.R1." + readset.name,
+                samples=[readset.sample]
             ))
+
+            if readset.run_type == "PAIRED_END":
+                output_dir = os.path.join(os.path.dirname(readset.fastq1), "fastqc.R2")
+                input = readset.fastq2
+                output = os.path.join(output_dir, ".fastq.gz" + "_fastqc.zip", input)
+
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(
+                            output_dir,
+                            remove=True
+                        ),
+                        fastqc.fastqc(
+                            input,
+                            None,
+                            output,
+                            adapter_file=None,
+                            use_tmp=True
+                    )],
+                    name="fastqc.R2" + readset.name,
+                    samples=[readset.sample]
+                ))
+
+        return jobs
 
     def blast(self):
         """ 
@@ -271,7 +295,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 self.output_dir,
                 "Unaligned." + readset.lane,
                 "Blast_sample",
-                readset.name + "_" + readset.sample_number + "_L00" + readset.lane
+                readset.name + "_" + readset.flowcell + "_L0" + readset.lane + "_" + readset.index
             )
             output = output_prefix + '.R1.RDP.blastHit_20MF_species.txt'
             current_jobs = [
@@ -285,103 +309,21 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 nb_blast_to_do=nb_blast_to_do
             )
 
-            if readset.bam:
-                input = readset.bam + ".bam"
-
-                # count the read that aren't marked as secondary alignment and calculate the ratio of reads to subsample
-                command = """\
-subsampling=$(samtools view -F 0x0180 {input} | \\
-wc -l | \\
-awk -v nbReads={nb_blast_to_do} \\
-  '{{x=sprintf("%.4f", nbReads/$1); if (x == "0.0000") print "0.0001"; else print x}}')""".format(
-                    input=input,
-                    nb_blast_to_do=nb_blast_to_do
+            inputs = [readset.fastq1, readset.fastq2]
+            command = "runBlast.sh " + str(nb_blast_to_do) + " " + output_prefix + " " + readset.fastq1 + " "
+            if readset.fastq2:
+                command += readset.fastq2
+            current_jobs.append(
+                Job(
+                    inputs,
+                    [output],
+                    [
+                        ["blast", "module_mugqic_tools"],
+                        ["blast", "module_blast"]
+                    ],
+                    command=command
                 )
-                current_jobs.append(
-                    Job(
-                        [input],
-                        [],
-                        [["blast", "module_samtools"]],
-                        command=command
-                    )
-                )
-
-                # subsample the reads and output to a temp fasta
-                command = """\
-samtools view \\
-  -s $subsampling \\
-  -F 0x0180 \\
-  {input} | \\
-awk '{{OFS="\\t"; print ">"$1"\\n"$10}}' - \\
-  > {fasta_file}""".format(
-                    input=input,
-                    fasta_file=fasta_file
-                )
-                current_jobs.append(
-                    Job(
-                        [input],
-                        [],
-                        [["blast", "module_samtools"]],
-                        command=command
-                    )
-                )
-
-                # run blast
-                command = """\
-blastn \\
-  -query {fasta_file} \\
-  -db nt \\
-  -out {result_file} \\
-  -perc_identity 80 \\
-  -num_descriptions 1 \\
-  -num_alignments 1""".format(
-                    fasta_file=fasta_file,
-                    result_file=result_file
-                )
-                current_jobs.append(
-                    Job(
-                        [],
-                        [],
-                        [["blast", "module_blast"]],
-                        command=command
-                    )
-                )
-
-                # filter and format the result to only have the sorted number of match and the species
-                command = """\
-grep ">" {result_file} | \\
-awk ' {{ print $2 "_" $3}} ' | \\
-sort | \\
-uniq -c | \\
-sort -n -r | \\
-head -20 > {output} && true""".format(
-                    result_file=result_file,
-                    output=output
-                )
-                current_jobs.append(
-                    Job(
-                        [],
-                        [output],
-                        [],
-                        command=command
-                    )
-                )
-            else:
-                inputs = [readset.fastq1, readset.fastq2]
-                command = "runBlast.sh " + str(nb_blast_to_do) + " " + output_prefix + " " + readset.fastq1 + " "
-                if readset.fastq2:
-                    command += readset.fastq2
-                current_jobs.append(
-                    Job(
-                        inputs,
-                        [output],
-                        [
-                            ["blast", "module_mugqic_tools"],
-                            ["blast", "module_blast"]
-                        ],
-                        command=command
-                    )
-                )
+            )
 
             # rRNA estimate using silva blast db, using the same subset of reads as the "normal" blast
             rrna_db = config.param('blast', 'rrna_db', required=False)
@@ -585,10 +527,10 @@ wc -l >> {output}""".format(
 
             jobs.append(
                 concat_jobs(
-                    current_jobs
-                ),
-                name="md5." + readset.name + ".md5." + self.run_id + "." + str(self.lane_number),
-                samples=[readset.sample]
+                    current_jobs,
+                    name="md5." + readset.name + ".md5." + self.run_id + "." + str(self.lane_number),
+                    samples=[readset.sample]
+                )
             )
 
         if config.param('md5', 'one_job', required=False, type="boolean"):
