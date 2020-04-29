@@ -553,7 +553,6 @@ class MGISeq(dnaseq.DnaSeqRaw):
                     name="ivar_create_consensus." + sample.name,#re.sub("\.bam$", "", os.path.basename(bam)),
                     samples=[sample]
                     )
-                )
 
         return jobs
 
