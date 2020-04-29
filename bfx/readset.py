@@ -1128,6 +1128,10 @@ class MGIRawReadset(MGIReadset):
         return self._reference_file
 
     @property
+    def is_rna(self):
+        return False
+
+    @property
     def annotation_files(self):
         if not hasattr(self, "_annotation_files"):
             return None
@@ -1187,13 +1191,13 @@ def parse_mgi_raw_readset_files(
    
         # Create readset and add it to sample
         readset = MGIRawReadset(line['Sample'] + "_" + line['Library'], run_type)
-        readset._library_id = line['Library']
+        readset._library = line['Library']
         readset._index = line['Index']
         readset._project_id = line['ProjectID']
         readset._project_name = line['Project']
         readset._protocol = line['Protocol']
         readset._pool_id = line['PoolID']
-        readset._run_id = line['RunID']
+        readset._run = line['RunID']
         readset._sequencer_name = line['Sequencer']
         readset._sequencer_id = line['SequencerID']
         readset._fcid = line['FlowcellID']
