@@ -978,7 +978,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
             fastq_file_pattern = os.path.join(
                 self.output_dir,
-                readset.flowcell + "_L0" + readset.lane + "_" + readset.index + "_{read_number}.fq.gz"
+                readset.name + "_" + readset.flowcell + "_L0" + readset.lane + "_" + readset.index + "_{read_number}.fq.gz"
             )
             readset.fastq1 = fastq_file_pattern.format(read_number=1)
             readset.fastq2 = fastq_file_pattern.format(read_number=2) if readset.run_type == "PAIRED_END" else None
@@ -1139,6 +1139,30 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 return jobs
             else:
                 return self.throttle_jobs(jobs)
+
+            if readset.run_type == "PAIRED_END":
+                output_dir = os.path.join(os.path.dirname(readset.fastq1), "fastqc.R2")
+                input = readset.fastq2
+                output = os.path.join(output_dir, ".fastq.gz" + "_fastqc.zip", input)
+
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(
+                            output_dir,
+                            remove=True
+                        ),
+                        fastqc.fastqc(
+                            input,
+                            None,
+                            output,
+                            adapter_file=None,
+                            use_tmp=True
+                    )],
+                    name="fastqc.R2" + readset.name,
+                    samples=[readset.sample]
+                ))
+
+        return jobs
 
     def blast(self):
         """ 
