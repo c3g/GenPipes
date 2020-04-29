@@ -37,8 +37,7 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 from core.pipeline import Pipeline
 from bfx.design import parse_design_file
-from bfx.readset import parse_illumina_readset_file
-from bfx.sample_tumor_pairs import *
+from bfx.readset import Readset, parse_illumina_readset_file 
 
 from bfx import metrics
 from bfx import bvatools
