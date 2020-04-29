@@ -28,6 +28,30 @@ from core.job import *
 
 log = logging.getLogger(__name__)
 
+
+def call_variants(prefix):
+    # inputs = [input]
+    output = [prefix + ".tsv"]
+
+    return Job(
+        input_files=[],
+        output_files=output,
+        module_entries=[
+            ['ivar', 'module_ivar']
+        ],
+
+        command="""\
+ivar variants -p {prefix} \\
+  -r {reference_genome} \\
+  {gff_file} \\
+  {other_options}""".format(
+            prefix=prefix,
+            reference_genome=config.param('ini_section', 'genome_fasta', type='filepath'),
+            gff_file="-g " + config.param('ivar_call_variants', 'gff_orf', type='filepath') if config.param('ivar_call_variants', 'gff_orf') else "",
+            other_options=config.param('ivar_call_variants', 'other_options')
+            ),
+        )
+
 def create_consensus(prefix):
     # inputs = [input]
     output = [prefix + ".fa", prefix + ".qual.txt"]
@@ -43,5 +67,23 @@ def create_consensus(prefix):
 ivar consensus -p {prefix} {other_options}""".format(
             prefix=prefix,
             other_options=config.param('ivar_create_consensus', 'other_options')
+            ),
+        )
+
+def tsv_to_vcf(input, output):
+    input = [input]
+    output = [output]
+
+    return Job(
+        input_files=input,
+        output_files=output,
+        module_entries=[
+            ['ivar', 'module_ivar']
+        ],
+
+        command="""\
+ivar_variants_to_vcf.py {input} {output}""".format(
+            input=" \\\n  ".join(input),
+            output=" \\\n  ".join(output)
             ),
         )
