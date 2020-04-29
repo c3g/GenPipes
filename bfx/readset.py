@@ -1064,7 +1064,7 @@ def parse_mgi_readset_file(
     samples = []
 
     log.info("Parsing MGI readset file " + mgi_readset_file + " ...")
-    readset_csv = csv.DictReader(open(illumina_readset_file, 'rb'), delimiter='\t')
+    readset_csv = csv.DictReader(open(mgi_readset_file, 'rb'), delimiter='\t')
     for line in readset_csv:
         sample_name = line['Sample']
         sample_names = [sample.name for sample in samples]
@@ -1123,7 +1123,7 @@ class MGIRawReadset(MGIReadset):
 
     @property
     def index(self):
-        return self._index_name
+        return self._index
 
     @property
     def sample_number(self):
@@ -1142,10 +1142,6 @@ class MGIRawReadset(MGIReadset):
         return self._reference_file
 
     @property
-    def is_rna(self):
-        return self._is_rna
-
-    @property
     def annotation_files(self):
         if not hasattr(self, "_annotation_files"):
             return None
@@ -1161,46 +1157,67 @@ class MGIRawReadset(MGIReadset):
         return self._project_id
 
     @property
-    def flow_cell(self):
+    def flowcell(self):
         return self._fcid
 
 def parse_mgi_raw_readset_files(
-    readset_file
-    lane,
-    run_type
+    readset_file,
+    run_folder,
+    run_id,
+    lane
     ):
 
     readsets = []
+    samples = []
+    GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
+
     # Parsing MGI readset sheet
     log.info("Parse MGI readset file " + readset_file + " ...")
 
     readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter=',', quotechar='"')
 
     for line in readset_csv:
+
+        current_pool = line['PoolID']
         current_lane = line['Lane']
 
-        if int(current_lane) != lane:
+        if current_pool == "FAIL" or int(current_lane) != lane:
             continue
 
-        sample_name = line['Sample name']
+        sample_name = line['Sample']
 
         # Always create a new sample
         sample = Sample(sample_name)
         samples.append(sample)
 
+        # Parse Info file to retriece the runtype i.e. PAIRED_END or SINGLE_END
+        run_info_file = open(os.path.join(run_folder, os.path.basename(run_folder)+"_Success.txt"), "r")
+        if "PE" in run_info_file.read().split(" ")[3]:
+            run_type = "PAIRED_END"
+        else:
+            run_type = "SINGLE_END"
+        if not run_type:
+            log.error("Run type could not be determined for run "+line['RunID']+" from file "+os.path.join(run_folder, os.path.basename(run_folder)+"_Success.txt"))
+   
         # Create readset and add it to sample
-        readset = MGIRawReadset(line['Sample name'] + "_" + line['Library ID'], run_type)
-        readset._library_id = line['Library ID']
-        readset._index_name = line['Index name']
-        readset._project_name = line['Project ID']
-        readset._project_name = line['Project name']
-
-        readset._fcid = line['FCID']
+        readset = MGIRawReadset(line['Sample'] + "_" + line['Library'], run_type)
+        readset._library_id = line['Library']
+        readset._index = line['Index']
+        readset._project_id = line['ProjectID']
+        readset._project_name = line['Project']
+        readset._protocol = line['Protocol']
+        readset._pool_id = line['PoolID']
+        readset._run_id = line['RunID']
+        readset._sequencer_name = line['Sequencer']
+        readset._sequencer_id = line['SequencerID']
+        readset._fcid = line['FlowcellID']
         readset._lane = current_lane
         readset._sample_number = str(len(readsets) + 1)
 
-    return readsets
+        readsets.append(readset)
+        sample.add_readset(readset)
 
+    return readsets
 
 class PacBioReadset(Readset):
 
