@@ -66,7 +66,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
     -------------
 
     The pipeline uses one input sample sheet.
-    CURRENTLY BASED ON MGI RUN PROCESSING GOOGLE SHEET (https://docs.google.com/spreadsheets/d/1Jk11bQUJdqVg37gfn7ndfk-g9ke96tsjCfAsf3r1xdA)
+    CURRENTLY BASED ON MGI RUN PROCESSING GOOGLE SHEET
     A csv file having the following columns :
 
     - Sample
