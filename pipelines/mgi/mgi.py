@@ -266,8 +266,57 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        jobs.extend(self.gatk_haplotype_caller())
-        jobs.extend(self.merge_and_call_individual_gvcf())
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            # haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
+
+            [input_bam] = self.select_input_files([
+                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+            ])
+
+            for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
+
+                output_prefix = os.path.join(alignment_directory, re.sub("\.bam$", "", os.path.basename(bam)))
+                output_tsv = output_prefix + ".tsv"
+                output_vcf = output_prefix + ".vcf"
+
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + alignment_directory),
+                        pipe_jobs([
+                            samtools.mpileup(
+                                input_bams=bam,
+                                output=None,
+                                other_options=config.param('ivar_call_variants', 'mpileup_options'),
+                                region=None,
+                                regionFile=None,
+                                ini_section='ivar_call_variants'
+                                ),
+                            ivar.call_variants(
+                                output_prefix
+                                )
+                            ]),
+                        ivar.tsv_to_vcf(
+                            output_tsv,
+                            output_vcf
+                            ),
+                        Job(
+                            input_files=[output_vcf],
+                            output_files=[output_vcf + ".gz"],
+                            command="gzip " + output_vcf,
+                            samples=[sample]
+                            )
+                        ],
+                        name="ivar_call_variants." + re.sub("\.bam$", "", os.path.basename(bam)),
+                        samples=[sample],
+                        removable_files=[output_tsv]
+                        )
+                    )
+
+        # jobs.extend(self.gatk_haplotype_caller())
+        # jobs.extend(self.merge_and_call_individual_gvcf())
+
         # jobs.extend(self.combine_gvcf())
         # jobs.extend(self.merge_and_call_combined_gvcf())
         # jobs.extend(self.variant_recalibrator())
@@ -289,30 +338,36 @@ class MGISeq(dnaseq.DnaSeqRaw):
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")
-            output_prefix = os.path.join(alignment_directory, sample.name)
+            [input_bam] = self.select_input_files([
+                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+            ])
 
-            jobs.append(
-                concat_jobs([
-                    Job(command="mkdir -p " + os.path.dirname(output_prefix)),
-                    pipe_jobs([
-                        samtools.mpileup(
-                            input_bams=input_bam,
-                            output=None,
-                            other_options=config.param('ivar_create_consensus', 'mpileup_options'),
-                            region=None,
-                            regionFile=None,
-                            ini_section='ivar_create_consensus'
-                            ),
-                        ivar.create_consensus(
-                            output_prefix
-                            )
-                        ])
-                    ],
-                    name="ivar_create_consensus." + sample.name,
-                    samples=[sample]
+            for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
+
+                output_prefix = os.path.join(alignment_directory, re.sub("\.bam$", "", os.path.basename(bam)))
+
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + os.path.dirname(output_prefix)),
+                        pipe_jobs([
+                            samtools.mpileup(
+                                input_bams=bam,
+                                output=None,
+                                other_options=config.param('ivar_create_consensus', 'mpileup_options'),
+                                region=None,
+                                regionFile=None,
+                                ini_section='ivar_create_consensus'
+                                ),
+                            ivar.create_consensus(
+                                output_prefix
+                                )
+                            ])
+                        ],
+                        name="ivar_create_consensus." + re.sub("\.bam$", "", os.path.basename(bam)),
+                        samples=[sample]
+                        )
                     )
-                )
 
         return jobs
 
