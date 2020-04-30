@@ -39,6 +39,7 @@ from pipelines.dnaseq import dnaseq
 from bfx import cutadapt
 from bfx import fgbio
 # from bfx import gatk4
+from bfx import htslib
 from bfx import ivar
 from bfx import multiqc
 from bfx import samtools
@@ -301,11 +302,9 @@ class MGISeq(dnaseq.DnaSeqRaw):
                             output_tsv,
                             output_vcf
                             ),
-                        Job(
-                            input_files=[output_vcf],
-                            output_files=[output_vcf + ".gz"],
-                            command="gzip " + output_vcf,
-                            samples=[sample]
+                        htslib.bgzip_tabix(
+                            output_vcf,
+                            output_vcf + ".gz"
                             )
                         ],
                         name="ivar_call_variants." + re.sub("\.bam$", "", os.path.basename(bam)),
