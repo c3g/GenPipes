@@ -2178,7 +2178,7 @@ pandoc \\
 
         return job
 
-    def flag_mappability(self, input_vcf = "variants/allSamples.merged.flt.vt.vcf", output_vcf = "variants/allSamples.merged.flt.vt.mil.vcf" ,job_name = "flag_mappability" ):
+    def flag_mappability(self, input_vcf="variants/allSamples.merged.flt.vt.vcf", output_vcf="variants/allSamples.merged.flt.vt.mil.vcf", job_name="flag_mappability"):
         """
         Mappability annotation. An in-house database identifies regions in which reads are confidently mapped
         to the reference genome.
@@ -2193,7 +2193,7 @@ pandoc \\
         #job.samples = self.samples
         return jobs
 
-    def haplotype_caller_flag_mappability(self) :
+    def haplotype_caller_flag_mappability(self):
         """
         Mappability annotation applied to haplotype caller vcf.
         An in-house database identifies regions in which reads are confidently mapped
@@ -2208,7 +2208,7 @@ pandoc \\
 
         return job
 
-    def mpileup_flag_mappability(self) :
+    def mpileup_flag_mappability(self):
         """
         Mappability annotation applied to mpileup vcf.
         An in-house database identifies regions in which reads are confidently mapped
