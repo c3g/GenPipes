@@ -309,7 +309,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                         ],
                         name="ivar_call_variants." + re.sub("\.bam$", "", os.path.basename(bam)),
                         samples=[sample],
-                        removable_files=[output_tsv]
+                        removable_files=[output_tsv, output_vcf]
                         )
                     )
 
