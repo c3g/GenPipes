@@ -47,7 +47,7 @@ ivar trim -i {input_bam}
   {other_options}""".format(
             input_bam=input_bam,
             prefix=prefix,
-            bed_file="-b " + config.param('ivar_trim_primers', 'bed_primers', type='filepath') if config.param('ivar_call_variants', 'bed_primers') else "",
+            bed_file="-b " + config.param('ivar_trim_primers', 'bed_primers', type='filepath') if config.param('ivar_trim_primers', 'bed_primers') else "",
             other_options=config.param('ivar_trim_primers', 'other_options')
             ),
         )
