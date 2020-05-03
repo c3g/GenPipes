@@ -452,8 +452,8 @@ class MGISeq(dnaseq.DnaSeqRaw):
             self.cutadapt,
             self.bwa_mem_sambamba_sort_sam,
             self.sambamba_merge_sam_files,
-            # self.fgbio_trim_primers,
-            self.ivar_trim_primers,
+            self.fgbio_trim_primers,
+            # self.ivar_trim_primers,
             self.mgi_metrics,
             self.mgi_calling,
             self.ivar_create_consensus
