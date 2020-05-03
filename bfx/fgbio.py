@@ -72,7 +72,7 @@ def correct_readname(
     inputs = [input_umi]
     outputs = [output_umi_corrected]
     
-    if input_umi.lower().endswith('.gz') :
+    if input_umi.lower().endswith('.gz'):
         input_opener="zcat "
     else:
         input_opener="cat "
