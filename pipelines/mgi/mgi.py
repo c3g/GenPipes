@@ -42,6 +42,7 @@ from bfx import fgbio
 from bfx import htslib
 from bfx import ivar
 from bfx import multiqc
+from bfx import sambamba
 from bfx import samtools
 # from bfx import bash_cmd as bash
 
@@ -238,6 +239,40 @@ class MGISeq(dnaseq.DnaSeqRaw):
                     ],
                     name="fgbio_trim_primers." + sample.name,
                     samples=[sample]
+                    )
+                )
+
+        return jobs
+
+
+    def ivar_trim_primers(self):
+        """
+        Remove primer sequences to individual bam files using ivar
+        """
+
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            output_prefix = os.path.join(alignment_directory, re.sub("\.sorted.bam$", ".primerTrim", os.path.basename(input_bam)))
+            output_bam = os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")
+
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + alignment_directory),
+                    ivar.trim_primers(
+                        input_bam,
+                        output_prefix
+                        ),
+                    sambamba.sort(
+                            output_prefix + ".bam",
+                            output_bam,
+                            config.param('ivar_trim_primers', 'tmp_dir')
+                            )
+                    ],
+                    name="ivar_trim_primers." + sample.name,
+                    samples=[sample],
+                    removable_files=[output_prefix + ".bam"]
                     )
                 )
 

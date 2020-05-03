@@ -29,6 +29,29 @@ from core.job import *
 log = logging.getLogger(__name__)
 
 
+def trim_primers(input_bam, prefix):
+    inputs = [input_bam]
+    output = [prefix + ".bam"]
+
+    return Job(
+        input_files=inputs,
+        output_files=output,
+        module_entries=[
+            ['ivar', 'module_ivar']
+        ],
+
+        command="""\
+ivar trim -i {input_bam}
+  -p {prefix} \\
+  {bed_file} \\
+  {other_options}""".format(
+            input_bam=input_bam,
+            prefix=prefix,
+            bed_file="-b " + config.param('ivar_trim_primers', 'bed_primers', type='filepath') if config.param('ivar_call_variants', 'bed_primers') else "",
+            other_options=config.param('ivar_trim_primers', 'other_options')
+            ),
+        )
+
 def call_variants(prefix):
     # inputs = [input]
     output = [prefix + ".tsv"]
