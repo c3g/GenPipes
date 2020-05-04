@@ -35,7 +35,7 @@ from core.job import Job, concat_jobs, pipe_jobs
 from pipelines.dnaseq import dnaseq
 
 # from bfx import bwa
-# from bfx import bvatools
+from bfx import bedtools
 from bfx import cutadapt
 from bfx import fgbio
 # from bfx import gatk4
@@ -279,6 +279,64 @@ class MGISeq(dnaseq.DnaSeqRaw):
         return jobs
 
 
+    def metrics_sambamba_flagstat(self):
+
+        jobs = []
+        for sample in self.samples:
+            flagstat_directory = os.path.join("metrics", "dna", sample.name, "flagstat")
+            alignment_directory = os.path.join("alignment", sample.name)
+            [input_bam] = self.select_input_files([
+                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+            ])
+
+            for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
+                output = os.path.join(flagstat_directory, re.sub("\.bam$", ".flagstat", os.path.basename(bam)))
+
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + flagstat_directory),
+                        sambamba.flagstat(
+                            bam,
+                            output,
+                            config.param('sambamba_flagstat', 'flagstat_options')
+                            )
+                        ],
+                        name="sambamba_flagstat." + re.sub("\.bam$", "", os.path.basename(bam)),
+                        samples=[sample]
+                        )
+                    )
+
+        return jobs
+
+    def metrics_bedtools_genomecov(self):
+
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            [input_bam] = self.select_input_files([
+                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+            ])
+
+            for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
+                output = os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(bam)))
+
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + alignment_directory),
+                        bedtools.genomecov(
+                            bam,
+                            output
+                            )
+                        ],
+                        name="bedtools_genomecov." + re.sub("\.bam$", "", os.path.basename(bam)),
+                        samples=[sample]
+                        )
+                    )
+
+        return jobs
+
     def mgi_metrics(self):
         """
         Multiple metrcis from dnaseq
@@ -288,7 +346,9 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
         jobs.extend(self.metrics_dna_picard_metrics())
         jobs.extend(self.metrics_dna_sample_qualimap())
-        jobs.extend(self.metrics_dna_sambamba_flagstat())
+        jobs.extend(self.metrics_sambamba_flagstat())
+        jobs.extend(self.metrics_bedtools_genomecov())
+        # jobs.extend(self.metrics_dna_sambamba_flagstat())
         jobs.extend(self.picard_calculate_hs_metrics())
         jobs.extend(self.metrics())
 
@@ -379,7 +439,8 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
             for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
 
-                output_prefix = os.path.join(alignment_directory, re.sub("\.bam$", "", os.path.basename(bam)))
+                output_prefix = os.path.join(alignment_directory, re.sub("\.bam$", ".consensus", os.path.basename(bam)))
+                log.error(output_prefix)
 
                 jobs.append(
                     concat_jobs([
@@ -452,8 +513,8 @@ class MGISeq(dnaseq.DnaSeqRaw):
             self.cutadapt,
             self.bwa_mem_sambamba_sort_sam,
             self.sambamba_merge_sam_files,
-            self.fgbio_trim_primers,
-            # self.ivar_trim_primers,
+            # self.fgbio_trim_primers,
+            self.ivar_trim_primers,
             self.mgi_metrics,
             self.mgi_calling,
             self.ivar_create_consensus
