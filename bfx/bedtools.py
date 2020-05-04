@@ -139,3 +139,24 @@ bedtools coverage {other_options} \\
             output_file=output_file
         )
     )
+
+
+def genomecov(input_file, output_file):
+
+    return Job(
+        [input_file],
+        [output_file],
+        [
+            ['bedtools', 'module_bedtools']
+        ],
+        command="""\
+bedtools genomecov {other_options} \\
+  {input} \\
+  {genome} \\
+  > {output_file}""".format(
+            input="-ibam " + input_file if re.search("\.bam$", os.path.basename(input_file)) else "-i " + input_file,
+            genome="-g " + config.param('bedtools_genomecov', 'genome_fasta') if not re.search("\.bam$", os.path.basename(input_file)) else "",
+            other_options=config.param('bedtools_genomecov', 'other_options', required=False),
+            output_file=output_file
+        )
+    )
