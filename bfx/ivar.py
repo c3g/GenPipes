@@ -41,7 +41,7 @@ def trim_primers(input_bam, prefix):
         ],
 
         command="""\
-ivar trim -i {input_bam}
+ivar trim -i {input_bam} \\
   -p {prefix} \\
   {bed_file} \\
   {other_options}""".format(
