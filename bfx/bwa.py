@@ -38,8 +38,8 @@ bwa index \\
         )
     )
 
-def mem(in1fastq, in2fastq=None, out_sam=None, read_group=None, ref=None, ini_section='bwa_mem'):
-    other_options = config.param(ini_section, 'other_options', required=False)
+def mem(in1fastq, in2fastq=None, out_sam=None, read_group=None, ref=None, ini_section='bwa_mem', other_options=config.param('bwa_mem', 'other_options', required=False)):
+    # other_options = config.param(ini_section, 'other_options', required=False)
 
     return Job(
         [in1fastq, in2fastq, ref + ".bwt" if ref else None],
