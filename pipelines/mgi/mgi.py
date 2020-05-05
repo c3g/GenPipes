@@ -34,7 +34,7 @@ from core.job import Job, concat_jobs, pipe_jobs
 
 from pipelines.dnaseq import dnaseq
 
-# from bfx import bwa
+from bfx import bwa
 from bfx import bedtools
 from bfx import cutadapt
 from bfx import fgbio
@@ -124,98 +124,97 @@ class MGISeq(dnaseq.DnaSeqRaw):
         return jobs
 
 
-    # def bwa_mem_sambamba_sort_sam(self):
-    #     """
-    #     The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-    #     The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-    #     BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
+    def mapping_bwa_mem_sambamba(self):
+        """
+        The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
+        The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+        BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
-    #     This step takes as input files:
+        This step takes as input files:
 
-    #     1. Trimmed FASTQ files if available
-    #     2. Else, FASTQ files from the readset file if available
-    #     3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
-    #     """
+        1. Trimmed FASTQ files if available
+        2. Else, FASTQ files from the readset file if available
+        3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+        """
 
-    #     jobs = []
-    #     for readset in self.readsets:
-    #         trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-    #         alignment_directory = os.path.join("alignment", readset.sample.name)
-    #         readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
-    #         index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
+        jobs = []
+        for readset in self.readsets:
+            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            alignment_directory = os.path.join("alignment", readset.sample.name)
+            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
 
-    #         # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-    #         if readset.run_type == "PAIRED_END":
-    #             candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-    #             if readset.fastq1 and readset.fastq2:
-    #                 candidate_input_files.append([readset.fastq1, readset.fastq2])
-    #             if readset.bam:
-    #                 prefix = os.path.join(
-    #                     self.output_dir,
-    #                     "raw_reads",
-    #                     readset.sample.name,
-    #                     re.sub("\.bam$", ".", os.path.basename(readset.bam))
-    #                 )
-    #                 candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
-    #             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                if readset.bam:
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-    #         elif readset.run_type == "SINGLE_END":
-    #             candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-    #             if readset.fastq1:
-    #                 candidate_input_files.append([readset.fastq1])
-    #             if readset.bam:
-    #                 prefix = os.path.join(
-    #                     self.output_dir,
-    #                     "raw_reads",
-    #                     readset.sample.name,
-    #                     re.sub("\.bam$", ".", os.path.basename(readset.bam))
-    #                 )
-    #                 candidate_input_files.append([prefix + ".single.fastq.gz"])
-    #             [fastq1] = self.select_input_files(candidate_input_files)
-    #             fastq2 = None
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                if readset.bam:
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + ".single.fastq.gz"])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
 
-    #         else:
-    #             _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-    #             "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
-    #         jobs.append(
-    #             concat_jobs([
-    #                 bash.mkdir(os.path.dirname(readset_bam)),
-    #                 pipe_jobs([
-    #                     bwa.mem(
-    #                         fastq1,
-    #                         fastq2,
-    #                         read_group="'@RG" + \
-    #                             "\\tID:" + readset.name + \
-    #                             "\\tSM:" + readset.sample.name + \
-    #                             "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
-    #                             ("\\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-    #                             ("\\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
-    #                             "\\tPL:MGI" + \
-    #                             "'"
-    #                         ),
-    #                     sambamba.view(
-    #                         "/dev/stdin",
-    #                         None,
-    #                         "-S -f bam"
-    #                         ),
-    #                     sambamba.sort(
-    #                         "/dev/stdin",
-    #                         readset_bam,
-    #                         config.param('sambamba_sort_sam', 'tmp_dir', required=True)
-    #                         )
-    #                     ]),
-    #                 sambamba.index(
-    #                     readset_bam,
-    #                     index_bam
-    #                     )
-    #                 ],
-    #                 name="bwa_mem_sambamba_sort_sam." + readset.name,
-    #                 samples=[readset.sample]
-    #                 )
-    #             )
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + os.path.dirname(readset_bam)),
+                    pipe_jobs([
+                        bwa.mem(
+                            fastq1,
+                            fastq2,
+                            read_group="'@RG" + \
+                                "\\tID:" + readset.name + \
+                                "\\tSM:" + readset.sample.name + \
+                                "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
+                                ("\\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                                ("\\tCN:" + config.param('mapping_bwa_mem_sambamba', 'sequencing_center') if config.param('mapping_bwa_mem_sambamba', 'sequencing_center', required=False) else "") + \
+                                ("\\tPL:" + config.param('mapping_bwa_mem_sambamba', 'sequencing_technology') if config.param('mapping_bwa_mem_sambamba', 'sequencing_technology', required=False) else "Illumina") + \
+                                "'",
+                                ini_section='mapping_bwa_mem_sambamba',
+                                other_options=config.param('mapping_bwa_mem_sambamba', 'bwa_other_options')
+                                ),
+                        sambamba.view(
+                            "/dev/stdin",
+                            None,
+                            options=config.param('mapping_bwa_mem_sambamba', 'sambamba_view_other_options')
+                            ),
+                        sambamba.sort(
+                            "/dev/stdin",
+                            readset_bam,
+                            tmp_dir=config.param('mapping_bwa_mem_sambamba', 'tmp_dir', required=True),
+                            other_options=config.param('mapping_bwa_mem_sambamba', 'sambamba_sort_other_options', required=True)
+                            )
+                        ])
+                    ],
+                    name="mapping_bwa_mem_sambamba." + readset.name,
+                    samples=[readset.sample]
+                    )
+                )
 
-    #     return jobs
+        return jobs
 
     def fgbio_trim_primers(self):
         """
@@ -440,7 +439,6 @@ class MGISeq(dnaseq.DnaSeqRaw):
             for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
 
                 output_prefix = os.path.join(alignment_directory, re.sub("\.bam$", ".consensus", os.path.basename(bam)))
-                log.error(output_prefix)
 
                 jobs.append(
                     concat_jobs([
@@ -511,7 +509,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
     def steps(self):
         return [
             self.cutadapt,
-            self.bwa_mem_sambamba_sort_sam,
+            self.mapping_bwa_mem_sambamba,
             self.sambamba_merge_sam_files,
             # self.fgbio_trim_primers,
             self.ivar_trim_primers,
