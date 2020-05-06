@@ -17,7 +17,11 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-from core.job import concat_jobs, pipe_jobs
+# Python Standard Modules
+import os
+import ConfigParser
+
+from core.job import Job, concat_jobs, pipe_jobs
 from core.config import config
 from bfx import bvatools
 from bfx import snpeff
@@ -63,7 +67,7 @@ class RunProcessingAligner(object):
                "\tPU:run" + readset.run + "_" + readset.lane + \
                ("\tCN:" + config.param(ini_section, 'sequencing_center')
                 if config.param(ini_section, 'sequencing_center', required=False) else "") + \
-               "\tPL:Illumina" + \
+               "\tPL:" + config.param(ini_section, 'platform', required=True) + \
                "'"
 
 
