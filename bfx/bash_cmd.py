@@ -247,3 +247,19 @@ gzip {input}{output}""".format(
             output=" > " + output if output else "",
         )
     )
+
+def touch(target, input_dependency=None):
+    if input_dependency is not None:
+        inputs=input_dependency
+    else:
+        inputs=[target]
+    return Job(
+        inputs,
+        [],
+        [],
+        command="""\
+touch {target}""".format(
+            target=target
+        )
+    )
+
