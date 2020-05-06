@@ -308,6 +308,13 @@ class MGIRunProcessing(common.MUGQICPipeline):
             _raise(SanitycheckError("Error: missing '-d/--run_dir' option!"))
 
     @property
+    def flowcell(self):
+        if self.args.flowcell:
+            return self.args.flowcell
+        else:
+            _raise(SanitycheckError("Error: missing '--fcid' option!"))
+
+    @property
     def lane_number(self):
         if self.args.lane_number:
             return self.args.lane_number
