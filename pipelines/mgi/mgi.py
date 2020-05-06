@@ -205,9 +205,14 @@ class MGISeq(dnaseq.DnaSeqRaw):
                             "/dev/stdin",
                             readset_bam,
                             tmp_dir=config.param('mapping_bwa_mem_sambamba', 'tmp_dir', required=True),
-                            other_options=config.param('mapping_bwa_mem_sambamba', 'sambamba_sort_other_options', required=True)
+                            other_options=config.param('mapping_bwa_mem_sambamba', 'sambamba_sort_other_options', required=False)
                             )
-                        ])
+                        ]),
+                    sambamba.index(
+                        readset_bam,
+                        index_bam,
+                        other_options=config.param('mapping_bwa_mem_sambamba', 'sambamba_index_other_options', required=False)
+                        )
                     ],
                     name="mapping_bwa_mem_sambamba." + readset.name,
                     samples=[readset.sample]
