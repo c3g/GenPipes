@@ -1111,10 +1111,6 @@ def parse_mgi_readset_file(
         readsets.append(readset)
         sample.add_readset(readset)
 
-    log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
-    log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
-    return readsets
-
 class MGIRawReadset(MGIReadset):
 
     def __init__(self, name, run_type):
@@ -1157,17 +1153,18 @@ class MGIRawReadset(MGIReadset):
 
     @property
     def project(self):
-        return self._project_id
+        return self._project
 
     @property
-    def flowcell(self):
-        return self._fcid
+    def flow_cell(self):
+        return self._flow_cell
 
 def parse_mgi_raw_readset_files(
     readset_file,
     run_folder,
-    run_id,
-    lane
+    flowcell,
+    lane,
+    output_dir
     ):
 
     readsets = []
@@ -1183,8 +1180,9 @@ def parse_mgi_raw_readset_files(
 
         current_pool = line['PoolID']
         current_lane = line['Lane']
+        current_flowcell = line['FlowcellID']
 
-        if current_pool == "FAIL" or int(current_lane) != lane:
+        if current_pool == "FAIL" or int(current_lane) != lane or current_flowcell != flowcell:
             continue
 
         sample_name = line['Sample']
@@ -1194,32 +1192,92 @@ def parse_mgi_raw_readset_files(
         samples.append(sample)
 
         # Parse Info file to retriece the runtype i.e. PAIRED_END or SINGLE_END
-        run_info_file = open(os.path.join(run_folder, os.path.basename(run_folder)+"_Success.txt"), "r")
+        run_info_file = open(os.path.join(run_folder, current_flowcell, current_flowcell + "_Success.txt"), "r")
         if "PE" in run_info_file.read().split(" ")[3]:
             run_type = "PAIRED_END"
         else:
             run_type = "SINGLE_END"
         if not run_type:
-            log.error("Run type could not be determined for run "+line['RunID']+" from file "+os.path.join(run_folder, os.path.basename(run_folder)+"_Success.txt"))
+            log.error("Run type could not be determined for run " + line['RunID'] + " from file " + os.path.join(run_folder, current_flowcell, current_flowcell + "_Success.txt"))
    
         # Create readset and add it to sample
         readset = MGIRawReadset(line['Sample'] + "_" + line['Library'], run_type)
         readset._library = line['Library']
         readset._index = line['Index']
+        readset._project = line['Project']
         readset._project_id = line['ProjectID']
-        readset._project_name = line['Project']
         readset._protocol = line['Protocol']
         readset._pool_id = line['PoolID']
         readset._run = line['RunID']
         readset._sequencer_name = line['Sequencer']
         readset._sequencer_id = line['SequencerID']
-        readset._fcid = line['FlowcellID']
+        readset._flow_cell = flowcell
         readset._lane = current_lane
         readset._sample_number = str(len(readsets) + 1)
+        readset._quality_offset = 33
+
+        readset._genomic_database = config.param('DEFAULT', 'scientific_name', required=True) + "." + config.param('DEFAULT', 'assembly', required=True)
+
+        if line.get('BED Files', None):
+            readset._beds = line['BED Files'].split(";")
+        else:
+            readset._beds = []
 
         readsets.append(readset)
         sample.add_readset(readset)
 
+    # Searching for a matching reference for the specified species
+    for readset in readsets:
+        genome_root = config.param('DEFAULT', 'genome_root', type="dirpath")
+
+        #m = re.search("(?P<build>\w+):(?P<assembly>[\w\.]+)", readset.genomic_database)
+        #genome_build = None
+        #if m:
+        #    genome_build = GenomeBuild(m.group('build'), m.group('assembly'))
+
+        #if genome_build is not None:
+        if len(readset.genomic_database) > 0:
+            #folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
+            folder_name = readset.genomic_database
+            current_genome_folder = os.path.join(genome_root, folder_name)
+
+            if readset.is_rna:
+                readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, nb_cycles)
+            else:
+                readset._aligner = run_processing_aligner.BwaRunProcessingAligner(output_dir, current_genome_folder)
+
+            aligner_reference_index = readset.aligner.get_reference_index()
+            annotation_files = readset.aligner.get_annotation_files()
+            reference_file = os.path.join(
+                current_genome_folder,
+                "genome",
+                folder_name + ".fa"
+            )
+            if reference_file and os.path.isfile(reference_file):
+                if aligner_reference_index and (os.path.isfile(aligner_reference_index) or os.path.isdir(aligner_reference_index)):
+                    readset._aligner_reference_index = aligner_reference_index
+                    readset._annotation_files = annotation_files
+                    readset._reference_file = reference_file
+                    readset._bam = os.path.join(
+                        output_dir,
+                        "Aligned." + readset.lane,
+                        'alignment',
+                        readset.sample.name,
+                        'run' + readset.run + "_" + readset.lane,
+                        readset.sample.name + "." + readset.library + ".sorted"
+                    )
+
+                else:
+                    log.warning("Unable to access the aligner reference file: '" + aligner_reference_index +
+                                "' for aligner: '" + readset.aligner.__class__.__name__ + "'")
+            else:
+                log.warning("Unable to access the reference file: '" + reference_file + "'")
+
+        if readset.bam is None and len(readset.genomic_database) > 0:
+            log.info("Skipping alignment for the genomic database: '" + readset.genomic_database + "'")
+
+    log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
+    log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
 class PacBioReadset(Readset):
