@@ -34,7 +34,7 @@ def fastqc(
     input2,
     output,
     adapter_file=None,
-    use_tmp=False
+    use_tmp=None
     ):
 
     if input2:  # Paired end reads
@@ -45,7 +45,8 @@ def fastqc(
     outputs = [output]
 
     output_directory = os.path.dirname(output)
-    tmp_directory = output_directory + ".tmp"
+    if use_tmp:
+        tmp_directory = os.path.join(output_directory, use_tmp + ".tmp")
 
     (input_basename, file_format) = os.path.splitext(input1)
     file_format = re.sub("^\.", "", file_format)
@@ -61,20 +62,23 @@ def fastqc(
             ['fastqc', 'module_java']
         ],
         command="""\
+{mkdir} \\ 
 fastqc \\
   --outdir {output_directory} \\
   --threads {threads} \\
   {adapter} \\
   --format {file_format} \\
   {tmp} \\
-  {inputs} && \\
-rm -r {tmp}""".format(
+  {inputs} \\
+  {rm_tmp}""".format(
+            mkdir="mkdir -p " + tmp_directory if use_tmp else "",
             output_directory=output_directory,
             threads=config.param('fastqc', 'threads', param_type='posint'),
             adapter="--adapters " + adapter_file if adapter_file else "",
             file_format=file_format,
-            tmp="-d " + tmp_directory if tmp_directory else "",
-            inputs="\\\n  ".join(inputs)
+            tmp="--dir " + tmp_directory if use_tmp else "",
+            inputs="\\\n  ".join(inputs),
+            rm_tmp="&& rm -r " + tmp_directory if use_tmp else ""
         ),
         removable_files=[]
     )
