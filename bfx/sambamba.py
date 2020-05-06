@@ -47,7 +47,7 @@ sambamba sort {options} {sort_by_name}\\
         )
     )
 
-def index(input, output):
+def index(input, output, other_options=config.param('sambamba_index', 'options', required=False)):
 
     return Job(
         [input],
@@ -60,7 +60,7 @@ def index(input, output):
 sambamba index {options} \\
   {input} \\
   {output}""".format(
-        options=config.param('sambamba_index', 'options'),
+        options=other_options,
         input=input,
         output=output,
         )
