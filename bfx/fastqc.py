@@ -60,7 +60,8 @@ def fastqc(
     tmp_directory = output_directory + ".tmp"
 
     output_directory = os.path.dirname(output)
-    tmp_directory = output_directory + ".tmp"
+    if use_tmp:
+        tmp_directory = os.path.join(output_directory, use_tmp + ".tmp")
 
     (input_basename, file_format) = os.path.splitext(input1)
     file_format = re.sub("^\.", "", file_format)
