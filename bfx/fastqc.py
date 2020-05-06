@@ -29,7 +29,7 @@ from core.job import Job, concat_jobs
 def fastqc(
     input1,
     input2,
-    output,
+    outputs,
     adapter_file=None,
     extract=False,
     use_tmp=False
@@ -42,13 +42,10 @@ def fastqc(
 
     if not isinstance(outputs, list):
         outputs = [outputs]
-
+ 
     output_directory = os.path.dirname(outputs[0])
     if use_tmp:
         tmp_directory = output_directory + ".tmp"
-
-    output_directory = os.path.dirname(output)
-    tmp_directory = output_directory + ".tmp"
 
     (input_basename, file_format) = os.path.splitext(input1)
     file_format = re.sub("^\.", "", file_format)
