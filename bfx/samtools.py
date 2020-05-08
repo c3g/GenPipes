@@ -80,9 +80,6 @@ def mpileup(input_bams, output, other_options="", region=None, regionFile=None, 
     if not isinstance(input_bams, list):
         input_bams = [input_bams]
 
-    if not isinstance(input_bams, list):
-        input_bams = [input_bams]
-
     return Job(
         input_bams,
         [output],
