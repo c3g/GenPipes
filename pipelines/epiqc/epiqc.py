@@ -42,6 +42,7 @@ from bfx import epigeec
 from bfx import epiqc_report
 from bfx.readset import *
 from bfx import genome
+from shutil import copyfile
 
 from pipelines.chipseq import chipseq
 
@@ -65,6 +66,7 @@ class EpiQC(common.Illumina):
         self._protocol = protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
+
         super(EpiQC, self).__init__(protocol)
 
     @property
@@ -160,6 +162,26 @@ class EpiQC(common.Illumina):
         return samplesMarksFiles
 
 
+    def test(self):
+        jobs = []
+        S1 ={}
+        for sample in self.samples:
+            for readset in sample.readsets:
+                #S1.setdefault(sample.name,[]).append(readset.bigwig)
+                S1.setdefault(sample.name, {})[readset.bigwig] = 1
+                print(sample.name)
+                print(readset.bigwig)
+
+        print ("dict")
+
+
+
+        for key, values in S1.iteritems():
+            for value in values:
+                print(key, '->', value)
+
+        return jobs
+
 
     def bigwiginfo(self):
         """
@@ -175,6 +197,9 @@ class EpiQC(common.Illumina):
 
         log.debug("bigwiginfo_creating_jobs")
 
+
+
+
         #obtain samples names for only histone marks (not inputs) from design
         sample_name_list = []
         sample_name_list = [sample.name for contrast in self.contrasts if contrast.treatments for sample in
@@ -182,12 +207,13 @@ class EpiQC(common.Illumina):
 
         for sample in self.samples:
             for readset in sample.readsets:
+
                 if readset.bigwig: # Check if the readset has a BIGWIG column != None
                     bigwig_file = readset.bigwig
                 else:                      # If not, we search for the path from a chipseq pipeline
                     prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
                     bigwig_file = os.path.join(prefix_path, "tracks", sample.name, "bigWig", sample.name + ".bw") # Create path to bigwig file
-                file_ext = bigwig_file.split(".")[-1]
+                #file_ext = bigwig_file.split(".")[-1]
                 #This is not a good way. we need to accept this and write a descriptive warning in job output without raising an error the job
                 #Becuase bigwinfoinfo it self can identify the filee type without the extension
              #   if file_ext not in ("bigWig", "bw"):# != "bigWig" and file_ext != "bw":
@@ -278,9 +304,62 @@ class EpiQC(common.Illumina):
         #files there
         #there should be a way to define it in the readset file. or use a specific readset file for epiqc
         #for now pipeline does not support that
+
+
+
+
         jobs = []
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+        #temp_inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], "temp_" +self.inputinfo_file)
+
+        #create chromimpute output directory
+        if not os.path.exists(self.output_dirs['chromimpute_output_directory']):
+            os.makedirs(self.output_dirs['chromimpute_output_directory'])
+
+        #copy inpur info file from cvmfs ihec directory
+        copyfile("/project/6007512/C3G/projects/pubudu/epiQC_main/inputinfofile.txt", inputinfofile)
+
+        #create modified inputinfo file with user's samples
+        for contrast in self.contrasts:
+            for sample in contrast.treatments:
+                inputinfo = open(inputinfofile, "a")
+                inputinfo.write("%s\t%s\t%s.bedgraph.gz\n" %(sample.name , contrast.real_name , sample.name  ))
+
+        chr_sizes =os.path.join(os.environ[config.param('DEFAULT', 'chromosome_size').split("/")[0].replace("$", "")],
+                        config.param('DEFAULT', 'chromosome_size').replace(config.param('DEFAULT', 'chromosome_size').split("/")[0]+"/", ""))
+
+        output_dir=self.output_dirs['chromimpute_output_directory']
+
+        chrs = config.param('chromimpute_preprocess', 'chromosomes')
+        #get the chromosome from the ini file if one chr specified it gets the chromosome and split the string in the
+        #ini file
+        #otherwise get all chrs information from dictionary file and creates the chromosome length file
+        if chrs == "All":
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            chrs = genome.chr_names_conv(genome_dict)
+        else:
+            chrs = config.param('chromimpute_preprocess', 'chromosomes').split(",")
+
+        chr_sizes_file =   os.path.join( output_dir, "_".join(( config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
+                                                                                           'assembly') , "chrom_sizes.txt")))
+
+        if os.path.exists(chr_sizes_file):
+                    os.remove(chr_sizes_file)
+
+
+        for chr in chrs:
+            with open(chr_sizes, "r") as chr_sizes_genome:
+                for chr_line in chr_sizes_genome:
+                    if chr==chr_line.strip().split("\t")[0]:
+
+                        chr_size=chr_line.strip().split("\t")[1]
+                        chr_sizes_file_name = open(chr_sizes_file, "a")
+                        chr_sizes_file_name.write("%s\t%i\n" % (chr, int(chr_size)))
+
+
+
+                #job_inputinfo.name = "chromimpute_preprocess.inputinfo"
 
         bedgraph_converted_files = []
 
@@ -363,14 +442,15 @@ mkdir -p \\
         #job_folder_create.name = "chromimpute_preprocess"
         job=[]
         #copy histone mark, sample and file paths in user's samples into inputinfo file (avoid input histone files)
-        for contrast in self.contrasts:
-            for sample in contrast.treatments:
-                input_file = os.path.join(self.output_dirs['bedgraph_converted_directory'], sample.name + ".bedgraph.gz")
-                job_sample = chromimpute.modify_inputinfofile(input_file, sample.name, contrast.real_name, inputinfofile)
-                job_sample.samples = [sample]
-                job.append(job_sample)
-                job_inputinfo = concat_jobs(job)
-                #job_inputinfo.name = "chromimpute_preprocess.inputinfo"
+        # for contrast in self.contrasts:
+        #     for sample in contrast.treatments:
+        #         input_file = os.path.join(self.output_dirs['bedgraph_converted_directory'], sample.name + ".bedgraph.gz")
+        #         job_sample = chromimpute.modify_inputinfofile(input_file, sample.name, contrast.real_name, inputinfofile)
+        #         job_sample.samples = [sample]
+        #         job.append(job_sample)
+        #         job_inputinfo = concat_jobs(job)
+        #         #job_inputinfo.name = "chromimpute_preprocess.inputinfo"
+
 
         job_create_simlinks = Job(command="""\
     if [ "$(ls -A {output_dir}/{user_converteddir})" ]; then
@@ -383,32 +463,19 @@ mkdir -p \\
                                 )
 
 
-        output_dir=self.output_dirs['chromimpute_output_directory']
-        chr_sizes=config.param('DEFAULT', 'chromosome_size')
-        chrs = config.param('chromimpute_preprocess', 'chromosomes')
-        #get the chromosome from the ini file if one chr specified it gets the chromosome and split the string in the
-        #ini file
-        #otherwise get all chrs information from dictionary file and creates the chromosome length file
-        if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
-            chrs = genome.chr_names_conv(genome_dict)
-        else:
-            chrs = config.param('chromimpute_preprocess', 'chromosomes').split(",")
-
-        chr_sizes_file =   os.path.join( output_dir, "_".join(( config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
-                                                                                           'assembly') , "chrom_sizes.txt")))
 
 
 
-        job_create_chr_sizes= Job(command="""\
-        if test -f "{chr_sizes_file}"; then
-        rm {chr_sizes_file} &&
-        touch {chr_sizes_file}
-        else
-            touch {chr_sizes_file}
-        fi""".format(
-            chr_sizes_file = chr_sizes_file)
-                                )
+
+        # job_create_chr_sizes= Job(command="""\
+        # if test -f "{chr_sizes_file}"; then
+        # rm {chr_sizes_file} &&
+        # touch {chr_sizes_file}
+        # else
+        #     touch {chr_sizes_file}
+        # fi""".format(
+        #     chr_sizes_file = chr_sizes_file)
+        #                         )
 
         # job_create_chr_sizes2= Job(command="""\
         # if test -f "{output_dir}/{chr_sizes_file}"; then
@@ -430,26 +497,26 @@ mkdir -p \\
         #                                                                                    'assembly') , "chrom_sizes.txt")))
         #                         )
         #
-        job=[]
-        for chr in chrs:
-            job_chr_sizes = chromimpute.generate_chr_sizes(chr_sizes_file, chr_sizes, chr)
-            job.append(job_chr_sizes)
-            job_chrs_sizes = concat_jobs(job)
-
-            #do not delete below command
-            #if someday you want to run convert for each chromosomes parellaly just uncomment below code
-
-        # job_bdg_folder = Job(input_files=bedgraph_converted_files,
-        #                      output_files=[os.path.join(self.output_dirs['chromimpute_output_directory'],
-        #                                                self.output_dirs['bedgraph_chr_converted_directory'])],
-        #                      command="""\
-        #         mkdir -p {chromimpute_output_dir}/{input_dir}""".format(
-        #                          chromimpute_output_dir=self.output_dirs['chromimpute_output_directory'],
-        #                          input_dir=self.output_dirs['bedgraph_chr_converted_directory'])
-        #                      )
-
-        jobs.append(concat_jobs([job_folder_create, job_copy_inputinfo, job_inputinfo, job_create_simlinks,
-                                 job_create_chr_sizes, job_chrs_sizes], name="chromimpute_preprocess"))
+        # job=[]
+        # for chr in chrs:
+        #     job_chr_sizes = chromimpute.generate_chr_sizes(chr_sizes_file, chr_sizes, chr)
+        #     job.append(job_chr_sizes)
+        #     job_chrs_sizes = concat_jobs(job)
+        #
+        #     #do not delete below command
+        #     #if someday you want to run convert for each chromosomes parellaly just uncomment below code
+        #
+        # # job_bdg_folder = Job(input_files=bedgraph_converted_files,
+        # #                      output_files=[os.path.join(self.output_dirs['chromimpute_output_directory'],
+        # #                                                self.output_dirs['bedgraph_chr_converted_directory'])],
+        # #                      command="""\
+        # #         mkdir -p {chromimpute_output_dir}/{input_dir}""".format(
+        # #                          chromimpute_output_dir=self.output_dirs['chromimpute_output_directory'],
+        # #                          input_dir=self.output_dirs['bedgraph_chr_converted_directory'])
+        # #                      )
+        #
+        # jobs.append(concat_jobs([job_folder_create, job_create_simlinks
+        #                           ], name="chromimpute_preprocess"))
        #todo #add samples info to the above job,
 
         #do not delete below code
@@ -555,7 +622,7 @@ mkdir -p \\
 
     def chromimpute_compute_global_dist(self):
         """
-            Creates a job for chromimpute ComputeGlobalDist for each unique mark in the dataset
+            Creates a job for chromimpute ComputeGlobalDist for each unique mark in the inputinfo file
         """
         jobs = []
         chr_sizes_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
@@ -584,7 +651,14 @@ mkdir -p \\
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
         converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converted_directory'])
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_distance_directory'])
-        histone_marks = [contrst.real_name for contrst in self.contrasts]
+        #histone_marks = [contrst.real_name for contrst in self.contrasts]
+        histone_marks=[]
+        #create a job for each histone maek in inputinfor file together with user's histone marks
+        #get unique histone marks from the inputinfo file
+        with open(inputinfofile, "r") as histone_marks_tatal:
+            for line in histone_marks_tatal:
+                histone_marks.append(line.strip().split("\t")[1])
+        histone_marks = list(set(histone_marks))
 
         input_files = []
         output_files = []
@@ -672,6 +746,9 @@ mkdir -p \\
         jobs = []
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+        temp2_inputinfofile_path = os.path.join(self.output_dirs['chromimpute_output_directory'], "temp2_" + self.inputinfo_file)
+        temp_inputinfofile_path = os.path.join(self.output_dirs['chromimpute_output_directory'],
+                                                "temp_" + self.inputinfo_file)
         distancedir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_distance_directory'])
         converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converted_directory'])
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_traindata_directory'])
@@ -683,36 +760,105 @@ mkdir -p \\
 
         train_data_path = config.param('chromimpute_generate_train_data', 'pre_trained_data_path')
 
-        if train_data_path=="":
+        #create temp inputinfo file with interneal indexes used in traindata step
+        #this file will be used to get the integer index for output file
 
-            #        jobs.append(chromimpute.generate_train_data(input_files, output_dir, output_files, converteddir,
-                                                        #        distancedir, inputinfofile, contrast.real_name))
+        #job_temp_inputinfo = chromimpute.temp_inputinfo( inputinfofile, temp_inputinfofile)
+        #jobs.append(job_temp_inputinfo)
 
-            for histone in histone_marks:
-                with open(chr_sizes_file, "r") as chrominfofile:
-                    for line in chrominfofile:
-                        chr_name =line.strip().split("\t")[0]
-                        input_files=[]
-                        output_files=[]
-                        with open(inputinfofile, "r") as inputinfo:
-                            for inputinfoline in inputinfo:
-                                # if histone mark in inputinfo file present in design file it only includes as an input fileof the convert global distance step
-                                if inputinfoline.split("\t")[1] == histone:
-                                    input_files.append(os.path.join(converteddir,
-                                                                    "%s_%s.wig.gz" %
-                                                                    (chr_name,
-                                                                     inputinfoline.strip().split("\t")[2])))
-                                    input_files.append(os.path.join( distancedir,  "%s_%s.txt" % (inputinfoline.split("\t")[0], histone)))
+        train_user_data= config.param('DEFAULT', 'train_only_user_data')
 
-                                   # output_files.append(
-                                    #    os.path.join(output_dir, "%s_%s.txt" % (inputinfoline.split("\t")[0], histone)))
+        if train_user_data=="F":
+            if os.path.exists(temp2_inputinfofile_path):
+                os.remove(temp2_inputinfofile_path)
 
-                job = chromimpute.generate_train_data(input_files, output_dir, output_files, converteddir, distancedir,
-                                                      inputinfofile, histone, chr_sizes_file, chr_name)
-                jobs.append(job)
+            if os.path.exists(temp_inputinfofile_path):
+                os.remove(temp_inputinfofile_path)
 
+            temp_inputinfofile = open(temp2_inputinfofile_path, "a")
+            lines = open(inputinfofile, 'r').readlines()
+
+            for line in sorted(lines, key=lambda line: line.split()[0]):
+                temp_inputinfofile.write(line)
+            temp_inputinfofile.close()
+            temp_inputinfofile = open(temp_inputinfofile_path, "a")
+            with open(temp2_inputinfofile_path, "r") as inputinfo:
+                i = 1
+                index_i = 0
+                for inputinfoline in inputinfo:
+                    if (i == 1):
+                        sample = inputinfoline.split("\t")[0]
+                        index_i = i - 1
+                        temp_inputinfofile.write("%s\t%i%s" % (inputinfoline.strip(), index_i, os.linesep))
+                        i += 1
+                    else:
+                        if sample == inputinfoline.split("\t")[0]:
+                            temp_inputinfofile.write("%s\t%i%s" % (inputinfoline.strip(), index_i, os.linesep))
+                            i += 1
+                        else:
+                            sample = inputinfoline.split("\t")[0]
+                            index_i += 1
+                            temp_inputinfofile.write("%s\t%i%s" % (inputinfoline.strip(), index_i, os.linesep))
+                            i += 1
+            os.remove(temp2_inputinfofile_path)
+            temp_inputinfofile.close()
+            if train_data_path == "":
+
+                #        jobs.append(chromimpute.generate_train_data(input_files, output_dir, output_files, converteddir,
+                #        distancedir, inputinfofile, contrast.real_name))
+
+                for histone in histone_marks:
+                    with open(chr_sizes_file, "r") as chrominfofile:
+                        for line in chrominfofile:
+                            chr_name = line.strip().split("\t")[0]
+                            input_files = []
+                            output_files = []
+                            with open(temp_inputinfofile_path, "r") as inputinfo:
+                                for inputinfoline in inputinfo:
+                                    # if histone mark in inputinfo file present in design file it only includes as an input fileof the convert global distance step
+                                    if inputinfoline.split("\t")[1] == histone:
+                                        input_files.append(os.path.join(converteddir,
+                                                                        "%s_%s.wig.gz" %
+                                                                        (chr_name,
+                                                                         inputinfoline.strip().split("\t")[2])))
+                                        
+                                        input_files.append(os.path.join(distancedir, "%s_%s.txt" % (
+                                        inputinfoline.split("\t")[0], histone)))
+
+                                        output_files.append(
+                                            os.path.join(output_dir, "%s_traindata_%s_%i_0.txt.gz" % (
+                                            chr_name, histone, int(inputinfoline.strip().split("\t")[3]))))
+                                        output_files.append(
+                                            os.path.join(output_dir, "attributes_%s_%i_0.txt.gz" % (
+                                                histone, int(inputinfoline.strip().split("\t")[3]))))
+
+                    # input_files.append(temp_inputinfofile)
+                    job = chromimpute.generate_train_data(input_files, output_dir, output_files, converteddir,
+                                                          distancedir,
+                                                          inputinfofile, histone, chr_sizes_file, chr_name)
+                    jobs.append(job)
+
+            else:
+                job_create_simlinks = Job(command="""\
+                    if [ "$(ls -A {output_dir}/{usertraindatadir})" ]; then
+                    rm {output_dir}/{usertraindatadir}/*
+                    fi &&
+                    ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
+                    output_dir=self.output_dirs['chromimpute_output_directory'],
+                    usertraindatadir=self.output_dirs['chromimpute_traindata_directory'],
+                    ihec_traindatadir="/project/6007512/C3G/projects/pubudu/epiQC_main/TRAINDATA")
+                )
+                jobs.append(
+                    concat_jobs([job_create_simlinks], name="chromimpute_generate_train_data.use_pre_trained_data"))
         else:
-            print("hiss ne")
+            print("")
+            #todo
+            #mula idanma hadan enna one meka
+            #user data witharaka train karanna
+
+
+
+
 
         # chroms = []
         # with open(os.path.join(os.environ[config.param('chromimpute', 'chromosome_size').split("/")[0].replace("$", "")], config.param('chromimpute', 'chromosome_size').replace(config.param('chromimpute', 'chromosome_size').split("/")[0]+"/", "")), "r") as chrominfofile:#with open(config.param('chromimpute', 'chrominfofile')) as chrominfofile:             os.environ[config.param('chromimpute', 'chromosome_size').split("/")[0].replace("$", "")]
@@ -739,13 +885,17 @@ mkdir -p \\
 
     def chromimpute_train(self):
         """
-            Creates a job for chromimpute Train for every sample mark given in the dataset
+            Creates a job for chromimpute Train for every sample mark combination given in the dataset
         """
         jobs = []
 
-        inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], "inputinfofile.ChromImpute.txt")
+        temp_inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'],
+                                                "temp_" + self.inputinfo_file)
+        inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'],
+                                           self.inputinfo_file)
         traindatadir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_traindata_directory'])
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_predictor_directory'])
+
 
         # for contrast in self.contrasts:
         #         #     if contrast.treatments:
@@ -764,18 +914,33 @@ mkdir -p \\
 
         for contrast in self.contrasts:
             if contrast.treatments:
-                input_files = []
-                output_files = []
-                indice_i = 0
+
+
                 for sample in contrast.treatments:
+                    input_files = []
                     output_files = []
-                    input_files.append(os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_traindata_directory'], "attributes_%s_%i_0.txt.gz" % (contrast.real_name, indice_i)))
-                    input_files.append(os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_traindata_directory'], "traindata_%s_%i_0.txt.gz" % (contrast.real_name, indice_i)))
-                    for indice_j, sample_j in enumerate(sorted(contrast.treatments, key=attrgetter("name"))):
-                        if sample_j != sample:
-                            output_files.append(os.path.join(output_dir, "useattributes_%s_%s_%i_0.txt.gz" % (sample.name, contrast.real_name, indice_j)))
-                    indice_i += 1
-                    jobs.append(chromimpute.train(input_files, output_dir, output_files, traindatadir, inputinfofile, sample.name, contrast.real_name))
+                    with open(temp_inputinfofile, "r") as inputinfo:
+                        for inputinfoline in inputinfo:
+                            inputinfo_histone=  inputinfoline.strip().split("\t")[1]
+                            inputinfo_sample = inputinfoline.strip().split("\t")[0]
+                            if contrast.real_name==inputinfo_histone:
+                                if sample.name != inputinfo_sample:
+                                    output_files.append(os.path.join(output_dir, "useattributes_%s_%s_%i_0.txt.gz" % (
+                                        sample.name, contrast.real_name, int(inputinfoline.strip().split("\t")[3]))))
+
+                                #output_files.append(os.path.join(output_dir, "classifier_%s_%s_%i_0.txt.gz" % (
+                                 #   sample.name, contrast.real_name, int(inputinfoline.strip().split("\t")[3]))))
+                                input_files.append(
+                                    os.path.join(traindatadir, "attributes_%s_%i_0.txt.gz" % (
+                                        contrast.real_name, int(inputinfoline.strip().split("\t")[3]))))
+
+                            #adding chr name will make things complex. so haven't added it. may be later
+                            #input_files.append(
+                             #   os.path.join(output_dir, "%s_traindata_%s_%i_0.txt.gz" % (
+                              #      chr_name, histone, int(inputinfoline.strip().split("\t")[3]))))
+
+
+                jobs.append(chromimpute.train(input_files, output_dir, output_files, traindatadir, inputinfofile, sample.name, contrast.real_name))
 
         return jobs
 
@@ -819,40 +984,128 @@ mkdir -p \\
         """
         jobs = []
 
-        inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], "inputinfofile.ChromImpute.txt")
+
+        temp_inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'],
+                                                "temp_" + self.inputinfo_file)
+        inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'],
+                                           self.inputinfo_file)
         converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converted_directory'])
         distancedir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_distance_directory'])
         predictordir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_predictor_directory'])
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_apply'])
+        chr_sizes_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
+                                      "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
+                                                                                                         'assembly'),
+                                                "chrom_sizes.txt")))
+
+        # for contrast in self.contrasts:
+        #     if contrast.treatments:
+        #         for sample in contrast.treatments:
+        #             input_files = []
+        #             for indice, sample_j in enumerate(sorted(contrast.treatments, key=attrgetter("name"))):
+        #                 if sample_j != sample:
+        #                     input_files.append(os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_predictor_directory'], "useattributes_%s_%s_%i_0.txt.gz" % (sample.name, contrast.real_name, indice)))
+        #             # output = output_dir+"_"+samplemark[0]+"_"+samplemark[1]
+        #             jobs.append(chromimpute.apply(input_files, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample.name, contrast.real_name))
 
         for contrast in self.contrasts:
             if contrast.treatments:
+
+
                 for sample in contrast.treatments:
                     input_files = []
-                    for indice, sample_j in enumerate(sorted(contrast.treatments, key=attrgetter("name"))):
-                        if sample_j != sample:
-                            input_files.append(os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_predictor_directory'], "useattributes_%s_%s_%i_0.txt.gz" % (sample.name, contrast.real_name, indice)))
-                    # output = output_dir+"_"+samplemark[0]+"_"+samplemark[1]
-                    jobs.append(chromimpute.apply(input_files, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample.name, contrast.real_name))
+                    output_files = []
+                    with open(chr_sizes_file, "r") as chrominfofile:
+                        for line in chrominfofile:
+                            chr_name = line.strip().split("\t")[0]
+                            with open(temp_inputinfofile, "r") as inputinfo:
+                                for inputinfoline in inputinfo:
+                                    inputinfo_histone=  inputinfoline.strip().split("\t")[1]
+                                    inputinfo_sample = inputinfoline.strip().split("\t")[0]
+                                    if contrast.real_name==inputinfo_histone:
+                                        if sample.name != inputinfo_sample:
+                                            input_files.append(os.path.join(predictordir, "useattributes_%s_%s_%i_0.txt.gz" % (
+                                                sample.name, contrast.real_name, int(inputinfoline.strip().split("\t")[3]))))
+
+                                #output_files.append(os.path.join(output_dir, "classifier_%s_%s_%i_0.txt.gz" % (
+                                 #   sample.name, contrast.real_name, int(inputinfoline.strip().split("\t")[3]))))
+                            output_files.append(
+                                os.path.join(output_dir, "%s_impute_%s_%s.wig.gz" % ( chr_name, sample.name,
+                                contrast.real_name)))
+
+                            #adding chr name will make things complex. so haven't added it. may be later
+                            #input_files.append(
+                             #   os.path.join(output_dir, "%s_traindata_%s_%i_0.txt.gz" % (
+                              #      chr_name, histone, int(inputinfoline.strip().split("\t")[3]))))
+
+
+                            jobs.append(chromimpute.apply(input_files, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample.name, contrast.real_name, chr_name, chr_sizes_file))
 
         return jobs
 
-    def chromimpute_eval(self, samplesMarksFile):
+    # def chromimpute_eval(self, samplesMarksFile):
+    #     """
+    #         Creates a job for chromimpute Eval for every sample mark given in the dataset
+    #     """
+    #     jobs = []
+    #
+    #     input_base = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_apply']) # input_base is the name of the folder containing imputed files
+    #     converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converted_directory'])
+    #     percent1 = config.param('chromimpute', 'percent1')
+    #     percent2 = config.param('chromimpute', 'percent2')
+    #
+    #
+    #     for contrast in self.contrasts:
+    #         if contrast.treatments:
+    #             input_dir = input_base+"_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]
+    #             output_path = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_eval'], "eval_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]+".txt")
+    #             jobs.append(chromimpute.eval(input_dir, percent1, percent2, converteddir, sampleMarkFile[2]+".wig.gz", input_base, "impute_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]+".wig.gz", output_path))
+    #
+    #     return jobs
+
+    def chromimpute_eval(self):
         """
             Creates a job for chromimpute Eval for every sample mark given in the dataset
         """
         jobs = []
 
-        input_base = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_apply']) # input_base is the name of the folder containing imputed files
-        converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converted_directory'])
+        converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'],
+                                    self.output_dirs['chromimpute_converted_directory'])
+        imputeddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_apply'])
+        chr_sizes_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
+                                      "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
+                                                                                                         'assembly'),
+                                                "chrom_sizes.txt")))
+
         percent1 = config.param('chromimpute', 'percent1')
         percent2 = config.param('chromimpute', 'percent2')
+        output_dir =  os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs[
+            'chromimpute_eval'])
 
         for contrast in self.contrasts:
             if contrast.treatments:
-                input_dir = input_base+"_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]
-                output_path = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_eval'], "eval_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]+".txt")
-                jobs.append(chromimpute.eval(input_dir, percent1, percent2, converteddir, sampleMarkFile[2]+".wig.gz", input_base, "impute_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]+".wig.gz", output_path))
+
+                input_files =[]
+                for sample in contrast.treatments:
+
+                        input_files.append(os.path.join(imputeddir, "impute_%s_%s.wig.gz" % (
+                                                sample.name, contrast.real_name)))
+
+                        input_files.append(os.path.join(converteddir, "%s.bedgraph.gz.wig.gz" % (
+                                                sample.name)))
+
+                        imputed_file = os.path.join("impute_%s_%s.wig.gz" % (
+                                                sample.name, contrast.real_name))
+
+                        converted_file = os.path.join("%s.bedgraph.gz.wig.gz" % (
+                                                sample.name))
+
+                        output_file = os.path.join(output_dir, "eval_%s_%s.tsv" % ( sample.name,
+                                contrast.real_name))
+
+
+                        jobs.append(chromimpute.apply(input_files, imputed_file, converted_file, output_file, converteddir, imputeddir, percent1, percent2, chr_sizes_file, sample.name, contrast.real_name))
+
 
         return jobs
 
@@ -904,44 +1157,48 @@ mkdir -p \\
         """
         # TODO : Delete decompressed converted files in imputation/converteddir to save space
         jobs = []
-
+        output_dir =self.output_dirs['signal_to_noise_output_directory']
+        chr_sizes_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
+                                      "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
+                                                                                                         'assembly'),
+                                                "chrom_sizes.txt")))
         jobs.append(Job(
             [],
-            ['signal_noise'],
+            [output_dir],
             [],
-            command=
-"mkdir \
-  {output_dir}".format(
-    output_dir=self.output_dirs['signal_to_noise_output_directory']),
-            name="mkdir_signal_noise"))
+            command="mkdir -p {output_dir}".format(
+            output_dir=output_dir,
+            name="signal_noise.create_signal_noise_directory")))
+
 
         converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converted_directory'])
 
         log.debug("signal_to_noise")
-        for sample in self.samples:
-            for readset in sample.readsets:
-                if readset.bigwig != None: # Check if the readset has a BIGWIG column
-                    bigwig_file = readset.bigwig
-                    converted_file = os.path.basename(bigwig_file)+".bedgraph.wig.gz"
-                else:                      # If not, we search for the path from a chipseq pipeline
-                    bigwig_file = sample.name
-                    converted_file = os.path.basename(bigwig_file)+".bw.bedgraph.wig.gz"
+        for contrast in self.contrasts:
+            if contrast.treatments:
 
+                input_files =[]
+                for sample in contrast.treatments:
+                    with open(chr_sizes_file, "r") as chrominfofile:
+                        for line in chrominfofile:
+                            chr_name = line.strip().split("\t")[0]
+                                         # If not, we search for the path from a chipseq pipeline
+                            converted_bedgraph_file = os.path.join(converteddir, "%s_%s.bedgraph.gz.wig.gz" % ( chr_name, sample.name ))
 
-                output_file = os.path.join(self.output_dirs['signal_to_noise_output_directory'], converted_file+".tsv")
+                            output_file = os.path.join(output_dir, "%s_%s_%s.tsv" % ( chr_name, sample.name , contrast.real_name) )
 
-                jobs.append(Job(
-                    ['signal_noise', converteddir],
+                            jobs.append(Job(
+                    [converted_bedgraph_file],
                     [output_file],
-                    [],
-                    name='signal_noise',
+                    [['signal_noise','module_python']],
+                    name='signal_noise.' + "%s_%s_%s.tsv" % ( chr_name, sample.name , contrast.real_name),
                     command="""\
 python ../genpipes/bfx/wigSignalNoise.py \\
-  -i {file} \\
+  -i {input_file} \\
   -p1 {percent1} \\
   -p2 {percent2} \\
   -o {output_dir}""".format(
-                    file=os.path.join(converteddir, "chr1_" + converted_file),
+                    input_file=converted_bedgraph_file,
                     percent1=config.param('signal_noise', 'percent1'),
                     percent2=config.param('signal_noise', 'percent2'),
                     output_dir=output_file
@@ -1192,12 +1449,15 @@ python ../genpipes/bfx/wigSignalNoise.py \\
     def steps(self):
         # TODO : - Create steps table
         return [
+            self.test,
             self.bigwiginfo,
             self.bigwig_to_bedgraph,
             self.chromimpute_preprocess,
             self.chromimpute_convert,
             self.chromimpute_compute_global_dist,
             self.chromimpute_generate_train_data,
+            self.chromimpute_train,
+            self.chromimpute_apply,
             self.chromimpute_train_step,
             self.chromimpute_compute_metrics,
             # self.signal_to_noise,
