@@ -44,7 +44,7 @@ from bfx import ivar
 from bfx import multiqc
 from bfx import sambamba
 from bfx import samtools
-# from bfx import bash_cmd as bash
+from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
 
@@ -79,8 +79,8 @@ class MGISeq(dnaseq.DnaSeqRaw):
         jobs = []
 
         for readset in self.readsets:
-            output_dir = os.path.join("trim", readset.sample.name)
-            trim_file_prefix = os.path.join(output_dir, readset.name)
+            trim_directory = os.path.join("trim", readset.sample.name)
+            trim_file_prefix = os.path.join(trim_directory, readset.name)
 
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
@@ -105,11 +105,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
             jobs.append(
                 concat_jobs([
-                    Job(
-                        command="mkdir -p " + output_dir,
-                        removable_files=[output_dir],
-                        samples=[readset.sample]
-                        ),
+                    bash.mkdir(trim_directory),
                     cutadapt.trim(
                         fastq1,
                         fastq2,
@@ -151,7 +147,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
                     prefix = os.path.join(
-                        self.output_dir,
+                        self.trim_directory,
                         "raw_reads",
                         readset.sample.name,
                         re.sub("\.bam$", ".", os.path.basename(readset.bam))
@@ -165,7 +161,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                     candidate_input_files.append([readset.fastq1])
                 if readset.bam:
                     prefix = os.path.join(
-                        self.output_dir,
+                        self.trim_directory,
                         "raw_reads",
                         readset.sample.name,
                         re.sub("\.bam$", ".", os.path.basename(readset.bam))
@@ -180,7 +176,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.dirname(readset_bam)),
+                    bash.mkdir(os.path.dirname(readset_bam)),
                     pipe_jobs([
                         bwa.mem(
                             fastq1,
@@ -234,7 +230,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.dirname(output_bam)),
+                    bash.mkdir(os.path.dirname(output_bam)),
                     fgbio.trim_primers(
                         input_bam,
                         output_bam,
@@ -263,16 +259,16 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory),
+                    bash.mkdir(alignment_directory),
                     ivar.trim_primers(
                         input_bam,
                         output_prefix
                         ),
                     sambamba.sort(
-                            output_prefix + ".bam",
-                            output_bam,
-                            config.param('ivar_trim_primers', 'tmp_dir')
-                            )
+                        output_prefix + ".bam",
+                        output_bam,
+                        config.param('ivar_trim_primers', 'tmp_dir')
+                        )
                     ],
                     name="ivar_trim_primers." + sample.name,
                     samples=[sample],
@@ -299,7 +295,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + flagstat_directory),
+                        bash.mkdir(flagstat_directory),
                         sambamba.flagstat(
                             bam,
                             output,
@@ -328,7 +324,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + alignment_directory),
+                        bash.mkdir(alignment_directory),
                         bedtools.genomecov(
                             bam,
                             output
@@ -383,7 +379,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + alignment_directory),
+                        bash.mkdir(alignment_directory),
                         pipe_jobs([
                             samtools.mpileup(
                                 input_bams=bam,
@@ -447,7 +443,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + os.path.dirname(output_prefix)),
+                        bash.mkdir(os.path.dirname(output_prefix)),
                         pipe_jobs([
                             samtools.mpileup(
                                 input_bams=bam,
