@@ -371,7 +371,7 @@ class Pipeline(object):
                     job.command_with_modules).hexdigest() + ".mugqic.done")
                 job.output_dir = self.output_dir
                 job.dependency_jobs = self.dependency_jobs(job)
-
+                
                 if not self.force_jobs and job.is_up2date():
                     log.info("Job " + job.name + " up to date... skipping")
                 else:

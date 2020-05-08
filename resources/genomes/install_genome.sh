@@ -343,6 +343,7 @@ create_samtools_index() {
     echo
     module load $module_samtools
     samtools faidx $GENOME_DIR/$GENOME_FASTA > $LOG_DIR/samtools_$TIMESTAMP.log 2>&1
+    awk '{print $1\t$2}' $GENOME_DIR/$GENOME_FASTA.fai > $GENOME_DIR/$GENOME_FASTA.tsv
   else
     echo
     echo "Genome SAMtools FASTA index up to date... skipping"
