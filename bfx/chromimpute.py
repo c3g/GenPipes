@@ -87,7 +87,6 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
   {output_dir}""".format(
       java_other_options=config.param('chromimpute_convert', 'other_options'),
       ram=config.param('chromimpute', 'ram'),
-      chrom="-c " + config.param('chromimpute_preprocess', 'chromosomes') if config.param('chromimpute_preprocess', 'chromosomes') else "",
       histone_mark=histone_mark,
       convertsample=sample,
       resolution=config.param('chromimpute', 'resolution'),
@@ -127,7 +126,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
 def generate_train_data(input_files, output_dir, output_files, converteddir, distancedir, inputinfofile, histone_mark, chr_sizes_file, chr):
     return Job(
         input_files,
-        [output_dir],
+        output_files,
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name="chromimpute_generate_train_data." + chr + "_" + histone_mark,
         command="""\
@@ -151,6 +150,20 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
       output_dir=output_dir,
       histone_mark=histone_mark,
       chr=chr
+      )
+    )
+
+def temp_inputinfo(input_file, output_file):
+    return Job(
+        [input_file],
+        [output_file],
+        [],
+        name="chromimpute_preprocess.temp_inputinfo",
+        command="""\
+sort -n {input_file} | \\
+awk -v OFS="\\t" '{{if(NR==1){{sample=$1;rowindex=NR-1; print $0,rowindex}} else {{if(sample==$1){{print $0,rowindex }} else {{sample=$1;rowindex=rowindex+1;print $0,rowindex}} }} }}' > {output_file}""".format(
+      input_file=input_file,
+      output_file=output_file
       )
     )
 
@@ -179,7 +192,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
       )
     )
 
-def apply(input_files, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample, mark):
+def apply(input_files, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample, mark, chr, chr_sizes_file):
     return Job(
         input_files,
         [output_dir],
@@ -189,6 +202,7 @@ def apply(input_files, output_dir, converteddir, distancedir, predictordir, inpu
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
     Apply \\
     -r {resolution} \\
+    -c {chrom} \\
     {converteddir} \\
     {distancedir} \\
     {predictordir} \\
@@ -199,43 +213,44 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
     {mark}""".format(
         java_other_options=config.param('DEFAULT', 'java_other_options'),
         ram=config.param('chromimpute', 'ram'),
-        # chrom=config.param('chromimpute', 'chrom'),
+        chrom=chr,
         resolution=config.param('chromimpute', 'resolution'),
         converteddir=converteddir,
         distancedir=distancedir,
         predictordir=predictordir,
         inputinfofile=inputinfofile,
-        chrom_sizes="<(awk '{print $1\"\\t\"$2}' %s)" % (config.param('chromimpute', 'chromosome_size')),# config.param('chromimpute', 'chrominfofile')
+        chrom_sizes=chr_sizes_file,
         output_dir=output_dir,
         sample=sample,
         mark=mark
         )
     )
 
-def eval(input_dir, percent1, percent2, converteddir, converted_file, output_dir, imputed_file, output_path):
+def eval(nput_files, imputed_file, converted_file, output_file, converteddir, imputeddir, percent1, percent2, chr_sizes_file, sample, histone_mark):
     return Job(
-        [input_dir],
-        [output_path],
+        [nput_files],
+        [output_file],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name="chromimpute_eval."+converted_file+"."+imputed_file,
+        name="chromimpute_eval."+sample+"_"+histone_mark,
         command="""\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
     Eval \\
+    -o {output_file} \\
     -p {percent1} {percent2} \\
     {converteddir} \\
     {converted_file} \\
-    {output_dir} \\
+    {imputeddir} \\
     {imputed_file} \\
-    {chrom_sizes} > {output_path}""".format(
+    {chrom_sizes}""".format(
         java_other_options=config.param('DEFAULT', 'java_other_options'),
         ram=config.param('chromimpute', 'ram'),
         percent1=percent1,
         percent2=percent2,
         converteddir=converteddir,
         converted_file=converted_file,
-        output_dir=output_dir,
+        imputeddir=imputeddir,
         imputed_file=imputed_file,
-        chrom_sizes=config.param('chromimpute', 'chrominfofile'),
-        output_path=output_path
+        chrom_sizes=chr_sizes_file,
+        output_file=output_file
         )
     )
