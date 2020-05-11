@@ -341,7 +341,7 @@ class HicSeq(common.Illumina):
     def reproducibility_scores(self):
 
         """
-        hic-rep is a R package for calculate the inter-chromosmal reproducibility score.
+        hic-rep is a R package for calculating the inter-chromosmal reproducibility score.
         Pairwise reproducibility scores for each chromosome pair in each sample pair are calculated using
         hic-rep at resolutions (bin size) defined in interaction_matrices_Chr step
         and other parameters defined in reproducibility_scores step of ini config file. All the scores are finally merged
@@ -447,11 +447,11 @@ class HicSeq(common.Illumina):
     def quality_scores(self):
 
         """
-        #     Quality score per chromosome for each sample is calculated using QUSAR-QC at all resolutions
-        #     and sequencing depths (coverages) and down_sampling value (coverage) defined in quality_scores step of ini config file
-        #     QUSAR-QC is a part of the hifive hic-seq analysis suit
-        #     for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_scoring.html]
-        # """
+             Quality score per chromosome for each sample is calculated using QUSAR-QC at all resolutions
+             and sequencing depths (coverages) and down_sampling value (coverage) defined in quality_scores step of ini config file
+             QUSAR-QC is a part of the hifive hic-seq analysis suit
+             for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_scoring.html]
+        """
         jobs = []
 
         # Get defined chromosomes and resolution from the config (.ini) file
