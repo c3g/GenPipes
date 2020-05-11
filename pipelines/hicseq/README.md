@@ -102,6 +102,9 @@ hic:
 14- identify_peaks
 15- create_hic_file
 16- multiqc_report
+17 - Cram output
+18- Reproducibility Score
+19 - Quality Score
 ----
 ```
 ![hicseq capture workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_capture.resized.png)
@@ -258,4 +261,29 @@ capture_intersect
 provided with a bed file, for example a bed of GWAS snps or features of interest, this method returns the lines in the bed file that intersect with the captured ends ("Other Ends") that have significant interactions.
 Input bed must have 4 columns (<chr> <start> <end> <annotation>) and must be tab separated.
 
+cram _output
+-----------------
+Generate long term storage version of the final alignment files in CRAM format.
+Using this function will include the orginal final bam file into the  removable file list 
 
+reproducibility_scores
+-----------------
+
+hic-rep is a R package for calculating the inter-chromosmal reproducibility score. 
+Pairwise reproducibility scores for each chromosome pair in each sample pair are calculated using
+hic-rep at resolutions (bin size) defined in interaction_matrices_Chr step
+and other parameters defined in reproducibility_scores step of ini config file. All the scores are finally merged
+together and output a csv file with parameters used in analysis with chromosome number, reproducibility scores,
+standard deviation and smoothing value used for the analysis (in order to compare samples smoothing value
+and the sequencing depth should be similar across samples.
+Down-sampling of samples can be performed using the down_sampling parameter in the ini config file.
+Correlation matrices and weight matrices can be saved using  corr=TRUE and weights=TRUE in ini config file
+for more information visit: [https://bioconductor.org/packages/release/bioc/html/hicrep.html]      
+
+quality_scores
+-----------------
+
+Quality score per chromosome for each sample is calculated using QUSAR-QC at all resolutions
+and sequencing depths (coverages) and down_sampling value (coverage) defined in quality_scores step of ini config file
+QUSAR-QC is a part of the hifive hic-seq analysis suit
+for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_scoring.html]
