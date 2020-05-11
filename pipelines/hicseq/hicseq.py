@@ -1046,6 +1046,7 @@ class HicSeq(common.Illumina):
             ]
         ]
 
+
 if __name__ == '__main__':
     argv = sys.argv
     if '--wrap' in argv:
