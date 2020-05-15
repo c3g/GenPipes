@@ -56,7 +56,7 @@ cutadapt {adapter_5p_fwd} \\
   {output_fwd} \\
   {output_rev} \\
   {inputs}""".format(
-            adapter_5p_fwd="-g " + config.param('cutadapt', 'adapter_5p_fwd') if config.param('cutadapt', 'adapter_5p_fwd') else "" ,
+            adapter_5p_fwd="-g " + config.param('cutadapt', 'adapter_5p_fwd') if config.param('cutadapt', 'adapter_5p_fwd') else "",
             adapter_5p_rev="-G " + config.param('cutadapt', 'adapter_5p_rev') if input2 and config.param('cutadapt', 'adapter_5p_fwd') else "",
             adapter_3p_fwd="-a " + adapter_3p_fwd,
             adapter_3p_rev="-A " + adapter_3p_rev if input2 else "",
