@@ -530,7 +530,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             [input_fa] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.fa")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.consensus.fa")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.consensus.fa")]
             ])
