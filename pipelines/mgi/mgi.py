@@ -383,7 +383,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                         output
                         )
                     ],
-                    name="bedtools_genomecov." + sample,#re.sub("\.bam$", "", os.path.basename(bam)),
+                    name="bedtools_genomecov." + sample.name,#re.sub("\.bam$", "", os.path.basename(bam)),
                     samples=[sample]
                     )
                 )
@@ -456,7 +456,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                         output_vcf + ".gz"
                         )
                     ],
-                    name="ivar_call_variants." + sample,#re.sub("\.bam$", "", os.path.basename(bam)),
+                    name="ivar_call_variants." + sample.name,#re.sub("\.bam$", "", os.path.basename(bam)),
                     samples=[sample],
                     removable_files=[output_tsv, output_vcf]
                     )
@@ -557,7 +557,7 @@ awk '/^>/\{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
     )
                         )
                 ],
-                name="rename_consensus_header." + sample,
+                name="rename_consensus_header." + sample.name,
                 samples=[sample]
                 )
             )
