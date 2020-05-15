@@ -544,7 +544,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                         input_files=input_fa,
                         output_files=output_fa,
                         command="""\\
-awk '/^>/\{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:{assemb_method}|snv_call_method:{snv_call_method}"; next\}\{print\}' < {input_fa} > {output_fa}""".format(
+awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:{assemb_method}|snv_call_method:{snv_call_method}"; next}}{{print}}' < {input_fa} > {output_fa}""".format(
     country=config.param('rename_consensus_header', 'country', required=False),
     province=config.param('rename_consensus_header', 'province', required=False),
     year=config.param('rename_consensus_header', 'year', required=False),
