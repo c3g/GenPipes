@@ -492,31 +492,31 @@ class MGISeq(dnaseq.DnaSeqRaw):
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
-            for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
+            # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
 
-                output_prefix = os.path.join(alignment_directory, re.sub("\.bam$", ".consensus", os.path.basename(bam)))
+            output_prefix = os.path.join(alignment_directory, re.sub("\.bam$", ".consensus", os.path.basename(input_bam)))
 
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(os.path.dirname(output_prefix)),
-                        pipe_jobs([
-                            samtools.mpileup(
-                                input_bams=bam,
-                                output=None,
-                                other_options=config.param('ivar_create_consensus', 'mpileup_options'),
-                                region=None,
-                                regionFile=None,
-                                ini_section='ivar_create_consensus'
-                                ),
-                            ivar.create_consensus(
-                                output_prefix
-                                )
-                            ])
-                        ],
-                        name="ivar_create_consensus." + re.sub("\.bam$", "", os.path.basename(bam)),
-                        samples=[sample]
-                        )
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(os.path.dirname(output_prefix)),
+                    pipe_jobs([
+                        samtools.mpileup(
+                            input_bams=input_bam,
+                            output=None,
+                            other_options=config.param('ivar_create_consensus', 'mpileup_options'),
+                            region=None,
+                            regionFile=None,
+                            ini_section='ivar_create_consensus'
+                            ),
+                        ivar.create_consensus(
+                            output_prefix
+                            )
+                        ])
+                    ],
+                    name="ivar_create_consensus." + sample.name,#re.sub("\.bam$", "", os.path.basename(bam)),
+                    samples=[sample]
                     )
+                )
 
         return jobs
 
@@ -617,7 +617,8 @@ awk '/^>/\{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
             self.ivar_trim_primers,
             self.mgi_metrics,
             self.mgi_calling,
-            self.ivar_create_consensus
+            self.ivar_create_consensus,
+            self.rename_consensus_header
             # self.run_multiqc
         ]
 
