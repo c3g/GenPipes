@@ -1065,11 +1065,12 @@ class DnaSeqRaw(common.Illumina):
             readset = sample.readsets[0]
 
             [input] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
                 [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
@@ -1128,11 +1129,12 @@ class DnaSeqRaw(common.Illumina):
             qualimap_directory = os.path.join("metrics", "dna", sample.name, "qualimap")
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
                 [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
             output = os.path.join(qualimap_directory, sample.name + ".genome_results.txt")
@@ -1315,11 +1317,12 @@ class DnaSeqRaw(common.Illumina):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
                 [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
             input_file_prefix = re.sub("bam$", "", input)
@@ -1390,11 +1393,12 @@ class DnaSeqRaw(common.Illumina):
 
                 alignment_directory = os.path.join("alignment", sample.name)
                 [input] = self.select_input_files([
-                    [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                    # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                     [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
                     [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
                 ])
                 job = gatk4.calculate_hs_metrics(

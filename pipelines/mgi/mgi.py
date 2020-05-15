@@ -217,6 +217,51 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
         return jobs
 
+    def sambamba_filtering(self):
+        """
+        Filter raw bams with sambamba and an awk cmd to filter by insert size
+        """
+
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            output_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
+
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(os.path.dirname(output_bam)),
+                    pipe_jobs([
+                        sambamba.view(
+                            input_bam=input_bam,
+                            output_bam=None,
+                            options=""
+                            ),
+                        Job(
+                            input_files=[],
+                            output_files=[],
+                            command="""awk 'substr($0,1,1)=="@" ||\\
+ ($9 >= {min_insert_size} && $9 <= {max_insert_size}) ||\\
+ ($9 <= -{min_insert_size} && $9 >= -{max_insert_size})'""".format(
+     min_insert_size=config.param('sambamba_filtering', 'min_insert_size', required=False),
+     max_insert_size=config.param('sambamba_filtering', 'max_insert_size', required=False)
+     )
+                            ),
+                        sambamba.view(
+                            input_bam="/dev/stdin",
+                            output_bam=output_bam,
+                            options=config.param('sambamba_filtering', 'sambamba_filtering_other_options', required=False)
+                            )
+                        ]),
+                    ],
+                    name="sambamba_filtering." + sample.name,
+                    samples=[sample]
+                    )
+                )
+
+        return jobs
+
+
     def fgbio_trim_primers(self):
         """
         Remove primer sequences to individual bam files using fgbio
@@ -225,7 +270,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
             output_bam = os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")
 
             jobs.append(
@@ -253,7 +298,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
-            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
             output_prefix = os.path.join(alignment_directory, re.sub("\.sorted.bam$", ".primerTrim", os.path.basename(input_bam)))
             output_bam = os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")
 
@@ -280,60 +325,68 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
 
     def metrics_sambamba_flagstat(self):
+        """
+        Sambamba flagstsat
+        """
 
         jobs = []
         for sample in self.samples:
             flagstat_directory = os.path.join("metrics", "dna", sample.name, "flagstat")
             alignment_directory = os.path.join("alignment", sample.name)
             [input_bam] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                # [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
-            for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
-                output = os.path.join(flagstat_directory, re.sub("\.bam$", ".flagstat", os.path.basename(bam)))
+            # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
+            output = os.path.join(flagstat_directory, re.sub("\.bam$", ".flagstat", os.path.basename(input_bam)))
 
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(flagstat_directory),
-                        sambamba.flagstat(
-                            bam,
-                            output,
-                            config.param('sambamba_flagstat', 'flagstat_options')
-                            )
-                        ],
-                        name="sambamba_flagstat." + re.sub("\.bam$", "", os.path.basename(bam)),
-                        samples=[sample]
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(flagstat_directory),
+                    sambamba.flagstat(
+                        input_bam,
+                        output,
+                        config.param('sambamba_flagstat', 'flagstat_options')
                         )
+                    ],
+                    name="sambamba_flagstat." + sample,
+                    samples=[sample]
                     )
+                )
 
         return jobs
 
     def metrics_bedtools_genomecov(self):
+        """
+        bedtools genome coverage
+        """
 
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             [input_bam] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
-            for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
-                output = os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(bam)))
+            # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
+            output = os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(input_bam)))
 
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(alignment_directory),
-                        bedtools.genomecov(
-                            bam,
-                            output
-                            )
-                        ],
-                        name="bedtools_genomecov." + re.sub("\.bam$", "", os.path.basename(bam)),
-                        samples=[sample]
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(alignment_directory),
+                    bedtools.genomecov(
+                        input_bam,
+                        output
                         )
+                    ],
+                    name="bedtools_genomecov." + sample,#re.sub("\.bam$", "", os.path.basename(bam)),
+                    samples=[sample]
                     )
+                )
 
         return jobs
 
@@ -368,45 +421,46 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
-            for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
+            # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
 
-                output_prefix = os.path.join(alignment_directory, re.sub("\.bam$", "", os.path.basename(bam)))
-                output_tsv = output_prefix + ".tsv"
-                output_vcf = output_prefix + ".vcf"
+            output_prefix = os.path.join(alignment_directory, re.sub("\.bam$", "", os.path.basename(input_bam)))
+            output_tsv = output_prefix + ".tsv"
+            output_vcf = output_prefix + ".vcf"
 
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(alignment_directory),
-                        pipe_jobs([
-                            samtools.mpileup(
-                                input_bams=bam,
-                                output=None,
-                                other_options=config.param('ivar_call_variants', 'mpileup_options'),
-                                region=None,
-                                regionFile=None,
-                                ini_section='ivar_call_variants'
-                                ),
-                            ivar.call_variants(
-                                output_prefix
-                                )
-                            ]),
-                        ivar.tsv_to_vcf(
-                            output_tsv,
-                            output_vcf
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(alignment_directory),
+                    pipe_jobs([
+                        samtools.mpileup(
+                            input_bams=input_bam,
+                            output=None,
+                            other_options=config.param('ivar_call_variants', 'mpileup_options'),
+                            region=None,
+                            regionFile=None,
+                            ini_section='ivar_call_variants'
                             ),
-                        htslib.bgzip_tabix(
-                            output_vcf,
-                            output_vcf + ".gz"
+                        ivar.call_variants(
+                            output_prefix
                             )
-                        ],
-                        name="ivar_call_variants." + re.sub("\.bam$", "", os.path.basename(bam)),
-                        samples=[sample],
-                        removable_files=[output_tsv, output_vcf]
+                        ]),
+                    ivar.tsv_to_vcf(
+                        output_tsv,
+                        output_vcf
+                        ),
+                    htslib.bgzip_tabix(
+                        output_vcf,
+                        output_vcf + ".gz"
                         )
+                    ],
+                    name="ivar_call_variants." + sample,#re.sub("\.bam$", "", os.path.basename(bam)),
+                    samples=[sample],
+                    removable_files=[output_tsv, output_vcf]
                     )
+                )
 
         # jobs.extend(self.gatk_haplotype_caller())
         # jobs.extend(self.merge_and_call_individual_gvcf())
@@ -434,6 +488,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
             alignment_directory = os.path.join("alignment", sample.name)
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
@@ -464,6 +519,51 @@ class MGISeq(dnaseq.DnaSeqRaw):
                     )
 
         return jobs
+
+
+    def rename_consensus_header(self):
+        """
+        Rename reads headers
+        """
+
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            [input_fa] = self.select_input_files([
+                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.consensus.fa")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.consensus.fa")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.consensus.fa")]
+            ])
+
+            output_fa = os.path.join(alignment_directory, re.sub("\.fa$", ".gisaid_renamed.fa", os.path.basename(input_fa)))
+
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(os.path.dirname(output_fa)),
+                    Job(
+                        input_files=input_fa,
+                        output_files=output_fa,
+                        command="""\\
+awk '/^>/\{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:{assemb_method}|snv_call_method:{snv_call_method}"; next\}\{print\}' < {input_fa} > {output_fa}""".format(
+    country=config.param('rename_consensus_header', 'country', required=False),
+    province=config.param('rename_consensus_header', 'province', required=False),
+    year=config.param('rename_consensus_header', 'year', required=False),
+    seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
+    assemb_method=config.param('rename_consensus_header', 'assemb_method', required=False),
+    snv_call_method=config.param('rename_consensus_header', 'snv_call_method', required=False),
+    sample=sample,
+    input_fa=input_fa,
+    output_fa=output_fa
+    )
+                        )
+                ],
+                name="rename_consensus_header." + sample,
+                samples=[sample]
+                )
+            )
+
+        return jobs
+
 
     def run_multiqc(self):
 
@@ -512,8 +612,9 @@ class MGISeq(dnaseq.DnaSeqRaw):
             self.cutadapt,
             self.mapping_bwa_mem_sambamba,
             self.sambamba_merge_sam_files,
-            self.fgbio_trim_primers,
-            # self.ivar_trim_primers,
+            self.sambamba_filtering,
+            # self.fgbio_trim_primers,
+            self.ivar_trim_primers,
             self.mgi_metrics,
             self.mgi_calling,
             self.ivar_create_consensus
