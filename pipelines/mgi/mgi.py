@@ -235,7 +235,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                         sambamba.view(
                             input_bam=input_bam,
                             output_bam=None,
-                            options=""
+                            options="-h"
                             ),
                         Job(
                             input_files=[],
