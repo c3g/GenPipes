@@ -299,8 +299,8 @@ class MGISeq(dnaseq.DnaSeqRaw):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
-            output_prefix = os.path.join(alignment_directory, re.sub("\.sorted.bam$", ".primerTrim", os.path.basename(input_bam)))
-            output_bam = os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")
+            output_prefix = os.path.join(alignment_directory, re.sub("\.sorted.filtered.bam$", ".primerTrim", os.path.basename(input_bam)))
+            output_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")
 
             jobs.append(
                 concat_jobs([
@@ -420,7 +420,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
             # haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
 
             [input_bam] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
@@ -487,7 +487,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             [input_bam] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
@@ -530,7 +530,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             [input_fa] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.consensus.fa")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.fa")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.consensus.fa")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.consensus.fa")]
             ])
