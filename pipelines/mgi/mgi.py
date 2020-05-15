@@ -351,7 +351,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                         config.param('sambamba_flagstat', 'flagstat_options')
                         )
                     ],
-                    name="sambamba_flagstat." + sample,
+                    name="sambamba_flagstat." + sample.name,
                     samples=[sample]
                     )
                 )
@@ -551,7 +551,7 @@ awk '/^>/\{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
     seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
     assemb_method=config.param('rename_consensus_header', 'assemb_method', required=False),
     snv_call_method=config.param('rename_consensus_header', 'snv_call_method', required=False),
-    sample=sample,
+    sample=sample.name,
     input_fa=input_fa,
     output_fa=output_fa
     )
