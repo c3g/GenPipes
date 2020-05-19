@@ -708,6 +708,33 @@ bash extractCaptureBed.sh \\
         removable_files=[ibed_file + ".capture"]
     )
 
+
+def sh_blastQC_ONT(output_directory, reads_fastq_dir, readset_name):
+    return Job(
+        [reads_fastq_dir],
+        [os.path.join(output_directory, readset_name + "blastHit_20MF_species.txt")],
+        [
+            ["blastqc", "module_mugqic_tools"],
+            ["blastqc", "module_blast"],
+            ["blastqc", "module_python"]
+        ],
+        command="""
+bash runBlastQC_ONT.sh \\
+  {output_directory} \\
+  {reads_fastq_dir} \\
+  {readset_name}""".format(
+            output_directory=output_directory,
+            reads_fastq_dir=reads_fastq_dir,
+            readset_name=readset_name
+        ),
+        name="blastQC." + readset_name,
+        removable_files=[os.path.join(output_directory, "subsample_input.trim.blastres"),
+                         os.path.join(output_directory, "subsample_input.trim.fasta"),
+                         os.path.join(output_directory, "subsample_input.trim.fastq"),
+                         os.path.join(output_directory, "subsample_input.trim.qual"),
+                         os.path.join(output_directory, "subsample_input.fastq")]
+    )
+
 def clean_otu(otu_table):
     """
     Used by ampliconseq pipeline

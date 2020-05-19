@@ -37,6 +37,7 @@ from pipelines import common
 from bfx import minimap2
 from bfx import svim
 from bfx import pycoqc
+from bfx import tools
 from bfx import gatk4
 
 log = logging.getLogger(__name__)
@@ -118,38 +119,7 @@ class Nanopore(common.MUGQICPipeline):
             else:
                 _raise(SanitycheckError("Error: FASTQ file not available for readset \"" + readset.name + "\"!"))
 
-            job = Job(
-                [reads_fastq_dir],
-                [os.path.join(blast_directory, readset.name + "blastHit_20MF_species.txt")],
-                [["blastqc", "module_mugqic_tools"],
-                 ["blastqc", "module_blast"],
-                 ["blastqc", "module_python"]],
-                command="""\
-mkdir -p {output_directory} && \\ 
-file -L {reads_fastq_dir}/*.fa* | head >> {output_directory}/fastq_file_type.tmp && \\
-if grep -q "gzip" {output_directory}/fastq_file_type.tmp; then zcat {reads_fastq_dir}/*.fastq.gz >> {output_directory}/full_input.tmp.fastq; fi && \\
-if grep -q "ASCII" {output_directory}/fastq_file_type.tmp; then cat {reads_fastq_dir}/*.fastq >> {output_directory}/full_input.tmp.fastq; fi && \\
-Nseq=$(cat {output_directory}/full_input.tmp.fastq | awk ' {{ if (substr($0,0,1) == "+") {{ print $0}} }}' | wc -l) && \\
-thrC=$(echo " scale=6; 1000 / $Nseq" | bc) && \\
-if [ $thrC == 0 ]; then thrC=0.000001; fi  && \\
-fastqPickRandom.pl --threshold 0$thrC --input1 {output_directory}/full_input.tmp.fastq --out1 {output_directory}/subsample_input.fastq && \\
-rm {output_directory}/full_input.tmp.fastq {output_directory}/fastq_file_type.tmp && \\
-trim_nanopore.py -i {output_directory}/subsample_input.fastq -o {output_directory}/subsample_input.trim.fastq -s 1000 && \\
-fastq2FastaQual.pl {output_directory}/subsample_input.trim.fastq {output_directory}/subsample_input.trim.fasta {output_directory}/subsample_input.trim.qual && \\
-blastn -query {output_directory}/subsample_input.trim.fasta -db nt -out {output_directory}/subsample_input.trim.blastres -perc_identity 80 -num_descriptions 1 -num_alignments 1 && \\
-grep ">" {output_directory}/subsample_input.trim.blastres | awk ' {{ print $2 "_" $3}} ' | sort | uniq -c | sort -n -r | head -20 > {output_directory}/{readset_name}.blastHit_20MF_species.txt 
-                """.format(
-                    output_directory=blast_directory,
-                    reads_fastq_dir=reads_fastq_dir,
-                    readset_name=readset.name
-                ),
-                removable_files=[os.path.join(blast_directory, "subsample_input.trim.blastres"),
-                                 os.path.join(blast_directory, "subsample_input.trim.fasta"),
-                                 os.path.join(blast_directory, "subsample_input.trim.fastq"),
-                                 os.path.join(blast_directory, "subsample_input.trim.qual"),
-                                 os.path.join(blast_directory, "subsample_input.fastq")]
-            )
-            job.name = "blastqc." + readset.name
+            job = tools.sh_blastQC_ONT(blast_directory, reads_fastq_dir, readset.name)
             job.samples = [readset.sample]
             jobs.append(job)
 
