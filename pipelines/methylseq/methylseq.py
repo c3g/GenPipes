@@ -184,6 +184,7 @@ class MethylSeq(dnaseq.DnaSeq):
                     sambamba.flagstat(
                         output_bam,
                         re.sub(".bam", "_flagstat.txt", output_bam),
+                        config.param('sambamba_flagstat', 'flagstat_options')
                     )
                 ], name="sambamba_flagstat." + readset.name, samples=[readset.sample])
             )
