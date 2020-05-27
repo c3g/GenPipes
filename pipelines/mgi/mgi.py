@@ -45,6 +45,8 @@ from bfx import ivar
 from bfx import multiqc
 from bfx import sambamba
 from bfx import samtools
+from bfx import snpeff
+
 from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
@@ -479,6 +481,40 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
         return jobs
 
+
+    def snpeff_annotate_vcf(self):
+        """
+        Calling steps from dnaseq
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+
+            [input_vcf] = self.select_input_files([
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.vcf.gz")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.vcf.gz")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.vcf.gz")]
+            ])
+
+            output_vcf = os.path.join(alignment_directory, re.sub("\.vcf.gz$", ".annotate.vcf.gz", os.path.basename(input_vcf)))
+
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(alignment_directory),
+                    snpeff.snpeff_annotate(
+                        input_vcf,
+                        output_vcf
+                        ),
+                    ],
+                    name="snpeff_annotate_vcf." + sample.name,
+                    samples=[sample]
+                    )
+                )
+
+        return jobs
+
     def ivar_create_consensus(self):
         """
         Remove primer sequences to individual bam files using fgbio
@@ -618,6 +654,7 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
             self.ivar_trim_primers,
             self.mgi_metrics,
             self.mgi_calling,
+            self.snpeff_annotate_vcf,
             self.ivar_create_consensus,
             self.rename_consensus_header
             # self.run_multiqc
