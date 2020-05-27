@@ -993,8 +993,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 recursive=True
             )
         ])
-        copy_job.name = "fastq_copy." + self.run_id + "." + str(self.lane_number)
-        copy_job.samples = self.samples
+#        copy_job.name = "fastq_copy." + self.run_id + "." + str(self.lane_number)
+#        copy_job.samples = self.samples
 
         # Then do the necessary moves and renamings, from the Unexpected folder to the Unaligned folders 
         fastq_job = Job()
@@ -1032,14 +1032,23 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     re.sub("gz", "fqStat.txt", readset.fastq2)
                 ) if readset.run_type == "PAIRED_END" else None
             ])
-        fastq_job.name = "fastq_rename." + self.run_id + "." + str(self.lane_number)
-        fastq_job.samples = self.samples
+ #       fastq_job.name = "fastq_rename." + self.run_id + "." + str(self.lane_number)
+ #       fastq_job.samples = self.samples
 
-        copy_job.output_files = fastq_job.input_files
-        copy_job.output_dependency = fastq_job.output_files 
+#        copy_job.output_files = fastq_job.output_files
+#        copy_job.output_dependency = fastq_job.output_files 
 
-        jobs.append(copy_job)
-        jobs.append(fastq_job)
+#        jobs.append(copy_job)
+#        jobs.append(fastq_job)
+
+        job = concat_jobs(
+            [
+                copy_job,
+                fastq_job,
+            ],
+            name="fastq_copy." + self.run_id + "." + str(self.lane_number),
+            samples=self.samples
+        )
 
         self.add_copy_job_inputs(jobs)
         return jobs
@@ -1197,7 +1206,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             None,
                             output,
                             adapter_file=None,
-                            use_tmp="fastqc.R2"
+                            use_tmp=True
                     )],
                     name="fastqc.R2." + readset.name,
                     samples=[readset.sample]
