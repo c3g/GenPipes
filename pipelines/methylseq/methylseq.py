@@ -929,7 +929,7 @@ pandoc \\
             self.merge_trimmomatic_stats,
             self.bismark_align,
             self.add_bam_umi,               # step 5
-            self.picard_merge_sam_files,
+            self.sambamba_merge_sam_files,
             self.picard_remove_duplicates,
             self.metrics,
             self.methylation_call,
@@ -943,7 +943,6 @@ pandoc \\
         ]
 
 if __name__ == '__main__':
-
     argv = sys.argv
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
