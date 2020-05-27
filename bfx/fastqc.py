@@ -32,7 +32,7 @@ from bfx import bash_cmd as bash
 def fastqc(
     input1,
     input2,
-    output,
+    outputs,
     adapter_file=None,
     use_tmp=None
     ):
@@ -42,11 +42,12 @@ def fastqc(
     else:       # Single end reads
         inputs = [input1]
 
-    outputs = [output]
-
-    output_directory = os.path.dirname(output)
+    if not isinstance(outputs, list):
+        outputs = [outputs]
+        
+    output_directory = os.path.dirname(outputs[0])
     if use_tmp:
-        tmp_directory = os.path.join(output_directory, use_tmp + ".tmp")
+        tmp_directory = output_directory + ".tmp"
 
     (input_basename, file_format) = os.path.splitext(input1)
     file_format = re.sub("^\.", "", file_format)
@@ -71,7 +72,7 @@ fastqc \\
   {tmp} \\
   {inputs} \\
   {rm_tmp}""".format(
-            mkdir="mkdir -p " + tmp_directory if use_tmp else "",
+            mkdir="mkdir -p " + tmp_directory + "&&" if use_tmp else "",
             output_directory=output_directory,
             threads=config.param('fastqc', 'threads', param_type='posint'),
             adapter="--adapters " + adapter_file if adapter_file else "",
