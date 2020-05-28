@@ -671,6 +671,7 @@ class DnaSeqRaw(common.Illumina):
         Fixing the read mate positions is done using [Samtools](http://samtools.sourceforge.net/) and [Sambamba](http://lomereiter.github.io/sambamba/index.html).
         """
 
+        return jobs
 
         jobs = []
         for sample in self.samples:
@@ -966,7 +967,6 @@ class DnaSeqRaw(common.Illumina):
             job.name = "gatk_base_recalibrator." + sample.name
             job.samples = [sample]
             jobs.append(job)
-
 
             if config.param('gatk_apply_bqsr', 'module_gatk').split("/")[2] > "3":
                 jobs.append(
@@ -1576,7 +1576,6 @@ class DnaSeqRaw(common.Illumina):
                             )
                         )
 
-
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 jobs.append(
                     concat_jobs([
@@ -1593,7 +1592,6 @@ class DnaSeqRaw(common.Illumina):
                         samples=[sample]
                         )
                     )
-
 
         return jobs
 
@@ -1662,7 +1660,6 @@ class DnaSeqRaw(common.Illumina):
                 job.name = "merge_and_call_individual_gvcf.call." + sample.name
                 job.samples = [sample]
                 jobs.append(job)
-
 
         return jobs
 
@@ -1841,7 +1838,6 @@ class DnaSeqRaw(common.Illumina):
                 job.name = "gatk_combine_gvcf.AllSample" + ".others"
                 job.samples = self.samples
                 job.removable_files = [
-
                     os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz"),
                     os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz.tbi")
                 ]
