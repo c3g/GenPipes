@@ -338,8 +338,8 @@ class MGISeq(dnaseq.DnaSeqRaw):
             alignment_directory = os.path.join("alignment", sample.name)
             [input_bam] = self.select_input_files([
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-                # [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                # [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
             # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
