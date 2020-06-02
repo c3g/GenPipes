@@ -337,7 +337,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
             flagstat_directory = os.path.join("metrics", "dna", sample.name, "flagstat")
             alignment_directory = os.path.join("alignment", sample.name)
             input_bams = [
-                os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"),
+                os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam"),
                 os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam"),
                 os.path.join(alignment_directory, sample.name + ".sorted.bam")
             ]
