@@ -336,28 +336,29 @@ class MGISeq(dnaseq.DnaSeqRaw):
         for sample in self.samples:
             flagstat_directory = os.path.join("metrics", "dna", sample.name, "flagstat")
             alignment_directory = os.path.join("alignment", sample.name)
-            [input_bam] = self.select_input_files([
-                # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                # [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+            input_bams = [
+                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
-            ])
+            ]
 
             # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
-            output = os.path.join(flagstat_directory, re.sub("\.bam$", ".flagstat", os.path.basename(input_bam)))
+            for input_bam in input_bams:
+                output = os.path.join(flagstat_directory, re.sub("\.bam$", ".flagstat", os.path.basename(input_bam)))
 
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(flagstat_directory),
-                    sambamba.flagstat(
-                        input_bam,
-                        output,
-                        config.param('sambamba_flagstat', 'flagstat_options')
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(flagstat_directory),
+                        sambamba.flagstat(
+                            input_bam,
+                            output,
+                            config.param('sambamba_flagstat', 'flagstat_options')
+                            )
+                        ],
+                        name="sambamba_flagstat." + sample.name,
+                        samples=[sample]
                         )
-                    ],
-                    name="sambamba_flagstat." + sample.name,
-                    samples=[sample]
                     )
-                )
 
         return jobs
 
