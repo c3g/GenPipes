@@ -157,7 +157,7 @@ def snpeff_annotate(input_vcf, output_vcf):
 
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME/snpEff.jar \\
-  -c $SNPEFF_HOME/snpEff.config \\
+  -v -c $SNPEFF_HOME/snpEff.config \\
   {reference_snpeff_genome} \\
   {input_vcf} > \\
   {output_vcf}""".format(
