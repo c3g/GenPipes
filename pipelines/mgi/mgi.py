@@ -498,7 +498,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                 [os.path.join(alignment_directory, sample.name + ".sorted.vcf.gz")]
             ])
 
-            output_vcf = os.path.join(alignment_directory, re.sub("\.vcf.gz$", ".annotate.vcf.gz", os.path.basename(input_vcf)))
+            output_vcf = os.path.join(alignment_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
 
             jobs.append(
                 concat_jobs([
@@ -507,6 +507,10 @@ class MGISeq(dnaseq.DnaSeqRaw):
                         input_vcf,
                         output_vcf
                         ),
+                    htslib.bgzip_tabix(
+                        output_vcf,
+                        output_vcf + ".gz"
+                        )
                     ],
                     name="snpeff_annotate_vcf." + sample.name,
                     samples=[sample]
