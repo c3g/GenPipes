@@ -483,7 +483,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
         return jobs
 
 
-    def snpeff_annotate_vcf(self):
+    def snpeff_annotate(self):
         """
         Calling steps from dnaseq
         """
@@ -513,7 +513,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                         output_vcf + ".gz"
                         )
                     ],
-                    name="snpeff_annotate_vcf." + sample.name,
+                    name="snpeff_annotate." + sample.name,
                     samples=[sample]
                     )
                 )
@@ -659,7 +659,7 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
             self.ivar_trim_primers,
             self.mgi_metrics,
             self.mgi_calling,
-            self.snpeff_annotate_vcf,
+            self.snpeff_annotate,
             self.ivar_create_consensus,
             self.rename_consensus_header
             # self.run_multiqc
