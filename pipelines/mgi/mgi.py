@@ -355,7 +355,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                             config.param('sambamba_flagstat', 'flagstat_options')
                             )
                         ],
-                        name="sambamba_flagstat." + sample.name,
+                        name="sambamba_flagstat." + re.sub("\.bam$", "", os.path.basename(input_bam)),
                         samples=[sample]
                         )
                     )
