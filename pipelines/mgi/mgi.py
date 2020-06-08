@@ -39,7 +39,7 @@ from bfx import bwa
 from bfx import bedtools
 from bfx import cutadapt
 from bfx import fgbio
-# from bfx import gatk4
+from bfx import gatk4
 from bfx import htslib
 from bfx import ivar
 from bfx import multiqc
@@ -394,6 +394,45 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
         return jobs
 
+
+    def multiple_metrics_raw_picard(self):
+
+        ##check the library status
+        library = {}
+        for readset in self.readsets:
+            if not library.has_key(readset.sample):
+                library[readset.sample] = "SINGLE_END"
+            if readset.run_type == "PAIRED_END":
+                library[readset.sample] = "PAIRED_END"
+
+        jobs = []
+        for sample in self.samples:
+            picard_directory = os.path.join("metrics", "dna", sample.name, "picard_metrics")
+            alignment_directory = os.path.join("alignment", sample.name)
+            readset = sample.readsets[0]
+
+            [input] = self.select_input_files([
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
+            ])
+            log.info(input)
+            mkdir_job = bash.mkdir(picard_directory, remove=True)
+
+            jobs.append(
+                concat_jobs([
+                    mkdir_job,
+                    gatk4.collect_multiple_metrics(
+                        input,
+                        os.path.join(picard_directory, sample.name + ".all.metrics"),
+                        library_type=library[sample]
+                        )
+                    ],
+                    name="picard_collect_multiple_metrics." + sample.name,
+                    samples=[sample]
+                    )
+                )
+
+        return jobs
+
     def mgi_metrics(self):
         """
         Multiple metrcis from dnaseq
@@ -401,6 +440,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
         jobs = []
 
+        jobs.extend(self.multiple_metrics_raw_picard())
         jobs.extend(self.metrics_dna_picard_metrics())
         jobs.extend(self.metrics_dna_sample_qualimap())
         jobs.extend(self.metrics_sambamba_flagstat())
