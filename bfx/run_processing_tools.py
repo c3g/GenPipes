@@ -24,9 +24,6 @@ import sys
 import os
 import re
 
-# Python Illumina InterOp Library
-from interop import py_interop_run_metrics, py_interop_run, py_interop_summary
-
 # MUGQIC Modules
 from core.config import config
 from core.job import Job

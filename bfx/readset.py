@@ -724,37 +724,38 @@ def parse_mgi_raw_readset_files(
 
     for line in readset_csv:
 
-        current_pool = line['PoolID']
+        current_pool = line['Pool_ID']
         current_lane = line['Lane']
-        current_flowcell = line['FlowcellID']
+        current_flowcell = line['Flowcell_ID']
 
         if current_pool == "FAIL" or int(current_lane) != lane or current_flowcell != flowcell:
             continue
 
-        sample_name = line['Sample']
+        sample_name = line['Sample_Name']
 
         # Always create a new sample
         sample = Sample(sample_name)
         samples.append(sample)
 
-        # Parse Info file to retriece the runtype i.e. PAIRED_END or SINGLE_END
+        # Parse Info file to retrieve the runtype i.e. PAIRED_END or SINGLE_END
         run_info_file = open(os.path.join(run_folder, current_flowcell, current_flowcell + "_Success.txt"), "r")
         if "PE" in run_info_file.read().split(" ")[3]:
             run_type = "PAIRED_END"
         else:
             run_type = "SINGLE_END"
         if not run_type:
-            log.error("Run type could not be determined for run " + line['RunID'] + " from file " + os.path.join(run_folder, current_flowcell, current_flowcell + "_Success.txt"))
+            log.error("Run type could not be determined for run " + line['RUN_ID'] + " from file " + os.path.join(run_folder, current_flowcell, current_flowcell + "_Success.txt"))
    
         # Create readset and add it to sample
-        readset = MGIRawReadset(line['Sample'] + "_" + line['Library'], run_type)
+        readset = MGIRawReadset(line['Sample_Name'] + "_" + line['Library'], run_type)
         readset._library = line['Library']
-        readset._index = line['Index']
+        readset._index = line['Index'].split("_")[2]
+        log.error(readset.index)
         readset._project = line['Project']
-        readset._project_id = line['ProjectID']
+        readset._project_id = line['Project_ID']
         readset._protocol = line['Protocol']
-        readset._pool_id = line['PoolID']
-        readset._run = line['RunID']
+        readset._pool_id = line['Pool_ID']
+        readset._run = line['RUN_ID']
         readset._sequencer_name = line['Sequencer']
         readset._sequencer_id = line['SequencerID']
         readset._flow_cell = flowcell

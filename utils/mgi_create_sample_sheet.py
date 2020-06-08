@@ -25,78 +25,9 @@ import gspread
 import csv
 import textwrap
 
+from spreadsheet_utils import parse_google_sheet, print_sample_sheet
+
 logger = logging.getLogger(__name__)
-
-def parse_google_sheet():
-    gc = gspread.service_account()
-
-    wks = gc.open("COVID 19 MGI Run Management ").sheet1
-
-    # As the labels in the header of the sample sheet differs from the ones in the header of the google spread sheet
-    # we work with indices
-    list_of_lists = wks.get_all_values()
-
-    # Use the second line of the google sheet as the HEADER,
-    # strip trailing space characters and replace new-line charaters by spaces
-    header = [x.strip() for x in list_of_lists[1]]
-    header = [x.replace("\n", " ") for x in header]
-
-    # Now build a dict of lists to store the columns
-    columns = {}
-    for i in range(len(header)):
-        h = header[i].encode('utf8')
-        if h == "Library Plate Barcode-Well (Library ID)":
-            h = "Library"
-        if h == "Index Name":
-            h = "Index"
-        h = h.replace(" ", "_")
-        columns[h] = []
-        header[i] = h
-
-    # Actual data starts at line 3 
-    for row in list_of_lists[2:]:
-        for h, v in zip(header, row):
-            columns[h].append(v.encode('utf8'))
-    # Add the Readset column
-    columns["Readset"] = [sample + "_" + library for sample, library in zip(columns["Sample_Name"], columns["Library"])] 
-
-    # Split the Suencer column in to 2 columns
-    columns["SequencerID"] = [seq.split('-')[1] if "-" in seq else "" for seq in columns["Sequencer"]]
-    columns["Sequencer"] = [seq.split('-')[0]  if "-" in seq else seq for seq in columns["Sequencer"]]
-
-    return columns
-
-def print_sheet(
-    columns,
-    project,
-    run,
-    lane,
-    outfile=None,
-    verbose=None
-    ):
-
-    if project not in columns['Project']:
-        logger.error("Project " + str(project) + " was not found in " + columns['Project'])
-    if run not in columns['RUN_ID']:
-        logger.error("Run ID " + str(run) + " was not found in " + columns['Run_ID'])
-    if str(lane) not in columns['Lane']:
-        logger.error("Lane " + str(lane) + " was not found in " + columns['Lane'])
-
-    if not outfile:
-        outfile = str(project) + "." + str(run) + ".L0" + str(lane) + ".sample_sheet.csv"
-
-    f = csv.writer(open(outfile, "wb+"))
-
-    # Write CSV Header
-    header = ["Sample_Name", "Readset", "Library", "Project", "Project_ID", "Protocol", "Index", "Pool_ID", "RUN_ID", "Flowcell_ID", "Lane", "Run_Date", "Sequencer", "SequencerID"]
-    f.writerow(header)
-
-    for x in range(len(columns['RUN_ID'])):
-        if columns['Project'][x] == project and columns['RUN_ID'][x] == run and columns['Lane'][x] == str(lane):
-            if columns['Pool_ID'][x] != "FAIL":
-                f.writerow([columns[col][x] for col in header])
-            else:
-                logger.info("Skipping failed sample " + columns['Sample'][x])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -104,6 +35,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--run', help="Run ID", required=True, dest="run_id")
     parser.add_argument('-l', '--lane', help="Lane number", type=int, required=True, dest="lane_number")
     parser.add_argument('-o', '--outfile', help="Output file (csv format). Default : PROJECT_ID.RUN_ID.LANE_NUMBER.sample_sheet.csv", required=False)
+    parser.add_argument('-a', '--authentication_file', help="JSON authentication file used to connect the spreadsheets", required=True, type=file, dest="json_file")
     parser.add_argument('--loglevel', help="Standard Python log level", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
 
     args = parser.parse_args()
@@ -116,10 +48,15 @@ if __name__ == '__main__':
     lane = args.lane_number
 
     outfile = args.outfile
+    authentication_file = args.json_file.name
 
-    dict_of_columns = parse_google_sheet()
+    MGI_spreadsheet_name = "COVID 19 MGI Run Management"
+    dict_of_columns = parse_google_sheet(
+        MGI_spreadsheet_name,
+        authentication_file
+    )
 
-    print_sheet(
+    print_sample_sheet(
         dict_of_columns,
         project,
         run,
