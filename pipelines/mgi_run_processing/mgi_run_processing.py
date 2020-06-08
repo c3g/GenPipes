@@ -986,15 +986,15 @@ class MGIRunProcessing(common.MUGQICPipeline):
         unaligned_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
         unexpected_dir = os.path.join(unaligned_dir, 'Unexpected')
         copy_job = concat_jobs([
-            bash.mkdir(unaligned_dir),
+            bash.mkdir(unexpected_dir),
             bash.cp(
-                os.path.join(self.run_dir, self.flowcell, "L0" + str(self.lane_number)),
+                os.path.join(self.run_dir, self.flowcell, "L0" + str(self.lane_number), "."),
                 unexpected_dir,
                 recursive=True
             )
         ])
-#        copy_job.name = "fastq_copy." + self.run_id + "." + str(self.lane_number)
-#        copy_job.samples = self.samples
+        copy_job.name = "fastq_copy." + self.run_id + "." + str(self.lane_number)
+        copy_job.samples = self.samples
 
         # Then do the necessary moves and renamings, from the Unexpected folder to the Unaligned folders 
         fastq_job = Job()
@@ -1032,23 +1032,13 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     re.sub("gz", "fqStat.txt", readset.fastq2)
                 ) if readset.run_type == "PAIRED_END" else None
             ])
- #       fastq_job.name = "fastq_rename." + self.run_id + "." + str(self.lane_number)
- #       fastq_job.samples = self.samples
+        fastq_job.name = "fastq_rename." + self.run_id + "." + str(self.lane_number)
+        fastq_job.samples = self.samples
 
-#        copy_job.output_files = fastq_job.output_files
-#        copy_job.output_dependency = fastq_job.output_files 
+        copy_job.output_files = fastq_job.input_files
 
-#        jobs.append(copy_job)
-#        jobs.append(fastq_job)
-
-        job = concat_jobs(
-            [
-                copy_job,
-                fastq_job,
-            ],
-            name="fastq_copy." + self.run_id + "." + str(self.lane_number),
-            samples=self.samples
-        )
+        jobs.append(copy_job)
+        jobs.append(fastq_job)
 
         self.add_copy_job_inputs(jobs)
         return jobs
