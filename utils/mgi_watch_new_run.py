@@ -29,6 +29,8 @@ import csv
 
 from spreadsheet_utils import print_sample_sheet, parse_google_sheet
 
+from spreadsheet_utils import print_sample_sheet, parse_google_sheet
+
 logger = logging.getLogger(__name__)
 
 columns = {}
@@ -109,7 +111,6 @@ def compare_runs(
     header = "RUN_ID"
     if os.path.isfile(mgi_runs_file):
         new_list = filter(None, sorted(set(columns['RUN_ID'])))
-#        ref_list = []
         ref_list = filter(None, open(mgi_runs_file, "r").read().split("\n"))
 
         if run_id or new_list != ref_list:
