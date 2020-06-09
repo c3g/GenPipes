@@ -341,13 +341,13 @@ class HicSeq(common.Illumina):
     def reproducibility_scores(self):
 
         """
-        hic-rep is a R package for calculating the inter-chromosmal reproducibility score.
+        hic-rep is a R package for calculating the inter-chromosomal reproducibility score.
         Pairwise reproducibility scores for each chromosome pair in each sample pair are calculated using
         hic-rep at resolutions (bin size) defined in interaction_matrices_Chr step
         and other parameters defined in reproducibility_scores step of ini config file. All the scores are finally merged
         together and output a csv file with parameters used in analysis with chromosome number, reproducibility scores,
-        standard deviation and smoothing value used for the analysis (in order to compare samples smoothing value
-        and the sequencing depth should be similar across samples.
+        standard deviation and smoothing value used for the analysis (in order to compare samples, smoothing value
+        and the sequencing depth should be similar across samples).
         Down-sampling of samples can be performed using the down_sampling parameter in the ini config file.
         Correlation matrices and weight matrices can be saved using  corr=TRUE and weights=TRUE in ini config file
         for more information visit: [https://bioconductor.org/packages/release/bioc/html/hicrep.html]
@@ -375,7 +375,6 @@ class HicSeq(common.Illumina):
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = chrs.split(",")
-        #chrs = ["chr5"]
 
         input_files_for_merging=[]
         tsv_files_for_merging=[]
@@ -447,9 +446,9 @@ class HicSeq(common.Illumina):
     def quality_scores(self):
 
         """
-             Quality score per chromosome for each sample is calculated using QUSAR-QC at all resolutions
+             Quality score per chromosome for each sample is calculated using QUASAR-QC at all resolutions
              and sequencing depths (coverages) and down_sampling value (coverage) defined in quality_scores step of ini config file
-             QUSAR-QC is a part of the hifive hic-seq analysis suit
+             QUASAR-QC is a part of the hifive hic-seq analysis suite
              for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_scoring.html]
         """
         jobs = []
@@ -511,7 +510,7 @@ class HicSeq(common.Illumina):
             jobs.append(job)
 
 
-        #Perform the QUSAR-QC analysis using the generated temp files
+        #Perform the QUASAR-QC analysis using the generated temp files
         #loop through each sample with same enzyme and one or many resolutions user has specified.
         #user can specify the downsampling value too. If needed the full coverage (all reads), use 0 as the downsampling value
 
@@ -537,7 +536,6 @@ class HicSeq(common.Illumina):
                 job_qusarqc.name = "_".join(("quality_scores.quasarqc",sample.name, res, self.enzyme))
                 jobs.append(job_qusarqc)
 
-#to edit
         for res in res_chr:
             for q_res in quasr_res.split(","):
                 q_res = int(q_res)/1000

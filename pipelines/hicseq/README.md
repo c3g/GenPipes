@@ -110,10 +110,10 @@ hic:
 13- identify_TADs_RobusTAD
 14- identify_peaks
 15- create_hic_file
-16- multiqc_report
-17 - Cram output
-18- Reproducibility Score
-19 - Quality Score
+16- Cram output
+17- Reproducibility Score
+18- Quality Score
+19- multiqc_report
 ----
 ```
 ![hicseq capture workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_capture.resized.png)
@@ -230,16 +230,6 @@ create_hic_file
 A .hic file is created per sample in order to visualize in JuiceBox, WashU epigenome browser or as input for other tools.
 For more detailed information about the JuiceBox visit: [JuiceBox] (http://www.aidenlab.org/software.html)
 
-multiqc_report
---------------
-A quality control report for all samples is generated.
-For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
-
-cram_output
------------
-Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list 
-
 create_rmap_file
 ----------------
 rmap file for Chicago capture analysis is created using the hicup digestion file.
@@ -302,3 +292,8 @@ Quality score per chromosome for each sample is calculated using QUSAR-QC at all
 and sequencing depths (coverages) and down_sampling value (coverage) defined in quality_scores step of ini config file
 QUSAR-QC is a part of the hifive hic-seq analysis suit
 for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_scoring.html]
+
+multiqc_report
+--------------
+A quality control report for all samples is generated.
+For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
