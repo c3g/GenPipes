@@ -26,14 +26,12 @@ import os
 from core.config import *
 from core.job import *
 
-#beluga path = /home/pubudu/projects/rrg-bourqueg-ad/pubudu/job_outputs/hicrep.R
 def calculate_reproducible_score( output_dir, sample1, sample2, file1_path, file2_path,
                                   chromosome , resolution, bound_width, weights, corr, down_sampling, smooth):
 
     output_file= "".join((output_dir, "_".join(("/hicrep", sample1,  "vs", sample2 , chromosome, resolution, "res",smooth,
                                                 bound_width, down_sampling)), ".tmp"))
 
-    ##/lb/project/C3G/projects/pubudu/mugqic_tools/R-tools/hicrep.R
     return Job(
         [file1_path,file2_path],
         [output_file],

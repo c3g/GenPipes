@@ -52,11 +52,8 @@ def create_fend_object(chromosome_lengths_file, output_file,output_dir, res_chr,
 def restructure_matrix(input_file_path, output_file_path,  output_dir, bin, temp_dir):
 
     return Job(
-#awk '{{ printf $1"\\t"; for( i = 2; i <= NF; i++) {{ if(( $i ~ /[0-9]+/ )) {{ printf "%.0f\\t", $i*10; }} else {{ printf 0"\\t";}} }} printf "\\n"}}' > \\
 
-        #awk '{split($1,a,"-"); print a[1],a[2]}' HTD_AC_Arima_chr10_20000_rawRN.txt
-        #awk -v OFS="\t" -v bin=$bin '{if(NR!=1) {split($1,a,"-"); print a[1]":"a[2]"-"bin+a[2],$0}else{print "V1",$0}}' HTD_AC_Arima_chr10_20000_rawRN.txt | cut -f2 --complement > /lb/project/C3G/projects/pubudu/testdata_hicseq/hicseq/sample.txt
-        [input_file_path],
+     [input_file_path],
         [output_file_path],
         [
             ['quality_scores', 'module_R']
