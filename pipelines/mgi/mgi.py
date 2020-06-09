@@ -426,7 +426,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                         library_type=library[sample]
                         )
                     ],
-                    name="picard_collect_multiple_metrics." + sample.name,
+                    name="multiple_metrics_raw_picard." + sample.name,
                     samples=[sample]
                     )
                 )
