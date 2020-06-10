@@ -357,7 +357,7 @@ class HicSeq(common.Illumina):
 
         #Get defined chromosomes, resolution and other paramters from the config (.ini) file
         chrs = config.param('interaction_matrices_Chr', 'chromosomes')
-        res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
+        res_chr= [x.strip() for x in config.param('interaction_matrices_Chr', 'resolution_chr').split(",")]
         bound_width = config.param('reproducibility_scores', 'boundary_width')
         weights = config.param('reproducibility_scores', 'weights')
         down_sampling = config.param('reproducibility_scores', 'down_sampling')
@@ -374,7 +374,7 @@ class HicSeq(common.Illumina):
             genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
-            chrs = chrs.split(",")
+            chrs = [x.strip() for x in chrs.split(",")]
 
         input_files_for_merging=[]
         tsv_files_for_merging=[]
@@ -455,11 +455,9 @@ class HicSeq(common.Illumina):
 
         # Get defined chromosomes and resolution from the config (.ini) file
         chrs = config.param('interaction_matrices_Chr', 'chromosomes')
-        res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
-        assembly_dir = config.param('DEFAULT', 'assembly_dir')
-        scientific_name = config.param('DEFAULT', 'scientific_name')
-        assembly = config.param('DEFAULT', 'assembly')
-        chrom_lengths = os.path.join(assembly_dir, "genome", ".".join((scientific_name, assembly,"fa", "fai")))
+        res_chr= [x.strip() for x in config.param('interaction_matrices_Chr', 'resolution_chr').split(",")]
+        genome_fasta = config.param('DEFAULT', 'genome_fasta')
+        chrom_lengths = ".".join((genome_fasta, "fai"))
         output_dir = self.output_dirs['quality_score_output_directory']
         temp_dir="temp"
         output_fend_file=""
@@ -476,7 +474,7 @@ class HicSeq(common.Illumina):
             genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
-            chrs = chrs.split(",")
+            chrs = [x.strip() for x in chrs.split(",")]
 
         #Restrutcturing interaction matrices suitable for QUASAR-QC input
         #First need to add a lable as (chr_number:bin_start - bin_end) and set it as the row name (first column)
@@ -1018,10 +1016,10 @@ class HicSeq(common.Illumina):
             self.identify_TADs_RobusTAD,
             self.identify_peaks,
             self.create_hic_file,
-            self.multiqc_report,
-            self.cram_output,
             self.reproducibility_scores,
-            self.quality_scores
+            self.quality_scores,
+            self.cram_output,
+            self.multiqc_report
             ],
             [self.samtools_bam_sort,
             self.picard_sam_to_fastq,
