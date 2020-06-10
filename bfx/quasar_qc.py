@@ -73,15 +73,15 @@ def restructure_matrix(input_file_path, output_file_path,  output_dir, bin, temp
         ))
 
 
-def quality_analysis(quasr_temp_files, input_files, output_file_path, output_dir, fend_file, quasar_res, quasar_coverage, report_file):
+def quality_analysis(quasr_temp_files, input_files, output_file_prefix, output_dir, fend_file, quasar_res, quasar_coverage, report_file):
     output_data_file = "_".join((
-                    output_file_path, "hic.data"))
+                    output_file_prefix, "hic.data"))
 
     output_project_file = "_".join((
-                    output_file_path, "hic.project"))
+                    output_file_prefix, "hic.project"))
 
     quasar_file="_".join((
-                    output_file_path, "hic.quasar"))
+                    output_file_prefix, "hic.quasar"))
     return Job(
         quasr_temp_files,
         [report_file],

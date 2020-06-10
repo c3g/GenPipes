@@ -71,6 +71,11 @@ Rscript $R_TOOLS/hicrep.R \\
 
 
 def merge_tmp_files( input_files, output_files, temp_out_dir, resolution, smooth, bound_width, down_sampling, temp_dir):
+    if not isinstance(input_files, list):
+        input_files = [input_files]
+    if not isinstance(output_files, list):
+            output_files = [output_files]
+
     return Job(
         input_files,
         output_files,
@@ -96,6 +101,9 @@ def merge_tmp_files( input_files, output_files, temp_out_dir, resolution, smooth
 def merge_tsv(input_files, out_dir, output_file, temp_dir):
 
     #merge all the tsvs and create final .csv file
+
+    if not isinstance(input_files, list):
+        input_files = [input_files]
 
     return Job(
         input_files,
