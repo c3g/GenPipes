@@ -215,6 +215,9 @@ class MGISeq(dnaseq.DnaSeqRaw):
                     Job(
                         input_files=[output_pair1, output_pair2],
                         output_files=[output_pair1 + ".gz", output_pair2 + ".gz"],
+                        module_entries=[
+                            ['pigz', 'module_pigz']
+                        ],
                         command="""pigz -p {nthreads} {input_files}""".format(
                             input_files=" ".join([output_pair1, output_pair2]),
                             nthreads=config.param('host_reads_removal', 'pigz_threads')
@@ -365,6 +368,9 @@ class MGISeq(dnaseq.DnaSeqRaw):
                     Job(
                         input_files=unclassified_output + classified_output,
                         output_files=[fastq1 + ".gz", fastq2 + ".gz"],
+                        module_entries=[
+                            ['pigz', 'module_pigz']
+                        ],
                         command="""pigz -p {nthreads} {input_files}""".format(
                             input_files=" ".join(unclassified_output + classified_output),
                             nthreads=config.param('host_reads_removal', 'pigz_threads')
