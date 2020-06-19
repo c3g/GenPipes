@@ -85,8 +85,8 @@ class MGISeq(dnaseq.DnaSeqRaw):
         for readset in self.readsets:
             # trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             host_removal_directory = os.path.join("host_removal", readset.sample.name)
-            readset_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam")
-            index_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam.bai")
+            readset_bam = os.path.join(host_removal_directory, readset.name + ".host_removed.nsorted.bam")
+            index_bam = os.path.join(host_removal_directory, readset.name + ".host_removed.nsorted.bam.bai")
 
 
             if readset.run_type == "PAIRED_END":
