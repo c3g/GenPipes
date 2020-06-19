@@ -3284,7 +3284,7 @@ END`""".format(
             [
                 self.picard_sam_to_fastq,
                 #self.trimmomatic,
-                # self.merge_trimmomatic_stats,
+                #self.merge_trimmomatic_stats,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
@@ -3367,7 +3367,7 @@ END`""".format(
                 self.sambamba_mark_duplicates,
                 self.recalibration,
                 self.sequenza,
-                self.sCNAphase,
+                #self.sCNAphase,
                 self.delly_call_filter,
                 self.delly_sv_annotation,
                 self.manta_sv_calls,

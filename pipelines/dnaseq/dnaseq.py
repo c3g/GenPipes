@@ -3512,7 +3512,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.skewer_trimming,
+<<<<<<< HEAD
                 self.bwa_mem_sambamba_sort_sam,
+=======
+                self.bwa_mem_picard_sort_sam,
+                #self.bwakit_picard_sort_sam,
+>>>>>>> remove testing steps
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
@@ -3548,8 +3553,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 	            self.metrics_verify_bam_id,
 	            self.metrics_vcftools_missing_indiv,
 	            self.metrics_vcftools_depth_indiv,
-	            self.metrics_gatk_sample_fingerprint,
-	            self.metrics_gatk_cluster_fingerprint_sample,
+	            #self.metrics_gatk_sample_fingerprint,
+	            #self.metrics_gatk_cluster_fingerprint_sample,
 	            self.metrics_peddy,
             ],
             [
