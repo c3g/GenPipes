@@ -68,150 +68,6 @@ class MGISeq(dnaseq.DnaSeqRaw):
         super(MGISeq, self).__init__(protocol)
 
 
-    def cutadapt(self):
-        """
-        Raw reads quality trimming and removing of MGI adapters is performed using [Cutadapt](https://cutadapt.readthedocs.io/en/stable/index.html).
-        'Adapter1' and 'Adapter2' columns from the readset file ar given to Cutadapt. For PAIRED_END readsets, both adapters are used.
-        For SINGLE_END readsets, only Adapter1 is used and left unchanged.
-        To trim the front of the read use adapter_5p_fwd and adapter_5p_rev (for PE only) in cutadapt section of ini file.
-
-        This step takes as input files:
-
-        1. FASTQ files from the readset file if available
-        2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
-        """
-
-        jobs = []
-
-        for readset in self.readsets:
-            trim_directory = os.path.join("trim", readset.sample.name)
-            trim_file_prefix = os.path.join(trim_directory, readset.name)
-
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[readset.fastq1, readset.fastq2]]
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-                adapter_fwd = readset.adapter1
-                adapter_rev = readset.adapter2
-
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[readset.fastq1]]
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-                adapter_fwd = readset.adapter1
-                adapter_rev = None
-
-            else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
-
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(trim_directory),
-                    cutadapt.trim(
-                        fastq1,
-                        fastq2,
-                        trim_file_prefix,
-                        adapter_fwd,
-                        adapter_rev
-                        )
-                    ],
-                    name="cutadapt." + readset.name)
-                )
-
-        return jobs
-
-
-    def kraken_analysis(self):
-        """
-        The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-        The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-        BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
-
-        This step takes as input files:
-
-        1. Trimmed FASTQ files if available
-        2. Else, FASTQ files from the readset file if available
-        3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
-        """
-
-        jobs = []
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            kraken_directory = os.path.join("metrics", "dna", readset.sample.name, "kraken_metrics")
-            prefix = os.path.join(kraken_directory, readset.name)
-            # readset_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam")
-            # index_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam.bai")
-
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    prefix = os.path.join(
-                        self.trim_directory,
-                        "raw_reads",
-                        readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
-                    )
-                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-                unclassified_output = [prefix + ".unclassified_sequences_1.fastq", prefix + ".unclassified_sequences_2.fastq"]
-                classified_output = [prefix + ".classified_sequences_1.fastq", prefix + ".classified_sequences_2.fastq"]
-
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    prefix = os.path.join(
-                        self.trim_directory,
-                        "raw_reads",
-                        readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
-                    )
-                    candidate_input_files.append([prefix + ".single.fastq.gz"])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-                unclassified_output = [prefix + ".unclassified_sequences.fastq"]
-                classified_output = [prefix + ".classified_sequences.fastq"]
-
-            else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
-
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(kraken_directory)),
-                    kraken2.kraken2(
-                        fastq1,
-                        fastq2,
-                        prefix,
-                        other_options=config.param('kraken_analysis', 'kraken2_other_options'),
-                        nthread=config.param('kraken_analysis', 'kraken2_threads'),
-                        database=config.param('kraken_analysis', 'kraken2_database')
-                        ),
-                    Job(
-                        input_files=unclassified_output + classified_output,
-                        output_files=[fastq1 + ".gz", fastq2 + ".gz"],
-                        command="""pigz -p {nthreads} {input_files}""".format(
-                            input_files=" ".join(unclassified_output + classified_output),
-                            nthreads=config.param('host_reads_removal', 'pigz_threads')
-                            )
-                        )
-                    ],
-                    name="kraken_analysis." + readset.name,
-                    samples=[readset.sample]
-                    )
-                )
-
-        return jobs
-
-
     def host_reads_removal(self):
         """
         The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
@@ -227,48 +83,93 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
         jobs = []
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            # trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             host_removal_directory = os.path.join("host_removal", readset.sample.name)
             readset_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam")
             index_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam.bai")
 
-            # Find input readset FASTQs first from previous cutadapt job, then from original FASTQs in the readset sheet
+
             if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    prefix = os.path.join(
-                        self.trim_directory,
-                        "raw_reads",
-                        readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
-                    )
-                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                candidate_input_files = [
+                    [readset.fastq1, readset.fastq2]
+                    ]
+                # if readset.fastq1 and readset.fastq2:
+                #     candidate_input_files.append([readset.fastq1, readset.fastq2])
+                # if readset.bam:
+                #     prefix = os.path.join(
+                #         self.trim_directory,
+                #         "raw_reads",
+                #         readset.sample.name,
+                #         re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                #     )
+                #     candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+
+                #     candidate_input_files.append([
+                #         re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
+                #         re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                #         ])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-                output_pair1 = os.path.join(host_removal_directory, readset.name, readset.name + ".trim.host_removed.pair1.fastq")
-                output_pair2 = os.path.join(host_removal_directory, readset.name, readset.name + ".trim.host_removed.pair2.fastq")
+
+                output_pair1 = os.path.join(host_removal_directory, readset.name, readset.name + ".host_removed.pair1.fastq")
+                output_pair2 = os.path.join(host_removal_directory, readset.name, readset.name + ".host_removed.pair2.fastq")
 
             elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    prefix = os.path.join(
-                        self.trim_directory,
-                        "raw_reads",
-                        readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
-                    )
-                    candidate_input_files.append([prefix + ".single.fastq.gz"])
+                candidate_input_files = [
+                    [readset.fastq1]
+                    ]
+                # if readset.fastq1:
+                #     candidate_input_files.append(readset.fastq1)
+                # if readset.bam:
+                #     candidate_input_files.append([
+                #         re.sub("\.bam$", ".single.fastq.gz",readset.bam)
+                #         ])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
-                output_pair1 = os.path.join(host_removal_directory, readset.name, readset.name + ".trim.host_removed.single.fastq")
+                output_pair1 = os.path.join(host_removal_directory, readset.name, readset.name + ".host_removed.single.fastq")
                 output_pair2 = None
 
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+
+            # # Find input readset FASTQs first from previous cutadapt job, then from original FASTQs in the readset sheet
+            # if readset.run_type == "PAIRED_END":
+            #     candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+            #     if readset.fastq1 and readset.fastq2:
+            #         candidate_input_files.append([readset.fastq1, readset.fastq2])
+            #     if readset.bam:
+            #         prefix = os.path.join(
+            #             self.trim_directory,
+            #             "raw_reads",
+            #             readset.sample.name,
+            #             re.sub("\.bam$", ".", os.path.basename(readset.bam))
+            #         )
+            #         candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+            #     [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+            #     output_pair1 = os.path.join(host_removal_directory, readset.name, readset.name + ".trim.host_removed.pair1.fastq")
+            #     output_pair2 = os.path.join(host_removal_directory, readset.name, readset.name + ".trim.host_removed.pair2.fastq")
+
+            # elif readset.run_type == "SINGLE_END":
+            #     candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+            #     if readset.fastq1:
+            #         candidate_input_files.append([readset.fastq1])
+            #     if readset.bam:
+            #         prefix = os.path.join(
+            #             self.trim_directory,
+            #             "raw_reads",
+            #             readset.sample.name,
+            #             re.sub("\.bam$", ".", os.path.basename(readset.bam))
+            #         )
+            #         candidate_input_files.append([prefix + ".single.fastq.gz"])
+            #     [fastq1] = self.select_input_files(candidate_input_files)
+            #     fastq2 = None
+            #     output_pair1 = os.path.join(host_removal_directory, readset.name, readset.name + ".trim.host_removed.single.fastq")
+            #     output_pair2 = None
+
+            # else:
+            #     _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+            #     "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(
                 concat_jobs([
@@ -328,6 +229,156 @@ class MGISeq(dnaseq.DnaSeqRaw):
         return jobs
 
 
+    def cutadapt(self):
+        """
+        Raw reads quality trimming and removing of MGI adapters is performed using [Cutadapt](https://cutadapt.readthedocs.io/en/stable/index.html).
+        'Adapter1' and 'Adapter2' columns from the readset file ar given to Cutadapt. For PAIRED_END readsets, both adapters are used.
+        For SINGLE_END readsets, only Adapter1 is used and left unchanged.
+        To trim the front of the read use adapter_5p_fwd and adapter_5p_rev (for PE only) in cutadapt section of ini file.
+
+        This step takes as input files:
+
+        1. FASTQ files from the readset file if available
+        2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+        """
+
+        jobs = []
+
+        for readset in self.readsets:
+            host_removal_directory = os.path.join("host_removal", readset.sample.name)
+            host_removal_file_prefix = os.path.join(host_removal_directory, readset.name)
+            trim_directory = os.path.join("cleaned_raw_reads", readset.sample.name)
+            trim_file_prefix = os.path.join(trim_directory, readset.name)
+
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [
+                    [host_removal_file_prefix + ".host_removed.pair1.fastq", host_removal_file_prefix + ".host_removed.pair2.fastq"]
+                    ]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                # if readset.bam:
+                #     candidate_input_files.append([
+                #         re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
+                #         re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                #         ])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                adapter_fwd = readset.adapter1
+                adapter_rev = readset.adapter2
+
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [
+                    [host_removal_file_prefix + ".host_removed.single.fastq"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                # if readset.bam:
+                #     candidate_input_files.append([
+                #         re.sub("\.bam$", ".single.fastq.gz", readset.bam)
+                #         ])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
+                adapter_fwd = readset.adapter1
+                adapter_rev = None
+
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(trim_directory),
+                    cutadapt.trim(
+                        fastq1,
+                        fastq2,
+                        trim_file_prefix,
+                        adapter_fwd,
+                        adapter_rev
+                        )
+                    ],
+                    name="cutadapt." + readset.name)
+                )
+
+        return jobs
+
+
+    def kraken_analysis(self):
+        """
+        kraken
+        """
+
+        jobs = []
+        for readset in self.readsets:
+            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            kraken_directory = os.path.join("metrics", "dna", readset.sample.name, "kraken_metrics")
+            prefix = os.path.join(kraken_directory, readset.name)
+            # readset_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam")
+            # index_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam.bai")
+
+            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [
+                    [readset.fastq1, readset.fastq2]
+                    ]
+                # if readset.bam:
+                #     prefix = os.path.join(
+                #         self.trim_directory,
+                #         "raw_reads",
+                #         readset.sample.name,
+                #         re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                #     )
+                #     candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                unclassified_output = [prefix + ".unclassified_sequences_1.fastq", prefix + ".unclassified_sequences_2.fastq"]
+                classified_output = [prefix + ".classified_sequences_1.fastq", prefix + ".classified_sequences_2.fastq"]
+
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [
+                    [readset.fastq1]
+                    ]
+                # if readset.bam:
+                #     prefix = os.path.join(
+                #         self.trim_directory,
+                #         "raw_reads",
+                #         readset.sample.name,
+                #         re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                #     )
+                #     candidate_input_files.append([prefix + ".single.fastq.gz"])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
+                unclassified_output = [prefix + ".unclassified_sequences.fastq"]
+                classified_output = [prefix + ".classified_sequences.fastq"]
+
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(os.path.dirname(kraken_directory)),
+                    kraken2.kraken2(
+                        fastq1,
+                        fastq2,
+                        prefix,
+                        other_options=config.param('kraken_analysis', 'kraken2_other_options'),
+                        nthread=config.param('kraken_analysis', 'kraken2_threads'),
+                        database=config.param('kraken_analysis', 'kraken2_database')
+                        ),
+                    Job(
+                        input_files=unclassified_output + classified_output,
+                        output_files=[fastq1 + ".gz", fastq2 + ".gz"],
+                        command="""pigz -p {nthreads} {input_files}""".format(
+                            input_files=" ".join(unclassified_output + classified_output),
+                            nthreads=config.param('host_reads_removal', 'pigz_threads')
+                            )
+                        )
+                    ],
+                    name="kraken_analysis." + readset.name,
+                    samples=[readset.sample]
+                    )
+                )
+
+        return jobs
+
+
     def mapping_bwa_mem_sambamba(self):
         """
         The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
@@ -345,37 +396,44 @@ class MGISeq(dnaseq.DnaSeqRaw):
         for readset in self.readsets:
             host_removal_directory = os.path.join("host_removal", readset.sample.name)
             trim_file_prefix = os.path.join(host_removal_directory, readset.name, readset.name + ".trim.host_removed.")
+            host_removal_file_prefix = os.path.join(host_removal_directory, readset.name)
             alignment_directory = os.path.join("alignment", readset.sample.name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                candidate_input_files = [
+                    [trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"],
+                    [host_removal_file_prefix + ".host_removed.pair1.fastq", host_removal_file_prefix + ".host_removed.pair2.fastq"]
+                ]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    prefix = os.path.join(
-                        self.trim_directory,
-                        "raw_reads",
-                        readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
-                    )
-                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                # if readset.bam:
+                #     prefix = os.path.join(
+                #         self.trim_directory,
+                #         "raw_reads",
+                #         readset.sample.name,
+                #         re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                #     )
+                #     candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
             elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                candidate_input_files = [
+                    [trim_file_prefix + "single.fastq.gz"],
+                    [host_removal_file_prefix + ".host_removed.single.fastq"]
+                ]
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    prefix = os.path.join(
-                        self.trim_directory,
-                        "raw_reads",
-                        readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
-                    )
-                    candidate_input_files.append([prefix + ".single.fastq.gz"])
+                # if readset.bam:
+                #     prefix = os.path.join(
+                #         self.trim_directory,
+                #         "raw_reads",
+                #         readset.sample.name,
+                #         re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                #     )
+                #     candidate_input_files.append([prefix + ".single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
 
@@ -875,7 +933,10 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
             jobs.append(
                 quast.quast(
                     input_fa,
-                    output_dir
+                    output_dir,
+                    reference=config.param('quast_consensus_metrics', 'reference_genome'),
+                    features=config.param('quast_consensus_metrics', 'genomic_feature'),
+                    nthread=config.param('quast_consensus_metrics', 'threads')
                     ),
                 name="quast_consensus_metrics." + sample.name,
                 samples=[sample]
@@ -928,9 +989,9 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
     @property
     def steps(self):
         return [
-            self.cutadapt,
-            self.kraken_analysis,
             self.host_reads_removal,
+            self.kraken_analysis,
+            self.cutadapt,
             self.mapping_bwa_mem_sambamba,
             self.sambamba_merge_sam_files,
             self.sambamba_filtering,

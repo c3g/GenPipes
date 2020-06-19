@@ -28,7 +28,7 @@ from core.job import *
 
 log = logging.getLogger(__name__)
 
-def quast(input, output_dir):
+def quast(input, output_dir, reference=config.param('quast', 'reference_genome', required=True), features=config.param('quast', 'genomic_feature', required=False), nthread=config.param('quast', 'threads', required=True)):
     inputs = [input]
     outputs = [
         output_dir + "report.html",
@@ -50,9 +50,9 @@ quast.py {reference} \\
   {features} \\
   {nthread} \\
   {input}""".format(
-      reference="-r " + config.param('quast', 'reference_genome'),
-      features="--features " + config.param('quast', 'genomic_feature'),
-      nthread="--threads " + config.param('quast', 'threads'),
+      reference="-r " + reference,
+      features="--features " + features,
+      nthread="--threads " + nthread,
       output_dir="--output-dir " + output_dir,
       input=input
       ),
