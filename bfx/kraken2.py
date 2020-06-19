@@ -28,7 +28,7 @@ from core.job import *
 
 log = logging.getLogger(__name__)
 
-def kraken2(input1, input2, prefix, other_options=config.param('kraken2', 'other_options', required=False), nthread=config.param('kraken2', 'threads', required=True), database=config.param('kraken2', 'database', required=True)):
+def kraken2(input1, input2, prefix, other_options=config.param('kraken2', 'other_options', required=False), nthread=config.param('kraken2', 'threads', required=False), database=config.param('kraken2', 'database', required=False)):
     # unclassified_output = prefix + ".unclassified_sequences#.fastq"
     # classified_output = prefix + ".classified_sequences#.fastq"
     output = prefix + ".kraken2_output"

@@ -28,7 +28,7 @@ from core.job import *
 
 log = logging.getLogger(__name__)
 
-def quast(input, output_dir, reference=config.param('quast', 'reference_genome', required=True), features=config.param('quast', 'genomic_feature', required=False), nthread=config.param('quast', 'threads', required=True)):
+def quast(input, output_dir, reference=config.param('quast', 'reference_genome', required=False), features=config.param('quast', 'genomic_feature', required=False), nthread=config.param('quast', 'threads', required=False)):
     inputs = [input]
     outputs = [
         output_dir + "report.html",
