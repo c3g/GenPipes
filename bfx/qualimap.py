@@ -48,6 +48,7 @@ qualimap bamqc {other_options} \\
             input_bam=input_bam,
             output_directory=output_directory,
             other_options=options,
+#            bed="\\\n  --feature-file " + bed if bed else "", 
             ram=config.param('qualimap', 'ram'),
         ),
         removable_files=[]
