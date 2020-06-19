@@ -42,7 +42,7 @@ from bfx import fgbio
 from bfx import gatk4
 from bfx import htslib
 from bfx import ivar
-from bxf import kraken2
+from bfx import kraken2
 from bfx import multiqc
 from bfx import quast
 from bfx import sambamba
