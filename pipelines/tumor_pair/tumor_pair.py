@@ -2961,6 +2961,7 @@ END`""".format(
             for key,input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
+<<<<<<< HEAD
                         deliverables.md5sum(
                             sample + ".ensemble.somatic.vt.annot.vcf.gz",
                             sample + ".ensemble.somatic.vt.annot.vcf.gz.md5",
@@ -3018,6 +3019,18 @@ END`""".format(
                             sample=key,
                             profyle=self.args.profyle
                         ),
+=======
+                        #deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        #deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.snpeff.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.snpeff.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        #deliverables.sym_link_pair(sample + ".somatic.gemini.set_somatic.tsv", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        #deliverables.sym_link_pair(sample + ".somatic.gemini.actionable.tsv", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        #deliverables.sym_link_pair(sample + ".ensemble.germline_loh.vt.annot.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        #deliverables.sym_link_pair(sample + ".ensemble.germline_loh.vt.annot.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        #deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.snpeff.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        #deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.snpeff.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+>>>>>>> 206edac5 (updates to SV germline and reference genome tweaks)
                     ], name="sym_link_ensemble." + tumor_pair.name + "." + key))
 
         return jobs
@@ -3334,6 +3347,7 @@ END`""".format(
                                 command="gzip -cf " + tumor_mpileup + " > " + tumor_gz
                             ),
                             pipe_jobs([
+<<<<<<< HEAD
                                 sequenza.seqz(
                                     normal_gz,
                                     tumor_gz,
@@ -3356,6 +3370,14 @@ END`""".format(
                                     [binned_seqz],
                                     command="gzip -c > " + binned_seqz
                                 ),
+=======
+                                sequenza.seqz(normal_gz, tumor_gz, config.param('sequenza', 'gc_file'), None),
+                                Job([None], [out_seqz], command="gzip -cf > " + out_seqz)
+                            ]),
+                            pipe_jobs([
+                                sequenza.bin(out_seqz, None),
+                                Job([None], [binned_seqz], command="gzip -c > " + binned_seqz),
+>>>>>>> 206edac5 (updates to SV germline and reference genome tweaks)
                             ]),
                         ], name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name))
 
@@ -3402,6 +3424,7 @@ END`""".format(
                                 remove=True
                             ),
                             pipe_jobs([
+<<<<<<< HEAD
                                 sequenza.seqz(
                                     normal_gz,
                                     tumor_gz,
@@ -3424,6 +3447,14 @@ END`""".format(
                                     [binned_seqz],
                                     command="gzip -c > " + binned_seqz
                                 ),
+=======
+                                sequenza.seqz(normal_gz, tumor_gz, config.param('sequenza', 'gc_file'), None),
+                                Job([None], [out_seqz], command="gzip -c > " + out_seqz),
+                            ]),
+                            pipe_jobs([
+                                sequenza.bin(out_seqz, None),
+                                Job([None], [binned_seqz], command="gzip -c > " + binned_seqz),
+>>>>>>> 206edac5 (updates to SV germline and reference genome tweaks)
                             ]),
                         ], name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name))
 
@@ -3433,6 +3464,7 @@ END`""".format(
             merged_seqz = os.path.join(sequenza_directory, tumor_pair.name + ".binned.merged.seqz.gz")
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     rawSequenza_directory,
                     remove=True
@@ -3455,6 +3487,16 @@ END`""".format(
                     sequenza_directory,
                     tumor_pair.name
                 ),
+=======
+                mkdir_job,
+                Job(seqz_outputs, [merged_seqz],
+                    command="zcat " + " \\\n".join(seqz_outputs) + " \\\n | gawk 'FNR==1 && NR==1{print;}{ if($1!=\"chromosome\" && $1!=\"MT\" && $1!=\"chrMT\" && $1!=\"chrM\") {print $0} }' | \\\n   gzip -cf > " + merged_seqz),
+            ], name="sequenza.merge_binned_seqz." + tumor_pair.name))
+
+            jobs.append(concat_jobs([
+                mkdir_job,
+                sequenza.main(merged_seqz, sequenza_directory, tumor_pair.name),
+>>>>>>> 206edac5 (updates to SV germline and reference genome tweaks)
                 #sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
                 #sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
                 #                  os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
@@ -3479,6 +3521,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
+<<<<<<< HEAD
                         deliverables.sym_link_pair(
                             sample, tumor_pair,
                             self.output_dir,
@@ -3486,6 +3529,10 @@ END`""".format(
                             sample=key,
                             profyle=self.args.profyle
                         ),
+=======
+                        deliverables.sym_link_pair(sample, tumor_pair, type="sv/cnv", sample=key,
+                                                   profyle=self.args.profyle),
+>>>>>>> 206edac5 (updates to SV germline and reference genome tweaks)
                     ], name="sym_link.sequenza." + tumor_pair.name + "." + key))
 
         return jobs
