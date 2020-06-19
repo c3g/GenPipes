@@ -200,7 +200,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                             tmp_dir=config.param('host_reads_removal', 'tmp_dir', required=True),
                             other_options=config.param('host_reads_removal', 'sambamba_sort_other_options', required=False)
                             )
-                        ])
+                        ]),
                     bedtools.bamtofastq(
                         input_bam=readset_bam,
                         output_pair1=output_pair1,
