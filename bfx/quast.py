@@ -51,7 +51,7 @@ quast.py {reference} \\
   {nthread} \\
   {input}""".format(
       reference="-r " + reference,
-      features="--features " + features if features=config.param('quast', 'genomic_feature', required=False) else "",
+      features="--features " + features if config.param('quast', 'genomic_feature', required=False) else "",
       nthread="--threads " + nthread,
       output_dir="--output-dir " + output_dir,
       input=input
