@@ -3,6 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=python
+
 VERSION=3.8.5
 SETUPTOOLS_VERSION=49.3.1
 # Remove the version last number
