@@ -401,8 +401,9 @@ class MGISeq(dnaseq.DnaSeqRaw):
         jobs = []
         for readset in self.readsets:
             host_removal_directory = os.path.join("host_removal", readset.sample.name)
-            trim_file_prefix = os.path.join(host_removal_directory, readset.name, readset.name + ".trim.host_removed.")
             host_removal_file_prefix = os.path.join(host_removal_directory, readset.name)
+            trim_directory = os.path.join("cleaned_raw_reads", readset.sample.name)
+            trim_file_prefix = os.path.join(trim_directory, readset.name)
             alignment_directory = os.path.join("alignment", readset.sample.name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
