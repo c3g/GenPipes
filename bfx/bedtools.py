@@ -161,7 +161,7 @@ bedtools genomecov {other_options} \\
         )
     )
 
-def bamtofastq(input_bam, output_pair1, output_pair2, other_options=config.param('bedtools_bamtofastq', 'other_options', required=False)):
+def bamtofastq(input_bam, output_pair1, output_pair2, other_options=config.param('bedtools_bamtofastq', 'other_options', required=False), pigz_threads=config.param('bedtools_bamtofastq', 'pigz_threads', required=False)):
     if output_pair2:  # Paired end reads
         outputs = [output_pair1, output_pair2]
     else:   # Single end reads
@@ -169,18 +169,22 @@ def bamtofastq(input_bam, output_pair1, output_pair2, other_options=config.param
 
     return Job(
         [input_bam],
-        outputs,
+        [outf + ".gz" for outf in outputs],
         [
-            ['bedtools', 'module_bedtools']
+            ['bedtools', 'module_bedtools'],
+            ['pigz', 'module_pigz']
         ],
         command="""\
 bedtools bamtofastq {other_options} \\
   -i {input_bam} \\
   {output_pair1} \\
-  {output_pair2}""".format(
-            input_bam=input_bam,
-            other_options=other_options,
-            output_pair1="-fq " + output_pair1,
-            output_pair2="-fq2 " + output_pair2 if output_pair2 else ""
-            )
+  {output_pair2} && \\
+pigz -p {pigz_threads} {input_fq}""".format(
+    input_bam=input_bam,
+    other_options=other_options,
+    output_pair1="-fq " + output_pair1,
+    output_pair2="-fq2 " + output_pair2 if output_pair2 else "",
+    pigz_threads=pigz_threads,
+    input_fq=" ".join(outputs)
+    )
         )
