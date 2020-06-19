@@ -179,7 +179,7 @@ bedtools bamtofastq {other_options} \\
   -i {input_bam} \\
   {output_pair1} \\
   {output_pair2} && \\
-pigz -p {pigz_threads} {input_fq}""".format(
+pigz -f -p {pigz_threads} {input_fq}""".format(
     input_bam=input_bam,
     other_options=other_options,
     output_pair1="-fq " + output_pair1,
