@@ -942,9 +942,10 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
                     output_dir,
                     reference=config.param('quast_consensus_metrics', 'reference_genome'),
                     features=config.param('quast_consensus_metrics', 'genomic_feature'),
-                    nthread=config.param('quast_consensus_metrics', 'threads')
-                    ),
-                name="quast_consensus_metrics." + sample.name
+                    nthread=config.param('quast_consensus_metrics', 'threads'),
+                    name="quast_consensus_metrics." + sample.name,
+                    samples=[sample]
+                    )
                 )
 
         return jobs
