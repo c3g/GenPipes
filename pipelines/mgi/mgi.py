@@ -110,8 +110,8 @@ class MGISeq(dnaseq.DnaSeqRaw):
                 #         ])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-                output_pair1 = os.path.join(host_removal_directory, readset.name, readset.name + ".host_removed.pair1.fastq")
-                output_pair2 = os.path.join(host_removal_directory, readset.name, readset.name + ".host_removed.pair2.fastq")
+                output_pair1 = os.path.join(host_removal_directory, readset.name + ".host_removed.pair1.fastq")
+                output_pair2 = os.path.join(host_removal_directory, readset.name + ".host_removed.pair2.fastq")
 
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [
@@ -125,7 +125,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                 #         ])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
-                output_pair1 = os.path.join(host_removal_directory, readset.name, readset.name + ".host_removed.single.fastq")
+                output_pair1 = os.path.join(host_removal_directory, readset.name + ".host_removed.single.fastq")
                 output_pair2 = None
 
             else:
