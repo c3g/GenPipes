@@ -93,7 +93,7 @@ def sv(input, normal_name, tumor_name, caller, output):
         command="""\
 vawk -v CALLER={caller} -v SNAME={tumor_name} \\
         '{{if (($7=="PASS" || $7 == ".") && (S${tumor_name}$GT!="0/0" && S${tumor_name}$GT!="./." && S${normal_name}$GT!="./.")) \\
-        print CALLER,I$SV_HIGHEST_TIER,SNAME,$1,$2,I$END,I$SVTYPE=="BND" ? I$SVTYPE":"$3":"I$MATEID : I$SVTYPE, I$LOF, I$SIMPLE_ANN, I$PE, I$SR, \\
+        print CALLER,I$SV_HIGHEST_TIER,SNAME,$1,$2,I$END,I$SVTYPE=="BND" ? I$SVTYPE":"$3":"I$MATEID":"$5 : I$SVTYPE, I$LOF, I$SIMPLE_ANN, I$PE, I$SR, \\
         S${tumor_name}$SR, S${normal_name}$SR, S${tumor_name}$PE, S${normal_name}$PE, S${tumor_name}$PR, S${normal_name}$PR, \\
         S${tumor_name}$RS, S${tumor_name}$AS, S${normal_name}$RS, S${normal_name}$AS, S${tumor_name}$DV, S${normal_name}$DV }}' \\
         {input} \\

@@ -46,7 +46,7 @@ sequenza-utils \\
   )
 
 
-def sequenza_seqz(normal_gz, tumor_gz, genome, output):
+def seqz(normal_gz, tumor_gz, genome, output):
     return Job(
         [normal_gz, tumor_gz],
         [output],
@@ -68,7 +68,7 @@ sequenza-utils \\
         )
     )
 
-def sequenza_bin(seqz_gz, output):
+def bin(seqz_gz, output):
     return Job(
         [seqz_gz],
         [output],
@@ -88,11 +88,12 @@ sequenza-utils  \\
         )
     )
 
-def sequenza_main(seqz, output_folder, sample_name):
+def main(seqz, output_folder, sample_name):
     output_dep = [os.path.join(output_folder, sample_name + "_chromosome_view.pdf"),
                   os.path.join(output_folder, sample_name + "_genome_view.pdf"),
                   os.path.join(output_folder, sample_name + "_CN_bars.pdf"),
-                  os.path.join(output_folder, sample_name + "_CP_contours.pdf")]
+                  os.path.join(output_folder, sample_name + "_CP_contours.pdf"),
+                  os.path.join(output_folder, sample_name + "_segments.txt")]
     return Job(
         [seqz],
         output_dep,
@@ -110,3 +111,55 @@ Rscript $R_TOOLS/RunSequenza_analysis.R \\
             OUTPUT_BASE_NAME=sample_name
         )
     )
+
+def filter(calls, pair_name, output):
+     return Job(
+         [calls],
+         [output],
+         [
+             ['sequenza', 'module_mugqic_tools']
+         ],
+         command="""\
+sequenza_filterOut.sh \\
+    {scones_calls} \\
+    {output} \\
+    {pair_name} """.format(
+             scones_calls=calls,
+             output=output,
+             pair_name=pair_name
+         )
+     )
+
+def annotate(calls_filtered, output_basename, tmp_basename):
+     scones_outputs = [output_basename + ".counts.filteredSV.annotate.txt",
+                       output_basename + ".other.filteredSV.annotate.txt",
+                       output_basename + ".TumS.filteredSV.annotate.txt"]
+    
+     return Job(
+         [calls_filtered],
+         scones_outputs,
+         [
+             ['sequenza', 'module_mugqic_tools']
+         ],
+         command="""\
+sequenza_filterAnnotCNV.sh \\
+    {scones_calls_filtered} \\
+    {excluded_regions} \\
+    {genes} \\
+    {DGV} \\
+    {microsat} \\
+    {repeatMasker} \\
+    {AutosomeSize} \\
+    {output_basename} \\
+    {tmp_basename} """.format(
+             scones_calls_filtered=calls_filtered,
+             excluded_regions=config.param('scones_annotate', 'excluded_regions_bed', type='filepath', required=True),
+             genes=config.param('scones_annotate', 'genes_bed', type='filepath', required=True),
+             DGV=config.param('scones_annotate', 'dgv_bed', type='filepath', required=True),
+             microsat=config.param('scones_annotate', 'microsat_bed', type='filepath', required=True),
+             repeatMasker=config.param('scones_annotate', 'repeat_masker_bed', type='filepath', required=True),
+             AutosomeSize=config.param('scones_annotate', 'autosome_size_file', type='filepath', required=True),
+             output_basename=output_basename,
+             tmp_basename=tmp_basename
+         )
+     )

@@ -34,6 +34,7 @@ def structural_variants(input, output):
             ['sv_annotation', 'module_sv_annotations']
         ],
         command="""\
+rm -f {output} && \\
 python $SVANNOT_PATH/simple_sv_annotation.py \\
         -g $SVANNOT_PATH/az-cancer-panel.txt \\
         -k $SVANNOT_PATH/fusion_pairs.txt  \\

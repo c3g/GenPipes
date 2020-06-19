@@ -167,6 +167,26 @@ cnvkit.py metrics {options} \\
         )
     )
 
+def segmetrics(input_cnr, input_cns, output):
+    return Job(
+        [input_cnr, input_cns],
+        [output],
+        [
+            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_R'],
+        ],
+        command="""\
+cnvkit.py segmetrics {options} \\
+  {input_cnr} \\
+  -s {input_cns} \\
+  -o {output}""".format(
+        options=config.param('cnvkit_batch','segmetrics_options'),
+        input_cnr=input_cnr,
+        input_cns=input_cns,
+        output=output,
+        )
+    )
+
 def select_background(inputs, output):
     
     return Job(

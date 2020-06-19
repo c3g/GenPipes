@@ -1961,8 +1961,6 @@ END`""".format(
                         deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.snpeff.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.snpeff.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        #deliverables.sym_link_pair(sample + ".somatic.gemini.set_somatic.tsv", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        #deliverables.sym_link_pair(sample + ".somatic.gemini.actionable.tsv", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.snpeff.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
@@ -2221,11 +2219,11 @@ END`""".format(
                             Job([normal_mpileup], [normal_gz], command="gzip -cf " + normal_mpileup + " > " + normal_gz),
                             Job([tumor_mpileup], [tumor_gz], command="gzip -cf " + tumor_mpileup + " > " + tumor_gz),
                             pipe_jobs([
-                                sequenza.sequenza_seqz(normal_gz, tumor_gz, config.param('sequenza', 'gc_file'), None),
+                                sequenza.seqz(normal_gz, tumor_gz, config.param('sequenza', 'gc_file'), None),
                                 Job([None], [out_seqz], command="gzip -cf > " + out_seqz)
                             ]),
                             pipe_jobs([
-                                sequenza.sequenza_bin(out_seqz, None),
+                                sequenza.bin(out_seqz, None),
                                 Job([None], [binned_seqz], command="gzip -c > " + binned_seqz),
                             ]),
                         ], name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name))
@@ -2247,11 +2245,11 @@ END`""".format(
                         jobs.append(concat_jobs([
                             mkdir_job,
                             pipe_jobs([
-                                sequenza.sequenza_seqz(normal_gz, tumor_gz, config.param('sequenza', 'gc_file'), None),
+                                sequenza.seqz(normal_gz, tumor_gz, config.param('sequenza', 'gc_file'), None),
                                 Job([None], [out_seqz], command="gzip -c > " + out_seqz),
                             ]),
                             pipe_jobs([
-                                sequenza.sequenza_bin(out_seqz, None),
+                                sequenza.bin(out_seqz, None),
                                 Job([None], [binned_seqz], command="gzip -c > " + binned_seqz),
                             ]),
                         ], name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name))
@@ -2264,12 +2262,15 @@ END`""".format(
             jobs.append(concat_jobs([
                 mkdir_job,
                 Job(seqz_outputs, [merged_seqz],
-                    command="zcat " + " \\\n".join(seqz_outputs) + " \\\n | gawk 'FNR==1 && NR==1{print;}{ if($1!=\"chromosome\" && $1!=\"MT\" && $1!=\"chrMT\") {print $0} }' | \\\n   gzip -cf > " + merged_seqz),
+                    command="zcat " + " \\\n".join(seqz_outputs) + " \\\n | gawk 'FNR==1 && NR==1{print;}{ if($1!=\"chromosome\" && $1!=\"MT\" && $1!=\"chrMT\" && $1!=\"chrM\") {print $0} }' | \\\n   gzip -cf > " + merged_seqz),
             ], name="sequenza.merge_binned_seqz." + tumor_pair.name))
 
             jobs.append(concat_jobs([
                 mkdir_job,
-                sequenza.sequenza_main(merged_seqz, sequenza_directory, tumor_pair.name),
+                sequenza.main(merged_seqz, sequenza_directory, tumor_pair.name),
+                #sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
+                #sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
+                #                  os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
             ], name="sequenza." + tumor_pair.name))
 
         return jobs
@@ -2280,18 +2281,20 @@ END`""".format(
         inputs = dict()
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.abspath(os.path.join("pairedVariants", tumor_pair.name))
+            pair_directory = os.path.join("pairedVariants", tumor_pair.name)
             inputs["Tumor"] = [os.path.join(pair_directory, "sequenza", tumor_pair.name + "_chromosome_view.pdf"),
                                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_genome_view.pdf"),
                                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_CN_bars.pdf"),
-                               os.path.join(pair_directory, "sequenza", tumor_pair.name + "_CP_contours.pdf")]
+                               os.path.join(pair_directory, "sequenza", tumor_pair.name + "_CP_contours.pdf"),
+                               os.path.join(pair_directory, "sequenza", tumor_pair.name + "_ploidy_celularity.tsv")]
+                               #os.path.join(pair_directory, "sequenza", tumor_pair.name + ".annotated.TumS.filteredSV.annotate.txt")]
 
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
                         deliverables.sym_link_pair(sample, tumor_pair, type="sv/cnv", sample=key,
                                                    profyle=self.args.profyle),
-                    ], name="sym_link_fastq.report." + tumor_pair.name + "." + key))
+                    ], name="sym_link.sequenza." + tumor_pair.name + "." + key))
 
         return jobs
 
