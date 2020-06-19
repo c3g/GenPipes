@@ -160,3 +160,27 @@ bedtools genomecov {other_options} \\
             output_file=output_file
         )
     )
+
+def bamtofastq(input_bam, output_pair1, output_pair2, other_options=config.param('bedtools_bamtofastq', 'other_options', required=False)):
+    if output_pair2:  # Paired end reads
+        outputs = [output_pair1, output_pair2]
+    else:   # Single end reads
+        outputs = [output_pair1]
+
+    return Job(
+        [input_bam],
+        outputs,
+        [
+            ['bedtools', 'module_bedtools']
+        ],
+        command="""\
+bedtools bamtofastq {other_options} \\
+  -i {input_bam} \\
+  {output_pair1} \\
+  {output_pair2}""".format(
+            input_bam=input_bam,
+            other_options=other_options,
+            output_pair1="-fq " + output_pair1,
+            output_pair2="-fq2 " + output_pair2 if output_pair2 else ""
+            )
+        )
