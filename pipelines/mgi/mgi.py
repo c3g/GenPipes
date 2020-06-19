@@ -86,8 +86,6 @@ class MGISeq(dnaseq.DnaSeqRaw):
             # trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             host_removal_directory = os.path.join("host_removal", readset.sample.name)
             readset_bam = os.path.join(host_removal_directory, readset.name + ".host_removed.nsorted.bam")
-            index_bam = os.path.join(host_removal_directory, readset.name + ".host_removed.nsorted.bam.bai")
-
 
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [
@@ -220,7 +218,8 @@ class MGISeq(dnaseq.DnaSeqRaw):
                         )
                     ],
                     name="host_reads_removal." + readset.name,
-                    samples=[readset.sample]
+                    samples=[readset.sample],
+                    removable_files=[output_pair1, output_pair2]
                     )
                 )
 
@@ -810,7 +809,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
             jobs.append(
                 concat_jobs([
-                    bash.mkdir(alignment_directory),
+                    bash.mkdir(os.path.dirname(metrics_prefix)),
                     snpeff.snpeff_annotate(
                         input_vcf,
                         output_vcf,
