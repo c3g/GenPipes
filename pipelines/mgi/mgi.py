@@ -250,7 +250,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [
-                    [host_removal_file_prefix + ".host_removed.pair1.fastq", host_removal_file_prefix + ".host_removed.pair2.fastq"]
+                    [host_removal_file_prefix + ".host_removed.pair1.fastq.gz", host_removal_file_prefix + ".host_removed.pair2.fastq.gs"]
                     ]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
@@ -265,7 +265,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [
-                    [host_removal_file_prefix + ".host_removed.single.fastq"]]
+                    [host_removal_file_prefix + ".host_removed.single.fastq.gz"]]
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 # if readset.bam:
