@@ -937,12 +937,16 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
             # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
 
             jobs.append(
-                quast.quast(
-                    input_fa,
-                    output_dir,
-                    reference=config.param('quast_consensus_metrics', 'reference_genome'),
-                    features=config.param('quast_consensus_metrics', 'genomic_feature'),
-                    nthread=config.param('quast_consensus_metrics', 'threads'),
+                concat_jobs([
+                    bash.mkdir(output_dir),
+                    quast.quast(
+                        input_fa,
+                        output_dir,
+                        reference=config.param('quast_consensus_metrics', 'reference_genome'),
+                        features=config.param('quast_consensus_metrics', 'genomic_feature'),
+                        nthread=config.param('quast_consensus_metrics', 'threads')
+                        )
+                    ],
                     name="quast_consensus_metrics." + sample.name,
                     samples=[sample]
                     )
