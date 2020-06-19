@@ -990,7 +990,7 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
     def steps(self):
         return [
             self.host_reads_removal,
-            self.kraken_analysis,
+            # self.kraken_analysis,
             self.cutadapt,
             self.mapping_bwa_mem_sambamba,
             self.sambamba_merge_sam_files,
