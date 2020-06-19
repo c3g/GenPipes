@@ -205,17 +205,17 @@ class MGISeq(dnaseq.DnaSeqRaw):
                         output_pair2=output_pair2,
                         other_options=config.param('host_reads_removal', 'bedtools_bamtofastq_other_options', required=False)
                         ),
-                    Job(
-                        input_files=[output_pair1, output_pair2],
-                        output_files=[output_pair1 + ".gz", output_pair2 + ".gz"],
-                        module_entries=[
-                            ['pigz', 'module_pigz']
-                        ],
-                        command="""pigz -p {nthreads} {input_files}""".format(
-                            input_files=" ".join([output_pair1, output_pair2]),
-                            nthreads=config.param('host_reads_removal', 'pigz_threads')
-                            )
-                        )
+                    # Job(
+                    #     input_files=[output_pair1, output_pair2],
+                    #     output_files=[output_pair1 + ".gz", output_pair2 + ".gz"],
+                    #     module_entries=[
+                    #         ['pigz', 'module_pigz']
+                    #     ],
+                    #     command="""pigz -p {nthreads} {input_files}""".format(
+                    #         input_files=" ".join([output_pair1, output_pair2]),
+                    #         nthreads=config.param('host_reads_removal', 'pigz_threads')
+                    #         )
+                    #     )
                     ],
                     name="host_reads_removal." + readset.name,
                     samples=[readset.sample],
