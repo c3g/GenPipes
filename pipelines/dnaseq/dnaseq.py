@@ -940,7 +940,7 @@ class DnaSeqRaw(common.Illumina):
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
-            log.info(input)
+            # log.info(input)
             mkdir_job = bash.mkdir(picard_directory, remove=True)
 
             jobs.append(
