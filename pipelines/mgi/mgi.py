@@ -173,7 +173,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
             jobs.append(
                 concat_jobs([
-                    bash.mkdir(os.path.dirname(host_removal_directory)),
+                    bash.mkdir(os.path.dirname(readset_bam)),
                     pipe_jobs([
                         bwa.mem(
                             fastq1,
