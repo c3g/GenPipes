@@ -803,6 +803,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
+            metrics_prefix = os.path.join("metrics", "dna", sample.name, "snpeff_metrics", sample.name + ".snpEff")
 
             [input_vcf] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.vcf.gz")],
@@ -817,7 +818,8 @@ class MGISeq(dnaseq.DnaSeqRaw):
                     bash.mkdir(alignment_directory),
                     snpeff.snpeff_annotate(
                         input_vcf,
-                        output_vcf
+                        output_vcf,
+                        metrics_prefix
                         ),
                     htslib.bgzip_tabix(
                         output_vcf,
