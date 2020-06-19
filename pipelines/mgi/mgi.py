@@ -411,7 +411,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [
-                    [trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"],
+                    [trim_file_prefix + ".trim.pair1.fastq.gz", trim_file_prefix + ".trim.pair1.fastq.gz"],
                     [host_removal_file_prefix + ".host_removed.pair1.fastq", host_removal_file_prefix + ".host_removed.pair2.fastq"]
                 ]
                 if readset.fastq1 and readset.fastq2:
@@ -428,7 +428,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [
-                    [trim_file_prefix + "single.fastq.gz"],
+                    [trim_file_prefix + ".trim.single.fastq.gz"],
                     [host_removal_file_prefix + ".host_removed.single.fastq"]
                 ]
                 if readset.fastq1:
@@ -685,7 +685,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
-            log.info(input)
+            # log.info(input)
             mkdir_job = bash.mkdir(picard_directory, remove=True)
 
             jobs.append(
