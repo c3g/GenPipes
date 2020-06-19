@@ -203,8 +203,9 @@ class MGISeq(dnaseq.DnaSeqRaw):
                         input_bam=readset_bam,
                         output_pair1=output_pair1,
                         output_pair2=output_pair2,
-                        other_options=config.param('host_reads_removal', 'bedtools_bamtofastq_other_options', required=False)
-                        ),
+                        other_options=config.param('host_reads_removal', 'bedtools_bamtofastq_other_options', required=False),
+                        pigz_threads=config.param('host_reads_removal', 'pigz_threads', required=False)
+                        )
                     # Job(
                     #     input_files=[output_pair1, output_pair2],
                     #     output_files=[output_pair1 + ".gz", output_pair2 + ".gz"],
@@ -218,8 +219,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                     #     )
                     ],
                     name="host_reads_removal." + readset.name,
-                    samples=[readset.sample],
-                    removable_files=[output_pair1, output_pair2]
+                    samples=[readset.sample]
                     )
                 )
 
@@ -249,7 +249,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [
-                    [host_removal_file_prefix + ".host_removed.pair1.fastq.gz", host_removal_file_prefix + ".host_removed.pair2.fastq.gs"]
+                    [host_removal_file_prefix + ".host_removed.pair1.fastq.gz", host_removal_file_prefix + ".host_removed.pair2.fastq.gz"]
                     ]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
