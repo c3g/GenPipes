@@ -1969,20 +1969,18 @@ END
         """
 
         jobs = []
-        
-        vcf_file = os.path.join("alignment", 'checkmate.tsv')
-        checkmate = open(vcf_file, 'w')
-        
+
+        inputs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            input = os.path.join(alignment_directory, sample.name + ".hc.vcf.gz")
-            checkmate.write(input + "\n")
-            
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".hc.vcf.gz"))
+
         output = os.path.join("metrics", "dna", "checkmate")
+        vcf_file = os.path.join(output, 'checkmate.tsv')
         mkdir_job = Job(command="mkdir -p " + output)
 
         jobs.append(concat_jobs([
             mkdir_job,
+            Job(inputs, [vcf_file], command="ls " + " ".join(inputs) + " > " + vcf_file),
             ngscheckmate.run(vcf_file, output),
         ], name="run_checkmate.sample_level"))
 
@@ -3935,6 +3933,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 	            self.metrics_vcftools_depth_indiv,
 	            self.metrics_gatk_sample_fingerprint,
 	            self.metrics_gatk_cluster_fingerprint,
+             
 	            #self.metrics_peddy,
             ],
             [
@@ -4037,7 +4036,7 @@ class DnaSeq(DnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "sv"], default="mugqic")
+        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light", "sv"], default="mugqic")
         super(DnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
