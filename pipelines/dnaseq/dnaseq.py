@@ -1720,7 +1720,7 @@ END
             jobs.append(concat_jobs([
                 # Create output directory since it is not done by default by GATK tools
                 Job(command="mkdir -p " + output, removable_files=[output], samples=[sample]),
-                verify_bam_id.verify(input[0], os.path.join(output, sample.name))
+                verify_bam_id.verify(input, os.path.join(output, sample.name))
             ], name="verify_bam_id." + sample.name))
 
         return jobs
