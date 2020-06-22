@@ -323,3 +323,33 @@ samtools view -F4 {options} -c \\
             ),
         removable_files=[output]
         )
+
+def bam2fq(input_bam, output_pair1, output_pair2, output_other, output_single, ini_section='samtools_bam2fq'):
+    if output_pair2:  # Paired end reads
+        outputs = [output_pair1, output_pair2]
+    else:   # Single end reads
+        outputs = [output_pair1]
+
+    return Job(
+        [input_bam],
+        [outf + ".gz" for outf in outputs],
+        [
+            ['samtools', 'module_samtools'],
+        ],
+        command="""\
+samtools bam2fq {nthread} \\
+  {other_options} \\
+  {output_pair1} \\
+  {output_pair2} \\
+  {output_other} \\
+  {output_single} \\
+  {input_bam} \\""".format(
+      nthread="-@ " + config.param(ini_section, 'samtools_bam2fq_threads', required=False),
+      other_options=config.param(ini_section, 'samtools_bam2fq_other_options', required=False),
+      output_pair1="-1 " + output_pair1,
+      output_pair2="-2 " + output_pair2 if output_pair2 else "",
+      output_other="-0 " + output_other,
+      output_single="-s " + output_single,
+      input_bam=input_bam
+      )
+        )
