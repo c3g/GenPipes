@@ -85,7 +85,8 @@ class MGISeq(dnaseq.DnaSeqRaw):
         for readset in self.readsets:
             # trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             host_removal_directory = os.path.join("host_removal", readset.sample.name)
-            readset_bam = os.path.join(host_removal_directory, readset.name + ".host_removed.nsorted.bam")
+            readset_bam = os.path.join(host_removal_directory, readset.name + ".hybrid.sorted.bam")
+            readset_bam_host_removed = os.path.join(host_removal_directory, readset.name + ".host_removed.nsorted.bam")
 
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [
@@ -190,17 +191,30 @@ class MGISeq(dnaseq.DnaSeqRaw):
                         sambamba.view(
                             "/dev/stdin",
                             None,
-                            options=config.param('host_reads_removal', 'sambamba_view_other_options')
+                            options="-S -f bam"
                             ),
                         sambamba.sort(
                             "/dev/stdin",
                             readset_bam,
                             tmp_dir=config.param('host_reads_removal', 'tmp_dir', required=True),
+                            other_options=None
+                            )
+                        ]),
+                    pipe_jobs([
+                        sambamba.view(
+                            readset_bam,
+                            None,
+                            options=config.param('host_reads_removal', 'sambamba_view_other_options')
+                            ),
+                        sambamba.sort(
+                            "/dev/stdin",
+                            readset_bam_host_removed,
+                            tmp_dir=config.param('host_reads_removal', 'tmp_dir', required=True),
                             other_options=config.param('host_reads_removal', 'sambamba_sort_other_options', required=False)
                             )
                         ]),
                     bedtools.bamtofastq(
-                        input_bam=readset_bam,
+                        input_bam=readset_bam_host_removed,
                         output_pair1=output_pair1,
                         output_pair2=output_pair2,
                         other_options=config.param('host_reads_removal', 'bedtools_bamtofastq_other_options', required=False),
