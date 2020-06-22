@@ -47,6 +47,7 @@ def quast(input, output_dir, reference=config.param('quast', 'reference_genome',
 
         command="""\
 quast.py {reference} \\
+  {output_dir} \\
   {features} \\
   {nthread} \\
   {input}""".format(
