@@ -88,6 +88,9 @@ class MGISeq(dnaseq.DnaSeqRaw):
             readset_bam = os.path.join(host_removal_directory, readset.name + ".hybrid.sorted.bam")
             readset_bam_host_removed = os.path.join(host_removal_directory, readset.name + ".host_removed.nsorted.bam")
 
+            output_other = os.path.join(host_removal_directory, readset.name + ".host_removed.other.fastq.gz")
+            output_single = os.path.join(host_removal_directory, readset.name + ".host_removed.single.fastq.gz")
+
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [
                     [readset.fastq1, readset.fastq2]
@@ -109,8 +112,8 @@ class MGISeq(dnaseq.DnaSeqRaw):
                 #         ])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-                output_pair1 = os.path.join(host_removal_directory, readset.name + ".host_removed.pair1.fastq")
-                output_pair2 = os.path.join(host_removal_directory, readset.name + ".host_removed.pair2.fastq")
+                output_pair1 = os.path.join(host_removal_directory, readset.name + ".host_removed.pair1.fastq.gz")
+                output_pair2 = os.path.join(host_removal_directory, readset.name + ".host_removed.pair2.fastq.gz")
 
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [
@@ -124,7 +127,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                 #         ])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
-                output_pair1 = os.path.join(host_removal_directory, readset.name + ".host_removed.single.fastq")
+                output_pair1 = os.path.join(host_removal_directory, readset.name + ".host_removed.single.fastq.gz")
                 output_pair2 = None
 
             else:
@@ -185,8 +188,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                                 ("\\tCN:" + config.param('host_reads_removal', 'sequencing_center') if config.param('host_reads_removal', 'sequencing_center', required=False) else "") + \
                                 ("\\tPL:" + config.param('host_reads_removal', 'sequencing_technology') if config.param('host_reads_removal', 'sequencing_technology', required=False) else "Illumina") + \
                                 "'",
-                                ini_section='host_reads_removal',
-                                other_options=config.param('host_reads_removal', 'bwa_other_options')
+                                ini_section='host_reads_removal'
                                 ),
                         sambamba.view(
                             "/dev/stdin",
@@ -213,13 +215,21 @@ class MGISeq(dnaseq.DnaSeqRaw):
                             other_options=config.param('host_reads_removal', 'sambamba_sort_other_options', required=False)
                             )
                         ]),
-                    bedtools.bamtofastq(
+                    samtools.bam2fq(
                         input_bam=readset_bam_host_removed,
                         output_pair1=output_pair1,
                         output_pair2=output_pair2,
-                        other_options=config.param('host_reads_removal', 'bedtools_bamtofastq_other_options', required=False),
-                        pigz_threads=config.param('host_reads_removal', 'pigz_threads', required=False)
+                        output_other=output_other,
+                        output_single=output_single,
+                        ini_section='host_reads_removal'
                         )
+                    # bedtools.bamtofastq(
+                    #     input_bam=readset_bam_host_removed,
+                    #     output_pair1=output_pair1,
+                    #     output_pair2=output_pair2,
+                    #     other_options=config.param('host_reads_removal', 'bedtools_bamtofastq_other_options', required=False),
+                    #     pigz_threads=config.param('host_reads_removal', 'pigz_threads', required=False)
+                    #     )
                     # Job(
                     #     input_files=[output_pair1, output_pair2],
                     #     output_files=[output_pair1 + ".gz", output_pair2 + ".gz"],
@@ -419,7 +429,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [
-                    [trim_file_prefix + ".trim.pair1.fastq.gz", trim_file_prefix + ".trim.pair1.fastq.gz"],
+                    [trim_file_prefix + ".trim.pair1.fastq.gz", trim_file_prefix + ".trim.pair2.fastq.gz"],
                     [host_removal_file_prefix + ".host_removed.pair1.fastq", host_removal_file_prefix + ".host_removed.pair2.fastq"]
                 ]
                 if readset.fastq1 and readset.fastq2:
@@ -471,8 +481,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                                 ("\\tCN:" + config.param('mapping_bwa_mem_sambamba', 'sequencing_center') if config.param('mapping_bwa_mem_sambamba', 'sequencing_center', required=False) else "") + \
                                 ("\\tPL:" + config.param('mapping_bwa_mem_sambamba', 'sequencing_technology') if config.param('mapping_bwa_mem_sambamba', 'sequencing_technology', required=False) else "Illumina") + \
                                 "'",
-                                ini_section='mapping_bwa_mem_sambamba',
-                                other_options=config.param('mapping_bwa_mem_sambamba', 'bwa_other_options')
+                                ini_section='mapping_bwa_mem_sambamba'
                                 ),
                         sambamba.view(
                             "/dev/stdin",
