@@ -1660,20 +1660,18 @@ END
         """
 
         jobs = []
-        
-        vcf_file = os.path.join("alignment", 'checkmate.tsv')
-        checkmate = open(vcf_file, 'w')
-        
+
+        inputs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            input = os.path.join(alignment_directory, sample.name + ".hc.vcf.gz")
-            checkmate.write(input + "\n")
-            
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".hc.vcf.gz"))
+
         output = os.path.join("metrics", "dna", "checkmate")
+        vcf_file = os.path.join(output, 'checkmate.tsv')
         mkdir_job = Job(command="mkdir -p " + output)
 
         jobs.append(concat_jobs([
             mkdir_job,
+            Job(inputs, [vcf_file], command="ls " + " ".join(inputs) + " > " + vcf_file),
             ngscheckmate.run(vcf_file, output),
         ], name="run_checkmate.sample_level"))
 
@@ -3524,14 +3522,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.combine_gvcf,
                 self.merge_and_call_combined_gvcf,
                 self.variant_recalibrator,
-                #self.haplotype_caller_filter_nstretches,
                 self.haplotype_caller_decompose_and_normalize,
                 self.haplotype_caller_flag_mappability,
                 self.haplotype_caller_snp_id_annotation,
                 self.haplotype_caller_snp_effect,
                 self.haplotype_caller_dbnsfp_annotation,
                 self.haplotype_caller_gemini_annotations,
-	            # self.haplotype_caller_metrics_vcf_stats,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_qualimap,
                 self.metrics_dna_fastqc,
@@ -3550,7 +3546,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 	            self.metrics_vcftools_depth_indiv,
 	            #self.metrics_gatk_sample_fingerprint,
 	            #self.metrics_gatk_cluster_fingerprint_sample,
-	            self.metrics_peddy,
+	            #self.metrics_peddy,
             ],
             [
                 self.picard_sam_to_fastq,
@@ -3561,18 +3557,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                # self.fix_mate_by_coordinate,
                 #self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
-                self.metrics_dna_picard_metrics,
-                self.metrics_dna_sample_qualimap,
-                self.metrics_dna_sambamba_flagstat,
-                self.metrics_dna_fastqc,
-                self.picard_calculate_hs_metrics,
-                self.gatk_callable_loci,
-                self.extract_common_snp_freq,
-                self.baf_plot,
                 self.rawmpileup,
                 self.rawmpileup_cat,
                 self.snp_and_indel_bcf,
@@ -3584,40 +3571,50 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.mpileup_dbnsfp_annotation,
                 self.mpileup_gemini_annotations,
                 self.mpileup_metrics_vcf_stats,
+                self.cram_output,
+                self.metrics_dna_picard_metrics,
+                self.metrics_dna_sample_qualimap,
+                self.metrics_dna_sambamba_flagstat,
+                self.metrics_dna_fastqc,
+                self.picard_calculate_hs_metrics,
+                self.gatk_callable_loci,
+                self.extract_common_snp_freq,
+                self.baf_plot,
                 #self.mpileup_metrics_snv_graph_metrics,
                 self.run_multiqc,
                 self.sym_link_fastq,
                 self.sym_link_final_bam
             ],
-            # [
-            #     self.picard_sam_to_fastq,
-            #     self.skewer_trimming,
-            #     self.bwa_mem_picard_sort_sam,
-            #     self.sambamba_merge_sam_files,
-            #     self.gatk_indel_realigner,
-            #     self.sambamba_merge_realigned,
-            #     self.sambamba_mark_duplicates,
-            #     self.metrics_dna_picard_metrics,
-            #     self.metrics_dna_sample_qualimap,
-            #     self.metrics_dna_sambamba_flagstat,
-            #     self.metrics_dna_fastqc,
-            #     self.picard_calculate_hs_metrics,
-            #     self.gatk_callable_loci,
-            #     self.extract_common_snp_freq,
-            #     self.baf_plot,
-            #     self.gatk_haplotype_caller,
-            #     self.merge_and_call_individual_gvcf,
-            #     self.combine_gvcf,
-            #     self.merge_and_call_combined_gvcf,
-            #     self.variant_recalibrator,
-            #     self.haplotype_caller_decompose_and_normalize,
-            #     self.haplotype_caller_flag_mappability,
-            #     self.haplotype_caller_snp_id_annotation,
-            #     self.haplotype_caller_snp_effect,
-            #     self.haplotype_caller_dbnsfp_annotation,
-            #     self.haplotype_caller_gemini_annotations,
-            #     self.run_multiqc,
-            # ],
+            [
+                self.picard_sam_to_fastq,
+                self.skewer_trimming,
+                self.bwa_mem_sambamba_sort_sam,
+                self.sambamba_merge_sam_files,
+                self.gatk_indel_realigner,
+                self.sambamba_merge_realigned,
+                self.sambamba_mark_duplicates,
+                self.metrics_dna_picard_metrics,
+                self.metrics_dna_sample_qualimap,
+                self.metrics_dna_sambamba_flagstat,
+                self.metrics_dna_fastqc,
+                self.picard_calculate_hs_metrics,
+                self.gatk_callable_loci,
+                self.extract_common_snp_freq,
+                self.baf_plot,
+                self.gatk_haplotype_caller,
+                self.merge_and_call_individual_gvcf,
+                self.combine_gvcf,
+                self.merge_and_call_combined_gvcf,
+                self.variant_recalibrator,
+                self.haplotype_caller_decompose_and_normalize,
+                self.haplotype_caller_flag_mappability,
+                self.haplotype_caller_snp_id_annotation,
+                self.haplotype_caller_snp_effect,
+                self.haplotype_caller_dbnsfp_annotation,
+                self.haplotype_caller_gemini_annotations,
+                self.run_multiqc,
+                self.cram_output
+             ],
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
@@ -3658,7 +3655,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
                 self.picard_mark_duplicates,
-                #self.sambamba_mark_duplicates,
                 self.recalibration,
                 self.metrics_dna_picard_metrics,
                 self.delly_call_filter,
@@ -3681,7 +3677,7 @@ class DnaSeq(DnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "sv"], default="mugqic")
+        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light", "sv"], default="mugqic")
         super(DnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
@@ -3689,4 +3685,4 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        DnaSeq(protocol=['mugqic', 'mpileup', "sv"])
+        DnaSeq(protocol=['mugqic', 'mpileup', "light", "sv"])
