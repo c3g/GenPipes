@@ -197,7 +197,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
                             "/dev/stdin",
                             readset_bam,
                             tmp_dir=config.param('host_reads_removal', 'tmp_dir', required=True),
-                            other_options=None
+                            other_options=""
                             )
                         ]),
                     pipe_jobs([
