@@ -1301,15 +1301,14 @@ END
             input_all_picard = os.path.join(metrics_directory, sample.name, "picard_metrics.all.metrics.quality_distribution.pdf")
             input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", sample.name, "genome_results.txt")
             input_fastqc = os.path.join(metrics_directory, sample.name, "fastqc", sample.name + ".sorted.dup_fastqc.zip")
-            input_flagstat = os.path.join(metrics_directory, sample.name, "flagstat", sample.name + ".flagstat")
+            #input_flagstat = os.path.join(metrics_directory, sample.name, "flagstat", sample.name + ".flagstat")
 
             input_dep += [
                 input_oxog,
                 input_qcbias,
                 input_all_picard,
                 input_qualimap,
-                input_fastqc,
-                input_flagstat
+                input_fastqc
             ]
 
             inputs += [os.path.join(metrics_directory, sample.name)]
