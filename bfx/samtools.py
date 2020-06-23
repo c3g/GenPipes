@@ -355,7 +355,7 @@ def bam2fq(input_bam, output_pair1, output_pair2, output_other, output_single, i
 
     return Job(
         [input_bam],
-        [outf + ".gz" for outf in outputs],
+        [outputs],
         [
             ['samtools', 'module_samtools'],
         ],
