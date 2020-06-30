@@ -962,9 +962,7 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
                     quast.quast(
                         input_fa,
                         output_dir,
-                        reference=config.param('quast_consensus_metrics', 'reference_genome'),
-                        features=config.param('quast_consensus_metrics', 'genomic_feature'),
-                        nthread=config.param('quast_consensus_metrics', 'threads')
+                        prefix="quast_consensus_metrics"
                         )
                     ],
                     name="quast_consensus_metrics." + sample.name,
