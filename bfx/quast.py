@@ -28,14 +28,14 @@ from core.job import *
 
 log = logging.getLogger(__name__)
 
-def quast(input, output_dir, reference=config.param('quast', 'reference_genome', required=False), features=config.param('quast', 'genomic_feature', required=False), nthread=config.param('quast', 'threads', required=False)):
+def quast(input, output_dir, prefix):
     inputs = [input]
     outputs = [
-        output_dir + "report.html",
-        output_dir + "report.pdf",
-        output_dir + "report.tex",
-        output_dir + "report.tsv",
-        output_dir + "report.txt"
+        output_dir + "/report.html",
+        output_dir + "/report.pdf",
+        output_dir + "/report.tex",
+        output_dir + "/report.tsv",
+        output_dir + "/report.txt"
         ]
 
     return Job(
@@ -51,9 +51,9 @@ quast.py {reference} \\
   {features} \\
   {nthread} \\
   {input}""".format(
-      reference="-r " + reference,
-      features="--features " + features if config.param('quast', 'genomic_feature', required=False) else "",
-      nthread="--threads " + nthread,
+      reference="-r " + config.param(prefix, 'reference_genome', required=False),
+      features="--features " + config.param(prefix, 'genomic_feature', required=False) if config.param(prefix, 'genomic_feature', required=False) else "",
+      nthread="--threads " + config.param('quast', 'threads', required=False),
       output_dir="--output-dir " + output_dir,
       input=input
       ),

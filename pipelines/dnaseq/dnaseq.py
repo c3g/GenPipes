@@ -1002,7 +1002,7 @@ class DnaSeqRaw(common.Illumina):
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
-            output = os.path.join(qualimap_directory, sample.name + ".genome_results.txt")
+            output = os.path.join(qualimap_directory, ".genome_results.txt")
 
             use_bed = config.param('dna_sample_qualimap', 'use_bed', type='boolean', required=True)
 

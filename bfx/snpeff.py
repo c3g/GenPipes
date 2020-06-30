@@ -145,7 +145,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
 
 def snpeff_annotate(input_vcf, output_vcf, metrics_prefix):
     inputs = [input_vcf]
-    output = [output_vcf, metrics_prefix + ".html", metrics_prefix + "genes.txt"]
+    output = [output_vcf, metrics_prefix + ".html", metrics_prefix + ".genes.txt"]
 
     return Job(
         input_files=inputs,
