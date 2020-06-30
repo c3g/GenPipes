@@ -53,7 +53,7 @@ quast.py {reference} \\
   {input}""".format(
       reference="-r " + config.param(prefix, 'reference_genome', required=False),
       features="--features " + config.param(prefix, 'genomic_feature', required=False) if config.param(prefix, 'genomic_feature', required=False) else "",
-      nthread="--threads " + config.param('quast', 'threads', required=False),
+      nthread="--threads " + config.param(prefix, 'threads', required=False),
       output_dir="--output-dir " + output_dir,
       input=input
       ),
