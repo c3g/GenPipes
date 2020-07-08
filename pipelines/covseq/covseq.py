@@ -54,9 +54,9 @@ from bfx import bash_cmd as bash
 log = logging.getLogger(__name__)
 
 
-class MGISeq(dnaseq.DnaSeqRaw):
+class CoVSeQ(dnaseq.DnaSeqRaw):
     """
-    MGI-Seq Pipeline
+    CoVSeQ Pipeline
     ================
 
     pwet
@@ -65,7 +65,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        super(MGISeq, self).__init__(protocol)
+        super(CoVSeQ, self).__init__(protocol)
 
 
     def host_reads_removal(self):
@@ -252,7 +252,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
     def cutadapt(self):
         """
-        Raw reads quality trimming and removing of MGI adapters is performed using [Cutadapt](https://cutadapt.readthedocs.io/en/stable/index.html).
+        Raw reads quality trimming and removing adapters is performed using [Cutadapt](https://cutadapt.readthedocs.io/en/stable/index.html).
         'Adapter1' and 'Adapter2' columns from the readset file ar given to Cutadapt. For PAIRED_END readsets, both adapters are used.
         For SINGLE_END readsets, only Adapter1 is used and left unchanged.
         To trim the front of the read use adapter_5p_fwd and adapter_5p_rev (for PE only) in cutadapt section of ini file.
@@ -721,7 +721,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
         return jobs
 
-    def mgi_metrics(self):
+    def covseq_metrics(self):
         """
         Multiple metrcis from dnaseq
         """
@@ -740,9 +740,9 @@ class MGISeq(dnaseq.DnaSeqRaw):
         return jobs
 
 
-    def mgi_calling(self):
+    def ivar_calling(self):
         """
-        Calling steps from dnaseq
+        ivar calling
         """
 
         jobs = []
@@ -813,7 +813,7 @@ class MGISeq(dnaseq.DnaSeqRaw):
 
     def snpeff_annotate(self):
         """
-        Calling steps from dnaseq
+        Consensus annotation with SnpEff
         """
 
         jobs = []
@@ -907,12 +907,29 @@ class MGISeq(dnaseq.DnaSeqRaw):
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.consensus.fa")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.consensus.fa")]
             ])
+            quast_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics")
+            quast_html = os.path.join(quast_directory, "report.html")
+            quast_tsv = os.path.join(quast_directory, "report.tsv")
 
-            output_fa = os.path.join(alignment_directory, re.sub("\.fa$", ".gisaid_renamed.fa", os.path.basename(input_fa)))
+            #TODO: change name of gisaid fasta, Cf. Hector script ".fasta"
+            output_fa = os.path.join(alignment_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="$STATUS"))
 
             jobs.append(
                 concat_jobs([
                     bash.mkdir(os.path.dirname(output_fa)),
+                    Job(
+                        input_files=[quast_tsv, quast_html],
+                        output_files=[],
+                        command="""\\
+cons_len=`grep -oP "Total length \(>= 0 bp\)\t\K.*?(?=$)" {quast_tsv}`
+N_count=`grep -oP "# N's\",\"quality\":\"Less is better\",\"values\":\[\K.*?(?=])" {quast_html}`
+cons_perc_N=`echo "scale=2; 100*$N_count/$cons_len" | bc -l`
+STATUS=`awk -v cons_perc_N=$cons_perc_N 'BEGIN {{ if (cons_perc_N < 1) {{print "pass"}} else if (cons_perc_N >= 1 && cons_perc_N <= 5) {{print "flag"}} else if (cons_perc_N > 5) {{print "rej"}} }}'`
+export STATUS""".format(
+    quast_html=quast_html,
+    quast_tsv=quast_tsv
+    )
+                        ),
                     Job(
                         input_files=[input_fa],
                         output_files=[output_fa],
@@ -948,7 +965,6 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
             alignment_directory = os.path.join("alignment", sample.name)
             output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics")
             [input_fa] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.consensus.gisaid_renamed.fa")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.consensus.fa")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.consensus.fa")]
@@ -1025,12 +1041,12 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
             self.sambamba_filtering,
             # self.fgbio_trim_primers,
             self.ivar_trim_primers,
-            self.mgi_metrics,
-            self.mgi_calling,
+            self.covseq_metrics,
+            self.ivar_calling,
             self.snpeff_annotate,
             self.ivar_create_consensus,
-            self.rename_consensus_header,
-            self.quast_consensus_metrics
+            self.quast_consensus_metrics,
+            self.rename_consensus_header
             # self.run_multiqc
         ]
 
@@ -1039,4 +1055,4 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        MGISeq()
+        CoVSeQ()
