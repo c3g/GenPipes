@@ -31,11 +31,11 @@ log = logging.getLogger(__name__)
 def quast(input, output_dir, prefix):
     inputs = [input]
     outputs = [
-        output_dir + "/report.html",
-        output_dir + "/report.pdf",
-        output_dir + "/report.tex",
-        output_dir + "/report.tsv",
-        output_dir + "/report.txt"
+        os.path.join(output_dir, "report.html"),
+        os.path.join(output_dir, "report.pdf"),
+        os.path.join(output_dir, "report.tex"),
+        os.path.join(output_dir, "report.tsv"),
+        os.path.join(output_dir, "report.txt")
         ]
 
     return Job(
