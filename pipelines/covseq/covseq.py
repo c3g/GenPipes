@@ -912,7 +912,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             quast_tsv = os.path.join(quast_directory, "report.tsv")
 
             #TODO: change name of gisaid fasta, Cf. Hector script ".fasta"
-            output_fa = os.path.join(alignment_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="$STATUS"))
+            output_fa = os.path.join(alignment_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="${{STATUS}}"))
 
             jobs.append(
                 concat_jobs([
@@ -921,8 +921,8 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                         input_files=[quast_tsv, quast_html],
                         output_files=[],
                         command="""\\
-cons_len=`grep -oP "Total length \(>= 0 bp\)\t\K.*?(?=$)" {quast_tsv}`
-N_count=`grep -oP "# N's\",\"quality\":\"Less is better\",\"values\":\[\K.*?(?=])" {quast_html}`
+cons_len=`grep -oP "Total length \(>= 0 bp\)\\t\K.*?(?=$)" {quast_tsv}`
+N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\[\K.*?(?=])" {quast_html}`
 cons_perc_N=`echo "scale=2; 100*$N_count/$cons_len" | bc -l`
 STATUS=`awk -v cons_perc_N=$cons_perc_N 'BEGIN {{ if (cons_perc_N < 1) {{print "pass"}} else if (cons_perc_N >= 1 && cons_perc_N <= 5) {{print "flag"}} else if (cons_perc_N > 5) {{print "rej"}} }}'`
 export STATUS""".format(
