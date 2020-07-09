@@ -912,7 +912,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             quast_tsv = os.path.join(quast_directory, "report.tsv")
 
             #TODO: change name of gisaid fasta, Cf. Hector script ".fasta"
-            output_fa = os.path.join(alignment_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="${{STATUS}}"))
+            output_fa = os.path.join(alignment_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="${STATUS}"))
 
             jobs.append(
                 concat_jobs([
