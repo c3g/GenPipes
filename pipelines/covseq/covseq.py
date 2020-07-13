@@ -749,6 +749,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
+            variant_directory = os.path.join("variant", sample.name)
             # haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
 
             [input_bam] = self.select_input_files([
@@ -759,13 +760,13 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
             # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
 
-            output_prefix = os.path.join(alignment_directory, re.sub("\.bam$", "", os.path.basename(input_bam)))
+            output_prefix = os.path.join(variant_directory, re.sub("\.bam$", "", os.path.basename(input_bam)))
             output_tsv = output_prefix + ".tsv"
             output_vcf = output_prefix + ".vcf"
 
             jobs.append(
                 concat_jobs([
-                    bash.mkdir(alignment_directory),
+                    bash.mkdir(variant_directory),
                     pipe_jobs([
                         samtools.mpileup(
                             input_bams=input_bam,
@@ -819,16 +820,16 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         jobs = []
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            variant_directory = os.path.join("variant", sample.name)
             metrics_prefix = os.path.join("metrics", "dna", sample.name, "snpeff_metrics", sample.name + ".snpEff")
 
             [input_vcf] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.vcf.gz")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.vcf.gz")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.vcf.gz")]
+                [os.path.join(variant_directory, sample.name + ".sorted.filtered.primerTrim.vcf.gz")],
+                [os.path.join(variant_directory, sample.name + ".sorted.filtered.vcf.gz")],
+                [os.path.join(variant_directory, sample.name + ".sorted.vcf.gz")]
             ])
 
-            output_vcf = os.path.join(alignment_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
+            output_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
 
             jobs.append(
                 concat_jobs([
@@ -858,6 +859,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
+            consensus_directory = os.path.join("consensus", sample.name)
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
@@ -866,7 +868,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
             # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
 
-            output_prefix = os.path.join(alignment_directory, re.sub("\.bam$", ".consensus", os.path.basename(input_bam)))
+            output_prefix = os.path.join(consensus_directory, re.sub("\.bam$", ".consensus", os.path.basename(input_bam)))
 
             jobs.append(
                 concat_jobs([
@@ -901,18 +903,18 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            consensus_directory = os.path.join("consensus", sample.name)
             [input_fa] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.consensus.fa")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.consensus.fa")]
+                [os.path.join(consensus_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
+                [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
+                [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
             ])
             quast_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics")
             quast_html = os.path.join(quast_directory, "report.html")
             quast_tsv = os.path.join(quast_directory, "report.tsv")
 
             #TODO: change name of gisaid fasta, Cf. Hector script ".fasta"
-            output_fa = os.path.join(alignment_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="${STATUS}"))
+            output_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="${STATUS}"))
 
             jobs.append(
                 concat_jobs([
@@ -962,12 +964,12 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            consensus_directory = os.path.join("consensus", sample.name)
             output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics")
             [input_fa] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.consensus.fa")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.consensus.fa")]
+                [os.path.join(consensus_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
+                [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
+                [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
             ])
 
             # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
