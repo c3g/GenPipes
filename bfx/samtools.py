@@ -80,27 +80,6 @@ def mpileup(input_bams, output, other_options="", region=None, regionFile=None, 
     if not isinstance(input_bams, list):
         input_bams = [input_bams]
 
-    if not isinstance(input_bams, list):
-        input_bams = [input_bams]
-
-    if not isinstance(input_bams, list):
-        input_bams = [input_bams]
-
-    if not isinstance(input_bams, list):
-        input_bams = [input_bams]
-
-    if not isinstance(input_bams, list):
-        input_bams = [input_bams]
-
-    if not isinstance(input_bams, list):
-        input_bams = [input_bams]
-
-    if not isinstance(input_bams, list):
-        input_bams = [input_bams]
-
-    if not isinstance(input_bams, list):
-        input_bams = [input_bams]
-
     return Job(
         input_bams,
         [output],
@@ -283,7 +262,6 @@ $BCFTOOLS_BIN/bcftools view \\
             )
         )
 
-
 def bcftools_cat_pair(inputs, output):
 
     if not isinstance(inputs, list):
@@ -303,7 +281,6 @@ $BCFTOOLS_BIN/bcftools cat \\
             output="> " + output if output else ""
             )
         )
-
 
 def bcftools_view_pair(input, output, options="", pair_calling=False):
 

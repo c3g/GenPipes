@@ -617,7 +617,6 @@ class DnaSeqRaw(common.Illumina):
 
         return jobs
 
-
     def fix_mate_by_coordinate_samtools(self):
         """
         Fix the read mates. Once local regions are realigned, the read mate coordinates of the aligned reads
@@ -1441,7 +1440,6 @@ class DnaSeqRaw(common.Illumina):
                             )
                         )
 
-
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 jobs.append(
                     concat_jobs([
@@ -1702,7 +1700,6 @@ class DnaSeqRaw(common.Illumina):
                 job.name = "gatk_combine_gvcf.AllSample" + ".others"
                 job.samples = self.samples
                 job.removable_files = [
-
                     os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz"),
                     os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz.tbi")
                 ]
