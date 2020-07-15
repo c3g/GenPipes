@@ -781,33 +781,19 @@ class DnaSeqRaw(common.Illumina):
         created_interval_lists = []
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
-            readset = sample.readsets[0]
-
-            [input] = self.select_input_files([
-                [alignment_file_prefix + "sorted.dup.bam"],
-                [alignment_file_prefix + "matefixed.sorted.bam"],
-                [alignment_file_prefix + "realigned.sorted.bam"],
-                [alignment_file_prefix + "sorted.bam"],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
-            ])
-            print_reads_output = alignment_file_prefix + "sorted.recal.bam"
-            base_recalibrator_output = alignment_file_prefix + "recalibration_report.grp"
+            duplicate_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
+            input = duplicate_file_prefix + "bam"
+            print_reads_output = duplicate_file_prefix + "recal.bam"
+            base_recalibrator_output = duplicate_file_prefix + "recalibration_report.grp"
 
             interval_list = None
-
+            
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
                 interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
 
                 if not interval_list in created_interval_lists:
-                    job = tools.bed2interval_list(
-                        None,
-                        coverage_bed,
-                        interval_list
-                        )
+                    job = tools.bed2interval_list(None, coverage_bed, interval_list)
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
                     created_interval_lists.append(interval_list)
@@ -820,13 +806,9 @@ class DnaSeqRaw(common.Illumina):
                         intervals=interval_list
                         )
                     ],
-                    name="gatk_base_recalibrator."+sample.name,
-                    samples=[sample]
+                    name="gatk_base_recalibrator." + sample.name
                     )
                 )
-            job.name = "gatk_base_recalibrator." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
 
             if config.param('gatk_apply_bqsr', 'module_gatk').split("/")[2] > "3":
                 jobs.append(
@@ -841,8 +823,7 @@ class DnaSeqRaw(common.Illumina):
                             print_reads_output + ".bai"
                             )
                         ],
-                        name="gatk_print_reads." + sample.name,
-                        samples=[sample]
+                        name="gatk_print_reads." + sample.name
                         )
                     )
 
@@ -853,14 +834,14 @@ class DnaSeqRaw(common.Illumina):
                             input,
                             print_reads_output,
                             base_recalibrator_output
-                            )
+                            ),
                         ],
-                        name="gatk_print_reads."+sample.name,
-                        samples=[sample]
+                        name="gatk_print_reads." + sample.name
                         )
                     )
 
         return jobs
+
 
     def sym_link_final_bam(self):
         jobs = []
@@ -878,7 +859,7 @@ class DnaSeqRaw(common.Illumina):
                 [alignment_file_prefix + "sorted.bam"],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
-            ])
+                ])
 
             jobs.append(
                 concat_jobs([
