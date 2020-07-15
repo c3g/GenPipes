@@ -105,3 +105,21 @@ vawk -v CALLER={caller} -v SNAME={tumor_name} \\
             output="> " + output if output else "",
         )
     )
+
+def format_cna(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['vawk', 'module_vawk'],
+        ],
+        command="""\
+cat <(echo "Chromosome;Start;End;Segment_Mean" | tr ';' '\t') \\
+<(zless {input} | \\
+        vawk \\
+        '{{print $1, $2, I$END, I$LOG_FOLD_CHANGE}}') \\
+        {output}""".format(
+            input=input,
+            output="> " + output if output else "",
+        )
+    )
