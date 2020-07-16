@@ -3220,7 +3220,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             genotype_vcf = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf")
             genotype_gzip = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf.gz")
             germline_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
- 
+
             jobs.append(concat_jobs([
                 bash.mkdir(lumpy_directory, remove=True),
                 pipe_jobs([
@@ -3789,13 +3789,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.merge_and_call_individual_gvcf,
                 self.metrics_dna_picard_metrics,
                 self.delly_call_filter,
-                #self.delly_sv_annotation,
+                self.delly_sv_annotation,
                 self.manta_sv_calls,
-                #self.manta_sv_annotation,
+                self.manta_sv_annotation,
                 self.lumpy_paired_sv,
-                #self.lumpy_sv_annotation,
+                self.lumpy_sv_annotation,
                 self.wham_call_sv,
-                #self.wham_sv_annotation,
+                self.wham_sv_annotation,
                 self.cnvkit_batch,
                 self.cnvkit_sv_annotation,
                 self.run_breakseq2,
