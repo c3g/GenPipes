@@ -38,6 +38,7 @@ from core.pipeline import *
 from bfx.sample_tumor_pairs import *
 from bfx.sequence_dictionary import *
 from pipelines.dnaseq import dnaseq
+import utils.utils
 
 #utilizes
 from bfx import sambamba
@@ -51,6 +52,7 @@ from bfx import vt
 from bfx import snpeff
 from bfx import vawk
 from bfx import deliverables
+from bfx import bash_cmd
 
 #metrics
 from bfx import conpair
@@ -1220,7 +1222,7 @@ END`""".format(
         """
 
         jobs = []
-        nb_jobs = config.param('merge_filter_paired_samtools', 'approximate_nb_jobs', type='posint')
+        nb_jobs = config.param('samtools_paired', 'nb_jobs', type='posint')
 
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join("pairedVariants", tumor_pair.name)
@@ -1617,7 +1619,7 @@ END`""".format(
             input_germline_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.vcf.gz")
     
             if nb_jobs == 1:
-                output_germline_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
+                output_germline_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
         
                 jobs.append(concat_jobs([
                     Job(command="mkdir -p " + annot_directory, removable_files=[annot_directory], samples=[tumor_pair.normal, tumor_pair.tumor]),
@@ -1654,7 +1656,7 @@ END`""".format(
         nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', type='posint')
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            annot_directory = os.path.join("pairedVariants", "ensemble", tumor_pair.name, "rawAnnotation")
+            annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
             output_somatic = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
             if nb_jobs > 1:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
@@ -1684,8 +1686,9 @@ END`""".format(
         nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', type='posint')
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            annot_directory = os.path.join("pairedVariants", "ensemble", tumor_pair.name, "rawAnnotation")
+            annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
             output_germline = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
+            
             if nb_jobs > 1:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
                 vcfs_to_merge = [os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation", tumor_pair.name + ".ensemble.germline.vt.annot." + str(idx) + ".vcf.gz")
@@ -2473,12 +2476,7 @@ END`""".format(
 
             for sv_type in SV_types:
                 output_bcf = os.path.join(delly_directory, tumor_pair.name + ".delly." + str(sv_type) + ".bcf")
-                output_vcf = os.path.join(delly_directory,
-                                          tumor_pair.name + ".delly." + str(sv_type) + ".somatic.flt.vcf.gz")
-                output_filter_somatic_bcf = os.path.join(delly_directory, tumor_pair.name + ".delly." + str(
-                    sv_type) + ".somatic.pre.bcf")
-                output_filter_germline_bcf = os.path.join(delly_directory, tumor_pair.name + ".delly." + str(
-                    sv_type) + ".germline.pre.bcf")
+                output_vcf = os.path.join(delly_directory, tumor_pair.name + ".delly." + str(sv_type) + ".somatic.flt.vcf.gz")
 
                 jobs.append(concat_jobs([
                     mkdir_job,
@@ -2487,13 +2485,6 @@ END`""".format(
                         bcftools.view(output_bcf, None, config.param('delly_call_filter_somatic', 'bcftools_options')),
                         htslib.bgzip_tabix(None, output_vcf),
                     ]),
-                    #delly.filter(output_bcf, output_filter_somatic_bcf, sv_type,
-                    #             config.param('delly_call_filter_somatic', 'type_options'),
-                    #             config.param('delly_call_filter_somatic', sv_type + '_options'),
-                    #             sample_file=cancer_pair_filename),
-                    #delly.filter(output_bcf, output_filter_germline_bcf, sv_type,
-                    #             config.param('delly_call_filter_germline', 'type_options'),
-                    #             config.param('delly_call_filter_germline', sv_type + '_options'))
                 ], name="delly_call_filter." + str(sv_type) + "." + tumor_pair.name))
 
         return jobs
@@ -3072,19 +3063,8 @@ END`""".format(
                 isize_mean, isize_sd = metric_tools.extract_isize(isize_file)
 
             else:
-                raise Exception("Error " + isize_file + " does not exist. Please run metrics step\n")
-
-            input_wham = None
-            if os.path.isfile(wham_vcf):
-                input_wham = wham_vcf
-
-            input_delly = None
-            if os.path.isfile(delly_vcf):
-                input_delly = delly_vcf
-
-            input_cnvkit = None
-            if os.path.isfile(cnvkit_vcf):
-                input_cnvkit = cnvkit_vcf
+                isize_mean = 325
+                isize_sd = 75
 
             gatk_pass = None
             if os.path.isfile(gatk_vcf):
@@ -3095,7 +3075,7 @@ END`""".format(
             
             jobs.append(concat_jobs([
                 mkdir_job,
-                metasv.ensemble(lumpy_vcf, manta_vcf, cnvkit_vcf, input_wham, input_delly, gatk_pass, inputTumor,
+                metasv.ensemble(lumpy_vcf, manta_vcf, cnvkit_vcf, wham_vcf, delly_vcf, gatk_pass, inputTumor,
                                 tumor_pair.tumor.name,
                                 os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory,
                                 isize_mean=str(isize_mean), isize_sd=str(isize_sd),
@@ -3283,8 +3263,6 @@ END`""".format(
         return [
             [
                 self.picard_sam_to_fastq,
-                #self.trimmomatic,
-                #self.merge_trimmomatic_stats,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
@@ -3302,14 +3280,12 @@ END`""".format(
                 self.metrics_dna_sample_qualimap,
                 self.metrics_dna_fastqc,
                 self.run_pair_multiqc,
-                self.sym_link_report,
+                #self.sym_link_report,
                 self.sym_link_fastq_pair,
                 self.sym_link_panel,
             ],
             [
                 self.picard_sam_to_fastq,
-                self.trimmomatic,
-                self.merge_trimmomatic_stats,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
@@ -3318,6 +3294,9 @@ END`""".format(
                 self.sambamba_mark_duplicates,
                 self.recalibration,
                 self.conpair_concordance_contamination,
+                self.metrics_dna_picard_metrics,
+                self.metrics_dna_sample_qualimap,
+                self.metrics_dna_fastqc,
                 self.rawmpileup,
                 self.paired_varscan2,
                 self.merge_varscan2,
@@ -3341,14 +3320,14 @@ END`""".format(
                 self.merge_gatk_variant_annotator_germline,
                 self.compute_cancer_effects_germline,
                 self.sample_gemini_annotations_germline,
-                self.combine_tumor_pairs_somatic,
-                self.decompose_and_normalize_mnps_somatic,
-                self.all_pairs_compute_effects_somatic,
-                self.gemini_annotations_somatic,
-                self.combine_tumor_pairs_germline,
-                self.decompose_and_normalize_mnps_germline,
-                self.all_pairs_compute_effects_germline,
-                self.gemini_annotations_germline,
+                #self.combine_tumor_pairs_somatic,
+                #self.decompose_and_normalize_mnps_somatic,
+                #self.all_pairs_compute_effects_somatic,
+                #self.gemini_annotations_somatic,
+                #self.combine_tumor_pairs_germline,
+                #self.decompose_and_normalize_mnps_germline,
+                #self.all_pairs_compute_effects_germline,
+                #self.gemini_annotations_germline,
                 self.run_pair_multiqc,
                 self.sym_link_fastq_pair,
                 self.sym_link_final_bam,
@@ -3357,8 +3336,6 @@ END`""".format(
             ],
             [
                 self.picard_sam_to_fastq,
-                #self.trimmomatic,
-                #self.merge_trimmomatic_stats,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
@@ -3369,15 +3346,15 @@ END`""".format(
                 self.sequenza,
                 #self.sCNAphase,
                 self.delly_call_filter,
-                #self.delly_sv_annotation,
+                self.delly_sv_annotation,
                 self.manta_sv_calls,
-                #self.manta_sv_annotation,
+                self.manta_sv_annotation,
                 self.lumpy_paired_sv,
-                #self.lumpy_sv_annotation,
+                self.lumpy_sv_annotation,
                 self.wham_call_sv,
-                #self.wham_sv_annotation,
+                self.wham_sv_annotation,
                 self.cnvkit_batch,
-                #self.cnvkit_sv_annotation,
+                self.cnvkit_sv_annotation,
                 self.scones,
                 self.svaba_assemble,
                 #self.svaba_sv_annotation,
@@ -3395,4 +3372,8 @@ END`""".format(
 
 
 if __name__ == '__main__':
-    TumorPair(protocol=['fastpass','ensemble','sv'])
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        TumorPair(protocol=['fastpass','ensemble','sv'])

@@ -31,7 +31,7 @@ def genome_gz(output):
         [output],
         [
             ['sequenza', 'module_python'],
-            #['sequenza', 'module_sequenza'],
+            ['sequenza', 'module_R'],
         ],
         command="""\\
 sequenza-utils \\
@@ -52,7 +52,7 @@ def seqz(normal_gz, tumor_gz, genome, output):
         [output],
         [
             ['sequenza', 'module_python'],
-            #['sequenza', 'module_sequenza'],
+            ['sequenza', 'module_R'],
         ],
         command="""\\
 sequenza-utils \\
@@ -74,7 +74,7 @@ def bin(seqz_gz, output):
         [output],
         [
             ['sequenza', 'module_python'],
-            #['sequenza', 'module_sequenza'],
+            ['sequenza', 'module_R'],
         ],
         command="""\\
 sequenza-utils  \\

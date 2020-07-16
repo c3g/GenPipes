@@ -2986,10 +2986,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     vawk.single_germline(output_vcf, sample.name, None),
                     htslib.bgzip_tabix(None, germline_vcf),
                 ]),
-                #pipe_jobs([
-                #    bcftools.view(output_vcf, None, "-f PASS"),
-                #    htslib.bgzip(None, germline_vcf),
-                #]),
             ], name="sv_annotation.delly.merge_sort_filter." + sample.name))
         
             jobs.append(concat_jobs([
@@ -3094,6 +3090,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         
             genotype_vcf = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf")
             genotype_gzip = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf.gz")
+            germline_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
         
             mkdir_job = Job(command="mkdir -p " + lumpy_directory, removable_files=[lumpy_directory], samples=self.samples)
         
@@ -3129,6 +3126,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 ]),
                 svtyper.genotyper(None, inputNormal, os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"), genotype_vcf),
                 htslib.bgzip(genotype_vcf, genotype_gzip),
+                pipe_jobs([
+                    vawk.single_germline(genotype_vcf, sample.name, None),
+                    vt.sort("-", "-", "-m full"),
+                    htslib.bgzip_tabix(None, germline_vcf),
+                ]),
             ], name="lumpy_paired_sv_calls.genotype." + sample.name))
     
         return jobs
@@ -3140,16 +3142,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         for sample in self.samples:
             pair_directory = os.path.join("SVariants", sample.name)
             prefix = os.path.join("SVariants", sample.name, sample.name)
-        
-            genotype_vcf = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf")
+       
             germline_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
         
             jobs.append(concat_jobs([
-                pipe_jobs([
-                    vawk.single_germline(genotype_vcf, sample.name, None),
-                    vt.sort("-", "-", "-m full"),
-                    htslib.bgzip_tabix(None, germline_vcf),
-                ]),
                 snpeff.compute_effects(germline_vcf, prefix + ".lumpy.germline.snpeff.vcf.gz"),
             ], name="sv_annotation.lumpy.germline." + sample.name))
     
@@ -3173,6 +3169,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             output_vcf = os.path.join(wham_directory, sample.name + ".wham.vcf")
             merge_vcf = os.path.join(wham_directory, sample.name + ".wham.merged.vcf")
             genotyped_vcf = os.path.join(pair_directory, sample.name + ".wham.merged.genotyped.vcf.gz")
+            germline_vcf = os.path.join(pair_directory, sample.name + ".wham.germline.vcf.gz")
         
             mkdir_job = Job(command="mkdir -p " + wham_directory, removable_files=[wham_directory], samples=self.samples)
         
@@ -3197,6 +3194,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     Job([None], [None], command="sed -e 's#\"\"#\"#g'"),
                     htslib.bgzip_tabix(None, genotyped_vcf),
                 ]),
+                pipe_jobs([
+                    vawk.single_germline(genotyped_vcf, sample.name, None),
+                    htslib.bgzip_tabix(None, germline_vcf),
+                ]),
             ], name="wham_call_sv.genotype." + sample.name))
     
         return jobs
@@ -3207,15 +3208,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
     
         for sample in self.samples:
             pair_directory = os.path.join("SVariants", sample.name)
-            genotyped_vcf = os.path.join(pair_directory, sample.name + ".wham.merged.genotyped.vcf.gz")
             
             germline_vcf = os.path.join(pair_directory, sample.name + ".wham.germline.vcf.gz")
         
             jobs.append(concat_jobs([
-                pipe_jobs([
-                     vawk.single_germline(genotyped_vcf, sample.name, None),
-                     htslib.bgzip_tabix(None, germline_vcf),
-                ]),
                 snpeff.compute_effects(germline_vcf, os.path.join(pair_directory, sample.name + ".wham.germline.snpeff.vcf.gz")),
             ], name="sv_annotation.wham.germline." + sample.name))
     
@@ -3335,8 +3331,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             pair_directory = os.path.join("SVariants", sample.name, sample.name)
 
             jobs.append(concat_jobs([
-                snpeff.compute_effects(pair_directory + ".cnvkit.vcf.gz", pair_directory + ".cnvkit.snpeff.vcf"),
-                annotations.structural_variants(pair_directory + ".cnvkit.snpeff.vcf", pair_directory + ".cnvkit.snpeff.annot.vcf"),
+                snpeff.compute_effects(pair_directory + ".cnvkit.germline.vcf.gz", pair_directory + ".cnvkit.snpeff.vcf"),
             ], name="sv_annotation.cnvkit." + sample.name))
 
         return jobs
@@ -3409,28 +3404,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             mkdir_job = Job(command="mkdir -p " + ensemble_directory, samples=self.samples)
 			
-            input_wham = None
-            if os.path.isfile(wham_vcf):
-                input_wham = wham_vcf
-
-            input_delly = None
-            if os.path.isfile(delly_vcf):
-                input_delly = delly_vcf
-	
-            input_cnvkit = None
-            if os.path.isfile(cnvkit_vcf):
-                input_cnvkit = cnvkit_vcf
-
-            input_breakseq = None
-            if os.path.isfile(breakseq_vcf):
-                input_breakseq = breakseq_vcf
-
             input_gatk = None
-            if os.path.isfile(gatk_pass):
-                input_gatk = gatk_pass
-
             if os.path.isfile(gatk_vcf):
                 input_gatk = gatk_pass
+                
                 jobs.append(concat_jobs([
 	                mkdir_job,
 	                bcftools.view(gatk_vcf, gatk_pass, config.param('metasv_ensemble', 'filter_pass_options')),
@@ -3439,9 +3416,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 
             jobs.append(concat_jobs([
                 mkdir_job,
-	            metasv.ensemble(lumpy_vcf, abs_manta, input_cnvkit, input_wham, input_delly, input_gatk, inputTumor,
-	                    sample.name, os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory,
-	                    isize_mean=str(isize_mean), isize_sd=str(isize_sd), output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"), breakseq=input_breakseq),
+	            metasv.ensemble(lumpy_vcf, abs_manta, cnvkit_vcf, wham_vcf, delly_vcf, input_gatk, inputTumor, sample.name,
+                                os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory, isize_mean=str(isize_mean),
+                                isize_sd=str(isize_sd), output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"),
+                                breakseq=breakseq_vcf),
             ], name="metasv_ensemble." + sample.name))
 	        
         return jobs
@@ -3657,17 +3635,19 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_realigned,
                 self.picard_mark_duplicates,
                 self.recalibration,
+                self.gatk_haplotype_caller,
+                self.merge_and_call_individual_gvcf,
                 self.metrics_dna_picard_metrics,
                 self.delly_call_filter,
-                #self.delly_sv_annotation,
+                self.delly_sv_annotation,
                 self.manta_sv_calls,
-                #self.manta_sv_annotation,
+                self.manta_sv_annotation,
                 self.lumpy_paired_sv,
-                #self.lumpy_sv_annotation,
+                self.lumpy_sv_annotation,
                 self.wham_call_sv,
-                #self.wham_sv_annotation,
+                self.wham_sv_annotation,
                 self.cnvkit_batch,
-                #self.cnvkit_sv_annotation,
+                self.cnvkit_sv_annotation,
                 self.run_breakseq2,
 	            self.ensemble_metasv,
                 self.svaba_assemble,
