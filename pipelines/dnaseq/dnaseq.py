@@ -3015,10 +3015,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         bed_file = None
         for sample in self.samples:
-            pair_directory = os.path.join("SVariants", sample.name)
-            tmp_directory = os.path.join(str(config.param("manta_sv", 'tmp_dir')), "SVariants", sample.name, "rawManta")
-            manta_directory = os.path.abspath(os.path.join(pair_directory, "rawManta"))
-            output_prefix = os.path.abspath(os.path.join(pair_directory, sample.name))
+            path = os.getcwd()
+            pair_directory = os.path.abspath(os.path.join(path, "SVariants", sample.name))
+            #tmp_directory = os.path.join(str(config.param("manta_sv", 'tmp_dir')), "SVariants", sample.name)
+            manta_directory = os.path.join(pair_directory, "rawManta")
+            output_prefix = os.path.join(pair_directory, sample.name)
 
             mkdir_job = Job(command="mkdir -p " + manta_directory, removable_files=[manta_directory], samples=self.samples)
 
@@ -3658,15 +3659,16 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.recalibration,
                 self.metrics_dna_picard_metrics,
                 self.delly_call_filter,
-                self.delly_sv_annotation,
+                #self.delly_sv_annotation,
                 self.manta_sv_calls,
-                self.manta_sv_annotation,
+                #self.manta_sv_annotation,
                 self.lumpy_paired_sv,
-                self.lumpy_sv_annotation,
+                #self.lumpy_sv_annotation,
                 self.wham_call_sv,
-                self.wham_sv_annotation,
+                #self.wham_sv_annotation,
                 self.cnvkit_batch,
-                self.cnvkit_sv_annotation,
+                #self.cnvkit_sv_annotation,
+                self.run_breakseq2,
 	            self.ensemble_metasv,
                 self.svaba_assemble,
                 self.svaba_sv_annotation
