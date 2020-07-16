@@ -440,11 +440,11 @@ class DnaSeqRaw(common.Illumina):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             realign_directory = os.path.join(alignment_directory, "realign")
-            alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
+            # alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
             [input] = self.select_input_files([
-                [alignment_file_prefix + "sorted.bam"],
+                [os.path.join(alignment_directory, sample.name + ".sorted.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
@@ -473,7 +473,7 @@ class DnaSeqRaw(common.Illumina):
                         ),
                         # Create sample realign symlink since no merging is required
                         bash.ln(
-                            os.path.relpath(output_bam, os.path.dirname(sample_output_bam)),
+                            output_bam,
                             sample_output_bam
                             )
                         ],
@@ -1183,7 +1183,7 @@ class DnaSeqRaw(common.Illumina):
 
             job = gatk4.collect_multiple_metrics(
                 input,
-                input_file_prefix+"all.metrics",
+                input_file_prefix + "all.metrics",
                 library_type=library[sample]
             )
             job.name = "picard_collect_multiple_metrics." + sample.name
@@ -2092,7 +2092,7 @@ pandoc \\
         job = self.vt_decompose_and_normalize(input_vcf, "variants/allSamples.merged.flt.vt.vcf.gz")
         return job
 
-    def filter_nstretches(self, input_vcf = "variants/allSamples.merged.flt.vcf", output_vcf = "variants/allSamples.merged.flt.NFiltered.vcf", job_name = "filter_nstretches" ):
+    def filter_nstretches(self, input_vcf="variants/allSamples.merged.flt.vcf", output_vcf="variants/allSamples.merged.flt.NFiltered.vcf", job_name="filter_nstretches" ):
         """
         The final .vcf files are filtered for long 'N' INDELs which are sometimes introduced and cause excessive
         memory usage by downstream tools.
@@ -2110,7 +2110,7 @@ pandoc \\
         """
 
         # Find input vcf first from VSQR, then from non recalibrate hapotype calleroriginal BAMs in the readset sheet.
-        hc_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf"],["variants/allSamples.hc.vcf.gz"]])
+        hc_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf"], ["variants/allSamples.hc.vcf.gz"]])
 
         job = self.filter_nstretches(hc_vcf[0], "variants/allSamples.hc.vqsr.NFiltered.vcf", "haplotype_caller_filter_nstretches")
 
