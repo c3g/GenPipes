@@ -886,7 +886,7 @@ class DnaSeqRaw(common.Illumina):
                         type="alignment"
                         )
                     ],
-                    name="sym_link_final_bam."+sample.name,
+                    name="sym_link_final_bam." + sample.name,
                     samples=[sample]
                     )
                 )
