@@ -685,16 +685,25 @@ class DnaSeqRaw(common.Illumina):
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
             output = alignment_file_prefix + "sorted.dup.bam"
+            output_index = alignment_file_prefix + "sorted.dup.bam.bai"
             metrics_file = alignment_file_prefix + "sorted.dup.metrics"
 
-            job = gatk4.picard_mark_duplicates(
-                input,
-                output,
-                metrics_file
-            )
-            job.name = "picard_mark_duplicates." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
+            jobs.append(
+                concat_jobs([
+                    gatk4.picard_mark_duplicates(
+                        input,
+                        output,
+                        metrics_file
+                        ),
+                    sambamba.index(
+                        output,
+                        output_index
+                        )
+                    ],
+                    name="picard_mark_duplicates." + sample.name,
+                    samples=[sample]
+                    )
+                )
 
         return jobs
 
