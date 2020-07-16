@@ -322,7 +322,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
             self.bwa_mem_sambamba_sort_sam,
             self.sambamba_merge_sam_files,
             self.gatk_indel_realigner,
-            self.merge_realigned,
+            self.sambamba_merge_realigned,
             self.picard_fixmate,
             self.metrics,
             self.picard_calculate_hs_metrics,
