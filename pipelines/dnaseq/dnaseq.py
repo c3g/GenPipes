@@ -1119,7 +1119,7 @@ class DnaSeqRaw(common.Illumina):
             input_oxog = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".oxog_metrics.txt")
             input_qcbias = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".qcbias_metrics.txt")
             input_all_picard = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".all.metrics.quality_distribution.pdf")
-            input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", sample.name + ".genome_results.txt")
+            input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", ".genome_results.txt")
             input_fastqc = os.path.join(metrics_directory, sample.name, "fastqc", sample.name + ".fastqc.zip")
             input_flagstat = os.path.join(metrics_directory, sample.name, "flagstat", sample.name + ".flagstat")
 
