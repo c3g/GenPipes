@@ -1262,7 +1262,7 @@ END
                     samples=[sample]
                     )
                 )
-
+            
             jobs.append(
                 concat_jobs([
                     mkdir_job,

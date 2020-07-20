@@ -5412,7 +5412,7 @@ END`""".format(
                 self.metrics_dna_sample_qualimap,
                 self.metrics_dna_fastqc,
                 self.run_pair_multiqc,
-                #self.sym_link_report,
+                self.sym_link_report,
                 self.sym_link_fastq_pair,
                 self.sym_link_panel,
             ],
