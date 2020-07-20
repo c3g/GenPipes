@@ -93,7 +93,8 @@ def main(seqz, output_folder, sample_name):
                   os.path.join(output_folder, sample_name + "_genome_view.pdf"),
                   os.path.join(output_folder, sample_name + "_CN_bars.pdf"),
                   os.path.join(output_folder, sample_name + "_CP_contours.pdf"),
-                  os.path.join(output_folder, sample_name + "_segments.txt")]
+                  os.path.join(output_folder, sample_name + "_segments.txt"),
+                  os.path.join(output_folder, sample_name + "_ploidy_celularity.tsv")]
     return Job(
         [seqz],
         output_dep,

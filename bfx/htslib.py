@@ -62,7 +62,7 @@ def bgzip_tabix(input, output):
 
     return Job(
         [input],
-        [output],
+        [output, output + ".tbi"],
         [
             ['htslib_bgziptabix', 'module_htslib'],
         ],

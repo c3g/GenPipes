@@ -176,14 +176,26 @@ END`""".format(
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
-            inputs["Normal"] = [os.path.join("raw_reads", readset.sample.name, readset.name) for readset in tumor_pair.readsets[tumor_pair.normal.name]]
-            inputs["Tumor"] = [os.path.join("raw_reads", readset.sample.name, readset.name) for readset in tumor_pair.readsets[tumor_pair.tumor.name]]
+            inputs["Normal"] = [self.select_input_files([
+                [readset.fastq1], [os.path.join("raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")]])
+                                for readset in tumor_pair.readsets[tumor_pair.normal.name]][0]
+            inputs["Normal"].append([self.select_input_files([
+                [readset.fastq2], [os.path.join("raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")]])
+                                for readset in tumor_pair.readsets[tumor_pair.normal.name]][0][0])
 
+            inputs["Tumor"] = [self.select_input_files([
+                [readset.fastq1], [os.path.join("raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")]])
+                                for readset in tumor_pair.readsets[tumor_pair.tumor.name]][0]
+            inputs["Tumor"].append([self.select_input_files([
+                [readset.fastq2], [os.path.join("raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")]])
+                                for readset in tumor_pair.readsets[tumor_pair.tumor.name]][0][0])
+            
             for key,input in inputs.iteritems():
                 for readset in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(readset + ".pair1.fastq.gz", tumor_pair, type="raw_reads", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(readset + ".pair2.fastq.gz", tumor_pair, type="raw_reads", sample=key, profyle=self.args.profyle),
+                        deliverables.md5sum(readset, readset + ".md5"),
+                        deliverables.sym_link_pair(readset, tumor_pair, self.output_dir, type="raw_reads", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(readset + ".md5", tumor_pair, self.output_dir, type="raw_reads", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_fastq.pairs." + tumor_pair.name + "." + key))
 
         return jobs
@@ -346,9 +358,12 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample_bam in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample_bam + ".bam", tumor_pair, type="alignment", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample_bam + ".bai", tumor_pair, type="alignment", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample_bam + ".bam.md5", tumor_pair, type="alignment", sample=key, profyle=self.args.profyle),
+                        deliverables.md5sum(sample_bam + ".bam", sample_bam + ".bam.md5"),
+                        deliverables.md5sum(sample_bam + ".bai", sample_bam + ".bai.md5"),
+                        deliverables.sym_link_pair(sample_bam + ".bam", tumor_pair, self.output_dir, type="alignment", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample_bam + ".bai", tumor_pair, self.output_dir, type="alignment", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample_bam + ".bam.md5", tumor_pair, self.output_dir, type="alignment", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample_bam + ".bai.md5", tumor_pair, self.output_dir, type="alignment", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_final_bam.pairs." + tumor_pair.name + "." + key))
 
         return jobs
@@ -695,10 +710,6 @@ END`""".format(
                 multiqc.run(input, output, input_dep=input_dep),
             ], name="multiqc." + tumor_pair.name))
 
-        #jobs.append(concat_jobs([
-        #    multiqc.run(inputs, os.path.join(metrics_directory, "allPairs.multiqc.html") , input_dep=outputs, sample="allPairs"),
-        #], name="multiqc.allPairs"))
-
         return jobs
 
     def sym_link_report(self):
@@ -711,7 +722,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="metrics", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="metrics", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_fastq.report." + tumor_pair.name + "." + key))
 
         return jobs
@@ -1917,39 +1928,6 @@ END`""".format(
 
         return jobs
 
-    def set_somatic_and_actionable_mutations(self):
-        """
-
-        """       
-
-        jobs = []
-
-        ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        gemini_module = config.param("DEFAULT", 'module_gemini').split(".")
-        gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
-
-        ped_file = config.param('set_somatic_and_actionable_mutations', 'ped_file', required=False, type='filepath')
-        ped_job = None
-
-        for tumor_pair in self.tumor_pairs.itervalues():
-            paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
-            gemini_prefix = os.path.join(paired_directory, tumor_pair.name)
-
-            if not ped_file:
-                ped_job = self.build_ped_file(paired_directory, tumor_pair)
-                ped_file = os.path.join(gemini_prefix + ".ped")
-               
-            jobs.append(concat_jobs([
-                Job(command="mkdir -p " + paired_directory, samples=[tumor_pair.normal, tumor_pair.tumor]),
-                ped_job,
-                gemini.set_somatic(ped_file, gemini_prefix + ".somatic.gemini." + gemini_version + ".db", 
-                                   gemini_prefix + ".somatic.gemini.set_somatic.tsv"),
-                gemini.actionable_mutations(gemini_prefix + ".somatic.gemini." + gemini_version + ".db",
-                                   gemini_prefix + ".somatic.gemini.actionable.tsv")
-             ], name="set_somatic_and_actionable_mutations." + tumor_pair.name))
-
-        return jobs
-
     def sym_link_ensemble(self):
         jobs = []
 
@@ -1960,14 +1938,14 @@ END`""".format(
             for key,input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.snpeff.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.snpeff.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.snpeff.vcf.gz", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.snpeff.vcf.gz.tbi", tumor_pair, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.md5sum(sample + ".ensemble.somatic.vt.annot.vcf.gz", sample + ".ensemble.somatic.vt.annot.vcf.gz.md5"),
+                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.vcf.gz.md5", tumor_pair, self.output_dir, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.vcf.gz", tumor_pair, self.output_dir, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.vcf.gz.tbi", tumor_pair, self.output_dir, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.md5sum(sample + ".ensemble.germline.vt.annot.vcf.gz", sample + ".ensemble.germline.vt.annot.vcf.gz.md5"),
+                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.vcf.gz.md5", tumor_pair, self.output_dir, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.vcf.gz", tumor_pair, self.output_dir, type="snv/ensemble", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.vcf.gz.tbi", tumor_pair, self.output_dir, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_ensemble." + tumor_pair.name + "." + key))
 
         return jobs
@@ -2259,7 +2237,7 @@ END`""".format(
 
             seqz_outputs = [os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + ".binned.seqz." + sequence['name'] + ".gz")
                             for sequence in self.sequence_dictionary_variant() if sequence['type'] is 'primary']
-            seqz_input = seqz_outputs[0]
+            #seqz_input = seqz_outputs[0]
             merged_seqz = os.path.join(sequenza_directory, tumor_pair.name + ".binned.merged.seqz.gz")
 
             jobs.append(concat_jobs([
@@ -2295,8 +2273,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv/cnv", sample=key,
-                                                   profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv/cnv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link.sequenza." + tumor_pair.name + "." + key))
 
         return jobs
@@ -2543,24 +2520,29 @@ END`""".format(
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
-            inputs["Tumor"] = [os.path.join(pair_directory + ".delly.somatic.snpeff.annot.vcf"),
+            inputs["Tumor"] = [pair_directory + ".delly.somatic.snpeff.annot.vcf",
                                pair_directory + ".delly.somatic.prioritize.tsv"]
 
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_delly.somatic." + tumor_pair.name + "." + key))
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
-            inputs["Tumor"] = [os.path.join(pair_directory + ".delly.germline.snpeff.annot.vcf"),
+            pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
+            inputs["Tumor"] = [pair_directory + ".delly.germline.snpeff.annot.vcf",
                                pair_directory + ".delly.germline.prioritize.tsv"]
 
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_delly.germline." + tumor_pair.name + "." + key))
 
         return jobs
@@ -2588,9 +2570,7 @@ END`""".format(
             inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
             inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
             manta_somatic_output = os.path.join(manta_directory, "results/variants/somaticSV.vcf.gz")
-            manta_somatic_output_tbi = os.path.join(manta_directory, "results/variants/somaticSV.vcf.gz.tbi")
             manta_germline_output = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz")
-            manta_germline_output_tbi = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz.tbi")
 
             bed_file = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
@@ -2603,20 +2583,16 @@ END`""".format(
                     htslib.tabix(coverage_bed + ".gz", "-p bed"),
                  ],name="bed_index." + tumor_pair.name))
 
-            output_dep = [manta_somatic_output, manta_somatic_output_tbi, manta_germline_output, manta_germline_output_tbi]
+            output_dep = [manta_somatic_output, manta_somatic_output + ".tbi", manta_germline_output, manta_germline_output + ".tbi"]
 
             jobs.append(concat_jobs([
                 mkdir_job,
                 manta.manta_config(inputNormal, inputTumor, manta_directory, bed_file),
                 manta.manta_run(manta_directory, output_dep=output_dep),
-                Job([manta_somatic_output], [output_prefix + ".manta.somatic.vcf.gz"],
-                    command="ln -sf " + manta_somatic_output + " " + output_prefix + ".manta.somatic.vcf.gz"),
-                Job([manta_somatic_output_tbi], [output_prefix + ".manta.somatic.vcf.gz"],
-                    command="ln -sf " + manta_somatic_output_tbi + " " + output_prefix + ".manta.somatic.vcf.gz.tbi"),
-                Job([manta_germline_output], [output_prefix + ".manta.germline.vcf.gz"],
-                    command="ln -sf " + manta_germline_output + " " + output_prefix + ".manta.germline.vcf.gz"),
-                Job([manta_germline_output_tbi], [output_prefix + ".manta.germline.vcf.gz"],
-                    command="ln -sf " + manta_germline_output_tbi + " " + output_prefix + ".manta.germline.vcf.gz.tbi"),
+                bash_cmd.mv(manta_somatic_output, output_prefix + ".manta.somatic.vcf.gz"),
+                bash_cmd.mv(manta_somatic_output + ".tbi", output_prefix + ".manta.somatic.vcf.gz.tbi"),
+                bash_cmd.mv(manta_germline_output, output_prefix + ".manta.germline.vcf.gz"),
+                bash_cmd.mv(manta_germline_output + ".tbi", output_prefix + ".manta.germline.vcf.gz.tbi"),
             ], name="manta_sv." + tumor_pair.name))
 
         return jobs
@@ -2656,7 +2632,9 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_manta.somatic." + tumor_pair.name + "." + key))
 
         inputs = dict()
@@ -2667,7 +2645,9 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_manta.germline." + tumor_pair.name + "." + key))
 
         return jobs
@@ -2792,26 +2772,30 @@ END`""".format(
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
+            pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [os.path.join(pair_directory + ".lumpy.somatic.snpeff.annot.vcf"),
                                os.path.join(pair_directory + ".lumpy.somatic.prioritize.tsv")]
 
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_lumpy.somatic." + tumor_pair.name + "." + key))
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
+            pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [os.path.join(pair_directory + ".lumpy.germline.snpeff.annot.vcf"),
                                os.path.join(pair_directory + ".lumpy.germline.prioritize.tsv")]
         
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_lumpy.germline." + tumor_pair.name + "." + key))
 
         return jobs
@@ -2904,25 +2888,30 @@ END`""".format(
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
+            pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [os.path.join(pair_directory + ".wham.somatic.snpeff.annot.vcf"),
                                os.path.join(pair_directory + ".wham.somatic.prioritize.tsv")]
             
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_wham.somatic." + tumor_pair.name + "." + key))
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
+            pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [os.path.join(pair_directory + ".wham.germline.snpeff.annot.vcf"),
                                os.path.join(pair_directory + ".wham.germline.prioritize.tsv")]
 
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_wham.germline." + tumor_pair.name + "." + key))
 
         return jobs
@@ -3028,14 +3017,18 @@ END`""".format(
     
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
-            inputs["Tumor"] = [os.path.join(pair_directory + ".cnvkit.snpeff.annot.vcf")]
+            pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
+            inputs["Tumor"] = [pair_directory + ".cnvkit.snpeff.annot.vcf"]
         
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_cnvkit.somatic." + tumor_pair.name + "." + key))
+
+        return jobs
      
     def ensemble_metasv(self):
         """
@@ -3099,6 +3092,24 @@ END`""".format(
                     os.path.join(ensemble_directory, tumor_pair.name + ".metasv.snpeff.annot.vcf")),
             ], name="sv_annotation.metasv_ensemble." + tumor_pair.name))
 
+        return jobs
+
+    def sym_link_metasv(self):
+        jobs = []
+    
+        inputs = dict()
+        for tumor_pair in self.tumor_pairs.itervalues():
+            pair_directory = os.path.abspath(os.path.join("SVariants", "ensemble", tumor_pair.name, tumor_pair.name))
+            inputs["Tumor"] = [pair_directory + ".metasv.snpeff.annot.vcf"]
+        
+            for key, input in inputs.iteritems():
+                for sample in input:
+                    jobs.append(concat_jobs([
+                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
+                    ], name="sym_link_metasv." + tumor_pair.name + "." + key))
+                    
         return jobs
 
     def scones(self):
@@ -3232,28 +3243,30 @@ END`""".format(
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
-            inputs["Tumor"] = [os.path.join(pair_directory + ".svaba.somatic.snpeff.annot.vcf"),
-                               os.path.join(pair_directory + ".svaba.somatic.prioritize.tsv")]
+            pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
+            inputs["Tumor"] = [pair_directory + ".svaba.somatic.snpeff.annot.vcf",
+                               pair_directory + ".svaba.somatic.prioritize.tsv"]
                                
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key,
-                                                   profyle=self.args.profyle),
+                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_svaba.somatic." + tumor_pair.name + "." + key))
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
-            inputs["Tumor"] = [os.path.join(pair_directory + ".svaba.germline.sv.snpeff.annot.vcf"),
-                               os.path.join(pair_directory + ".svaba.germline.prioritize.tsv")]
+            pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
+            inputs["Tumor"] = [pair_directory + ".svaba.germline.sv.snpeff.annot.vcf",
+                               pair_directory + ".svaba.germline.prioritize.tsv"]
 
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.sym_link_pair(sample, tumor_pair, type="sv", sample=key,
-                                                   profyle=self.args.profyle),
+                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_svaba.germline." + tumor_pair.name + "." + key))
 
         return jobs
@@ -3280,7 +3293,7 @@ END`""".format(
                 self.metrics_dna_sample_qualimap,
                 self.metrics_dna_fastqc,
                 self.run_pair_multiqc,
-                #self.sym_link_report,
+                self.sym_link_report,
                 self.sym_link_fastq_pair,
                 self.sym_link_panel,
             ],
@@ -3361,12 +3374,13 @@ END`""".format(
                 self.ensemble_metasv,
                 self.metasv_sv_annotation,
                 self.sym_link_sequenza,
+                self.sym_link_metasv,
                 self.sym_link_delly,
                 self.sym_link_manta,
                 self.sym_link_lumpy,
                 self.sym_link_wham,
                 self.sym_link_cnvkit,
-                self.sym_link_svaba
+                #self.sym_link_svaba
             ]
         ]
 

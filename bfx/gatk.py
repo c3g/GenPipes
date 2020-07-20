@@ -481,7 +481,7 @@ def variant_annotator(input_normal, input_tumor, input_variants, output, interva
 
     return Job(
         [input_normal, input_tumor, input_variants],
-        [output],
+        [output, output + ".tbi"],
         [
             ['gatk_variant_annotator', 'module_java'],
             ['gatk_variant_annotator', 'module_gatk']

@@ -48,10 +48,10 @@ mkdir -p {prefix} && \\
 ln -sf \\
   {input} \\
   {output}""".format(
-      prefix=prefix,
-      input=os.path.join(out_dir, input),
-      output=output
-      )
+        prefix=prefix,
+        input=os.path.abspath(input),
+        output=output
+        )
     )
 
 def sym_link_pair(input, tumor_pair, out_dir, type=None, sample=None, profyle=False):
@@ -80,15 +80,14 @@ def sym_link_pair(input, tumor_pair, out_dir, type=None, sample=None, profyle=Fa
         [input],
         [output],
         command="""\
-mkdir -p {prefix} && \\       
-<<<<<<< HEAD
+mkdir -p {prefix} && \\
 ln -s -f \\
   {input} \\
   {output}""".format(
-      prefix=prefix,
-      input=os.path.join(out_dir, input),
-      output=output
-      )
+        prefix=prefix,
+        input=os.path.abspath(input),
+        output=output
+        )
     )
 
 def md5sum(input, output, out_dir):

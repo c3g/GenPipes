@@ -85,8 +85,8 @@ zless {input} | \\
 
 def sv(input, normal_name, tumor_name, caller, output):
     return Job(
-        [input],
-        [output],
+        [os.path.abspath(input)],
+        [os.path.abspath(output)],
         [
             ['vawk', 'module_vawk'],
         ],

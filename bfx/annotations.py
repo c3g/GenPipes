@@ -28,7 +28,7 @@ from core.job import *
 def structural_variants(input, output):
     return Job(
         [input],
-        [output],
+        [os.path.abspath(output)],
         [
             ['sv_annotation', 'module_python'],
             ['sv_annotation', 'module_sv_annotations']

@@ -3383,7 +3383,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                              [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
                                              [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])[0]
 
-            #inputTumor = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
             isize_file = os.path.join("metrics", "dna", sample.name, "picard_metrics.all.metrics.insert_size_metrics")
             gatk_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.vcf.gz")
             gatk_pass = os.path.join("alignment", sample.name, sample.name + ".hc.flt.vcf.gz")
@@ -3423,6 +3422,18 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             ], name="metasv_ensemble." + sample.name))
 	        
         return jobs
+    
+    def metasv_sv_annotation(self):
+
+        jobs = []
+
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name, sample.name)
+
+            jobs.append(concat_jobs([
+                snpeff.compute_effects(os.path.join(pair_directory, "variants.vcf.gz"),
+                                       os.path.join(pair_directory, sample.name + ".metasv.snpeff.vcf")),
+            ], name="sv_annotation.metasv_ensemble." + sample.name))
 
     def svaba_assemble(self):
         jobs = []
@@ -3473,9 +3484,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             + os.path.abspath(pair_directory) + ".svaba.germline.flt.vcf"),
                 snpeff.compute_effects(os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.flt.vcf.gz"), os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf")),
                 htslib.bgzip_tabix(os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf"), os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf.gz")),
-                #annotations.structural_variants(pair_directory + ".svaba.germline.snpeff.vcf", pair_directory + ".svaba.germline.snpeff.annot.vcf"),
-                #vawk.sv(pair_directory + ".svaba.germline.snpeff.annot.vcf", tumor_pair.normal.name, tumor_pair.tumor.name, "SVABA",
-                #        pair_directory + ".svaba.germline.prioritize.tsv"),
             ], name="sv_annotation.svaba_germline." + sample.name))
 
         return jobs
@@ -3650,9 +3658,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.cnvkit_sv_annotation,
                 self.run_breakseq2,
 	            self.ensemble_metasv,
-                self.svaba_assemble,
-                self.svaba_sv_annotation
-            ]
+                self.metasv_sv_annotation,
+                #self.svaba_assemble,
+                #self.svaba_sv_annotation
+            ],
         ]
 
 class DnaSeq(DnaSeqRaw):
