@@ -3428,12 +3428,14 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
 
         for sample in self.samples:
-            pair_directory = os.path.join("SVariants", sample.name, sample.name)
+            ensemble_directory = os.path.join("SVariants", "ensemble", sample.name)
 
             jobs.append(concat_jobs([
-                snpeff.compute_effects(os.path.join(pair_directory, "variants.vcf.gz"),
-                                       os.path.join(pair_directory, sample.name + ".metasv.snpeff.vcf")),
+                snpeff.compute_effects(os.path.join(ensemble_directory, "variants.vcf.gz"),
+                                       os.path.join(ensemble_directory, sample.name + ".metasv.snpeff.vcf")),
             ], name="sv_annotation.metasv_ensemble." + sample.name))
+            
+        return jobs
 
     def svaba_assemble(self):
         jobs = []
