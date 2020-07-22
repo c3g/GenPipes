@@ -86,7 +86,7 @@ ln -s -f \\
   {output}""".format(
         prefix=prefix,
         input=os.path.abspath(input),
-        output=output
+        output=os.path.abspath(output)
         )
     )
 

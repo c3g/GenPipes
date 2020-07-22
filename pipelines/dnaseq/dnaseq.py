@@ -3020,8 +3020,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         bed_file = None
         for sample in self.samples:
-            path = os.getcwd()
-            pair_directory = os.path.abspath(os.path.join(path, "SVariants", sample.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", sample.name))
             #tmp_directory = os.path.join(str(config.param("manta_sv", 'tmp_dir')), "SVariants", sample.name)
             manta_directory = os.path.join(pair_directory, "rawManta")
             output_prefix = os.path.join(pair_directory, sample.name)
@@ -3398,6 +3397,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             mkdir_job = Job(command="mkdir -p " + ensemble_directory, samples=self.samples)
 			
+            input_cnvkit = None
+            if os.path.isfile(cnvkit_vcf):
+                input_cnvkit = cnvkit_vcf
+
             input_gatk = None
             if os.path.isfile(gatk_vcf):
                 input_gatk = gatk_pass
@@ -3410,7 +3413,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 
             jobs.append(concat_jobs([
                 bash.mkdir(ensemble_directory, remove=True),
-	            metasv.ensemble(lumpy_vcf, abs_manta, cnvkit_vcf, wham_vcf, delly_vcf, input_gatk, inputTumor, sample.name,
+	            metasv.ensemble(lumpy_vcf, abs_manta, input_cnvkit, wham_vcf, delly_vcf, input_gatk, inputTumor, sample.name,
                                 os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory, isize_mean=str(isize_mean),
                                 isize_sd=str(isize_sd), output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"),
                                 breakseq=breakseq_vcf),
