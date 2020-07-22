@@ -342,10 +342,12 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
     )
 
 def indel_realigner(input, target_intervals, input2=[], output=[], output_norm_dep=[], output_tum_dep=[], intervals=[], exclude_intervals=[], optional=[]):
-
+    output_dep = output_norm_dep + output_tum_dep
+    output_dep.append(output)
+    
     return Job(
         [input, target_intervals, input2],
-        [output, output_norm_dep, output_tum_dep],
+        output_dep,
         [
             ['gatk_indel_realigner', 'module_java'],
             ['gatk_indel_realigner', 'module_gatk']
@@ -370,9 +372,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         input=input,
         input2="--input_file " + input2 if input2 else "",
         target_intervals=target_intervals,
-        #known_indel_sites=config.param('gatk_realigner_target_creator', 'known_indel_sites', type='filepath'),
         known_mills=config.param('gatk_realigner_target_creator', 'known_mills', type='filepath'),
-        #known_1000G=config.param('gatk_realigner_target_creator', 'known_1000G', type='filepath'),
         output=" \\\n  --out " + output if output else "",
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),

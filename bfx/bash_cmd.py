@@ -61,9 +61,19 @@ def mv(source, target):
         [target],
         [],
         command="""\
-mv {source} {dest}""".format(
+mv {source}
+   {dest}""".format(
             source=source,
             dest=target
         )
     )
 
+def rm(source):
+    return Job(
+        [source],
+        [],
+        command="""\
+rm -rf {source}""".format(
+            source=source,
+        )
+    )

@@ -464,7 +464,7 @@ END
                                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
         
             job = concat_jobs([
-                Job(command="mkdir -p " + os.path.dirname(readset_bam), samples=[readset.sample]),
+                bash.mkdir(os.path.dirname(readset_bam), remove=True),
                 pipe_jobs([
                     bwa.mem(
                         fastq1,
@@ -524,14 +524,14 @@ END
                 sample_index = re.sub("\.bam$", ".bai", sample_bam)
 
                 job = concat_jobs([
-                    mkdir_job,
+                    bash.mkdir(os.path.dirname(sample_bam), remove=True),
                     Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam, removable_files=[sample_bam]),
                     Job([readset_index], [sample_index], command="ln -s -f " + target_readset_index + " " + sample_index, removable_files=[sample_index])
                 ], name="symlink_readset_sample_bam." + sample.name)
 
             elif len(sample.readsets) > 1:
                 job = concat_jobs([
-                    mkdir_job,
+                    bash.mkdir(os.path.dirname(sample_bam), remove=True),
                     sambamba.merge(readset_bams, sample_bam)
                 ])
                 job.name = "sambamba_merge_sam_files." + sample.name
@@ -665,7 +665,6 @@ END
                         samples=[sample]
                         )
                     )
-
             else:
                 # The first sequences are the longest to process.
                 # Each of them must be processed in a separate job.
@@ -1301,7 +1300,6 @@ END
             input_all_picard = os.path.join(metrics_directory, sample.name, "picard_metrics.all.metrics.quality_distribution.pdf")
             input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", sample.name, "genome_results.txt")
             input_fastqc = os.path.join(metrics_directory, sample.name, "fastqc", sample.name + ".sorted.dup_fastqc.zip")
-            #input_flagstat = os.path.join(metrics_directory, sample.name, "flagstat", sample.name + ".flagstat")
 
             input_dep += [
                 input_oxog,
@@ -1667,10 +1665,9 @@ END
 
         output = os.path.join("metrics", "dna", "checkmate")
         vcf_file = os.path.join(output, 'checkmate.tsv')
-        mkdir_job = Job(command="mkdir -p " + output)
-
+   
         jobs.append(concat_jobs([
-            mkdir_job,
+            bash.mkdir(os.path.dirname(output), remove=False),
             Job(inputs, [vcf_file], command="ls " + " ".join(inputs) + " > " + vcf_file),
             ngscheckmate.run(vcf_file, output),
         ], name="run_checkmate.sample_level"))
@@ -1719,7 +1716,7 @@ END
 
             jobs.append(concat_jobs([
                 # Create output directory since it is not done by default by GATK tools
-                Job(command="mkdir -p " + output, removable_files=[output], samples=[sample]),
+                bash.mkdir(os.path.dirname(output), remove=False),
                 verify_bam_id.verify(input, os.path.join(output, sample.name))
             ], name="verify_bam_id." + sample.name))
 
@@ -2273,6 +2270,8 @@ pandoc \\
         """
 
         jobs = []
+        nb_jobs = config.param('rawmpileup', 'nb_jobs', type='posint')
+        
         for sample in self.samples:
             mpileup_directory = os.path.join("alignment", sample.name, "mpileup")
             alignment_directory = os.path.join("alignment", sample.name)
@@ -2284,15 +2283,30 @@ pandoc \\
                 [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
+            
+            if nb_jobs == 1:
+                output = os.path.join(mpileup_directory, sample.name + ".mpileup.gz")
+                jobs.append(concat_jobs([
+                    bash.mkdir(mpileup_directory, remove=True),
+                    pipe_jobs([
+                        samtools.mpileup(
+                            input,
+                            None,
+                            None,
+                            config.param('rawmpileup', 'mpileup_other_options')),
+                        Job(output_files=[output], command="gzip -1 -c > " + output, samples=[sample])
+                    ])
+                ], name="rawmpileup." + sample.name + ".all"))
 
-            for sequence in self.sequence_dictionary:
-                if sequence['type'] is 'primary':
-                    output = os.path.join(mpileup_directory, sample.name + "." + sequence['name'] + ".mpileup.gz")
-                    jobs.append(
-                        concat_jobs([
-                            bash.mkdir(mpileup_directory),
-                            pipe_jobs([
-                                samtools.mpileup(
+            else:
+                for sequence in self.sequence_dictionary:
+                    if sequence['type'] is 'primary':
+                        output = os.path.join(mpileup_directory, sample.name + "." + sequence['name'] + ".mpileup.gz")
+                        jobs.append(
+                            concat_jobs([
+                                bash.mkdir(mpileup_directory),
+                                pipe_jobs([
+                                    samtools.mpileup(
                                     input,
                                     None,
                                     config.param('rawmpileup', 'mpileup_other_options'),
@@ -2937,8 +2951,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             inputs = [input]
 
-            mkdir_job = Job(command="mkdir -p " + delly_directory, removable_files=[delly_directory], samples=self.samples)
-
             SV_types = config.param('delly_call_filter', 'sv_types_options').split(",")
 
             for sv_type in SV_types:
@@ -2946,15 +2958,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 output_vcf = os.path.join(delly_directory, sample.name + ".delly." + str(sv_type) + ".germline.flt.vcf.gz")
 
                 jobs.append(concat_jobs([
-                    mkdir_job,
-                    delly.call(inputs, output_bcf, sv_type),
+                    bash.mkdir(delly_directory, remove=True),
+                    delly.call([input], output_bcf, sv_type),
                     pipe_jobs([
                         bcftools.view(output_bcf, None, config.param('delly_call_filter_germline', 'bcftools_options')),
                         htslib.bgzip_tabix(None, output_vcf),
                     ]),
-                    #delly.filter(output_bcf, output_filter_germline_bcf, sv_type,
-                    #             config.param('delly_call_filter_germline', 'type_options'),
-                    #             config.param('delly_call_filter_germline', sv_type + '_options'))
                 ], name="delly_call_filter." + str(sv_type) + "." + sample.name))
 
         return jobs
@@ -2990,9 +2999,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         
             jobs.append(concat_jobs([
                 snpeff.compute_effects(germline_vcf, final_directory + ".delly.germline.snpeff.vcf.gz"),
-                #annotations.structural_variants(final_directory + ".delly.germline.snpeff.vcf", final_directory + ".delly.germline.snpeff.annot.vcf"),
-                #vawk.sv(final_directory + ".delly.germline.snpeff.annot.vcf", sample.normal.name, sample.tumor.name, "DELLY",
-                #        final_directory + ".delly.germline.prioritize.tsv"),
             ], name="sv_annotation.delly.germline." + sample.name))
     
         return jobs
@@ -3040,14 +3046,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             output_dep = [manta_germline_output, manta_germline_output_tbi]
 
             jobs.append(concat_jobs([
-                mkdir_job,
+                bash.mkdir(manta_directory, remove=True),
                 manta.manta_config(input, None, manta_directory, bed_file),
                 manta.manta_run(manta_directory, output_dep=output_dep),
                 #Job([tmp_directory], [manta_directory], command="mv " + tmp_directory + " " + manta_directory),
-                Job([manta_germline_output], [output_prefix + ".manta.germline.vcf.gz"],
-                    command="ln -sf " + manta_germline_output + " " + output_prefix + ".manta.germline.vcf.gz"),
-                Job([manta_germline_output_tbi], [output_prefix + ".manta.germline.vcf.gz"],
-                    command="ln -sf " + manta_germline_output_tbi + " " + output_prefix + ".manta.germline.vcf.gz.tbi"),
+                bash.ln(manta_germline_output, output_prefix + ".manta.germline.vcf.gz"),
+                bash.ln(manta_germline_output_tbi, output_prefix + ".manta.germline.vcf.gz.tbi"),
             ], name="manta_sv." + sample.name))
 
         return jobs
@@ -3061,8 +3065,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             jobs.append(concat_jobs([
                 snpeff.compute_effects(pair_directory + ".manta.germline.vcf.gz", pair_directory + ".manta.germline.snpeff.vcf.gz"),
-                #vawk.sv(pair_directory + ".manta.germline.snpeff.annot.vcf", sample.normal.name, sample.tumor.name, "MANTA",
-                #        pair_directory + ".manta.germline.prioritize.tsv")
             ], name="sv_annotation.manta_germline." + sample.name))
 
         return jobs
@@ -3091,11 +3093,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             genotype_vcf = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf")
             genotype_gzip = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf.gz")
             germline_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
-        
-            mkdir_job = Job(command="mkdir -p " + lumpy_directory, removable_files=[lumpy_directory], samples=self.samples)
-        
+ 
             jobs.append(concat_jobs([
-                mkdir_job,
+                bash.mkdir(lumpy_directory, remove=True),
                 pipe_jobs([
                     samtools.view(inputNormal, None, "-b -F 1294"),
                     sambamba.sort("/dev/stdin", discordants_normal, lumpy_directory, config.param('extract_discordant_reads', 'discordants_sort_option')),
@@ -3103,7 +3103,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             ], name="extract_discordant_reads." + sample.name))
 
             jobs.append(concat_jobs([
-                mkdir_job,
+                bash.mkdir(lumpy_directory, remove=True),
                 pipe_jobs([
                     samtools.view(inputNormal, None, "-h"),
                     Job([None], [None], [['lumpy_sv', 'module_lumpy']], command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"),
@@ -3113,7 +3113,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             ], name="extract_split_reads." + sample.name))
 
             jobs.append(concat_jobs([
-                mkdir_job,
+                bash.mkdir(lumpy_directory, remove=True),
                 lumpy.lumpyexpress_pair(inputNormal, None, output_vcf, spl_normal=splitters_normal, dis_normal=discordants_normal),
                 htslib.bgzip(output_vcf, gzip_vcf),
             ], name="lumpy_paired_sv_calls." + sample.name))
@@ -3174,7 +3174,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             mkdir_job = Job(command="mkdir -p " + wham_directory, removable_files=[wham_directory], samples=self.samples)
         
             jobs.append(concat_jobs([
-                mkdir_job,
+                bash.mkdir(wham_directory, remove=True),
                 wham.call_sv(inputNormal, None, output_vcf),
                 pipe_jobs([
                     wham.merge(output_vcf, None),
@@ -3183,7 +3183,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             ], name="wham_call_sv.call_merge." + sample.name))
         
             jobs.append(concat_jobs([
-                mkdir_job,
+                bash.mkdir(wham_directory, remove=True),
                 pipe_jobs([
                     Job([merge_vcf], [None], command="cat " + merge_vcf + " | grep -v \"^##contig\""),
                     bcftools.annotate(None, None, config.param('wham_call_sv', 'header_options')),
@@ -3252,27 +3252,23 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             gatk_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.vcf.gz")
 
+            input_vcf = None
+            normal = None
             if os.path.isfile(gatk_vcf):
                 input_vcf = gatk_vcf
-                #input_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.qual40.vcf.gz")
-                #bcftools.view(gatk_vcf, input_vcf, filter_options="-f QUAL")
+                input_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.qual40.vcf.gz")
+                bcftools.view(gatk_vcf, input_vcf, filter_options="-f QUAL")
                 normal = sample.name
-
-            else:
-                input_vcf = None
-                normal = None
-
-            mkdir_job = Job(command="mkdir -p " + cnvkit_dir, removable_files=[cnvkit_dir], samples=self.samples)
-            
+         
             if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples'):
                 jobs.append(concat_jobs([
-                    mkdir_job,
+                    bash.mkdir(cnvkit_dir, remove=True),
                     cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn,
                                  target_bed=bed, reference=pool_ref_cnn, output_cnn=ref_cnn),
                 ], name="cnvkit_batch." + sample.name))
     
                 jobs.append(concat_jobs([
-                    mkdir_job,
+                    bash.mkdir(cnvkit_dir, remove=True),
                     cnvkit.fix(tarcov_cnn, antitarcov_cnn, os.path.join(cnvkit_dir, sample.name + ".cnr"),
                                reference=pool_ref_cnn, ref_cnn=ref_cnn),
                     cnvkit.segment(os.path.join(cnvkit_dir, sample.name + ".cnr"),
@@ -3288,12 +3284,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             else:
            
                 jobs.append(concat_jobs([
-                    mkdir_job,
+                    bash.mkdir(cnvkit_dir, remove=True),
                     cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn, target_bed=bed, reference=pool_ref_cnn, output_cnn=ref_cnn),
                 ], name="cnvkit_batch." + sample.name))
 
                 jobs.append(concat_jobs([
-                    mkdir_job,
+                    bash.mkdir(cnvkit_dir, remove=True),
                     cnvkit.fix(tarcov_cnn, antitarcov_cnn, os.path.join(cnvkit_dir, sample.name + ".cnr"), reference=pool_ref_cnn, ref_cnn=ref_cnn),
                     cnvkit.segment(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".cns"), vcf=input_vcf, sample_id=sample.name),
                     cnvkit.segmetrics(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".cns"), os.path.join(cnvkit_dir, sample.name + ".segmetrics.cns")),
@@ -3301,7 +3297,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 ], name="cnvkit_batch.correction." + sample.name))
             
                 jobs.append(concat_jobs([
-                    mkdir_job,
+                    bash.mkdir(cnvkit_dir, remove=True),
                     cnvkit.call(os.path.join(cnvkit_dir, sample.name + ".segmetrics.cns"), os.path.join(cnvkit_dir, sample.name + ".call.cns")),
                     #cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".call.cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
                     pipe_jobs([
@@ -3311,7 +3307,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 ], name="cnvkit_batch.call." + sample.name))
 
                 jobs.append(concat_jobs([
-                    mkdir_job,
+                    bash.mkdir(cnvkit_dir, remove=True),
                     cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"),
                                    os.path.join(cnvkit_dir, sample.name + ".call.cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
                     cnvkit.scatter(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".call.cns"),
@@ -3350,16 +3346,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             output = os.path.join(pair_directory, "rawBreakseq2", "breakseq.vcf.gz")
             final_vcf = os.path.join(pair_directory, sample.name + ".breakseq.germline.vcf.gz")
         
-            input = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
-
-            # input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
-            #                                 [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
-            #                                 [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
-        
-            mkdir_job = Job(command="mkdir -p " + output_dir, removable_files=[output_dir], samples=self.samples)
+            input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])[0]
             
             jobs.append(concat_jobs([
-                mkdir_job,
+                bash.mkdir(output_dir, remove=True),
                 breakseq2.run(input, sample.name, output_dir),
                 pipe_jobs([
                     bcftools.view(output, None, config.param('run_breakseq2', 'bcftools_options')),
@@ -3408,13 +3400,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 input_gatk = gatk_pass
                 
                 jobs.append(concat_jobs([
-	                mkdir_job,
+	                bash.mkdir(ensemble_directory, remove=True),
 	                bcftools.view(gatk_vcf, gatk_pass, config.param('metasv_ensemble', 'filter_pass_options')),
                     htslib.tabix(gatk_pass),
                 ], name="metasv_ensemble.gatk_pass." + sample.name))
                 
             jobs.append(concat_jobs([
-                mkdir_job,
+                bash.mkdir(ensemble_directory, remove=True),
 	            metasv.ensemble(lumpy_vcf, abs_manta, cnvkit_vcf, wham_vcf, delly_vcf, input_gatk, inputTumor, sample.name,
                                 os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory, isize_mean=str(isize_mean),
                                 isize_sd=str(isize_sd), output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"),
@@ -3450,8 +3442,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             germline_input = os.path.join(svaba_directory, sample.name + ".svaba.sv.vcf")
             germline_output = os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.vcf.gz")
-
-            mkdir_job = Job(command="mkdir -p " + svaba_directory, removable_files=[svaba_directory], samples=self.samples)
             #cd_job = Job(command="cd " + svaba_directory)
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
@@ -3462,7 +3452,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 bed = coverage_bed
 
             jobs.append(concat_jobs([
-                mkdir_job,
+                bash.mkdir(svaba_directory, remove=True),
                 #cd_job,
                 svaba.run(input_normal, os.path.join(svaba_directory, sample.name), None, bed),
                 pipe_jobs([
