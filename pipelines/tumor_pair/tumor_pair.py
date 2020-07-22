@@ -252,22 +252,33 @@ END`""".format(
             input_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")
 
             if nb_jobs == 1:
+<<<<<<< HEAD
                 realign_intervals = os.path.abspath(os.path.join(pair_directory, "all.intervals"))
                 bam_postfix = ".realigned.all.bam"
                 
                 normal_bam = os.path.join(pair_directory, tumor_pair.normal.name + ".sorted.realigned.all.bam")
+=======
+                realign_intervals = os.path.join(tumor_realign_directory, "all.intervals")
+                bam_postfix = ".realigned.all.bam"
+                normal_bam = os.path.join(tumor_pair.normal.name + ".sorted.realigned.all.bam")
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 normal_index = re.sub("\.bam$", ".bai", normal_bam)
                 normal_output_bam = os.path.join(normal_alignment_directory,
                                                  tumor_pair.normal.name + ".sorted.realigned.bam")
                 normal_output_index = re.sub("\.bam$", ".bai", normal_output_bam)
+<<<<<<< HEAD
                 
                 tumor_bam = os.path.join(pair_directory, tumor_pair.tumor.name + ".sorted.realigned.all.bam")
+=======
+                tumor_bam = os.path.join(tumor_pair.tumor.name + ".sorted.realigned.all.bam")
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
                 tumor_output_bam = os.path.join(tumor_alignment_directory,
                                                 tumor_pair.tumor.name + ".sorted.realigned.bam")
                 tumor_output_index = re.sub("\.bam$", ".bai", tumor_output_bam)
 
                 jobs.append(concat_jobs([
+<<<<<<< HEAD
                     bash.mkdir(
                         pair_directory,
                         remove=True
@@ -311,6 +322,19 @@ END`""".format(
                         tumor_output_index,
                         self.output_dir
                     ),
+=======
+                    bash.mkdir(normal_realign_directory, remove=True),
+                    bash.mkdir(tumor_realign_directory, remove=True),
+                    gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor),
+                    gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=[normal_bam,normal_index],
+                                         output_tum_dep=[tumor_bam,tumor_index], target_intervals=realign_intervals,
+                                         optional=bam_postfix),
+                    # Move sample realign
+                    bash.mv(normal_bam, normal_output_bam),
+                    bash.mv(normal_index, normal_output_index),
+                    bash.mv(tumor_bam, tumor_output_bam),
+                    bash.mv(tumor_index, tumor_output_index),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 ], name="gatk_indel_realigner." + tumor_pair.name))
 
             else:
@@ -342,6 +366,7 @@ END`""".format(
 
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
+<<<<<<< HEAD
                         bash.mkdir(
                             pair_directory,
                             remove=True
@@ -394,6 +419,19 @@ END`""".format(
                             tumor_output_index,
                             self.output_dir
                         ),
+=======
+                        bash.mkdir(normal_realign_directory, remove=True),
+                        bash.mkdir(tumor_realign_directory, remove=True),
+                        gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor,
+                                                      intervals=intervals),
+                        gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=[normal_bam,normal_index],
+                                             output_tum_dep=[tumor_bam,tumor_index], target_intervals=realign_intervals,
+                                             intervals=intervals, optional=bam_postfix),
+                        bash.mv(normal_bam, normal_output_bam),
+                        bash.mv(normal_index, normal_output_index),
+                        bash.mv(tumor_bam, tumor_output_bam),
+                        bash.mv(tumor_index, tumor_output_index),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                     ], name="gatk_indel_realigner." + tumor_pair.name + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
@@ -413,6 +451,7 @@ END`""".format(
 
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
+<<<<<<< HEAD
                     bash.mkdir(
                         pair_directory,
                         remove=True
@@ -465,6 +504,19 @@ END`""".format(
                         tumor_output_index,
                         self.output_dir
                     ),
+=======
+                    bash.mkdir(normal_realign_directory, remove=True),
+                    bash.mkdir(tumor_realign_directory, remove=True),
+                    gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor,
+                                                  exclude_intervals=unique_sequences_per_job_others),
+                    gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=[normal_bam, normal_index],
+                                         output_tum_dep=[tumor_bam, tumor_index], target_intervals=realign_intervals,
+                                         exclude_intervals=unique_sequences_per_job_others, optional=bam_postfix),
+                    bash.mv(normal_bam, normal_output_bam),
+                    bash.mv(normal_index, normal_output_index),
+                    bash.mv(tumor_bam, tumor_output_bam),
+                    bash.mv(tumor_index, tumor_output_index),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 ], name="gatk_indel_realigner." + tumor_pair.name + ".others"))
 
         return jobs
@@ -584,6 +636,7 @@ END`""".format(
             ], name="conpair_concordance_contamination.pileup." + tumor_pair.tumor.name))
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     metrics_directory,
                     remove=False
@@ -598,6 +651,11 @@ END`""".format(
                     pileup_tumor,
                     contamination_out
                 )
+=======
+                bash.mkdir(metrics_directory, remove=False),
+                conpair.concordance(pileup_normal, pileup_tumor, concordance_out),
+                conpair.contamination(pileup_normal, pileup_tumor, contamination_out)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="conpair_concordance_contamination." + tumor_pair.name))
 
         return jobs
@@ -620,10 +678,14 @@ END`""".format(
                     pair_output = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".mpileup")
 
                     jobs.append(concat_jobs([
+<<<<<<< HEAD
                         bash.mkdir(
                             varscan_directory,
                             remove=True
                         ),
+=======
+                        bash.mkdir(varscan_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                         samtools.mpileup(
                             [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam"),
                              os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
@@ -657,6 +719,7 @@ END`""".format(
                     output_vcf_gz = os.path.join(varscan_directory, tumor_pair.name + ".varscan2." + sequence['name'] + ".vcf.gz")
 
                     jobs.append(concat_jobs([
+<<<<<<< HEAD
                         bash.mkdir(
                             varscan_directory,
                             remove=True
@@ -677,6 +740,13 @@ END`""".format(
                             output_indel,
                             os.path.join(varscan_directory, tumor_pair.name + ".indel." + sequence['name'] + ".vcf.gz")
                         ),
+=======
+                        bash.mkdir(varscan_directory, remove=True),
+                        varscan.somatic(input_pair, output, config.param('varscan2_somatic_panel', 'other_options'),
+                                    output_vcf_dep=output_vcf_gz, output_snp_dep=output_snp, output_indel_dep=output_indel),
+                        htslib.bgzip_tabix(output_snp, os.path.join(varscan_directory, tumor_pair.name + ".snp." + sequence['name'] + ".vcf.gz")),
+                        htslib.bgzip_tabix(output_indel, os.path.join(varscan_directory, tumor_pair.name + ".indel." + sequence['name'] + ".vcf.gz")),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                         pipe_jobs([
                             bcftools.concat(
                                 [os.path.join(varscan_directory, tumor_pair.name + ".snp." + sequence['name'] + ".vcf.gz"),
@@ -917,6 +987,41 @@ END`""".format(
 
         return jobs
 
+<<<<<<< HEAD
+=======
+    def set_somatic_and_actionable_mutations_panel(self):
+        """
+
+        """
+
+        jobs = []
+
+        gemini_module = config.param("DEFAULT", 'module_gemini').split(".")
+        gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
+
+        ped_file = config.param('set_somatic_and_actionable_mutations', 'ped_file', required=False, type='filepath')
+        ped_job = None
+
+        for tumor_pair in self.tumor_pairs.itervalues():
+            paired_directory = os.path.join("pairedVariants", tumor_pair.name, "panel")
+            gemini_prefix = os.path.join(paired_directory, tumor_pair.name)
+
+            if not ped_file:
+                ped_job = self.build_ped_file(paired_directory, tumor_pair)
+                ped_file = os.path.join(gemini_prefix + ".ped")
+
+            jobs.append(concat_jobs([
+                bash.mkdir(paired_directory, remove=False),
+                ped_job,
+                gemini.set_somatic(ped_file, gemini_prefix + ".somatic.gemini.db",
+                                   gemini_prefix + ".varscan2.somatic.gemini.set_somatic.tsv"),
+                gemini.actionable_mutations(gemini_prefix + ".somatic.gemini.db",
+                                            gemini_prefix + ".varscan2.somatic.gemini.actionable.tsv")
+            ], name="set_somatic_and_actionable_mutations." + tumor_pair.name))
+
+        return jobs
+
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
     def sym_link_panel(self):
         jobs = []
 
@@ -927,6 +1032,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
+<<<<<<< HEAD
                         deliverables.sym_link_pair(
                             sample + ".varscan2.vcf.gz",
                             tumor_pair, self.output_dir,
@@ -988,6 +1094,16 @@ END`""".format(
                             sample=key,
                             profyle=self.args.profyle
                         ),
+=======
+                        deliverables.sym_link_pair(sample + ".varscan2.vcf.gz", tumor_pair, self.output_dir, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".varscan2.vcf.gz.tbi", tumor_pair, self.output_dir, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".varscan2.somatic.vt.snpeff.vcf.gz", tumor_pair, self.output_dir, type="snv/panel",sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".varscan2.somatic.vt.snpeff.vcf.gz.tbi", tumor_pair, self.output_dir, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".varscan2.germline.vt.snpeff.vcf.gz", tumor_pair, self.output_dir, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".varscan2.germline.vt.snpeff.vcf.gz.tbi", tumor_pair, self.output_dir, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".somatic.gemini.db", tumor_pair, self.output_dir, type="snv/panel", sample=key, profyle=self.args.profyle),
+                        deliverables.sym_link_pair(sample + ".germline.gemini.db", tumor_pair, self.output_dir, type="snv/panel", sample=key, profyle=self.args.profyle),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                     ], name="sym_link_panel." + tumor_pair.name + "." + key))
 
         return jobs
@@ -1109,6 +1225,7 @@ END`""".format(
             if nb_jobs == 1:
                 pair_output = os.path.join(varscan_directory, tumor_pair.name + ".mpileup")
                 jobs.append(concat_jobs([
+<<<<<<< HEAD
                     bash.mkdir(
                         varscan_directory,
                         remove=True
@@ -1119,6 +1236,10 @@ END`""".format(
                         config.param('rawmpileup', 'mpileup_other_options'),
                         regionFile=bed_file
                     ),
+=======
+                    bash.mkdir(varscan_directory, remove=True),
+                    samtools.mpileup([input_normal[0], input_tumor[0]], pair_output, config.param('rawmpileup', 'mpileup_other_options'), regionFile=bed_file),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 ], name="rawmpileup." + tumor_pair.name))
 
             else:
@@ -1129,6 +1250,7 @@ END`""".format(
                                                    tumor_pair.name + "." + sequence['name'] + ".mpileup")
 
                         jobs.append(concat_jobs([
+<<<<<<< HEAD
                             bash.mkdir(
                                 varscan_directory,
                                 remove=True
@@ -1140,6 +1262,10 @@ END`""".format(
                                 region=sequence['name'],
                                 regionFile=bed_file
                             ),
+=======
+                            bash.mkdir(varscan_directory, remove=True),
+                            samtools.mpileup([input_normal[0], input_tumor[0]], pair_output, config.param('rawmpileup', 'mpileup_other_options'), region=sequence['name'], regionFile=bed_file),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                         ], name="rawmpileup." + tumor_pair.name + "." + sequence['name']))
 
         return jobs
@@ -1172,6 +1298,7 @@ END`""".format(
                 output_vcf_gz = os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")
     
                 jobs.append(concat_jobs([
+<<<<<<< HEAD
                     bash.mkdir(
                         varscan_directory,
                         remove=True
@@ -1192,6 +1319,13 @@ END`""".format(
                         output_indel,
                         os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf.gz")
                     ),
+=======
+                    bash.mkdir(varscan_directory, remove=True),
+                    varscan.somatic(input_pair, output, config.param('varscan2_somatic', 'other_options'), output_vcf_dep=output_vcf, output_snp_dep=output_snp,
+                                    output_indel_dep=output_indel),
+                    htslib.bgzip_tabix(output_snp, os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf.gz")),
+                    htslib.bgzip_tabix(output_indel, os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf.gz")),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                     pipe_jobs([
                         bcftools.concat(
                             [os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf.gz"),
@@ -1225,6 +1359,7 @@ END`""".format(
                         output_vcf_gz = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".varscan2.vcf.gz")
 
                         jobs.append(concat_jobs([
+<<<<<<< HEAD
                             bash.mkdir(
                                 varscan_directory,
                                 remove=True
@@ -1258,6 +1393,18 @@ END`""".format(
                                             + tumor_pair.normal.name + "/g' | grep -v \"INFO=<ID=SSC\" | sed -E \"s/SSC=(.*);//g\" > "
                                             + output_vcf
                                 ),
+=======
+                            bash.mkdir(varscan_directory, remove=True),
+                            varscan.somatic(input_pair, output, config.param('varscan2_somatic', 'other_options'),
+                                        output_vcf_dep=output_vcf, output_snp_dep=output_snp, output_indel_dep=output_indel),
+                            htslib.bgzip_tabix(output_snp, os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".snp.vcf.gz")),
+                            htslib.bgzip_tabix(output_indel, os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".indel.vcf.gz")),
+                            pipe_jobs([
+                                bcftools.concat([os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".snp.vcf.gz"),
+                                                 os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".indel.vcf.gz")], None),
+                                Job([None], [output_vcf],
+                                command="sed 's/TUMOR/" + tumor_pair.tumor.name + "/g' | sed 's/NORMAL/" + tumor_pair.normal.name + "/g' | grep -v \"INFO=<ID=SSC\" | sed -E \"s/SSC=(.*);//g\" > " + output_vcf),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                             ]),
                             htslib.bgzip_tabix(
                                 output_vcf,
@@ -1483,6 +1630,7 @@ END`""".format(
             if nb_jobs == 1:
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
+<<<<<<< HEAD
                     bash.mkdir(
                         mutect_directory,
                         remove=True
@@ -1495,6 +1643,11 @@ END`""".format(
                         os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz"),
                         interval_list=interval_list
                     )
+=======
+                    bash.mkdir(mutect_directory, remove=True),
+                    gatk4.mutect2(input_normal[0], tumor_pair.normal.name, input_tumor[0], tumor_pair.tumor.name,
+                                 os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz"), interval_list=interval_list)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 ], name="gatk_mutect2." + tumor_pair.name))
 
             else:
@@ -1505,6 +1658,7 @@ END`""".format(
                     outprefix = tumor_pair.name + "." + str(idx) + ".mutect2"
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
+<<<<<<< HEAD
                         bash.mkdir(
                             mutect_directory,
                             remove=True
@@ -1518,11 +1672,17 @@ END`""".format(
                             intervals=sequences,
                             interval_list=interval_list
                         )
+=======
+                        bash.mkdir(mutect_directory, remove=True),
+                        gatk4.mutect2(input_normal[0], tumor_pair.normal.name, input_tumor[0], tumor_pair.tumor.name,
+                                      os.path.join(mutect_directory, outprefix + ".vcf.gz"), intervals=sequences, interval_list=interval_list)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                     ], name="gatk_mutect2." + tumor_pair.name + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
+<<<<<<< HEAD
                     bash.mkdir(
                         mutect_directory,
                         remove=True
@@ -1537,6 +1697,13 @@ END`""".format(
                         interval_list=interval_list,
                         )
                     ], name="gatk_mutect2." + tumor_pair.name + ".others"))
+=======
+                    bash.mkdir(mutect_directory, remove=True),
+                    gatk4.mutect2(input_normal[0], tumor_pair.normal.name, input_tumor[0], tumor_pair.tumor.name,
+                                 os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"),
+                                 exclude_intervals=unique_sequences_per_job_others, interval_list=interval_list)
+                ], name="gatk_mutect2." + tumor_pair.name + ".others"))
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
 
         return jobs
 
@@ -1766,6 +1933,7 @@ END`""".format(
                           os.path.join(strelka2_directory, "results/variants/somatic.indels.vcf.gz")]
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 strelka2.somatic_config(
                     input_normal[0],
                     input_tumor[0],
@@ -1777,6 +1945,12 @@ END`""".format(
                     strelka2_directory,
                     output_dep=output_dep
                 ),
+=======
+                bash.rm(strelka2_directory),
+                bash.mkdir(strelka2_directory, remove=True),
+                strelka2.somatic_config(input_normal[0], input_tumor[0], strelka2_directory, bed_file, mantaIndels),
+                strelka2.run(strelka2_directory, output_dep=output_dep),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="strelka2_paired_somatic.call." + tumor_pair.name))
             
             jobs.append(concat_jobs([
@@ -1854,10 +2028,14 @@ END`""".format(
 
             if nb_jobs == 1:
                 jobs.append(concat_jobs([
+<<<<<<< HEAD
                     bash.mkdir(
                         samtools_directory,
                         remove=True
                     ),
+=======
+                    bash.mkdir(samtools_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                     pipe_jobs([
                         bcftools.mpileup(
                             [input_normal[0], input_tumor[0]],
@@ -1882,10 +2060,14 @@ END`""".format(
                 for sequence in self.sequence_dictionary_variant():
                     if sequence['type'] is 'primary':
                         jobs.append(concat_jobs([
+<<<<<<< HEAD
                             bash.mkdir(
                                 samtools_directory,
                                 remove=True
                             ),
+=======
+                            bash.mkdir(samtools_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                             pipe_jobs([
                                 bcftools.mpileup(
                                     [input_normal[0], input_tumor[0]],
@@ -2127,10 +2309,14 @@ END`""".format(
                 for bf in bed_file_list:
                     output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz")
                     jobs.append(concat_jobs([
+<<<<<<< HEAD
                         bash.mkdir(
                             vardict_directory,
                             remove=True
                         ),
+=======
+                        bash.mkdir(vardict_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                         pipe_jobs([
                             vardict.paired_java(
                                 input_normal[0],
@@ -2164,10 +2350,14 @@ END`""".format(
                     bedjob = vardict.dict2beds(genome_dictionary, beds)
                     output = os.path.join(vardict_directory, tumor_pair.name + ".0.vardict.vcf.gz")
                     jobs.append(concat_jobs([
+<<<<<<< HEAD
                         bash.mkdir(
                             vardict_directory,
                             remove=True
                         ),
+=======
+                        bash.mkdir(vardict_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                         bedjob,
                         pipe_jobs([
                             vardict.paired_java(
@@ -2195,19 +2385,27 @@ END`""".format(
                     ], name="vardict_paired." + tumor_pair.name + ".0"))
                     
                 else:
+<<<<<<< HEAD
                     bedjob = vardict.dict2beds(
                         genome_dictionary,
                         beds
                     )
+=======
+                    bedjob = vardict.dict2beds(genome_dictionary, beds)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                     jobs.append(concat_jobs([bedjob], name="vardict.genome.beds." + tumor_pair.name))
 
                     for idx in range(nb_jobs):
                         output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz")
                         jobs.append(concat_jobs([
+<<<<<<< HEAD
                             bash.mkdir(
                                 vardict_directory,
                                 remove=True
                             ),
+=======
+                            bash.mkdir(vardict_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                             pipe_jobs([
                                 vardict.paired_java(
                                     input_normal[0],
@@ -2416,6 +2614,7 @@ END`""".format(
 
             jobs.append(concat_jobs([
                 # Create output directory since it is not done by default by GATK tools
+<<<<<<< HEAD
                 bash.mkdir(
                     paired_ensemble_directory,
                     remove=True
@@ -2425,6 +2624,11 @@ END`""".format(
                     output_ensemble,
                     config.param('bcbio_ensemble_somatic', 'options')
                 ),
+=======
+                bash.mkdir(paired_ensemble_directory, remove=True),
+                bcbio_variation_recall.ensemble(inputs_somatic, output_ensemble,
+                                                config.param('bcbio_ensemble_somatic', 'options')),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="bcbio_ensemble_somatic." + tumor_pair.name))
 
         return jobs
@@ -2455,13 +2659,18 @@ END`""".format(
                                            tumor_pair.name + ".ensemble.germline.vt.vcf.gz")
 
             if os.path.isdir(os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vt-work")):
+<<<<<<< HEAD
                 rm_job = bash.rm(
                     os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vt-work")
                 )
+=======
+                rm_job = bash.rm(os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vt-work"))
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 jobs.append(rm_job)
 
             jobs.append(concat_jobs([
                 # Create output directory since it is not done by default by GATK tools
+<<<<<<< HEAD
                 bash.mkdir(
                     paired_ensemble_directory,
                     remove=True
@@ -2471,6 +2680,11 @@ END`""".format(
                     output_ensemble,
                     config.param('bcbio_ensemble_germline', 'options')
                 ),
+=======
+                bash.mkdir(paired_ensemble_directory, remove=True),
+                bcbio_variation_recall.ensemble(inputs_germline, output_ensemble,
+                                                config.param('bcbio_ensemble_germline', 'options')),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="bcbio_ensemble_germline." + tumor_pair.name))
 
         return jobs
@@ -2498,6 +2712,7 @@ END`""".format(
                 output_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
     
                 jobs.append(concat_jobs([
+<<<<<<< HEAD
                     bash.mkdir(
                         annot_directory,
                         remove=True
@@ -2508,6 +2723,10 @@ END`""".format(
                         input_somatic_variants,
                         output_somatic_variants
                     ),
+=======
+                    bash.mkdir(annot_directory, remove=True),
+                    gatk.variant_annotator(input_normal, input_tumor, input_somatic_variants, output_somatic_variants),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 ], name="gatk_variant_annotator.somatic." + tumor_pair.name))
                 
             else:
@@ -2516,6 +2735,7 @@ END`""".format(
                     output_somatic_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot." + str(idx) + ".vcf.gz")
 
                     jobs.append(concat_jobs([
+<<<<<<< HEAD
                         bash.mkdir(
                             annot_directory,
                             remove=True
@@ -2527,11 +2747,16 @@ END`""".format(
                             output_somatic_variants,
                             intervals=sequences
                         ),
+=======
+                        bash.mkdir(annot_directory, remove=True),
+                        gatk.variant_annotator(input_normal, input_tumor, input_somatic_variants, output_somatic_variants, intervals=sequences),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                     ], name="gatk_variant_annotator.somatic." + str(idx) + "." + tumor_pair.name))
 
                 output_somatic_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.others.vcf.gz")
 
                 jobs.append(concat_jobs([
+<<<<<<< HEAD
                     bash.mkdir(
                         annot_directory,
                         remove=True
@@ -2543,6 +2768,11 @@ END`""".format(
                         output_somatic_variants,
                         exclude_intervals=unique_sequences_per_job_others
                     ),
+=======
+                    bash.mkdir(annot_directory, remove=True),
+                    gatk.variant_annotator(input_normal, input_tumor, input_somatic_variants, output_somatic_variants,
+                                           exclude_intervals=unique_sequences_per_job_others),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 ], name="gatk_variant_annotator.somatic.others." + tumor_pair.name))
 
         return jobs
@@ -2570,6 +2800,7 @@ END`""".format(
                 output_germline_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
         
                 jobs.append(concat_jobs([
+<<<<<<< HEAD
                     bash.mkdir(
                         annot_directory,
                         remove=True
@@ -2580,6 +2811,10 @@ END`""".format(
                         input_germline_variants,
                         output_germline_variants
                     ),
+=======
+                    bash.mkdir(annot_directory, remove=True),
+                    gatk.variant_annotator(input_normal, input_tumor, input_germline_variants, output_germline_variants),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 ], name="gatk_variant_annotator.germline." + tumor_pair.name))
     
             else:
@@ -2588,6 +2823,7 @@ END`""".format(
                     output_germline_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot." + str(idx) + ".vcf.gz")
             
                     jobs.append(concat_jobs([
+<<<<<<< HEAD
                         bash.mkdir(
                             annot_directory,
                             remove=True
@@ -2599,11 +2835,16 @@ END`""".format(
                             output_germline_variants,
                             intervals=sequences
                         ),
+=======
+                        bash.mkdir(annot_directory, remove=True),
+                        gatk.variant_annotator(input_normal, input_tumor, input_germline_variants, output_germline_variants, intervals=sequences),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                     ], name="gatk_variant_annotator.germline." + str(idx) + "." + tumor_pair.name))
         
                 output_germline_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot.others.vcf.gz")
         
                 jobs.append(concat_jobs([
+<<<<<<< HEAD
                     bash.mkdir(
                         annot_directory,
                         remove=True
@@ -2615,6 +2856,10 @@ END`""".format(
                         output_germline_variants,
                         exclude_intervals=unique_sequences_per_job_others
                     ),
+=======
+                    bash.mkdir(annot_directory, remove=True),
+                    gatk.variant_annotator(input_normal, input_tumor, input_germline_variants, output_germline_variants, exclude_intervals=unique_sequences_per_job_others),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 ], name="gatk_variant_annotator.germline.others." + tumor_pair.name))
 
         return jobs
@@ -2706,12 +2951,17 @@ END`""".format(
 
         for tumor_pair in self.tumor_pairs.itervalues():
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     somatic_signature_directory + "/tmp_vcf",
                     remove=True
                 ),
                 Job(
                     [os.path.join(ensemble_directory, tumor_pair.name,
+=======
+                bash.mkdir(somatic_signature_directory + "/tmp_vcf", remove=True),
+                Job([os.path.join(ensemble_directory, tumor_pair.name,
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                                   tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")],
                     [os.path.join(somatic_signature_directory, "tmp_vcf", tumor_pair.name + "list_tmp.tsv")],
                     command="echo -e '" + tumor_pair.tumor.name + "\t" + os.path.join(ensemble_directory, tumor_pair.name,
@@ -2765,6 +3015,7 @@ END`""".format(
             cancer_pair.write(tumor_pair.normal.name + "\t" + tumor_pair.tumor.name + "\n")
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     paired_directory,
                     remove=True
@@ -2779,6 +3030,12 @@ END`""".format(
                     output_somatic,
                     output_somatic + ".gz"
                 ),
+=======
+                bash.mkdir(paired_directory, remove=True),
+                snpeff.compute_effects(input_somatic, output_somatic, cancer_sample_file=cancer_pair_filename,
+                                       options=config.param('compute_cancer_effects_somatic', 'options')),
+                htslib.bgzip_tabix(output_somatic, output_somatic + ".gz"),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="compute_cancer_effects_somatic." + tumor_pair.name))
 
         return jobs
@@ -2806,6 +3063,7 @@ END`""".format(
             cancer_pair.write(tumor_pair.normal.name + "\t" + tumor_pair.tumor.name + "\n")
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     paired_directory,
                     remove=True
@@ -2819,6 +3077,11 @@ END`""".format(
                     output_germline,
                     output_germline + ".gz"
                 ),
+=======
+                bash.mkdir(paired_directory, remove=True),
+                snpeff.compute_effects(input_germline, output_germline, options=config.param('compute_cancer_effects_germline', 'options')),
+                htslib.bgzip_tabix(output_germline, output_germline + ".gz"),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="compute_cancer_effects_germline." + tumor_pair.name))
 
         return jobs
@@ -2909,6 +3172,7 @@ END`""".format(
 
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     paired_directory,
                     remove=True
@@ -2918,6 +3182,11 @@ END`""".format(
                     gemini_prefix + ".somatic.gemini." + gemini_version + ".db",
                     temp_dir
                 )
+=======
+                bash.mkdir(paired_directory, remove=True),
+                gemini.gemini_annotations(gemini_prefix + ".ensemble.somatic.vt.annot.snpeff.vcf.gz",
+                                          gemini_prefix + ".somatic.gemini." + gemini_version + ".db", temp_dir)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="gemini_annotations.somatic." + tumor_pair.name))
 
         return jobs
@@ -2938,6 +3207,7 @@ END`""".format(
             gemini_prefix = os.path.join(paired_directory, tumor_pair.name)
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     paired_directory,
                     remove=True
@@ -2947,6 +3217,11 @@ END`""".format(
                     gemini_prefix + ".germline.gemini." + gemini_version + ".db",
                     temp_dir
                 )
+=======
+                bash.mkdir(paired_directory, remove=True),
+                gemini.gemini_annotations(gemini_prefix + ".ensemble.germline.vt.annot.snpeff.vcf.gz",
+                                          gemini_prefix + ".germline.gemini." + gemini_version + ".db", temp_dir)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="gemini_annotations.germline." + tumor_pair.name))
 
         return jobs
@@ -3036,6 +3311,7 @@ END`""".format(
 
         if len(input_merged_vcfs) == 1:
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     ensemble_directory,
                     remove=True
@@ -3045,11 +3321,17 @@ END`""".format(
                     [output],
                     command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output
                 )
+=======
+                bash.mkdir(ensemble_directory, remove=True),
+                Job([input_merged_vcfs[0]], [output],
+                    command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="gatk_combine_variants.somatic.allPairs"))
 
         else:
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     ensemble_directory,
                     remove=True
@@ -3058,6 +3340,10 @@ END`""".format(
                     input_merged_vcfs,
                     output
                 )
+=======
+                bash.mkdir(ensemble_directory, remove=True),
+                gatk.combine_variants(input_merged_vcfs, output)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="gatk_combine_variants.somatic.allPairs"))
 
         return jobs
@@ -3077,6 +3363,7 @@ END`""".format(
 
         if len(input_merged_vcfs) == 1:
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     ensemble_directory,
                     remove=True
@@ -3086,11 +3373,17 @@ END`""".format(
                     [output],
                     command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output
                 )
+=======
+                bash.mkdir(ensemble_directory, remove=True),
+                Job([input_merged_vcfs[0]], [output],
+                    command="ln -s -f " + os.path.abspath(input_merged_vcfs[0]) + " " + output)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="gatk_combine_variants.germline.allPairs"))
 
         else:
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     ensemble_directory,
                     remove=True
@@ -3099,6 +3392,10 @@ END`""".format(
                     input_merged_vcfs,
                     output
                 )
+=======
+                bash.mkdir(ensemble_directory, remove=True),
+                gatk.combine_variants(input_merged_vcfs, output)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="gatk_combine_variants.germline.allPairs"))
 
         return jobs
@@ -3115,6 +3412,7 @@ END`""".format(
         output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.vcf.gz")
 
         jobs.append(concat_jobs([
+<<<<<<< HEAD
             bash.mkdir(
                 ensemble_directory,
                 remove=True
@@ -3123,6 +3421,10 @@ END`""".format(
                 input,
                 output
             )
+=======
+            bash.mkdir(ensemble_directory, remove=True),
+            vt.decompose_and_normalize_mnps(input, output)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
         ], name="decompose_and_normalize_mnps.somatic.allPairs"))
 
         return jobs
@@ -3142,6 +3444,7 @@ END`""".format(
         job.name = "decompose_and_normalize_mnps.germline.allPairs"
 
         jobs.append(concat_jobs([
+<<<<<<< HEAD
             bash.mkdir(
                 ensemble_directory,
                 remove=True
@@ -3150,6 +3453,10 @@ END`""".format(
                 input_vcf,
                 output_vcf
             )
+=======
+            bash.mkdir(ensemble_directory, remove=True),
+            vt.decompose_and_normalize_mnps(input_vcf, output_vcf)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
         ], name="decompose_and_normalize_mnps.somatic.allPairs"))
 
         return jobs
@@ -3176,6 +3483,7 @@ END`""".format(
             cancer_pair.write(tumor_pair.normal.name + "\t" + tumor_pair.tumor.name + "\n")
 
         jobs.append(concat_jobs([
+<<<<<<< HEAD
             bash.mkdir(
                 ensemble_directory,
                 remove=True
@@ -3190,6 +3498,12 @@ END`""".format(
                 output,
                 output_gz
             ),
+=======
+            bash.mkdir(ensemble_directory, remove=True),
+            snpeff.compute_effects(input, output, cancer_sample_file=cancer_pair_filename,
+                                   options=config.param('compute_cancer_effects_somatic', 'options')),
+            htslib.bgzip_tabix(output, output_gz),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
         ], name="compute_effects.somatic.allPairs"))
 
         return jobs
@@ -3210,6 +3524,7 @@ END`""".format(
         output_gz = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.snpeff.vcf.gz")
 
         jobs.append(concat_jobs([
+<<<<<<< HEAD
             bash.mkdir(
                 ensemble_directory,
                 remove=True
@@ -3223,6 +3538,11 @@ END`""".format(
                 output,
                 output_gz
             ),
+=======
+            bash.mkdir(ensemble_directory, remove=True),
+            snpeff.compute_effects(input, output, options=config.param('compute_cancer_effects_germline', 'options')),
+            htslib.bgzip_tabix(output, output_gz),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
         ], name="compute_effects.germline.allPair"))
 
         return jobs
@@ -3239,6 +3559,7 @@ END`""".format(
         gemini_prefix = os.path.join(ensemble_directory, "allPairs")
 
         jobs.append(concat_jobs([
+<<<<<<< HEAD
             bash.mkdir(
                 ensemble_directory,
                 remove=True
@@ -3248,6 +3569,11 @@ END`""".format(
                 gemini_prefix + ".somatic.gemini.db",
                 temp_dir
             )
+=======
+            bash.mkdir(ensemble_directory, remove=True),
+            gemini.gemini_annotations(gemini_prefix + ".ensemble.somatic.vt.annot.snpeff.vcf.gz",
+                                      gemini_prefix + ".somatic.gemini.db", temp_dir)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
         ], name="gemini_annotations.somatic.allPairs"))
 
         return jobs
@@ -3264,6 +3590,7 @@ END`""".format(
         gemini_prefix = os.path.join(ensemble_directory, "allPairs")
 
         jobs.append(concat_jobs([
+<<<<<<< HEAD
             bash.mkdir(
                 ensemble_directory,
                 remove=True
@@ -3273,6 +3600,11 @@ END`""".format(
                 gemini_prefix + ".germline.gemini.db",
                 temp_dir
             )
+=======
+            bash.mkdir(ensemble_directory, remove=True),
+            gemini.gemini_annotations(gemini_prefix + ".ensemble.germline.vt.annot.snpeff.vcf.gz",
+                                      gemini_prefix + ".germline.gemini.db", temp_dir)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
         ], name="gemini_annotations.germline.allPairs"))
 
         return jobs
@@ -3319,6 +3651,7 @@ END`""".format(
 
                     if os.path.isfile(normal_mpileup) and os.path.isfile(tumor_mpileup):
                         jobs.append(concat_jobs([
+<<<<<<< HEAD
                             bash.mkdir(
                                 rawSequenza_directory,
                                 remove=True
@@ -3333,6 +3666,11 @@ END`""".format(
                                 [tumor_gz],
                                 command="gzip -cf " + tumor_mpileup + " > " + tumor_gz
                             ),
+=======
+                            bash.mkdir(rawSequenza_directory, remove=True),
+                            Job([normal_mpileup], [normal_gz], command="gzip -cf " + normal_mpileup + " > " + normal_gz),
+                            Job([tumor_mpileup], [tumor_gz], command="gzip -cf " + tumor_mpileup + " > " + tumor_gz),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                             pipe_jobs([
                                 sequenza.seqz(
                                     normal_gz,
@@ -3362,10 +3700,14 @@ END`""".format(
                     else:
 
                         jobs.append(concat_jobs([
+<<<<<<< HEAD
                             bash.mkdir(
                                 rawSequenza_directory,
                                 remove=True
                             ),
+=======
+                            bash.mkdir(rawSequenza_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                             pipe_jobs([
                                 samtools.mpileup(
                                     [inputNormal[0]],
@@ -3397,10 +3739,14 @@ END`""".format(
                         ], name="mpileup_sequenza." + sequence['name'] + "." + tumor_pair.name))
 
                         jobs.append(concat_jobs([
+<<<<<<< HEAD
                             bash.mkdir(
                                 rawSequenza_directory,
                                 remove=True
                             ),
+=======
+                            bash.mkdir(rawSequenza_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                             pipe_jobs([
                                 sequenza.seqz(
                                     normal_gz,
@@ -3433,6 +3779,7 @@ END`""".format(
             merged_seqz = os.path.join(sequenza_directory, tumor_pair.name + ".binned.merged.seqz.gz")
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     rawSequenza_directory,
                     remove=True
@@ -3455,6 +3802,16 @@ END`""".format(
                     sequenza_directory,
                     tumor_pair.name
                 ),
+=======
+                bash.mkdir(rawSequenza_directory, remove=True),
+                Job(seqz_outputs, [merged_seqz],
+                    command="zcat " + " \\\n".join(seqz_outputs) + " \\\n | gawk 'FNR==1 && NR==1{print;}{ if($1!=\"chromosome\" && $1!=\"MT\" && $1!=\"chrMT\" && $1!=\"chrM\") {print $0} }' | \\\n   gzip -cf > " + merged_seqz),
+            ], name="sequenza.merge_binned_seqz." + tumor_pair.name))
+
+            jobs.append(concat_jobs([
+                bash.mkdir(rawSequenza_directory, remove=True),
+                sequenza.main(merged_seqz, sequenza_directory, tumor_pair.name),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 #sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
                 #sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
                 #                  os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
@@ -3513,10 +3870,14 @@ END`""".format(
 
             if nb_jobs == 1:
                 jobs.append(concat_jobs([
+<<<<<<< HEAD
                     bash.mkdir(
                         raw_directory,
                         remove=True
                     ),
+=======
+                    bash.mkdir(raw_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                     pipe_jobs([
                         samtools.mpileup(
                             [inputNormal],
@@ -3534,10 +3895,14 @@ END`""".format(
                 ], name="samtools_single." + tumor_pair.normal.name))
 
                 jobs.append(concat_jobs([
+<<<<<<< HEAD
                     bash.mkdir(
                         raw_directory,
                         remove=True
                     ),
+=======
+                    bash.mkdir(raw_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                     pipe_jobs([
                         samtools.mpileup(
                             [inputTumor],
@@ -3557,10 +3922,14 @@ END`""".format(
             else:
                 for region in self.generate_approximate_windows(nb_jobs):  # for idx,sequences in enumerate(unique_sequences_per_job):
                     jobs.append(concat_jobs([
+<<<<<<< HEAD
                         bash.mkdir(
                             raw_directory,
                             remove=True
                         ),
+=======
+                        bash.mkdir(raw_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                         pipe_jobs([
                             samtools.mpileup(
                                 [inputNormal],
@@ -3579,10 +3948,14 @@ END`""".format(
                     ], name="samtools_single." + tumor_pair.normal.name + "." + region))
 
                     jobs.append(concat_jobs([
+<<<<<<< HEAD
                         bash.mkdir(
                             raw_directory,
                             remove=True
                         ),
+=======
+                        bash.mkdir(raw_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                         pipe_jobs([
                             samtools.mpileup(
                                 [inputTumor],
@@ -3740,6 +4113,7 @@ END`""".format(
                     ], name="shapeit.phase." + tumor_pair.normal.name + "." + str(chr)))
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     raw_directory,
                     remove=True
@@ -3752,6 +4126,11 @@ END`""".format(
                     tumor_pair.normal.name,
                     tumor_pair.tumor.name
                 ),
+=======
+                bash.mkdir(raw_directory, remove=True),
+                Job(command="cd " + scnaphase_directory),
+                scnaphase.run(tumor_pair.name, tumor_pair.normal.name, tumor_pair.tumor.name),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="scnaphase." + tumor_pair.name))
 
         return jobs
@@ -3796,6 +4175,7 @@ END`""".format(
                 output_vcf = os.path.join(delly_directory, tumor_pair.name + ".delly." + str(sv_type) + ".somatic.flt.vcf.gz")
 
                 jobs.append(concat_jobs([
+<<<<<<< HEAD
                     bash.mkdir(
                         delly_directory,
                         remove=True
@@ -3805,6 +4185,10 @@ END`""".format(
                         output_bcf,
                         sv_type
                     ),
+=======
+                    bash.mkdir(delly_directory, remove=True),
+                    delly.call(inputs, output_bcf, sv_type),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                     pipe_jobs([
                         bcftools.view(
                             output_bcf,
@@ -4038,6 +4422,7 @@ END`""".format(
             output_dep = [manta_somatic_output, manta_somatic_output + ".tbi", manta_germline_output, manta_germline_output + ".tbi"]
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     manta_directory,
                     remove=True
@@ -4072,6 +4457,15 @@ END`""".format(
                     output_prefix + ".manta.germline.vcf.gz.tbi",
                     self.output_dir,
                 ),
+=======
+                bash.mkdir(manta_directory, remove=True),
+                manta.manta_config(inputNormal, inputTumor, manta_directory, bed_file),
+                manta.manta_run(manta_directory, output_dep=output_dep),
+                bash.mv(manta_somatic_output, output_prefix + ".manta.somatic.vcf.gz"),
+                bash.mv(manta_somatic_output + ".tbi", output_prefix + ".manta.somatic.vcf.gz.tbi"),
+                bash.mv(manta_germline_output, output_prefix + ".manta.germline.vcf.gz"),
+                bash.mv(manta_germline_output + ".tbi", output_prefix + ".manta.germline.vcf.gz.tbi"),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="manta_sv." + tumor_pair.name))
 
         return jobs
@@ -4218,10 +4612,14 @@ END`""".format(
             genotype_gzip = os.path.join(pair_directory, tumor_pair.name + ".lumpy.genotyped.vcf.gz")
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     lumpy_directory,
                     remove=True
                 ),
+=======
+                bash.mkdir(lumpy_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 pipe_jobs([
                     samtools.view(
                         inputNormal,
@@ -4251,10 +4649,14 @@ END`""".format(
             ], name="extract_discordant_reads." + tumor_pair.name))
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     lumpy_directory,
                     remove=True
                 ),
+=======
+                bash.mkdir(lumpy_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 pipe_jobs([
                     samtools.view(
                         inputNormal,
@@ -4306,6 +4708,7 @@ END`""".format(
             ], name="extract_split_reads." + tumor_pair.name))
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     lumpy_directory,
                     remove=True
@@ -4323,6 +4726,12 @@ END`""".format(
                     output_vcf,
                     gzip_vcf
                 ),
+=======
+                bash.mkdir(lumpy_directory, remove=True),
+                lumpy.lumpyexpress_pair(inputNormal, inputTumor, output_vcf, spl_normal=splitters_normal, spl_tumor=splitters_tumor,
+                                        dis_normal=discordants_normal, dis_tumor=discordants_tumor),
+                htslib.bgzip(output_vcf, gzip_vcf),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="lumpy_paired_sv_calls." + tumor_pair.name))
 
             jobs.append(concat_jobs([
@@ -4521,6 +4930,7 @@ END`""".format(
             output_vcf = os.path.join(wham_directory, tumor_pair.name + ".wham.vcf")
             merge_vcf = os.path.join(wham_directory, tumor_pair.name + ".wham.merged.vcf")
             genotyped_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.merged.genotyped.vcf.gz")
+<<<<<<< HEAD
             somatic_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.somatic.vcf.gz")
             germline_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.germline.vcf.gz")
 
@@ -4534,6 +4944,12 @@ END`""".format(
                     inputNormal,
                     output_vcf
                 ),
+=======
+
+            jobs.append(concat_jobs([
+                bash.mkdir(wham_directory, remove=True),
+                wham.call_sv(inputTumor, inputNormal, output_vcf),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 pipe_jobs([
                     wham.merge(
                         output_vcf,
@@ -4548,10 +4964,14 @@ END`""".format(
             ], name="wham_call_sv.call_merge." + tumor_pair.name))
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     wham_directory,
                     remove=True
                 ),
+=======
+                bash.mkdir(wham_directory, remove=True),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 pipe_jobs([
                     Job(
                         [merge_vcf],
@@ -4774,6 +5194,7 @@ END`""".format(
                 tumor = tumor_pair.tumor.name
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     cnvkit_dir,
                     remove=True
@@ -4817,6 +5238,21 @@ END`""".format(
                     tumor_cns,
                     os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns")
                 ),
+=======
+                bash.mkdir(cnvkit_dir, remove=True),
+                cnvkit.batch(inputTumor, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn, target_bed=bed, reference=pool_ref_cnn, output_cnn=ref_cnn),
+            ], name="cnvkit_batch." + tumor_pair.name))
+
+            jobs.append(concat_jobs([
+                bash.mkdir(cnvkit_dir, remove=True),
+                cnvkit.fix(tarcov_cnn, antitarcov_cnn, os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"), reference=pool_ref_cnn, ref_cnn=ref_cnn),
+                cnvkit.segment(os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"), tumor_cns),
+            ], name="cnvkit_batch.correction." + tumor_pair.name))
+
+            jobs.append(concat_jobs([
+                bash.mkdir(cnvkit_dir, remove=True),
+                cnvkit.call(tumor_cns, os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns")),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                 pipe_jobs([
                     cnvkit.export(
                         os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"),
@@ -4831,6 +5267,7 @@ END`""".format(
             ], name="cnvkit_batch.call." + tumor_pair.name))
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     cnvkit_dir,
                     remove=True
@@ -4853,6 +5290,17 @@ END`""".format(
                     os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"),
                     os.path.join(cnvkit_dir, tumor_pair.name + ".diagram.pdf")
                 ),
+=======
+                bash.mkdir(cnvkit_dir, remove=True),
+                cnvkit.metrics(os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"),
+                               os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"), os.path.join(metrics, tumor_pair.name + ".metrics.tsv")),
+                cnvkit.scatter(os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"),
+                               os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"),
+                               os.path.join(cnvkit_dir, tumor_pair.name + ".scatter.pdf"), input_vcf, normal, tumor),
+                cnvkit.diagram(os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"),
+                               os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"),
+                               os.path.join(cnvkit_dir, tumor_pair.name + ".diagram.pdf")),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="cnvkit_batch.metrics." + tumor_pair.name))
 
         return jobs
@@ -4945,6 +5393,7 @@ END`""".format(
             gatk_pass = None
             if os.path.isfile(gatk_vcf):
                 jobs.append(concat_jobs([
+<<<<<<< HEAD
                     bash.mkdir(
                         ensemble_directory,
                         remove=True
@@ -4976,6 +5425,19 @@ END`""".format(
                     isize_sd=str(isize_sd),
                     output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz")
                 ),
+=======
+                    bash.mkdir(ensemble_directory, remove=True),
+                    bcftools.view(gatk_vcf, gatk_pass, config.param('metasv_ensemble', 'filter_pass_options')),
+                ], name="metasv_ensemble.gatk_pass." + tumor_pair.name))
+            
+            jobs.append(concat_jobs([
+                bash.mkdir(ensemble_directory, remove=True),
+                metasv.ensemble(lumpy_vcf, abs_manta, cnvkit_vcf, wham_vcf, delly_vcf, gatk_pass, inputTumor,
+                                tumor_pair.tumor.name,
+                                os.path.join(ensemble_directory, "rawMetaSV"), ensemble_directory,
+                                isize_mean=str(isize_mean), isize_sd=str(isize_sd),
+                                output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz")),
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="metasv_ensemble." + tumor_pair.name))
 
         return jobs
@@ -5143,6 +5605,7 @@ END`""".format(
             scones_annotate_tmp_basename = scones_best_model_basename + "_CNVcalls.filtered.tmp"
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     scones_directory,
                     remove=True
@@ -5195,6 +5658,30 @@ END`""".format(
                     output_basename=scones_annotate_basename,
                     tmp_basename=scones_annotate_tmp_basename
                 )
+=======
+                bash.mkdir(scones_directory, remove=True),
+                bvatools.bincounter(bam=inputTumor, refbam=inputNormal, out=bined_count_fix_file, window=window_size),
+                Job([bined_count_fix_file], [bined_count_file], command="cat <(head -1 " + bined_count_fix_file + ") <(grep -v \"_\" " + bined_count_fix_file + " | grep -v \"EBV\" ) > " + bined_count_file),
+            ], name="bvatools_bincounter." + tumor_pair.name))
+
+            jobs.append(concat_jobs([
+                bash.mkdir(scones_directory, remove=True),
+                scones.scones_pair(bined_file=bined_count_file, output_basename=output_scones_basename,
+                                   window=window_size)
+            ], name="scones_pair." + tumor_pair.name))
+
+            jobs.append(concat_jobs([
+                bash.mkdir(scones_directory, remove=True),
+                scones.scones_filter(scones_calls=scones_calls_file, pair_name=tumor_pair.name,
+                                     output=scones_filtered_file)
+            ], name="scones_filter." + tumor_pair.name))
+
+            jobs.append(concat_jobs([
+                bash.mkdir(scones_directory, remove=True),
+                scones.scones_annotate(scones_calls_filtered=scones_filtered_file,
+                                       output_basename=scones_annotate_basename,
+                                       tmp_basename=scones_annotate_tmp_basename)
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             ], name="scones_annotate." + tumor_pair.name))
 
         return jobs
@@ -5217,6 +5704,7 @@ END`""".format(
             germline_input = tumor_pair.name + ".svaba.germline.sv.vcf"
             germline_output = os.path.join(os.path.abspath(pair_directory), tumor_pair.name + ".svaba.germline.vcf")
 
+<<<<<<< HEAD
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 tumor_pair.tumor.readsets[0]
             )
@@ -5226,6 +5714,8 @@ END`""".format(
             if coverage_bed:
                 bed = coverage_bed
 
+=======
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
             coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.tumor.readsets[0])
 
             bed = None
@@ -5234,6 +5724,7 @@ END`""".format(
                 bed = coverage_bed
 
             jobs.append(concat_jobs([
+<<<<<<< HEAD
                 bash.mkdir(
                     svaba_directory,
                     remove=True
@@ -5251,6 +5742,12 @@ END`""".format(
                     [somatic_input],
                     [somatic_output],
                     command="sed -e 's#" + os.path.abspath(input_normal) + "#" + tumor_pair.normal.name + "#g' " + somatic_input + " | "
+=======
+                bash.mkdir(svaba_directory, remove=True),
+                Job(command="cd " + svaba_directory),
+                svaba.run(input_tumor, tumor_pair.name, input_normal, bed),
+                Job([somatic_input], [somatic_output], command="sed -e 's#" + os.path.abspath(input_normal) + "#" + tumor_pair.normal.name + "#g' " + somatic_input + " | "
+>>>>>>> 5312b997 (updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug)
                                                                "sed -e 's#" + os.path.abspath(input_tumor) + "#" + tumor_pair.tumor.name + "#g' > " + somatic_output),
                 Job(
                     [germline_input],
