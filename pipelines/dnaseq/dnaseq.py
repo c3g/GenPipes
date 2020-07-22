@@ -582,7 +582,7 @@ END
                                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
         
             job = concat_jobs([
-                Job(command="mkdir -p " + os.path.dirname(readset_bam), samples=[readset.sample]),
+                bash.mkdir(os.path.dirname(readset_bam), remove=True),
                 pipe_jobs([
                     bwa.mem(
                         fastq1,
@@ -1976,10 +1976,9 @@ END
 
         output = os.path.join("metrics", "dna", "checkmate")
         vcf_file = os.path.join(output, 'checkmate.tsv')
-        mkdir_job = Job(command="mkdir -p " + output)
-
+   
         jobs.append(concat_jobs([
-            mkdir_job,
+            bash.mkdir(os.path.dirname(output), remove=False),
             Job(inputs, [vcf_file], command="ls " + " ".join(inputs) + " > " + vcf_file),
             ngscheckmate.run(vcf_file, output),
         ], name="run_checkmate.sample_level"))
