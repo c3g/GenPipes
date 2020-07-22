@@ -2332,9 +2332,12 @@ pandoc \\
         """
 
         jobs = []
+        nb_jobs = config.param('rawmpileup', 'nb_jobs', type='posint')
+        
         for sample in self.samples:
-            mpileup_file_prefix = os.path.join("alignment", sample.name, "mpileup", sample.name + ".")
-            mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary if sequence['type'] is 'primary']
+            if nb_jobs > 1:
+                mpileup_file_prefix = os.path.join("alignment", sample.name, "mpileup", sample.name + ".")
+                mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary if sequence['type'] is 'primary']
 
             gzip_output = mpileup_file_prefix + "mpileup.gz"
             job = Job(
