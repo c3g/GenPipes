@@ -49,7 +49,7 @@ ln -sf \\
   {input} \\
   {output}""".format(
         prefix=prefix,
-        input=os.path.abspath(input),
+        input=os.path.join(out_dir,input),
         output=output
         )
     )
@@ -85,8 +85,8 @@ ln -s -f \\
   {input} \\
   {output}""".format(
         prefix=prefix,
-        input=os.path.abspath(input),
-        output=os.path.abspath(output)
+        input=os.path.join(out_dir, input),
+        output=output
         )
     )
 
@@ -94,9 +94,10 @@ def md5sum(input, output, out_dir):
     return Job(
         [input],
         [output],
-        command="""\
-md5sum {input} > {output}""".format(
-      input=os.path.join(out_dir, input),
-      output=os.path.join(out_dir, output),
-      )
+    command="""\
+md5sum {input} \\
+        > {output}""".format(
+        input=os.path.join(out_dir, input),
+        output=os.path.join(out_dir, output),
+        )
     )

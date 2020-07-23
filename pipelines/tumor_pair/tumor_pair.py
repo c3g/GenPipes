@@ -193,7 +193,7 @@ END`""".format(
             for key,input in inputs.iteritems():
                 for readset in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(readset, readset + ".md5"),
+                        deliverables.md5sum(readset, readset + ".md5", self.output_dir),
                         deliverables.sym_link_pair(readset, tumor_pair, self.output_dir, type="raw_reads", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(readset + ".md5", tumor_pair, self.output_dir, type="raw_reads", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_fastq.pairs." + tumor_pair.name + "." + key))
@@ -358,8 +358,8 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample_bam in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample_bam + ".bam", sample_bam + ".bam.md5"),
-                        deliverables.md5sum(sample_bam + ".bai", sample_bam + ".bai.md5"),
+                        deliverables.md5sum(sample_bam + ".bam", sample_bam + ".bam.md5", self.output_dir),
+                        deliverables.md5sum(sample_bam + ".bai", sample_bam + ".bai.md5", self.output_dir),
                         deliverables.sym_link_pair(sample_bam + ".bam", tumor_pair, self.output_dir, type="alignment", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample_bam + ".bai", tumor_pair, self.output_dir, type="alignment", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample_bam + ".bam.md5", tumor_pair, self.output_dir, type="alignment", sample=key, profyle=self.args.profyle),
@@ -1928,11 +1928,11 @@ END`""".format(
             for key,input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample + ".ensemble.somatic.vt.annot.vcf.gz", sample + ".ensemble.somatic.vt.annot.vcf.gz.md5"),
+                        deliverables.md5sum(sample + ".ensemble.somatic.vt.annot.vcf.gz", sample + ".ensemble.somatic.vt.annot.vcf.gz.md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.vcf.gz.md5", tumor_pair, self.output_dir, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.vcf.gz", tumor_pair, self.output_dir, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.somatic.vt.annot.vcf.gz.tbi", tumor_pair, self.output_dir, type="snv/ensemble", sample=key, profyle=self.args.profyle),
-                        deliverables.md5sum(sample + ".ensemble.germline.vt.annot.vcf.gz", sample + ".ensemble.germline.vt.annot.vcf.gz.md5"),
+                        deliverables.md5sum(sample + ".ensemble.germline.vt.annot.vcf.gz", sample + ".ensemble.germline.vt.annot.vcf.gz.md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.vcf.gz.md5", tumor_pair, self.output_dir, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.vcf.gz", tumor_pair, self.output_dir, type="snv/ensemble", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample + ".ensemble.germline.vt.annot.vcf.gz.tbi", tumor_pair, self.output_dir, type="snv/ensemble", sample=key, profyle=self.args.profyle),
@@ -2496,7 +2496,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.md5sum(sample, sample + ".md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_delly.somatic." + tumor_pair.name + "." + key))
@@ -2510,7 +2510,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.md5sum(sample, sample + ".md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_delly.germline." + tumor_pair.name + "." + key))
@@ -2602,7 +2602,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.md5sum(sample, sample + ".md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_manta.somatic." + tumor_pair.name + "." + key))
@@ -2615,7 +2615,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.md5sum(sample, sample + ".md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_manta.germline." + tumor_pair.name + "." + key))
@@ -2747,7 +2747,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.md5sum(sample, sample + ".md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_lumpy.somatic." + tumor_pair.name + "." + key))
@@ -2761,7 +2761,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.md5sum(sample, sample + ".md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_lumpy.germline." + tumor_pair.name + "." + key))
@@ -2861,7 +2861,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.md5sum(sample, sample + ".md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_wham.somatic." + tumor_pair.name + "." + key))
@@ -2875,7 +2875,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.md5sum(sample, sample + ".md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_wham.germline." + tumor_pair.name + "." + key))
@@ -2989,7 +2989,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.md5sum(sample, sample + ".md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_cnvkit.somatic." + tumor_pair.name + "." + key))
@@ -3069,7 +3069,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.md5sum(sample, sample + ".md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_metasv." + tumor_pair.name + "." + key))
@@ -3216,7 +3216,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.md5sum(sample, sample + ".md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_svaba.somatic." + tumor_pair.name + "." + key))
@@ -3230,7 +3230,7 @@ END`""".format(
             for key, input in inputs.iteritems():
                 for sample in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(sample, sample + ".md5"),
+                        deliverables.md5sum(sample, sample + ".md5", self.output_dir),
                         deliverables.sym_link_pair(sample + ".md5", tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                         deliverables.sym_link_pair(sample, tumor_pair, self.output_dir, type="sv", sample=key, profyle=self.args.profyle),
                     ], name="sym_link_svaba.germline." + tumor_pair.name + "." + key))
