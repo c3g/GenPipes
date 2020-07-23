@@ -3559,7 +3559,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.cram_output,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_qualimap,
-                self.metrics_dna_sambamba_flagstat,
                 self.metrics_dna_fastqc,
                 self.picard_calculate_hs_metrics,
                 self.gatk_callable_loci,

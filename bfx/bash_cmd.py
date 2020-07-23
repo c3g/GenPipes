@@ -61,7 +61,7 @@ def mv(source, target):
         [target],
         [],
         command="""\
-mv {source}
+mv {source} \\
    {dest}""".format(
             source=source,
             dest=target
