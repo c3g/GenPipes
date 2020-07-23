@@ -874,7 +874,8 @@ class DnaSeqRaw(common.Illumina):
                 concat_jobs([
                     deliverables.md5sum(
                         input_bam,
-                        input_bam + ".md5"
+                        input_bam + ".md5",
+                        self.output_dir
                         ),
                     deliverables.sym_link(
                         input_bam,
