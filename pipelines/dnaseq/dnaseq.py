@@ -738,7 +738,7 @@ END
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             realign_directory = os.path.join(alignment_directory, "realign")
-            merged_realigned_bam = os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")
+            merged_realigned_bam = os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")
 
             # if nb_jobs == 1, symlink has been created in indel_realigner and merging is not necessary
             if nb_jobs > 1:
@@ -2476,7 +2476,7 @@ pandoc \\
 
     def mpileup_decompose_and_normalize(self):
     
-        input_vcf = self.select_input_files([["variants/allSamples.merged.flt.vcf"]])
+        input_vcf = self.select_input_files([["variants/allSamples.merged.flt.vcf"], ["variants/allSamples.merged.flt.vcf.gz"]])
     
         job = self.vt_decompose_and_normalize(input_vcf, "variants/allSamples.merged.flt.vt.vcf.gz")
         return job
