@@ -31,7 +31,7 @@ def somatic_config(input_normal,input_tumor, output_dir, callRegions=None, manta
     ]
     return Job(
         [input_normal, input_tumor],
-        output,
+        [os.path.join(output_dir, "runWorkflow.py")],
         [
             ['strelka2_paired_somatic', 'module_python'],
             ['strelka2_paired_somatic', 'module_strelka2']
@@ -56,7 +56,7 @@ def somatic_config(input_normal,input_tumor, output_dir, callRegions=None, manta
 def germline_config(input_normal, output_dir, callRegions=None):
     return Job(
         [input_normal],
-        [output_dir],
+        [os.path.join(output_dir, "runWorkflow.py")],
         [
             ['strelka2_germline', 'module_python'],
             ['strelka2_germline', 'module_strelka2']

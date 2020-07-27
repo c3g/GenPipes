@@ -1264,7 +1264,7 @@ END
                     adapter_file,
                     fastqc=True
                 )
-
+                
             jobs.append(
                 concat_jobs([
                     bash.mkdir(
@@ -1667,7 +1667,7 @@ END
         vcf_file = os.path.join(output, 'checkmate.tsv')
    
         jobs.append(concat_jobs([
-            bash.mkdir(os.path.dirname(output), remove=False),
+            bash.mkdir(output, remove=False),
             Job(inputs, [vcf_file], command="ls " + " ".join(inputs) + " > " + vcf_file),
             ngscheckmate.run(vcf_file, output),
         ], name="run_checkmate.sample_level"))
@@ -1716,7 +1716,7 @@ END
 
             jobs.append(concat_jobs([
                 # Create output directory since it is not done by default by GATK tools
-                bash.mkdir(os.path.dirname(output), remove=False),
+                bash.mkdir(output, remove=False),
                 verify_bam_id.verify(input, os.path.join(output, sample.name))
             ], name="verify_bam_id." + sample.name))
 

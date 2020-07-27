@@ -423,9 +423,9 @@ END`""".format(
                         bash.mkdir(varscan_directory, remove=True),
                         samtools.mpileup(
                             [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam"),
-                            os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                             os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
                             pair_output, config.param('rawmpileup_panel', 'mpileup_other_options'), region=sequence['name'], regionFile=bedfile),
-                    ], name="rawmpileup_panel." + tumor_pair.name + "." + sequence['name']))
+                        ], name="rawmpileup_panel." + tumor_pair.name + "." + sequence['name']))
 
         return jobs
 
@@ -1128,9 +1128,6 @@ END`""".format(
                 [[os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
                  [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
                  [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")]])
-            
-            strelka2_snvs = os.path.join(strelka2_directory, "results/variants/somatic.snvs.vcf.gz")
-            strelka2_indels = os.path.join(strelka2_directory, "results/variants/somatic.indels.vcf.gz")
 
             mantaIndels = None
             if os.path.isfile(os.path.join("SVariants", tumor_pair.name, "rawManta", "results", "variants", "candidateSmallIndels.vcf.gz")):
@@ -1147,11 +1144,12 @@ END`""".format(
                     htslib.tabix(coverage_bed + ".gz", "-p bed"),
                  ],name="bed_index." + tumor_pair.name))
 
-            output_dep = [strelka2_snvs, strelka2_indels]
+            output_dep = [os.path.join(strelka2_directory, "results/variants/somatic.snvs.vcf.gz"),
+                          os.path.join(strelka2_directory, "results/variants/somatic.indels.vcf.gz")]
 
             jobs.append(concat_jobs([
                 bash.rm(strelka2_directory),
-                bash.mkdir(strelka2_directory, remove=True),
+                #bash.mkdir(strelka2_directory, remove=True),
                 strelka2.somatic_config(input_normal[0], input_tumor[0], strelka2_directory, bed_file, mantaIndels),
                 strelka2.run(strelka2_directory, output_dep=output_dep),
             ], name="strelka2_paired_somatic.call." + tumor_pair.name))
@@ -1261,7 +1259,7 @@ END`""".format(
                     Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                     pipe_jobs([
                         bcftools.view(inputs, None),
-                        vcflib.vcfsamplediff(tumor_pair.normal.name, tumor_pair.tumor.name, None, None),
+                        #vcflib.vcfsamplediff(tumor_pair.normal.name, tumor_pair.tumor.name, None, None),
                         Job([None], [None],
                             command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
                         Job([None], [None],
@@ -1293,7 +1291,7 @@ END`""".format(
                     bcftools.concat(inputs, output, config.param('merge_filter_paired_samtools', 'concat_options')),
                     pipe_jobs([
                         bcftools.view(output, None),
-                        vcflib.vcfsamplediff(tumor_pair.normal.name, tumor_pair.tumor.name, None, None),
+                        #vcflib.vcfsamplediff(tumor_pair.normal.name, tumor_pair.tumor.name, None, None),
                         Job([None], [None],
                             command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"),
                         Job([None], [None],
