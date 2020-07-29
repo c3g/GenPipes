@@ -25,14 +25,14 @@
 from core.config import *
 from core.job import *
 
-def run(inputs, output, ini_section='multiqc'):
+def run(inputs, output):
     output = output + ".html"
     return Job(
         inputs,
         [output],
         [
-            [ini_section, 'module_python'],
-            [ini_section, 'module_multiqc'],
+            ['multiqc', 'module_python'],
+            ['multiqc', 'module_multiqc'],
         ],
         command="""\
 multiqc -f {options} \\
