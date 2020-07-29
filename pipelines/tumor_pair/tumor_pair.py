@@ -1757,6 +1757,11 @@ END`""".format(
                     )
                 ], name="rm_strelka2_directory." + tumor_pair.name))
 
+            if os.path.isdir(strelka2_directory):
+                jobs.append(concat_jobs([
+                    bash.rm(strelka2_directory)
+                ], name="rm_strelka2_directory." + tumor_pair.name))
+
             if coverage_bed:
                 bed_file = coverage_bed + ".gz"
                 jobs.append(concat_jobs([
