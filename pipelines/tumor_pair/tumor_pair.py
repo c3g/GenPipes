@@ -1136,6 +1136,11 @@ END`""".format(
             bed_file = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
 
+            if os.path.isdir(strelka2_directory):
+                jobs.append(concat_jobs([
+                    bash.rm(strelka2_directory)
+                ], name="rm_strelka2_directory." + tumor_pair.name))
+
             if coverage_bed:
                 bed_file = coverage_bed + ".gz"
                 jobs.append(concat_jobs([
@@ -1148,8 +1153,6 @@ END`""".format(
                           os.path.join(strelka2_directory, "results/variants/somatic.indels.vcf.gz")]
 
             jobs.append(concat_jobs([
-                bash.rm(strelka2_directory),
-                #bash.mkdir(strelka2_directory, remove=True),
                 strelka2.somatic_config(input_normal[0], input_tumor[0], strelka2_directory, bed_file, mantaIndels),
                 strelka2.run(strelka2_directory, output_dep=output_dep),
             ], name="strelka2_paired_somatic.call." + tumor_pair.name))
@@ -2915,17 +2918,13 @@ END`""".format(
 
             vardict_vcf = os.path.join("pairedVariants", tumor_pair.name, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
 
+            input_vcf = None
+            normal = None
+            tumor = None
             if os.path.isfile(vardict_vcf):
                 input_vcf = vardict_vcf
                 normal = tumor_pair.normal.name
                 tumor = tumor_pair.tumor.name
-
-            else:
-                input_vcf = None
-                normal = None
-                tumor = None
-
-            mkdir_job = Job(command="mkdir -p " + cnvkit_dir, removable_files=[cnvkit_dir], samples = [tumor_pair.normal, tumor_pair.tumor])
 
             jobs.append(concat_jobs([
                 bash.mkdir(cnvkit_dir, remove=True),

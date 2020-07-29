@@ -29,6 +29,7 @@ def run(input, sample_name, output_dir):
         [output],
         [
             ['run_breakseq2', 'module_python'],
+	        ['run_breakseq2', 'module_breakseq2'],
 	        ['run_breakseq2', 'module_samtools'],
 	        ['run_breakseq2', 'module_bwa']
         ],

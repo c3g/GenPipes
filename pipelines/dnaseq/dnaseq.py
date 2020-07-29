@@ -2431,9 +2431,14 @@ pandoc \\
         nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', type='posint')
 
         if nb_jobs == 1:
-            inputs = ["variants/rawBCF/allSamples.bcf"]
+            inputs = ["variants/rawBCF/allSamples.vcf.gz"]
+            jobs.append(concat_jobs([
+                htslib.tabix(inputs[0], options="-pvcf"),
+            ], name="merge_filter_bcf.index"))
+            
         else:
-            inputs = ["variants/rawBCF/allSamples." + region + ".bcf" for region in self.generate_approximate_windows(nb_jobs)]
+            inputs = ["variants/rawBCF/allSamples." + region + ".vcf.gz" for region in self.generate_approximate_windows(nb_jobs)]
+        
         output_file_prefix = "variants/allSamples.merged."
 
         bcf = output_file_prefix + "bcf"
@@ -3257,9 +3262,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             input_vcf = None
             normal = None
             if os.path.isfile(gatk_vcf):
-                input_vcf = gatk_vcf
-                input_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.qual40.vcf.gz")
-                bcftools.view(gatk_vcf, input_vcf, filter_options="-f QUAL")
+                input_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.flt.vcf.gz")
+                jobs.append(concat_jobs([
+                    bcftools.view(gatk_vcf, input_vcf, filter_options="-i '%QUAL>=50'")
+                ], name="cnvkit_batch.vcf_flt." + sample.name))
                 normal = sample.name
          
             if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples'):

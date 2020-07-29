@@ -103,8 +103,8 @@ def call(inputs, output, options=None):
         command="""\
 bcftools \\
   call {options} \\
-  {inputs} \\
-  {output}""".format(
+  {output} \\
+  {inputs}""".format(
         options=options if options else "",
         inputs="".join(" \\\n  " + input for input in inputs),
         output=" \\\n -o " + output if output else ""
@@ -145,11 +145,11 @@ def concat(inputs, output, options=None):
         command="""\
 bcftools \\
   concat -a {options} \\
-  {inputs} \\
-  {output}""".format(
+  {output} \\
+  {inputs}""".format(
         options=options if options else "",
         inputs="".join(" \\\n  " + input for input in inputs),
-        output=" \\\n > " + output if output else ""
+        output=" \\\n -o " + output if output else ""
         )
     )
 
