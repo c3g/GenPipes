@@ -32,11 +32,17 @@ import picard2
 config = core.config.config
 
 def base_recalibrator(input, output, intervals):
+    if intervals:
+        inputs = [input, intervals]
+    
+    else:
+        inputs = [input]
+        
     if config.param('gatk_base_recalibrator', 'module_gatk').split("/")[2] >= "4":
         return gatk4.base_recalibrator(input, output, intervals)
     else:
         return Job(
-            [input, intervals],
+            inputs,
             [output],
             [
                 ['gatk_base_recalibrator', 'module_java'],
@@ -305,12 +311,18 @@ def mutect2(inputNormal, normal_name, inputTumor, tumor_name, outputVCF, interva
     # if set add arg prefix
     if cosmic and os.path.isfile(cosmic):
         cosmic = " --cosmic " + cosmic
+    
+    if interval_list:
+        inputs = [inputNormal, inputTumor, interval_list]
         
+    else:
+        inputs = [inputNormal, inputTumor]
+    
     if config.param('gatk_mutect2', 'module_gatk').split("/")[2] >= "4":
         return gatk4.mutect2(inputNormal, normal_name, inputTumor, tumor_name, outputVCF, intervals, exclude_intervals, interval_list)
     else:
         return Job(
-            [inputNormal, inputTumor, interval_list],
+            inputs,
             [outputVCF],
             [
                 ['gatk_mutect2', 'module_java'],
@@ -590,8 +602,13 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
 
 
 def split_n_cigar_reads(input, output, intervals=[], exclude_intervals=[], interval_list=None):
+    if interval_list:
+        inputs = [input, interval_list]
+    
+    else:
+        inputs = [input]
     return Job(
-        [input],
+        inputs,
         [output],
         [
             ['gatk_split_N_trim', 'module_java'],
