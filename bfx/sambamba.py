@@ -25,7 +25,7 @@
 from core.config import *
 from core.job import *
 
-def sort(input_bam, output_bam, tmp_dir):
+def sort(input_bam, output_bam, tmp_dir, sort_by_name=False, other_options=config.param('sambamba_sort_sam', 'options', required=False)):
 
     return Job(
         [input_bam],
@@ -35,18 +35,19 @@ def sort(input_bam, output_bam, tmp_dir):
             ['sambamba_sort_sam', 'module_sambamba']
         ],
         command="""\
-sambamba sort {options} \\
+sambamba sort {options} {sort_by_name}\\
   {input} \\
   --tmpdir {temp} \\
   {output}""".format(
-        options=config.param('sambamba_sort_sam', 'options'),
+        options=other_options,
+        sort_by_name="-n" if sort_by_name else "",
         input=input_bam,
         output="--out " + output_bam if output_bam else "",
         temp=tmp_dir
         )
     )
 
-def index(input, output):
+def index(input, output, other_options=config.param('sambamba_index', 'options', required=False)):
 
     return Job(
         [input],
@@ -59,7 +60,7 @@ def index(input, output):
 sambamba index {options} \\
   {input} \\
   {output}""".format(
-        options=config.param('sambamba_index', 'options'),
+        options=other_options,
         input=input,
         output=output,
         )
@@ -98,8 +99,8 @@ sambamba markdup {options} \\
   {input} \\
   --tmpdir {temp} \\
   {output}""".format(
-        options=config.param('sambamba_mark_duplicates', 'options',required=False),
-	temp=config.param('sambamba_mark_duplicate', 'tmp_dir'),
+        options=config.param('sambamba_mark_duplicates', 'options', required=False),
+        temp=config.param('sambamba_mark_duplicate', 'tmp_dir'),
         input=input_bam,
         output=output_bam,
         )
@@ -119,7 +120,7 @@ sambamba view {options} \\
   {output} {chr}""".format(
         options=options,
         input=input_bam,
-        output="-o " + output_bam,
+        output="-o " + output_bam if output_bam else "",
         chr=chr if chr else "",
         )
     )

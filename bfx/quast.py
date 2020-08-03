@@ -20,42 +20,41 @@
 ################################################################################
 
 # Python Standard Modules
-import os
+import logging
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def index(input):
+log = logging.getLogger(__name__)
+
+def quast(input, output_dir, prefix):
+    inputs = [input]
+    outputs = [
+        os.path.join(output_dir, "report.html"),
+        os.path.join(output_dir, "report.pdf"),
+        os.path.join(output_dir, "report.tex"),
+        os.path.join(output_dir, "report.tsv"),
+        os.path.join(output_dir, "report.txt")
+        ]
+
     return Job(
-        [input],
-        [input + ".bwt"],
-        [['bwa_mem', 'module_bwa']],
+        inputs,
+        outputs,
+        [
+            ['quast', 'module_quast']
+        ],
+
         command="""\
-bwa index \\
+quast.py {reference} \\
+  {output_dir} \\
+  {features} \\
+  {nthread} \\
   {input}""".format(
+      reference="-r " + config.param(prefix, 'reference_genome', required=False),
+      features="--features " + config.param(prefix, 'genomic_feature', required=False) if config.param(prefix, 'genomic_feature', required=False) else "",
+      nthread="--threads " + config.param(prefix, 'threads', required=False),
+      output_dir="--output-dir " + output_dir,
       input=input
-      )
-        )
-
-def mem(in1fastq, in2fastq=None, out_sam=None, read_group=None, ref=None, ini_section='bwa_mem'):
-    # other_options = config.param(ini_section, 'other_options', required=False)
-
-    return Job(
-        [in1fastq, in2fastq, ref + ".bwt" if ref else None],
-        [out_sam],
-        [["bwa_mem", "module_bwa"]],
-        command="""\
-bwa mem {other_options} \\
-  {read_group} \\
-  {idxbase} \\
-  {in1fastq}{in2fastq}{out_sam}""".format(
-      other_options=config.param(ini_section, 'bwa_other_options', required=False) if config.param(ini_section, 'bwa_other_options', required=False) else "",
-      read_group=" \\\n  -R " + read_group if read_group else "",
-      idxbase=ref if ref else config.param(ini_section, 'genome_bwa_index', type='filepath'),
-      in1fastq=in1fastq,
-      in2fastq=" \\\n  " + in2fastq if in2fastq else "",
-      out_sam=" \\\n  > " + out_sam if out_sam else ""
       ),
-        removable_files=[out_sam]
-        )
+    )

@@ -1050,7 +1050,7 @@ cp \\
         edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
         edger_job.samples = self.samples
 
-        deseq_job = differential_expression.deseq(design_file, count_matrix, output_directory)
+        deseq_job = differential_expression.deseq2(design_file, count_matrix, output_directory)
         deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
         deseq_job.samples = self.samples
 

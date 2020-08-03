@@ -430,3 +430,33 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
                 sequencing_center=("RGCN=\"" + config.param('picard_add_read_groups', 'sequencing_center') + "\"" if config.param('picard_add_read_groups', 'sequencing_center', required=False) else "")
             )
         )
+
+
+def bed2interval_list(dictionary, bed, output):
+    if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] >= "2":
+        return picard2.bed2interval_list(
+            dictionary,
+            bed,
+            output
+            )
+
+    return Job(
+        [dictionary, bed],
+        [output],
+        [
+            ['picard_bed2interval_list', 'module_java'],
+            ['picard_bed2interval_list', 'module_picard']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/BedToIntervalList.jar \\
+  INPUT={bed} \\
+  SEQUENCE_DICTIONARY={dictionary} \\
+  OUTPUT={output}""".format(
+            tmp_dir=config.param('picard_bed2interval_list', 'tmp_dir'),
+            java_other_options=config.param('picard_bed2interval_list', 'java_other_options'),
+            ram=config.param('picard_bed2interval_list', 'ram'),
+            dictionary=dictionary if dictionary else config.param('picard_bed2interval_list', 'genome_dictionary', type='filepath'),
+            bed=bed,
+            output=output
+            )
+        )

@@ -142,3 +142,33 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
         ),
         name=job_name
     )
+
+def snpeff_annotate(input_vcf, output_vcf, metrics_prefix):
+    inputs = [input_vcf]
+    output = [output_vcf, metrics_prefix + ".html", metrics_prefix + ".genes.txt"]
+
+    return Job(
+        input_files=inputs,
+        output_files=output,
+        module_entries=[
+            ['snpeff_annotate', 'module_snpeff'],
+            ['snpeff_annotate', 'module_java']
+        ],
+
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} \\
+  -jar $SNPEFF_HOME/snpEff.jar ann \\
+  -v -c $SNPEFF_HOME/snpEff.config \\
+  -s {metrics_prefix} \\
+  {reference_snpeff_genome} \\
+  {input_vcf} > \\
+  {output_vcf}""".format(
+            tmp_dir=config.param('snpeff_annotate', 'tmp_dir', required=False),
+            java_other_options=config.param('snpeff_annotate', 'java_other_options', required=False),
+            ram=config.param('snpeff_annotate', 'ram', required=False),
+            metrics_prefix=metrics_prefix + ".html",
+            reference_snpeff_genome=config.param('snpeff_annotate', 'snpeff_genome'),
+            input_vcf=input_vcf,
+            output_vcf=output_vcf
+            ),
+        )
