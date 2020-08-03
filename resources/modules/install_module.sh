@@ -74,7 +74,7 @@ patch_c3g_binaries() {
 }
 
 # 'MUGQIC_INSTALL_HOME_DEV' for development, 'MUGQIC_INSTALL_HOME' for production (don't write '$' before!)
-if [[ ${1:-} == MUGQIC_INSTALL_HOME ]]
+if [[ ${1:-} == MUGQIC_INSTALL_HOME || ${1:-} == GENPIPES_INSTALL_HOME ]]
 then
   INSTALL_HOME=MUGQIC_INSTALL_HOME
 else
@@ -82,6 +82,9 @@ else
   NOPATCH=1
   NOWRAP=1
 fi
+
+echo $INSTALL_HOME
+exit 1
 
 # Indirection call to use $INSTALL_HOME value as variable name
 INSTALL_DIR=${!INSTALL_HOME}/software/$SOFTWARE

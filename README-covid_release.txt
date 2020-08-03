@@ -42,22 +42,22 @@ pipelines/tumor_pair/tumor_pair.py --help > pipelines/tumor_pair/README.md
 pipelines/illumina_run_processing/illumina_run_processing.py --help > pipelines/illumina_run_processing/README.md
 
 # Tag the branch and push the tag. You'll need to have a gpg signature for this. Extra precaution
-git tag -s 3.1.3 -m 'Release 3.1.3'
+git tag -s covid_1.0 -m 'Covid Release 1.0'
 git push -u origin --tags
 
 # Recreate the CHANGELOG.md
-bash ~/work/repo/dump_ChangeLog.sh > CHANGELOG.md
-git commit -a -m "Version bump to 3.1.3"
+bash ~/repo/dump_ChangeLog.sh > CHANGELOG.md
+git commit -a -m "Version bump to Covid Release 1.0"
 
 # Create a release tarball archive
-git archive --format=tar --prefix=genpipes-3.1.3/ 3.1.3 | gzip > genpipes-3.1.3.tar.gz
+git archive --format=tar --prefix=genpipes_covid_release-1.0/ covid_1.0 | gzip > genpipes_covid_relase-1.0.tar.gz
 
 # Upload this archive in
 https://bitbucket.org/mugqic/genpipes/downloads
 
-# Version bump the value. Until the next release, add '-beta' e.g. 3.1.4-beta
+# Version bump the value. Until the next release, add '-beta' e.g. covid_1.1-beta
 vim VERSION
-git commit -m "Version bump to 3.1.4-beta" VERSION
+git commit -m "Version bump to Covid Release 1.1-beta" VERSION
 git push
 
 # Deploy GenPipes-<VERSION> as a module on all clusters

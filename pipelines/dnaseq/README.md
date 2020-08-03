@@ -8,13 +8,15 @@ Usage
 #!text
 
 usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f] [--json]
-                 [--report] [--clean] [-l {debug,info,warning,error,critical}]
+                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
+                 [--no-json] [--report] [--clean]
+                 [-l {debug,info,warning,error,critical}] [--sanity-check]
+                 [--container {wrapper, singularity} <IMAGE PATH>]
                  [-t {mugqic,mpileup,light}] [-r READSETS] [-v]
 
-Version: 3.1.4
+Version: covid_1.0
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
@@ -30,8 +32,9 @@ optional arguments:
                         job scheduler type (default: slurm)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
-  --json                create a JSON file per analysed sample to track the
-                        analysis status (default: false)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -43,6 +46,12 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  --sanity-check        run the pipeline in `sanity check mode` to verify that
+                        all the input files needed for the pipeline to run are
+                        available on the system (default: false)
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a validsingularity
+                        image path
   -t {mugqic,mpileup,light}, --type {mugqic,mpileup,light}
                         DNAseq analysis type
   -r READSETS, --readsets READSETS
@@ -63,11 +72,11 @@ mugqic:
 3- trimmomatic
 4- merge_trimmomatic_stats
 5- skewer_trimming
-6- bwa_mem_picard_sort_sam
+6- bwa_mem_sambamba_sort_sam
 7- sambamba_merge_sam_files
 8- gatk_indel_realigner
 9- sambamba_merge_realigned
-10- fix_mate_by_coordinate
+10- fix_mate_by_coordinate_samtools
 11- picard_mark_duplicates
 12- recalibration
 13- sym_link_final_bam
@@ -92,6 +101,7 @@ mugqic:
 32- haplotype_caller_gemini_annotations
 33- haplotype_caller_metrics_vcf_stats
 34- run_multiqc
+35- cram_output
 ----
 ```
 ![dnaseq mpileup workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mpileup.resized.png)
@@ -103,11 +113,11 @@ mpileup:
 3- trimmomatic
 4- merge_trimmomatic_stats
 5- skewer_trimming
-6- bwa_mem_picard_sort_sam
+6- bwa_mem_sambamba_sort_sam
 7- sambamba_merge_sam_files
 8- gatk_indel_realigner
 9- sambamba_merge_realigned
-10- fix_mate_by_coordinate
+10- fix_mate_by_coordinate_samtools
 11- picard_mark_duplicates
 12- recalibration
 13- sym_link_final_bam
@@ -131,6 +141,41 @@ mpileup:
 31- mpileup_gemini_annotations
 32- mpileup_metrics_vcf_stats
 33- run_multiqc
+34- cram_output
+----
+```
+![dnaseq light workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_light.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_light.png)
+```
+light:
+1- picard_sam_to_fastq
+2- skewer_trimming
+3- bwa_mem_sambamba_sort_sam
+4- sambamba_merge_sam_files
+5- gatk_indel_realigner
+6- sambamba_merge_realigned
+7- sambamba_mark_duplicates
+8- metrics_dna_picard_metrics
+9- metrics_dna_sample_qualimap
+10- metrics_dna_sambamba_flagstat
+11- metrics_dna_fastqc
+12- picard_calculate_hs_metrics
+13- gatk_callable_loci
+14- extract_common_snp_freq
+15- baf_plot
+16- gatk_haplotype_caller
+17- merge_and_call_individual_gvcf
+18- combine_gvcf
+19- merge_and_call_combined_gvcf
+20- variant_recalibrator
+21- haplotype_caller_decompose_and_normalize
+22- haplotype_caller_flag_mappability
+23- haplotype_caller_snp_id_annotation
+24- haplotype_caller_snp_effect
+25- haplotype_caller_dbnsfp_annotation
+26- haplotype_caller_gemini_annotations
+27- run_multiqc
+28- cram_output
 
 ```
 picard_sam_to_fastq
@@ -164,11 +209,11 @@ The trim statistics per readset are merged at this step.
 skewer_trimming
 ---------------
 
-bwa_mem_picard_sort_sam
------------------------
+bwa_mem_sambamba_sort_sam
+-------------------------
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
 The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
+BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
 
@@ -178,11 +223,11 @@ This step takes as input files:
 
 sambamba_merge_sam_files
 ------------------------
-BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
 
-1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
+1. Aligned and sorted BAM output files from previous bwa_mem_sambamba_sort_sam step if available
 2. Else, BAM files from the readset file
 
 gatk_indel_realigner
@@ -197,11 +242,11 @@ sambamba_merge_realigned
 ------------------------
 BAM files of regions of realigned reads are merged per sample using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
-fix_mate_by_coordinate
-----------------------
+fix_mate_by_coordinate_samtools
+-------------------------------
 Fix the read mates. Once local regions are realigned, the read mate coordinates of the aligned reads
 need to be recalculated since the reads are realigned at positions that differ from their original alignment.
-Fixing the read mate positions is done using [BVATools](https://bitbucket.org/mugqic/bvatools).
+Fixing the read mate positions is done using [Samtools](http://samtools.sourceforge.net/) and [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 picard_mark_duplicates
 ----------------------
@@ -319,6 +364,11 @@ summary of allele frequencies, codon changes, amino acid changes, changes per ch
 
 run_multiqc
 -----------
+cram_output
+-----------
+Generate long term storage version of the final alignment files in CRAM format
+Using this function will include the orginal final bam file into the  removable file list 
+
 rawmpileup
 ----------
 Full pileup (optional). A raw mpileup file is created using samtools mpileup and compressed in gz format.
@@ -331,7 +381,8 @@ Merge mpileup files per sample/chromosome into one compressed gzip file per samp
 snp_and_indel_bcf
 -----------------
 Mpileup and Variant calling. Variants (SNPs and INDELs) are called using
-[SAMtools](http://samtools.sourceforge.net/) mpileup. bcftools view is used to produce binary bcf files.
+[SAMtools](http://samtools.sourceforge.net/) mpileup.
+bcftools view is used to produce binary bcf files.
 
 merge_filter_bcf
 ----------------
@@ -378,5 +429,11 @@ Multiple metrics associated to annotations and effect prediction are generated a
 change rate by chromosome, changes by type, effects by impact, effects by functional class, counts by effect,
 counts by genomic region, SNV quality, coverage, InDel lengths, base changes,  transition-transversion rates,
 summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
+
+sambamba_mark_duplicates
+------------------------
+Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
+(for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
+will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 

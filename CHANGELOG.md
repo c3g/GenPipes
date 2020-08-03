@@ -1,6 +1,1323 @@
-20 tags, 4285 commits
+22 tags, 5484 commits
 
-HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
+HEAD        Mon Aug 3 16:41:08 2020 -0400        1 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      1 commits
+
+       a2f2178 GenPipes - Covid Release : adding resources
+
+covid_1.0        Mon Aug 3 16:37:12 2020 -0400        774 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      14 commits
+
+       9e07fc4 GenPipes - HiC-Seq pipeline : corrected fastq_readName_edit input path
+       dd58212 GenPipes - DNA-Seq pipeline : correcting symlink creation in sambamba_merge_sam_file
+       7e00f1d Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       1799cea updated version of MUGQIC_TOOLS in installation script
+       fb8ad6e Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       7a9b872 GenPipes bug correction - corrected ln() function in bfx/bash_cmd.py
+       62402ad GenPipes Update - debugging use portal_output_dir variable : check for both undef and empty value
+       2830d23 GenPipes Genome - added Sus_scrofa.sh (Pig genome) installation script
+       81d580a GenPipes Soft - added kent.sh installation script
+       756d9a0 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       076e200 GenPipes Update - DNASeq - updated sym_link for better handling of path reconstruction
+       19cc2c0 GenPipes Update : fixing path of config files when passed to job2json script
+       1d204f9 DNASeq - removed use of 'os.path.abspath' in call of 'ln()'
+       399aac0 DNASeq - Skewer trimming call to ln() upadted without 'sleep' variable
+
+  Édouard Henrion <henrione@beluga3.int.ets1.calculquebec.ca>      4 commits
+
+       4640569 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       8c46541 GenPipes - ChIPSeq update : a bit of code cleaning and simplifying
+       b03ee2f Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       72c7538 GENOME INSTALLATION - updated install genome.sh : added bismark genome preparation + refined genome digest command
+
+  Édouard Henrion <henrione@beluga4.int.ets1.calculquebec.ca>      2 commits
+
+       0dc068b Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       c744938 Merged in eh_quick_fixes (pull request #144)
+
+  Édouard Henrion <henrione@ip18.m>      6 commits
+
+       b190926 GenPIpes Update - corrected one problematic sym_link call...
+       ed444a7 GenPipes Update - corrected pipeline behavior regarding PORTAL_OUTPUT_DIR environment variable : if te variable is empty or not set, then no JSON file at all will be generated
+       c540751 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       6331eed C3G Software - added demuxlet.sh installation script
+       d63b356 Genome Update - install_genome.sh
+       a899066 Genome Update - some updates to Homo_sapiens.GRCh38.sh
+
+  ehenrion <edouard.henrion@mcgill.ca>      15 commits
+
+       7d9f811 BFX- Software - iVar installation script update with latest version
+       3c3a80c common.py : genpipes replacing mugqic_pipeline....
+       8658f7b GenPipes RNA-SEq - calling DESeq2 instead of DESeq for differential_expression
+       6a0c825 Coorected typo in README.md
+       d59cb59 GenPIpes - DEBUGGING - added slurm-comprehensive walltime for picard_sam_to_fastq in dnaseq.beluga.ini
+       af972e1 GenPipes - pipelines/dnaseq.py  : corrected prefix generation in SymLinkFastq step
+       8ebbd14 GenPipes - pipelines/common.py corrected outputs name generation patterns for SamToFastq & Trimmomatic steps
+       65fe80a Merged in ehenrion/dnaseqpy-edited-online-with-bitbucket-1575918129493 (pull request #142)
+       97afb33 GenPipes - dnaseq.py : bug correction - typo removed
+       4f9a8dd GenPipes - bug correction in pipelines/common.py : corrected the path where the sorted bam files as well as the raw_reads fastq files(from sam_to_fastq) should be written, i.e. within the output directory provided at the pipeline execution
+       fc67a7b GenPipes - bug correction in pipeline/dnaseq.py : corrected sym_link_fastq, skewer_trimming & bwa_mem_picard_sort_sam steps, regarding the path of the fastq files when they have to be determined from the readset.bam
+       9fbd085 GenPipes - corrected scheduler.py : removed unwanted sed command in --no-json context
+       16a5635 GenPipes - nanuq2mugqic_pipelines.py : bug corrected - typo in seq_type selection
+       853c806 updated methylseq.base.ini, useless comments removed
+       be965bd updated methylseq.base.ini, useless comments removed
+
+  Hector Galvez <jose.hector.galvez@computaitonalgenomics.ca>      27 commits
+
+       d485728 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into nanopore_jhg
+       7cb4024 final edits to the nanopore pipeline
+       f1db8a9 Added support for gzipped fastq
+       8da4a1c Added the nanopore CIT ini file
+       86988df Merge branch 'dev' of bitbucket.org:mugqic/genpipes into nanopore_jhg
+       71f1658 Final corrections before merge to dev
+       6994d69 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into nanopore_jhg
+       83a6f5f More corrections to the INI files for other servers to allow proper running with SLURM
+       caf6cb2 Corrected an error in the mp2b ini file
+       e2637c0 Made corrections to the nanopore ini files for all servers that were causing the pipeline to break when running with SLURM
+       a10fe05 Merge conflict resolutions
+       e08cd6d Corrected problem with nanopore readset parsing that caused problem with the paths
+       5d884c1 Added full documentation for Nanopore pipeline, as well as the Graham config file.
+       e2edb70 Included commands necessary to add readgroup tag to alignments in minimap2
+       278feb7 Final corrections before testing on other servers
+       cc0f765 Corrected merge error related to .gitignore
+       cb83788 Fixed bug caused by missing module import in nanopore.py
+       649e04b Added minimap2 script that was missing from previous commit
+       0f2a89d First working version of the nanopore pipeline
+       7acad99 Added full documentation for Nanopore pipeline, as well as the Graham config file.
+       7c528bd Merge branch 'dev' of bitbucket.org:mugqic/genpipes into nanopore_jhg
+       56699ff Included commands necessary to add readgroup tag to alignments in minimap2
+       3d53188 Final corrections before testing on other servers
+       558f3e9 More bug corrections for nanopore pipeline after initial testing. Switched to only one protocol, with an optional first step (guppy)
+       5107ed7 Fixed bug caused by missing module import in nanopore.py
+       653c4e0 Added minimap2 script that was missing from previous commit
+       a0fe5eb First working version of the nanopore pipeline
+
+  Jose Hector Galvez <jose.hector.galvez@computationalgenomics.ca>      8 commits
+
+       50bc9f3 Merged in Jose-Hector-Galvez/rnaseq_lightbaseini-edited-online-with-b-1580485656011 (pull request #171)
+       e2c91c8 Added module_perl to the rnaseq_light ini file.
+       007835b Merged in Jose-Hector-Galvez/jobpy-edited-online-with-bitbucket-1576266027164 (pull request #154)
+       c500f6b Suggestion, add `module purge` to all jobs that load modules, to avoid conflicts between modules.
+       4c35a7c Merged in Jose-Hector-Galvez/gatk4py-edited-online-with-bitbucket-1575403540009 (pull request #135)
+       89e70fe gatk4.py edited to correct for inconsistencies with configuration parameters within functions.
+       eefc95a Merged in Jose-Hector-Galvez/found-a-bug-in-the-schedulerpy-script-i--1575322351581 (pull request #127)
+       afae6ee Found a bug in the scheduler.py script. I am adding a line to correct it.
+
+  José Héctor Gálvez López <jose.hector.galvez@computationalgenomics.ca>      1 commits
+
+       3960717 Merged in nanopore_jhg (pull request #173)
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      644 commits
+
+       41514c0 Merged in mgi_stretenp (pull request #175)
+       d6ae129 Adding WARN for not changing R ver in rnaseq denovo
+       f51f693 Fixing rnaseq denovo R issue by creating deseq and a deseq2
+       4a1a5bf Fixing back rnaseq denovo
+       56fb3fb Fixing rnaseq denovo
+       1d29eb6 Fixing rnaseq denovo assembly R versions
+       50fb470 Fixing trinity report on cit
+       1ae8b17 deliverables fix
+       c51f7e1 Switching to 10% as minor variants threshold
+       dca8fea Removing kraken module & Changing R version for rnaseq
+       c49a073 Including sambamba changes in ini
+       29b5aec Including sambamba changes into other ini
+       c4a7ef3 Fixing gatk_indel_realigner if 1 job
+       8fd747f Including sambamba modifs in ini
+       d826d81 sambamba merge realigned high coverage
+       f135baf Switching to sambamba merge sam
+       c55297c Including bwa sambamba into high coverage
+       466906d Inluding a with sambamba bam.bai to picard mark duplicates
+       858c1f5 Merge branch 'dnaseq_picard_fix' into mgi_stretenp
+       a3354a5 Typo
+       dd39ded Fixing for cit run
+       1b4d014 Merge branch 'dev' into mgi_stretenp
+       d9566ff Using Illumina as default
+       34cd422 Merge branch 'mgi_stretenp' of bitbucket.org:mugqic/genpipes into mgi_stretenp
+       2502aba Renaming outputs and default genome
+       8ccb242 Fixing consensus renaming
+       075ab5a Fixing consensus renaming
+       9dec668 Renaming + flaging consensus seq
+       621449a Fixing quast options
+       da26384 Fixing qualimap output
+       cb98c5e Fixing outputs quast and snpeff
+       6d22060 Fixing mkdir
+       d15425c Fixing typo
+       921d565 Fixing typo
+       53c68fd Changing to samtools bam2fq and fixing options ini
+       4f5c5ce Fixing quast
+       f7042ec Fixing latest commit
+       04f2916 Adding intermediate bam file on host removal step
+       d931a89 Forcing pigz to overwritte gz
+       b0711a8 fixing host removal
+       4cfa142 Adding pigz within bam2fq to be able to skip step
+       7916935 quast fix
+       4788bae quast + snpeff + host removal fix
+       2e3bc59 Fixing cutadapt input files
+       75d6382 Fixing type
+       308ace1 Removing indexing after name sorting
+       f76fdad Fixing path creation at host removal step
+       d5aa6f0 Fixing snpeff
+       9202478 Removing print files
+       afa134e Fixing input choosing
+       979eafe Fixing choosing inout files mapping
+       9b6ae43 Fixing host removal
+       f7ba725 Fixing host removal
+       f0ac000 Fixing quast step
+       8ce9bf2 Fixing quast
+       c07ffae Fixing quast step
+       5415ab7 Fixing param requirements
+       9218a8e Fixing typo
+       52999ae Fixing pigz
+       fec2cea Not using kraken anymore
+       3363c61 Switching steps order
+       7e51be5 Adding 3 steps
+       863d61b Fixing picard multiple metrics raw
+       4d8cc43 Insert Size metrics on raw bam
+       f2e8b42 sambamba flagstat fix
+       0a8c640 Renaming snpeff step/job
+       d473404 Fixing flagstat
+       8163c9a Fixing flagstat
+       8461e19 flagstat on all the bams
+       a380f68 Zipping output of snpeff
+       28969ba Fixing snpeff
+       a899bdd Fixing cutadapt
+       2f86db5 Flagstat on raw bam
+       f2b8a9f Fix
+       f4fba5a Fixing renaming step
+       b0fcd1c Switching to fgbio trim primer
+       e9c450f Updating metrics
+       6582bc9 Addition of consensus step
+       319e50d MGI init commit
+       6df0cca Adding bed2interval_list to gatk, gatk4 and picard, picard2 bfx
+       350131a DNA-Seq - Fix update
+       5cce818 DNA-Seq - Fix update
+       838cc92 DNA-Seq - Fix update
+       990fc56 DNA-Seq - Fix update
+       7e7b810 DNA-Seq - Fix update
+       0a8d7ee DNA-Seq - Fix update
+       fe22929 DNA-Seq - Fixmate with samtools and sorting with sambamba
+       3c84dd1 DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       e0fa9ff DNA-Seq - Fix update including input_file_revision_eh changes
+       d03669f DNA-Seq - Fix update
+       5f22222 DNA-Seq - Fix update
+       18dd106 DNA-Seq - Fix update
+       08c2864 DNA-Seq - Fix update
+       117181c DNA-Seq - Fixmate with samtools and sorting with sambamba
+       813c02e DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       c193068 DNA-Seq - Fix update including input_file_revision_eh changes on gatk
+       0e8d422 DNA-Seq - Fix update including input_file_revision_eh changes
+       80f732a Zipping and indexing vcfs
+       6b1179b Adding parameter to ivar consensus
+       a463f5b Changing caller
+       75a071a Addition of consensus step
+       5639985 MGI init commit
+       9811842 Adding bed2interval_list to gatk, gatk4 and picard, picard2 bfx
+       34dac0c cutadapt bfx
+       9ccadd3 DNA-Seq - Fix update
+       8733abc DNA-Seq - Fix update
+       e007f9a DNA-Seq - Fix update
+       93e342c DNA-Seq - Fix update
+       0160ab5 DNA-Seq - Fix update
+       567bd8a DNA-Seq - Fixmate with samtools and sorting with sambamba
+       9e4119b DNA-Seq - Fix update
+       7ed58f8 DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       aefdd2c DNA-Seq - Fix update including input_file_revision_eh changes
+       8a94a76 DNA-Seq - First commit for https://bitbucket.org/mugqic/genpipes/issues/21/index-file-of-bam-bai
+       36fbd80 DNA-Seq - Fix update
+       cb43b48 DNA-Seq - Fix update
+       069de1c DNA-Seq - Fix update
+       2775e6f DNA-Seq - Fix update
+       348c2c6 DNA-Seq - Fix update
+       809b43d DNA-Seq - Fix update
+       08c4183 DNA-Seq - Fix update
+       7314301 DNA-Seq - Fixmate with samtools and sorting with sambamba
+       b4728a8 DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       d22a3b1 DNA-Seq - Fix update including input_file_revision_eh changes on gatk
+       7a608be DNA-Seq - Fix update including input_file_revision_eh changes
+       96dcc43 MGI-Seq - First commit
+       c6e80af Adding snpEff step for mgi pipeline
+       0e998c0 Fixing sambamba flagstat
+       79e8114 Fixing sambamba module
+       3bd9321 Adding module sambamba to ini
+       812e317 Fixing sambamba indexing
+       b0cbd93 Switching from picard to sambamba withing methylseq
+       3f5d5a3 Fix
+       271b81d fix
+       6b0c09f Fixing input output files
+       79e49f4 Fixing filtering bam
+       c4dee0f Fixing renaming step
+       f131124 Fix renaming step
+       c765138 fix
+       c04a496 Fix
+       eea7c7b Fixing filtering
+       c0bc132 Adding filtering step
+       7d34c4e Switch to fgbio
+       f38cd7d ivar triming switch
+       15b7438 Switching to fgbio trim primer
+       cec53cb Updating metrics
+       b8de4e3 MGI init commit
+       11b01b0 cutadapt bfx
+       e3858aa DNA-Seq - Fix update
+       1eaa3dc DNA-Seq - Fix update
+       d23743f DNA-Seq - Fix update
+       bd59ddb DNA-Seq - Fix update
+       4eb3268 DNA-Seq - Fix update
+       9d8e58b DNA-Seq - Fix update
+       c93e233 DNA-Seq - Fix update
+       2934b70 DNA-Seq - Fixmate with samtools and sorting with sambamba
+       ff53bb3 DNA-Seq - Fix update
+       5d3fb26 DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       bb731b1 DNA-Seq - Fix update
+       1b68132 DNA-Seq - Fix update including input_file_revision_eh changes on gatk
+       3a6e72d DNA-Seq - Fix update including input_file_revision_eh changes
+       01551e5 DNA-Seq - Fix update
+       dcaedc8 DNA-Seq - Fix update
+       a01251a DNA-Seq - Fix update
+       56a50d0 DNA-Seq - Fix update
+       32e070f DNA-Seq - Fix update
+       e4778b0 DNA-Seq - Fix update
+       9456045 DNA-Seq - Fix update
+       083f6a6 DNA-Seq - Fixmate with samtools and sorting with sambamba
+       67603dd DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       a59d994 DNA-Seq - Fix update including input_file_revision_eh changes
+       c203912 MGI-Seq - First commit
+       c5a1baa Switch to fgbio
+       b4ca5f7 Fixing alignment
+       f3378e1 ivar triming switch
+       8a0045d Switching to fgbio trim primer
+       d479b85 Fixing ivar trim
+       80c578a Filtering reads
+       30f51c7 Updating metrics
+       ea1149b fgbio
+       22daf31 Fixing ivar trim
+       6462908 Using ivar trim instead of fgbio
+       fc6de5f Adding ivar primer trimming
+       7049f31 Default bwa parameters to include pairs
+       0e834bc Zipping and indexing vcfs
+       0935479 Adding parameter to ivar consensus
+       d8751cc Changing caller
+       1e6dd74 ivar bfx
+       3399cbb Addition of consensus step
+       f46ccb5 ivar module
+       52f8a2b MGI init commit
+       3bd0932 Adding bed2interval_list to gatk, gatk4 and picard, picard2 bfx
+       2fbd1e3 Adding trim_primers to fgbio bfx
+       327b963 cutadapt bfx
+       7652e5b DNA-Seq - Fix update
+       0ab9060 DNA-Seq - Fix update
+       66b240b DNA-Seq - Fix update
+       472c6b0 DNA-Seq - Fix update
+       e1e7318 DNA-Seq - Fix update
+       6954eaf DNA-Seq - Fix update
+       db7bab2 DNA-Seq - Fix update
+       2a0bb00 DNA-Seq - Fix update
+       60e7d9a DNA-Seq - Fixmate with samtools and sorting with sambamba
+       7be45c1 DNA-Seq - Fix update
+       1dddc4f DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       27ac18b DNA-Seq - Fix update including input_file_revision_eh changes
+       748e668 DNA-Seq - First commit for https://bitbucket.org/mugqic/genpipes/issues/21/index-file-of-bam-bai
+       0b53786 DNA-Seq - Fix update
+       6218cdd DNA-Seq - Fix update
+       56547aa DNA-Seq - Fix update
+       05baa00 DNA-Seq - Fix update
+       ff5a871 DNA-Seq - Fix update
+       591339e DNA-Seq - Fix update
+       de100ee DNA-Seq - Fix update
+       5e3e598 DNA-Seq - Fix update
+       584181f DNA-Seq - Fix update
+       02439f0 DNA-Seq - Fixmate with samtools and sorting with sambamba
+       90e9ee9 DNA-Seq - Fix update
+       ac56691 DNA-Seq - Fix update
+       f73bce0 DNA-Seq - Fix update
+       22e030d DNA-Seq - Fix update
+       6928926 DNA-Seq - Fix update
+       0facc34 DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       c6bf187 DNA-Seq - Fix update
+       111cbcb DNA-Seq - Fix update including input_file_revision_eh changes on gatk
+       ef0a25e DNA-Seq - Fix update ini files
+       2eed96b DNA-Seq - Fix update including input_file_revision_eh changes on job.py
+       417ff67 DNA-Seq - Fix update bai output
+       114d004 DNA-Seq - Fix update indexing
+       fc9901c DNA-Seq - Fix update including input_file_revision_eh changes
+       0016ba2 DNA-Seq - First commit for https://bitbucket.org/mugqic/genpipes/issues/21/index-file-of-bam-bai
+       77e5041 MGI-Seq - First commit
+       9447bed Renaming outputs and default genome
+       6f45655 Fixing consensus renaming
+       87a6264 Fixing consensus renaming
+       cb95534 Renaming + flaging consensus seq
+       6c7058d Fixing quast options
+       1ec14ff Fixing qualimap output
+       90eb6b0 Fixing outputs quast and snpeff
+       3dbf0a1 Fixing mkdir
+       8cd2ba3 Fixing typo
+       200cb4b Fixing typo
+       2b01f81 Changing to samtools bam2fq and fixing options ini
+       d5dc5b7 Fixing quast
+       f32dd81 Fixing latest commit
+       d58a7b2 Adding intermediate bam file on host removal step
+       dbd486b Forcing pigz to overwritte gz
+       95505ba fixing host removal
+       a119100 Adding pigz within bam2fq to be able to skip step
+       de7633c quast fix
+       d0383f5 quast + snpeff + host removal fix
+       f165e56 Fixing cutadapt input files
+       2dfd2e6 Fixing type
+       6e67b6d Removing indexing after name sorting
+       4b0740e Fixing path creation at host removal step
+       7020fe0 Fixing snpeff
+       5e6b7a9 Removing print files
+       031d9df Fixing input choosing
+       256cdc7 Fixing choosing inout files mapping
+       cd7e52e Fixing host removal
+       c11d220 Fixing host removal
+       a3d58c9 Fixing quast step
+       8abe6c0 Fixing quast
+       5a68e07 Fixing quast step
+       b141fa8 Fixing param requirements
+       a7318fd Fixing typo
+       aa32b62 Fixing pigz
+       617f817 Not using kraken anymore
+       df8f32c Switching steps order
+       10c3586 Adding 3 steps
+       eb7d612 Fixing picard multiple metrics raw
+       8d852a7 Insert Size metrics on raw bam
+       67dcc5f sambamba flagstat fix
+       08fb926 Renaming snpeff step/job
+       068d072 Fixing flagstat
+       770c233 Fixing flagstat
+       4ff0fb6 flagstat on all the bams
+       1e3ef28 Zipping output of snpeff
+       5c219e6 Fixing snpeff
+       c0faa37 Fixing cutadapt
+       effce8a Flagstat on raw bam
+       8c7dd5a Merge branch 'mgi_stretenp' of bitbucket.org:mugqic/genpipes into mgi_stretenp
+       221dea2 Adding snpEff step for mgi pipeline
+       86a0acf Fixing sambamba flagstat
+       dd8163f Fixing sambamba module
+       609e6ca Adding module sambamba to ini
+       71316e9 Fixing sambamba indexing
+       9040722 Switching from picard to sambamba withing methylseq
+       9d3bdfd Fix
+       e5a7f40 fix
+       59aeaff Fixing input output files
+       da3b1cd Fixing filtering bam
+       cb775da Fixing renaming step
+       f78909c Fix renaming step
+       49dba7d fix
+       50ac6ee Fix
+       860591e Fixing filtering
+       cc0f319 Adding filtering step
+       4d36888 Switch to fgbio
+       6066f52 ivar triming switch
+       5790ea2 Switching to fgbio trim primer
+       45c2449 Updating metrics
+       ffc8fd1 MGI init commit
+       13d4f10 cutadapt bfx
+       2a61965 DNA-Seq - Fix update
+       7c8d9e3 DNA-Seq - Fix update
+       aad95a2 DNA-Seq - Fix update
+       db01cdb DNA-Seq - Fix update
+       c8fd1f4 DNA-Seq - Fix update
+       19b7a74 DNA-Seq - Fix update
+       386a604 DNA-Seq - Fix update
+       6063ddd DNA-Seq - Fixmate with samtools and sorting with sambamba
+       7e1f0b5 DNA-Seq - Fix update
+       30121a7 DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       4b9d8e1 DNA-Seq - Fix update
+       a83ee80 DNA-Seq - Fix update including input_file_revision_eh changes on gatk
+       033dd3e DNA-Seq - Fix update including input_file_revision_eh changes
+       a9102d3 DNA-Seq - Fix update
+       a4ee47f DNA-Seq - Fix update
+       18d832e DNA-Seq - Fix update
+       6623f8c DNA-Seq - Fix update
+       1d002d1 DNA-Seq - Fix update
+       fe5c405 DNA-Seq - Fix update
+       dbd8034 DNA-Seq - Fix update
+       74d2bdd DNA-Seq - Fixmate with samtools and sorting with sambamba
+       1678639 DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       5f66227 DNA-Seq - Fix update including input_file_revision_eh changes
+       562180b MGI-Seq - First commit
+       a16695b Switch to fgbio
+       1d92909 Fixing alignment
+       01f5df7 ivar triming switch
+       e49e632 Switching to fgbio trim primer
+       057e2e8 Fixing ivar trim
+       d9638b5 Filtering reads
+       c3ab6f1 Updating metrics
+       dc9a43e fgbio
+       579e0dd Fixing ivar trim
+       603bb4a Using ivar trim instead of fgbio
+       26a2da8 Adding ivar primer trimming
+       f25c75d Default bwa parameters to include pairs
+       6a8c301 Zipping and indexing vcfs
+       cf6c19f Adding parameter to ivar consensus
+       c9231e5 Changing caller
+       b9bfed0 ivar bfx
+       70cc54a Addition of consensus step
+       5a990e2 ivar module
+       cd17c0d MGI init commit
+       5bef158 Adding bed2interval_list to gatk, gatk4 and picard, picard2 bfx
+       f7a155d Adding trim_primers to fgbio bfx
+       8177037 cutadapt bfx
+       a702d27 DNA-Seq - Fix update
+       f6fe0e2 DNA-Seq - Fix update
+       4a42439 DNA-Seq - Fix update
+       a880e3b DNA-Seq - Fix update
+       2cd5d01 DNA-Seq - Fix update
+       9f7e048 DNA-Seq - Fix update
+       75b18ca DNA-Seq - Fix update
+       9a0adea DNA-Seq - Fix update
+       bb259fe DNA-Seq - Fixmate with samtools and sorting with sambamba
+       0c96937 DNA-Seq - Fix update
+       75e589b DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       dd3999c DNA-Seq - Fix update including input_file_revision_eh changes
+       2a2a43c DNA-Seq - First commit for https://bitbucket.org/mugqic/genpipes/issues/21/index-file-of-bam-bai
+       cb09a7b DNA-Seq - Fix update
+       31653bd DNA-Seq - Fix update
+       513818c DNA-Seq - Fix update
+       b202a5b DNA-Seq - Fix update
+       c87c2cd DNA-Seq - Fix update
+       a4926cb DNA-Seq - Fix update
+       c06ee52 DNA-Seq - Fix update
+       6f894d2 DNA-Seq - Fix update
+       3d5daeb DNA-Seq - Fix update
+       ed9e7fe DNA-Seq - Fixmate with samtools and sorting with sambamba
+       4215929 DNA-Seq - Fix update
+       3dca79c DNA-Seq - Fix update
+       7bf5141 DNA-Seq - Fix update
+       ff24ef9 DNA-Seq - Fix update
+       f535202 DNA-Seq - Fix update
+       a6b428c DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       7e35168 DNA-Seq - Fix update
+       302e6c9 DNA-Seq - Fix update including input_file_revision_eh changes on gatk
+       03fc8c2 DNA-Seq - Fix update ini files
+       0cd4885 DNA-Seq - Fix update including input_file_revision_eh changes on job.py
+       ade8279 DNA-Seq - Fix update bai output
+       8ee3267 DNA-Seq - Fix update indexing
+       4f25a98 DNA-Seq - Fix update including input_file_revision_eh changes
+       314107e DNA-Seq - First commit for https://bitbucket.org/mugqic/genpipes/issues/21/index-file-of-bam-bai
+       6d82d3f MGI-Seq - First commit
+       2cbfa5c Adding snpEff step for mgi pipeline
+       8f5d839 Fixing sambamba flagstat
+       4415a7a Fixing sambamba module
+       644bc8d Adding module sambamba to ini
+       38cd45a Fixing sambamba indexing
+       08dc201 Switching from picard to sambamba withing methylseq
+       e89813f Fix
+       9ef7ecb fix
+       0d6651a Fixing input output files
+       192bb65 Fixing filtering bam
+       030b759 Fixing renaming step
+       1348f00 Fix renaming step
+       bc42658 fix
+       49a16fc Fix
+       c69973d Fixing filtering
+       76219a8 Adding filtering step
+       7ed54e8 Switch to fgbio
+       b6cfddf Fixing alignment
+       4796cff ivar triming switch
+       3ec5f7f Switching to fgbio trim primer
+       3a84e9e Fixing ivar trim
+       b673f47 Filtering reads
+       9fdafbd Updating metrics
+       3f63d5c fgbio
+       56bec97 Fixing ivar trim
+       30475ca Using ivar trim instead of fgbio
+       d5b4054 Adding ivar primer trimming
+       925645e Default bwa parameters to include pairs
+       314a869 Zipping and indexing vcfs
+       191bfb3 Adding parameter to ivar consensus
+       db7c70a Changing caller
+       d9e302b ivar bfx
+       09d9f6b Addition of consensus step
+       d9c3f32 ivar module
+       f6a8e17 MGI init commit
+       49c7f1d Adding bed2interval_list to gatk, gatk4 and picard, picard2 bfx
+       eae7037 Adding trim_primers to fgbio bfx
+       bfc47be cutadapt bfx
+       ffcfe26 DNA-Seq - Fix update
+       0f17426 DNA-Seq - Fix update
+       34b0965 DNA-Seq - Fix update
+       b7323de DNA-Seq - Fix update
+       e0909f1 DNA-Seq - Fix update
+       48e203e DNA-Seq - Fix update
+       0cd7e5e DNA-Seq - Fix update
+       b3d7401 DNA-Seq - Fix update
+       6ff06b0 DNA-Seq - Fixmate with samtools and sorting with sambamba
+       b000f97 DNA-Seq - Fix update
+       52deaf3 DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       2acf3c0 DNA-Seq - Fix update including input_file_revision_eh changes
+       0fe44df DNA-Seq - First commit for https://bitbucket.org/mugqic/genpipes/issues/21/index-file-of-bam-bai
+       3772b9b DNA-Seq - Fix update
+       479e9ed DNA-Seq - Fix update
+       5f25120 DNA-Seq - Fix update
+       aa1687c DNA-Seq - Fix update
+       8632426 DNA-Seq - Fix update
+       c5d384b DNA-Seq - Fix update
+       746d2f0 DNA-Seq - Fix update
+       eef3b27 DNA-Seq - Fix update
+       f1d1b55 DNA-Seq - Fix update
+       d2d4430 DNA-Seq - Fixmate with samtools and sorting with sambamba
+       5683297 DNA-Seq - Fix update
+       a7e450c DNA-Seq - Fix update
+       5cb9574 DNA-Seq - Fix update
+       e888e09 DNA-Seq - Fix update
+       d366f67 DNA-Seq - Fix update
+       ba6aa73 DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       9dc3bf6 DNA-Seq - Fix update
+       c01dcf5 DNA-Seq - Fix update including input_file_revision_eh changes on gatk
+       ca81d44 DNA-Seq - Fix update ini files
+       78519f2 DNA-Seq - Fix update including input_file_revision_eh changes on job.py
+       0c922cc DNA-Seq - Fix update bai output
+       6117bc9 DNA-Seq - Fix update indexing
+       5e9b268 DNA-Seq - Fix update including input_file_revision_eh changes
+       519beea DNA-Seq - First commit for https://bitbucket.org/mugqic/genpipes/issues/21/index-file-of-bam-bai
+       43bb771 MGI-Seq - First commit
+       f2cd11a Switch to fgbio
+       c3aa00d Fixing alignment
+       8d157fd ivar triming switch
+       42a5e2d Switching to fgbio trim primer
+       6030fa7 Fixing ivar trim
+       6bb7e08 Filtering reads
+       330e345 Updating metrics
+       b1153cd fgbio
+       4450c70 Fixing ivar trim
+       a68648b Using ivar trim instead of fgbio
+       8a2bdf3 Adding ivar primer trimming
+       8856367 Default bwa parameters to include pairs
+       4e96864 Zipping and indexing vcfs
+       6e9529f Adding parameter to ivar consensus
+       4b826ef Changing caller
+       b8bc79a ivar bfx
+       dab5579 Addition of consensus step
+       c91d067 ivar module
+       ec2a176 MGI init commit
+       260059a Adding bed2interval_list to gatk, gatk4 and picard, picard2 bfx
+       7760a79 Adding trim_primers to fgbio bfx
+       3180972 Fixing haplotype_caller
+       66d8cdd Fixing haplotype_caller
+       3bdb0aa cutadapt bfx
+       2d274eb Merge branch 'dnaseq_picard_fix' of bitbucket.org:mugqic/genpipes into mgi_stretenp
+       f083b66 MGI-Seq - First commit
+       538907e Merge branch 'dnaseq_picard_fix' of bitbucket.org:mugqic/genpipes into dnaseq_picard_fix
+       b0197fe DNA-Seq - Fix update
+       54b4741 DNA-Seq - Fix update
+       452f869 DNA-Seq - Fix update
+       d0cb631 DNA-Seq - Fix update
+       6e3580e DNA-Seq - Fix update
+       222b79b DNA-Seq - Fix update
+       5cf6269 DNA-Seq - Fix update
+       de8d901 DNA-Seq - Fix update
+       d87cd96 DNA-Seq - Fix update
+       b3b9b1b DNA-Seq - Fixmate with samtools and sorting with sambamba
+       5e55bfc DNA-Seq - Fix update
+       9f20fe7 DNA-Seq - Fix update
+       123b730 DNA-Seq - Fix update
+       5ae600a DNA-Seq - Fix update
+       8119523 DNA-Seq - Fix update
+       d6007d2 DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       1ff8cac DNA-Seq - Fix update
+       58d662a DNA-Seq - Fix update including input_file_revision_eh changes on gatk
+       83ba60d DNA-Seq - Fix update ini files
+       f7bef7d DNA-Seq - Fix update including input_file_revision_eh changes on job.py
+       10d50aa DNA-Seq - Fix update bai output
+       1319c26 DNA-Seq - Fix update indexing
+       fe4e7b9 DNA-Seq - Fix update including input_file_revision_eh changes
+       80def2a DNA-Seq - First commit for https://bitbucket.org/mugqic/genpipes/issues/21/index-file-of-bam-bai
+       894566c DNA-Seq - Fix update
+       1413d45 DNA-Seq - Fix update
+       ab945dd DNA-Seq - Fix update
+       97186dd DNA-Seq - Fix update
+       fc158a4 DNA-Seq - Fix update
+       86b2e80 DNA-Seq - Fix update
+       d2ecd4b DNA-Seq - Fix update
+       98928a5 DNA-Seq - Fix update
+       bdee1f8 DNA-Seq - Fix update
+       8afb500 DNA-Seq - Fixmate with samtools and sorting with sambamba
+       7e8699b DNA-Seq - Fix update
+       1e47ab1 DNA-Seq - Fix update
+       bea5e94 DNA-Seq - Fix update
+       eae982e DNA-Seq - Fix update
+       15d745e DNA-Seq - Fix update
+       0553a5d DNA-Seq - Fix update including input_file_revision_eh changes on samtools
+       ef79ced DNA-Seq - Fix update
+       afaa484 DNA-Seq - Fix update including input_file_revision_eh changes on gatk
+       7dfa730 DNA-Seq - Fix update ini files
+       3d22e67 DNA-Seq - Fix update including input_file_revision_eh changes on job.py
+       6dd6e0c DNA-Seq - Fix update bai output
+       54a5fc0 DNA-Seq - Fix update indexing
+       20cee1f DNA-Seq - Fix update including input_file_revision_eh changes
+       a1579f4 DNA-Seq - First commit for https://bitbucket.org/mugqic/genpipes/issues/21/index-file-of-bam-bai
+       c5e9966 Merged in ihec_metrics (pull request #126)
+       7bceefb Merge branch 'ihec_metrics' of bitbucket.org:mugqic/genpipes into ihec_metrics
+       388c9bf ChIP-Seq - Fix IHEC metrics
+       b5683f2 ChIP-Seq - Fix IHEC metrics
+       7c0f68f Merged in chipseq_atacseq_mode (pull request #121)
+       7a101a7 Merge branch 'chipseq_atacseq_mode' of bitbucket.org:mugqic/genpipes into chipseq_atacseq_mode
+       e83caef MethylSeq - Trimmomatic resources revisited for methylseq
+       f9bbdb7 General - Genome installation with cvmfs grep
+       a8c4d93 ChIP-Seq - Fixing GenPipes metrics
+       d82ed89 ChIP-Seq - Sambamba loading properly in mito calcul
+       e6c4274 ChIP-Seq - Reducing ihec report ressources
+       f3755e9 ChIP-Seq - Fixing typo
+       3153017 ChIP-Seq - Increasing IHEC preprocess ressources
+       a02fd32 ChIP-Seq - Fix IHEC metrics
+       7f1f4a9 ChIP-Seq - Fix IHEC report template md file
+       805c58b ChIP-Seq - Fix IHEC report template md file
+       19b0b62 ChIP-Seq - Fix IHEC report template md file
+       3c573f8 ChIP-Seq - Fixing merge metrics
+       1bb96cb ChIP-Seq - Fixing merge metrics
+       9714313 ChIP-Seq - Fixing merge metrics
+       ad5e531 ChIP-Seq - Fixing merge metrics
+       f3ebb74 ChIP-Seq - Fixing merge metrics
+       b5658b8 ChIP-Seq - Adding IHEC report template md file
+       3ad67e0 ChIP-Seq - Fixing merge metrics
+       bef0f18 ChIP-Seq - Fixing merge metrics
+       ec3dea0 ChIP-Seq - Fixing merge metrics
+       4883d4c ChIP-Seq - Fixing merge metrics
+       51bd5f2 ChIP-Seq - Adding merge IHEC metrics
+       c310d1e ChIP-Seq - Fixing metrics
+       b1ec49d ChIP-Seq - Fixing metrics
+       5084171 ChIP-Seq - Fixing metrics
+       fa035a1 ChIP-Seq - Fixing metrics
+       85c8c53 ChIP-Seq - Fixing metrics
+       41081d6 ChIP-Seq - Fixing metrics
+       1acdfa5 ChIP-Seq - Fixing metrics
+       cfe4059 ChIP-Seq - Fixing metrics & report
+       d29881f ChIP-Seq - Fixing metrics
+       d1d4385 ChIP-Seq - Fixing metrics
+       5e801f9 ChIP-Seq - Fixing metrics
+       a1a4784 ChIP-Seq - Fixing metrics
+       0f847f1 ChIP-Seq - Fixing metrics
+       2f9084a ChIP-Seq - Fixing metrics
+       e545fb4 ChIP-Seq - Fixing metrics
+       56f6af0 ChIP-Seq - Fixing metrics
+       878335c ChIP-Seq - Fixing metrics
+       380e122 ChIP-Seq - Fixing metrics
+       f6f26f4 ChIP-Seq - Fixing metrics
+       343c9ff ChIP-Seq - Fixing metrics
+       3da997d ChIP-Seq - Fixing metrics
+       db54da1 ChIP-Seq - Fixing metrics
+       6a91f0d ChIP-Seq - Adding metrics
+       b6a1e60 ChIP-Seq - Fixing bwa missing import
+       319655b ChIP-Seq - Fixing chipseq pipeline
+       1a47e31 ChIP-Seq - Adding ATAC-Seq protocol
+       5f113fc Merge branch 'chipseq_atacseq_mode' of bitbucket.org:mugqic/genpipes into chipseq_atacseq_mode
+       a440d4e General - Genome installation with cvmfs grep
+       d7cd595 ChIP-Seq - Fixing GenPipes metrics
+       bbfb6bb ChIP-Seq - Sambamba loading properly in mito calcul
+       466041c Merge branch 'dev' into chipseq_atacseq_mode
+       15611bf ChIP-Seq - Reducing ihec report ressources
+       56c39f6 ChIP-Seq - Fixing typo
+       f88ee59 ChIP-Seq - Increasing IHEC preprocess ressources
+       0bd494d Merge branch 'chipseq_atacseq_mode' of bitbucket.org:mugqic/genpipes into chipseq_atacseq_mode
+       1d727d0 ChIP-Seq - Fix IHEC metrics
+       09d7280 Merged dev into chipseq_atacseq_mode
+       364e381 ChIP-Seq - Fix IHEC report template md file
+       24b64ed ChIP-Seq - Fix IHEC report template md file
+       9f8c10e ChIP-Seq - Fix IHEC report template md file
+       0d811bd ChIP-Seq - Fixing merge metrics
+       70a5ed0 ChIP-Seq - Fixing merge metrics
+       b1da600 ChIP-Seq - Fixing merge metrics
+       aee5b14 ChIP-Seq - Fixing merge metrics
+       74f44e2 ChIP-Seq - Fixing merge metrics
+       b096b63 ChIP-Seq - Adding IHEC report template md file
+       12b2f31 ChIP-Seq - Fixing merge metrics
+       a807a5e ChIP-Seq - Fixing merge metrics
+       5131a32 ChIP-Seq - Fixing merge metrics
+       60b0f6f ChIP-Seq - Fixing merge metrics
+       05c2623 ChIP-Seq - Adding merge IHEC metrics
+       9664631 ChIP-Seq - Fixing metrics
+       1e2bc38 ChIP-Seq - Fixing metrics
+       c6a08a6 ChIP-Seq - Fixing metrics
+       e9e96da ChIP-Seq - Fixing metrics
+       809cb52 ChIP-Seq - Fixing metrics
+       7873647 ChIP-Seq - Fixing metrics
+       4b1bb18 ChIP-Seq - Fixing metrics
+       e806abc ChIP-Seq - Fixing metrics & report
+       ca01c9c ChIP-Seq - Fixing metrics
+       3c72d0f ChIP-Seq - Fixing metrics
+       1199e5f ChIP-Seq - Fixing metrics
+       1ee3d36 ChIP-Seq - Fixing metrics
+       59a2828 ChIP-Seq - Fixing metrics
+       5157069 ChIP-Seq - Fixing metrics
+       4a8a555 ChIP-Seq - Fixing metrics
+       2cb7a7b ChIP-Seq - Fixing metrics
+       a48c88e ChIP-Seq - Fixing metrics
+       235552a ChIP-Seq - Fixing metrics
+       5b47faf ChIP-Seq - Fixing metrics
+       31535af ChIP-Seq - Fixing metrics
+       2d751ea ChIP-Seq - Fixing metrics
+       85ea7e4 ChIP-Seq - Fixing metrics
+       b62f519 ChIP-Seq - Adding metrics
+       bbe8b2c ChIP-Seq - Fixing bwa missing import
+       5bdb8aa ChIP-Seq - Fixing chipseq pipeline
+       2ae5803 ChIP-Seq - Adding ATAC-Seq protocol
+
+  Paul Stretenowich <pstretenowich@CYPRUS.local>      4 commits
+
+       20aa88f Cleaning mgi.py
+       cc25234 Cleaning mgi.py
+       397efae Cleaning mgi.py
+       97bd776 Merge branch 'mgi_stretenp' of bitbucket.org:mugqic/genpipes into mgi_stretenp
+
+  Pierre-Olivier Quirion <pierre-olivier.quirion@computationalgenomics.ca>      10 commits
+
+       31826de Merged in remove_pacbio (pull request #176)
+       68d5195 Merged in poq/fast_module_check (pull request #164)
+       652e207 Merged poq/graham_ini into dev
+       9c6da9a Merged poq/graham_ini into dev
+       1f66c6c Merged update_beluga_ini into dev
+       70167f1 Merged update_beluga_ini into dev
+       e7c7f34 Merged update_beluga_ini into dev
+       a54d824 Merged in add_container (pull request #167)
+       8a076c7 Merged in poq/graham_ini (pull request #168)
+       f18307f Merged in master (pull request #161)
+
+  P-O Quirion <pierre-olivier.quirion@computationalgenomics.ca>      33 commits
+
+       241f706 remove pacbio from the repo/release
+       fd02e50 no mail in cit.ini
+       68d8a66 add sh script for steps in pbs too
+       d79b273 Add SARS-CoV2 genome file
+       b4c4740 tweek memory usage beluga denovo
+       7fcd09a update cluster for rnaseq star index
+       473294d use 1.1.0 genpipes_in_container release
+       0d591bb make module show sure it raise with older version
+       1aa57cb chipseq cedar and graham ini
+       1329a13 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       6f7be7f more graham ini
+       b455c4c more graham ini
+       8267603 copy dnaseq ini from cedar to graham
+       b448597 fix fastq symlink on graham
+       153aa9e less log
+       40ab0ff cleanup
+       0ac3121 speedup module check
+       20ff188 one module call
+       1fb3ae7 add mem to star_* on rnaseq
+       4d682b6 update again
+       19a81cf mem-per-cpu
+       e5ce420 Add generic ini for chipseq update README
+       d103761 create graham ini file
+       05ef09e log when all sbatch submit is dont
+       c1f2c53 feedback at submit time
+       0ac30b3 feedback at submit time
+       fd755d8 fix ini typo
+       77b2c9b wrapper for slum, pbs and batch
+       bc80a4d update wrap options.
+       304c7eb add default wrapper
+       22d9efa remove docker
+       004a9a4 put --wrap import at the top
+       3516da4 add wrapper to all pipelines
+
+  P-O Quirion <pioliqui@gmail.com>      2 commits
+
+       328a00e make nanopore executable
+       ab1de9a Add automatic wrapper option
+
+  Romain Grégoire <romgrk.cc@gmail.com>      1 commits
+
+       123f6c5 Merged in fix-watch-folder (pull request #165)
+
+  Rom Grk <romgrk.cc@gmail.com>      1 commits
+
+       1baeef5 watch_portal_folder.py: fix undefined variable
+
+  ufgauthi <ulysse.fortiergauthier@mcgill.ca>      1 commits
+
+       0a60ef2 Bug Fix by replacing sacct delimiter | by ^
+
+  Ulysse Fortier Gauthier <ulysse.fortiergauthier@mcgill.ca>      1 commits
+
+       bf54dbf Merged in ufg_log_report_fix (pull request #157)
+
+3.1.5        Wed Jan 15 11:58:16 2020 -0500        424 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      78 commits
+
+       e0844c3 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       986f2a3 HICSeq pipeline - improving trimmomatic resources for SULRM + added graham config file for hicseq pipeline
+       6714a5d Genome installation - added America Mink genome (Neovison_vison.NNQGG.v01) installation script
+       d60d136 Software installation - added 'demuxlet' installation script
+       6822cbf Software installation - updated ucsc.sh with lat4est version i.e. v387
+       b350d2d Software installation - replaced call of lsb_release by universal commands (avoid 'lsb_release command not found' error)
+       5c87fd7 Software installation - corrected regular expression within genome_digest function
+       23e9315 removed some test code introduced by latest commit...
+       9445ee9 Merge branch 'master' of bitbucket.org:mugqic/genpipes into dev
+       00577d4 GenPipes RNA-Seq de novo - corrected bugs introduced in commit 4a72735
+       f3b9a92 GenPipes BFX - added bash_cmd python wrapper to wrap basic bash commands
+       4a72735 GenPipes RNA-Seq de novo - updated pipeline with better sample assignemnt to jobs for better JSON building
+       d89d4fc Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       1b48215 GenPipes JSON - updated pipeline.py and scheduler.py so that the copy of the original JSONs to the PORTAL is made before building the pipeline steps
+       6360349 GenPipes Trimmomatic - corrected assignment of samples to the job to correct analysis JSON generation per sample
+       fbaa84a MethylSeq - corrected assignment of samples to the jobs to correct analysis JSON generation per sample
+       d1cd79b GenPipes analysis JSON - updated jsonator.py in reagrds of the updated .base.ini files, now containing 'source' & 'version' to ease the process + minor updates to core/pipeline.py
+       fc1b6c0 GenPipes config files - updated most of the .base.ini files with missing 'source' & 'version' to avoid issues with the 'jsonator'
+       f44ccb1 GenPipes Anlalysis JSON file - corrected core/pipeline.py regarding the use of PORTAL_OUTPUT_DIR
+       9751513 GenPipes Analysis JSON file - added the system to update the submission_date
+       a9ba832 GenPipes Anlalysis JSON file - pipelines now create JSON analysis file as a default behavior
+       7b42d15 GenPipes Analysis JSON file - added the submission_date to the JSON
+       7e04404 Analysis JSON - updated jsonator.py with project_name and submission_date. Also updated version to 1.0.1
+       f422649 GenPipes utils - minor updates : updated some comments
+       38937e6 Software install - updated install_module.sh with finer LIBDIR for patching and better patching to avoid overwritting potential pre-existing RPATH
+       fb2bffc Software install - updated R_Bioconductor.sh with new R packages and finer LIBDIR for patching
+       721d941 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into eh_methylseq_single_end
+       074045a GenPipes Sanity Check - Refining the report
+       0d0e0bd Merge branch 'dev' of bitbucket.org:mugqic/genpipes into sanity_check_mode
+       1478455 GenPipes Sanity Check - Adjusting the log level
+       cf3ec9e GenPIpes Sanity Check - set log level to 'warning' instead of info when running sanity check, thus removing some useless if statements and refining display of the messages
+       6cf36ee GenPipes Sanity Check mode : removed some useless comments in core/pipeline.py
+       b46df3f GenPIpes Sanity Check mode - created the SanitycheckError class in config.py to use instead of Error
+       f4d6323 Merge branch 'master' of bitbucket.org:mugqic/genpipes into rnaseq_denovo_jhg
+       989996a GenPipes MethylSeq - updated base.ini with [samtools_cram_output] section
+       066c24e Merge branch 'dev' of bitbucket.org:mugqic/genpipes into eh_methylseq_single_end
+       433950d GenPipes Sanity Check - DNASeq high coverage, RNASeq denovo assembly & RNASeq light pipelines are updated regarding the sanity-check mode
+       0fbecd2 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into sanity_check_mode
+       6b00ce5 GenPipes Sanity Check - updated pipelines for sanity-check mode responsiveness
+       afa406a GenPipes Sanity Check - updated common.py to be sanity-check responsive
+       4f25a0f GenPipes Sanity Check - update _raise() function in config.py & refined code of sanity-check mode in pipeline.py
+       6a457d5 GenPipes Sanity Check - updated readset.py design.py to be sanity-check responsive & tools.py with proper import statements
+       6f11825 MethylSeq pipeline - updated pipeline to make SINGLE-END mode actually work
+       b3ac5a9 GenPipes Sanity Check mode : updated PacBio Assembly pipeline as the first try to test sanity check mode
+       f288544 GenPipes Sanity Check mode : updated pipeline.py with the sanity check mode fully functionnal
+       b5a78dd GenPipes Sanity Check mode : updated sample.py to reflect the updates that have been done in config.py
+       3203ce9 GenPipes Sanity Check mode : updated config.py to avoid raising errors when sanity-check mode is on, logging them instead
+       daabbf4 GenPipes code cleaning - cleaned some 'import' calls : stop using 'import *' and specify which modules/classes/functions to import instead
+       2699bc9 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into sanity_check_mode
+       975e0ff GenPipes Core - updated pipeline.py to catch , relative to changes in config.py. Added the sanity-check mode : the pipeline now does not stop at fist met error/exection : wait untill the end to print the errors
+       1f628d3 GenPipes Core - updated config.py wth PO's code : catches  instead of
+       0f4c860 Software upadte - updated mugqic_tools installation script with version 2.2.3
+       68f32a9 Software update - updated R_Bioconductor.sh : added binless and DoubletFinder packages to the installation, updated the installer depending on the version of R
+       2bca735 Saoftware update : update cellranger-atac.sh with the latest versoin 1.1.0
+       1478321 Software update - added th shebang to the C3G wrappers for installed binaries
+       697eaec Genome installation - corrected typo in 'lambda_page'
+       e7010eb Software update - added script to install gemBS in C3G softwatre stack
+       9c4f295 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       93f92cd Software update - updated installation scripts for LUMPY-SV, mugqic_tools & SMRTLink
+       39b691a Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       06fdb58 Software update - updated MultiQC installation script : shebang of MultiQC scripts now uses #!/usr/bin/env python
+       e66f717 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       1e4c96f Software update : added the installation of methylKit packages in R_Bioconductor.sh - also added the generation of a file listing all the packages installed for all the new installed R versions
+       251f418 GenPipes utils - updated nanuq2mugqic_pipelines script : added support for iSeq projects
+       742aa73 GenPipes utils - updated nanuq2mugqic_pipelines script : added -rn/--run parameter, standing for Nanuq run ID, to fetch only readsets procesed in specified run(s)
+       5555171 Software update - updated install_module.sh so that it does not wrap nor patch the executable binaries when installing on DEV space
+       d4fb87c Software update - added MiXCR v3.0.5 installation script - MiXCR: a universal tool for fast and accurate analysis of T- and B- cell receptor repertoire sequencing data
+       f020d92 Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       3e7d563 Software update - updated some installation scripts with the latest version of software : bowtie v1.2.2 - bowtie2 v2.3.5 - MultiQC v1.7
+       09335ff install_genome.sh - added the generation of the 100-bin GC content file for bisulfite genome references
+       4e1331f Merge branch 'master' of bitbucket.org:mugqic/genpipes
+       04047df Genome installation : added Bisulfite Genome Reference creation and indexing with Bismark
+       8916af0 updated LIBDIR in R_Bioconductor.sh
+       0ad8456 update Bismark version to 0.21.0
+       eff8002 updated python installation script with version 3.7.3 and added pip as a symling to pip3
+       db27d82 Added fastq software installation script
+       e1f627f Version bump to 3.1.5-beta
+       1786fb3 Version bump to 3.1.4
+
+  Édouard Henrion <henrione@beluga4.int.ets1.calculquebec.ca>      1 commits
+
+       650797a GenPipes - DEBUGGING - DNASeq SamToFastq & SymLink steps corrected + working bfx/bash_cmd.py
+
+  Édouard Henrion <henrione@gra-login2.graham.sharcnet>      4 commits
+
+       9e9adc7 GenPipes JSON - debugged call to job2json when output_dir is different that '.'
+       b7eb0ed Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       754a7d9 GenPipes software update - updated patching in install_module.sh
+       5bf7663 GenPipes software update - updated R_Bioconductor.sh with the latest requested libraries & updated patching
+
+  Édouard Henrion <henrione@ip18.m>      3 commits
+
+       140b411 GenPipes Scheduler - Corrected bug in job2json call
+       c77a535 Merge branch 'eh_methylseq_single_end' of bitbucket.org:mugqic/genpipes into eh_methylseq_single_end
+       a592ddf GenPipes MethylSeq - updates for single-mode
+
+  Édouard Henrion <henrione@ip20.m>      1 commits
+
+       41ed7a2 Genome Installation - updated install_genome.sh with common grep version
+
+  ehenrion <edouard.henrion@mcgill.ca>      83 commits
+
+       25f72f0 Merged in ehenrion/dnaseqpy-edited-online-with-bitbucket-1578931756922 (pull request #163)
+       64b7414 DNASeq.py - removed the use of 'os/path.abspath' in call of 'ln()'
+       3c750f0 bash_cmd.py - added import os
+       7a05d36 DNASeq - Skewer trimming call to ln() upadted without 'sleep' variable
+       e9213a6 bash_cmd.py - remove call to "sleep" in the ln() function. Replaced it by a call to "ls" in order to flush the cache
+       0115491 GenPipes - BUG correction - trailing space removed in output files of DNASeq skewer trimming step
+       1fdf579 Merged in ehenrion/bash_cmdpy-edited-online-with-bitbucket-1578602990982 (pull request #162)
+       b74f38d BUG correction : corrected bash_cmd.py "ln" function with correct format keys when buiding command
+       07d826f Merged in ehenrion/bash_cmdpy-edited-online-with-bitbucket-1578588554527 (pull request #158)
+       828d573 Bug Correction : corrected 'ln' function in bash_cmd.py to avoid a python "TypeError: cannot concatenate 'str' and 'int' objects" exception
+       4205582 Merged in ehenrion/dnaseqbelugaini-edited-online-with-bitbu-1576097030188 (pull request #147)
+       fcaef48 GenPIpes - DEBUGGING - added slurm-comprehensive walltime for picard_sam_to_fastq in dnaseq.beluga.ini
+       5202100 Merged in eh_quick_fixes (pull request #143)
+       815632f Merged in ehenrion/dnaseqpy-edited-online-with-bitbucket-1575918024470 (pull request #141)
+       92a7c11 GenPIpes - dnaseq.py : bug correction - typo removed
+       44d9eb5 Merged in ehenrion/dnaseqpy-edited-online-with-bitbucket-1575399438745 (pull request #132)
+       1526642 Merged in ehenrion/commonpy-edited-online-with-bitbucket-1575398053532 (pull request #131)
+       482a0bb GenPipes - bug correction in pipelines/common.py : corrected name for bam and fastq files created by the pipeline : don't depend and raw file names anymore, but built from sample & readset name given in the readset file
+       2a25960 GenPipes - bug correction in pipeline/dnaseq.py : corrected sym_link_fastq, skewer_trimming & bwa_mem_picard_sort_sam steps, regarding the path of the fastq files when they have to be determined from the readset.bam
+       72e7f1e GenPipes - bug correction in pipelines/common.py : corrected the path where the sorted bam files as well as the raw_reads fastq files(from sam_to_fastq) should be written, i.e. within the output directory provided at the pipeline execution
+       c946bb0 Merged in ehenrion/schedulerpy-edited-online-with-bitbucket-1575392160612 (pull request #129)
+       9bf49cb Merged in ehenrion/nanuq2mugqic_pipelinespy-edited-online-w-1575392552042 (pull request #130)
+       3893e10 GenPipes : nanuq2mugqic_pipelines.py : bug corrected - typo in seq_type selection
+       2f38d5d GenPipes - corrected scheduler.py : removed unwanted sed command in --no-json context
+       a876d02 GenPipes - corrected scheduler.py with missing argument line
+       8b8bca8 Merged in dev (pull request #125)
+       7cd7b1c RNASeq Denovo Assembly - rnaseq_denovo_assembly.base.ini - dowgraded trinity version to 2.0.4_patch
+       656db12 RNASeq Denovo Assembly - rnaseq_denovo_assembly.base.ini - corrected typo in trinity version...
+       01c2bee RNASeq Denovo Assembly - rnaseq_denovo_assembly.base.ini - updated trinity version to 2.2.0_patch which contains a patch (from C3G developppers) to avoid  printing buffer 'hiccup'
+       b9325d1 CIT - RNASeq Denovo Assembly - update default cluster_walltime to 4:00:00 in cit.ini
+       8235190 Merged ehenrion/cit-dnaseq-updated-cit_cluster_walltim-1574180387297 into dev
+       238abec CIT - DNASeq - updated 'cit_cluster_walltime' for gatk_callable_loci step in cit.ini
+       6a891c2 DNASeq - gatk_callable_loci - adjusted memory and cpu allocation in dnaseq.beluga.ini
+       dec27c8 CIT - DNASeq - Adjusted trimmomatic resource allocation through java_other_options, threads settings and mem-per-cpu use
+       3d34243 CIT - RNASeq - corrected 'cluster_walltime' for wiggle  step in cit.ini
+       a24e7b1 RNASeq - wiggle step - adjusted memory allocation using 'mem-per-cpu' instead of 'mem'
+       3e3ee1d CIT - RNASeq - updated java threads to 5 through 'java_other_options' in rnaseq.beluga.ini
+       1a1d0f1 CIT - RNASeq_light - updated default cluster_walltime to 4:00:00 in cit.ini
+       bae00cd CIT - RNASeq_light - updated default cluster_walltime to 4:00:00 in cit.ini
+       cc5df68 CIT - HiCSeq - redefined hicup_align walltime and mem-per-cpu in cit.ini
+       5cd0d02 CIT - Pacbio assembly - set specific walltime for smrtanalysis_summarize_polishing in cit.ini
+       1c19791 HICSeq pipeline - trimmomatic resources revisited in hicseq.beluga.ini : removed buffer_size
+       29024f2 CIT - RNASeq denovo Assembly - set localfit to true in cit.ini for differential_expression_deseq
+       622b41a CIT - Pacbio Assembly - redefined walltime for pacbio_tools_split_reads in cit.ini
+       09e2235 RNASeq denove Assembly - edited rnaseq_denovo_assembly.beluga.ini adjusted memory assignment for insilico_read_normalisation_readsets
+       3a25fef RNASeq denovo Assembly : edited rnaseq_denovo_assembly.beluga.ini with beter resources assignement
+       b4a3e98 Software update - trimmomatic.py - updated trimmomatic command with the use of the  java_other_options parameter provided by the ini files
+       47e5e41 Merged in ehenrion/rnaseq-metricspy-ihec_metrics_rnaseq--1573489397505 (pull request #124)
+       87c3190 RNASeq - metrics.py - ihec_metrics_rnaseq : added file in the input_file list to correct job dependency
+       fc680b1 RNASeq cufflinks - correcting dependencies for ihec_metrics : needed rnaseqc report file to be added to the output_file list
+       25f6cc3 CIT - Pacbio assembly - set threads in beluga.ini
+       aa3d185 CIT - RNASeq_light - set threads for trimmomatic in beluga.ini
+       b199242 CIT - RNASeq_light - redefined walltime for callisto_count_matrix in cit.ini
+       24d79ff CIT - Pacbio Assembly - redefined walltime for preassembly in cit.ini
+       3c8f736 CIT - RNASeq denovo Assembly - redefined walltime for align_estimate_abundance in cit.ini
+       3134f05 CIT - RNASeq denovo Assembly - updates cit_cluster_walltime to 24h
+       24351cb CIT - RNASeq denovo Assembly - redefined walltime for transdecoder and align_estimate_abundance in cit.ini
+       c17d791 CIT - Pacbio Assembly - redefined walltime for smrtanalysis_filtering in cit.ini
+       19ed125 CIT - DNASeq - redefined walltime for sambamba_merge_realigned in cit.ini
+       d92aa27 CIT - DNASeq High Coverage - redefined trimmomatic walltime in cit.ini
+       74979fa CIT - HiCSeq - redefined trimmomatic walltime in cit.ini
+       ed4fb13 CIT - RNASeq_light - redefined walltime for trimmomatic in cit.ini
+       0cf351d RNASeq denovo Assembly pipeline - rnaseq_denovo_assembly.py - corrected command quoting in trinity step
+       8386936 RNASeq denovo Assembly Pipeline - rnaseq_denovo_assembly.beluga.ini - corrected max_memory parameter for trinity step : using Gb instead of Mb
+       373bd60 RNA-Seq de novo assembly pipeline - rnaseq_denovo_assembly.beluga.ini - corrected Jellyfish memory parameter : using Gb instead of Mb unit
+       d2e4c46 HiC-Seq pipeline - hicseq.base.ini - corrected typo in HiCUP module name
+       ceaae53 HiC-Seq pipeline - hicseq.base.ini -  update HiCUP version to v0.7.2
+       7860ea8 dnaseq.py - corrected file names dependencies
+       c198c42 dnaseq.py - corrected wrong file extension in metrics_vcf_stats step
+       bc952b6 HiC-Seq pipeline - corrected typo in cram_output options definition - hicseq.base.ini
+       d8c5f58 rnaseq_light.cedar.ini : corrected typo in cluster_server assigned value
+       19bf83c rnaseq_light.mp2b.ini corrected minor typo on cluster_server
+       27f7080 rnaseq_denovo_assembly.py : corrected differential expression jobs with samples
+       5010b02 corrected typo in ampliconseq.beluga.ini
+       1f16017 DNASeq High Coverage README.md updated with `picard_fixmate` step documentation
+       eda0617 GenPipes - Readme updated for `picard_fixmate` step in dnaseq_high_coverage.py
+       a05f490 Merged in eh_methylseq_single_end (pull request #115)
+       6c88ebf Merged in sanity_check_mode (pull request #114)
+       fa25623 rnaseq_denovo_assembly.beluga.ini :  updated [insilico_read_normalization_all] with missing core allocation
+       305d96e README.md updated : removed Guillimin settings section from README
+       56d668c README.md updated : corrected the setting of MUGQIC_INSTALL_HOME_DEV for mp2b
+       8d4f1b4 rnaseq_denovo_assembly.mp2b.ini - corrected resources requirments : all the steps now run on one single node !
+       33909cf chipseq.base.ini - updated MultiQC version to 1.6 to support Homer
+
+  Francois Lefebvre <francois.lefebvre@mcgill.ca>      2 commits
+
+       6c76ddc Merged in lefebvref/rnaseq_denovo_assemblybaseini-edited-onl-1557891680322 (pull request #110)
+       53bd32a Previous default expression in base.ini would end up basically only retaining transmembrane proteins. Not good.
+
+  Hector Galvez <jose.hector.galvez@computaitonalgenomics.ca>      2 commits
+
+       5bea83c Corrected error with beluga ini for RNAseq denovo
+       02b131c Corrected minor error in the help message that said that the default protocol was cuflinks. Starting from version 3.1.4, stringtie is the default protocol
+
+  Jose Hector Galvez <jose.hector.galvez@computationalgenomics.ca>      10 commits
+
+       153d4c4 Merged in Jose-Hector-Galvez/update-to-the-rnaseq_light-readmemd-file-1569265173884 (pull request #120)
+       e24a066 Update to the rnaseq_light README.md file to address issue brought up by GSoD collaborator.
+       5f4086f Merged in Jose-Hector-Galvez/readmemd-edited-online-with-bitbucket-1565184718156 (pull request #118)
+       ed95482 README.md edited to remove warning labels.
+       341cab2 Merged in rnaseq_denovo_jhg (pull request #103)
+       05e7dfe Merged in rnaseq_jhg (pull request #112)
+       9a24bea Merged dev into rnaseq_jhg
+       6f98c76 Merged master into rnaseq_denovo_jhg
+       5505147 Merged master into rnaseq_jhg
+       160079d Merged master into rnaseq_denovo_jhg
+
+  José Héctor Gálvez López <hgalvez@beluga3.int.ets1.calculquebec.ca>      3 commits
+
+       e618184 Corrected error in the beluga ini for RNAseq de novo
+       e9610a9 Corrected error in the beluga ini for RNAseq de novo
+       ceade42 Corrected error in the beluga ini for RNAseq de novo
+
+  mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      14 commits
+
+       cc5eac7 add header in the cram file (all base.ini)
+       92b5c4f add cram to tumor_pair pipeline
+       7822413 implement the launch of the entire pipeline if no step argument is given
+       689732a add cram to dnaseq_high_coverage pipeline
+       71569ce add cram to methylseq pipeline
+       c242a05 add cram to rnaseq pipeline
+       70ccb03 add cram to hicseq pipeline
+       0e78873 add cram to chipseq ini files
+       830cd38 add cram to dnaseq ini files
+       f9d780a add cram to ChipSeq
+       5f1d736 correct bugs in dnaseq light
+       0313f9c add cram creation to dnaseq pipeline
+       bfde214 add generic function to create CRAM from BAM
+       1956514 make samtools view's output not mandatory removable
+
+  mathieu bourgey <mathieu.bourgey@mcgill.ca>      2 commits
+
+       52cd608 temporary fix for tbi missing output in haplotypecaller when running only 1 job
+       6a98813 Merged in cram (pull request #111)
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      9 commits
+
+       ee86893 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       0fd7a88 Nextflow install script
+       cc8694c Merged in rnaseq_rnaseqc (pull request #116)
+       d59ea5e General - Correcting genome ini path
+       caa989b Merge branch 'dev' of bitbucket.org:mugqic/genpipes into rnaseq_rnaseqc
+       8e90fcf RNA-Seq Pipeline - Typo update
+       6bfe800 RNA-Seq Pipeline - Typo update
+       bb8a0cd RNA-Seq Pipeline - Removing verify_bam_id step
+       7eb13c4 Chip-Seq Pipeline - Adding homer_make_ucsc_file to mp2b.ini
+
+  Pierre-Olivier Quirion <pierre-olivier.quirion@computationalgenomics.ca>      12 commits
+
+       a8d1aae Merged in add_container (pull request #122)
+       9b20dde Merged in cit_fix_cedar_2019-04 (pull request #109)
+       4eb85d8 gatk4.py added 2 spaces in multi line string
+       ef09195 ampliconseq.py edited online with Bitbucket
+       9e04a50 pacbio_assembly.cedar.ini edited online with Bitbucket
+       2b02306 Merged in log_repport_ci (pull request #108)
+       04e9b6b Merged in log_repport_ci (pull request #107)
+       f171ba1 Merged in log_repport_ci (pull request #106)
+       0da3f3e Merged in log_repport_ci (pull request #105)
+       f9458d8 Merged in log_repport_ci (pull request #104)
+       1b7e74f Merged in fix_multiqc (pull request #89)
+       0e66455 Merged in fix_multiqc (pull request #77)
+
+  Pierre-Olivier Quirion <poq@beluga3.int.ets1.calculquebec.ca>      2 commits
+
+       feeaf91 Log when loading Job. More robust output parser.
+       5181b5c Log when loading Job. More robust output parser.
+
+  P-O Quirion <pioliqui@gmail.com>      158 commits
+
+       161d1d1 fixed motifMaker ini: used default memory
+       ba32a47 typo in waltime kallisto_count_matrix
+       50b824b trimmomatic thread ini
+       20c0f56 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       795edd9 string tie ini
+       d4e255d sync thread in java for trimomatic
+       9bd93fa differential_expression_and_goseq_rsem return list list
+       42bf1d8  fix scheduler logging; reduce sleep to 0.1 sec
+       0902f42 ignore .pyc
+       bca87cc remove the methylkit_differential_analysis step form the pipeline
+       f9cef1b add gitignore
+       dd0267e missing import
+       3d6b4e7 log regression scheduler
+       f4ab24a fix beluga ini
+       6d5d769 fix beluga ini
+       ef68329 Merge branch 'add_container' into merge
+       a872d63 Merge branch 'master' into dev
+       d31246f fix batch system account for container
+       313fcb2 remove commented code
+       281e3cd Merge branch 'add_container' of bitbucket.org:mugqic/genpipes into add_container
+       ebb67ba Add default config for container ini
+       116615f fix regression
+       7542a09 fix scheduler when container not in use
+       8c9d6e3 use mugqic stack java in rnaseq on cedar.ini
+       bb6fc69 simple default ini for container
+       b82cace default ini for container
+       331715d Basic container ini file
+       b787ff7 Working singularity version tested on graham
+       2fe8f47 WIP exec line prototype
+       b2b4d97 add container option
+       215d352 Merge branch 'cit_fix_cedar_2019-04' of bitbucket.org:mugqic/genpipes into cit_fix_cedar_2019-04
+       4092e77 amplicon R tweak
+       7b389fc missing quotes in pacbio
+       138f335 amplicon memory
+       32627c8 amplicon memory
+       141554d sleuth again wrong name
+       8c34b2b renaming sleuth to differential_expression_sleuth
+       963d105 fix typo in ampliconseq ini
+       ff92d21 fix amplicon method typo
+       da2cdf8 tweak default mem for rnaseq denovo and light
+       75e2f69 more ampliconseq deadlock: otu_assigning
+       1cfac73 parallel_assign_taxonomy_uclust.py deadlock
+       6ecfef8 rna fix
+       cecb514 update cit
+       b4997b3 packbio tmpdir again
+       c392576 chr19 option for cit chicagorun
+       46d9149 fix log report on output id
+       5cfc33c fix log report on output id
+       0cc3e17 update waltime in amplicon and regex in log
+       5cc0ce5 migrate form testdata ini to cit
+       2c02e92 mem teak
+       51bf13d tweak to get in bynode queue
+       3f05dbe tweak ini for cit
+       078d0e0 dnaseq ini tweak for slurm; sh_create_baitmap \\
+       cf79f46 timout amplicon
+       410185e remove mpileup_metrics_vcf_stats step from mpileup
+       9d100d8 pbutgcns_wf need full path an tmp need to exist
+       ad31e6e ini file tweak
+       ac6bf87 tweak mem usage
+       b4f2cf8 ini tweak plus perl module load in mummer
+       3ae1b09 tweak mem usage per-cpu for ampliconseq
+       bb8fc31 Ensembl v 90 for GRCh38
+       890cd48 mummer using deprecated perl syntax
+       16326cf more default time for rnaseq cufflink
+       3d1aa24 mugqic_tools/2.2.4 in rnaseq_light
+       ffcf62f samll sample for both gatk call in variant_recalibrator
+       7b25d7b change R_Bioconductor version/cleanup code
+       bc97eae update rnaseq_light references
+       505ffeb tweek memory usage in dnaseq_high_coverage
+       3ce4bb6 add time to ampliconseq
+       c1b5a6a reformat errors in the core.config module
+       05aa94b redirect small_sample_option to the right function
+       3d51765 tweak cit for dnaseq
+       720c3fa fix ampliconseq dada2
+       390ceee tweak VariantRecalibrator for testing
+       f74afdf fix slurm_time_to_datetime
+       733f258 set cit ini file and config
+       7d9c898 add runtime to csv output
+       86e84f3 Add GENPIPES_CIT env var to run in testing mode
+       4cb6e24 fix all slumtmpdir sting renaming problem
+       8f3652f update mugqic_tools in hicseq
+       2107daa second run of pipeline fixing
+       458e919 remove extra gz extention from anotation
+       690acf4 flash_log is a list of one
+       b829c31 update hicseq.base
+       81a4690 add interactive option in smrtanalysis bash cmd
+       7855217 fix regression
+       18aa48b fix scheduler when container not in use
+       ae7824c use mugqic stack java in rnaseq on cedar.ini
+       b8eee7f simple default ini for container
+       2522d29 default ini for container
+       60de9f1 Basic container ini file
+       a5b2901 Working singularity version tested on graham
+       5229f0e WIP exec line prototype
+       56e0a9b add container option
+       27a2cb3 amplicon R tweak
+       738c59d missing quotes in pacbio
+       d73e165 amplicon memory
+       a770708 amplicon memory
+       80498da sleuth again wrong name
+       53c5205 renaming sleuth to differential_expression_sleuth
+       1e5d20e fix typo in ampliconseq ini
+       7bb900d fix amplicon method typo
+       85b51a0 tweak default mem for rnaseq denovo and light
+       7df9cae more ampliconseq deadlock: otu_assigning
+       777bb33 parallel_assign_taxonomy_uclust.py deadlock
+       24bd06e rna fix
+       a9e2370 update cit
+       b120e4c packbio tmpdir again
+       8e1835f chr19 option for cit chicagorun
+       eec3f95 fix log report on output id
+       5488adc fix log report on output id
+       34960c0 update waltime in amplicon and regex in log
+       ca1fe4d migrate form testdata ini to cit
+       eca1836 mem teak
+       058f071 tweak to get in bynode queue
+       10ff44a tweak ini for cit
+       c7568c6 dnaseq ini tweak for slurm; sh_create_baitmap \\
+       1c50e41 timout amplicon
+       ff1a9c7 remove mpileup_metrics_vcf_stats step from mpileup
+       d8d8a3d pbutgcns_wf need full path an tmp need to exist
+       48ff75b ini file tweak
+       68d6f46 tweak mem usage
+       160a123 ini tweak plus perl module load in mummer
+       ee6a7aa tweak mem usage per-cpu for ampliconseq
+       f0acafe Ensembl v 90 for GRCh38
+       23788c3 mummer using deprecated perl syntax
+       14d0500 more default time for rnaseq cufflink
+       4e3a8b0 mugqic_tools/2.2.4 in rnaseq_light
+       624781c samll sample for both gatk call in variant_recalibrator
+       8307e59 change R_Bioconductor version/cleanup code
+       069dd4a update rnaseq_light references
+       3e01c15 tweek memory usage in dnaseq_high_coverage
+       c0c5905 add time to ampliconseq
+       d29d926 reformat errors in the core.config module
+       43fdeda redirect small_sample_option to the right function
+       cfefb02 tweak cit for dnaseq
+       509d333 fix ampliconseq dada2
+       927a732 tweak VariantRecalibrator for testing
+       0a2659d fix slurm_time_to_datetime
+       0f48c2d set cit ini file and config
+       20c8521 add runtime to csv output
+       02ce535 Add GENPIPES_CIT env var to run in testing mode
+       dbbb0cd fix all slumtmpdir sting renaming problem
+       19c6c30 update mugqic_tools in hicseq
+       27e5164 second run of pipeline fixing
+       32a1a40 remove extra gz extention from anotation
+       4edbfc5 flash_log is a list of one
+       a396c5f update hicseq.base
+       d806fce add interactive option in smrtanalysis bash cmd
+       d9567ac add space
+       31ddd6c add check for output job id
+       63431c4 get real path in log_report
+       bec1796 file exist file missing mixup
+       4120c3a bug fixes
+       3e94acd get pipeline info in tsv file can also mute stdout
+       29f5670 run dnaseq multiqc on all samples at once
+       8d73217 add indentation
+
+  Robert Eveleigh <robert.eveleigh@mcgill.ca>      1 commits
+
+       43f70c6 fix to preprocess step
+
+  Robert Syme <robsyme@beluga4.int.ets1.calculquebec.ca>      1 commits
+
+       8581436 We don't need to track compiled python .pyc in git
+
+  Robert Syme <rob.syme@gmail.com>      7 commits
+
+       30ea46d Merged in spacesfix (pull request #117)
+       0c4d6ce Remove spaces from Rscript commands.
+       1f3c0f6 More trailing space cleanup.
+       534124c Cleanup trailing spaces
+       16b7d01 Merged in amplicon-pathfix (pull request #113)
+       63d804a Add support for --output-dir argument
+       eb8389c Trailing whitespace cleanup
+
+  Rola Dali <rola.dali@mail.mcgill.ca>      31 commits
+
+       92202e8 dnaseq_high_coverage.base.ini edited Varscan version to 2.4.3
+       3f0b732 dnaseq.mp2b.ini edited online with Bitbucket
+       07b6376 dnaseq.beluga.ini edited online with Bitbucket
+       a0bad07 dnaseq.cedar.ini edited online with Bitbucket
+       f379676 dnaseq.beluga.ini edited online with Bitbucket
+       2805dc6 dnaseq.cedar.ini edited online with Bitbucket
+       a4c3418 pacbio_assembly.beluga.ini edited online with Bitbucket
+       bdd8b72 dnaseq.beluga.ini edited online with Bitbucket
+       b648fb5 dnaseq.cedar.ini edited online with Bitbucket
+       287e82b dnaseq.beluga.ini edited online with Bitbucket
+       a760a50 dnaseq.cedar.ini edited online with Bitbucket
+       62de3fb hicseq.beluga.ini edited online with Bitbucket
+       1fd7787 hicseq.cedar.ini edited online with Bitbucket
+       42eb77a ampliconseq.cedar.ini edited online with Bitbucket
+       fabb3d5 ampliconseq.mp2b.ini edited online with Bitbucket
+       193c97b ampliconseq.beluga.ini edited online with Bitbucket
+       5c4c908 ampliconseq.cedar.ini edited online with Bitbucket
+       59491ff dnaseq.cedar.ini edited online with Bitbucket
+       9c9a75f dnaseq.beluga.ini edited online with Bitbucket
+       a2e7e80 rnaseq.beluga.ini edited online with Bitbucket
+       d1777dd hicseq.beluga.ini edited online with Bitbucket
+       5a6a198 hicseq.cedar.ini edited online with Bitbucket
+       855a02c hicseq.cedar.ini edited online with Bitbucket
+       a4cb4c1 hicseq.beluga.ini edited online with Bitbucket
+       efe78e4 README.md edited online with Bitbucket
+       c0b67c1 README.md edited online with Bitbucket
+       5c78251 README.md edited online with Bitbucket
+       982f934 README.md edited online with Bitbucket
+       4402aef README.md edited online with Bitbucket
+       ed0fd9e README.md edited online with Bitbucket
+       b97304e README.md edited online with Bitbucket
 
 3.1.4        Tue Mar 26 14:03:32 2019 -0400        198 commits
 
@@ -353,6 +1670,10 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        317fe6a Merge branch 'methylSeq_UMI' of bitbucket.org:mugqic/genpipes into methylSeq_UMI
        acb5536 corect typo
 
+  mathieu bourgey <mathieu.bourgey@mcgill.ca>      1 commits
+
+       7f369e1 Merged in methylSeq_UMI (pull request #52)
+
   Mathieu Bourgey <mathieu.bourgey@mcgill.ca>      11 commits
 
        1d2a7d3 add on target metrics and UMI
@@ -366,10 +1687,6 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        5c52b3d Add other_option  system to MarkDuplicate
        2efad22 add the UMI field in the readset file
        9ef8610 add the UMI field in the readset file
-
-  mathieu bourgey <mathieu.bourgey@mcgill.ca>      1 commits
-
-       7f369e1 Merged in methylSeq_UMI (pull request #52)
 
   Robert Eveleigh <eveleigh@cedar1.cedar.computecanada.ca>      1 commits
 
@@ -824,6 +2141,10 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        8a250c8 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
        7716f96 include a test of inputs type for some library function which does not enforce the list type
 
+  mathieu bourgey <mathieu.bourgey@mcgill.ca>      1 commits
+
+       804ae6c Merged in cedar (pull request #34)
+
   Mathieu Bourgey <mathieu.bourgey@mcgill.ca>      24 commits
 
        e2b2a7a resolve conflict with master
@@ -850,10 +2171,6 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        77e5d35 update cedar scheduler
        67b8006 update cedar ini
        120f92d DNAseq -ini file for cedar
-
-  mathieu bourgey <mathieu.bourgey@mcgill.ca>      1 commits
-
-       804ae6c Merged in cedar (pull request #34)
 
   Mathieu Bourgey <mbourgey@cedar5.cedar.computecanada.ca>      9 commits
 
@@ -1252,19 +2569,6 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        c8ecd2c ajout Salmon 0.8.0
        e2986c5 mise a jour kallisto 0.43.0
 
-  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      10 commits
-
-       34124b6 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       a9f69a4 add protocole compatibility to rnaseq_light
-       cd1caeb Make other pipeline supporting several prtocols - BFXDEV-692
-       ffdf4f6 Create 2 protocols with different steps for hicseq - BFXDEV-692
-       554f8ad Make other pipeline supporting several prtocols - BFXDEV-692
-       5ac65fc allow several prtocols with different step list - BFXDEV-692
-       e634cd2 Create 2 protocols with different steps for hicseq - BFXDEV-692
-       ece6ab0 test multi protocole pipeline
-       b109814  RNAseq & ChIPseq-   Update ini file for the new release of mugqic_tools 2.1.9 - BFXDEV-668  - BFXDEV-675
-       e057114 ChipSeq - finish ihec metrics, preprocess and reformat -  BFXDEV-675
-
   mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      21 commits
 
        6150a8a remove bad output in ihec_metrics_report
@@ -1288,6 +2592,19 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        ba1f73c  RNAseq & ChIPseq-   Update (chip) and debug (Rna) IHEC metrics steps - BFXDEV-668  - BFXDEV-675
        9e71317  RNAseq -  implement IHEC RNA metrics step - BFXDEV-668
        7cfbb6d  RNAseq - BFX - implement mugqic_tools module for the IHEC RNA metrics generation script - BFXDEV-668
+
+  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      10 commits
+
+       34124b6 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       a9f69a4 add protocole compatibility to rnaseq_light
+       cd1caeb Make other pipeline supporting several prtocols - BFXDEV-692
+       ffdf4f6 Create 2 protocols with different steps for hicseq - BFXDEV-692
+       554f8ad Make other pipeline supporting several prtocols - BFXDEV-692
+       5ac65fc allow several prtocols with different step list - BFXDEV-692
+       e634cd2 Create 2 protocols with different steps for hicseq - BFXDEV-692
+       ece6ab0 test multi protocole pipeline
+       b109814  RNAseq & ChIPseq-   Update ini file for the new release of mugqic_tools 2.1.9 - BFXDEV-668  - BFXDEV-675
+       e057114 ChipSeq - finish ihec metrics, preprocess and reformat -  BFXDEV-675
 
   mathieu bourgey <mathieu.bourgey@mcgill.ca>      1 commits
 
@@ -1438,18 +2755,6 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
 
        0e875a5 README.md edited online with Bitbucket
 
-  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      9 commits
-
-       b5b1d51 tumor_pair - add comments to dict2beds function - BFXDEV-521
-       e0590a4 tumor_pair - add feature to dict2beds function - BFXDEV-521
-       7c0efb4 Merge branch 'tumor_pair' of bitbucket.org:mugqic/mugqic_pipelines into tumor_pair
-       bd7e169 tumor_pair - modify ini file to take into account the new version of scalpel (CVMFS) - BFXDEV-477
-       8e735ac tumor_pair - add space charter before scalpel option - BFXDEV-478
-       33a9347 pull origin Merge branch 'tumor_pair' of bitbucket.org:mugqic/mugqic_pipelines into tumor_pair
-       5ed5783 tumor_pair - add the two pass option to scalpel - BFXDEV-478
-       bf963a3 tumor_pair - corect bugs and typo in bed file integration of scalpel & rewrite to speed up the bed parsing - BFXDEV-476
-       18110f5 tumor_pair - corect bugs and typo in bed file integration of scalpel & rewrite to speed up the bed parsing
-
   mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      39 commits
 
        d6be75a remove .gitignore
@@ -1491,6 +2796,18 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        5acad27 tumor_pair - extract tumor_pair code for the high coverage branch - BFXDEV-475
        6c73c2b tumor-pair - adding bedfile spliting process & start implementation in tumor_pair.py - BFXDEV-476
        905c1ac tumor_pair - extract tumor_pair code for the high coverage branch
+
+  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      9 commits
+
+       b5b1d51 tumor_pair - add comments to dict2beds function - BFXDEV-521
+       e0590a4 tumor_pair - add feature to dict2beds function - BFXDEV-521
+       7c0efb4 Merge branch 'tumor_pair' of bitbucket.org:mugqic/mugqic_pipelines into tumor_pair
+       bd7e169 tumor_pair - modify ini file to take into account the new version of scalpel (CVMFS) - BFXDEV-477
+       8e735ac tumor_pair - add space charter before scalpel option - BFXDEV-478
+       33a9347 pull origin Merge branch 'tumor_pair' of bitbucket.org:mugqic/mugqic_pipelines into tumor_pair
+       5ed5783 tumor_pair - add the two pass option to scalpel - BFXDEV-478
+       bf963a3 tumor_pair - corect bugs and typo in bed file integration of scalpel & rewrite to speed up the bed parsing - BFXDEV-476
+       18110f5 tumor_pair - corect bugs and typo in bed file integration of scalpel & rewrite to speed up the bed parsing
 
   robert.eveleigh@mcgill.ca <reveleig@abacus1.ferrier.genome.mcgill.ca>      5 commits
 
@@ -1693,14 +3010,6 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        be71d1c nxtrim and quest modules updates
        5ec026e dev install scripts for MAKER
 
-  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      5 commits
-
-       2f9db74 HighCoverage - add missing README.md file
-       21f73de Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       5e66e13 Removing unmaintained pipelines (PUURE & rRNATAGGER) from master
-       435f7d5 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       3366710 RNAseq synchromize mammouth ini with the base ini (missing tuxedo_hard_clip) - BFXDEV-515
-
   mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      9 commits
 
        a157437 AmpliconSeq - remove ini recursive interpolation
@@ -1712,6 +3021,14 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        e28eff7 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
        73bce2e ressource - python lib: add futures for multithearding
        a7c0b13 update install module general script
+
+  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      5 commits
+
+       2f9db74 HighCoverage - add missing README.md file
+       21f73de Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       5e66e13 Removing unmaintained pipelines (PUURE & rRNATAGGER) from master
+       435f7d5 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       3366710 RNAseq synchromize mammouth ini with the base ini (missing tuxedo_hard_clip) - BFXDEV-515
 
   mathieu bourgey <mathieu.bourgey@mcgill.ca>      5 commits
 
@@ -1978,41 +3295,6 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        8c0cfc7 BFXDEV-370 Added the scalpel module
        7452be9 bvatools version bump
 
-  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      32 commits
-
-       a57fd6d RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
-       129d564 RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
-       4695881 RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
-       226c59b RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
-       1cbb0f1 chipseq - update module -  BFXDEV-490
-       9e24486 dnaseq - add correct dependency in metrics snv - BFXDEV-508
-       501c3ac DNASEQ - remove bad ppn settings for mammouth ini file - BFXDEV-490
-       bc5920a RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
-       849d732 RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
-       db6c64a chipseq - update module -  BFXDEV-490
-       65e3861 dnaseq - add correct dependency in metrics snv - BFXDEV-508
-       e1637bf DNASEQ - remove bad ppn settings for mammouth ini file - BFXDEV-490
-       c9e8db0 RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
-       0d077aa RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
-       32d1d5b Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       4c43bb2 chipseq - update module -  BFXDEV-490
-       7a68160 dnaseq - add correct dependency in metrics snv - BFXDEV-508
-       7e2f61b Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       4a95aa1 DNASEQ - remove bad ppn settings for mammouth ini file - BFXDEV-490
-       58f9477 BFXDEV-465 - correct GATK DoC small bug to support when no bed fileis given in the readset file
-       269b60f DNAseq - Adding variant recalibration BFXDEV-436
-       557f75a DNAseq - gatk DoC will use the bed file as intervalls if the bed file is in the readset shett  - BFXDEV-465
-       ce3014a DNAseq - implement haplotype caller and mpileup annotation and filtering using old foinction as background - BFXDEV-463
-       2aa0008 DNAseq - create new pipeline steps - BFXDEV-463
-       f46876a DNAseq - Add gvcf Combining the set of sample and genotyping - BFXDEV-440
-       157b7e9 DNAseq - starting to implement GATK gvcf merging - BFXDEV-440
-       3c407b2 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       74c6c2a Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       66cfdc6 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       bcfdd2c Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       c83d71c Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       1b17411 bump pacbio module to patch 4 -  BFXDEV-415
-
   mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      105 commits
 
        db54b51 resolving conflict
@@ -2120,6 +3402,41 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        3a54c85 modify resources/modules/smrtanalysis.sh for patch 3
        ce104cd Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
        d309b7d RESSOURCES - R_bioconductor - Addthe package 'circlize' to the list of R package to automatically install
+
+  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      32 commits
+
+       a57fd6d RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
+       129d564 RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
+       4695881 RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
+       226c59b RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
+       1cbb0f1 chipseq - update module -  BFXDEV-490
+       9e24486 dnaseq - add correct dependency in metrics snv - BFXDEV-508
+       501c3ac DNASEQ - remove bad ppn settings for mammouth ini file - BFXDEV-490
+       bc5920a RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
+       849d732 RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
+       db6c64a chipseq - update module -  BFXDEV-490
+       65e3861 dnaseq - add correct dependency in metrics snv - BFXDEV-508
+       e1637bf DNASEQ - remove bad ppn settings for mammouth ini file - BFXDEV-490
+       c9e8db0 RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
+       0d077aa RNASEQ - update ini downgrade R version for differential expression and java for rnaseqc - BFXDEV-490
+       32d1d5b Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       4c43bb2 chipseq - update module -  BFXDEV-490
+       7a68160 dnaseq - add correct dependency in metrics snv - BFXDEV-508
+       7e2f61b Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       4a95aa1 DNASEQ - remove bad ppn settings for mammouth ini file - BFXDEV-490
+       58f9477 BFXDEV-465 - correct GATK DoC small bug to support when no bed fileis given in the readset file
+       269b60f DNAseq - Adding variant recalibration BFXDEV-436
+       557f75a DNAseq - gatk DoC will use the bed file as intervalls if the bed file is in the readset shett  - BFXDEV-465
+       ce3014a DNAseq - implement haplotype caller and mpileup annotation and filtering using old foinction as background - BFXDEV-463
+       2aa0008 DNAseq - create new pipeline steps - BFXDEV-463
+       f46876a DNAseq - Add gvcf Combining the set of sample and genotyping - BFXDEV-440
+       157b7e9 DNAseq - starting to implement GATK gvcf merging - BFXDEV-440
+       3c407b2 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       74c6c2a Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       66cfdc6 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       bcfdd2c Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       c83d71c Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       1b17411 bump pacbio module to patch 4 -  BFXDEV-415
 
   mathieu bourgey <mathieu.bourgey@mcgill.ca>      6 commits
 
@@ -2367,17 +3684,6 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        9a0a698 BFXDEV-351 Removed MD5 from markdup, added it to recalibration
        b33195c BFXDEV-346 Split jobs in a more uniform way
 
-  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      8 commits
-
-       70099f3 rnaseq - include correlation matrix manual estimation using an utils.py new function
-       fd53801 RNAmetrics - include ini_section argument to some bfs picard function to allow to use them several time with different parameter in the same ini
-       e7c5a01 rnaMetrics - remove confilct pipelines/rnaseq/rnaseq.base.ini
-       9ad7fbb rnaMetrics - update pipelines/rnaseq/rnaseq.py pipelines/rnaseq/rnaseq.base.ini
-       9d3b87d RNAseq - metrics update ini
-       1913bc1 RNAseq - remove conflict
-       deca058 RNAseq - metrics RNA - update base ini
-       2fc2006 RNAseq - remove rnaseqc; add picard_rna_metrics ; partial add estimate_ribosomal_rna - BFXDEV-345
-
   mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      9 commits
 
        05937d6 RNA-seq - rna_metrics : test are ok; new files annoation files are created ; point to the production assembly folder -  BFXDEV-345
@@ -2389,6 +3695,17 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        cd5f239 RNAseq -rna_metrics -fit the new bam2fq from bvatools_dev
        d2048eb Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines into rna_metrics
        d651fee RNAseq - rRNA metrics add bvatools | bwa | picard && rrnaBMAcount.py
+
+  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      8 commits
+
+       70099f3 rnaseq - include correlation matrix manual estimation using an utils.py new function
+       fd53801 RNAmetrics - include ini_section argument to some bfs picard function to allow to use them several time with different parameter in the same ini
+       e7c5a01 rnaMetrics - remove confilct pipelines/rnaseq/rnaseq.base.ini
+       9ad7fbb rnaMetrics - update pipelines/rnaseq/rnaseq.py pipelines/rnaseq/rnaseq.base.ini
+       9d3b87d RNAseq - metrics update ini
+       1913bc1 RNAseq - remove conflict
+       deca058 RNAseq - metrics RNA - update base ini
+       2fc2006 RNAseq - remove rnaseqc; add picard_rna_metrics ; partial add estimate_ribosomal_rna - BFXDEV-345
 
   mmichaud <marc.michaud@mail.mcgill.ca>      27 commits
 
@@ -2544,17 +3861,17 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        d2d65f0 BFXDEV-327 Used only one thread for haplotypecaller because of a race condition
        639f650 BFXDEV-327 Used only one thread for haplotypecaller because of a race condition
 
+  mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      2 commits
+
+       7ec0344 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       1905eb6 COMMON - add fastq2 = None in sam_to_fastq pipeline step wehen the read are single - BFXDEV-321
+
   Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      4 commits
 
        12ff20e Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
        233244b RNAseq - correct stdin input issue of htseq-count - BFXDEV-318
        fa33528 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
        47c4cc8 RNAseq - htse-count: pipe samtools view -F 4 output in htseq-count instead of using the bam to remove error due to unmapped reads - BFXDEV-318
-
-  mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      2 commits
-
-       7ec0344 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       1905eb6 COMMON - add fastq2 = None in sam_to_fastq pipeline step wehen the read are single - BFXDEV-321
 
   mmichaud <marc.michaud@mail.mcgill.ca>      8 commits
 
@@ -2630,17 +3947,6 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
 
        ccb812e Fixed picard installer, reverted back to 123
 
-  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      8 commits
-
-       fcd7134 pull before pushing Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       05b352d  PacbioQC - Fix code vs ini section name - BFXDEV-315
-       d085269 RNAseq - correct discrepency in hsteq_count ini calls - link to BFXDEV-312
-       6773ef7 pull before pushing
-       d5d82f0 RNAseq - correct errounous section header in ini files - BFXDEV-312
-       98a456a Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
-       fdd92aa RNAseq -update guillimin cluster ini file - BFXDEV-307
-       b4a12a5 RNAseq - fix report dependencies - BFXDEV-306
-
   mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      9 commits
 
        693ea1d PacBIo - add input files to the first pacBio job file (cp job) - BFXDEV-305
@@ -2652,6 +3958,17 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        ab81bc3 DNAseq - correct report  dependency - BFXDEV-304
        12830d3 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
        b6f4e8f PacBio de novo - to allows running multiples sampes in parralele in the same analysis - BFXDEV-301
+
+  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      8 commits
+
+       fcd7134 pull before pushing Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       05b352d  PacbioQC - Fix code vs ini section name - BFXDEV-315
+       d085269 RNAseq - correct discrepency in hsteq_count ini calls - link to BFXDEV-312
+       6773ef7 pull before pushing
+       d5d82f0 RNAseq - correct errounous section header in ini files - BFXDEV-312
+       98a456a Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipelines
+       fdd92aa RNAseq -update guillimin cluster ini file - BFXDEV-307
+       b4a12a5 RNAseq - fix report dependencies - BFXDEV-306
 
   mmichaud <marc.michaud@mail.mcgill.ca>      8 commits
 
@@ -3326,16 +4643,6 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
 
        e1c5341 BFXDEV-246 Version bump
 
-  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      7 commits
-
-       14060c1 Remove conflicts in modules/mugqic_tools.sh and modules/dev/star_dev.sh
-       cb81397 update modules/mugqic_tools.sh to 1.10.4
-       b2db257 remove decrepated python module script and add a new one
-       16d3068 replace dev module in module/dev/ cufflinks_dev.sh  star_dev.sh
-       fd6119e Merge branch 'master' of bitbucket.org:mugqic/mugqic_resources
-       85a4523 add genomes/oryCun2.sh  modules/cufflinks_dev.sh  modules/star_dev.sh
-       b35f6de up-date mugqic_tools.sh version to 1.7
-
   mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      47 commits
 
        0eff10b Merge branch 'python' of bitbucket.org:mugqic/mugqic_pipeline into python
@@ -3385,6 +4692,16 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        834b58e Merge branch 'master' of bitbucket.org:mugqic/mugqic_resources
        19f7508 update mugqic_tools
        5e75b3d update modules/mugqic_tools to point to the new repository mugqic_tools with tag v1.0
+
+  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      7 commits
+
+       14060c1 Remove conflicts in modules/mugqic_tools.sh and modules/dev/star_dev.sh
+       cb81397 update modules/mugqic_tools.sh to 1.10.4
+       b2db257 remove decrepated python module script and add a new one
+       16d3068 replace dev module in module/dev/ cufflinks_dev.sh  star_dev.sh
+       fd6119e Merge branch 'master' of bitbucket.org:mugqic/mugqic_resources
+       85a4523 add genomes/oryCun2.sh  modules/cufflinks_dev.sh  modules/star_dev.sh
+       b35f6de up-date mugqic_tools.sh version to 1.7
 
   mmichaud <marc.michaud@mail.mcgill.ca>      54 commits
 
@@ -3594,13 +4911,6 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
 
        6b8f9f7 Add missing use
 
-  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      4 commits
-
-       3c0fb6e update ini to fit the new mugqic_tools tag 1.10.4 - BFXDEV-275
-       e5bd476 correct dnaseq bwa samnse dependency bug - BFXDEV-253
-       6fdf802 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       f3abd8c correct cuffdiff input double array issue when checking the job object is up to date
-
   mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      13 commits
 
        3bd1f63 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
@@ -3616,6 +4926,13 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        21e3c79 remove conflicys in pipelines/dnaseq/pairedVariants.abacus.ini
        a156ae5 pairedVariant.pl formAt SV and CNV to new standard - part of BFXDEV-41
        cb5b91e cuffdiff now should not be relaunch in a restart if it exit correctly during the previous analysis BFXDEV-212
+
+  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      4 commits
+
+       3c0fb6e update ini to fit the new mugqic_tools tag 1.10.4 - BFXDEV-275
+       e5bd476 correct dnaseq bwa samnse dependency bug - BFXDEV-253
+       6fdf802 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       f3abd8c correct cuffdiff input double array issue when checking the job object is up to date
 
   mmichaud <marc.michaud@mail.mcgill.ca>      14 commits
 
@@ -3840,10 +5157,6 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        cdc15b6 Added BLAST for longest transcript only, with results header
        df03b3b Added metrics and deliverables steps in RNA-Seq De Novo pipeline
 
-  Johanna Sandoval <johanna.sandoval@mail.mcgill.ca>      1 commits
-
-       6a2eca8 README.md edited online with Bitbucket
-
   johanna_sandoval <johanna.sandoval@mail.mcgill.ca>      5 commits
 
        90ac5a4 BFXDEV-133 incompatibility between /usr/bin/perl and mugqic/perl/5.18.2. Added perl HOMER_HOME/bin/ to the program execution in peak annotations and motifs usign Homer
@@ -3851,6 +5164,10 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        972c98b Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
        0fe7a1c BFXDEV-133 updated software, parameters, corrected bugs in chipseq pipeline for guillimin phase2
        2401cf3 BFXDEV-133 adapt chipseq pipeline and configuration file to guillimin phase2
+
+  Johanna Sandoval <johanna.sandoval@mail.mcgill.ca>      1 commits
+
+       6a2eca8 README.md edited online with Bitbucket
 
   johanna.sandoval@mail.mcgill.ca <johanna.sandoval@mail.mcgill.ca>      17 commits
 
@@ -4773,134 +6090,6 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        3b2af18 RNASEQDN: modify trinity to check for previous assembly + variable name change
        d49a53a TOOLS: chenge permission of non-executable scripts
 
-  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      26 commits
-
-       58770fe RNASEQ: change merge test
-       73407b0 RNASEQ: change merge test
-       54a772a Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       22f64a3 RNASEQ: add mkdir metrics in step 2
-       be482de Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       ee774f9 goseq.R: check and remove results that are not reported in the GO.db R package
-       220e9fb lib GqSeqUtils report call change
-       aa69e7e Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       08a72c9 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       20ce1c9 formatDenovoCombinedGTF.py update
-       3183fd0 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       f6ce3df RNAseq update
-       c833eee Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       d1e8dcc RNASEQ update unstrand wiggle bug correct
-       49d7bbc Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       e7dbfbc RNASEQ correct stranded wiggle array assignation
-       352f1ed add the java module call at Metrics::rnaseqQC
-       7825d84 add the java module call before at each picard function
-       aeb1c37 RNASEQ: add mamouth ini file
-       2f858ec MODULES - add temporary download folder in several module install scripts
-       e63d649 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       44263b2 rnaseq: resolve dependency pb
-       9873fc2 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       89fbe54 RNAseq modify some output location for the reporting
-       27bbc10 STATS: correct metrics:readstat for using output trimmomatic
-       772a5e5 RNASEQDN: old mamouth ini file by the new one that fit changes
-
-  mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      96 commits
-
-       ad59572 RNAseq update cuffdiff new dependency update
-       278c9d2 RNASEQ: change variable nemae of bowtie fasta
-       483e00d RNAseq update metrics stats
-       8b02e13 RNAseq update trimming metrics
-       2149362 RNAseq correct DESseq wrong dependency
-       398a121 RNAseq upstae trimming merge stats; update edgeR
-       b07481e rna update
-       bed41b6 rna update
-       4c45b56 remove tmp test for maty in dnaseq.pl
-       45c8ba2 rna update
-       ab2a149 R-tool: change saturation graph format
-       7d052f1 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       d0bd499 RNASEQ: add format protability to goseq
-       1cd3ae0 RNASEQ: add format protability to goseq
-       2c7b901 RNASEQ: add format protability to goseq
-       be3833a RNASEQ: add format protability to goseq
-       3289aac RNASEQ: add format protability to goseq
-       971938c RNASEQ: add format protability to goseq
-       6cc1155 RNASEQ: add format protability to goseq
-       9f84207 RNASEQ: rnaseq.pl update
-       e31e700 RNASEQ: rnaseq.pl update
-       fc1faad RNASEQ: add format protability to goseq
-       18ffd9a RNASEQ: add format protability to goseq
-       e725e01 RNASEQ: edger update
-       7fbbb5a RNASEQ: goseq update
-       c6dbccb Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       73a94bf RNASEQ: goseq update
-       06b2e4a RNASEQ: goseq update
-       f93dba0 RNASEQ: allow non native GOseq analysis
-       656c63c RNAseq: cuffdiff result fillter now include in the merge with fpkm
-       02e9ef8 RNAseq: cuffdiff result fillter now include in the merge with fpkm
-       bc787bd RNAseq update
-       49ab91f RNAseq update
-       e6515d3 change mugiqc_tools.install script to avoir facl conflict
-       9676b39 update tools changes
-       287a8e2 update tools changes
-       e35a443 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       58ad96b RNASEQ: resolve splited metrics dependency
-       4008a3d Rtools edger old index name  not suported by the actual edger version now use
-       483781a RNAseq remove fpkm stats as they are done also in rna-seqc
-       c47230d RNAseq correct bugs - see BFXDEV-20 for details
-       8b614c0 RTOOL: mergeCuffdifRes bug correct && adapt the Rnaseq script in consequence 2
-       b5eee70 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       79804b1 RTOOL: mergeCuffdifRes bug correct && adapt the Rnaseq script in consequence
-       3b0ce98 RNASEQ: bowtie reference the new code should now be portable
-       4b6bf8e RNASEQ: allow readstat on single library
-       d079f59 RNASEQ: correct readstat output format
-       a61e005 RNASEQ: metrics changes bug correction & Cufflinks correction
-       28285f9 Metrics add  argument
-       a1032f1 RNASEQ - correct typo in the mergebam step
-       68b309e Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       318f27b TOOLS remove type blatbestHit.awk
-       30a3793 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       5c8851c TOOLS adding blastbestHit.awk blatbestHit.awk
-       e8481fd Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       26152f7 RNASEQ: rnaSeq.abacus.ini correct rnaQC fasta variable name
-       9bcdcf9 TOOLS: gtf2tmpMatrix.awk - adapt for line witout gene name
-       57441b6 RNASEQ : adjust saturation plot title
-       f05e6a7  RNASEQ : add saturation thread Number in the abacus .ini file
-       1d072b2 Tools : make gtf2tmpMatrix.awk portable for various type of GTF file
-       fbf1e9a tools : adding gtf2geneSize.awk and gtf2tmpMatrix.awk which were initially in tools but not anymore in the module
-       2de9a90 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       3ec125d RNASEQ : allow running without reference GTF .2
-       a19c305 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       a48116d RNASEQ : allow running without reference GTF
-       4c9f803 pairedVariant - finish controlFREEC allow either bam or mpileup input everthing is specified in the ini file -  BFXDEV-7
-       4a2439b R-tools change rpkmSaturation the count file need to be tab separeted
-       93eda90 R-tools correct the polting bug of the rpkmSaturation - BFXDEV-3
-       c67cdd0 rnaseq - replace my email by the  MAIL variable
-       b1039a2 pairedVariant - add Control FREEC lib
-       75351f1 update rnaseq.pl for single mode
-       d155782 update rpkmSaturation to the last version
-       6714873 correct formatGTFCufflinks.pl
-       2220b26 Merge branch 'master' into mugqic_mathieu
-       8aef01e Merge branch 'mugqic_mathieu' of bitbucket.org:mugqic/mugqic_pipeline into mugqic_mathieu
-       7ff4088 correct rnaseq ; remove special caharacter in subimti to cluster job ID varable
-       39e7fd1 correct cuffdiff deNovo
-       9db7cdf correct conflict btw mugqic_mathieu and master
-       314eadc correct small bugs
-       0307f25 Merge branch 'mugqic_mathieu' of bitbucket.org:mugqic/mugqic_pipeline into mugqic_mathieu
-       17dadbe correcting pindel in lib/pindel.pm and in pairedVariant.pl form dnaseq pipeline
-       3927743 remove python module call in htseqCount::readCountPortable
-       ed644b5 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
-       fcc0e41 Merge branch 'master' into mugqic_mathieu
-       d7d4284 correcting last bug in rnaseq
-       4cb464e debug rnaSeq.pl
-       7725d78 trimmomatic add java module loading
-       1c9c334 submitToCluster add default  value =  if undef
-       70afb54 rnaSeq debug
-       2a78c37 resolve conflicts
-       3c840f2 Merge branch 'mugqic_mathieu' of bitbucket.org:mugqic/mugqic_pipeline into mugqic_mathieu
-       208d0cc debug
-       cc57bb2 update
-       8889bf1 rnaseq test debug; submitcluster modification; trimmomatic modifications
-       bd4afe1 debugging RNAseq
-       249ded6 debugging RNAseq
-
   mathieu bourgey <mathieu.bourgey@mail.mcgill.ca>      129 commits
 
        a51199f samtools allow pileup with nb de region = 1 => pas de region
@@ -5032,6 +6221,134 @@ HEAD        Tue Mar 26 17:27:21 2019 +0000        0 commits
        9f81ed0 Starting bowtie/tophat lib
        43c3e7a Global dependency and RNAseq Triming and submit with working directory argument
        d6a6324 starting the rnaseq pipeline
+
+  mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      96 commits
+
+       ad59572 RNAseq update cuffdiff new dependency update
+       278c9d2 RNASEQ: change variable nemae of bowtie fasta
+       483e00d RNAseq update metrics stats
+       8b02e13 RNAseq update trimming metrics
+       2149362 RNAseq correct DESseq wrong dependency
+       398a121 RNAseq upstae trimming merge stats; update edgeR
+       b07481e rna update
+       bed41b6 rna update
+       4c45b56 remove tmp test for maty in dnaseq.pl
+       45c8ba2 rna update
+       ab2a149 R-tool: change saturation graph format
+       7d052f1 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       d0bd499 RNASEQ: add format protability to goseq
+       1cd3ae0 RNASEQ: add format protability to goseq
+       2c7b901 RNASEQ: add format protability to goseq
+       be3833a RNASEQ: add format protability to goseq
+       3289aac RNASEQ: add format protability to goseq
+       971938c RNASEQ: add format protability to goseq
+       6cc1155 RNASEQ: add format protability to goseq
+       9f84207 RNASEQ: rnaseq.pl update
+       e31e700 RNASEQ: rnaseq.pl update
+       fc1faad RNASEQ: add format protability to goseq
+       18ffd9a RNASEQ: add format protability to goseq
+       e725e01 RNASEQ: edger update
+       7fbbb5a RNASEQ: goseq update
+       c6dbccb Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       73a94bf RNASEQ: goseq update
+       06b2e4a RNASEQ: goseq update
+       f93dba0 RNASEQ: allow non native GOseq analysis
+       656c63c RNAseq: cuffdiff result fillter now include in the merge with fpkm
+       02e9ef8 RNAseq: cuffdiff result fillter now include in the merge with fpkm
+       bc787bd RNAseq update
+       49ab91f RNAseq update
+       e6515d3 change mugiqc_tools.install script to avoir facl conflict
+       9676b39 update tools changes
+       287a8e2 update tools changes
+       e35a443 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       58ad96b RNASEQ: resolve splited metrics dependency
+       4008a3d Rtools edger old index name  not suported by the actual edger version now use
+       483781a RNAseq remove fpkm stats as they are done also in rna-seqc
+       c47230d RNAseq correct bugs - see BFXDEV-20 for details
+       8b614c0 RTOOL: mergeCuffdifRes bug correct && adapt the Rnaseq script in consequence 2
+       b5eee70 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       79804b1 RTOOL: mergeCuffdifRes bug correct && adapt the Rnaseq script in consequence
+       3b0ce98 RNASEQ: bowtie reference the new code should now be portable
+       4b6bf8e RNASEQ: allow readstat on single library
+       d079f59 RNASEQ: correct readstat output format
+       a61e005 RNASEQ: metrics changes bug correction & Cufflinks correction
+       28285f9 Metrics add  argument
+       a1032f1 RNASEQ - correct typo in the mergebam step
+       68b309e Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       318f27b TOOLS remove type blatbestHit.awk
+       30a3793 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       5c8851c TOOLS adding blastbestHit.awk blatbestHit.awk
+       e8481fd Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       26152f7 RNASEQ: rnaSeq.abacus.ini correct rnaQC fasta variable name
+       9bcdcf9 TOOLS: gtf2tmpMatrix.awk - adapt for line witout gene name
+       57441b6 RNASEQ : adjust saturation plot title
+       f05e6a7  RNASEQ : add saturation thread Number in the abacus .ini file
+       1d072b2 Tools : make gtf2tmpMatrix.awk portable for various type of GTF file
+       fbf1e9a tools : adding gtf2geneSize.awk and gtf2tmpMatrix.awk which were initially in tools but not anymore in the module
+       2de9a90 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       3ec125d RNASEQ : allow running without reference GTF .2
+       a19c305 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       a48116d RNASEQ : allow running without reference GTF
+       4c9f803 pairedVariant - finish controlFREEC allow either bam or mpileup input everthing is specified in the ini file -  BFXDEV-7
+       4a2439b R-tools change rpkmSaturation the count file need to be tab separeted
+       93eda90 R-tools correct the polting bug of the rpkmSaturation - BFXDEV-3
+       c67cdd0 rnaseq - replace my email by the  MAIL variable
+       b1039a2 pairedVariant - add Control FREEC lib
+       75351f1 update rnaseq.pl for single mode
+       d155782 update rpkmSaturation to the last version
+       6714873 correct formatGTFCufflinks.pl
+       2220b26 Merge branch 'master' into mugqic_mathieu
+       8aef01e Merge branch 'mugqic_mathieu' of bitbucket.org:mugqic/mugqic_pipeline into mugqic_mathieu
+       7ff4088 correct rnaseq ; remove special caharacter in subimti to cluster job ID varable
+       39e7fd1 correct cuffdiff deNovo
+       9db7cdf correct conflict btw mugqic_mathieu and master
+       314eadc correct small bugs
+       0307f25 Merge branch 'mugqic_mathieu' of bitbucket.org:mugqic/mugqic_pipeline into mugqic_mathieu
+       17dadbe correcting pindel in lib/pindel.pm and in pairedVariant.pl form dnaseq pipeline
+       3927743 remove python module call in htseqCount::readCountPortable
+       ed644b5 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       fcc0e41 Merge branch 'master' into mugqic_mathieu
+       d7d4284 correcting last bug in rnaseq
+       4cb464e debug rnaSeq.pl
+       7725d78 trimmomatic add java module loading
+       1c9c334 submitToCluster add default  value =  if undef
+       70afb54 rnaSeq debug
+       2a78c37 resolve conflicts
+       3c840f2 Merge branch 'mugqic_mathieu' of bitbucket.org:mugqic/mugqic_pipeline into mugqic_mathieu
+       208d0cc debug
+       cc57bb2 update
+       8889bf1 rnaseq test debug; submitcluster modification; trimmomatic modifications
+       bd4afe1 debugging RNAseq
+       249ded6 debugging RNAseq
+
+  Mathieu Bourgey <mathieu.bourgey@mail.mcgill.ca>      26 commits
+
+       58770fe RNASEQ: change merge test
+       73407b0 RNASEQ: change merge test
+       54a772a Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       22f64a3 RNASEQ: add mkdir metrics in step 2
+       be482de Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       ee774f9 goseq.R: check and remove results that are not reported in the GO.db R package
+       220e9fb lib GqSeqUtils report call change
+       aa69e7e Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       08a72c9 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       20ce1c9 formatDenovoCombinedGTF.py update
+       3183fd0 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       f6ce3df RNAseq update
+       c833eee Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       d1e8dcc RNASEQ update unstrand wiggle bug correct
+       49d7bbc Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       e7dbfbc RNASEQ correct stranded wiggle array assignation
+       352f1ed add the java module call at Metrics::rnaseqQC
+       7825d84 add the java module call before at each picard function
+       aeb1c37 RNASEQ: add mamouth ini file
+       2f858ec MODULES - add temporary download folder in several module install scripts
+       e63d649 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       44263b2 rnaseq: resolve dependency pb
+       9873fc2 Merge branch 'master' of bitbucket.org:mugqic/mugqic_pipeline
+       89fbe54 RNAseq modify some output location for the reporting
+       27bbc10 STATS: correct metrics:readstat for using output trimmomatic
+       772a5e5 RNASEQDN: old mamouth ini file by the new one that fit changes
 
   Mathieu Bourgey <mbourgey@abacus2.(none)>      1 commits
 

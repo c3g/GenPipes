@@ -20,14 +20,16 @@ Usage
 
 usage: dnaseq_high_coverage.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                [-s STEPS] [-o OUTPUT_DIR]
-                               [-j {pbs,batch,daemon,slurm}] [-f] [--json]
+                               [-j {pbs,batch,daemon,slurm}] [-f] [--no-json]
                                [--report] [--clean]
                                [-l {debug,info,warning,error,critical}]
+                               [--sanity-check]
+                               [--container {wrapper, singularity} <IMAGE PATH>]
                                [-t {mugqic,mpileup,light}] [-r READSETS] [-v]
 
-Version: 3.1.4
+Version: covid_1.0
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
@@ -43,8 +45,9 @@ optional arguments:
                         job scheduler type (default: slurm)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
-  --json                create a JSON file per analysed sample to track the
-                        analysis status (default: false)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -56,6 +59,12 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  --sanity-check        run the pipeline in `sanity check mode` to verify that
+                        all the input files needed for the pipeline to run are
+                        available on the system (default: false)
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a validsingularity
+                        image path
   -t {mugqic,mpileup,light}, --type {mugqic,mpileup,light}
                         DNAseq analysis type
   -r READSETS, --readsets READSETS
@@ -71,10 +80,10 @@ Steps:
 1- picard_sam_to_fastq
 2- trimmomatic
 3- merge_trimmomatic_stats
-4- bwa_mem_picard_sort_sam
-5- picard_merge_sam_files
+4- bwa_mem_sambamba_sort_sam
+5- sambamba_merge_sam_files
 6- gatk_indel_realigner
-7- merge_realigned
+7- sambamba_merge_realigned
 8- picard_fixmate
 9- metrics
 10- picard_calculate_hs_metrics
@@ -83,6 +92,7 @@ Steps:
 13- preprocess_vcf
 14- snp_effect
 15- gemini_annotations
+16- cram_output
 
 ```
 picard_sam_to_fastq
@@ -108,11 +118,11 @@ merge_trimmomatic_stats
 -----------------------
 The trim statistics per readset are merged at this step.
 
-bwa_mem_picard_sort_sam
------------------------
+bwa_mem_sambamba_sort_sam
+-------------------------
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
 The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
+BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
 
@@ -120,13 +130,13 @@ This step takes as input files:
 2. Else, FASTQ files from the readset file if available
 3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-picard_merge_sam_files
-----------------------
-BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+sambamba_merge_sam_files
+------------------------
+BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
 
-1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
+1. Aligned and sorted BAM output files from previous bwa_mem_sambamba_sort_sam step if available
 2. Else, BAM files from the readset file
 
 gatk_indel_realigner
@@ -137,9 +147,9 @@ Such regions will introduce false positive variant calls which may be filtered o
 those regions properly. Realignment is done using [GATK](https://www.broadinstitute.org/gatk/).
 The reference genome is divided by a number regions given by the `nb_jobs` parameter.
 
-merge_realigned
----------------
-BAM files of regions of realigned reads are merged per sample using [Picard](http://broadinstitute.github.io/picard/).
+sambamba_merge_realigned
+------------------------
+BAM files of regions of realigned reads are merged per sample using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 picard_fixmate
 --------------
@@ -183,5 +193,10 @@ SnpEff annotates and predicts the effects of variants on genes (such as amino ac
 gemini_annotations
 ------------------
 Load functionally annotated vcf file into a mysql lite annotation database : http://gemini.readthedocs.org/en/latest/index.html
+
+cram_output
+-----------
+Generate long term storage version of the final alignment files in CRAM format
+Using this function will include the orginal final bam file into the  removable file list 
 
 
