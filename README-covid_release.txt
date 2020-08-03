@@ -11,13 +11,14 @@ vim resources/modules/genpipes_covid.sh
 for script in \
   pipelines/ampliconseq/ampliconseq.py \
   pipelines/chipseq/chipseq.py \
-  pipelines/chipseq/covseq.py \
+  pipelines/covseq/covseq.py \
   pipelines/dnaseq/dnaseq.py \
   pipelines/dnaseq_high_coverage/dnaseq_high_coverage.py \
   pipelines/methylseq/methylseq.py \
   pipelines/rnaseq/rnaseq.py \
   pipelines/rnaseq_denovo_assembly/rnaseq_denovo_assembly.py \
   pipelines/rnaseq_light/rnaseq_light.py \
+  pipelines/tumor_pair/tumor_pair.py
 do
   echo $script
   pipeline=$(cut -d '/' -f2 <<< "$script")
@@ -50,7 +51,7 @@ bash ~/repo/dump_ChangeLog.sh > CHANGELOG.md
 git commit -a -m "Version bump to Covid Release 1.0"
 
 # Create a release tarball archive
-git archive --format=tar --prefix=genpipes_covid_release-1.0/ covid_1.0 | gzip > genpipes_covid_relase-1.0.tar.gz
+git archive --format=tar --prefix=genpipes_covid_release-1.0/ covid_1.0 | gzip > ~/genpipes_covid_relase-1.0.tar.gz
 
 # Upload this archive in
 https://bitbucket.org/mugqic/genpipes/downloads

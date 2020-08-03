@@ -1,47 +1,161 @@
-Data Analysis Recommendations for MGI Sequencing Data
-Paragon Genomics offers this panel of 343 amplicons covering 99.7% of the SARS-CoV-2 genome
-(MN908947/NC_045512.2) with 92 bases uncovered at the ends of the genome. The 343 amplicons are
-distributed into two pools. With amplicon size range from 116-196bp (median 149bp), the panel can be
-used for DNBSEQ PE100 or PE150. Below are some notes on data processing.
-We recommend the Broad Institute’s GATK Best Practice (https://software.broadinstitute.org/gatk/best-
-practices/) as general guiding principles for sequencing data analysis.
-1. Adapter Trimming.
-With amplicon size ranges from 116 to 196bp, it is recommended to trim leftover adapter sequences for
-PE150 sequencing (no need for PE100 sequencing) before read mapping.
-Following is an example command with open source software cutadapt
-(https://cutadapt.readthedocs.io/en/stable/).
-cutadapt -g GAACGACATGGCTACGATCCGACTT \
--a AAGTCGGAGGCCAAGCGGTC \
--A AAGTCGGATCGTAGCCATGTCGTTC \
--G GACCGCTTGGCCTCCGACTT \
--e 0.1 -O 9 -m 20 -n 2 \
--o R1_out.fq.gz -p R2_out.fq.gz R1_in.fq.gz R2_in.fq.gz \
-> cutadapt_report.output.txt
-2. Map reads to reference genome.
-The design was based on MN908947/NC_045512.2 and it is recommended to perform read mapping
-against the reference sequence of NC_045512.2. Bwa mem is recommended for read mapping and de-
-duplication procedure shall be skipped.
-3. Trim primer sequences.
-Before construction of a consensus genome sequence, it is recommended to remove primer sequences.
-Software package fgbio is recommended. It requires primer genomic coordinates in a tab delimited file
-which will be provided by Paragon Genomics to customers.
-Following is an example command.
-java -jar fgbio-1.2.0-e7ac607-SNAPSHOT.jar TrimPrimers -i input.bam -o
-output.primerTrim.bam -p primer_info.tab -H true
-UG4002-01
-For Research Use Only. Not for use in diagnostic procedures.
-41CleanPlex for MGI SARS-CoV-2 Research and Surveillance NGS Panel User Guide
-4. Calculate QC metrics.
-In order to assess the quality of the sequencing results, it is recommended to assign mapped reads to
-amplicons based on mapping position. Subsequently, the following metrics can be used to measure
-general performance of the panel.
-● Mapping Rate: Percentage of reads mapped to reference genome. It assesses primer-dimers
-and other PCR artifacts.
-● On-Target Rate: Percentage of mapped reads that aligned to the targeted regions. It assesses
-binding/amplification specificity of designed primers.
-● Coverage Uniformity: Percentage of amplicons with read depth equal to or greater than 20% of
-mean read depth of all amplicons in the panel. It measures performance uniformity of amplicons
-in the panel.
-To accommodate the calculation, a file in BED format listing amplicon start and end coordinates will be
-provided to customers. The BED file can be downloaded from
-www.paragongenomics.com/product_documents/.
+[TOC]
+
+
+CoVSeQ Pipeline
+================
+
+pwet
+
+
+Usage
+-----
+```
+#!text
+
+usage: covseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
+                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
+                 [--no-json] [--report] [--clean]
+                 [-l {debug,info,warning,error,critical}] [--sanity-check]
+                 [--container {wrapper, singularity} <IMAGE PATH>]
+                 [-r READSETS] [-v]
+
+Version: covid_1.0
+
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
+
+optional arguments:
+  -h                    show this help message and exit
+  --help                show detailed description of pipeline and steps
+  -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+                        config INI-style list of files; config parameters are
+                        overwritten based on files order
+  -s STEPS, --steps STEPS
+                        step range e.g. '1-5', '3,6,7', '2,4-8'
+  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+                        output directory (default: current)
+  -j {pbs,batch,daemon,slurm}, --job-scheduler {pbs,batch,daemon,slurm}
+                        job scheduler type (default: slurm)
+  -f, --force           force creation of jobs even if up to date (default:
+                        false)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
+  --report              create 'pandoc' command to merge all job markdown
+                        report files in the given step range into HTML, if
+                        they exist; if --report is set, --job-scheduler,
+                        --force, --clean options and job up-to-date status are
+                        ignored (default: false)
+  --clean               create 'rm' commands for all job removable files in
+                        the given step range, if they exist; if --clean is
+                        set, --job-scheduler, --force options and job up-to-
+                        date status are ignored (default: false)
+  -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
+                        log level (default: info)
+  --sanity-check        run the pipeline in `sanity check mode` to verify that
+                        all the input files needed for the pipeline to run are
+                        available on the system (default: false)
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a validsingularity
+                        image path
+  -r READSETS, --readsets READSETS
+                        readset file
+  -v, --version         show the version information and exit
+
+Steps:
+```
+![covseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_covseq.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_covseq.png)
+```
+------
+1- host_reads_removal
+2- cutadapt
+3- mapping_bwa_mem_sambamba
+4- sambamba_merge_sam_files
+5- sambamba_filtering
+6- ivar_trim_primers
+7- covseq_metrics
+8- ivar_calling
+9- snpeff_annotate
+10- ivar_create_consensus
+11- quast_consensus_metrics
+12- rename_consensus_header
+
+```
+host_reads_removal
+------------------
+The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
+The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
+
+This step takes as input files:
+
+1. Trimmed FASTQ files if available
+2. Else, FASTQ files from the readset file if available
+3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
+cutadapt
+--------
+Raw reads quality trimming and removing adapters is performed using [Cutadapt](https://cutadapt.readthedocs.io/en/stable/index.html).
+'Adapter1' and 'Adapter2' columns from the readset file ar given to Cutadapt. For PAIRED_END readsets, both adapters are used.
+For SINGLE_END readsets, only Adapter1 is used and left unchanged.
+To trim the front of the read use adapter_5p_fwd and adapter_5p_rev (for PE only) in cutadapt section of ini file.
+
+This step takes as input files:
+
+1. FASTQ files from the readset file if available
+2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
+mapping_bwa_mem_sambamba
+------------------------
+The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
+The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
+
+This step takes as input files:
+
+1. Trimmed FASTQ files if available
+2. Else, FASTQ files from the readset file if available
+3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
+sambamba_merge_sam_files
+------------------------
+BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
+
+This step takes as input files:
+
+1. Aligned and sorted BAM output files from previous bwa_mem_sambamba_sort_sam step if available
+2. Else, BAM files from the readset file
+
+sambamba_filtering
+------------------
+Filter raw bams with sambamba and an awk cmd to filter by insert size
+
+ivar_trim_primers
+-----------------
+Remove primer sequences to individual bam files using ivar
+
+covseq_metrics
+--------------
+Multiple metrcis from dnaseq
+
+ivar_calling
+------------
+ivar calling
+
+snpeff_annotate
+---------------
+Consensus annotation with SnpEff
+
+ivar_create_consensus
+---------------------
+Remove primer sequences to individual bam files using fgbio
+
+quast_consensus_metrics
+-----------------------
+Generate QUAST metrics on consensus
+
+rename_consensus_header
+-----------------------
+Rename reads headers
+
+

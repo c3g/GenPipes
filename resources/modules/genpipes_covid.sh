@@ -2,8 +2,6 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-#SOFTWARE=mugqic_pipelines
-#SOFTWARE=GenAP_Pipes
 SOFTWARE=covid_release
 VERSION=1.0
 ARCHIVE=genpipes_${SOFTWARE}-${VERSION}.tar.gz
@@ -27,20 +25,21 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                   $INSTALL_DIR/$SOFTWARE_DIR
-setenv          MUGQIC_PIPELINES_HOME \$root
-prepend-path    PATH                  \$root/utils
-prepend-path    PATH                  \$root/pipelines/ampliconseq
-prepend-path    PATH                  \$root/pipelines/chipseq
-prepend-path    PATH                  \$root/pipelines/covseq
-prepend-path    PATH                  \$root/pipelines/dnaseq
-prepend-path    PATH                  \$root/pipelines/dnaseq_high_coverage
-prepend-path    PATH                  \$root/pipelines/illumina_run_processing
-prepend-path    PATH                  \$root/pipelines/methylseq
-prepend-path    PATH                  \$root/pipelines/rnaseq
-prepend-path    PATH                  \$root/pipelines/rnaseq_denovo_assembly
-prepend-path    PATH                  \$root/pipelines/rnaseq_light
-prepend-path    PATH                  \$root/pipelines/tumor_pair
-prepend-path    PATH                  \$root/pipelines/hicseq
+setenv          MUGQIC_PIPELINES_HOME   \$root
+setenv          GENPIPES_PIPELINES_HOME \$root
+prepend-path    PATH                    \$root/utils
+prepend-path    PATH                    \$root/pipelines/ampliconseq
+prepend-path    PATH                    \$root/pipelines/chipseq
+prepend-path    PATH                    \$root/pipelines/covseq
+prepend-path    PATH                    \$root/pipelines/dnaseq
+prepend-path    PATH                    \$root/pipelines/dnaseq_high_coverage
+prepend-path    PATH                    \$root/pipelines/illumina_run_processing
+prepend-path    PATH                    \$root/pipelines/methylseq
+prepend-path    PATH                    \$root/pipelines/rnaseq
+prepend-path    PATH                    \$root/pipelines/rnaseq_denovo_assembly
+prepend-path    PATH                    \$root/pipelines/rnaseq_light
+prepend-path    PATH                    \$root/pipelines/tumor_pair
+prepend-path    PATH                    \$root/pipelines/hicseq
 "
 }
 

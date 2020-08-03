@@ -1,15 +1,14 @@
-22 tags, 5484 commits
+22 tags, 5488 commits
 
-HEAD        Mon Aug 3 16:41:08 2020 -0400        1 commits
+HEAD        Mon Aug 3 19:46:11 2020 -0400        0 commits
 
-  Edouard Henrion <edouard.henrion@mcgill.ca>      1 commits
+covid_1.0        Mon Aug 3 19:49:01 2020 -0400        779 commits
 
+  Edouard Henrion <edouard.henrion@mcgill.ca>      17 commits
+
+       eda88d0 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       3555e1b Version bump to Covid Release 1.0
        a2f2178 GenPipes - Covid Release : adding resources
-
-covid_1.0        Mon Aug 3 16:37:12 2020 -0400        774 commits
-
-  Edouard Henrion <edouard.henrion@mcgill.ca>      14 commits
-
        9e07fc4 GenPipes - HiC-Seq pipeline : corrected fastq_readName_edit input path
        dd58212 GenPipes - DNA-Seq pipeline : correcting symlink creation in sambamba_merge_sam_file
        7e00f1d Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
@@ -105,8 +104,13 @@ covid_1.0        Mon Aug 3 16:37:12 2020 -0400        774 commits
        eefc95a Merged in Jose-Hector-Galvez/found-a-bug-in-the-schedulerpy-script-i--1575322351581 (pull request #127)
        afae6ee Found a bug in the scheduler.py script. I am adding a line to correct it.
 
-  José Héctor Gálvez López <jose.hector.galvez@computationalgenomics.ca>      1 commits
+  José Héctor Gálvez López <hgalvez@beluga3.int.ets1.calculquebec.ca>      1 commits
 
+       3ec3f1c Added CoVSeQ ini files for Graham and Cedar. Corrected a few errors on the Beluga ini
+
+  José Héctor Gálvez López <jose.hector.galvez@computationalgenomics.ca>      2 commits
+
+       10e762b Merged in mgi_stretenp (pull request #177)
        3960717 Merged in nanopore_jhg (pull request #173)
 
   Paul Stretenowich <paul.stretenowich@mcgill.ca>      644 commits
