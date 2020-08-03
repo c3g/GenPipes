@@ -3,20 +3,17 @@
 set -eu -o pipefail
 
 SOFTWARE=ivar
-VERSION=1.2.1
+VERSION=1.2.2
 ARCHIVE=$SOFTWARE-${VERSION}.tar.gz
 ARCHIVE_URL=https://github.com/andersen-lab/${SOFTWARE}/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar -xzvf $ARCHIVE
 
   cd $SOFTWARE_DIR
-  module load mugqic/htslib/1.9
+  module load mugqic/htslib/1.10.2
   ./autogen.sh
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
   make
@@ -34,7 +31,8 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin
-module load mugqic/samtools/1.9 mugqic/htslib/1.9
+puts stderr \"WARNING : iVar needs both samtools and htslib to be accessible in the envoronement.\"
+puts stderr \"We recommend loading mugqic/samtools/1.10 and mugqic/htslib/1.10.2 \"
 "
 }
 
