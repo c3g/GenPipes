@@ -42,7 +42,6 @@ import utils.utils
 
 #utilizes
 from bfx import sambamba
-from bfx import vcflib
 from bfx import bcftools
 from bfx import tools
 from bfx import bed_file
@@ -219,40 +218,37 @@ END`""".format(
             log.warning("Number of realign jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
-            normal_realign_directory = os.path.join(normal_alignment_directory, "realign")
-            tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
-            tumor_realign_directory = os.path.join(tumor_alignment_directory, "realign")
+            normal_alignment_directory = os.path.abspath(os.path.join("alignment", tumor_pair.normal.name))
+            tumor_alignment_directory = os.path.abspath(os.path.join("alignment", tumor_pair.tumor.name))
+            pair_directory = os.path.join("alignment", "realign", tumor_pair.name)
 
             input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")
             input_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")
 
             if nb_jobs == 1:
-                realign_intervals = os.path.join(tumor_realign_directory, "all.intervals")
+                realign_intervals = os.path.abspath(os.path.join(pair_directory, "all.intervals"))
                 bam_postfix = ".realigned.all.bam"
                 normal_bam = os.path.join(tumor_pair.normal.name + ".sorted.realigned.all.bam")
                 normal_index = re.sub("\.bam$", ".bai", normal_bam)
-                normal_output_bam = os.path.join(normal_alignment_directory,
-                                                 tumor_pair.normal.name + ".sorted.realigned.bam")
+                normal_output_bam = os.path.join(normal_alignment_directory,tumor_pair.normal.name + ".sorted.realigned.bam")
                 normal_output_index = re.sub("\.bam$", ".bai", normal_output_bam)
                 tumor_bam = os.path.join(tumor_pair.tumor.name + ".sorted.realigned.all.bam")
                 tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
-                tumor_output_bam = os.path.join(tumor_alignment_directory,
-                                                tumor_pair.tumor.name + ".sorted.realigned.bam")
+                tumor_output_bam = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.realigned.bam")
                 tumor_output_index = re.sub("\.bam$", ".bai", tumor_output_bam)
 
                 jobs.append(concat_jobs([
-                    bash.mkdir(normal_realign_directory, remove=True),
-                    bash.mkdir(tumor_realign_directory, remove=True),
+                    bash.mkdir(pair_directory, remove=True),
+                    bash.chgdir(pair_directory),
                     gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor),
                     gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=[normal_bam,normal_index],
                                          output_tum_dep=[tumor_bam,tumor_index], target_intervals=realign_intervals,
                                          optional=bam_postfix),
                     # Move sample realign
-                    bash.mv(normal_bam, normal_output_bam),
-                    bash.mv(normal_index, normal_output_index),
-                    bash.mv(tumor_bam, tumor_output_bam),
-                    bash.mv(tumor_index, tumor_output_index),
+                    bash.ln(normal_bam, os.path.abspath(normal_output_bam), pair_directory),
+                    bash.ln(normal_index, os.path.abspath(normal_output_index), pair_directory),
+                    bash.ln(tumor_bam, os.path.abspath(tumor_output_bam), pair_directory),
+                    bash.ln(tumor_index, os.path.abspath(tumor_output_index), pair_directory),
                 ], name="gatk_indel_realigner." + tumor_pair.name))
 
             else:
@@ -260,10 +256,12 @@ END`""".format(
                 # Each of them must be processed in a separate job.
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary,
                                                                                           nb_jobs - 1)
-
+                normal_realign_directory = os.path.join(normal_alignment_directory, "realign")
+                tumor_realign_directory = os.path.join(tumor_alignment_directory, "realign")
+                
                 # Create one separate job for each of the first sequences
                 for idx, sequences in enumerate(unique_sequences_per_job):
-                    realign_prefix = os.path.join(tumor_realign_directory, str(idx))
+                    realign_prefix = os.path.join(pair_directory, str(idx))
                     realign_intervals = realign_prefix + ".intervals"
                     intervals = sequences
                     if str(idx) == 0:
@@ -282,17 +280,19 @@ END`""".format(
 
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
+                        bash.mkdir(pair_directory, remove=True),
                         bash.mkdir(normal_realign_directory, remove=True),
                         bash.mkdir(tumor_realign_directory, remove=True),
+                        bash.chgdir(pair_directory),
                         gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor,
                                                       intervals=intervals),
                         gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=[normal_bam,normal_index],
                                              output_tum_dep=[tumor_bam,tumor_index], target_intervals=realign_intervals,
                                              intervals=intervals, optional=bam_postfix),
-                        bash.mv(normal_bam, normal_output_bam),
-                        bash.mv(normal_index, normal_output_index),
-                        bash.mv(tumor_bam, tumor_output_bam),
-                        bash.mv(tumor_index, tumor_output_index),
+                        bash.ln(normal_bam, os.path.abspath(normal_output_bam), pair_directory),
+                        bash.ln(normal_index, os.path.abspath(normal_output_index), pair_directory),
+                        bash.ln(tumor_bam, os.path.abspath(tumor_output_bam), pair_directory),
+                        bash.ln(tumor_index, os.path.abspath(tumor_output_index), pair_directory),
                     ], name="gatk_indel_realigner." + tumor_pair.name + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
@@ -312,17 +312,19 @@ END`""".format(
 
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
+                    bash.mkdir(pair_directory, remove=True),
                     bash.mkdir(normal_realign_directory, remove=True),
                     bash.mkdir(tumor_realign_directory, remove=True),
+                    bash.chgdir(pair_directory),
                     gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor,
                                                   exclude_intervals=unique_sequences_per_job_others),
                     gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=[normal_bam, normal_index],
                                          output_tum_dep=[tumor_bam, tumor_index], target_intervals=realign_intervals,
                                          exclude_intervals=unique_sequences_per_job_others, optional=bam_postfix),
-                    bash.mv(normal_bam, normal_output_bam),
-                    bash.mv(normal_index, normal_output_index),
-                    bash.mv(tumor_bam, tumor_output_bam),
-                    bash.mv(tumor_index, tumor_output_index),
+                    bash.ln(normal_bam, os.path.abspath(normal_output_bam), pair_directory),
+                    bash.ln(normal_index, os.path.abspath(normal_output_index), pair_directory),
+                    bash.ln(tumor_bam, os.path.abspath(tumor_output_bam), pair_directory),
+                    bash.ln(tumor_index, os.path.abspath(tumor_output_index), pair_directory),
                 ], name="gatk_indel_realigner." + tumor_pair.name + ".others"))
 
         return jobs
@@ -2055,7 +2057,7 @@ END`""".format(
         cancer_pair_filename = os.path.join('cancer_snpeff.tsv')
         cancer_pair = open(cancer_pair_filename, 'w')
 
-        for tumor_pair in self.tumor_pair.itervalues():
+        for tumor_pair in self.tumor_pairs.itervalues():
             cancer_pair.write(tumor_pair.normal.name + "\t" + tumor_pair.tumor.name + "\n")
 
         jobs.append(concat_jobs([
@@ -2610,6 +2612,7 @@ END`""".format(
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
+            pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [os.path.join(pair_directory + ".manta.germline.snpeff.annot.vcf"),
                                pair_directory + ".manta.germline.prioritize.tsv"]
 

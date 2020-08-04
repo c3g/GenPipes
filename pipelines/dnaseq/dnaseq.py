@@ -20,12 +20,10 @@
 ################################################################################
 
 # Python Standard Modules
-import argparse
 import logging
 import math
 import os
 import re
-import subprocess
 import sys
 
 # Append mugqic_pipelines directory to Python library path
@@ -90,7 +88,6 @@ from bfx import metasv
 from bfx import svtyper
 from bfx import bcftools
 from bfx import metric_tools
-from bfx import annotations
 from bfx import vawk
 from bfx import svaba
 

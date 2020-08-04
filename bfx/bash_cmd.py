@@ -37,7 +37,18 @@ mkdir -p {directory}""".format(
         removable_files=[folder] if remove else []
     )
 
-def ln(target_file, link):
+def chgdir(folder):
+    return Job(
+        [],
+        [folder],
+        [],
+        command="""\
+cd {directory}""".format(
+            directory=folder
+        ),
+    )
+
+def ln(target_file, link, out_dir=None):
     folder = os.path.dirname(link)
     return Job(
         [target_file],
@@ -48,7 +59,8 @@ ln -s -f \\
   {target_file} \\
   {link} && \\
 ls {folder}""".format(
-            target_file=os.path.relpath(target_file, folder),
+            #target_file=os.path.relpath(target_file, folder),
+            target_file=os.path.abspath(os.path.join(out_dir, target_file)),
             link=link,
             folder=folder
         ),
