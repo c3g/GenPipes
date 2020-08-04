@@ -256,14 +256,12 @@ END`""".format(
                 
                 normal_bam = os.path.join(pair_directory, tumor_pair.normal.name + ".sorted.realigned.all.bam")
                 normal_index = re.sub("\.bam$", ".bai", normal_bam)
-                normal_output_bam = os.path.join(normal_alignment_directory,
-                                                 tumor_pair.normal.name + ".sorted.realigned.bam")
+                normal_output_bam = os.path.join(normal_alignment_directory,tumor_pair.normal.name + ".sorted.realigned.bam")
                 normal_output_index = re.sub("\.bam$", ".bai", normal_output_bam)
                 
                 tumor_bam = os.path.join(pair_directory, tumor_pair.tumor.name + ".sorted.realigned.all.bam")
                 tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
-                tumor_output_bam = os.path.join(tumor_alignment_directory,
-                                                tumor_pair.tumor.name + ".sorted.realigned.bam")
+                tumor_output_bam = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.realigned.bam")
                 tumor_output_index = re.sub("\.bam$", ".bai", tumor_output_bam)
 
                 jobs.append(concat_jobs([
