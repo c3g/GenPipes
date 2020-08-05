@@ -392,21 +392,6 @@ END`""".format(
                             tumor_output_index,
                             self.output_dir
                         ),
-=======
-                        bash.mkdir(pair_directory, remove=True),
-                        bash.mkdir(normal_realign_directory, remove=True),
-                        bash.mkdir(tumor_realign_directory, remove=True),
-                        bash.chgdir(pair_directory),
-                        gatk.realigner_target_creator(input_normal, realign_intervals, input2=input_tumor,
-                                                      intervals=intervals),
-                        gatk.indel_realigner(input_normal, input2=input_tumor, output_norm_dep=[normal_bam,normal_index],
-                                             output_tum_dep=[tumor_bam,tumor_index], target_intervals=realign_intervals,
-                                             intervals=intervals, optional=bam_postfix),
-                        bash.ln(normal_bam, os.path.abspath(normal_output_bam), pair_directory),
-                        bash.ln(normal_index, os.path.abspath(normal_output_index), pair_directory),
-                        bash.ln(tumor_bam, os.path.abspath(tumor_output_bam), pair_directory),
-                        bash.ln(tumor_index, os.path.abspath(tumor_output_index), pair_directory),
->>>>>>> 39a23f60 (updates and fixes for cit)
                     ], name="gatk_indel_realigner." + tumor_pair.name + "." + str(idx)))
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
@@ -1022,7 +1007,6 @@ END`""".format(
                 [os.path.join(normal_directory, "fastqc", tumor_pair.normal.name + ".sorted.dup_fastqc.zip")],
                 [os.path.join(normal_directory, "fastqc", tumor_pair.normal.name + "_fastqc.zip")],
             ])
-            #input_normal_flagstat = os.path.join(normal_directory, "flagstat", tumor_pair.normal.name + ".flagstat")
 
             tumor_directory = os.path.join(metrics_directory, tumor_pair.tumor.name)
             input_tumor_oxog = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".oxog_metrics.txt")
@@ -1034,12 +1018,6 @@ END`""".format(
                 [os.path.join(tumor_directory, "fastqc", tumor_pair.tumor.name + ".sorted.dup_fastqc.zip")],
                 [os.path.join(tumor_directory, "fastqc", tumor_pair.tumor.name + "_fastqc.zip")],
             ])
-            #input_tumor_flagstat = os.path.join(tumor_directory, "flagstat", tumor_pair.tumor.name + ".flagstat")
-
-            input = [
-                os.path.join(metrics_directory, tumor_pair.normal.name),
-                os.path.join(metrics_directory,tumor_pair.tumor.name)
-            ]
 
             input_dep += [
                 input_normal_oxog,
