@@ -28,11 +28,12 @@ Usage
 
 usage: methylseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                     [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
-                    [--json] [--report] [--clean]
-                    [-l {debug,info,warning,error,critical}] [-d DESIGN]
-                    [-t {mugqic,mpileup,light}] [-r READSETS] [-v]
+                    [--no-json] [--report] [--clean]
+                    [-l {debug,info,warning,error,critical}] [--sanity-check]
+                    [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
+                    [-d DESIGN] [-t {mugqic,mpileup,light}] [-r READSETS] [-v]
 
-Version: 3.1.4
+Version: 3.1.5
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -50,8 +51,9 @@ optional arguments:
                         job scheduler type (default: slurm)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
-  --json                create a JSON file per analysed sample to track the
-                        analysis status (default: false)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -63,6 +65,12 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  --sanity-check        run the pipeline in `sanity check mode` to verify that
+                        all the input files needed for the pipeline to run are
+                        available on the system (default: false)
+  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
+                        run pipeline inside a container providing a container
+                        image path or accessible docker/singularity hub path
   -d DESIGN, --design DESIGN
                         design file
   -t {mugqic,mpileup,light}, --type {mugqic,mpileup,light}
@@ -92,7 +100,7 @@ Steps:
 13- bis_snp
 14- filter_snp_cpg
 15- prepare_methylkit
-16- methylkit_differential_analysis
+16- cram_output
 
 ```
 picard_sam_to_fastq
@@ -185,8 +193,9 @@ prepare_methylkit
 -----------------
 Prepare input file for methylKit differential analysis
 
-methylkit_differential_analysis
--------------------------------
-Run methylKit to get DMCs & DMRs for different designeds comparisons
+cram_output
+-----------
+Generate long term storage version of the final alignment files in CRAM format
+Using this function will include the orginal final bam file into the  removable file list 
 
 
