@@ -704,7 +704,7 @@ mkdir -p {report_dir}/annotation/ && \\
 cp {report_template_dir}/{basename_report_file} {report_dir} && \\
 for contrast in {contrasts}
 do
-  rsync -avP annotation/$contrast {report_dir}/annotation/ && \\
+  rsync -rvP annotation/$contrast {report_dir}/annotation/ && \\
   echo -e "* [Gene Annotations for Design $contrast](annotation/$contrast/${{contrast}}.annotated.csv)\n* [HOMER Gene Ontology Annotations for Design $contrast](annotation/$contrast/$contrast/geneOntology.html)\n* [HOMER Genome Ontology Annotations for Design $contrast](annotation/$contrast/$contrast/GenomeOntology.html)" \\
   >> {report_file}
 done""".format(
