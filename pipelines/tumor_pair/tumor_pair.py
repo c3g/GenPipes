@@ -917,9 +917,6 @@ END`""".format(
 
         jobs = []
 
-        gemini_module = config.param("DEFAULT", 'module_gemini').split(".")
-        gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
-
         ped_file = config.param('set_somatic_and_actionable_mutations', 'ped_file', required=False, type='filepath')
         ped_job = None
 
