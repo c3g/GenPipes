@@ -597,9 +597,6 @@ END`""".format(
 
         jobs = []
 
-        gemini_module = config.param("DEFAULT", 'module_gemini').split(".")
-        gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
-
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join("pairedVariants", tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
@@ -630,9 +627,6 @@ END`""".format(
         """
 
         jobs = []
-
-        gemini_module = config.param("DEFAULT", 'module_gemini').split(".")
-        gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
         ped_file = config.param('set_somatic_and_actionable_mutations', 'ped_file', required=False, type='filepath')
         ped_job = None
@@ -704,6 +698,7 @@ END`""".format(
                         input_tumor_oxog, input_tumor_qcbias, input_tumor_all_picard, input_tumor_qualimap, input_tumor_fastqc]
 
             input = [os.path.join(metrics_directory, tumor_pair.normal.name), os.path.join(metrics_directory,tumor_pair.tumor.name)]
+
             output = os.path.join(metrics_directory, tumor_pair.name + ".multiqc")
             inputs.append(input)
             outputs.append(output)
