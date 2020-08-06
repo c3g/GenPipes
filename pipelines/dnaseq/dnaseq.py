@@ -1384,6 +1384,7 @@ END
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                #[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
