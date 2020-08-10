@@ -257,12 +257,14 @@ END`""".format(
                 
                 normal_bam = os.path.join(pair_directory, tumor_pair.normal.name + ".sorted.realigned.all.bam")
                 normal_index = re.sub("\.bam$", ".bai", normal_bam)
-                normal_output_bam = os.path.join(normal_alignment_directory,tumor_pair.normal.name + ".sorted.realigned.bam")
+                normal_output_bam = os.path.join(normal_alignment_directory,
+                                                 tumor_pair.normal.name + ".sorted.realigned.bam")
                 normal_output_index = re.sub("\.bam$", ".bai", normal_output_bam)
                 
                 tumor_bam = os.path.join(pair_directory, tumor_pair.tumor.name + ".sorted.realigned.all.bam")
                 tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
-                tumor_output_bam = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.realigned.bam")
+                tumor_output_bam = os.path.join(tumor_alignment_directory,
+                                                tumor_pair.tumor.name + ".sorted.realigned.bam")
                 tumor_output_index = re.sub("\.bam$", ".bai", tumor_output_bam)
 
                 jobs.append(concat_jobs([
@@ -1736,7 +1738,9 @@ END`""".format(
 
             if os.path.isdir(strelka2_directory):
                 jobs.append(concat_jobs([
-                    bash.rm(strelka2_directory)
+                    bash.rm(
+                        strelka2_directory
+                    )
                 ], name="rm_strelka2_directory." + tumor_pair.name))
 
             if coverage_bed:
@@ -2802,7 +2806,6 @@ END`""".format(
             cancer_pair.write(tumor_pair.normal.name + "\t" + tumor_pair.tumor.name + "\n")
 
             jobs.append(concat_jobs([
-
                 bash.mkdir(
                     paired_directory,
                     remove=True
@@ -5217,7 +5220,6 @@ END`""".format(
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 tumor_pair.tumor.readsets[0]
             )
-
             bed = None
 
             if coverage_bed:
