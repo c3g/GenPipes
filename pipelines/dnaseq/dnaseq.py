@@ -1765,7 +1765,6 @@ END
                  [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])[0]
 
             jobs.append(concat_jobs([
-                # Create output directory since it is not done by default by GATK tool
                 bash.mkdir(
                     output,
                     remove=False
