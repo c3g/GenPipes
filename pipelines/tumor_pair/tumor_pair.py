@@ -256,12 +256,14 @@ END`""".format(
                 
                 normal_bam = os.path.join(pair_directory, tumor_pair.normal.name + ".sorted.realigned.all.bam")
                 normal_index = re.sub("\.bam$", ".bai", normal_bam)
-                normal_output_bam = os.path.join(normal_alignment_directory,tumor_pair.normal.name + ".sorted.realigned.bam")
+                normal_output_bam = os.path.join(normal_alignment_directory,
+                                                 tumor_pair.normal.name + ".sorted.realigned.bam")
                 normal_output_index = re.sub("\.bam$", ".bai", normal_output_bam)
                 
                 tumor_bam = os.path.join(pair_directory, tumor_pair.tumor.name + ".sorted.realigned.all.bam")
                 tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
-                tumor_output_bam = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.realigned.bam")
+                tumor_output_bam = os.path.join(tumor_alignment_directory,
+                                                tumor_pair.tumor.name + ".sorted.realigned.bam")
                 tumor_output_index = re.sub("\.bam$", ".bai", tumor_output_bam)
 
                 jobs.append(concat_jobs([
@@ -907,35 +909,6 @@ END`""".format(
                     temp_dir
                 )
             ], name="gemini_annotations.germline." + tumor_pair.name))
-
-        return jobs
-
-    def set_somatic_and_actionable_mutations_panel(self):
-        """
-
-        """
-
-        jobs = []
-
-        ped_file = config.param('set_somatic_and_actionable_mutations', 'ped_file', required=False, type='filepath')
-        ped_job = None
-
-        for tumor_pair in self.tumor_pairs.itervalues():
-            paired_directory = os.path.join("pairedVariants", tumor_pair.name, "panel")
-            gemini_prefix = os.path.join(paired_directory, tumor_pair.name)
-
-            if not ped_file:
-                ped_job = self.build_ped_file(paired_directory, tumor_pair)
-                ped_file = os.path.join(gemini_prefix + ".ped")
-
-            jobs.append(concat_jobs([
-                bash.mkdir(paired_directory, remove=False),
-                ped_job,
-                gemini.set_somatic(ped_file, gemini_prefix + ".somatic.gemini.db",
-                                   gemini_prefix + ".varscan2.somatic.gemini.set_somatic.tsv"),
-                gemini.actionable_mutations(gemini_prefix + ".somatic.gemini.db",
-                                            gemini_prefix + ".varscan2.somatic.gemini.actionable.tsv")
-            ], name="set_somatic_and_actionable_mutations." + tumor_pair.name))
 
         return jobs
 
@@ -1754,7 +1727,9 @@ END`""".format(
 
             if os.path.isdir(strelka2_directory):
                 jobs.append(concat_jobs([
-                    bash.rm(strelka2_directory)
+                    bash.rm(
+                        strelka2_directory
+                    )
                 ], name="rm_strelka2_directory." + tumor_pair.name))
 
             if coverage_bed:
