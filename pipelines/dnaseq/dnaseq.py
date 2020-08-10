@@ -1249,6 +1249,7 @@ END
                 picard_directory,
                 remove=True
             )
+        
             jobs.append(
                 concat_jobs([
                     mkdir_job,
@@ -1910,7 +1911,10 @@ END
             
         output = os.path.join("dna", "metrics", "variants.fingerprint")
     
-        job= gatk4.crosscheck_fingerprint(inputs, output)
+        job= gatk4.crosscheck_fingerprint(
+            inputs,
+            output
+        )
         job.name="gatk_crosscheck_fingerprint.variant"
 
         return job
@@ -1923,7 +1927,10 @@ END
         output: fingerprint file
         """
         jobs = []
-        job = gatk4.cluster_crosscheck_metrics(input, output)
+        job = gatk4.cluster_crosscheck_metrics(
+            input,
+            output
+        )
         job.name = job_name
         
         jobs.append(job)
@@ -1937,9 +1944,11 @@ END
         input: sample SAM/BAM or VCF
         output: fingerprint file
         """
-        job = self.metrics_gatk_cluster_fingerprint(os.path.join("metrics", "dna", "sample.fingerprint"),
-                                                    os.path.join("metrics", "dna", "sample.cluster.fingerprint"),
-                                                    "gatk_cluster_fingerprint.sample")
+        job = self.metrics_gatk_cluster_fingerprint(
+            os.path.join("metrics", "dna", "sample.fingerprint"),
+            os.path.join("metrics", "dna", "sample.cluster.fingerprint"),
+            "gatk_cluster_fingerprint.sample"
+        )
         return job
 
     def metrics_gatk_cluster_fingerprint_variant(self) :
@@ -1950,9 +1959,11 @@ END
         output: fingerprint file
         """
 
-        job = self.metrics_gatk_cluster_fingerprint(os.path.join("metrics", "dna", "variant.fingerprint"),
-                                                    os.path.join("metrics", "dna", "variant.cluster.fingerprint"),
-                                                    "gatk_cluster_fingerprint.variant")
+        job = self.metrics_gatk_cluster_fingerprint(
+            os.path.join("metrics", "dna", "variant.fingerprint"),
+            os.path.join("metrics", "dna", "variant.cluster.fingerprint"),
+            "gatk_cluster_fingerprint.variant"
+        )
         #job.samples = self.samples
 
         return job
@@ -1979,9 +1990,19 @@ END
         vcf_file = os.path.join(output, 'checkmate.tsv')
    
         jobs.append(concat_jobs([
-            bash.mkdir(output, remove=False),
-            Job(inputs, [vcf_file], command="ls " + " ".join(inputs) + " > " + vcf_file),
-            ngscheckmate.run(vcf_file, output),
+            bash.mkdir(
+                output,
+                remove=False
+            ),
+            Job(
+                inputs,
+                [vcf_file],
+                command="ls " + " ".join(inputs) + " > " + vcf_file
+            ),
+            ngscheckmate.run(
+                vcf_file,
+                output
+            ),
         ], name="run_checkmate.sample_level"))
 
         return jobs
@@ -2001,7 +2022,11 @@ END
         output = os.path.join("metrics", "dna", "peddy")
     
         if(peddy_file):
-            job = peddy.run(input, peddy_file, output)
+            job = peddy.run(
+                input,
+                peddy_file,
+                output
+            )
             job.name = "run_peddy.sample_level"
             jobs.append(job)
     
@@ -2022,14 +2047,21 @@ END
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             output = os.path.join("metrics", "dna", sample.name, "verifyBamId")
-            input = self.select_input_files([[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
-                                             [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                                             [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])
+            input = self.select_input_files(
+                [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])[0]
 
             jobs.append(concat_jobs([
                 # Create output directory since it is not done by default by GATK tools
-                Job(command="mkdir -p " + output, removable_files=[output], samples=[sample]),
-                verify_bam_id.verify(input[0], os.path.join(output, sample.name))
+                bash.mkdir(
+                    output,
+                    remove=False
+                ),
+                verify_bam_id.verify(
+                    input,
+                    os.path.join(output, sample.name)
+                )
             ], name="verify_bam_id." + sample.name))
 
         return jobs
@@ -3295,7 +3327,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         remove=True
                     ),
                     delly.call(
-                        input,
+                        [input],
                         output_bcf,
                         sv_type
                     ),
