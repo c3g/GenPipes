@@ -563,7 +563,9 @@ END
 
                 jobs.append(
                     concat_jobs([
-                        mkdir_job,
+                        bash.mkdir(
+                            os.path.dirname(sample_bam)
+                        ),
                         bash.ln(
                             readset_bam,
                             sample_bam
@@ -581,7 +583,9 @@ END
             elif len(sample.readsets) > 1:
                 jobs.append(
                     concat_jobs([
-                        mkdir_job,
+                        bash.mkdir(
+                            os.path.dirname(sample_bam)
+                        ),
                         sambamba.merge(
                             readset_bams,
                             sample_bam
@@ -955,8 +959,6 @@ END
 
         jobs = []
 
-        created_interval_lists = []
-
         for sample in self.samples:
             duplicate_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
             input = duplicate_file_prefix + "bam"
@@ -965,15 +967,20 @@ END
 
             interval_list = None
             
-            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            coverage_bed = bvatools.resolve_readset_coverage_bed(
+                sample.readsets[0]
+            )
             if coverage_bed:
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
-                if not interval_list in created_interval_lists:
-                    job = tools.bed2interval_list(None, coverage_bed, interval_list)
+                if not os.path.isfile(interval_list):
+                    job = tools.bed2interval_list(
+                        None,
+                        coverage_bed,
+                        interval_list
+                    )
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
-                    created_interval_lists.append(interval_list)
 
             jobs.append(
                 concat_jobs([
@@ -1098,7 +1105,10 @@ END
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
             # log.info(input)
-            mkdir_job = bash.mkdir(picard_directory, remove=True)
+            mkdir_job = bash.mkdir(
+                picard_directory,
+                remove=True
+            )
             jobs.append(
                 concat_jobs([
                     mkdir_job,
@@ -1358,7 +1368,9 @@ END
             job = gatk4.depth_of_coverage(
                 input,
                 input_file_prefix + "all.coverage",
-                bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+                bvatools.resolve_readset_coverage_bed(
+                    sample.readsets[0]
+                )
             )
             job.name = "gatk_depth_of_coverage." + sample.name + ".genome"
             job.samples = [sample]
@@ -1368,7 +1380,9 @@ END
             job = bvatools.depth_of_coverage(
                 input,
                 input_file_prefix + "coverage.tsv",
-                bvatools.resolve_readset_coverage_bed(sample.readsets[0]),
+                bvatools.resolve_readset_coverage_bed(
+                    sample.readsets[0]
+                ),
                 other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
             )
             job.name = "bvatools_depth_of_coverage." + sample.name
@@ -1561,7 +1575,10 @@ END
             inputs.append(input[0])
             
         output = os.path.join("metrics", "dna", "sample.fingerprint")
-        job = gatk4.crosscheck_fingerprint(inputs, output)
+        job = gatk4.crosscheck_fingerprint(
+            inputs,
+            output
+        )
         job.name = "gatk_crosscheck_fingerprint.sample"
 
         jobs.append(job)
@@ -1585,7 +1602,10 @@ END
             
         output = os.path.join("dna", "metrics", "variants.fingerprint")
     
-        job= gatk4.crosscheck_fingerprint(inputs, output)
+        job= gatk4.crosscheck_fingerprint(
+            inputs,
+            output
+        )
         job.name="gatk_crosscheck_fingerprint.variant"
 
         return job
@@ -1598,7 +1618,10 @@ END
         output: fingerprint file
         """
         jobs = []
-        job = gatk4.cluster_crosscheck_metrics(input, output)
+        job = gatk4.cluster_crosscheck_metrics(
+            input,
+            output
+        )
         job.name = job_name
         
         jobs.append(job)
@@ -1612,9 +1635,11 @@ END
         input: sample SAM/BAM or VCF
         output: fingerprint file
         """
-        job = self.metrics_gatk_cluster_fingerprint(os.path.join("metrics", "dna", "sample.fingerprint"),
-                                                    os.path.join("metrics", "dna", "sample.cluster.fingerprint"),
-                                                    "gatk_cluster_fingerprint.sample")
+        job = self.metrics_gatk_cluster_fingerprint(
+            os.path.join("metrics", "dna", "sample.fingerprint"),
+            os.path.join("metrics", "dna", "sample.cluster.fingerprint"),
+            "gatk_cluster_fingerprint.sample"
+        )
         return job
 
     def metrics_gatk_cluster_fingerprint_variant(self) :
@@ -1625,9 +1650,11 @@ END
         output: fingerprint file
         """
 
-        job = self.metrics_gatk_cluster_fingerprint(os.path.join("metrics", "dna", "variant.fingerprint"),
-                                                    os.path.join("metrics", "dna", "variant.cluster.fingerprint"),
-                                                    "gatk_cluster_fingerprint.variant")
+        job = self.metrics_gatk_cluster_fingerprint(
+            os.path.join("metrics", "dna", "variant.fingerprint"),
+            os.path.join("metrics", "dna", "variant.cluster.fingerprint"),
+            "gatk_cluster_fingerprint.variant"
+        )
         #job.samples = self.samples
 
         return job
@@ -1654,9 +1681,19 @@ END
         vcf_file = os.path.join(output, 'checkmate.tsv')
    
         jobs.append(concat_jobs([
-            bash.mkdir(output, remove=False),
-            Job(inputs, [vcf_file], command="ls " + " ".join(inputs) + " > " + vcf_file),
-            ngscheckmate.run(vcf_file, output),
+            bash.mkdir(
+                output,
+                remove=False
+            ),
+            Job(
+                inputs,
+                [vcf_file],
+                command="ls " + " ".join(inputs) + " > " + vcf_file
+            ),
+            ngscheckmate.run(
+                vcf_file,
+                output
+            ),
         ], name="run_checkmate.sample_level"))
 
         return jobs
@@ -1676,7 +1713,11 @@ END
         output = os.path.join("metrics", "dna", "peddy")
     
         if(peddy_file):
-            job = peddy.run(input, peddy_file, output)
+            job = peddy.run(
+                input,
+                peddy_file,
+                output
+            )
             job.name = "run_peddy.sample_level"
             jobs.append(job)
     
@@ -1697,14 +1738,21 @@ END
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             output = os.path.join("metrics", "dna", sample.name, "verifyBamId")
-            input = self.select_input_files([[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
-                                             [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                                             [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])
+            input = self.select_input_files(
+                [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])[0]
 
             jobs.append(concat_jobs([
                 # Create output directory since it is not done by default by GATK tools
-                bash.mkdir(output, remove=False),
-                verify_bam_id.verify(input, os.path.join(output, sample.name))
+                bash.mkdir(
+                    output,
+                    remove=False
+                ),
+                verify_bam_id.verify(
+                    input,
+                    os.path.join(output, sample.name)
+                )
             ], name="verify_bam_id." + sample.name))
 
         return jobs
@@ -1715,8 +1763,6 @@ END
         """
 
         jobs = []
-
-        created_interval_lists = []
 
         nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_jobs', type='posint')
         if nb_haplotype_jobs > 50:
@@ -1745,7 +1791,8 @@ END
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
-                if not interval_list in created_interval_lists:
+
+                if not os.path.isfile(interval_list):
                     job = tools.bed2interval_list(
                         None,
                         coverage_bed,
@@ -1753,8 +1800,7 @@ END
                     )
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
-                    created_interval_lists.append(interval_list)
-                    
+
             if nb_haplotype_jobs == 1 or interval_list:
                 jobs.append(
                     concat_jobs([
@@ -2954,11 +3000,25 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 output_vcf = os.path.join(delly_directory, sample.name + ".delly." + str(sv_type) + ".germline.flt.vcf.gz")
 
                 jobs.append(concat_jobs([
-                    bash.mkdir(delly_directory, remove=True),
-                    delly.call([input], output_bcf, sv_type),
+                    bash.mkdir(
+                        delly_directory,
+                        remove=True
+                    ),
+                    delly.call(
+                        [input],
+                        output_bcf,
+                        sv_type
+                    ),
                     pipe_jobs([
-                        bcftools.view(output_bcf, None, config.param('delly_call_filter_germline', 'bcftools_options')),
-                        htslib.bgzip_tabix(None, output_vcf),
+                        bcftools.view(
+                            output_bcf,
+                            None,
+                            config.param('delly_call_filter_germline', 'bcftools_options')
+                        ),
+                        htslib.bgzip_tabix(
+                            None,
+                            output_vcf
+                        ),
                     ]),
                 ], name="delly_call_filter." + str(sv_type) + "." + sample.name))
 
@@ -2983,18 +3043,39 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         
             jobs.append(concat_jobs([
                 pipe_jobs([
-                    bcftools.concat(inputBCF, None, "-O v"),
-                    vt.sort("-", "-", "-m full"),
-                    htslib.bgzip(None, output_vcf),
+                    bcftools.concat(
+                        inputBCF,
+                        None,
+                        "-O v"
+                    ),
+                    vt.sort(
+                        "-",
+                        "-",
+                        "-m full"
+                    ),
+                    htslib.bgzip(
+                        None,
+                        output_vcf
+                    ),
                 ]),
                 pipe_jobs([
-                    vawk.single_germline(output_vcf, sample.name, None),
-                    htslib.bgzip_tabix(None, germline_vcf),
+                    vawk.single_germline(
+                        output_vcf,
+                        sample.name,
+                        None
+                    ),
+                    htslib.bgzip_tabix(
+                        None,
+                        germline_vcf
+                    ),
                 ]),
             ], name="sv_annotation.delly.merge_sort_filter." + sample.name))
         
             jobs.append(concat_jobs([
-                snpeff.compute_effects(germline_vcf, final_directory + ".delly.germline.snpeff.vcf.gz"),
+                snpeff.compute_effects(
+                    germline_vcf,
+                    final_directory + ".delly.germline.snpeff.vcf.gz"
+                ),
             ], name="sv_annotation.delly.germline." + sample.name))
     
         return jobs
@@ -3018,12 +3099,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             manta_directory = os.path.join(pair_directory, "rawManta")
             output_prefix = os.path.join(pair_directory, sample.name)
 
-            mkdir_job = Job(command="mkdir -p " + manta_directory, removable_files=[manta_directory], samples=self.samples)
-
             input = self.select_input_files(
-	            [[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
-	             [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
-	             [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
+                [[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+                 [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
+                 [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])[0]
         
             manta_germline_output = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz")
             manta_germline_output_tbi = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz.tbi")
@@ -3033,9 +3112,20 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             if coverage_bed and not bed_file:
                 bed_file = coverage_bed + ".gz"
                 jobs.append(concat_jobs([
-                    Job([coverage_bed], [coverage_bed + ".sort"], command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > " + coverage_bed + ".sort ; sleep 300"),
-                    htslib.bgzip(coverage_bed + ".sort", bed_file),
-                    htslib.tabix(coverage_bed + ".gz", "-p bed"),
+                    Job(
+                        [coverage_bed],
+                        [coverage_bed + ".sort"],
+                        command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > "
+                                + coverage_bed + ".sort ; sleep 180"
+                    ),
+                    htslib.bgzip(
+                        coverage_bed + ".sort",
+                        bed_file
+                    ),
+                    htslib.tabix(
+                        coverage_bed + ".gz",
+                        "-p bed"
+                    ),
                  ],name="bed_index." + sample.name))
 
             output_dep = [manta_germline_output, manta_germline_output_tbi]
@@ -3444,7 +3534,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             germline_output = os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.vcf.gz")
             #cd_job = Job(command="cd " + svaba_directory)
 
-            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            coverage_bed = bvatools.resolve_readset_coverage_bed(
+                sample.readsets[0]
+            )
 
             bed = None
 
