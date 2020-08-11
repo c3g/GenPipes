@@ -986,31 +986,49 @@ END`""".format(
         jobs = []
 
         metrics_directory = os.path.join("metrics", "dna")
-        inputs = []
-        outputs = []
+        input_dep = []
         for tumor_pair in self.tumor_pairs.itervalues():
-            input_normal_oxog = os.path.join(metrics_directory, tumor_pair.normal.name, "picard_metrics.oxog_metrics.txt")
-            input_normal_qcbias = os.path.join(metrics_directory, tumor_pair.normal.name, "picard_metrics.qcbias_metrics.txt")
-            input_normal_all_picard = os.path.join(metrics_directory, tumor_pair.normal.name, "picard_metrics.all.metrics.quality_distribution.pdf")
+            normal_directory = os.path.join(metrics_directory, tumor_pair.normal.name)
+            input_normal_oxog = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".oxog_metrics.txt")
+            input_normal_qcbias = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name +".qcbias_metrics.txt")
+            input_normal_all_picard = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".all.metrics.quality_distribution.pdf")
             input_normal_qualimap = os.path.join(metrics_directory, tumor_pair.normal.name, "qualimap", tumor_pair.normal.name, "genome_results.txt")
-            input_normal_fastqc = os.path.join(metrics_directory, tumor_pair.normal.name, "fastqc", tumor_pair.normal.name + ".sorted.dup_fastqc.zip")
-            #input_normal_flagstat = os.path.join(metrics_directory, tumor_pair.normal.name, "flagstat", tumor_pair.normal.name + ".flagstat")
+            [input_normal_fastqc] = self.select_input_files([
+                [os.path.join(normal_directory, "fastqc", tumor_pair.normal.name + ".sorted.dup_fastqc.zip")],
+                [os.path.join(normal_directory, "fastqc", tumor_pair.normal.name + "_fastqc.zip")],
+            ])
+            #input_normal_flagstat = os.path.join(normal_directory, "flagstat", tumor_pair.normal.name + ".flagstat")
 
-            input_tumor_oxog = os.path.join(metrics_directory, tumor_pair.tumor.name, "picard_metrics.oxog_metrics.txt")
-            input_tumor_qcbias = os.path.join(metrics_directory, tumor_pair.tumor.name, "picard_metrics.qcbias_metrics.txt")
-            input_tumor_all_picard = os.path.join(metrics_directory, tumor_pair.tumor.name, "picard_metrics.all.metrics.quality_distribution.pdf")
+            tumor_directory = os.path.join(metrics_directory, tumor_pair.tumor.name)
+            input_tumor_oxog = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".oxog_metrics.txt")
+            input_tumor_qcbias = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".qcbias_metrics.txt")
+            input_tumor_all_picard = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all.metrics.quality_distribution.pdf")
             input_tumor_qualimap = os.path.join(metrics_directory, tumor_pair.tumor.name, "qualimap", tumor_pair.tumor.name, "genome_results.txt")
-            input_tumor_fastqc = os.path.join(metrics_directory, tumor_pair.tumor.name, "fastqc", tumor_pair.tumor.name + ".sorted.dup_fastqc.zip")
-            #input_tumor_flagstat = os.path.join(metrics_directory, tumor_pair.tumor.name, "flagstat", tumor_pair.tumor.name + ".flagstat")
+            [input_tumor_fastqc] = self.select_input_files([
+                [os.path.join(tumor_directory, "fastqc", tumor_pair.tumor.name + ".sorted.dup_fastqc.zip")],
+                [os.path.join(tumor_directory, "fastqc", tumor_pair.tumor.name + "_fastqc.zip")],
+            ])
+            #input_tumor_flagstat = os.path.join(tumor_directory, "flagstat", tumor_pair.tumor.name + ".flagstat")
 
-            input_dep = [input_normal_oxog, input_normal_qcbias, input_normal_all_picard, input_normal_qualimap, input_normal_fastqc, 
-                        input_tumor_oxog, input_tumor_qcbias, input_tumor_all_picard, input_tumor_qualimap, input_tumor_fastqc]
+            input = [
+                os.path.join(metrics_directory, tumor_pair.normal.name),
+                os.path.join(metrics_directory,tumor_pair.tumor.name)
+            ]
 
-            input = [os.path.join(metrics_directory, tumor_pair.normal.name), os.path.join(metrics_directory,tumor_pair.tumor.name)]
+            input_dep += [
+                input_normal_oxog,
+                input_normal_qcbias,
+                input_normal_all_picard,
+                input_normal_qualimap,
+                input_normal_fastqc,
+                input_tumor_oxog,
+                input_tumor_qcbias,
+                input_tumor_all_picard,
+                input_tumor_qualimap,
+                input_tumor_fastqc
+            ]
 
             output = os.path.join(metrics_directory, tumor_pair.name + ".multiqc")
-            inputs.append(input)
-            outputs.append(output)
 
             jobs.append(concat_jobs([
                 multiqc.run(input, output, input_dep=input_dep),
