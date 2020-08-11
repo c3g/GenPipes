@@ -1249,7 +1249,8 @@ END
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
             output_dir = os.path.join(fastqc_directory)
-            output = os.path.join(fastqc_directory, sample.name + ".fastqc.zip")
+            file = re.sub(".bam", "", os.path.basename(input))
+            output = os.path.join(fastqc_directory, file + "_fastqc.zip")
 
             adapter_file = config.param('fastqc', 'adapter_file', required=False, type='filepath')
             adapter_job = None

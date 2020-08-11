@@ -603,7 +603,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
 
 def split_n_cigar_reads(input, output, intervals=[], exclude_intervals=[], interval_list=None):
     if interval_list:
-        inputs = [input, interval_list]
+        inputs = [input]
     
     else:
         inputs = [input]
@@ -625,7 +625,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
             ram=config.param('gatk_split_N_trim', 'ram'),
             other_options=config.param('gatk_split_N_trim', 'other_options', required=False),
             reference_sequence=config.param('gatk_split_N_trim', 'reference', type='filepath'),
-            input=input,
+            input=" \\\n  ".join(input for input in inputs),
             output=output,
             intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
             interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",
