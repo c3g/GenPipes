@@ -868,6 +868,10 @@ END
 
             jobs.append(
                 concat_jobs([
+                    bash.mkdir(
+                        picard_directory,
+                        remove=False,
+                    ),
                     gatk4.picard_mark_duplicates(
                         input,
                         output,
