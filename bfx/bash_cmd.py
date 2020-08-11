@@ -60,7 +60,7 @@ ln -s -f \\
   {link}""".format(
             #target_file=os.path.relpath(target_file, folder),
             target_file=os.path.abspath(os.path.join(out_dir, target_file)),
-            link=os.path.abspath(link),
+            link=os.path.abspath(os.path.join(out_dir, link)),
             folder=folder
         ),
         removable_files=[link]
