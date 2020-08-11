@@ -291,7 +291,10 @@ END
 
             jobs.append(
                 concat_jobs([
-                    bash.mkdir(output_dir, remove=True),
+                    bash.mkdir(
+                        output_dir,
+                        remove=True
+                    ),
                     adapter_job,
                     skewer.trim(
                         fastq1,
@@ -649,9 +652,10 @@ END
                         ),
                         # Create sample realign symlink since no merging is required
                         bash.ln(
-                            output_bam,
-                            sample_output_bam
-                            )
+                            realign_prefix + ".bam",
+                            sample_output_bam,
+                            self.output_dir,
+                            ),
                         ],
                         name="gatk_indel_realigner." + sample.name,
                         samples=[sample]
@@ -847,6 +851,7 @@ END
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
+            picard_directory = os.path.join("metrics", "dna", sample.name, "picard_metrics")
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
@@ -868,16 +873,18 @@ END
                         output,
                         metrics_file
                         ),
-                    sambamba.index(
-                        output,
-                        output_index
-                        )
-                    ],
-                    name="picard_mark_duplicates." + sample.name,
-                    samples=[sample]
-                    )
+                    Job(
+                        [metrics_file],
+                        [os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")],
+                        command="sed -e 's#.realigned##g' " + metrics_file + " > "
+                                + os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")
+                    ),
+                ],
+                name="picard_mark_duplicates." + sample.name,
+                samples=[sample]
                 )
-
+            )
+            
         return jobs
 
     def gatk_mark_duplicates(self):
@@ -3139,8 +3146,16 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 manta.manta_config(input, None, manta_directory, bed_file),
                 manta.manta_run(manta_directory, output_dep=output_dep),
                 #Job([tmp_directory], [manta_directory], command="mv " + tmp_directory + " " + manta_directory),
-                bash.ln(manta_germline_output, output_prefix + ".manta.germline.vcf.gz"),
-                bash.ln(manta_germline_output_tbi, output_prefix + ".manta.germline.vcf.gz.tbi"),
+                bash.ln(
+                    manta_germline_output,
+                    output_prefix + ".manta.germline.vcf.gz",
+                    self.output_dir
+                ),
+                bash.ln(
+                    manta_germline_output_tbi,
+                    output_prefix + ".manta.germline.vcf.gz.tbi",
+                    self.output_dir
+                ),
             ], name="manta_sv." + sample.name))
 
         return jobs

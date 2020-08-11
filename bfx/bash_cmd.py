@@ -59,8 +59,8 @@ ln -s -f \\
   {target_file} \\
   {link}""".format(
             #target_file=os.path.relpath(target_file, folder),
-            target_file=os.path.abspath(os.path.join(out_dir, target_file)),
-            link=os.path.abspath(os.path.join(out_dir, link)),
+            target_file=os.path.join(out_dir, target_file),
+            link=os.path.join(out_dir, link),
             folder=folder
         ),
         removable_files=[link]
