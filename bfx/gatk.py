@@ -444,7 +444,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         ram=config.param('gatk_realigner_target_creator', 'ram'),
         other_options=config.param('gatk_realigner_target_creator', 'other_options'),
         reference_sequence=config.param('gatk_realigner_target_creator', 'genome_fasta', type='filepath'),
-        input=input,
+        input= os.path.abspath(input),
         input2="--input_file " + os.path.abspath(input2) if input2 else "",
         known_mills=config.param('gatk_realigner_target_creator', 'known_mills', type='filepath'),
         #known_1000G=config.param('gatk_realigner_target_creator', 'known_1000G', type='filepath'),

@@ -254,13 +254,13 @@ END`""".format(
                 realign_intervals = os.path.abspath(os.path.join(pair_directory, "all.intervals"))
                 bam_postfix = ".realigned.all.bam"
                 
-                normal_bam = os.path.join(tumor_pair.normal.name + ".sorted.realigned.all.bam")
+                normal_bam = os.path.join(pair_directory, tumor_pair.normal.name + ".sorted.realigned.all.bam")
                 normal_index = re.sub("\.bam$", ".bai", normal_bam)
                 normal_output_bam = os.path.join(normal_alignment_directory,
                                                  tumor_pair.normal.name + ".sorted.realigned.bam")
                 normal_output_index = re.sub("\.bam$", ".bai", normal_output_bam)
                 
-                tumor_bam = os.path.join(tumor_pair.tumor.name + ".sorted.realigned.all.bam")
+                tumor_bam = os.path.join(pair_directory, tumor_pair.tumor.name + ".sorted.realigned.all.bam")
                 tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
                 tumor_output_bam = os.path.join(tumor_alignment_directory,
                                                 tumor_pair.tumor.name + ".sorted.realigned.bam")
@@ -291,22 +291,22 @@ END`""".format(
                     bash.ln(
                         normal_bam,
                         normal_output_bam,
-                        pair_directory
+                        self.output_dir
                     ),
                     bash.ln(
                         normal_index,
                         normal_output_index,
-                        pair_directory
+                        self.output_dir
                     ),
                     bash.ln(
                         tumor_bam,
                         tumor_output_bam,
-                        pair_directory
+                        self.output_dir
                     ),
                     bash.ln(
                         tumor_index,
                         tumor_output_index,
-                        pair_directory
+                        self.output_dir
                     ),
                 ], name="gatk_indel_realigner." + tumor_pair.name))
 
@@ -326,9 +326,9 @@ END`""".format(
                     if str(idx) == 0:
                         intervals.append("unmapped")
                     bam_postfix = ".realigned." + str(idx) + ".bam"
-                    normal_bam = os.path.join(tumor_pair.normal.name + ".sorted.realigned." + str(idx) + ".bam")
+                    normal_bam = os.path.join(pair_directory, tumor_pair.normal.name + ".sorted.realigned." + str(idx) + ".bam")
                     normal_index = re.sub("\.bam$", ".bai", normal_bam)
-                    tumor_bam = os.path.join(tumor_pair.tumor.name + ".sorted.realigned." + str(idx) + ".bam")
+                    tumor_bam = os.path.join(pair_directory, tumor_pair.tumor.name + ".sorted.realigned." + str(idx) + ".bam")
                     tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
                     normal_output_bam = os.path.join(normal_realign_directory,
                                                      tumor_pair.normal.name + ".sorted.realigned." + str(idx) + ".bam")
@@ -371,23 +371,23 @@ END`""".format(
                         ),
                         bash.ln(
                             normal_bam,
-                            os.path.abspath(normal_output_bam),
-                            pair_directory
+                            normal_output_bam,
+                            self.output_dir
                         ),
                         bash.ln(
                             normal_index,
-                            os.path.abspath(normal_output_index),
-                            pair_directory
+                            normal_output_index,
+                            self.output_dir
                         ),
                         bash.ln(
                             tumor_bam,
-                            os.path.abspath(tumor_output_bam),
-                            pair_directory
+                            tumor_output_bam,
+                            self.output_dir
                         ),
                         bash.ln(
                             tumor_index,
-                            os.path.abspath(tumor_output_index),
-                            pair_directory
+                            tumor_output_index,
+                            self.output_dir
                         ),
                     ], name="gatk_indel_realigner." + tumor_pair.name + "." + str(idx)))
 
@@ -395,9 +395,9 @@ END`""".format(
                 realign_prefix = os.path.join(tumor_realign_directory, "others")
                 realign_intervals = realign_prefix + ".intervals"
                 bam_postfix = ".realigned.others.bam"
-                normal_bam = os.path.join(tumor_pair.normal.name + ".sorted.realigned.others.bam")
+                normal_bam = os.path.join(pair_directory, tumor_pair.normal.name + ".sorted.realigned.others.bam")
                 normal_index = re.sub("\.bam$", ".bai", normal_bam)
-                tumor_bam = os.path.join(tumor_pair.tumor.name + ".sorted.realigned.others.bam")
+                tumor_bam = os.path.join(pair_directory, tumor_pair.tumor.name + ".sorted.realigned.others.bam")
                 tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
                 normal_output_bam = os.path.join(normal_realign_directory,
                                                  tumor_pair.normal.name + ".sorted.realigned.others.bam")
@@ -440,23 +440,23 @@ END`""".format(
                     ),
                     bash.ln(
                         normal_bam,
-                        os.path.abspath(normal_output_bam),
-                        pair_directory
+                        normal_output_bam,
+                        self.output_dir
                     ),
                     bash.ln(
                         normal_index,
-                        os.path.abspath(normal_output_index),
-                        pair_directory
+                        normal_output_index,
+                        self.output_dir
                     ),
                     bash.ln(
                         tumor_bam,
-                        os.path.abspath(tumor_output_bam),
-                        pair_directory
+                        tumor_output_bam,
+                        self.output_dir
                     ),
                     bash.ln(
                         tumor_index,
-                        os.path.abspath(tumor_output_index),
-                        pair_directory
+                        tumor_output_index,
+                        self.output_dir
                     ),
                 ], name="gatk_indel_realigner." + tumor_pair.name + ".others"))
 
