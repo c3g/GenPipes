@@ -1616,7 +1616,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             )
         )
 
-
 def cluster_crosscheck_metrics(input,
                                output):
         return Job(
