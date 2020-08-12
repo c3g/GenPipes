@@ -1628,7 +1628,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   ClusterCrosscheckMetrics {options} \\
   --VALIDATION_STRINGENCY SILENT \\
   --TMP_DIR {tmp_dir} \\
-  --INPUT {inputs} \\
+  --INPUT {input} \\
   --LOD_THRESHOLD {lod_threshold} \\
   --OUTPUT={output} """.format(
                 tmp_dir=config.param('gatk_cluster_crosscheck_metrics', 'tmp_dir'),
