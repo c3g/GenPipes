@@ -643,11 +643,13 @@ END
                         mkdir_job,
                         gatk4.realigner_target_creator(
                             input,
-                            realign_intervals
+                            realign_intervals,
+                            output_dir=self.output_dir,
                         ),
                         gatk4.indel_realigner(
                             input,
                             output=output_bam,
+                            output_dir=self.output_dir,
                             target_intervals=realign_intervals
                         ),
                         # Create sample realign symlink since no merging is required
@@ -681,10 +683,12 @@ END
                             gatk4.realigner_target_creator(
                                 input,
                                 realign_intervals,
+                                output_dir=self.output_dir,
                                 intervals=intervals
                             ),
                             gatk4.indel_realigner(
                                 input,
+                                output_dir=self.output_dir,
                                 output=output_bam,
                                 target_intervals=realign_intervals,
                                 intervals=intervals
@@ -707,10 +711,12 @@ END
                         gatk4.realigner_target_creator(
                             input,
                             realign_intervals,
+                            output_dir=self.output_dir,
                             exclude_intervals=unique_sequences_per_job_others
                         ),
                         gatk4.indel_realigner(
                             input,
+                            output_dir=self.output_dir,
                             output=output_bam,
                             target_intervals=realign_intervals,
                             exclude_intervals=unique_sequences_per_job_others

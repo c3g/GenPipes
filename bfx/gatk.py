@@ -353,7 +353,18 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def indel_realigner(input, target_intervals, input2=[], output=[], output_norm_dep=[], output_tum_dep=[], intervals=[], exclude_intervals=[], optional=[]):
+def indel_realigner(input,
+                    target_intervals,
+                    input2=[],
+                    output=[],
+                    output_dir=[],
+                    output_norm_dep=[],
+                    output_tum_dep=[],
+                    intervals=[],
+                    exclude_intervals=[],
+                    optional=[]
+                    ):
+    
     output_dep = output_norm_dep + output_tum_dep
     output_dep.append(output)
     
@@ -381,11 +392,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         other_options=config.param('gatk_indel_realigner', 'other_options'),
         reference_sequence=config.param('gatk_indel_realigner', 'genome_fasta', type='filepath'),
         optional="--nWayOut " + optional if optional else "",
-        input=input,
-        input2="--input_file " + os.path.abspath(input2) if input2 else "",
-        target_intervals=target_intervals,
+        input=os.path.join(output_dir, input),
+        input2="--input_file " + os.path.join(output_dir, input2) if input2 else "",
+        target_intervals=os.path.join(output_dir, target_intervals),
         known_mills=config.param('gatk_realigner_target_creator', 'known_mills', type='filepath'),
-        output=" \\\n  --out " + output if output else "",
+        output=" \\\n  --out " + os.path.join(output_dir,output) if output else "",
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
         max_reads_in_memory=config.param('gatk_indel_realigner', 'max_reads_in_memory')
@@ -422,7 +433,13 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def realigner_target_creator(input, output, input2=[], intervals=[], exclude_intervals=[]):
+def realigner_target_creator(input,
+                             output,
+                             output_dir=[],
+                             input2=[],
+                             intervals=[],
+                             exclude_intervals=[]
+                             ):
 
     return Job(
         [input, input2],
@@ -444,11 +461,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         ram=config.param('gatk_realigner_target_creator', 'ram'),
         other_options=config.param('gatk_realigner_target_creator', 'other_options'),
         reference_sequence=config.param('gatk_realigner_target_creator', 'genome_fasta', type='filepath'),
-        input= os.path.abspath(input),
-        input2="--input_file " + os.path.abspath(input2) if input2 else "",
+        input= os.path.join(output_dir, input),
+        input2="--input_file " + os.path.join(output_dir, input2) if input2 else "",
         known_mills=config.param('gatk_realigner_target_creator', 'known_mills', type='filepath'),
         #known_1000G=config.param('gatk_realigner_target_creator', 'known_1000G', type='filepath'),
-        output=output,
+        output=os.path.join(output_dir, output),
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )

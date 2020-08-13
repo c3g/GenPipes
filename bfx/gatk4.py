@@ -35,6 +35,7 @@ import picard2
 def realigner_target_creator(
     input,
     output,
+    output_dir=[],
     input2=[],
     intervals=[],
     exclude_intervals=[]
@@ -43,6 +44,7 @@ def realigner_target_creator(
     return gatk.realigner_target_creator(
         input,
         output,
+        output_dir,
         input2,
         intervals,
         exclude_intervals
@@ -54,6 +56,7 @@ def indel_realigner(
     target_intervals,
     input2=[],
     output=[],
+    output_dir=[],
     output_norm_dep=[],
     output_tum_dep=[],
     intervals=[],
@@ -66,6 +69,7 @@ def indel_realigner(
         target_intervals,
         input2,
         output,
+        output_dir,
         output_norm_dep,
         output_tum_dep,
         intervals,

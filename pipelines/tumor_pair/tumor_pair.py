@@ -277,11 +277,13 @@ END`""".format(
                     gatk.realigner_target_creator(
                         input_normal,
                         realign_intervals,
+                        output_dir=self.output_dir,
                         input2=input_tumor
                     ),
                     gatk.indel_realigner(
                         input_normal,
                         input2=input_tumor,
+                        output_dir=self.output_dir,
                         output_norm_dep=[normal_bam,normal_index],
                         output_tum_dep=[tumor_bam,tumor_index],
                         target_intervals=realign_intervals,
@@ -357,12 +359,14 @@ END`""".format(
                         gatk.realigner_target_creator(
                             input_normal,
                             realign_intervals,
+                            output_dir=self.output_dir,
                             input2=input_tumor,
                             intervals=intervals
                         ),
                         gatk.indel_realigner(
                             input_normal,
                             input2=input_tumor,
+                            output_dir=self.output_dir,
                             output_norm_dep=[normal_bam,normal_index],
                             output_tum_dep=[tumor_bam,tumor_index],
                             target_intervals=realign_intervals,
@@ -426,12 +430,14 @@ END`""".format(
                     gatk.realigner_target_creator(
                         input_normal,
                         realign_intervals,
+                        output_dir=self.output_dir,
                         input2=input_tumor,
                         exclude_intervals=unique_sequences_per_job_others
                     ),
                     gatk.indel_realigner(
                         input_normal,
                         input2=input_tumor,
+                        output_dir=self.output_dir,
                         output_norm_dep=[normal_bam, normal_index],
                         output_tum_dep=[tumor_bam, tumor_index],
                         target_intervals=realign_intervals,
