@@ -2340,9 +2340,14 @@ pandoc \\
                         samtools.mpileup(
                             input,
                             None,
-                            None,
-                            config.param('rawmpileup', 'mpileup_other_options')),
-                        Job(output_files=[output], command="gzip -1 -c > " + output, samples=[sample])
+                            other_options=config.param('rawmpileup', 'mpileup_other_options'),
+                            region=None,
+                            regionFile=None,
+                        ),
+                        Job(output_files=[output],
+                            command="gzip -1 -c > " + output,
+                            samples=[sample]
+                            ),
                     ])
                 ], name="rawmpileup." + sample.name + ".all"))
 
@@ -2355,23 +2360,23 @@ pandoc \\
                                 bash.mkdir(mpileup_directory),
                                 pipe_jobs([
                                     samtools.mpileup(
-                                    input,
-                                    None,
-                                    config.param('rawmpileup', 'mpileup_other_options'),
-                                    sequence['name']
-                                    ),
-                                Job(
-                                    output_files=[output],
-                                    command="gzip -1 -c > " + output,
-                                    samples=[sample]
-                                    )
-                                ])
-                            ],
-                            name="rawmpileup."+sample.name+"."+sequence['name'],
-                            samples=[sample]
+                                        input,
+                                        None,
+                                        other_options=config.param('rawmpileup', 'mpileup_other_options'),
+                                        region=sequence['name'],
+                                        regionFile=None,
+                                        ),
+                                    Job(
+                                        output_files=[output],
+                                        command="gzip -1 -c > " + output,
+                                        samples=[sample]
+                                        )
+                                    ])
+                                ],
+                                name="rawmpileup."+sample.name+"."+sequence['name'],
+                                samples=[sample]
+                                )
                             )
-                        )
-
         return jobs
 
     def rawmpileup_cat(self):

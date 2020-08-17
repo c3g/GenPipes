@@ -75,7 +75,7 @@ samtools flagstat \\
         removable_files=[output]
         )
 
-def mpileup(inputs, output, options="", region=None, regionFile=None, ini_section='rawmpileup'):
+def mpileup(inputs, output, other_options=None, region=None, regionFile=None, ini_section='rawmpileup'):
 
     if not isinstance(inputs, list):
         inputs = [inputs]
@@ -93,7 +93,7 @@ samtools mpileup {other_options} \\
   {regionFile} \\
   {input_bams} \\
   {output}""".format(
-            other_options=options,
+            other_options=other_options,
             reference_fasta="-f " + config.param('samtools_mpileup', 'genome_fasta', type='filepath') if config.param('samtools_mpileup', 'genome_fasta', type='filepath') else "",
             region="-r " + region if region else "",
             regionFile="-l " + regionFile if regionFile else "",
