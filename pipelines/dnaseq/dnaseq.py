@@ -1010,36 +1010,18 @@ END
                     name="gatk_base_recalibrator." + sample.name
                     )
                 )
-
-            if config.param('gatk_apply_bqsr', 'module_gatk').split("/")[2] > "3":
-                jobs.append(
-                    concat_jobs([
-                        gatk4.print_reads(
-                            input,
-                            print_reads_output,
-                            base_recalibrator_output
-                            ),
-                        sambamba.index(
-                            print_reads_output,
-                            print_reads_output + ".bai"
-                            )
-                        ],
-                        name="gatk_print_reads." + sample.name
-                        )
-                    )
-
-            else:
-                jobs.append(
-                    concat_jobs([
-                        gatk4.print_reads(
-                            input,
-                            print_reads_output,
-                            base_recalibrator_output
-                            ),
-                        ],
-                        name="gatk_print_reads." + sample.name
-                        )
-                    )
+            
+            jobs.append(
+                concat_jobs([
+                    gatk4.print_reads(
+                        input,
+                        print_reads_output,
+                        base_recalibrator_output
+                        ),
+                    ],
+                    name="gatk_print_reads." + sample.name
+                )
+            )
 
         return jobs
 

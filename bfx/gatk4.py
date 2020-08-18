@@ -210,7 +210,7 @@ def apply_bqsr(
                 input,
                 base_quality_score_recalibration
             ],
-            [output],
+            [output, re.sub(".bam", ".bai", output)],
             [
                 ['gatk_apply_bqsr', 'module_java'],
                 ['gatk_apply_bqsr', 'module_gatk']
