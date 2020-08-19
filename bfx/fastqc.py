@@ -42,7 +42,7 @@ def fastqc(
 
     if not isinstance(outputs, list):
         outputs = [outputs]
- 
+
     output_directory = os.path.dirname(outputs[0])
     if use_tmp:
         tmp_directory = output_directory + ".tmp"
@@ -51,7 +51,7 @@ def fastqc(
     file_format = re.sub("^\.", "", file_format)
     if file_format == 'gz':
         (input_basename, file_format) = os.path.splitext(input_basename)
-        file_format = re.sub("^\.", "", file_format)
+        file_format = re.sub("^\.", "", file_format) 
 
     return Job(
         inputs,
