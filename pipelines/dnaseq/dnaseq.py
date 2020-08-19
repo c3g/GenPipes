@@ -385,7 +385,8 @@ END
                                 "\\tID:" + readset.name + \
                                 "\\tSM:" + readset.sample.name + \
                                 "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
-                                ("\\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                                ("\\tPU:" + readset.name) + \
+                                #("\\tPU:" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
                                 ("\\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
                                 ("\\tPL:" + config.param('bwa_mem', 'sequencing_technology') if config.param('bwa_mem', 'sequencing_technology', required=False) else "Illumina") + \
                                 "'"
@@ -2510,7 +2511,8 @@ pandoc \\
 
     def haplotype_caller_decompose_and_normalize(self):
     
-        input_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf.gz"], ["variants/allSamples.hc.vcf.gz"]])
+        #input_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf.gz"], ["variants/allSamples.hc.vcf.gz"]])
+        input_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf.gz"]])
     
         job = self.vt_decompose_and_normalize(input_vcf, "variants/allSamples.hc.vqsr.vt.vcf.gz")
         return job
