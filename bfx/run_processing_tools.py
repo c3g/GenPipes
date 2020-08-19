@@ -75,43 +75,6 @@ java -Djava.io.tmpdir={tmp_dir} \\
         )
     )
 
-def get_non_index_reads(summary):
-    """
-    Pick-out the reads which are not index reads
-    :param summary: a Interop read summary object to parse the read numbers from
-    :returns: all reads which are not index reads
-    """
-    non_index_reads = []
-    for read_nbr in range(summary.size()):
-        if not summary.at(read_nbr).read().is_index():
-            non_index_reads.append(read_nbr)
-    return non_index_reads
-
-
-def get_index_reads(summary):
-    """
-    Pick-out the reads which are not index reads
-    :param summary: a Interop read summary object to parse the read numbers from
-    :returns: all reads which are not index reads
-    """
-    index_reads = []
-    for read_nbr in range(summary.size()):
-        if summary.at(read_nbr).read().is_index():
-            index_reads.append(read_nbr)
-    return index_reads
-
-
-def get_all_reads(summary):
-    """
-    Pick-out the reads which are not index reads
-    :param summary: a Interop read summary object to parse the read numbers from
-    :returns: all reads which are not index reads
-    """
-    reads = []
-    for read_nbr in range(summary.size()):
-            reads.append(read_nbr)
-    return reads
-
 def bcl2fastq(
     input,
     fastq_outputs,
@@ -132,8 +95,6 @@ def bcl2fastq(
             number_of_mismatches=mismatches,
             mask=mask
         )
-    else:
-        command_suffix = ""
 
     return Job(
         [input],

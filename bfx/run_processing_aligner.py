@@ -20,7 +20,7 @@
 # Python Standard Modules
 import os
 import re
-import ConfigParser
+import configparser
 import sys
 
 # MUGQIC Modules
@@ -490,7 +490,7 @@ class StarRunProcessingAligner(RNARunProcessingAligner):
         folder_name = os.path.basename(self.genome_folder)
         ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
         if os.path.isfile(ini_file):
-            genome_config = ConfigParser.SafeConfigParser()
+            genome_config = configparser.SafeConfigParser()
             genome_config.read(ini_file)
 
             source = genome_config.get("DEFAULT", "source")
@@ -556,7 +556,7 @@ class CellrangerRunProcessingAligner(RNARunProcessingAligner):
         folder_name = os.path.basename(self.genome_folder)
         ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
         if os.path.isfile(ini_file):
-            genome_config = ConfigParser.SafeConfigParser()
+            genome_config = configparser.SafeConfigParser()
             genome_config.read(ini_file)
 
             return os.path.join(
