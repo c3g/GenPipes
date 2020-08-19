@@ -452,28 +452,113 @@ python $PYTHON_TOOLS/CpG_coverageStats.py \\
     )
 
 def index_validation(
-    indexes,
-    index_file,
+    index_json_file,
+    index_metrics_file,
+    bcl2fastq_html_report,
+    lane,
     mismatches
     ):
-    output_json = os.path.join(os.path.dirname(index_file), "index_validation_report.json")
+
+    output_json = os.path.join(os.path.dirname(index_json_file), "index_validation_report.json")
     return Job(
-        [index_file],
+        [index_metrics_file, bcl2fastq_html_report],
         [output_json],
         [
             ['index_validation', 'module_mugqic_tools'],
             ['index_validation', 'module_python']
         ],
         command="""\
-python $PYTHON_TOOLS/run_processing_index_validation.py \\
-  {index_hash} \\
-  {index_file} \\
-  {mismatches}""".format(
-            index_hash=indexes,
-            index_file=index_file,
+python $PYTHON_TOOLS/runProcessingIndexValidation.py \\
+  -j {index_json} \\
+  -f {index_file} \\
+  -r {bcl2fastq_html_report} \\
+  -l {lane} \\
+  -m {mismatches}""".format(
+            index_json=index_json_file,
+            index_file=index_metrics_file,
+            bcl2fastq_html_report=bcl2fastq_html_report,
+            lane=lane,
             mismatches=mismatches
         )
     )
+
+def run_validation_sample_report(
+    readset,
+    report_inputs,
+    out_file
+    ):
+
+    inputs = [
+        report_inputs['index'],
+        report_inputs['sample_tag'][readset.name],
+        report_inputs['qc'][readset.name],
+        report_inputs['blast'][readset.name]
+    ]
+    if readset.bam:
+        inputs.append(report_inputs['mark_dup'][readset.name])
+        inputs.extend(report_inputs['align'][readset.name])
+
+    return Job(
+        inputs,
+        [out_file],
+        [
+            ['sample_report', 'module_mugqic_tools'],
+            ['sample_report', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/runProcessingSampleReport.py \\
+  -s {sample} \\
+  -l {library} \\
+  -i {index} \\
+  -k {sample_tag} \\
+  -q {qc} \\
+  -b {blast} \\
+  {align} \\
+  -g {gender} \\
+  -o {outfile}""".format(
+            sample=readset.sample.name,
+            library=readset.library,
+            index=report_inputs['index'],
+            sample_tag=report_inputs['sample_tag'][readset.name],
+            qc=report_inputs['qc'][readset.name],
+            blast=report_inputs['blast'][readset.name],
+            align="-a " + os.path.dirname(report_inputs['mark_dup'][readset.name]) if readset.bam else "",
+            gender=readset.gender,
+            outfile=out_file
+        )
+    )
+
+def run_validation_aggregate_report(
+    main_json,
+    index_json,
+    inputs,
+    outfile
+    ):
+
+    input_files = inputs
+    input_files.append(main_json)
+    input_files.append(index_json)
+
+    return Job(
+        input_files,
+        [outfile],
+        [
+            ['report', 'module_mugqic_tools'],
+            ['report', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/runProcessingAggregateReports.py \\
+  -m {main_json} \\
+  -i {index} \\
+  -s {input_dir} \\
+  -o {outfile}""".format(
+            main_json=main_json,
+            index=index_json,
+            input_dir=os.path.dirname(inputs[0]),
+            outfile=outfile
+        )
+    )
+
 
 ## functions for perl tools ##
 
@@ -777,19 +862,21 @@ def sh_sample_tag_summary(
     nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', type='int', required=True)
     align_size = config.param('sample_tag', 'align_size', type='int', required=True)
     mismatches = config.param('sample_tag', 'mismatches', type='int', required=True)
-    identity = config.param('sample_tag', 'identity', type='int', required=True)
+    identity = config.param('sample_tag', 'identity', type='float', required=True)
+    database_file = config.param('sample_tag', 'database', type='filepath', required=True)
 
-    output_base_name = os.path.basebname(fastq_in)+".subSampled_"+nreads_sample_tag+".blast.tsv."+align_size+"bp_"+mismatches+"MM_"+identity+"id.tsv.summary.tsv"
+    output_base_name = os.path.basename(fastq_in) + ".subSampled_" + str(nreads_sample_tag) + ".blast.tsv."+ str(align_size) + "bp_" + str(mismatches) + "MM_" + str(int(100*identity)) + "id.tsv.summary.tsv"
     output_file = os.path.join(output_dir, output_base_name)
-
     return Job(
         [fastq_in],
         [output_file],
         [
-            ['sample_tag_summary', 'module_mugqic_tools']
+            ['sample_tag', 'module_mugqic_tools'],
+            ['sample_tag', 'module_blast'],
+            ['sample_tag', 'module_R']
         ],
         command="""\
-bash ${TOOLS}/estimateSpikeInCount.sh \\
+bash $TOOLS/estimateSpikeInCount.sh \\
   {nreads_sample_tag} \\
   {output_dir} \\
   {fastq} \\
@@ -808,33 +895,35 @@ bash ${TOOLS}/estimateSpikeInCount.sh \\
     )
 
 def sh_sample_tag_stats(
-    input_prefix,
+    fastq_in,
     output_dir,
     sample_tag,
     readset_name
     ):
 
+    input_prefix = os.path.join(output_dir, os.path.basename(fastq_in))
+
     nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', type='int', required=True)
     align_size = config.param('sample_tag', 'align_size', type='int', required=True)
     mismatches = config.param('sample_tag', 'mismatches', type='int', required=True)
-    identity = config.param('sample_tag', 'identity', type='int', required=True)
+    identity = int(100 * config.param('sample_tag', 'identity', type='float', required=True))
 
-    input_file = input_prefix + ".subSampled_" + nreads_sample_tag + ".blast.tsv." + align_size + "bp_" + mismatches + "MM_" + identity + "id.tsv.summary.tsv"
+    input_file = input_prefix + ".subSampled_" + str(nreads_sample_tag) + ".blast.tsv." + str(align_size) + "bp_" + str(mismatches) + "MM_" + str(identity) + "id.tsv.summary.tsv"
     output_file = os.path.join(output_dir, readset_name + ".sample_tag_stats.csv")
 
     return Job(
-        [input_file],
+        [fastq_in],
         [output_file],
         [
             ['sample_tag', 'module_mugqic_tools']
         ],
         command="""\
-bash ${TOOLS}/createSampleTagStats.sh \\
+bash $TOOLS/createSampleTagStats.sh \\
   {input} \\
   {output} \\
   {tag} \\
   {readset}""".format(
-            input=input,
+            input=input_file,
             output=output_file,
             tag=sample_tag,
             readset=readset_name
