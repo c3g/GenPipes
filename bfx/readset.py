@@ -23,6 +23,8 @@ import csv
 import logging
 import os
 import re
+import xml.etree.ElementTree as Xml
+import sys
 
 # MUGQIC Modules
 from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner 
@@ -378,10 +380,14 @@ def parse_illumina_raw_readset_files(
 
         current_lane = line['Position'].split(':')[0]
 
-        if int(current_lane) != int(lane):
+        if int(current_lane) != lane:
             continue
 
         sample_name = line['SampleName']
+
+        # Always create a new sample
+        sample = Sample(sample_name)
+        samples.append(sample)
 
         # Create readset and add it to sample
         readset = IlluminaRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
