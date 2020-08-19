@@ -823,6 +823,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         in the `Blast_sample` folder, under the Unaligned folder.
         """
         jobs = []
+        self.report_inputs['blast'] = {}
 
         nb_blast_to_do = config.param('blast', 'nb_blast_to_do', type="posint")
         is_nb_blast_per_lane = config.param('blast', 'is_nb_for_whole_lane', type="boolean")
@@ -872,6 +873,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                         command=command
                     )
                 )
+            )
 
                 # rRNA estimate using silva blast db, using the same subset of reads as the "normal" blast
                 rrna_db = config.param('blast', 'rrna_db', required=False)
@@ -973,6 +975,10 @@ wc -l >> {output}""".format(
         align the reads.
         """
         jobs = []
+        for readset in [readset for readset in self.readsets if readset.bam]:
+            job = readset.aligner.get_alignment_job(readset)
+            job.samples = [readset.sample]
+            jobs.append(job)
 
         for lane in self.lanes:
             lane_jobs = []
@@ -1346,6 +1352,53 @@ wc -l >> {output}""".format(
 
         return jobs
 
+    def report(self):
+        """
+        Generate en JSON file reporting the whole pipeline
+        """
+        jobs = []
+
+        report_dir = os.path.join(self.output_dir, "report")
+        sample_report_dir  = os.path.join(report_dir, "sample_json")
+
+        for readset in self.readsets:
+            output_file = os.path.join(sample_report_dir, readset.name + ".report.json")
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(sample_report_dir),
+                    tools.run_validation_sample_report(
+                        readset,
+                        self.report_inputs,
+                        output_file
+                    )],
+                    name="sample_report." + readset.name + "." + self.run_id + "." + str(readset.lane)
+                )
+            )
+
+        run_validation_report_json = os.path.join(report_dir, self.run_id + "." + str(self.lane_number) + ".run_validation_report.json")
+        general_information_file = os.path.join(self.output_dir, self.run_id + "." + str(self.lane_number) + ".general_information.json")
+        with open(general_information_file, 'w') as out_json:
+            json.dump(self.report_hash, out_json, indent=4)
+
+        run_validation_inputs = []
+        for sample_job in jobs:
+            run_validation_inputs.extend(sample_job.output_files)
+
+        jobs.append(
+            concat_jobs([
+                bash.mkdir(report_dir),
+                tools.run_validation_aggregate_report(
+                    general_information_file,
+                    os.path.join(self.output_dir, "index", "index_per_readset.json"),
+                    run_validation_inputs,
+                    run_validation_report_json
+                )],
+                name="report." + self.run_id + "." + str(self.lane_number)
+            )
+        )
+
+        return jobs
+
     #
     # Utility methods
     #
@@ -1355,6 +1408,19 @@ wc -l >> {output}""".format(
             # we first remove dependencies of the current job, since we will have a dependency on that job
             self.copy_job_inputs[lane] = [item for item in self.copy_job_inputs[lane] if item not in job.input_files]
             self.copy_job_inputs[lane].extend(job.output_files)
+
+    def add_to_report_hash(self, step_name, jobs=[]):
+        report_hash = {
+            "step_name" : step_name,
+            "jobs" : [{
+                "job_name" : job.name,
+                "input_files" : [os.path.relpath(input_file, os.path.join(self.output_dir, "report")) for input_file in job.input_files],
+                "output_files" : [os.path.relpath(output_file, os.path.join(self.output_dir, "report")) for output_file in job.output_files],
+                "command" : job.command,                     
+                "modules" : job.modules
+            } for job in jobs]
+        }
+        self.report_hash["steps"].append(report_hash)
 
     def add_to_report_hash(self, step_name, jobs=[]):
         report_hash = {
@@ -1699,6 +1765,7 @@ wc -l >> {output}""".format(
                             fastq1d
                         ],
                         readset.fastq1
+                ))
                 # If True, then merge the 'Undetermined' reads
                 if merge:
                     undet_fastq1 = os.path.join(output_dir, re.sub(readset.name, "Undetermined_S0", fastq1))
@@ -1974,23 +2041,6 @@ wc -l >> {output}""".format(
 
         return run_index_lengths
 
-    def interop_getrawreads(self):
-        """
-        Parse the InterOp .bin files (within the run folder) to retrieve the # raw reads
-        """
-        run_metrics = py_interop_run_metrics.run_metrics()
-
-        valid_to_load = py_interop_run.uchar_vector(py_interop_run.MetricCount, 0)
-        py_interop_run_metrics.list_index_metrics_to_load(valid_to_load)
-        run_metrics.read(self.run_dir, valid_to_load)
-
-        summary = py_interop_summary.index_flowcell_summary()
-        py_interop_summary.summarize_index_metrics(run_metrics, summary)
-
-        lane_summary = summary.at(self.lane_number - 1)
-        
-        return lane_summary.total_reads()
-
     def parse_run_info_file(self):
         """
         Parse the RunInfo.xml file of the run and returns the list of RunInfoRead objects
@@ -2078,7 +2128,6 @@ def distance(
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
     return sum(itertools.imap(unicode.__ne__, str1, str2))
-
 
 if __name__ == '__main__':
 
