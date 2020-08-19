@@ -21,7 +21,6 @@
 
 # Python Standard Modules
 import argparse
-import collections
 import logging
 import os
 import re

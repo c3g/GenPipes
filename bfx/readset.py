@@ -89,6 +89,14 @@ class IlluminaReadset(Readset):
             return self._bigwig
 
     @property
+    def sample_tag(self):
+        return self._sample_tag
+
+    @property
+    def gender(self):
+        return self._gender
+
+    @property
     def library(self):
         return self._library
 
@@ -102,12 +110,18 @@ class IlluminaReadset(Readset):
 
     @property
     def adapter1(self):
-        return self._adapter1
+        if not hasattr(self, "_adapter1"):
+            return None
+        else:
+            return self._adapter1
 
     @property
     def adapter2(self):
-        return self._adapter2
-
+        if not hasattr(self, "_adapter2"):
+            return None
+        else:
+            return self._adapter2
+    
     @property
     def primer1(self):
         if not hasattr(self, "_primer1"):
@@ -320,141 +334,106 @@ def parse_illumina_raw_readset_files(
     lane,
     genome_root,
     nb_cycles,
-    lims
     ):
 
     readsets = []
     samples = []
     GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
 
-    if lims == 'clarity':
-        # Parsing Clarity event file
-        log.info("Parse Clarity Illumina event file " + readset_file + " ...")
+    # Parsing Clarity event file
+    log.info("Parse Clarity Illumina event file " + readset_file + " ...")
 
-        readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter=',', quotechar='"')
+    readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter='\t', quotechar='"')
 
-        protocol_file = config.param('DEFAULT', 'library_protocol_file', type='filepath', required='false')
+    for line in readset_csv:
+        protocol_file = config.param('DEFAULT', 'library_protocol_file', type='filepath', required=False)
         if not (protocol_file and os.path.isfile(protocol_file)):
             protocol_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'library_protocol_list.csv')
         protocol_csv = csv.DictReader(open(protocol_file, 'rb'), delimiter=',', quotechar='"')
 
-        adapter_file = config.param('DEFAULT', 'adapter_type_file', type='filepath', required='false')
+        adapter_file = config.param('DEFAULT', 'adapter_type_file', type='filepath', required=False)
         if not (adapter_file and os.path.isfile(adapter_file)):
-            adapter_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_types.csv')
+            adapter_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_types.txt')
         adapter_csv = csv.reader(open(adapter_file, 'rb'), delimiter=',', quotechar='"')
 
-        index_file = config.param('DEFAULT', 'index_settings_file', type='filepath', required='false')
+        index_file = config.param('DEFAULT', 'index_settings_file', type='filepath', required=False)
         if not (index_file and os.path.isfile(index_file)):
             index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
         index_csv = csv.reader(open(index_file, 'rb'), delimiter=',', quotechar='"')
 
-        for line in readset_csv:
-            current_lane = line['Position'].split(':')[0]
+        current_lane = line['Position'].split(':')[0]
 
-            if int(current_lane) != lane:
-                continue
+        if int(current_lane) != lane:
+            continue
 
-            sample_name = line['SampleName']
+        sample_name = line['SampleName']
 
-            # Always create a new sample
-            sample = Sample(sample_name)
-            samples.append(sample)
+        # Always create a new sample
+        sample = Sample(sample_name)
+        samples.append(sample)
 
-            # Create readset and add it to sample
-            readset = IlluminaRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
-            readset._quality_offset = 33
-            readset._description = line['Index'].split(' ')[0]
-            readset._library = line['LibraryLUID']
+        # Create readset and add it to sample
+        readset = IlluminaRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
+        readset._quality_offset = 33
+        readset._description = line['Index'].split(' ')[0]
+        readset._library = line['LibraryLUID']
+        readset._sample_tag = line['Sample Tag']
+        readset._gender = line['Gender']
 
-            for protocol_line in protocol_csv:
-                if protocol_line['Clarity Step Name'] == line['LibraryProcess']:
-                    readset._lib_type = line['LibraryProcess']
-                    readset._library_source = protocol_line['Processing Protocol Name']
-                    readset._library_type = protocol_line['Library Structure']
+        for protocol_line in protocol_csv:
+            if protocol_line['Clarity Step Name'] == line['LibraryProcess']:
+                readset._lib_type = line['LibraryProcess']
+                readset._library_source = protocol_line['Processing Protocol Name']
+                readset._library_type = protocol_line['Library Structure']
 
-                    if not readset._library_type:
-                        if re.search("SI-*", readset._description):
-                            key = readset._description
-                            for index_line in index_csv:
-                                if index_line[0] == key:
-                                    readset._index = "-".join(index_line[1:])
-                                    break
-                            else:
-                                _raise(SanityCheckError("Could not find index " + key + " in index file file " + index_file + " Aborting..."))
-                        else:
-                            key = readset._description.split("-")[0]
-                            for idx, index in enumerate(readset._description.split("-")):
-                                for index_line in index_csv:
-                                    if index_line[0] == index:
-                                        readset._index = index_line[1] if str(idx) == 0 else "-"+index_line[1]
-                                        break
-                                else:
-                                    _raise(SanityCheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
-                        for adapter_line in adapter_csv:
-                            if adapter_line[0] == key:
-                                readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
-                                readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
+                if re.search("SI-*", readset._description):
+                    key = readset._description
+                    for index_line in index_csv:
+                        if index_line and index_line[0] == key:
+                            readset._index = "-".join(index_line[1:])
+                            break
+                    else:
+                        _raise(SanitycheckError("Could not find index " + key + " in index file " + index_file + " Aborting..."))
+                else:
+                    key = readset._description.split("-")[0]
+                    index_to_use = ""
+                    for idx, index in enumerate(readset._description.split("-")):
+                        for index_line in index_csv:
+                            if index_line and index_line[0] == index:
+                                if idx > 0 and len(index_line[1]) > 0:
+                                    index_to_use += "-"
+                                index_to_use += index_line[1]
                                 break
                         else:
-                            _raise(SanityCheckError("Could not find adapter "+key+" in adapter file " + adapter_file + " Aborting..."))
-                    break
-            else:
-                _raise(SanityCheckError("Could not find protocol "+line['LibraryProcess']+" (from event file "+readset_file+") in protocol library file " + protocol_file + " Aborting..."))
+                            _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
+                    readset._index = index_to_use
+                for adapter_line in adapter_csv:
+                    if adapter_line:
+                        if adapter_line[0] == key:
+                            readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
+                            readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
+                            break
+                else:
+                    _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + " Aborting..."))
+                # At this point, inedx_file, adapter_file  protocol_file were succesfully parsed, then exit the loop !
+                break
+        else:
+            _raise(SanitycheckError("Could not find protocol " + line['LibraryProcess'] + " (from event file " + readset_file + ") in protocol library file " + protocol_file + " for readset " + readset.name + " Aborting..."))
 
-            readset._genomic_database = line['Reference']
+        readset._genomic_database = line['Reference']
 
-            readset._run = Xml.parse(os.path.join(run_dir, "RunInfo.xml")).getroot().find('Run').get('Number')
-            readset._lane = current_lane
-            readset._sample_number = str(len(readsets) + 1)
+        readset._run = Xml.parse(os.path.join(run_dir, "RunInfo.xml")).getroot().find('Run').get('Number')
+        readset._lane = current_lane
+        readset._sample_number = str(len(readsets) + 1)
 
-            readset._flow_cell = Xml.parse(os.path.join(run_dir, "RunInfo.xml")).getroot().find('Run').find('Flowcell').text
-                                #Xml.parse(os.path.join(run_dir, "RunParameters.xml")).getroot().find('RfidsInfo').find('FlowCellSerialBarcode').text
-            readset._control = "N"
-            readset._recipe = None
-            readset._operator = None
-            readset._project = line['ProjectName']
-
-            readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
-
-            if line['Capture REF_BED']:
-                readset._beds = line['Capture REF_BED'].split(";")
-            else:
-                readset._beds = []
-
-            readsets.append(readset)
-            sample.add_readset(readset)
-
-    elif lims == 'nanuq':
-        # Parsing Nanuq readset sheet
-        log.info("Parse Nanuq Illumina readset file " + readset_file + " ...")
-
-        readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter=',', quotechar='"')
-
-        for line in readset_csv:
-            current_lane = line['Region']
-
-            if int(current_lane) != lane:
-                continue
-
-            sample_name = line['Name']
-
-            # Always create a new sample
-            sample = Sample(sample_name)
-            samples.append(sample)
-
-            # Create readset and add it to sample
-            readset = IlluminaRawReadset(line['ProcessingSheetId'], run_type)
-            readset._quality_offset = 33
-            readset._library = line['Library Barcode']
-            readset._library_source = line['Library Source']
-            readset._library_type = line['Library Type']
-            readset._genomic_database = line['Genomic Database']
-
-            readset._run = line['Run']
-            readset._lane = current_lane
-            readset._sample_number = str(len(readsets) + 1)
-
-            readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
+        readset._flow_cell = Xml.parse(os.path.join(run_dir, "RunInfo.xml")).getroot().find('Run').find('Flowcell').text
+                            #Xml.parse(os.path.join(run_dir, "RunParameters.xml")).getroot().find('RfidsInfo').find('FlowCellSerialBarcode').text
+        readset._control = "N"
+        readset._recipe = None
+        readset._operator = None
+#        readset._project = line['ProjectName']
+        readset._project = line['ProjectLUID']
+        readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
 
             if line['BED Files']:
                 readset._beds = line['BED Files'].split(";")
@@ -478,6 +457,7 @@ def parse_illumina_raw_readset_files(
             readset._control = line['Control']
             readset._recipe = line['Recipe']
 
+    skipped_db = []
     # Searching for a matching reference for the specified species
     for readset in readsets:
         m = re.search("(?P<build>\w+):(?P<assembly>[\w\.]+)", readset.genomic_database)
@@ -820,9 +800,11 @@ def parse_mgi_raw_readset_files(
             else:
                 log.warning("Unable to access the reference file: '" + reference_file + "'")
 
-        if readset.bam is None and len(readset.genomic_database) > 0:
-            log.info("Skipping alignment for the genomic database: '" + readset.genomic_database + "'")
+        if readset.bam is None and len(readset.genomic_database) > 0 and readset.genomic_database not in skipped_db:
+            skipped_db.append(readset.genomic_database)
 
+    if len(skipped_db) > 0:
+        log.info("Skipping alignment for the genomic database: '" + "', '".join(skipped_db) + "'")
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets

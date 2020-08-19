@@ -23,6 +23,7 @@ import json
 
 # MUGQIC Modules
 from core.config import config
+from bfx import sample
 
 # Start creating the json dump for the passed sample
 def create(pipeline, sample):
@@ -160,8 +161,8 @@ def create(pipeline, sample):
                     "runType" : readset.run_type,
                     "run" : readset.run,
                     "lane" : readset.lane,
-                    "adapter1" : readset.adapter1,
-                    "adapter2" : readset.adapter2,
+                    "adapter1" : readset.adapter1 if readset.adapter1 else "",
+                    "adapter2" : readset.adapter2 if readset.adapter2 else "",
                     "qualityoffset" : readset.quality_offset,
                     "bed" : [bed for bed in readset.beds],
                     "fastq1" : os.path.realpath(readset.fastq1) if readset.fastq1 else "",

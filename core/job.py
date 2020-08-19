@@ -18,7 +18,7 @@
 ################################################################################
 
 # Python Standard Modules
-import collections
+from collections import OrderedDict
 import datetime
 import logging
 import os
@@ -41,7 +41,7 @@ class Job(object):
         self._removable_files = [_f for _f in removable_files if _f]
 
         # Retrieve modules from config, removing duplicates but keeping the order
-        self._modules = list(collections.OrderedDict.fromkeys([config.param(section, option) for section, option in module_entries]))
+        self._modules = list(OrderedDict.fromkeys([config.param(section, option) for section, option in module_entries]))
 
         self._name = name
         self._command = command
@@ -212,7 +212,8 @@ def concat_jobs(jobs, name="", samples=[], removable_files = []):
     report_files = []
     multiqc_files = []
     modules = []
-    for job_item in jobs:
+    sample_list = samples
+    for job_item in [job_item for job_item in jobs if job_item]:
         input_files.extend([input_file for input_file in job_item.input_files if input_file not in input_files and input_file not in output_files])
         output_files.extend([output_file for output_file in job_item.output_files if output_file not in output_files])
         report_files.extend([report_file for report_file in job_item.report_files if report_file not in report_files])
@@ -225,7 +226,7 @@ def concat_jobs(jobs, name="", samples=[], removable_files = []):
     job.modules = modules
 
     # Merge commands
-    job.command = " && \\\n".join([job_item.command for job_item in jobs if job_item.command])
+    job.command = " && \\\n".join([job_item.command for job_item in jobs if job_item and job_item.command])
 
     return job
 
@@ -248,15 +249,15 @@ def pipe_jobs(jobs, name="", samples=[]):
         sample_list.extend([sample for sample in job_item.samples if sample not in sample_list])
 
     # Remove duplicates if any, keeping the order
-    report_files = list(collections.OrderedDict.fromkeys([report_file for report_file in report_files]))
+    report_files = list(OrderedDict.fromkeys([report_file for report_file in report_files]))
     job.report_files = report_files
-    multiqc_files = list(collections.OrderedDict.fromkeys([multiqc_file for multiqc_file in multiqc_files]))
+    multiqc_files = list(OrderedDict.fromkeys([multiqc_file for multiqc_file in multiqc_files]))
     job.multiqc_files = multiqc_files
-    removable_files = list(collections.OrderedDict.fromkeys([removable_file for removable_file in removable_files]))
+    removable_files = list(OrderedDict.fromkeys([removable_file for removable_file in removable_files]))
     job.removable_files = removable_files
-    modules = list(collections.OrderedDict.fromkeys([module for module in modules]))
+    modules = list(OrderedDict.fromkeys([module for module in modules]))
     job.modules = modules
-    sample_list = list(collections.OrderedDict.fromkeys([sample for sample in sample_list]))
+    sample_list = list(OrderedDict.fromkeys([sample for sample in sample_list]))
     job.samples = sample_list
 
     # Merge commands

@@ -27,7 +27,7 @@ import re
 import socket
 import string
 import sys
-import collections
+from collections import OrderedDict
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
@@ -72,7 +72,7 @@ class MUGQICPipeline(Pipeline):
     @property
     def samples(self):
         if not hasattr(self, "_samples"):
-            self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
+            self._samples = list(OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
         return self._samples
 
     def mugqic_log(self):
@@ -142,7 +142,7 @@ class Illumina(MUGQICPipeline):
     @property
     def samples(self):
         if not hasattr(self, "_samples"):
-            self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
+            self._samples = list(OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
         return self._samples
 
     @property
