@@ -42,7 +42,7 @@ def fastqc(
 
     if not isinstance(outputs, list):
         outputs = [outputs]
- 
+
     output_directory = os.path.dirname(outputs[0])
     if use_tmp:
         tmp_directory = output_directory + ".tmp"
