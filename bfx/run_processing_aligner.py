@@ -623,4 +623,3 @@ class CellrangerRunProcessingAligner(RNARunProcessingAligner):
         )
         return job
 
-
