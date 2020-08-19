@@ -244,13 +244,12 @@ def pipe_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=
     multiqc_files = []
     removable_files = []
     modules = []
-    sample_list = samples
     for job_item in jobs:
         report_files.extend(job_item.report_files)
         multiqc_files.extend(job_item.multiqc_files)
         removable_files.extend(job_item.removable_files)
         modules.extend(job_item.modules)
-        sample_list.extend([sample for sample in job_item.samples if sample not in sample_list])
+        samples.extend([sample for sample in job_item.samples if sample not in samples])
 
     # Remove duplicates if any, keeping the order
     report_files = list(OrderedDict.fromkeys([report_file for report_file in report_files]))
@@ -261,8 +260,13 @@ def pipe_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=
     job.removable_files = removable_files
     modules = list(OrderedDict.fromkeys([module for module in modules]))
     job.modules = modules
-    sample_list = list(OrderedDict.fromkeys([sample for sample in sample_list]))
-    job.samples = sample_list
+    samples = list(OrderedDict.fromkeys([sample for sample in samples]))
+    job.samples = samples
+
+    if input_dependency:
+        job.input_files=input_dependency
+    if output_dependency:
+        job.output_files=output_dependency
 
     if input_dependency:
         job.input_files=input_dependency
