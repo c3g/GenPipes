@@ -258,19 +258,8 @@ def pipe_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=
     removable_files = list(OrderedDict.fromkeys([removable_file for removable_file in removable_files]))
     job.removable_files = removable_files
     modules = list(OrderedDict.fromkeys([module for module in modules]))
-    job.modules = modules
     samples = list(OrderedDict.fromkeys([sample for sample in samples]))
     job.samples = samples
-
-    if input_dependency:
-        job.input_files=input_dependency
-    if output_dependency:
-        job.output_files=output_dependency
-
-    if input_dependency:
-        job.input_files=input_dependency
-    if output_dependency:
-        job.output_files=output_dependency
 
     if input_dependency:
         job.input_files=input_dependency
