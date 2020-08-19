@@ -435,27 +435,12 @@ def parse_illumina_raw_readset_files(
         readset._project = line['ProjectLUID']
         readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
 
-            if line['BED Files']:
-                readset._beds = line['BED Files'].split(";")
-            else:
-                readset._beds = []
-
-            readsets.append(readset)
-            sample.add_readset(readset)
-
-        # Parsing Casava sheet
-        log.info("Parsing Casava sample sheet " + casava_sheet_file + " ...")
-        casava_csv = csv.DictReader(open(casava_sheet_file, 'rb'), delimiter=',')
-        for line in casava_csv:
-            if int(line['Lane']) != lane:
-                continue
-            processing_sheet_id = line['SampleID']
-            readset = [x for x in readsets if x.name == processing_sheet_id][0]
-            readset._flow_cell = line['FCID']
-            readset._index = line['Index']
-            readset._description = line['Description']
-            readset._control = line['Control']
-            readset._recipe = line['Recipe']
+        if line['Capture REF_BED'] and line['Capture REF_BED'] != "N/A":
+            readset._beds = line['Capture REF_BED'].split(";")
+        else:
+            readset._beds = []
+        readsets.append(readset)
+        sample.add_readset(readset)
 
     skipped_db = []
     # Searching for a matching reference for the specified species
@@ -494,15 +479,18 @@ def parse_illumina_raw_readset_files(
                         'run' + readset.run + "_" + readset.lane,
                         readset.sample.name + "." + readset.library + ".sorted"
                     )
+
                 else:
                     log.warning("Unable to access the aligner reference file: '" + aligner_reference_index +
                                 "' for aligner: '" + readset.aligner.__class__.__name__ + "'")
             else:
                 log.warning("Unable to access the reference file: '" + reference_file + "'")
 
-        if readset.bam is None and len(readset.genomic_database) > 0:
-            log.info("Skipping alignment for the genomic database: '" + readset.genomic_database + "'")
+        if readset.bam is None and len(readset.genomic_database) > 0 and readset.genomic_database not in skipped_db:
+            skipped_db.append(readset.genomic_database)
 
+    if len(skipped_db) > 0:
+        log.info("Skipping alignment for the genomic database: '" + "', '".join(skipped_db) + "'")
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets

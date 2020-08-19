@@ -221,3 +221,46 @@ java -Djava.io.tmpdir={tmp_dir} \\
         removable_files=[os.path.dirname(metrics_file)]
     )
 
+def bcl2fastq_for_index(
+    run_dir,
+    output_dir,
+    sample_sheet,
+    flowcell,
+    lane,
+    demultiplex=False,
+    mismatches=None,
+    mask=None,
+    ):
+
+    if demultiplex:
+        demultiplex_parameters = """\
+  --barcode-mismatches {number_of_mismatches} \\
+  --use-bases-mask {mask}""".format(
+            number_of_mismatches=mismatches,
+            mask=mask
+        )
+
+    return Job(
+        [run_dir],
+        [os.path.join(output_dir, "Reports/html", flowcell, "all/all/all/lane.html"), os.path.join(output_dir, "Stats/Stats.json")],
+        [
+            ['bcl2fastq_index', 'module_bcl_to_fastq']
+        ],
+        command="""\
+bcl2fastq \\
+  --runfolder-dir {run_dir} \\
+  --output-dir {output_dir} \\
+  --tiles {tiles} \\
+  --sample-sheet {sample_sheet} \\
+  --create-fastq-for-index-reads \\
+  {demultiplex_parameters} \\
+  {other_options}""".format(
+            run_dir=run_dir,
+            output_dir=output_dir,
+            tiles="s_" + str(lane),
+            sample_sheet=sample_sheet,
+            demultiplex_parameters=demultiplex_parameters if demultiplex_parameters else "",
+            other_options=config.param('bcl2fastq_index', 'other_options'),
+        )
+    )
+
