@@ -2218,7 +2218,7 @@ END
                     variant_apply_indels_prefix + ".recal",
                     variant_apply_indels_prefix + ".tranches",
                     apply_indels_other_options,
-                    os.path.join(output_directory, "allSamples.hc.vqsr.vcf")
+                    os.path.join(output_directory, "allSamples.hc.vqsr.vcf.gz")
                     )
                 ],
                 name="variant_recalibrator.apply.allSamples",
