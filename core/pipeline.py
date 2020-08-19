@@ -23,8 +23,8 @@ if sys.version_info < (2,7):
     raise SystemExit("Incompatible Python version: " + sys.version + "\nPython 2.7 or higher is required")
 
 # Python Standard Modules
+from collections import Counter, OrderedDict, namedtuple
 import argparse
-import collections
 import datetime
 import hashlib
 import logging
@@ -41,6 +41,7 @@ from .scheduler import create_scheduler
 from .step import Step
 
 from bfx import jsonator
+from bfx.sample import Sample
 
 log = logging.getLogger(__name__)
 
@@ -123,7 +124,7 @@ class Pipeline(object):
         if self.args.no_json:
             self._json = False
 
-        step_counter = collections.Counter(step_list)
+        step_counter = Counter(step_list)
         duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
         if duplicated_steps:
             raise Exception("Error: pipeline contains duplicated steps: " + ", ".join(duplicated_steps) + "!")
@@ -401,8 +402,6 @@ class Pipeline(object):
         if self.json:
             # Check if portal_output_dir is set from a valid environment variable
             self.portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
-            log.info(self.portal_output_dir.startswith("$"))
-            log.info(os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)))
             if self.portal_output_dir.startswith("$") and (os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) is None or os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) == ""):
                 if self.portal_output_dir == "$PORTAL_OUTPUT_DIR":
                     self.portal_output_dir = ""
@@ -497,7 +496,7 @@ pandoc \\
             # Retrieve absolute paths of removable files
             abspath_removable_files.extend([job.abspath(removable_file) for removable_file in job.removable_files])
         # Remove removable file duplicates but keep the order
-        for removable_file in list(collections.OrderedDict.fromkeys(abspath_removable_files)):
+        for removable_file in list(OrderedDict.fromkeys(abspath_removable_files)):
             if os.path.exists(removable_file):
                 print("rm -rf " + removable_file)
 
@@ -518,6 +517,6 @@ class ValidateContainer(argparse.Action):
         c_type, container = values
         if c_type not in self.VALID_TYPE:
             raise ValueError('{} is not supported, choose from {}'.format(c_type, self.VALID_TYPE))
-        Container = collections.namedtuple('container', 'type name')
+        Container = namedtuple('container', 'type name')
 
         setattr(args, self.dest, Container(c_type, container))

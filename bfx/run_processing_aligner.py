@@ -19,8 +19,10 @@
 
 # Python Standard Modules
 import os
+import re
 import ConfigParser
 
+# MUGQIC Modules
 from core.job import Job, concat_jobs, pipe_jobs
 from core.config import config
 from bfx import bvatools
@@ -31,7 +33,7 @@ from bfx import metrics
 from bfx import picard
 from bfx import star
 from bfx import tools
-
+from bfx import bash_cmd as bash
 
 class RunProcessingAligner(object):
     def __init__(self, output_dir, genome_folder):
@@ -70,7 +72,6 @@ class RunProcessingAligner(object):
                "\tPL:" + config.param(ini_section, 'platform', required=True) + \
                "'"
 
-
 class BwaRunProcessingAligner(RunProcessingAligner):
     downloaded_bed_files = []
     created_interval_lists = []
@@ -100,7 +101,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                 return [
                     os.path.join(self.genome_folder,
                                  "annotations",
-                                 folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf"),
+                                 folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf.gz"),
                 ]
 
         return []
@@ -108,21 +109,23 @@ class BwaRunProcessingAligner(RunProcessingAligner):
     def get_alignment_job(self, readset):
         output = readset.bam + ".bam"
         job = concat_jobs([
-                              Job(command="mkdir -p " + os.path.dirname(output)),
-                              pipe_jobs([
-                                  bwa.mem(
-                                      readset.fastq1,
-                                      readset.fastq2,
-                                      read_group=RunProcessingAligner.get_rg_tag(readset, 'bwa_mem'),
-                                      ref=readset.aligner_reference_index
-                                  ),
-                                  picard.sort_sam(
-                                      "/dev/stdin",
-                                      output,
-                                      "coordinate"
-                                  )
-                              ])
-                          ], name="bwa_mem_picard_sort_sam." + readset.name + "." + readset.run + "." + readset.lane)
+            bash.mkdir(os.path.dirname(output)),
+            pipe_jobs([
+                bwa.mem(
+                    readset.fastq1,
+                    readset.fastq2,
+                    read_group=RunProcessingAligner.get_rg_tag(readset, 'bwa_mem'),
+                    ref=readset.aligner_reference_index
+                ),
+                picard.sort_sam(
+                    "/dev/stdin",
+                    output,
+                    "coordinate"
+                )]
+            )],
+            name="bwa_mem_picard_sort_sam." + readset.name + "." + readset.run + "." + readset.lane,
+            samples=[readset.sample]
+        )
 
         return job
 
@@ -132,9 +135,13 @@ class BwaRunProcessingAligner(RunProcessingAligner):
         input_file_prefix = readset.bam + '.'
         input = input_file_prefix + "bam"
 
-        job = picard.collect_multiple_metrics(input, input_file_prefix + "metrics",
-                                              reference_sequence=readset.reference_file)
+        job = picard.collect_multiple_metrics(
+            input,
+            input_file_prefix + "metrics",
+            reference_sequence=readset.reference_file
+        )
         job.name = "picard_collect_multiple_metrics." + readset.name + ".met" + "." + readset.run + "." + readset.lane
+        job.samples = [readset.sample]
         jobs.append(job)
 
         if readset.beds:
@@ -152,7 +159,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                     output_directory=self.output_dir,
                     filename=coverage_bed
                 )
-                job = Job([], [full_coverage_bed], command=command, name="bed_download." + coverage_bed)
+                job = Job([], [full_coverage_bed], command=command, name="bed_download." + coverage_bed, samples=[readset.sample])
                 BwaRunProcessingAligner.downloaded_bed_files.append(coverage_bed)
                 jobs.append(job)
 
@@ -163,12 +170,14 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                 ref_dict = os.path.splitext(readset.reference_file)[0] + '.dict'
                 job = tools.bed2interval_list(ref_dict, full_coverage_bed, interval_list)
                 job.name = "interval_list." + coverage_bed
+                job.samples = [readset.sample]
                 BwaRunProcessingAligner.created_interval_lists.append(interval_list)
                 jobs.append(job)
 
             job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "metrics.onTarget.txt",
                                               interval_list, reference_sequence=readset.reference_file)
             job.name = "picard_calculate_hs_metrics." + readset.name + ".hs" + "." + readset.run + "." + readset.lane
+            job.samples = [readset.sample]
             jobs.append(job)
 
         jobs.extend(self.verify_bam_id(readset))
@@ -181,6 +190,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             reference_genome=readset.reference_file
         )
         job.name = "bvatools_depth_of_coverage." + readset.name + ".doc" + "." + readset.run + "." + readset.lane
+        job.samples = [readset.sample]
         jobs.append(job)
 
         return jobs
@@ -201,21 +211,22 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
             input_bam = readset.bam + ".bam"
             output_prefix = readset.bam + ".metrics.verifyBamId"
-
-            jobs.append(concat_jobs([
-                verify_bam_id.verify(
-                    input_bam,
-                    known_variants_annotated_filtered,
-                    output_prefix,
-                ),
-                # the first column starts with a # (a comment for nanuq) so we remove the column and output the result
-                # in a file with the name supported by nanuq
-                Job([output_prefix + ".selfSM"],
-                    [output_prefix + ".tsv"],
-                    command="cut -f2- " + output_prefix + ".selfSM > " + output_prefix + ".tsv"
-                )
-                ],
-                name="verify_bam_id." + readset.name + "." + readset.run + "." + readset.lane
+            jobs.append(
+                concat_jobs([
+                    verify_bam_id.verify(
+                        input_bam,
+                        known_variants_annotated_filtered,
+                        output_prefix,
+                    ),
+                    # the first column starts with a # (a comment for nanuq) so we remove the column and output the result
+                    # in a file with the name supported by nanuq
+                    Job(
+                        [output_prefix + ".selfSM"],
+                        [output_prefix + ".tsv"],
+                        command="cut -f2- " + output_prefix + ".selfSM > " + output_prefix + ".tsv"
+                )],
+                name="verify_bam_id." + readset.name + "." + readset.run + "." + readset.lane,
+                samples=[readset.sample]
             ))
 
         return jobs
@@ -224,6 +235,19 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 class StarRunProcessingAligner(RunProcessingAligner):
     def __init__(self, output_dir, genome_folder, nb_cycles):
         super(StarRunProcessingAligner, self).__init__(output_dir, genome_folder)
+        # Adjusting the nb of cycles
+        if 49 <= nb_cycles <= 51:
+            nb_cycles = 50
+        elif 74<= nb_cycles <= 76:
+            nb_cycles = 75
+        elif 99<= nb_cycles <= 101:
+            nb_cycles = 100
+        elif 124<= nb_cycles <= 126:
+            nb_cycles = 125
+        elif 149 <= nb_cycles <= 151:
+            nb_cycles = 150
+        else:
+            log.error("NumCycles " + nb_cycles + " not supported for Star aligner...")
         self._nb_cycles = nb_cycles
 
     @property
@@ -307,6 +331,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
             picard.build_bam_index(output, output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1])
         ])
         job.name = "star_align." + readset.name + "." + readset.run + "." + readset.lane
+        job.samples = [readset.sample]
         return job
 
     def get_metrics_jobs(self, readset):
@@ -333,22 +358,31 @@ class StarRunProcessingAligner(RunProcessingAligner):
             gtf_transcript_id = readset.annotation_files[0]
             reference = readset.reference_file
             job = concat_jobs([
-                                  Job(command="mkdir -p " + output_directory),
-                                  Job(command="touch " + ribosomal_interval_file),
-                                  Job([input_bam], [sample_file], command="""\
-        echo "Sample\tBamFile\tNote
-        {sample_row}" \\
-        > {sample_file}""".format(sample_row=sample_row, sample_file=sample_file)),
-                                  metrics.rnaseqc(sample_file, output_directory, readset.fastq2 is not None,
-                                                  gtf_file=gtf_transcript_id,
-                                                  ribosomal_interval_file=ribosomal_interval_file, reference=reference),
-                                  Job(command="cp " + os.path.join(output_directory,
-                                                                   "metrics.tsv") + " " + os.path.join(
-                                      input_bam_directory,
-                                      readset.sample.name + "." +
-                                      readset.library +
-                                      ".rnaseqc.sorted.dup.metrics.tsv"))
-                              ], name="rnaseqc." + readset.name + ".rnaseqc" + "." + readset.run + "." + readset.lane)
+                bash.mkdir(output_directory),
+                Job(command="touch " + ribosomal_interval_file),
+                Job(
+                    [input_bam],
+                    [sample_file],
+                    command="""\
+echo "Sample\tBamFile\tNote\n{sample_row}" \\
+ > {sample_file}""".format(
+                        sample_row=sample_row,
+                        sample_file=sample_file)),
+                metrics.rnaseqc(
+                    sample_file,
+                    output_directory,
+                    readset.fastq2 is not None,
+                    gtf_file=gtf_transcript_id,
+                    ribosomal_interval_file=ribosomal_interval_file,
+                    reference=reference
+                ),
+                bash.cp(
+                    os.path.join(output_directory, "metrics.tsv"),
+                    os.path.join(input_bam_directory, readset.sample.name + "." + readset.library + ".rnaseqc.sorted.dup.metrics.tsv")
+                )],
+                name="rnaseqc." + readset.name + ".rnaseqc" + "." + readset.run + "." + readset.lane,
+                samples=[readset.sample]
+            )
             jobs.append(job)
 
         return jobs
@@ -366,18 +400,24 @@ class StarRunProcessingAligner(RunProcessingAligner):
         alignment_file = readset.bam + ".bam"
         output_directory = os.path.dirname(alignment_file)
 
-        job = picard.collect_multiple_metrics(alignment_file, readset.bam + ".metrics",
-                                              reference_sequence=readset.reference_file)
+        job = picard.collect_multiple_metrics(
+            alignment_file, readset.bam + ".metrics",
+            reference_sequence=readset.reference_file
+        )
         job.name = "picard_collect_multiple_metrics." + readset.name + ".met" + "." + readset.run + "." + readset.lane
+        job.samples = [readset.sample]
         jobs.append(job)
 
         if len(readset.annotation_files) > 2 and os.path.isfile(readset.annotation_files[2]):
-            job = picard.collect_rna_metrics(alignment_file,
-                                             os.path.join(output_directory, sample.name),
-                                             readset.annotation_files[2],
-                                             readset.reference_file)
+            job = picard.collect_rna_metrics(
+                alignment_file,
+                os.path.join(output_directory, sample.name),
+                readset.annotation_files[2],
+                readset.reference_file
+            )
 
             job.name = "picard_rna_metrics." + readset.name + ".rmet" + "." + readset.run + "." + readset.lane
+            job.samples = [readset.sample]
             jobs.append(job)
 
         return jobs
@@ -422,7 +462,8 @@ class StarRunProcessingAligner(RunProcessingAligner):
                                       gtf=readset.annotation_files[0],
                                       output=os.path.join(readset.bam + ".metrics.rRNA.tsv"),
                                       typ="transcript")],
-                              name="bwa_mem_rRNA." + readset.name + ".rRNA" + "." + readset.run + "." + readset.lane)
+                              name="bwa_mem_rRNA." + readset.name + ".rRNA" + "." + readset.run + "." + readset.lane,
+                              samples=[readset.sample])
 
             job.removable_files = [readset_metrics_bam]
             jobs.append(job)
