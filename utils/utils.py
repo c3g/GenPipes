@@ -97,11 +97,13 @@ def slurm_time_to_datetime(time):
         Acceptable time formats include "minutes", "minutes:seconds",
         "hours:minutes:seconds", "days-hours",
         "days-hours:minutes" and "days-hours:minutes:seconds"
+        In fact it will also work for pbs/torque.
     :param time: sting from slurm sbatch --time option
     :return: timedelta object
     """
     time = time.lstrip()
     time = time.lstrip('--time=')
+    time = time.lstrip('-l walltime=')  # pbs/torque support
 
     colon = time.count(':')
     dash = time.count('-')
