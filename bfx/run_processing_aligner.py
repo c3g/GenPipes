@@ -32,6 +32,7 @@ from bfx import bwa
 from bfx import metrics
 from bfx import picard
 from bfx import star
+from bfx import cellranger
 from bfx import tools
 from bfx import bash_cmd as bash
 

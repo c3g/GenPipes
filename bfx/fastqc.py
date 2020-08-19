@@ -31,7 +31,8 @@ def fastqc(
     input2,
     outputs,
     adapter_file=None,
-    use_tmp=None
+    extract=False,
+    use_tmp=False
     ):
 
     if input2:  # Paired end reads
@@ -41,7 +42,7 @@ def fastqc(
 
     if not isinstance(outputs, list):
         outputs = [outputs]
-        
+
     output_directory = os.path.dirname(outputs[0])
     if use_tmp:
         tmp_directory = output_directory + ".tmp"
@@ -50,7 +51,7 @@ def fastqc(
     file_format = re.sub("^\.", "", file_format)
     if file_format == 'gz':
         (input_basename, file_format) = os.path.splitext(input_basename)
-        file_format = re.sub("^\.", "", file_format)
+        file_format = re.sub("^\.", "", file_format) 
 
     return Job(
         inputs,
@@ -66,6 +67,7 @@ fastqc \\
   --threads {threads} \\
   {adapter} \\
   --format {file_format} \\
+  {extract} \\
   {tmp} \\
   {inputs} \\
   {rm_tmp}""".format(
@@ -74,6 +76,7 @@ fastqc \\
             threads=config.param('fastqc', 'threads', param_type='posint'),
             adapter="--adapters " + adapter_file if adapter_file else "",
             file_format=file_format,
+            extract="--extract" if extract else "",
             tmp="--dir " + tmp_directory if use_tmp else "",
             inputs="\\\n  ".join(inputs),
             rm_tmp="&& rm -r " + tmp_directory if use_tmp else ""
