@@ -135,7 +135,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
         for lane in self.lanes:
             self._samples[lane] = list(OrderedDict.fromkeys([readset.sample for readset in self.readsets[lane]]))
         return self._samples
-            
 
     @property
     def lanes(self):
@@ -309,10 +308,13 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
     @property
     def flowcell(self):
-        if self.args.flowcell:
-            return self.args.flowcell
-        else:
-            _raise(SanitycheckError("Error: missing '--fcid' option!"))
+        """
+        The flow cell ID from the run folder
+        """
+        if not hasattr(self, "_flowcell"):
+            self._flowcell = os.path.basename(self.run_dir.rstrip('/'))
+        return self._flowcell
+
 
     @property
     def lane_number(self):
