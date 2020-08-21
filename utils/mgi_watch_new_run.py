@@ -66,14 +66,13 @@ def compare_runs(columns):
     header = "RUN_ID"
     if os.path.isfile("/tmp/mgi_runs.ref"):
         new_list = filter(None, sorted(set(columns['RUN_ID'])))
+#        ref_list = []
         ref_list = filter(None, open("/tmp/mgi_runs.ref", "r").read().split("\n"))
 
-        print new_list
-        print ref_list
         if new_list != ref_list:
-            print "New runs have been added to the COVID 19 MGI Run Management spreadsheet... building the new samples sheets now"
+            print "New runs have been added to the Run Management spreadsheet... building the new samples sheets now"
             runs_added = list(set(new_list) - set(ref_list))
-
+            print runs_added
             for run in runs_added:
                 flowcell = get_flowcell_from_run(
                     columns,
@@ -100,15 +99,17 @@ def compare_runs(columns):
                             lane
                         )
             # replace referece run list by the current run list to set it as the reference for next watch round
-#            print_runs()
+            print_runs(columns)
+        else:
+            print "No new run detected..."
 
     else:
         # print current run list and set it as the reference for next watch round
-        print_runs()
+        print_runs(columns)
         ref_list = open("/tmp/mgi_runs.ref", "r").read().split("\n")
         print ref_list
 
-def print_runs(path="/tmp/mgi_runs.ref"):
+def print_runs(columns, path="/tmp/mgi_runs.ref"):
     f = open(path, "wb+")
     for i in filter(None, sorted(set(columns['RUN_ID']))):
         f.write(i + "\n")
@@ -116,6 +117,7 @@ def print_runs(path="/tmp/mgi_runs.ref"):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--spreadsheet_name', help='Name of the MGI run management Google spreadsheet to parse', required=True, dest="spreadsheet_name")
     parser.add_argument('-a', '--authentication_file', help="JSON authentication file used to connect the spreadsheets", type=file, required=True, dest="json_file")
     parser.add_argument('-o', '--outfile', help="Output file (csv format)", required=False)
     parser.add_argument('--loglevel', help="Standard Python log level", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
@@ -125,10 +127,10 @@ if __name__ == '__main__':
     log_level = args.loglevel
     logging.basicConfig(level=log_level)
 
+    MGI_spreadsheet_name = args.spreadsheet_name
     outfile = args.outfile
     authentication_file = args.json_file.name
 
-    MGI_spreadsheet_name = "COVID 19 MGI Run Management"
     dict_of_columns = parse_google_sheet(
         MGI_spreadsheet_name,
         authentication_file

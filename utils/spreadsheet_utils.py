@@ -24,6 +24,7 @@ import argparse
 import logging
 import gspread
 import csv
+import os
 import textwrap
 
 logger = logging.getLogger(__name__)
@@ -57,7 +58,7 @@ def parse_google_sheet(sheet_name, authentication_file):
     # Actual data starts at line 3 
     for row in list_of_lists[2:]:
         for h, v in zip(header, row):
-            columns[h].append(v.encode('utf8'))
+            columns[h].append(v.encode('utf8').replace(" ", "_"))
     # Add the Readset column
     columns["Readset"] = [sample + "_" + library for sample, library in zip(columns["Sample_Name"], columns["Library"])]
 
@@ -84,7 +85,10 @@ def print_sample_sheet(
         logger.error("Lane " + str(lane) + " was not found in " + columns['Lane'])
 
     if not outfile:
-        outfile = str(project) + "." + str(run) + ".L0" + str(lane) + ".sample_sheet.csv"
+        process_dir = os.path.join(str(project) , str(run), "L0" + str(lane))
+        if not os.path.exists(process_dir):
+            os.makedirs(process_dir)
+        outfile = os.path.join(process_dir, str(project) + "." + str(run) + ".L0" + str(lane) + ".sample_sheet.csv")
 
     f = csv.writer(open(outfile, "wb+"))
 
@@ -98,3 +102,4 @@ def print_sample_sheet(
                 f.writerow([columns[col][x] for col in header])
             else:
                 logger.info("Skipping failed sample " + columns['Sample'][x])
+

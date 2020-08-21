@@ -63,7 +63,7 @@ def fastqc(
             ['fastqc', 'module_java']
         ],
         command="""\
-{mkdir} \\ 
+{mkdir} \\
 fastqc \\
   --outdir {output_directory} \\
   --threads {threads} \\
@@ -72,7 +72,7 @@ fastqc \\
   {tmp} \\
   {inputs} \\
   {rm_tmp}""".format(
-            mkdir="mkdir -p " + tmp_directory + "&&" if use_tmp else "",
+            mkdir="mkdir -p " + tmp_directory + " &&" if use_tmp else "",
             output_directory=output_directory,
             threads=config.param('fastqc', 'threads', param_type='posint'),
             adapter="--adapters " + adapter_file if adapter_file else "",
