@@ -50,7 +50,7 @@ if __name__ == '__main__':
     outfile = args.outfile
     authentication_file = args.json_file.name
 
-    MGI_spreadsheet_name = "COVID 19 MGI Run Management"
+    MGI_spreadsheet_name = "ALL MGI Run Management"
     dict_of_columns = parse_google_sheet(
         MGI_spreadsheet_name,
         authentication_file
