@@ -347,10 +347,13 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
     @property
     def flowcell(self):
-        if self.args.flowcell:
-            return self.args.flowcell
-        else:
-            _raise(SanitycheckError("Error: missing '--fcid' option!"))
+        """
+        The flow cell ID from the run folder
+        """
+        if not hasattr(self, "_flowcell"):
+            self._flowcell = os.path.basename(self.run_dir.rstrip('/'))
+        return self._flowcell
+
 
     @property
     def lane_number(self):
@@ -988,7 +991,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         copy_job = concat_jobs([
             bash.mkdir(unexpected_dir),
             bash.cp(
-                os.path.join(self.run_dir, self.flowcell, "L0" + str(self.lane_number), "."),
+                os.path.join(self.run_dir, "L0" + str(self.lane_number), "."),
                 unexpected_dir,
                 recursive=True
             )
@@ -1013,29 +1016,29 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 bash.mkdir(output_dir),
                 bash.mv(
                     os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_1.fq.gz"),
-                    readset.fastq1
+                    readset.fastq1,
+                    input_dependency = copy_job.input_files
                 ),
                 bash.mv(
                     os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_1.fq.fqStat.txt"),
-                    re.sub("gz", "fqStat.txt", readset.fastq1)
-                ),
-                bash.mv(
-                    os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + ".report.html"),
-                    re.sub("_R1.fastq.gz", ".report.html", readset.fastq1)
+                    re.sub("gz", "fqStat.txt", readset.fastq1),
+                    input_dependency = copy_job.input_files
                 ),
                 bash.mv(
                     os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_2.fq.gz"),
-                    readset.fastq2
+                    readset.fastq2,
+                    input_dependency = copy_job.input_files
                 ) if readset.run_type == "PAIRED_END" else None,
                 bash.mv(
                     os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_2.fq.fqStat.txt"),
-                    re.sub("gz", "fqStat.txt", readset.fastq2)
+                    re.sub("gz", "fqStat.txt", readset.fastq2),
+                    input_dependency = copy_job.input_files
                 ) if readset.run_type == "PAIRED_END" else None
             ])
         fastq_job.name = "fastq_rename." + self.run_id + "." + str(self.lane_number)
         fastq_job.samples = self.samples
 
-        copy_job.output_files = fastq_job.input_files
+        copy_job.output_dependency = fastq_job.output_files
 
         jobs.append(copy_job)
         jobs.append(fastq_job)
