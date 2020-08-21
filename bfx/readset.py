@@ -1118,6 +1118,10 @@ class MGIRawReadset(MGIReadset):
         super(MGIRawReadset, self).__init__(name, run_type)
 
     @property
+    def index_name(self):
+        return self._index_name
+
+    @property
     def index(self):
         return self._index
 
@@ -1193,19 +1197,27 @@ def parse_mgi_raw_readset_files(
         samples.append(sample)
 
         # Parse Info file to retrieve the runtype i.e. PAIRED_END or SINGLE_END
-        run_info_file = open(os.path.join(run_folder, current_flowcell, current_flowcell + "_Success.txt"), "r")
+        run_info_file = open(os.path.join(run_folder, current_flowcell + "_Success.txt"), "r")
         if "PE" in run_info_file.read().split(" ")[3]:
             run_type = "PAIRED_END"
         else:
             run_type = "SINGLE_END"
         if not run_type:
-            log.error("Run type could not be determined for run " + line['RUN_ID'] + " from file " + os.path.join(run_folder, current_flowcell, current_flowcell + "_Success.txt"))
+            log.error("Run type could not be determined for run " + line['RUN_ID'] + " from file " + os.path.join(run_folder, current_flowcell + "_Success.txt"))
    
         # Create readset and add it to sample
         readset = MGIRawReadset(line['Sample_Name'] + "_" + line['Library'], run_type)
         readset._library = line['Library']
-        readset._index = line['Index'].split("_")[2]
-        log.error(readset.index)
+        readset._index_name = line['Index']
+        #log.error(readset.index_name)
+        if "MGI" in line['Index']:
+            m = re.search("\w+(?P<index>\d+)", line['Index'])
+            if m:
+                #log.error(m.group('index'))
+                readset._index = m.group('index')
+        else:
+            readset._index = readset.index_name
+
         readset._project = line['Project']
         readset._project_id = line['Project_ID']
         readset._protocol = line['Protocol']
