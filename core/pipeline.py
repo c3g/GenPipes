@@ -327,6 +327,39 @@ class Pipeline(object):
             _raise(SanitycheckError("Error: missing candidate input files: " + str(candidate_input_files) +
                 " neither found in dependencies nor on file system!"))
 
+    # Given a list of lists of output files, return the first valid list of output files which can be found either in previous jobs output files or on file system.
+    # Thus, a job with several candidate lists of output files can find out the first valid one.
+    def select_output_files(self, candidate_output_files):
+        log.debug("candidate_output_files: \n" + str(candidate_output_files))
+
+        selected_output_files = []
+
+        # Create a reversed copy to pop the candidates ordered by priority
+        remaining_candidate_output_files = list(candidate_output_files)
+        remaining_candidate_output_files.reverse()
+        previous_jobs_output_files = set([output_file for job in self.jobs for output_file in job.output_files])
+
+        while not selected_output_files and remaining_candidate_output_files:
+            output_files = filter(None, remaining_candidate_output_files.pop())
+            # Skip empty candidate output files
+            if output_files:
+                # dependency_jobs() checks if the current candidate output files is valid, otherwise raises an exception
+                try:
+                    job = Job(output_files=output_files)
+                    job.output_dir = self.output_dir
+                    self.dependency_jobs(job)
+                    selected_output_files = output_files
+                except Exception as e:
+                    log.debug("Caught Exception for candidate output file: " +  ", ".join(output_files))
+                    log.debug(e.message)
+
+        if selected_output_files:
+            log.debug("selected_output_files: " + ", ".join(output_files) + "\n")
+            return selected_output_files
+        else:
+            _raise(SanitycheckError("Error: missing candidate output files: " + str(candidate_output_files) +
+                " neither found in dependencies nor on file system!"))
+
     def dependency_jobs(self, current_job):
         dependency_jobs = []
         dependency_input_files = set()
