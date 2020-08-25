@@ -20,7 +20,7 @@ submit () {
   while true; do
     bash ${job_script}
     ret_code=$?
-    if [ ${ret_code} -eq 0]; then
+    if [ ${ret_code} -eq 0 ]; then
       touch ${job_script%.sh}.done
       echo chunk ${job_script} was sucssfully submitted
       break
