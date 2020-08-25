@@ -914,7 +914,12 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             quast_tsv = os.path.join(quast_directory, "report.tsv")
 
             #TODO: change name of gisaid fasta, Cf. Hector script ".fasta"
-            output_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="${STATUS}"))
+            [output_fa] = self.select_input_files([
+                [os.path.join(consensus_directory, sample.name + ".{technology}.pass.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))],
+                [os.path.join(consensus_directory, sample.name + ".{technology}.flag.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))],
+                [os.path.join(consensus_directory, sample.name + ".{technology}.rej.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))]
+            ])
+            # output_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="${STATUS}"))
 
             jobs.append(
                 concat_jobs([
