@@ -914,7 +914,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             quast_tsv = os.path.join(quast_directory, "report.tsv")
 
             #TODO: change name of gisaid fasta, Cf. Hector script ".fasta"
-            [output_fa] = self.select_input_files([
+            [output_fa] = self.select_output_files([
                 [os.path.join(consensus_directory, sample.name + ".{technology}.pass.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))],
                 [os.path.join(consensus_directory, sample.name + ".{technology}.flag.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))],
                 [os.path.join(consensus_directory, sample.name + ".{technology}.rej.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))]
