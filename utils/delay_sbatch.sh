@@ -10,8 +10,10 @@ echo
 echo "   <Genpipes script>       A Genpipes output script"
 echo "   -n <MAX QUEUE>          Maximum number of job in slurm queue"
 echo "                             default=500"
+echo "   -s <SLEEP TIME>          number of second to sleep when queue is full default= 120"
 
 }
+
 
 submit () {
   job_script=${1}
@@ -24,7 +26,7 @@ submit () {
       break
     else
       echo cancel all jobs from ${job_script%.sh}.out
-      echo scancel $(cat ${job_script%.sh}.out | awk -F'=' '{print $2}')
+      scancel $(cat ${job_script%.sh}.out | awk -F'=' '{print $2}')
       rm ${job_script%.sh}.out
     fi
   done
@@ -33,13 +35,16 @@ submit () {
 
 #  Script
 
-SLEEP_TIME=3
+SLEEP_TIME=120
 max_queue=500
 slurm_user=$USER
-while getopts "hn:u:" opt; do
+while getopts "hn:u:s:" opt; do
   case $opt in
     u)
       slurm_user=${OPTARG}
+    ;;
+    s)
+      SLEEP_TIME=${OPTARG}
     ;;
     n)
       max_queue=${OPTARG}
@@ -95,7 +100,6 @@ for sh_script in ${all_sh[@]}; do
       if [[ $((max_queue-$curent_job_n)) -gt $CHUNK_SIZE ]]; then
        submit ${sh_script}
        break
-
       else
         echo to many jobs, sleeping for $SLEEP_TIME sec
         sleep $SLEEP_TIME
