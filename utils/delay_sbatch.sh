@@ -90,10 +90,9 @@ fi
 
 
 all_sh=($(ls ${chunk_folder}/chunk*sh|sort -V))
-# all_out=$chunk_folder/*out
 all_done=($chunk_folder/chunk*done)
 
-for sh_script in ${all_sh[@]}; do
+for sh_script in "${all_sh[@]}"; do
   done_script=${sh_script%.sh}.done
   echo ${done_script}
   if [ ! -f $done_script ]; then

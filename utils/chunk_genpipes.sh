@@ -72,7 +72,7 @@ genpipes_in=$1
 out_dir=$2
 
 
-
+rm -rf ${out_dir}/chunk_* 2>/dev/null
 mkdir -p ${out_dir}
 TIMESTAMP=`date +%FT%H.%M.%S`
 header=${out_dir}/header.sh
@@ -82,11 +82,14 @@ while read -r line ; do
       STEP=${line#STEP=}
       break
     elif [[ "$line" =~ ^TIMESTAMP=.*$ ]]; then
-      line="TIMESTAMP=${TIMESTAMP}"
+      line="export TIMESTAMP=${TIMESTAMP}"
+    elif [[ $line =~ ^[^[:space:]]*=[^[:space:]]  ]]; then
+        line="export ${line}"
     fi
+
     echo "$line" >> ${header}
 done < ${genpipes_in}
-echo "CHUNK_SIZE=${max_chunk}" >> ${header}
+echo "export CHUNK_SIZE=${max_chunk}" >> ${header}
 
 chunk=1
 out_file=/dev/null
@@ -117,7 +120,7 @@ while read -r line ; do
 
     elif [[ $line =~ echo.*\ \>\>..JOB_LIST ]]; then
       job_list_chunk=${out_dir}/chunk_${chunk}.out
-      bidon=$(echo "$line" | sed 's/echo\s"$\(.*\)\s$JOB_NAME.*/echo "\1=$\1 "/g')
+      bidon=$(echo "$line" | sed 's/echo\s"$\(.*\)\s$JOB_NAME.*/echo "export \1=$\1 "/g')
       echo "$bidon >> ${job_list_chunk}" >> ${out_file}
     fi
 done < ${genpipes_in}
