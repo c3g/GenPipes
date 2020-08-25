@@ -14,6 +14,9 @@ echo "   -s <SLEEP TIME>          number of second to sleep when queue is full d
 
 }
 
+cancel_jobs () {
+  echo ""
+}
 
 submit () {
   job_script=${1}
@@ -22,7 +25,7 @@ submit () {
     ret_code=$?
     if [ ${ret_code} -eq 0 ]; then
       touch ${job_script%.sh}.done
-      echo chunk ${job_script} was sucssfully submitted
+      echo ${job_script} was sucssfully submitted
       break
     else
       echo cancel all jobs from ${job_script%.sh}.out

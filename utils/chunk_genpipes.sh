@@ -18,9 +18,9 @@ echo "                             default=20"
 load_previous_submit_id (){
 echo load_previous_submit_id on $1
  current_file=$1
- input_dir=$2
- cat << 'EOF' >> ${current_file}
-for file in $(ls .job/*out | sort -n ); do
+cat << 'EOF' >> ${current_file}
+SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+for file in $(ls ${SCRIPTPATH}/*out | sort -n ); do
 source $file
 done
 EOF
