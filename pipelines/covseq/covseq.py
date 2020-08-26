@@ -704,8 +704,8 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             #     [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             # ])
             input_bams = [
-                os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam"),
-                os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")
+                os.path.join(alignment_directory, sample.name + ".sorted.bam"),
+                os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
                 ]
             # log.info(input)
             mkdir_job = bash.mkdir(picard_directory, remove=True)
