@@ -1178,10 +1178,10 @@ def parse_mgi_raw_readset_files(
         readset._index_name = line['Index']
         #log.error(readset.index_name)
         if "MGI" in line['Index']:
-            m = re.search("\w+(?P<index>\d+)", line['Index'])
+            m = re.split("_", line['Index'])
             if m:
                 #log.error(m.group('index'))
-                readset._index = m.group('index')
+                readset._index = m[2]
         else:
             readset._index = readset.index_name
 
