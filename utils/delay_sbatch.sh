@@ -7,23 +7,31 @@ echo
 echo "usage: $0 <CHUNK FOLDER>
   Chunk Genpipes submiting sript so there is njobs in them"
 echo
-echo "   <Genpipes script>       A Genpipes output script"
+echo "   <CHUNK FOLDER>          The output folder from the chunk_genpipes.sh script"
 echo "   -n <MAX QUEUE>          Maximum number of job in slurm queue"
 echo "                             default=500"
-echo "   -s <SLEEP TIME>          number of second to sleep when queue is full default= 120"
+echo "   -s <SLEEP TIME>         Number of second to sleep when queue is full default= 120"
 
 }
 
+# cancel jobs should happen it SIGTERM is send while bash submit runst
 cancel_jobs () {
   echo ""
+  job_script=$1
+  echo cancel all jobs from ${job_script%.sh}.out
+  scancel $(cat ${job_script%.sh}.out | awk -F'=' '{print $2}')
+  rm ${job_script%.sh}.out
+  exit 0
 }
 
 submit () {
   job_script=${1}
   while true; do
+    trap "cancel_jobs ${job_script%.sh}.out" SIGTERM SIGINT SIGHUP
     bash ${job_script}
     ret_code=$?
     if [ ${ret_code} -eq 0 ]; then
+      trap - SIGTERM
       touch ${job_script%.sh}.done
       echo ${job_script} was sucssfully submitted
       break
@@ -94,9 +102,7 @@ all_done=($chunk_folder/chunk*done)
 
 for sh_script in "${all_sh[@]}"; do
   done_script=${sh_script%.sh}.done
-  echo ${done_script}
   if [ ! -f $done_script ]; then
-
     while true ; do
       curent_job_n=$(squeue -u $slurm_user -h -t pending,running | wc -l)
       if [[ $((max_queue-$curent_job_n)) -gt $CHUNK_SIZE ]]; then
