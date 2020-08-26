@@ -683,7 +683,8 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         return jobs
 
 
-    def multiple_metrics_raw_picard(self):
+    def multiple_metrics_picard(self):
+        # Calculates picard metrics from dnaseq pipeline but on raw AND on filtered bam file
 
         ##check the library status
         library = {}
@@ -699,27 +700,62 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             alignment_directory = os.path.join("alignment", sample.name)
             readset = sample.readsets[0]
 
-            [input] = self.select_input_files([
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
-            ])
+            # [input] = self.select_input_files([
+            #     [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
+            # ])
+            input_bams = [
+                os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam"),
+                os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")
+                ]
             # log.info(input)
             mkdir_job = bash.mkdir(picard_directory, remove=True)
 
-            jobs.append(
-                concat_jobs([
-                    mkdir_job,
-                    gatk4.collect_multiple_metrics(
-                        input,
-                        os.path.join(picard_directory, sample.name + ".all.metrics"),
-                        library_type=library[sample]
+            for input in input_bams:
+                jobs.append(
+                    concat_jobs([
+                        mkdir_job,
+                        gatk4.collect_multiple_metrics(
+                            input,
+                            os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input)) + ".all.metrics"),
+                            library_type=library[sample]
+                            )
+                        ],
+                        name="multiple_metrics_raw_picard." + re.sub("\.bam$", "", os.path.basename(input)),
+                        samples=[sample]
                         )
-                    ],
-                    name="multiple_metrics_raw_picard." + sample.name,
-                    samples=[sample]
                     )
-                )
+
+                jobs.append(
+                    concat_jobs([
+                        mkdir_job,
+                        gatk4.collect_oxog_metrics(
+                            input,
+                            os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input)) + ".oxog_metrics.txt")
+                            )
+                        ],
+                        name="picard_collect_oxog_metrics." + re.sub("\.bam$", "", os.path.basename(input)),
+                        samples=[sample]
+                        )
+                    )
+
+                jobs.append(
+                    concat_jobs([
+                        mkdir_job,
+                        gatk4.collect_gcbias_metrics(
+                            input,
+                            os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input)) + ".qcbias_metrics.txt"),
+                            os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input)) + ".qcbias_metrics.pdf"),
+                            os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input)) + ".qcbias_summary_metrics.txt")
+                            )
+                        ],
+                        name="picard_collect_gcbias_metrics." + re.sub("\.bam$", "", os.path.basename(input)),
+                        samples=[sample]
+                        )
+                    )
 
         return jobs
+
+
 
     def covseq_metrics(self):
         """
@@ -728,8 +764,8 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        jobs.extend(self.multiple_metrics_raw_picard())
-        jobs.extend(self.metrics_dna_picard_metrics())
+        jobs.extend(self.multiple_metrics_picard())
+        # jobs.extend(self.metrics_dna_picard_metrics())
         jobs.extend(self.metrics_dna_sample_qualimap())
         jobs.extend(self.metrics_sambamba_flagstat())
         jobs.extend(self.metrics_bedtools_genomecov())
