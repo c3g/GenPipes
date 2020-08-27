@@ -739,7 +739,7 @@ def parse_mgi_raw_readset_files(
             m = re.split("_", line['Index'])
             if m:
                 #log.error(m.group('index'))
-                readset._index = m[2]
+                readset._index = m[2].lstrip("0")
         else:
             readset._index = readset.index_name
 
