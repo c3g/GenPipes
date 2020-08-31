@@ -168,7 +168,7 @@ class searchBioconda:
             return True
         return False
 
-# Lacking logging as of now
+
 class searchPyPi:
     """
     Scraper made to scrape metadata from PyPi. 

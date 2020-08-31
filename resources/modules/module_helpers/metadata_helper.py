@@ -10,10 +10,10 @@ Can be run directly from command line with a command line argument
 python metadata_helper.py <SOFTWARE_NAME> <PATH_TO_SOFTSTACK>
 """
 
-import pythonSearcher as pySrch
-import json
-import sys
 import os
+import json
+import argparse
+import pythonSearcher as pySrch
 
 
 def run_mdh(sw_name, path=False, overwrite=False):
@@ -99,21 +99,29 @@ def run_mdh(sw_name, path=False, overwrite=False):
 	elif os.path.isfile(check_json_path):
 		print(f'JSON skipped since exists {check_json_path}')
 		pass
+
+	else:
+		with open(json_filepath, 'w') as f:
+			json.dump(data, f, indent=6)
+		print(f'JSON inside {json_filepath}')
+
 	
 if __name__ == '__main__':
-	try:
-		sys.argv[1]
-	except Exception as IndexError:
-		print("Are you sure you're using it with proper arguments?\n \
-			Try using -h or --help for help".replace('		', ''))
-		sys.exit()
-	if sys.argv[1] == '-h' or '--help':
-		print("Driver Script to get a software's metadata\n\
-		Usage:\n\
-		python metadata_helper.py <SOFTWARE_NAME> <PATH_TO_SOFTSTACK> \
-		<OVERWRITE_FLAG=True/False(False by default)> ".replace('		', ''))
-		sys.exit()
-	sw_name = sys.argv[1]
-	if len(sys.argv) == 3:
-		path_ = sys.argv[2]
-	run_mdh(sw_name, path=path_, overwrite=False)
+	
+
+	parser = argparse.ArgumentParser(description='Script to scrape metadata of a\
+		package')
+	parser.add_argument('name', metavar='N', type=str, nargs=1,
+		help='Name of the software')
+	parser.add_argument('path', metavar='P', type=str, nargs=1,
+		help='Path to the software stack')
+	parser.add_argument('-o', '--overwrite',
+		help='Use the flag only if you want to overwrite previous JSONs',
+		action='store_true')
+	
+	args = parser.parse_args()
+
+	sw_name = args.name[0]
+	path = args.path[0]
+
+	run_mdh(sw_name, path=path, overwrite=args.overwrite)

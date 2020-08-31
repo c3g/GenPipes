@@ -2,22 +2,27 @@
 """
 Script that verifies the installation scripts.
 
+Can be run from command line. Stores the logfile
+inside the folder where it is run from.
+
+python install_script_verify.py <FILENAME>
+
 """
 import os
-import sys
 import csv
+import argparse
 import subprocess
 import urllib.request
 
 class moduleVeri:
     def __init__(self, veri_file):
         self.veri_file = veri_file
-        if not os.path.isfile('module_helpers/verify_modules.csv'):
-            with open('module_helpers/verify_modules.csv', 'w') as file:
+        if not os.path.isfile('verify_modules.csv'):
+            with open('verify_modules.csv', 'w') as file:
                 writer = csv.writer(file)
                 writer.writerow(['FILENAME', 'FOLLOW_TEMPLATE',
-                                 'ARCHIVE_URL', 'URL_WORK?'])
-        self.file_path = 'module_helpers/verify_modules.csv'
+                                 'ARCHIVE_URL', 'URL_WORK'])
+        self.file_path = 'verify_modules.csv'
         with open(self.veri_file, 'r') as f:
             self.data = f.readlines()
         self.vars = {}
@@ -117,19 +122,27 @@ class moduleVeri:
 
         """
         keys = list_dict[0].keys()
-        with open('module_helpers/verify_modules.csv', 'a') as output_file:
+        with open('verify_modules.csv', 'a') as output_file:
             dict_writer = csv.DictWriter(output_file, keys)
             dict_writer.writerows(list_dict)
 
-sw_name = sys.argv[1]
-modVer = moduleVeri(sw_name)
-modVer.create_bash()
-url_ = modVer.get_var_value('ARCHIVE_URL')
-arr_ = []
-dict_ = {'FILENAME': sw_name,
-         'FOLLOW_TEMPLATE': modVer.check_template(),
-         'ARCHIVE_URL': url_,
-         'URL WORK?': modVer.verify_url(url_)}
+if __name__=='__main__':
+    parser = argparse.ArgumentParser(description='Single script to scrape metadata of all\
+        the software found inside the stack folder')
+    parser.add_argument('path', metavar='P', type=str, nargs=1,
+        help='Path to the installation script to be checked')
 
-arr_.append(dict_)
-modVer.append_to_csv(arr_)
+    args = parser.parse_args()
+    sw_name = args.path[0]
+
+    modVer = moduleVeri(sw_name)
+    modVer.create_bash()
+    url_ = modVer.get_var_value('ARCHIVE_URL')
+    arr_ = []
+    dict_ = {'FILENAME': sw_name,
+             'FOLLOW_TEMPLATE': modVer.check_template(),
+             'ARCHIVE_URL': url_,
+             'URL_WORK': modVer.verify_url(url_)}
+
+    arr_.append(dict_)
+    modVer.append_to_csv(arr_)
