@@ -480,6 +480,31 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
+def mergeVcfs(variants, output):
+    return Job(
+            variants,
+            [output],
+            [
+                ['picard_merge_vcfs', 'module_java'],
+                ['picard_merge_vcfs', 'module_picard']
+            ],
+            command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar \\
+  MergeVcfs {options} \\
+  --TMP_DIR {tmp_dir} \\
+  --REFERENCE_SEQUENCE {reference}{variants} \\
+  --OUTPUT {output}""".format(
+                tmp_dir=config.param('picard_merge_vcfs', 'tmp_dir'),
+                java_other_options=config.param('picard_merge_vcfs', 'java_other_options'),
+                ram=config.param('picard_merge_vcfs', 'ram'),
+                options=config.param('picard_merge_vcfs', 'options'),
+                reference=config.param('picard_merge_vcfs', 'genome_fasta', type='filepath'),
+                variants="".join(" \\\n  --INPUT " + variant for variant in variants),
+                output=output
+        )
+  )
+
+
 def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
 
     if config.param('picard_collect_rna_metrics', 'module_picard').split("/")[2] < "2":
