@@ -10,15 +10,30 @@ import requests
 import lxml.html
 from bs4 import BeautifulSoup
 
-logfile = os.getcwd()
-
-class searchLogger:
+class SearchLogger:
     """
-    The function handles logging done when scrapers are run.
+    Class made specifically to maintain an uniform logging system.
+
+    ...
+
+    Attributes
+    ----------
+    log_format : str
+        A formatted string which contains a log in parts.
+    logfile_path : str
+        The path where logfile is stored
+
+    Methods
+    -------
+    append_log(dict_data)
+       Appends the dict_data to the logfile.
+    reset_log()
+        Deletes the old log file and creates a new one.
+
     """
     def __init__(self):
         self.log_format = '{time} - {type} - {message}\n'
-        self.logfile_path = os.path.join(logfile, 'logfile.txt')
+        self.logfile_path = os.path.join(os.getcwd(), 'logfile.txt')
         if not os.path.isfile(self.logfile_path):
             with open(self.logfile_path, 'w') as file:
                 curr_time = time.ctime(time.time())
@@ -48,10 +63,39 @@ class searchLogger:
                 curr_time = time.ctime(time.time())
                 file.write(f'LOG FILE GENERATED ON {curr_time}\n')
 
-class searchBioconda:
+class SearchBioconda:
     """
-    Scraper made to scrape Bioconda data from - 
+    A class made to scrape data from Bioconda.
     https://bioconda.github.io/conda-package_index.html
+
+    ...
+
+    Attributes
+    ----------
+    keys_to_ignore : list
+        A list consisting of data that is to be ignored
+        when scraping.
+    xpath_dict : dict
+        Name of the element as keys, and their xpaths as values
+    all_keys : list
+        All the available keys for a certain metadata
+    check_if_exist : list
+        Contains the keys that are to be checked for a software
+    db : dict
+        Software name as the key, and the software page link as
+        values.
+    logger : object
+        Object that calls the logger class.
+
+    Methods
+    -------
+    return_db()
+       Getter class to return database.
+    fetch_software(name)
+        Fetches metadata for a software.
+    isBioconda(name)
+        Checks if a certain software is available on Bioconda.
+
     """
     def __init__(self):
         self.keys_to_ignore = ['Links',
@@ -75,7 +119,7 @@ class searchBioconda:
         for elem in sws_:
             sws_dict[elem.text.strip()] = 'https://bioconda.github.io/' + elem.get('href')
         self.db = sws_dict
-        self.logger = searchLogger()
+        self.logger = SearchLogger()
         self.logger.append_log({
             'type': 'INITIALIZATION',
             'message': 'Database scraped from Bioconda Index'
@@ -149,7 +193,7 @@ class searchBioconda:
             return template_dict
         return False
     
-    def isBioconda(self, name):
+    def is_bioconda(self, name):
         """
         Checks if a certain software is available in Bioconda Index.
         
@@ -169,12 +213,35 @@ class searchBioconda:
         return False
 
 
-class searchPyPi:
+class SearchPyPi:
     """
-    Scraper made to scrape metadata from PyPi. 
+    A class made to scrape data from PyPi.
+
+    ...
+
+    Attributes
+    ----------
+    keys_to_ignore : list
+        A list consisting of data that is to be ignored
+        when scraping.
+    search_source : str
+        Contains the URL as formattable string that can be queried to
+        get search results.
+    field_paths : dict
+        Name of the element as keys, and their xpaths as values
+    search_xpath : str
+        Xpath of the results on the search results page.
+
+    Methods
+    -------
+    searchPackage(name)
+        Searches for a package on PyPi.
+    getMetadata(name, link)
+        Scrapes the metadata from the software's PyPi page.
+
     """
     def __init__(self):
-        self.keys_to_ignore = ['MAINTAINER', 'AUTHOR']
+        self.keys_to_ignore = ['AUTHOR', 'MAINTAINER', 'HOMEPAGE']
         self.search_source = 'https://pypi.org/search/?q={}'
         self.field_paths = {'INFO': '/html/body/main/div[2]/div/div',
                            'MAINTAINER': '/html/body/main/div[3]/div/div/div[1]/div[5]/span/a/span[2]',
@@ -182,9 +249,8 @@ class searchPyPi:
                            'HOMEPAGE': '/html/body/main/div[3]/div/div/div[1]/div[2]/ul/li/a', 
                            'LICENSE': '/html/body/main/div[3]/div/div/div[1]/div[4]/p[1]'}
         self.search_xpath = '/html/body/main/div/div/div[2]/form/div[3]/ul/li/a'
-        self.keys_to_ignore = ['AUTHOR', 'MAINTAINER', 'HOMEPAGE']
     
-    def searchPackage(self, name):
+    def search_package(self, name):
         """
         Checks if a certain software is available on PyPi.
         
@@ -212,7 +278,7 @@ class searchPyPi:
                 return 'https://pypi.org' + result.get('href')
         return None
     
-    def getMetadata(self, name, link):
+    def get_metadata(self, name, link):
         """
         Extracts the software metadata from the PyPi page.
         

@@ -13,7 +13,7 @@ import os
 import json
 import argparse
 
-def getVersions(soft, dir_):
+def GetVersions(soft, dir_):
     files = os.listdir(dir_)
     files = [file for file in files if file[0] is not '.']
     versions = []
@@ -22,7 +22,7 @@ def getVersions(soft, dir_):
         versions.append(version)
     return versions
 
-def addToJson(dict_):
+def AddToJSONs(dict_):
     for json_p in software_paths:
         load_json = None
         json_f = os.path.join(json_p, '.metadata.json')
@@ -64,13 +64,13 @@ if __name__=='__main__':
     software_paths = [os.path.join(soft_stack, soft) for soft in list_of_software]
 
 
-    softList = {}
+    soft_list = {}
     for index in range(0, len(software_paths)):
-        extractedVersions = getVersions(list_of_software[index], software_paths[index])
-        currSoft = list_of_software[index]
-        softList[currSoft] = extractedVersions
+        extracted_versions = GetVersions(list_of_software[index], software_paths[index])
+        curr_soft = list_of_software[index]
+        soft_list[curr_soft] = extracted_versions
 
-    addToJson(softList)
+    AddToJSONs(soft_list)
                     
     arr_ = []
     for path in software_paths:

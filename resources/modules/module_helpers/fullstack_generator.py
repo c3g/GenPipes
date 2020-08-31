@@ -14,7 +14,21 @@ import os
 import argparse
 import metadata_helper as mdh
 
-def generate_all_jsons(traverse_this=None, overwrite=False):
+def GenerateAllJSONs(traverse_this=None, overwrite=False):
+	"""
+    Generates a combined JSON from all the JSONs in the
+    software stack.
+
+    Parameters
+    ----------
+    traverse_this: str
+    Path of the software stack.
+    
+    overwrite: bool
+	A boolean value which signifies if the previous JSONs
+	have to been overwritten.
+
+	"""
 	if traverse_this is None:
 		traverse_this = os.getcwd()
 	all_soft = os.listdir(traverse_this)
@@ -39,7 +53,7 @@ if __name__ == '__main__':
 	if args.verbose:
 		print(f'Traversing {path}')
 	
-	generate_all_jsons(traverse_this=path, overwrite=args.overwrite)
+	GenerateAllJSONs(traverse_this=path, overwrite=args.overwrite)
 
 
 

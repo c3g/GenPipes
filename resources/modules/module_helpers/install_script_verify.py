@@ -14,7 +14,43 @@ import argparse
 import subprocess
 import urllib.request
 
-class moduleVeri:
+class ModuleVeri:
+    """
+    A class made to verify the module mirrors in the 
+    installation scripts.
+
+    ...
+
+    Attributes
+    ----------
+    veri_file : str
+    Name of the file that is to be verified.
+    
+    vars : dict
+    The variables found inside the installation script
+    and their values.
+
+    Methods
+    -------
+    create_bash()
+    Creates a temporary bash file.
+    
+    check_template()
+    Checks if the installation script adheres to
+    the installation template
+    
+    get_var_value(varname)
+    Gets the value of a certain variable inside the
+    bash file.
+
+    verify_url(url)
+    Pings a certain URL to verify if the URL exists
+    or not.
+
+    append_to_csv(list_dict)
+    Appends the list_dict to the logfile.
+
+    """
     def __init__(self, veri_file):
         self.veri_file = veri_file
         if not os.path.isfile('verify_modules.csv'):
@@ -22,7 +58,6 @@ class moduleVeri:
                 writer = csv.writer(file)
                 writer.writerow(['FILENAME', 'FOLLOW_TEMPLATE',
                                  'ARCHIVE_URL', 'URL_WORK'])
-        self.file_path = 'verify_modules.csv'
         with open(self.veri_file, 'r') as f:
             self.data = f.readlines()
         self.vars = {}
@@ -135,14 +170,14 @@ if __name__=='__main__':
     args = parser.parse_args()
     sw_name = args.path[0]
 
-    modVer = moduleVeri(sw_name)
-    modVer.create_bash()
-    url_ = modVer.get_var_value('ARCHIVE_URL')
+    modver_ = ModuleVeri(sw_name)
+    modver_.create_bash()
+    url_ = modver_.get_var_value('ARCHIVE_URL')
     arr_ = []
     dict_ = {'FILENAME': sw_name,
-             'FOLLOW_TEMPLATE': modVer.check_template(),
+             'FOLLOW_TEMPLATE': modver_.check_template(),
              'ARCHIVE_URL': url_,
-             'URL_WORK': modVer.verify_url(url_)}
+             'URL_WORK': modver_.verify_url(url_)}
 
     arr_.append(dict_)
-    modVer.append_to_csv(arr_)
+    modver_.append_to_csv(arr_)

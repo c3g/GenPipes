@@ -43,7 +43,7 @@ def run_mdh(sw_name, path=False, overwrite=False):
 	else:
 		c_path = os.getcwd()
 
-	logger = pySrch.searchLogger()
+	logger = pySrch.SearchLogger()
 
 	logger.append_log({
 		'type': 'READY',
@@ -57,11 +57,11 @@ def run_mdh(sw_name, path=False, overwrite=False):
 			"License": None
 	}
 
-	bioconda_search = pySrch.searchBioconda()
-	pypi_search= pySrch.searchPyPi()
+	bioconda_search = pySrch.SearchBioconda()
+	pypi_search= pySrch.SearchPyPi()
 
 	bconda_data = bioconda_search.fetch_software(sw_name)
-	pypi_url = pypi_search.searchPackage(sw_name)
+	pypi_url = pypi_search.search_package(sw_name)
 
 	pypi = False
 	not_found = False
@@ -69,7 +69,7 @@ def run_mdh(sw_name, path=False, overwrite=False):
 	if bconda_data:
 		data = bconda_data
 	elif pypi_url:
-		data = pypi_search.getMetadata(sw_name, pypi_url)
+		data = pypi_search.get_metadata(sw_name, pypi_url)
 		pypi = True
 	else:
 		data = template_dict
