@@ -527,7 +527,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
   MergeVcfs {options} \\
   --TMP_DIR {tmp_dir} \\
   --REFERENCE_SEQUENCE {reference}{variants} \\
-  --OUTPUT {output}
+  --OUTPUT {output} \\
   --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
                 tmp_dir=config.param('picard_merge_vcfs', 'tmp_dir'),
                 java_other_options=config.param('picard_merge_vcfs', 'java_other_options'),
