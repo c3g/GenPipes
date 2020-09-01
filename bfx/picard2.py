@@ -493,14 +493,16 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
   MergeVcfs {options} \\
   --TMP_DIR {tmp_dir} \\
   --REFERENCE_SEQUENCE {reference}{variants} \\
-  --OUTPUT {output}""".format(
+  --OUTPUT {output}
+  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
                 tmp_dir=config.param('picard_merge_vcfs', 'tmp_dir'),
                 java_other_options=config.param('picard_merge_vcfs', 'java_other_options'),
                 ram=config.param('picard_merge_vcfs', 'ram'),
                 options=config.param('picard_merge_vcfs', 'options'),
                 reference=config.param('picard_merge_vcfs', 'genome_fasta', type='filepath'),
                 variants="".join(" \\\n  --INPUT " + variant for variant in variants),
-                output=output
+                output=output,
+                max_records_in_ram=config.param('picard_merge_vcfs', 'max_records_in_ram', type='int')
         )
   )
 

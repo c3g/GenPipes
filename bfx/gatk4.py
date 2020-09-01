@@ -136,7 +136,7 @@ def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
 		command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
  MarkDuplicatesSpark \\
- --remove-all-duplicates={remove_duplicates} --read-validation-stringency SILENT --create-output-bam-index true \\
+ --remove-all-duplicates {remove_duplicates} --read-validation-stringency SILENT --create-output-bam-index true \\
  --tmp-dir {tmp_dir} \\
  {inputs} \\
  --metrics-file {metrics_file} \\
@@ -1186,21 +1186,20 @@ def picard_mark_duplicates(
             ],
             command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
-<<<<<<< HEAD
-  MarkDuplicates \\
-  --REMOVE_DUPLICATES={remove_duplicates} \\
-  --VALIDATION_STRINGENCY=SILENT \\
-  --CREATE_INDEX=true \\
-  --TMP_DIR={tmp_dir} \\
-  {inputs} \\
-  --OUTPUT={output} \\
-  --METRICS_FILE={metrics_file} \\
-  --MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
+ MarkDuplicates \\
+ --REMOVE_DUPLICATES {remove_duplicates} \\
+ --VALIDATION_STRINGENCY SILENT \\
+ --CREATE_INDEX true \\
+ --TMP_DIR {tmp_dir} \\
+ {inputs} \\
+ --OUTPUT {output} \\
+ --METRICS_FILE {metrics_file} \\
+ --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
                 tmp_dir=config.param('picard_mark_duplicates', 'tmp_dir'),
                 java_other_options=config.param('picard_mark_duplicates', 'java_other_options'),
                 ram=config.param('picard_mark_duplicates', 'ram'),
                 remove_duplicates=remove_duplicates,
-                inputs=" \\\n  ".join("--INPUT=" + input for input in inputs),
+                inputs=" \\\n  ".join("--INPUT " + input for input in inputs),
                 output=output,
                 metrics_file=metrics_file,
                 max_records_in_ram=config.param('picard_mark_duplicates', 'max_records_in_ram', type='int')
