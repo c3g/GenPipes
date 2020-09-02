@@ -796,8 +796,8 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
             # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
 
-            output_prefix = os.path.join(alignment_directory, sample.name)
-            output_tsv = output_prefix + ".variants.tsv"
+            output_prefix = os.path.join(variant_directory, sample.name) + ".variants"
+            output_tsv = output_prefix + ".tsv"
             output_vcf = os.path.join(variant_directory, re.sub("\.bam$", "", os.path.basename(input_bam)))
 
             jobs.append(
