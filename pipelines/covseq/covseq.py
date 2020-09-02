@@ -798,7 +798,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
             output_prefix = os.path.join(variant_directory, sample.name) + ".variants"
             output_tsv = output_prefix + ".tsv"
-            output_vcf = os.path.join(variant_directory, re.sub("\.bam$", "", os.path.basename(input_bam)))
+            output_vcf = os.path.join(variant_directory, re.sub("\.bam$", "", os.path.basename(input_bam))) + ".vcf"
 
             jobs.append(
                 concat_jobs([
