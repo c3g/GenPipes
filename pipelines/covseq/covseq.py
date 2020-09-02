@@ -797,7 +797,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
 
             output_prefix = os.path.join(variant_directory, re.sub("\.bam$", "", os.path.basename(input_bam)))
-            output_tsv = output_prefix + ".tsv"
+            output_tsv = os.path.join(alignment_directory, sample.name + ".variants.tsv")
             output_vcf = output_prefix + ".vcf"
 
             jobs.append(
@@ -827,7 +827,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                     ],
                     name="ivar_call_variants." + sample.name,#re.sub("\.bam$", "", os.path.basename(bam)),
                     samples=[sample],
-                    removable_files=[output_tsv, output_vcf]
+                    removable_files=[output_vcf]
                     )
                 )
 
@@ -950,12 +950,13 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             quast_tsv = os.path.join(quast_directory, "report.tsv")
 
             #TODO: change name of gisaid fasta, Cf. Hector script ".fasta"
-            [output_fa] = self.select_output_files([
-                [os.path.join(consensus_directory, sample.name + ".{technology}.pass.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))],
-                [os.path.join(consensus_directory, sample.name + ".{technology}.flag.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))],
-                [os.path.join(consensus_directory, sample.name + ".{technology}.rej.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))]
-            ])
-            # output_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="${STATUS}"))
+            # [output_fa] = self.select_output_files([
+            #     [os.path.join(consensus_directory, sample.name + ".{technology}.pass.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))],
+            #     [os.path.join(consensus_directory, sample.name + ".{technology}.flag.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))],
+            #     [os.path.join(consensus_directory, sample.name + ".{technology}.rej.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))]
+            # ])
+            output_fa = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
+            output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="${STATUS}"))
 
             jobs.append(
                 concat_jobs([
@@ -977,7 +978,9 @@ export STATUS""".format(
                         input_files=[input_fa],
                         output_files=[output_fa],
                         command="""\\
-awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:{assemb_method}|snv_call_method:{snv_call_method}"; next}}{{print}}' < {input_fa} > {output_fa}""".format(
+awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:{assemb_method}|snv_call_method:{snv_call_method}"; next}}{{print}}' < {input_fa} > {output_status_fa} && \\
+ln -sf {output_status_fa} {output_fa}
+""".format(
     country=config.param('rename_consensus_header', 'country', required=False),
     province=config.param('rename_consensus_header', 'province', required=False),
     year=config.param('rename_consensus_header', 'year', required=False),
@@ -986,6 +989,7 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
     snv_call_method=config.param('rename_consensus_header', 'snv_call_method', required=False),
     sample=sample.name,
     input_fa=input_fa,
+    output_status_fa=output_status_fa,
     output_fa=output_fa
     )
                         )
