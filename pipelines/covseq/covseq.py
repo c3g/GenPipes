@@ -990,7 +990,7 @@ ln -sf {output_status_fa} {output_fa}
     sample=sample.name,
     input_fa=input_fa,
     output_status_fa=output_status_fa,
-    output_fa=output_fa
+    output_fa=os.path.basename(output_fa)
     )
                         )
                 ],
