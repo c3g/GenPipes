@@ -62,7 +62,11 @@ def get_lanes_from_run(
                 lanes.append(columns['Lane'][x])
     return lanes
 
-def compare_runs(columns):
+def compare_runs(
+    columns,
+    outdir
+    ):
+
     header = "RUN_ID"
     if os.path.isfile("/tmp/mgi_runs.ref"):
         new_list = filter(None, sorted(set(columns['RUN_ID'])))
@@ -96,7 +100,8 @@ def compare_runs(columns):
                             columns,
                             project,
                             run,
-                            lane
+                            lane,
+                            outdir
                         )
             # replace referece run list by the current run list to set it as the reference for next watch round
             print_runs(columns)
@@ -119,7 +124,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--spreadsheet_name', help='Name of the MGI run management Google spreadsheet to parse', required=True, dest="spreadsheet_name")
     parser.add_argument('-a', '--authentication_file', help="JSON authentication file used to connect the spreadsheets", type=file, required=True, dest="json_file")
-    parser.add_argument('-o', '--outfile', help="Output file (csv format)", required=False)
+    parser.add_argument('-o', '--outdir', help="Path of the output directory i.e. where the sample sheets will be written in their respective project folder", required=False)
     parser.add_argument('--loglevel', help="Standard Python log level", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
 
     args = parser.parse_args()
@@ -128,7 +133,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=log_level)
 
     MGI_spreadsheet_name = args.spreadsheet_name
-    outfile = args.outfile
+    outdir = args.outdir
     authentication_file = args.json_file.name
 
     dict_of_columns = parse_google_sheet(
@@ -137,5 +142,6 @@ if __name__ == '__main__':
     )
 
     compare_runs(
-        dict_of_columns
+        dict_of_columns,
+        outdir
     )
