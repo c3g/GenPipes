@@ -979,7 +979,7 @@ export STATUS""".format(
                         output_files=[output_fa],
                         command="""\\
 awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:{assemb_method}|snv_call_method:{snv_call_method}"; next}}{{print}}' < {input_fa} > {output_status_fa} && \\
-ln -sf {output_status_fa} {output_fa}
+ln -sf {output_status_fa_basename} {output_fa}
 """.format(
     country=config.param('rename_consensus_header', 'country', required=False),
     province=config.param('rename_consensus_header', 'province', required=False),
@@ -989,6 +989,7 @@ ln -sf {output_status_fa} {output_fa}
     snv_call_method=config.param('rename_consensus_header', 'snv_call_method', required=False),
     sample=sample.name,
     input_fa=input_fa,
+    output_status_fa=os.path.basename(output_status_fa),
     output_status_fa=output_status_fa,
     output_fa=output_fa
     )
