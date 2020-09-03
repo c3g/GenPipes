@@ -34,7 +34,7 @@ def fastqc(
     input2,
     outputs,
     adapter_file=None,
-    use_tmp=None
+    use_tmp=False
     ):
 
     if input2:  # Paired end reads
@@ -44,7 +44,7 @@ def fastqc(
 
     if not isinstance(outputs, list):
         outputs = [outputs]
-        
+ 
     output_directory = os.path.dirname(outputs[0])
     if use_tmp:
         tmp_directory = output_directory + ".tmp"

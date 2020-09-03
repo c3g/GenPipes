@@ -78,10 +78,12 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
     def get_reference_index(self):
         folder_name = os.path.basename(self.genome_folder)
-        return os.path.join(self.genome_folder,
-                            "genome",
-                            "bwa_index",
-                            folder_name + ".fa")
+        return os.path.join(
+            self.genome_folder,
+            "genome",
+            "bwa_index",
+            folder_name + ".fa"
+        )
 
     def get_annotation_files(self):
         folder_name = os.path.basename(self.genome_folder)
@@ -94,14 +96,15 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             dbsnp_option_name = "dbsnp_version"
             af_option_name = "population_AF"
 
-            if genome_config.has_option(section, dbsnp_option_name) and\
-                    genome_config.has_option(section, af_option_name):
+            if genome_config.has_option(section, dbsnp_option_name) and genome_config.has_option(section, af_option_name):
                 dbsnp_version = genome_config.get(section, dbsnp_option_name)
                 af_name = genome_config.get(section, af_option_name)
                 return [
-                    os.path.join(self.genome_folder,
-                                 "annotations",
-                                 folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf.gz"),
+                    os.path.join(
+                        self.genome_folder,
+                        "annotations",
+                        folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf.gz"
+                    )
                 ]
 
         return []
@@ -439,31 +442,31 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
             readset_metrics_bam = readset.bam + ".rRNA.bam"
 
             job = concat_jobs([
-                                  pipe_jobs([
-                                      bvatools.bam2fq(
-                                          readset_bam
-                                      ),
-                                      bwa.mem(
-                                          "/dev/stdin",
-                                          None,
-                                          read_group=RunProcessingAligner.get_rg_tag(readset, 'bwa_mem_rRNA'),
-                                          ref=readset.annotation_files[1],
-                                          ini_section='bwa_mem_rRNA'
-                                      ),
-                                      picard.sort_sam(
-                                          "/dev/stdin",
-                                          readset_metrics_bam,
-                                          "coordinate",
-                                          ini_section='picard_sort_sam_rrna'
-                                      )
-                                  ]),
-                                  tools.py_rrnaBAMcount(
-                                      bam=readset_metrics_bam,
-                                      gtf=readset.annotation_files[0],
-                                      output=os.path.join(readset.bam + ".metrics.rRNA.tsv"),
-                                      typ="transcript")],
-                              name="bwa_mem_rRNA." + readset.name + ".rRNA" + "." + readset.run + "." + readset.lane,
-                              samples=[readset.sample])
+                pipe_jobs([
+                    bvatools.bam2fq(readset_bam),
+                    bwa.mem(
+                        "/dev/stdin",
+                        None,
+                        read_group=RunProcessingAligner.get_rg_tag(readset, 'bwa_mem_rRNA'),
+                        ref=readset.annotation_files[1],
+                        ini_section='bwa_mem_rRNA'
+                    ),
+                    picard.sort_sam(
+                        "/dev/stdin",
+                        readset_metrics_bam,
+                        "coordinate",
+                        ini_section='picard_sort_sam_rrna'
+                    )
+                ]),
+                tools.py_rrnaBAMcount(
+                    bam=readset_metrics_bam,
+                    gtf=readset.annotation_files[0],
+                    output=os.path.join(readset.bam + ".metrics.rRNA.tsv"),
+                    typ="transcript"
+                )],
+                name="bwa_mem_rRNA." + readset.name + ".rRNA" + "." + readset.run + "." + readset.lane,
+                samples=[readset.sample]
+            )
 
             job.removable_files = [readset_metrics_bam]
             jobs.append(job)

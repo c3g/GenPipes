@@ -540,6 +540,17 @@ class MGIReadset(Readset):
             return self._umi
 
     @property
+    def sample_tag(self):
+        return self._sample_tag
+
+    @property
+    def gender(self):
+        if not hasattr(self, "_gender"):
+            return None
+        else:
+            return self._gender
+
+    @property
     def library(self):
         return self._library
 
@@ -739,7 +750,7 @@ def parse_mgi_raw_readset_files(
             m = re.search("\D+(?P<index>\d+)", line['Index'])
             if m:
                 #log.error(str(int(m.group('index'))))
-                readset._index = str(int(m.group('index')))
+                readset._index = m.group('index').lstrip("0")
         else:
             readset._index = readset.index_name
 
@@ -761,6 +772,13 @@ def parse_mgi_raw_readset_files(
             readset._beds = line['BED Files'].split(";")
         else:
             readset._beds = []
+
+        fastq_file_pattern = os.path.join(
+            os.path.join(output_dir, "Unaligned." + readset.lane, 'Project_' + readset.project, 'Sample_' + readset.name),
+            readset.name + "_" + readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_R{read_number}.fastq.gz"
+        )
+        readset.fastq1 = fastq_file_pattern.format(read_number=1)
+        readset.fastq2 = fastq_file_pattern.format(read_number=2) if readset.run_type == "PAIRED_END" else None
 
         readsets.append(readset)
         sample.add_readset(readset)
