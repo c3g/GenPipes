@@ -307,13 +307,13 @@ class MGIRunProcessing(common.MUGQICPipeline):
             _raise(SanitycheckError("Error: missing '-d/--run_dir' option!"))
 
     @property
-    def flowcell(self):
+    def flowcell_id(self):
         """
         The flow cell ID from the run folder
         """
-        if not hasattr(self, "_flowcell"):
-            self._flowcell = os.path.basename(self.run_dir.rstrip('/'))
-        return self._flowcell
+        if not hasattr(self, "_flowcell_id"):
+            self._flowcell_id = os.path.basename(self.run_dir.rstrip('/'))
+        return self._flowcell_id
 
 
     @property
