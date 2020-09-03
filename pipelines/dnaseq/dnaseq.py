@@ -1157,7 +1157,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            qualimap_directory = os.path.join("metrics", "dna", sample.name, "qualimap")
+            qualimap_directory = os.path.join("metrics", "dna", sample.name, "qualimap", sample.name)
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
