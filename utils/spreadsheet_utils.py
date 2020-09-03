@@ -73,7 +73,7 @@ def print_sample_sheet(
     project,
     run,
     lane,
-    outfile=None,
+    output_dir=None,
     verbose=None
     ):
 
@@ -84,11 +84,12 @@ def print_sample_sheet(
     if str(lane) not in columns['Lane']:
         logger.error("Lane " + str(lane) + " was not found in " + columns['Lane'])
 
-    if not outfile:
-        process_dir = os.path.join(str(project) , str(run), "L0" + str(lane))
-        if not os.path.exists(process_dir):
-            os.makedirs(process_dir)
-        outfile = os.path.join(process_dir, str(project) + "." + str(run) + ".L0" + str(lane) + ".sample_sheet.csv")
+    process_dir = os.path.join(str(project) , str(run), "L0" + str(lane))
+    if output_dir :
+        process_dir = os.path.join(output_dir, process_dir)
+    if not os.path.exists(process_dir):
+        os.makedirs(process_dir)
+    outfile = os.path.join(process_dir, str(project) + "." + str(run) + ".L0" + str(lane) + ".sample_sheet.csv")
 
     f = csv.writer(open(outfile, "wb+"))
 
