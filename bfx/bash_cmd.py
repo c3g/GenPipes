@@ -294,3 +294,13 @@ pigz {input} -c {output}""".format(
         )
     )
 
+def md5sum(input, output):
+    return Job(
+        [input],
+        [output],
+        command="""\
+md5sum {input} > {output}""".format(
+            input=os.path.abspath(input),
+            output=os.path.abspath(output)
+        )
+    )
