@@ -660,6 +660,33 @@ python $PYTHON_TOOLS/runProcessingIndexValidation.py \\
         )
     )
 
+def edit_index_stats(
+    readset_json_file,
+    stats_json_file,
+    outfile
+    ):
+
+    return Job(
+        [
+            readset_json_file,
+            stats_json_file
+        ],
+        [outfile],
+        [
+            ['index_validation', 'module_mugqic_tools'],
+            ['index_validation', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/runProcessingEditIndexStatsFile.py \\
+  -r {readset_json} \\
+  -s {stats_json} \\
+  -o {output_json}""".format(
+            readset_json=readset_json_file,
+            stats_json=stats_json_file,
+            output_json=outfile
+        )
+    )
+
 def run_validation_sample_report(
     readset,
     report_inputs,
@@ -667,11 +694,13 @@ def run_validation_sample_report(
     ):
 
     inputs = [
-        report_inputs['index'],
-        report_inputs['sample_tag'][readset.name],
         report_inputs['qc'][readset.name],
         report_inputs['blast'][readset.name]
     ]
+    if report_inputs.get('index'):
+        inputs.append(report_inputs['index'])
+    if report_inputs.get('sample_tag'):
+        inputs.append(report_inputs['sample_tag'][readset.name])
     if readset.bam:
         inputs.append(report_inputs['mark_dup'][readset.name])
         inputs.extend(report_inputs['align'][readset.name])
@@ -685,19 +714,21 @@ def run_validation_sample_report(
         ],
         command="""\
 python $PYTHON_TOOLS/runProcessingSampleReport.py \\
+  -p {project} \\
   -s {sample} \\
   -l {library} \\
-  -i {index} \\
-  -k {sample_tag} \\
+  {index} \\
+  {sample_tag} \\
   -q {qc} \\
   -b {blast} \\
   {align} \\
   -g {gender} \\
   -o {outfile}""".format(
+            project=readset.project,
             sample=readset.sample.name,
             library=readset.library,
-            index=report_inputs['index'],
-            sample_tag=report_inputs['sample_tag'][readset.name],
+            index="-i " + report_inputs['index'] if report_inputs.get('index') else "",
+            sample_tag="-k " + report_inputs['sample_tag'][readset.name] if report_inputs.get('sample_tag') else "",
             qc=report_inputs['qc'][readset.name],
             blast=report_inputs['blast'][readset.name],
             align="-a " + os.path.dirname(report_inputs['mark_dup'][readset.name]) if readset.bam else "",
@@ -708,14 +739,12 @@ python $PYTHON_TOOLS/runProcessingSampleReport.py \\
 
 def run_validation_aggregate_report(
     main_json,
-    index_json,
     inputs,
     outfile
     ):
 
     input_files = inputs
     input_files.append(main_json)
-    input_files.append(index_json)
 
     return Job(
         input_files,
@@ -727,16 +756,13 @@ def run_validation_aggregate_report(
         command="""\
 python $PYTHON_TOOLS/runProcessingAggregateReports.py \\
   -m {main_json} \\
-  -i {index} \\
   -s {input_dir} \\
   -o {outfile}""".format(
             main_json=main_json,
-            index=index_json,
             input_dir=os.path.dirname(inputs[0]),
             outfile=outfile
         )
     )
-
 
 ## functions for perl tools ##
 
