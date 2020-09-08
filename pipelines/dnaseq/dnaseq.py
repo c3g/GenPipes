@@ -1576,9 +1576,9 @@ END
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.cram")],
-                [os.path.join(alignment_directory, sample.name + ".hc.vcf.gz")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                [os.path.join(alignment_directory, sample.name + ".sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".hc.vcf.gz")]
             ])
             inputs.append(input)
             
