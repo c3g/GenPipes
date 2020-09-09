@@ -1589,7 +1589,7 @@ END`""".format(
                     if not self.is_gz_file(input_vcf):
                         stderr.write("Incomplete mutect2 vcf: %s\n" % input_vcf)
 
-                if config.param('gatk_apply_bqsr', 'module_gatk').split("/")[2] > "4":
+                if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
                     output_stats = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz.stats")
                     stats = []
                     for idx, sequences in enumerate(unique_sequences_per_job):

@@ -289,8 +289,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 reference=config.param('gatk_merge_vcfs', 'genome_fasta', type='filepath'),
                 variants="".join(" \\\n  --INPUT " + variant for variant in variants),
                 output=output
-        ))
-
+            )
+        )
 
 def merge_stats(stats, output=None):
 		return Job(
@@ -559,45 +559,47 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 
 def get_pileup_summaries(
     input_bam,
-    output
+    output,
+    intervals=None,
     ):
 
     return Job(
         [input_bam],
         [output],
         [
-            ['get_pileup_summaries', 'module_java'],
-            ['get_pileup_summaries', 'module_gatk']
+            ['gatk_get_pileup_summaries', 'module_java'],
+            ['gatk_get_pileup_summaries', 'module_gatk']
         ],
         command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   GetPileupSummaries {options} \\
   --input {input_bam} \\
-  --variant {variants} \\
-  --intervals {intervals} \\
+  --variant {variants} {intervals} \\
   --output {output}""".format(
-            tmp_dir=config.param('get_pileup_summaries', 'tmp_dir'),
-            java_other_options=config.param('get_pileup_summaries', 'java_other_options'),
-            ram=config.param('get_pileup_summaries', 'ram'),
-            options=config.param('get_pileup_summaries', 'options'),
-            variants=config.param('get_pileup_summaries', 'known_sites', type='filepath'),
-            intervals=config.param('get_pileup_summaries', 'intervals', type='filepath'),
+            tmp_dir=config.param('gatk_get_pileup_summaries', 'tmp_dir'),
+            java_other_options=config.param('gatk_get_pileup_summaries', 'java_other_options'),
+            ram=config.param('gatk_get_pileup_summaries', 'ram'),
+            options=config.param('gatk_get_pileup_summaries', 'options'),
+            variants=config.param('gatk_get_pileup_summaries', 'known_sites', type='filepath'),
+            intervals=" \\\n --intervals " + intervals if intervals else "",
             input_bam=input_bam,
             output=output
-    ))
+        )
+    )
 
 def calculate_contamination(
-    input,
-    output,
-    match_normal=None
+        input,
+        output,
+        tumor_segment,
+        match_normal=None
     ):
 
     return Job(
-        [input],
-        [output],
+        [input, match_normal],
+        [output, tumor_segment],
         [
-            ['get_pileup_summaries', 'module_java'],
-            ['get_pileup_summaries', 'module_gatk']
+            ['gatk_calculate_contamination', 'module_java'],
+            ['gatk_calculate_contamination', 'module_gatk']
         ],
         command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
@@ -605,20 +607,24 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --tmp_dir {tmp_dir} \\
   --input {input} \\
   {normal} \\
-  --output {output}""".format(
-            tmp_dir=config.param('get_pileup_summaries', 'tmp_dir'),
-            java_other_options=config.param('get_pileup_summaries', 'java_other_options'),
-            ram=config.param('get_pileup_summaries', 'ram'),
-            options=config.param('get_pileup_summaries', 'options'),
+  --output {output} \\
+  --tumor-segmentation {tumor_segment}""".format(
+            tmp_dir=config.param('gatk_calculate_contamination', 'tmp_dir'),
+            java_other_options=config.param('ggatk_calculate_contamination', 'java_other_options'),
+            ram=config.param('gatk_calculate_contamination', 'ram'),
+            options=config.param('gatk_calculate_contamination', 'options'),
             input=input,
             normal=" \\\n --matched-normal " + match_normal if match_normal else "",
-            output=output
-    ))
+            tumor_segment=tumor_segment,
+            output=output,
+        )
+    )
 
 def filter_mutect_calls(
     variants,
     output,
-    contamination=None
+    contamination=None,
+    segment=None
     ):
 
     return Job(
@@ -633,21 +639,31 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   FilterMutectCalls {options} \\
   --reference {reference} \\
   --variant {variants} \\
-  {contamination_table} \\
+  {contamination_table} {segment_table} \\
   --output {output}""".format(
-				tmp_dir=config.param('gatk_filter_mutect_call', 'tmp_dir'),
-				java_other_options=config.param('gatk_filter_mutect_call', 'java_other_options'),
-				ram=config.param('gatk_filter_mutect_call', 'ram'),
-				options=config.param('gatk_filter_mutect_call', 'options'),
-				reference=config.param('gatk_variant_recalibrator', 'genome_fasta', type='filepath'),
-				variants=variants,
-				contamination_table=" \\\n --contamination-table " + contamination if contamination else "",
-				output=output
-			)
-		)
+                tmp_dir=config.param('gatk_filter_mutect_calls', 'tmp_dir'),
+                java_other_options=config.param('gatk_filter_mutect_calls', 'java_other_options'),
+                ram=config.param('gatk_filter_mutect_calls', 'ram'),
+                options=config.param('gatk_filter_mutect_calls', 'options'),
+                reference=config.param('gatk_filter_mutect_calls', 'genome_fasta', type='filepath'),
+                variants=variants,
+                contamination_table=" \\\n --contamination-table " + contamination if contamination else "",
+                segment_table=" \\\n --tumor-segmentation" + segment if segment else "",
+                output=output
+            )
+        )
 
 
-def variant_recalibrator(variants, other_options, recal_output, tranches_output, R_output, small_sample_check=False):
+def variant_recalibrator(variants,
+                         other_options,
+                         recal_output,
+                         tranches_output,
+                         R_output,
+                         small_sample_check=False):
+    
+    if not isinstance(variants, list):
+        variants = [variants]
+	
     if config.param('gatk_variant_recalibrator', 'module_gatk').split("/")[2] < "4":
         return gatk.variant_recalibrator(variants, other_options, recal_output, tranches_output,
 										 R_output, small_sample_check=small_sample_check)
