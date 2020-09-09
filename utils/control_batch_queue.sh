@@ -10,7 +10,7 @@ usage (){
 
 echo
 echo "usage: $0 <CHUNK FOLDER>
-  Chunk Genpipes submiting sript so there is njobs in them"
+  Control the number of jobs in scheduler queue, and resubmit jobs if then fail at submit time."
 echo
 echo "   <CHUNK FOLDER>          The output folder from the chunk_genpipes.sh script"
 echo "   -n <MAX QUEUE>          Maximum number of job in slurm queue"
