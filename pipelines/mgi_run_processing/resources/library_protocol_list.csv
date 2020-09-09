@@ -1,0 +1,41 @@
+Clarity Step Name,Processing Protocol Name,Library Structure,Raw Data Type,Common Name
+KAPA Hyper Plus,default DNA,,bam,WGS
+Lucigen AmpFREE Low DNA 1.0,default DNA,,bam,WGS
+Lucigen AmpFREE Low DNA 2.0,default DNA,,bam,WGS
+PCR-free,default DNA,,bam,WGS
+PCR-enriched,default DNA,,bam,WGS
+WGS,default DNA,,bam,WGS
+10x Genomics Single Cell RNA v1,default RNA,tenX_sc_RNA_v1,fastq,Single Cell RNA
+10x Genomics Single Cell RNA v2,default RNA,tenX_sc_RNA_v2,fastq,Single Cell RNA
+10x Genomics Single Cell RNA,default RNA,tenX_sc_RNA_v2,fastq,Single Cell RNA
+10x Genomics Linked Reads gDNA,default DNA,tenX_DNA_v2,fastq,WGS Linked Reads
+10x Genomics Single Cell CNV,default DNA,tenX_DNA_v2,fastq,Single Cell DNA
+10x Genomics Single Cell RNA VDJ,default RNA,tenX_sc_RNA_v2,fastq,Single Cell RNA
+WGBS,default DNA,,fastq,WGBS
+MCC,default DNA,,fastq,MCC
+Exome,default DNA,,fastq,Exome
+WGBS Lucigen,default DNA,,fastq,WGBS
+WGBS Kapa,default DNA,,fastq,WGBS
+MCC Lucigen,default DNA,,fastq,MCC
+MCC Kapa,default DNA,,fastq,MCC
+Hi-C,default DNA,,fastq,Hi-C
+HiC,default DNA,,fastq,Hi-C
+Hi-C Library Prep.,default DNA,,fastq,Hi-C
+Nextera WGS,default DNA,,fastq,WGS
+RNASeq,default RNA,,fastq,RNA-Seq
+Generic Library,default DNA,,fastq,Unknown
+Cancer Capture,default DNA,,fastq,Capture
+ATAC-Seq Library,default DNA,,fastq,ATAC-Seq
+ATAC-Seq,default DNA,,fastq,ATAC-Seq
+ATACSeq,default DNA,,fastq,ATAC-Seq
+ImmunoSeq Capture,default DNA,,fastq,Capture
+ChIP_H3K4me1,default DNA,,fastq,ChIP-Seq
+ChIP_H3K4me3,default DNA,,fastq,ChIP-Seq
+ChIP_H3K27me3,default DNA,,fastq,ChIP-Seq
+ChIP_H3K27ac,default DNA,,fastq,ChIP-Seq
+ChIP_Input,default DNA,,fastq,ChIP-Seq
+ChIPSeq,default DNA,,fastq,ChIP-Seq
+ChIPmentation,default DNA,,fastq,ChIPmentation
+ChIP-Seq,default DNA,,fastq,ChIP-Seq
+HaloPlex,default DNA,,fastq,HaloPlex
+Panel,default DNA,,fastq,Panel
