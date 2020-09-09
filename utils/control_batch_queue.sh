@@ -1,6 +1,11 @@
 
 # Functions
 
+SLEEP_TIME=120
+MAX_QUEUE=500
+SHEDULER_USER=$USER
+SCHEDULER=slurm
+
 usage (){
 
 echo
@@ -9,25 +14,45 @@ echo "usage: $0 <CHUNK FOLDER>
 echo
 echo "   <CHUNK FOLDER>          The output folder from the chunk_genpipes.sh script"
 echo "   -n <MAX QUEUE>          Maximum number of job in slurm queue"
-echo "                             default=500"
-echo "   -s <SLEEP TIME>         Number of second to sleep when queue is full default= 120"
+echo "                             default=$MAX_QUEUE"
+echo "   -s <SLEEP TIME>         Number of second to sleep when queue is full default=$SLEEP_TIME"
+echo "   -S <SCHEDULER>          Scheduler running on the cluster (slurm or pbs) default=$SCHEDULER"
 
 }
 
-# cancel jobs should happen it SIGTERM is send while bash submit runst
+
+
+get_n_jobs () {
+  if [[ ${SCHEDULER} ==  'slurm' ]]; then
+    echo $(squeue -u $SHEDULER_USER -h -t pending,running | wc -l)
+  elif [[ ${SCHEDULER} ==  'pbs' ]]; then
+    echo $(showq  -u $SHEDULER_USER  | grep $SHEDULER_USER  | wc -l )
+  fi
+}
+
 cancel_jobs () {
   echo ""
   job_script=$1
   echo cancel all jobs from ${job_script%.sh}.out
-  scancel $(cat ${job_script%.sh}.out | awk -F'=' '{print $2}')
+
+  if [[ ${SCHEDULER} ==  'slurm' ]]; then
+    scancel $(cat ${job_script%.sh}.out | awk -F'=' '{print $2}')
+  elif [[ ${SCHEDULER} ==  'pbs' ]]; then
+    qdel $(cat ${job_script%.sh}.out | awk -F'=' '{print $2}')
+  fi
   rm ${job_script%.sh}.out
-  exit 0
+}
+
+cancel_trap () {
+    cancel_jobs "$@"
+    exit 0
 }
 
 submit () {
   job_script=${1}
   while true; do
-    trap "cancel_jobs ${job_script%.sh}.out" SIGTERM SIGINT SIGHUP
+    # clean cancel if there is an interruption
+    trap "cancel_trap ${job_script%.sh}.out" EXIT
     bash ${job_script}
     ret_code=$?
     if [ ${ret_code} -eq 0 ]; then
@@ -37,8 +62,7 @@ submit () {
       break
     else
       echo cancel all jobs from ${job_script%.sh}.out
-      scancel $(cat ${job_script%.sh}.out | awk -F'=' '{print $2}')
-      rm ${job_script%.sh}.out
+      cancel_jobs ${job_script%.sh}.out
     fi
   done
 }
@@ -46,19 +70,25 @@ submit () {
 
 #  Script
 
-SLEEP_TIME=120
-max_queue=500
-slurm_user=$USER
-while getopts "hn:u:s:" opt; do
+while getopts "hn:u:s:S:" opt; do
   case $opt in
     u)
-      slurm_user=${OPTARG}
+      SHEDULER_USER=${OPTARG}
     ;;
     s)
       SLEEP_TIME=${OPTARG}
     ;;
+    S)
+      SCHEDULER=${OPTARG}
+      if [[ ${SCHEDULER} != 'slurm'  && ${SCHEDULER} != 'pbs' ]] ;then
+        echo only slurm and pbs scheduler are supported
+        usage
+        exit 1
+      fi
+
+    ;;
     n)
-      max_queue=${OPTARG}
+      MAX_QUEUE=${OPTARG}
     ;;
     h)
       usage
@@ -87,6 +117,9 @@ fi
 source ${chunk_folder}/header.sh
 
 
+
+
+
 mkdir $chunk_folder/.lockdir 2>/dev/null
 ret_code=$?
 if [[ $ret_code -ne 0 ]] ; then
@@ -97,6 +130,7 @@ else
 fi
 
 
+
 all_sh=($(ls ${chunk_folder}/chunk*sh|sort -V))
 all_done=($chunk_folder/chunk*done)
 
@@ -104,8 +138,8 @@ for sh_script in "${all_sh[@]}"; do
   done_script=${sh_script%.sh}.done
   if [ ! -f $done_script ]; then
     while true ; do
-      curent_job_n=$(squeue -u $slurm_user -h -t pending,running | wc -l)
-      if [[ $((max_queue-$curent_job_n)) -gt $CHUNK_SIZE ]]; then
+      curent_n_jobs=$(get_n_jobs)
+      if [[ $((MAX_QUEUE-curent_n_jobs)) -gt $CHUNK_SIZE ]]; then
        submit ${sh_script}
        break
       else
