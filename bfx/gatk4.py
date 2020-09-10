@@ -1337,6 +1337,49 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
+def picard_mark_duplicates_mate_cigar(inputs,
+                           output,
+                           metrics_file,
+                           remove_duplicates="false"):
+    if not isinstance(inputs, list):
+        inputs = [inputs]
+    
+    if config.param('picard_mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] < "4":
+        return picard2.mark_duplicates_mate_cigar(inputs,
+                                       output,
+                                       metrics_file,
+                                       remove_duplicates)
+    else:
+        return Job(
+            inputs,
+            [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
+            [
+                ['picard_mark_duplicates_mate_cigar', 'module_java'],
+                ['picard_mark_duplicates_mate_cigar', 'module_gatk']
+            ],
+            command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+ MarkDuplicatesWithMateCigar \\
+ --REMOVE_DUPLICATES {remove_duplicates} \\
+ --VALIDATION_STRINGENCY SILENT \\
+ --CREATE_INDEX true \\
+ --TMP_DIR {tmp_dir} \\
+ {inputs} \\
+ --OUTPUT {output} \\
+ --METRICS_FILE {metrics_file} \\
+ --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
+                tmp_dir=config.param('picard_mark_duplicates_mate_cigar', 'tmp_dir'),
+                java_other_options=config.param('picard_mark_duplicates_mate_cigar', 'java_other_options'),
+                ram=config.param('picard_mark_duplicates_mate_cigar', 'ram'),
+                remove_duplicates=remove_duplicates,
+                inputs=" \\\n  ".join("--INPUT " + input for input in inputs),
+                output=output,
+                metrics_file=metrics_file,
+                max_records_in_ram=config.param('picard_mark_duplicates_mate_cigar', 'max_records_in_ram', type='int')
+            ),
+            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
+        )
+
 def merge_sam_files(inputs,
                     output):
     
