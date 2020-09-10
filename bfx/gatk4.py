@@ -292,27 +292,93 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             )
         )
 
-def merge_stats(stats, output=None):
-		return Job(
-			stats,
-			[output],
-			[
-				['gatk_merge_stats', 'module_java'],
-				['gatk_merge_stats', 'module_gatk']
-			],
-			command="""\
+def merge_stats(
+        stats,
+        output=None
+        ):
+        return Job(
+            stats,
+            [output],
+            [
+                ['gatk_merge_stats', 'module_java'],
+                ['gatk_merge_stats', 'module_gatk']
+            ],
+            command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   MergeMutectStats {options} \\
   {stats}\\
   --output {output}""".format(
-				tmp_dir=config.param('gatk_merge_stats', 'tmp_dir'),
-				java_other_options=config.param('gatk_merge_stats', 'java_other_options'),
-				ram=config.param('gatk_merge_stats', 'ram'),
-				options=config.param('gatk_merge_stats', 'options'),
-				stats="".join(" \\\n  --stats " + stat for stat in stats),
-				output=output
-			)
-		)
+                tmp_dir=config.param('gatk_merge_stats', 'tmp_dir'),
+                java_other_options=config.param('gatk_merge_stats', 'java_other_options'),
+                ram=config.param('gatk_merge_stats', 'ram'),
+                options=config.param('gatk_merge_stats', 'options'),
+                stats="".join(" \\\n  --stats " + stat for stat in stats),
+                output=output
+            )
+        )
+
+def cnn_score_variants(
+        input,
+        output,
+        input_bam,
+        interval_list=None
+        ):
+    return Job(
+        [input, input_bam],
+        [output],
+        [
+            ['gatk_cnn_score_variants', 'module_java'],
+            ['gatk_cnn_score_variants', 'module_gatk']
+        ],
+        command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  CNNScoreVariants {options} \\
+  --reference {reference_sequence} \\
+  --variant {input} {input_bam} {interval_list} \\
+  --output {output}""".format(
+            tmp_dir=config.param('gatk_cnn_score_variantss', 'tmp_dir'),
+            java_other_options=config.param('gatk_cnn_score_variants', 'java_other_options'),
+            ram=config.param('gatk_cnn_score_variants', 'ram'),
+            options=config.param('gatk_cnn_score_variants', 'options'),
+            reference_sequence=config.param('gatk_cnn_score_variants', 'reference', type='filepath'),
+            input=input,
+            input_bam=" \\\n  --input " + input_bam if input_bam else "",
+            interval_list=" \\\n --intervals " + interval_list if interval_list else "",
+            output=output
+        )
+    )
+
+def filter_variant_tranches(
+        input,
+        output,
+        interval_list=None
+        ):
+    return Job(
+        [input],
+        [output],
+        [
+            ['gatk_filter_variant_tranches', 'module_java'],
+            ['gatk_filter_variant_tranches', 'module_gatk']
+        ],
+        command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  FilterVariantTranches {options} \\
+  --resource {resource_hapmap} \\
+  --resource {resource_mills} {interval_list} \\
+  --variant {input} \\
+  --output {output}""".format(
+            tmp_dir=config.param('gatk_filter_variant_tranches', 'tmp_dir'),
+            java_other_options=config.param('gatk_filter_variant_tranches', 'java_other_options'),
+            ram=config.param('gatk_filter_variant_tranches', 'ram'),
+            options=config.param('gatk_filter_variant_tranches', 'options'),
+            resource_hapmap=config.param('gatk_cnn_score_variants', 'hapmap', type='filepath'),
+            resource_mills=config.param('gatk_cnn_score_variants', 'mills', type='filepath'),
+            input=input,
+            interval_list=" \\\n --intervals " + interval_list if interval_list else "",
+            output=output
+        )
+    )
+
 # only in GATK3
 def combine_variants(
     variants,
@@ -1229,10 +1295,52 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             ]
         )
 
-def merge_sam_files(
-    inputs,
-    output
-    ):
+def mark_duplicates_mate_cigar(inputs,
+                           output,
+                           metrics_file,
+                           remove_duplicates="false"):
+    if not isinstance(inputs, list):
+        inputs = [inputs]
+    
+    if config.param('mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] < "4":
+        return picard2.mark_duplicates_mate_cigar(inputs,
+                                       output,
+                                       metrics_file,
+                                       remove_duplicates)
+    else:
+        return Job(
+            inputs,
+            [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
+            [
+                ['mark_duplicates_mate_cigar', 'module_java'],
+                ['mark_duplicates_mate_cigar', 'module_gatk']
+            ],
+            command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+ MarkDuplicatesWithMateCigar \\
+ --REMOVE_DUPLICATES {remove_duplicates} \\
+ --VALIDATION_STRINGENCY SILENT \\
+ --CREATE_INDEX true \\
+ --TMP_DIR {tmp_dir} \\
+ {inputs} \\
+ --OUTPUT {output} \\
+ --METRICS_FILE {metrics_file} \\
+ --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
+                tmp_dir=config.param('mark_duplicates_mate_cigar', 'tmp_dir'),
+                java_other_options=config.param('mark_duplicates_mate_cigar', 'java_other_options'),
+                ram=config.param('mark_duplicates_mate_cigar', 'ram'),
+                remove_duplicates=remove_duplicates,
+                inputs=" \\\n  ".join("--INPUT " + input for input in inputs),
+                output=output,
+                metrics_file=metrics_file,
+                max_records_in_ram=config.param('mark_duplicates_mate_cigar', 'max_records_in_ram', type='int')
+            ),
+            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
+        )
+
+def merge_sam_files(inputs,
+                    output):
+	
 
     if not isinstance(inputs, list):
         inputs = [inputs]
@@ -1495,15 +1603,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   {inputs} \\
   --HAPLOTYPE_MAP {haplotype_database} \\
   --LOD_THRESHOLD {lod_threshold} \\
-  --OUTPUT={output} """.format(
+  --OUTPUT {output} """.format(
                 tmp_dir=config.param('gatk_crosscheck_fingerprint', 'tmp_dir'),
                 options=config.param('gatk_crosscheck_fingerprint', 'options'),
                 java_other_options=config.param('gatk_crosscheck_fingerprint', 'java_other_options'),
-#				genotypes=config.param('gatk_crosscheck_fingerprint', 'genotypes'),
                 haplotype_database=config.param('gatk_crosscheck_fingerprint', 'haplotype_database'),
                 lod_threshold=config.param('gatk_crosscheck_fingerprint', 'lod_threshold'),
                 ram=config.param('gatk_crosscheck_fingerprint', 'ram'),
-                inputs=" \\\n  ".join("--INPUT=" + str(input) for input in inputs),
+                inputs=" \\\n  ".join("--INPUT " + str(input) for input in inputs),
                 output=output,
             )
         )
