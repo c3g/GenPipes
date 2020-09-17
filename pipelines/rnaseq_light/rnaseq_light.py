@@ -109,6 +109,9 @@ class RnaSeqLight(rnaseq.RnaSeq):
         return jobs
 
     def kallisto_count_matrix(self):
+        """
+        Use the output from Kallisto to create a transcript count matrix. 
+        """
 
         jobs=[]
         kallisto_directory="kallisto"
@@ -198,8 +201,6 @@ cp \\
             """
             Performs differential gene expression analysis using [Sleuth](http://pachterlab.github.io/sleuth/). 
             Analysis are performed both at a transcript and gene level, using two different tests: LRT and WT. 
-
-            Still in development, use with caution. 
             """
 
             # If --design <design file> option is missing, self.contrasts call will raise an Exception
