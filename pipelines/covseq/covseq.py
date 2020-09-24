@@ -95,21 +95,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                 candidate_input_files = [
                     [readset.fastq1, readset.fastq2]
                     ]
-                # if readset.fastq1 and readset.fastq2:
-                #     candidate_input_files.append([readset.fastq1, readset.fastq2])
-                # if readset.bam:
-                #     prefix = os.path.join(
-                #         self.trim_directory,
-                #         "raw_reads",
-                #         readset.sample.name,
-                #         re.sub("\.bam$", ".", os.path.basename(readset.bam))
-                #     )
-                #     candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
-
-                #     candidate_input_files.append([
-                #         re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
-                #         re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
-                #         ])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
                 output_pair1 = os.path.join(host_removal_directory, readset.name + ".host_removed.pair1.fastq.gz")
@@ -119,12 +104,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                 candidate_input_files = [
                     [readset.fastq1]
                     ]
-                # if readset.fastq1:
-                #     candidate_input_files.append(readset.fastq1)
-                # if readset.bam:
-                #     candidate_input_files.append([
-                #         re.sub("\.bam$", ".single.fastq.gz",readset.bam)
-                #         ])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
                 output_pair1 = os.path.join(host_removal_directory, readset.name + ".host_removed.single.fastq.gz")
@@ -133,45 +112,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
-
-
-            # # Find input readset FASTQs first from previous cutadapt job, then from original FASTQs in the readset sheet
-            # if readset.run_type == "PAIRED_END":
-            #     candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-            #     if readset.fastq1 and readset.fastq2:
-            #         candidate_input_files.append([readset.fastq1, readset.fastq2])
-            #     if readset.bam:
-            #         prefix = os.path.join(
-            #             self.trim_directory,
-            #             "raw_reads",
-            #             readset.sample.name,
-            #             re.sub("\.bam$", ".", os.path.basename(readset.bam))
-            #         )
-            #         candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
-            #     [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-            #     output_pair1 = os.path.join(host_removal_directory, readset.name, readset.name + ".trim.host_removed.pair1.fastq")
-            #     output_pair2 = os.path.join(host_removal_directory, readset.name, readset.name + ".trim.host_removed.pair2.fastq")
-
-            # elif readset.run_type == "SINGLE_END":
-            #     candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-            #     if readset.fastq1:
-            #         candidate_input_files.append([readset.fastq1])
-            #     if readset.bam:
-            #         prefix = os.path.join(
-            #             self.trim_directory,
-            #             "raw_reads",
-            #             readset.sample.name,
-            #             re.sub("\.bam$", ".", os.path.basename(readset.bam))
-            #         )
-            #         candidate_input_files.append([prefix + ".single.fastq.gz"])
-            #     [fastq1] = self.select_input_files(candidate_input_files)
-            #     fastq2 = None
-            #     output_pair1 = os.path.join(host_removal_directory, readset.name, readset.name + ".trim.host_removed.single.fastq")
-            #     output_pair2 = None
-
-            # else:
-            #     _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-            #     "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(
                 concat_jobs([
@@ -223,24 +163,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                         output_single=output_single,
                         ini_section='host_reads_removal'
                         )
-                    # bedtools.bamtofastq(
-                    #     input_bam=readset_bam_host_removed,
-                    #     output_pair1=output_pair1,
-                    #     output_pair2=output_pair2,
-                    #     other_options=config.param('host_reads_removal', 'bedtools_bamtofastq_other_options', required=False),
-                    #     pigz_threads=config.param('host_reads_removal', 'pigz_threads', required=False)
-                    #     )
-                    # Job(
-                    #     input_files=[output_pair1, output_pair2],
-                    #     output_files=[output_pair1 + ".gz", output_pair2 + ".gz"],
-                    #     module_entries=[
-                    #         ['pigz', 'module_pigz']
-                    #     ],
-                    #     command="""pigz -p {nthreads} {input_files}""".format(
-                    #         input_files=" ".join([output_pair1, output_pair2]),
-                    #         nthreads=config.param('host_reads_removal', 'pigz_threads')
-                    #         )
-                    #     )
                     ],
                     name="host_reads_removal." + readset.name,
                     samples=[readset.sample]
@@ -277,11 +199,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                     ]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
-                # if readset.bam:
-                #     candidate_input_files.append([
-                #         re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
-                #         re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
-                #         ])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 adapter_fwd = readset.adapter1
                 adapter_rev = readset.adapter2
@@ -291,10 +208,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                     [host_removal_file_prefix + ".host_removed.single.fastq.gz"]]
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
-                # if readset.bam:
-                #     candidate_input_files.append([
-                #         re.sub("\.bam$", ".single.fastq.gz", readset.bam)
-                #         ])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
                 adapter_fwd = readset.adapter1
@@ -339,14 +252,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                 candidate_input_files = [
                     [readset.fastq1, readset.fastq2]
                     ]
-                # if readset.bam:
-                #     prefix = os.path.join(
-                #         self.trim_directory,
-                #         "raw_reads",
-                #         readset.sample.name,
-                #         re.sub("\.bam$", ".", os.path.basename(readset.bam))
-                #     )
-                #     candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 unclassified_output = [prefix + ".unclassified_sequences_1.fastq", prefix + ".unclassified_sequences_2.fastq"]
                 classified_output = [prefix + ".classified_sequences_1.fastq", prefix + ".classified_sequences_2.fastq"]
@@ -355,14 +260,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                 candidate_input_files = [
                     [readset.fastq1]
                     ]
-                # if readset.bam:
-                #     prefix = os.path.join(
-                #         self.trim_directory,
-                #         "raw_reads",
-                #         readset.sample.name,
-                #         re.sub("\.bam$", ".", os.path.basename(readset.bam))
-                #     )
-                #     candidate_input_files.append([prefix + ".single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
                 unclassified_output = [prefix + ".unclassified_sequences.fastq"]
@@ -434,14 +331,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                 ]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
-                # if readset.bam:
-                #     prefix = os.path.join(
-                #         self.trim_directory,
-                #         "raw_reads",
-                #         readset.sample.name,
-                #         re.sub("\.bam$", ".", os.path.basename(readset.bam))
-                #     )
-                #     candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
             elif readset.run_type == "SINGLE_END":
@@ -451,14 +340,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                 ]
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
-                # if readset.bam:
-                #     prefix = os.path.join(
-                #         self.trim_directory,
-                #         "raw_reads",
-                #         readset.sample.name,
-                #         re.sub("\.bam$", ".", os.path.basename(readset.bam))
-                #     )
-                #     candidate_input_files.append([prefix + ".single.fastq.gz"])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
 
@@ -630,7 +511,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                 os.path.join(alignment_directory, sample.name + ".sorted.bam")
             ]
 
-            # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
             for input_bam in input_bams:
                 output = os.path.join(flagstat_directory, re.sub("\.bam$", ".flagstat", os.path.basename(input_bam)))
 
@@ -659,12 +539,10 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             [input_bam] = self.select_input_files([
-                # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
-            # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
             output = os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(input_bam)))
 
             jobs.append(
@@ -675,7 +553,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                         output
                         )
                     ],
-                    name="bedtools_genomecov." + sample.name,#re.sub("\.bam$", "", os.path.basename(bam)),
+                    name="bedtools_genomecov." + sample.name,
                     samples=[sample]
                     )
                 )
@@ -700,14 +578,10 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             alignment_directory = os.path.join("alignment", sample.name)
             readset = sample.readsets[0]
 
-            # [input] = self.select_input_files([
-            #     [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
-            # ])
             input_bams = [
                 os.path.join(alignment_directory, sample.name + ".sorted.bam"),
                 os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
                 ]
-            # log.info(input)
             mkdir_job = bash.mkdir(picard_directory, remove=True)
 
             for input in input_bams:
@@ -786,15 +660,12 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             variant_directory = os.path.join("variant", sample.name)
-            # haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
 
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
-
-            # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
 
             output_prefix = os.path.join(variant_directory, sample.name) + ".variants"
             output_tsv = output_prefix + ".tsv"
@@ -825,25 +696,11 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                         output_vcf + ".gz"
                         )
                     ],
-                    name="ivar_call_variants." + sample.name,#re.sub("\.bam$", "", os.path.basename(bam)),
+                    name="ivar_call_variants." + sample.name,
                     samples=[sample],
                     removable_files=[output_vcf]
                     )
                 )
-
-        # jobs.extend(self.gatk_haplotype_caller())
-        # jobs.extend(self.merge_and_call_individual_gvcf())
-
-        # jobs.extend(self.combine_gvcf())
-        # jobs.extend(self.merge_and_call_combined_gvcf())
-        # jobs.extend(self.variant_recalibrator())
-        # jobs.extend(self.haplotype_caller_decompose_and_normalize())
-        # jobs.extend(self.haplotype_caller_flag_mappability())
-        # jobs.extend(self.haplotype_caller_snp_id_annotation())
-        # jobs.extend(self.haplotype_caller_snp_effect())
-        # jobs.extend(self.haplotype_caller_dbnsfp_annotation())
-        # jobs.extend(self.haplotype_caller_gemini_annotations())
-        # jobs.extend(self.haplotype_caller_metrics_vcf_stats())
 
         return jobs
 
@@ -902,8 +759,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
-            # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
-
             output_prefix = os.path.join(consensus_directory, re.sub("\.bam$", ".consensus", os.path.basename(input_bam)))
 
             jobs.append(
@@ -923,7 +778,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                             )
                         ])
                     ],
-                    name="ivar_create_consensus." + sample.name,#re.sub("\.bam$", "", os.path.basename(bam)),
+                    name="ivar_create_consensus." + sample.name,
                     samples=[sample],
                     removable_files=[output_prefix + ".fa"]
                     )
@@ -949,12 +804,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             quast_html = os.path.join(quast_directory, "report.html")
             quast_tsv = os.path.join(quast_directory, "report.tsv")
 
-            #TODO: change name of gisaid fasta, Cf. Hector script ".fasta"
-            # [output_fa] = self.select_output_files([
-            #     [os.path.join(consensus_directory, sample.name + ".{technology}.pass.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))],
-            #     [os.path.join(consensus_directory, sample.name + ".{technology}.flag.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))],
-            #     [os.path.join(consensus_directory, sample.name + ".{technology}.rej.fasta".format(technology=config.param('rename_consensus_header', 'seq_technology', required=False)))]
-            # ])
             output_fa = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
             output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="${STATUS}"))
 
@@ -1017,8 +866,6 @@ ln -sf {output_status_fa_basename} {output_fa}
                 [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
                 [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
             ])
-
-            # for bam in [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam"), os.path.join(alignment_directory, sample.name + ".sorted.bam")]:
 
             jobs.append(
                 concat_jobs([
