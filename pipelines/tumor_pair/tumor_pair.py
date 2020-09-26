@@ -999,6 +999,7 @@ END`""".format(
             input_normal_qcbias = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name +".qcbias_metrics.txt")
             input_normal_all_picard = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".all.metrics.quality_distribution.pdf")
             input_normal_qualimap = os.path.join(metrics_directory, tumor_pair.normal.name, "qualimap", tumor_pair.normal.name, "genome_results.txt")
+            
             [input_normal_fastqc] = self.select_input_files([
                 [os.path.join(normal_directory, "fastqc", tumor_pair.normal.name + ".sorted.dup_fastqc.zip")],
                 [os.path.join(normal_directory, "fastqc", tumor_pair.normal.name + "_fastqc.zip")],
@@ -1010,6 +1011,7 @@ END`""".format(
             input_tumor_qcbias = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".qcbias_metrics.txt")
             input_tumor_all_picard = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all.metrics.quality_distribution.pdf")
             input_tumor_qualimap = os.path.join(metrics_directory, tumor_pair.tumor.name, "qualimap", tumor_pair.tumor.name, "genome_results.txt")
+
             [input_tumor_fastqc] = self.select_input_files([
                 [os.path.join(tumor_directory, "fastqc", tumor_pair.tumor.name + ".sorted.dup_fastqc.zip")],
                 [os.path.join(tumor_directory, "fastqc", tumor_pair.tumor.name + "_fastqc.zip")],
