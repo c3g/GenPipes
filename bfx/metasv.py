@@ -49,8 +49,8 @@ run_metasv.py {options} \\
   {breakseq} \\
   --bam {bam} \\
   --sample {sample_name} \\
-  --spades $SPAdes_BIN/spades.py \\
-  --age $AGE_BIN/age_align \\
+  --spades spades.py \\
+  --age age_align \\
   --workdir {workdir} \\
   --outdir {outdir} \\
   {isize_mean} \\
