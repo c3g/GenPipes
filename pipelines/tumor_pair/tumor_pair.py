@@ -4895,7 +4895,7 @@ END`""".format(
 
         return jobs
      
-    def ensemble_metasv(self):
+    def ensemble_metasv_somatic(self):
         """
 
         """
@@ -4906,13 +4906,13 @@ END`""".format(
             ensemble_directory = os.path.join("SVariants", "ensemble", tumor_pair.name)
 
             inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
-            isize_file = os.path.join("metrics", "dna", tumor_pair.tumor.name, "picard_metrics.all.metrics.insert_size_metrics")
-            gatk_vcf = os.path.join("pairedVariants", "ensemble", tumor_pair.name, tumor_pair.name + ".ensemble.somatic.flt.vcf.gz")
+            isize_file = os.path.join("metrics", "dna", tumor_pair.tumor.name, "picard_metrics", "picard_metrics.all.metrics.insert_size_metrics")
+            gatk_vcf = os.path.join("pairedVariants", "ensemble", tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vcf.gz")
             gatk_pass = os.path.join("pairedVariants", "ensemble", tumor_pair.name, tumor_pair.name + ".ensemble.somatic.flt.pass.vcf.gz")
-            lumpy_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.genotyped.vcf.gz")
-            manta_vcf = os.path.join(pair_directory, tumor_pair.name + ".manta.somatic.vcf.gz")
-            wham_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.merged.genotyped.vcf.gz")
-            delly_vcf= os.path.join(pair_directory, tumor_pair.name + ".delly.merge.sort.flt.vcf.gz")
+            lumpy_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.somatic.vcf.gz")
+            manta_vcf = os.path.abspath(os.path.join(pair_directory, tumor_pair.name + ".manta.somatic.vcf.gz"))
+            wham_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.somatic.vcf.gz")
+            delly_vcf= os.path.join(pair_directory, tumor_pair.name + ".delly.somatic.vcf.gz")
             cnvkit_vcf = os.path.join(pair_directory, tumor_pair.name + ".cnvkit.vcf.gz")
 
             if os.path.isfile(isize_file):
@@ -4934,9 +4934,9 @@ END`""".format(
                     bcftools.view(
                         gatk_vcf,
                         gatk_pass,
-                        config.param('metasv_ensemble', 'filter_pass_options')
+                        config.param('metasv_ensemble', 'filter_somatic_options')
                     ),
-                ], name="metasv_ensemble.gatk_pass." + tumor_pair.name))
+                ], name="metasv_ensemble.ensemble_pass." + tumor_pair.name))
             
             jobs.append(concat_jobs([
                 bash.mkdir(
@@ -4952,7 +4952,7 @@ END`""".format(
                     gatk_pass,
                     inputTumor,
                     tumor_pair.tumor.name,
-                    os.path.join(ensemble_directory, "rawMetaSV"),
+                    os.path.join(ensemble_directory, "rawMetaSV_somatic"),
                     ensemble_directory,
                     isize_mean=str(isize_mean),
                     isize_sd=str(isize_sd),
@@ -4960,6 +4960,77 @@ END`""".format(
                 ),
             ], name="metasv_ensemble." + tumor_pair.name))
 
+        return jobs
+
+    def ensemble_metasv_germline(self):
+        """
+
+        """
+        jobs = []
+    
+        for tumor_pair in self.tumor_pairs.itervalues():
+            pair_directory = os.path.join("SVariants", tumor_pair.name)
+            ensemble_directory = os.path.join("SVariants", "ensemble", tumor_pair.name)
+        
+            inputTumor = os.path.join("alignment", tumor_pair.tumor.name,
+                                      tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            isize_file = os.path.join("metrics", "dna", tumor_pair.tumor.name, "picard_metrics",
+                                      "picard_metrics.all.metrics.insert_size_metrics")
+            gatk_vcf = os.path.join("pairedVariants", "ensemble", tumor_pair.name,
+                                    tumor_pair.name + ".ensemble.germline.vcf.gz")
+            gatk_pass = os.path.join("pairedVariants", "ensemble", tumor_pair.name,
+                                     tumor_pair.name + ".ensemble.germline.flt.pass.vcf.gz")
+            lumpy_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.germline.vcf.gz")
+            manta_vcf = os.path.abspath(os.path.join(pair_directory, tumor_pair.name + ".manta.germline.vcf.gz"))
+            wham_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.germline.vcf.gz")
+            delly_vcf = os.path.join(pair_directory, tumor_pair.name + ".delly.germline.vcf.gz")
+            cnvkit_vcf = os.path.join(pair_directory, tumor_pair.name + ".cnvkit.vcf.gz")
+
+            if os.path.isfile(isize_file):
+                isize_mean, isize_sd = metric_tools.extract_isize(
+                    isize_file
+                )
+        
+            else:
+                isize_mean = 325
+                isize_sd = 75
+        
+            gatk_pass = None
+            if os.path.isfile(gatk_vcf):
+                jobs.append(concat_jobs([
+                    bash.mkdir(
+                        ensemble_directory,
+                        remove=True
+                    ),
+                    bcftools.view(
+                        gatk_vcf,
+                        gatk_pass,
+                        config.param('metasv_ensemble', 'filter_germline_options')
+                    ),
+                ], name="metasv_ensemble.ensemble_pass." + tumor_pair.name))
+        
+            jobs.append(concat_jobs([
+                bash.mkdir(
+                    ensemble_directory,
+                    remove=True
+                ),
+                metasv.ensemble(
+                    lumpy_vcf,
+                    manta_vcf,
+                    cnvkit_vcf,
+                    wham_vcf,
+                    delly_vcf,
+                    gatk_pass,
+                    inputTumor,
+                    tumor_pair.tumor.name,
+                    os.path.join(ensemble_directory, "rawMetaSV_germline"),
+                    ensemble_directory,
+                    isize_mean=str(isize_mean),
+                    isize_sd=str(isize_sd),
+                    output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz")
+                ),
+            ], name="metasv_ensemble." + tumor_pair.name))
+    
         return jobs
 
     def metasv_sv_annotation(self):
@@ -5388,8 +5459,9 @@ END`""".format(
                 self.cnvkit_sv_annotation,
                 self.scones,
                 self.svaba_assemble,
-                #self.svaba_sv_annotation,
-                self.ensemble_metasv,
+                self.svaba_sv_annotation,
+                self.ensemble_metasv_somatic,
+                self.ensemble_metasv_germline,
                 self.metasv_sv_annotation,
                 self.sym_link_sequenza,
                 self.sym_link_metasv,
