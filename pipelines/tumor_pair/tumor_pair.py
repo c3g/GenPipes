@@ -5445,6 +5445,7 @@ END`""".format(
                 self.sambamba_merge_realigned,
                 self.sambamba_mark_duplicates,
                 self.recalibration,
+                self.metrics_dna_picard_metrics,
                 self.sequenza,
                 #self.sCNAphase,
                 self.delly_call_filter,
