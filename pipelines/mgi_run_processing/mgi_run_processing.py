@@ -158,6 +158,45 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     self._is_paired_end[lane] = False
         return self._is_paired_end
 
+    def is_dual_index(self):
+        if not hasattr(self, "_is_dual_index"):
+            if self.get_index2cycles():
+                self._is_dual_index = True
+            else:
+                self._is_dual_index = False
+        return self._is_dual_index
+
+    @property
+    def is_demultiplexed(self):
+        if not hasattr(self, "_is_demultiplexed"):
+            if all(readset.is_mgi_index for readset in self.readsets):
+                self._is_demultiplexed = True
+            elif all(not readset.is_mgi_index for readset in self.readsets):
+                self._is_demultiplexed = False
+            else:
+                _raise(SanitycheckError("Error: bad index settings in lane... both non-MGI and MGI adapters were detected in the readset file" + self.readset_file))
+        return self._is_demultiplexed
+
+    @property
+    def mask(self):
+        if not hasattr(self, "_mask"):
+            if self.is_dual_index:
+                self._mask = self.get_read1cycles() + "T " + self.get_read2cycles() + "T" + self.get_index2cycles() + "B" + self.get_index1cycles() + "B"
+            else:
+                self._mask = self.get_read1cycles() + "T " + self.get_read2cycles() + "T" + self.get_index1cycles() + "B"
+        return self._mask 
+
+    @property
+    def merge_undetermined(self):
+        if not hasattr(self, "_merge_undetermined"):
+            self._merge_undetermined = False
+            # If only one library on the lane
+            if len(self.readsets) == 1:
+                self._merge_undetermined = True
+            if config.param('fastq', 'merge_undetermined', required=False, type='boolean'):
+                self._merge_undetermined = config.param('fastq', 'merge_undetermined')
+        return self._merge_undetermined
+
     @property
     def read1cycles(self):
         if not hasattr(self, "_read1cycles"):
@@ -215,45 +254,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
             else:
                 self._is_demultiplexed = False
         return self._is_demultiplexed
-
-    @property
-    def merge_undetermined(self):
-        if not hasattr(self, "_merge_undetermined"):
-            self._merge_undetermined = {}
-            for lane in self.lanes:
-                self._merge_undetermined[lane] = False
-                # If only one library on the lane
-                if len(self.readsets[lane]) == 1:
-                    self._merge_undetermined[lane] = True
-                if config.param('fastq', 'merge_undetermined', required=False, type='boolean'):
-                    self._merge_undetermined[lane] = config.param('fastq', 'merge_undetermined')
-        return self._merge_undetermined
-
-    @property
-    def is_dual_index(self):
-        if not hasattr(self, "_is_dual_index"):
-            self._is_dual_index = {}
-            for lane in self.lanes:
-                if self.get_index2cycles(lane) == "0":
-                    self._is_dual_index[lane] = False
-                else:
-                    self._is_dual_index[lane] = True
-        return self._is_dual_index
-
-    @property
-    def is_demultiplexed(self):
-        if not hasattr(self, "_is_demultiplexed"):
-            if self.args.demux_fastq:
-                self._is_demultiplexed = True
-            else:
-                self._is_demultiplexed = False
-        return self._is_demultiplexed
-
-    @property
-    def mask(self):
-        if not hasattr(self, "_mask"):
-            _raise(SanitycheckError("No mask could be found !!"))
-        return self._mask 
 
     @property
     def merge_undetermined(self):
@@ -353,7 +353,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
         if not hasattr(self, "_flowcell_id"):
             self._flowcell_id = os.path.basename(self.run_dir.rstrip('/'))
         return self._flowcell_id
-
 
     @property
     def lane_number(self):
@@ -475,6 +474,22 @@ class MGIRunProcessing(common.MUGQICPipeline):
     @property
     def last_index(self):
         return self.args.last_index if self.args.last_index else 999
+
+    @property
+    def number_of_mismatches(self):
+        return self.args.number_of_mismatches if (self.args.number_of_mismatches is not None) else 1
+
+    @property
+    def first_index(self):
+        return self.args.first_index if self.args.first_index else 1
+
+    @property
+    def last_index(self):
+        return self.args.last_index if self.args.last_index else 999
+
+    @property
+    def index_per_readset(self):
+        return self._index_per_readset
 
     @property
     def readset_file(self):
@@ -986,7 +1001,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 "seqtype" : self.seqtype,
                 "sequencing_method" : "PAIRED_END" if self.is_paired_end else "SINGLE_END",
                 "steps" : [],
-                "run_validation" : []
+                "barcodes" : {}
             }
         return self._report_hash
     
@@ -1001,6 +1016,313 @@ class MGIRunProcessing(common.MUGQICPipeline):
             }
         return self._report_inputs
 
+    def index(self):
+        """
+        First copy all the files of the lane from the sequencer deposit folder to the processing folder,
+        into "raw_fastq".
+        Then, if MGI adapters are used (i.e. demultiplexing already done on sequencer)) then
+            rename the fastq files and move them from "raw_fastq" to "Unaligned.LANE" folder,
+            and pipeline will SKIP demultiplexing (i.e. next step, fastq).
+        Else, for all non-MGI adapters (i.e. demultiplexing still remains to be done) then prepare
+            prepare data for demultiplexing (i.e. next step, fastq) by extracting adapters from R2 fastq,
+            creating I1 and I2 fastq files for adapter i7 and i5 respectively (or only I1 form i7 in case
+            of single index sequencing). This will also create the barcode tsv file used to launch
+            fastq-multx to demultiplex the reads in fastq step.
+        *TO DO* - in both cases, retrieve index stats from the sequencer output files to build an index report
+        """
+
+        jobs = []
+
+        # First we copy all the lane folder into the raw_fastq folder
+        unaligned_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
+        raw_fastq_dir = os.path.join(unaligned_dir, 'raw_fastq')
+        copy_done_file = os.path.join(raw_fastq_dir, "copy_done.Success")
+        copy_job_output_dependency = []
+        fastq_job_input_dependency = []
+
+        # If demultiplexing were done on the sequencer i.e. MGI adpaters used...
+        if self.is_demultiplexed:
+            fastq_jobs = []
+
+            # ...then do the necessary moves and renamings, from the raw_fastq folder to the Unaligned folders
+            for readset in self.readsets:
+                output_dir = os.path.join(self.output_dir, "Unaligned." + readset.lane, 'Project_' + readset.project, 'Sample_' + readset.name)
+
+                copy_job_output_dependency.extend([
+                    readset.fastq1,
+                    re.sub("gz", "fqStat.txt", readset.fastq1),
+                    re.sub("_R1.fastq.gz", ".report.html", readset.fastq1)
+                ])
+                fastq_job_input_dependency.extend([
+                    os.path.join(self.run_dir, "L0" + str(self.lane_number), readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_1.fq.gz"),
+                    os.path.join(self.run_dir, "L0" + str(self.lane_number), readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_1.fq.fqStat.txt"),
+                    os.path.join(self.run_dir, "L0" + str(self.lane_number), readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + ".report.html")
+                ])
+                fastq_jobs.append(
+                    concat_jobs([
+                        bash.mkdir(output_dir),
+                        bash.mv(
+                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_1.fq.gz"),
+                            readset.fastq1
+                        ),
+                        bash.ln(
+                            readset.fastq1,
+                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_1.fq.gz")
+                        ),
+                        bash.mv(
+                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_1.fq.fqStat.txt"),
+                            re.sub("gz", "fqStat.txt", readset.fastq1)
+                        ),
+                        bash.ln(
+                            re.sub("gz", "fqStat.txt", readset.fastq1),
+                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_1.fq.fqStat.txt")
+                        ),
+                        bash.mv(
+                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + ".report.html"),
+                            re.sub("_R1_001.fastq.gz", ".report.html", readset.fastq1)
+                        ),
+                        bash.ln(
+                            re.sub("_R1_001.fastq.gz", ".report.html", readset.fastq1),
+                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + ".report.html")
+                        )
+                    ])
+                )
+
+                if readset.run_type == "PAIRED_END":
+                    copy_job_output_dependency.extend([
+                        readset.fastq2,
+                        re.sub("gz", "fqStat.txt", readset.fastq2)
+                    ])
+                    fastq_job_input_dependency.extend([
+                        os.path.join(self.run_dir, "L0" + str(self.lane_number), readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_2.fq.gz"),
+                        os.path.join(self.run_dir, "L0" + str(self.lane_number), readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_2.fq.fqStat.txt")
+                    ])
+                    fastq_jobs.append(
+                        concat_jobs([
+                            bash.mv(
+                                os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_2.fq.gz"),
+                                readset.fastq2,
+                            ),
+                            bash.ln(
+                                readset.fastq2,
+                                os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_2.fq.gz")
+                            ),
+                            bash.mv(
+                                os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_2.fq.fqStat.txt"),
+                                re.sub("gz", "fqStat.txt", readset.fastq2),
+                            ),
+                            bash.ln(
+                                re.sub("gz", "fqStat.txt", readset.fastq2),
+                                os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_2.fq.fqStat.txt")
+                            )
+                        ])
+                    )
+            fastq_job = concat_jobs(fastq_jobs)
+            fastq_job.input_files = fastq_job_input_dependency + [copy_done_file]
+            fastq_job.name = "index.copy_rename_raw." + self.run_id + "." + str(self.lane_number)
+            fastq_job.samples = self.samples
+
+        # If no demultiplexing were done on the sequencer i.e. no MGI adpater used... 
+        else:
+            # ...then extract read2, index1 and index2 from R2 fastq, and do some renamings before demultiplexing ('fastq' step)
+
+            # R1 fastq
+            copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz"))
+            fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz"))
+            fastq_job = [concat_jobs(
+                [
+                    bash.mv(
+                        os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz"),
+                        os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz")
+                    ),
+                    bash.ln(
+                        os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz"),
+                        os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz")
+                    )
+                ],
+                input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz")],
+                output_dependency=[os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz")],
+                name="index.rename_R1_fastq." + self.run_id + "." + str(self.lane_number),
+                samples=self.samples
+            )]
+            if self.is_paired_end:
+                # R2 fastq
+                copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R2.fastq.gz"))
+                fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"))
+                fastq_job.append(
+                    pipe_jobs(
+                        [
+                            bash.cat(
+                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"),
+                                None,
+                                zip=True
+                            ),
+                            bash.cut(
+                                None,
+                                None,
+                                options="-c 1-" + self.get_read2cycles()
+                            ),
+                            bash.gzip(
+                                None,
+                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R2.fastq.gz"),
+                            )
+                        ],
+                        input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")],
+                        name="index.extract_R2_fastq." + self.run_id + "." + str(self.lane_number),
+                        samples=self.samples
+                    )
+                )
+            if self.is_dual_index:
+                # I1 fastq
+                copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"))
+                fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"))
+                fastq_job.append(
+                    pipe_jobs(
+                        [
+                            bash.cat(
+                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"),
+                                None,
+                                zip=True
+                            ),
+                            bash.paste(
+                                None,
+                                None,
+                                options="-d '\\t' - - - -"
+                            ),
+                            bash.awk(
+                                None,
+                                None,
+                                "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles())+int(self.get_index2cycles())+1)+","+self.get_index1cycles()+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles())+int(self.get_index2cycles())+1)+","+self.get_index1cycles()+") }'"
+                            ),
+                            bash.gzip(
+                                None,
+                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"),
+                            )
+                        ],
+                        input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")],
+                        name="index.extract_I1_fastq." + self.run_id + "." + str(self.lane_number),
+                        samples=self.samples
+                    )
+                )
+                # I2 fastq
+                copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I2.fastq.gz"))
+                fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"))
+                fastq_job.append(
+                    pipe_jobs(
+                        [
+                            bash.cat(
+                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"),
+                                None,
+                                zip=True
+                            ),
+                            bash.paste(
+                                None,
+                                None,
+                                options="-d '\\t' - - - -"
+                            ),
+                            bash.awk(
+                                None,
+                                None,
+                                "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles())+1)+","+self.get_index2cycles()+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles())+1)+","+self.get_index2cycles()+") }'"
+                            ),
+                            bash.gzip(
+                                None,
+                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I2.fastq.gz"),
+                            )
+                        ],
+                        input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")],
+                        name="index.extract_I2_fastq." + self.run_id + "." + str(self.lane_number),
+                        samples=self.samples
+                    )
+                )
+            else:
+                # I1 fastq
+                copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"))
+                fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"))
+                fastq_job.append(
+                    pipe_jobs(
+                        [
+                            bash.cat(
+                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"),
+                                None,
+                                zip=True
+                            ),
+                            bash.paste(
+                                None,
+                                None,
+                                options="-d '\\t' - - - -"
+                            ),
+                            bash.awk(
+                                None,
+                                None,
+                                "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles())+1)+","+self.get_index1cycles()+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles())+1)+","+self.get_index1cycles()+") }'"
+                            ),
+                            bash.gzip(
+                                None,
+                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"),
+                            )
+                        ],
+                        input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")],
+                        name="index.extract_I1_fastq." + self.run_id + "." + str(self.lane_number),
+                        samples=self.samples
+                    )
+                )
+
+        # Job submission :
+        # First we copy all the lane folder into the raw_fastq folder (unless already done...)
+        if not os.path.exists(copy_done_file):
+            copy_job = concat_jobs(
+                [
+                    bash.mkdir(raw_fastq_dir),
+                    bash.cp(
+                        os.path.join(self.run_dir, "L0" + str(self.lane_number), "."),
+                        raw_fastq_dir,
+                        recursive=True
+                    ),
+                    pipe_jobs([
+                        bash.md5sum(
+                            list(set(fastq_job_input_dependency)),
+                            None
+                        ),
+                        bash.awk(
+                            None,
+                            None,
+                            "'sub( /\/.*\//,\"\",$2 )'"
+                        ),
+                        bash.awk(
+                            None,
+                            copy_done_file + ".md5",
+                            "'{print $1,\""+raw_fastq_dir+"/\"$2}'"
+                        ),
+                    ]),
+                    bash.md5sum(
+                        copy_done_file + ".md5",
+                        None,
+                        check=True
+                    ),
+                    bash.touch(copy_done_file)
+                ],
+                output_dependency=copy_job_output_dependency + [copy_done_file],
+                name="index.copy_raw." + self.run_id + "." + str(self.lane_number),
+                samples=self.samples
+            )
+            jobs.append(copy_job)
+
+        # If copy was already made and successful
+        else:
+            log.info("Copy of source run folder already done and successful... skipping index.copy_raw." + self.run_id + "." + str(self.lane_number) + " job..." )
+
+        # Then process the copied fastq
+        if isinstance(fastq_job, list):
+            for job in fastq_job:
+                job.input_files.append(copy_done_file)
+                jobs.append(job)
+        else: 
+            jobs.append(fastq_job)
+
+        self.add_copy_job_inputs(jobs)
+        return jobs
+
     def fastq(self):
         """
         *** In the future, may generate the fastq files from the raw CAL files. ***
@@ -1008,99 +1330,84 @@ class MGIRunProcessing(common.MUGQICPipeline):
         The fastq (and metrics) files which match the readsets of the sample sheet are put in the Unaligned folder and renamed accordingly to their record in the sheet.
         All the fastq (and metrics) files which don't match any of the readsets in the sample sheet are put in the Unexpected folder without renaming.
         """
-
         jobs = []
 
-        # First we copy all the run folder into the Unexpected folder
-        unaligned_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
-        unexpected_dir = os.path.join(unaligned_dir, 'Unexpected')
-        copy_job = concat_jobs([
-            bash.mkdir(unexpected_dir),
-            bash.cp(
-                os.path.join(self.run_dir, "L0" + str(self.lane_number), "."),
-                unexpected_dir,
-                recursive=True
+        if self.is_demultiplexed:
+            log.info("Demultiplexing done on the sequencer... Skipping fastq step...")
+
+        else:
+            log.info("No demultiplexing done on the sequencer... Processing fastq step...")
+
+            input_fastq_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number), "raw_fastq")
+
+            fastq_multx_outputs, final_fastq_jobs = self.generate_fastqdemultx_outputs() 
+            tmp_output_dir = os.path.dirname(fastq_multx_outputs[0])
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(tmp_output_dir),
+                        run_processing_tools.fastqmultx(
+                            os.path.join(self.output_dir, "barcodesheet." + str(self.lane_number) + ".tsv"),
+                            self.number_of_mismatches,
+                            fastq_multx_outputs,
+                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz"),
+                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"),
+                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R2.fastq.gz"),
+                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I2.fastq.gz") if self.is_dual_index else None
+                        )
+                    ],
+                    name="fastq.demultiplex" + self.run_id + "." + str(self.lane_number),
+                    samples=self.samples
+                )
             )
-        ])
 
-        # Then do the necessary moves and renamings, from the Unexpected folder to the Unaligned folders 
-        fastq_job = Job()
-        for readset in self.readsets:
-            output_dir = os.path.join(self.output_dir, "Unaligned." + readset.lane, 'Project_' + readset.project, 'Sample_' + readset.name)
+            if final_fastq_jobs:
+                jobs.extend(final_fastq_jobs)
 
-            copy_job.output_files.extend([
-                os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_1.fq.gz"),
-                os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_1.fq.fqStat.txt")
-            ])
-            fastq_job = concat_jobs([
-                fastq_job,
-                bash.mkdir(output_dir),
-                bash.mv(
-                    os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_1.fq.gz"),
-                    readset.fastq1,
-                ),
-                bash.ln(
-                    readset.fastq1,
-                    os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_1.fq.gz")
-                ),
-                bash.touch(readset.fastq1),
-                bash.mv(
-                    os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_1.fq.fqStat.txt"),
-                    re.sub("gz", "fqStat.txt", readset.fastq1),
-                ),
-                bash.ln(
-                    re.sub("gz", "fqStat.txt", readset.fastq1),
-                    os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_1.fq.fqStat.txt")
-                ),
-                bash.touch(re.sub("gz", "fqStat.txt", readset.fastq1))
-            ])
+        self.add_copy_job_inputs(jobs)
+        return jobs
 
-            if readset.run_type == "PAIRED_END":
-                copy_job.output_files.extend([
-                    os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_2.fq.gz"),
-                    os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_2.fq.fqStat.txt")
-                ])
-                fastq_job = concat_jobs([
-                    fastq_job,
-                    bash.mv(
-                        os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_2.fq.gz"),
-                        readset.fastq2,
-                    ),
-                    bash.ln(
-                        readset.fastq2,
-                        os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_2.fq.gz")
-                    ),
-                    bash.touch(readset.fastq2),
-                    bash.mv(
-                        os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_2.fq.fqStat.txt"),
-                        re.sub("gz", "fqStat.txt", readset.fastq2),
-                    ),
-                    bash.ln(
-                        re.sub("gz", "fqStat.txt", readset.fastq2),
-                        os.path.join(unexpected_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_2.fq.fqStat.txt")
-                    ),
-                    bash.touch(re.sub("gz", "fqStat.txt", readset.fastq2))
-            ])
+    def demuxfastq(self):
+        """
+        *** In the future, may generate the fastq files from the raw CAL files. ***
+        When fastq files are already generated by the sequencer, then copy all the fastq files in processing folder.
+        The fastq (and metrics) files which match the readsets of the sample sheet are put in the Unaligned folder and renamed accordingly to their record in the sheet.
+        All the fastq (and metrics) files which don't match any of the readsets in the sample sheet are put in the Unexpected folder without renaming.
+        """
+        jobs = []
 
-#        copy_job.name = "fastq_copy." + self.run_id + "." + str(self.lane_number)
-#        copy_job.samples = self.samples
-##        copy_job.output_dependency = fastq_job.output_files
+        if self.is_demultiplexed:
+            log.info("Demultiplexing done on the sequencer... Skipping fastq step...")
 
-#        fastq_job.name = "fastq_rename." + self.run_id + "." + str(self.lane_number)
-#        fastq_job.samples = self.samples
+        else:
+            log.info("No demultiplexing done on the sequencer... Processing fastq step...")
 
-#        jobs.append(copy_job)
-#        jobs.append(fastq_job)
-        jobs.append(
-            concat_jobs(
-                [
-                    copy_job,
-                    fastq_job
-                ],
-                name="fastq." + self.run_id + "." + str(self.lane_number),
-                samples=self.samples
+            input_fastq_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number), "raw_fastq")
+
+            demux_fastqs_outputs, final_fastq_jobs = self.generate_demuxfastqs_outputs()
+            tmp_output_dir = os.path.dirname(demux_fastqs_outputs[0])
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(tmp_output_dir),
+                        run_processing_tools.demux_fastqs(
+                            os.path.join(self.output_dir, "samplesheet." + str(self.lane_number) + ".csv"),
+                            self.number_of_mismatches,
+                            self.mask,
+                            demux_fastqs_outputs,
+                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz"),
+                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R2.fastq.gz")
+                        )
+                    ],
+                    name="fastq.demultiplex" + self.run_id + "." + str(self.lane_number),
+                    samples=self.samples
+                )
             )
-        )
+
+            if final_fastq_jobs:
+                jobs.extend(final_fastq_jobs)
 
         self.add_copy_job_inputs(jobs)
         return jobs
@@ -1248,6 +1555,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     os.path.join(os.path.dirname(readset.fastq2), "fastqc.R2", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.fastq2))),
                     os.path.join(os.path.dirname(readset.fastq2), "fastqc.R2", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.fastq2))),
                 ]
+#            if not self.is_demultiplexed:
+#                input_dict[readset.index_fastq1] = [
+#                    os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.I1", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq1))),
+#                    os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.I1", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq1)))
+#                ]
 #                if readset.index_type == "DUALINDEX":
 #                    input_dict[readset.index_fastq2] = [
 #                        os.path.join(os.path.dirname(readset.index_fastq2), "fastqc.I2", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq2))),
