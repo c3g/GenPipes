@@ -77,6 +77,7 @@ def mv(
     return Job(
         [source],
         [target],
+        [],
         command="""\
 mv {force}{source} \\
    {dest}""".format(
@@ -244,6 +245,7 @@ def gzip(
     return Job(
         [input],
         [output],
+        [],
         command="""\
 gzip {input}{output}""".format(
             input=input if input else "",
@@ -293,13 +295,136 @@ pigz {input} -c {output}""".format(
         )
     )
 
-def md5sum(input, output):
+def md5sum(
+    inputs,
+    output,
+    check=False
+    ):
+
+    if not isinstance(inputs, list):
+        inputs = [inputs]
+
+    return Job(
+        inputs,
+        [output],
+        command="""\
+md5sum {check}{input}{output}""".format(
+            check="-c " if check else "",
+            input=" ".join([os.path.abspath(input) for input in inputs]),
+            output=" > " + os.path.abspath(output) if output else ""
+        )
+    )
+
+def cat(
+    input,
+    output,
+    zip=False
+    ):
+
+    if not isinstance(input, list):
+        inputs=[input]
+    else:
+        inputs=input
+
+    cat_call = "cat"    
+    if zip:
+        cat_call = "zcat"
+
+    return Job(
+        inputs,
+        [output],
+        command="""\
+{cat} {input}{output}""".format(
+            cat=cat_call,
+            input=" ".join(inputs) if input else "",
+            output=" > " + output if output else ""
+        )
+    )
+
+def cut(
+    input,
+    output,
+    options
+    ):
+
     return Job(
         [input],
         [output],
         command="""\
-md5sum {input} > {output}""".format(
-            input=os.path.abspath(input),
-            output=os.path.abspath(output)
+cut {options} {input}{output}""".format(
+            options=options,
+            input=input if input else "",
+            output=" > " + output if output else "",
         )
     )
+
+def paste(
+    input,
+    output,
+    options
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+paste {options} {input}{output}""".format(
+            options=options,
+            input=input if input else "",
+            output=" > " + output if output else "",
+        )
+    )
+
+def awk(
+    input,
+    output,
+    instructions
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+awk {instructions} {input}{output}""".format(
+            instructions=instructions,
+            input=input if input else "",
+            output=" > " + output if output else "",
+        )
+    )
+
+def gzip(
+    input,
+    output,
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+gzip {input}{output}""".format(
+            input=input if input else "",
+            output=" > " + output if output else "",
+        )
+    )
+
+def zip(
+    inputs,
+    zip_output
+    ):
+
+    # all the inputs are supposed to be in the same directory
+    inputs_dir = os.path.dirname(inputs[0]) 
+
+    return Job(
+        inputs,
+        [zip_output],
+        command="""\
+pushd {archive_dir};\\
+zip {output} {inputs};\\
+popd""".format(
+            archive_dir=inputs_dir,
+            output=zip_output if zip_output else "",
+            inputs=" ".join([os.path.basename(input) for input in inputs]) if inputs else ""
+        )
+    )
+
