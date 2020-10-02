@@ -4,7 +4,6 @@
 ,Nextera,,,,
 ,tenX_sc_RNA_v1,,,,
 ,tenX_sc_RNA_v2,,,,
-,tenX_DNA_v2,,,,
 
 Index_1,TruSeqLT,SINGLEINDEX,ILLUMINA,i7,
 Index_2,TruSeqLT,SINGLEINDEX,ILLUMINA,i7,
