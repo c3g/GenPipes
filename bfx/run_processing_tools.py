@@ -122,45 +122,98 @@ bcl2fastq \\
         )
     )
 
-def bcl2fastq_for_index(
-    run_dir,
-    output_dir,
-    sample_sheet,
-    flowcell,
-    lane,
-    demultiplex=False,
-    mismatches=None,
-    mask=None,
+def fastqmultx(
+    barcode_file,
+    mismatches,
+    outputs,
+    R1_fastq,
+    I1_fastq,
+    R2_fastq,
+    I2_fastq=None
     ):
 
-    if demultiplex:
-        demultiplex_parameters = """\
-  --barcode-mismatches {number_of_mismatches} \\
-  --use-bases-mask {mask}""".format(
-            number_of_mismatches=mismatches,
-            mask=mask
-        )
-
+    output_dir = os.path.dirname(outputs[0])
     return Job(
-        [run_dir],
-        [os.path.join(output_dir, "Reports/html", flowcell, "all/all/all/lane.html"), os.path.join(output_dir, "Stats/Stats.json")],
         [
-            ['bcl2fastq_index', 'module_bcl_to_fastq']
+            R1_fastq,
+            I1_fastq,
+            R2_fastq,
+            I2_fastq if I2_fastq else None
+        ],
+        outputs,
+        [
+            ['fastq', 'module_fastq_multx']
         ],
         command="""\
-bcl2fastq \\
-  --runfolder-dir {run_dir} \\
-  --output-dir {output_dir} \\
-  --tiles {tiles} \\
+fastq-multx \\
+  -B {barcode} \\
+  -m {mismatches} \\
+  {input_I1} \\
+  {input_I2} \\
+  {input_R1} \\
+  {input_R2} \\
+  {output_I1} \\
+  {output_I2} \\
+  {output_R1} \\
+  {output_R2}""".format(
+            barcode=barcode_file,
+            mismatches=mismatches,
+            input_I1=I1_fastq,
+            input_I2=I2_fastq if I2_fastq else "",
+            input_R1=R1_fastq,
+            input_R2=R2_fastq,
+            output_I1="-o " + os.path.join(output_dir, "%_I1.fastq"),
+            output_I2="-o " + os.path.join(output_dir, "%_I2.fastq") if I2_fastq else "",
+            output_R1="-o " + os.path.join(output_dir, "%_R1.fastq"),
+            output_R2="-o " + os.path.join(output_dir, "%_R2.fastq")
+        ),
+        removable_files=outputs+[output_dir]
+    )
+
+def demux_fastqs(
+    sample_sheet,
+    mismatches,
+    mask,
+    outputs,
+    R1_fastq,
+    R2_fastq
+    ):
+
+    output_dir = os.path.dirname(outputs[0])
+    metrics_file = os.path.join(output_dir, "DemuxFastqs.metrics.txt")
+    return Job(
+        [
+            R1_fastq,
+            R2_fastq,
+        ],
+        outputs + [ metrics_file],
+        [
+            ['fastq', 'module_java'],
+            ['fastq', 'module_fgbio']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} \\
+  {java_other_options} \\
+  -Xmx{ram} \\
+  -jar $FGBIO_JAR DemuxFastqs \\
+  --threads {threads} \\
+  --max-mismatches {mismatches} \\
+  --metrics {metrics_file} \\
+  --inputs {inputs} \\
+  --read-structures {read_structure} \\
   --sample-sheet {sample_sheet} \\
-  --create-fastq-for-index-reads \\
-  {demultiplex_parameters} \\
-  {other_options}""".format(
-            run_dir=run_dir,
-            output_dir=output_dir,
-            tiles="s_" + str(lane),
+  --output {output_dir} \\
+  --output-type fastq""".format(
+            tmp_dir=config.param('fastq', 'tmp_dir'),
+            java_other_options=config.param('fastq', 'java_other_options'),
+            ram=config.param('fastq', 'ram'),
+            threads=config.param('fastq', 'threads'),
+            mismatches=mismatches,
+            metrics_file=metrics_file,
+            inputs=" ".join([R1_fastq, R2_fastq]),
+            read_structure=mask,
             sample_sheet=sample_sheet,
-            demultiplex_parameters=demultiplex_parameters if demultiplex_parameters else "",
-            other_options=config.param('bcl2fastq_index', 'other_options'),
+            output_dir=output_dir
         )
     )
+

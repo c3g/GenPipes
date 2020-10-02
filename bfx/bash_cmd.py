@@ -30,7 +30,7 @@ def mkdir(
 
     return Job(
         [],
-        [folder],
+        [],
         command="""\
 mkdir -p {directory} && \\
 touch {directory}""".format(
@@ -77,6 +77,7 @@ def mv(
     return Job(
         [source],
         [target],
+        [],
         command="""\
 mv {force}{source} \\
    {dest}""".format(
@@ -96,6 +97,7 @@ def cp(
     return Job(
         [source],
         [target],
+        [],
         command="""\
 cp {rec}{upd}'{source}' {dest}""".format(
             source=source,
@@ -107,10 +109,9 @@ cp {rec}{upd}'{source}' {dest}""".format(
 
 def rm(
     source,
-    recursive=True,
-    force=True
+    recursive=False,
+    force=False
     ):
-
     return Job(
         [source],
         [],
@@ -241,6 +242,7 @@ def gzip(
     return Job(
         [input],
         [output],
+        [],
         command="""\
 gzip {input}{output}""".format(
             input=input if input else "",
@@ -248,13 +250,12 @@ gzip {input}{output}""".format(
         )
     )
 
-def touch(target, input_dependency=None):
-    if input_dependency is not None:
-        inputs=input_dependency
-    else:
-        inputs=[target]
+def touch(
+    target
+    ):
+
     return Job(
-        inputs,
+        [],
         [],
         [],
         command="""\
@@ -263,13 +264,161 @@ touch {target}""".format(
         )
     )
 
-def md5sum(input, output):
+def md5sum(
+    inputs,
+    output,
+    check=False
+    ):
+
+    if not isinstance(inputs, list):
+        inputs = [inputs]
+
+    return Job(
+        inputs,
+        [output],
+        command="""\
+md5sum {check}{input}{output}""".format(
+            check="-c " if check else "",
+            input=" ".join(["'"+os.path.abspath(input)+"'" for input in inputs]),
+            output=" > " + os.path.abspath(output) if output else ""
+        )
+    )
+
+def cat(
+    input,
+    output,
+    zip=False,
+    append=False
+    ):
+
+    if not isinstance(input, list):
+        inputs=[input]
+    else:
+        inputs=input
+
+    cat_call = "cat"    
+    if zip:
+        cat_call = "zcat"
+
+    return Job(
+        inputs,
+        [output],
+        command="""\
+{cat} {input} {append}{output}""".format(
+            cat=cat_call,
+            input=" ".join(inputs) if input else "",
+            append=">" if append else "",
+            output="> " + output if output else ""
+        )
+    )
+
+def cut(
+    input,
+    output,
+    options
+    ):
+
     return Job(
         [input],
         [output],
         command="""\
-md5sum {input} > {output}""".format(
-            input=os.path.abspath(input),
-            output=os.path.abspath(output)
+cut {options} {input}{output}""".format(
+            options=options,
+            input=input if input else "",
+            output=" > " + output if output else "",
         )
     )
+
+def paste(
+    input,
+    output,
+    options
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+paste {options} {input}{output}""".format(
+            options=options,
+            input=input if input else "",
+            output=" > " + output if output else "",
+        )
+    )
+
+def awk(
+    input,
+    output,
+    instructions,
+    append=False
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+awk {instructions} {input}{output}""".format(
+            instructions=instructions,
+            input=input if input else "",
+            append=" >" if append else " ",
+            output="> " + output if output else "",
+        )
+    )
+
+def gzip(
+    input,
+    output,
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+gzip {input}{output}""".format(
+            input=input if input else "",
+            output=" > " + output if output else "",
+        )
+    )
+
+def zip(
+    inputs,
+    zip_output,
+    recursive=False
+    ):
+
+    # all the inputs are supposed to be in the same directory
+    inputs_dir = os.path.dirname(inputs[0]) 
+
+    return Job(
+        inputs,
+        [zip_output],
+        command="""\
+pushd {archive_dir};\\
+zip {recursive}{output} {inputs};\\
+popd""".format(
+            archive_dir=inputs_dir,
+            recursive="-r " if recursive else "",
+            output=zip_output if zip_output else "",
+            inputs=" ".join([os.path.basename(input) for input in inputs]) if inputs else ""
+        )
+    )
+
+def pigz(
+    input,
+    output,
+    ini_section="DEFAULT"
+    ):
+
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, 'module_pigz']
+        ],
+        command="""\
+pigz {input} -c {output}""".format(
+            input=input if input else "",
+            output=" > " + output if output else "",
+        )
+    )
+

@@ -662,6 +662,14 @@ class MGIRawReadset(MGIReadset):
         return self._index
 
     @property
+    def index_number(self):
+        return self._index_number
+
+    @property
+    def index_type(self):
+        return self._index_type
+
+    @property
     def sample_number(self):
         return self._sample_number
 
@@ -680,6 +688,18 @@ class MGIRawReadset(MGIReadset):
     @property
     def is_rna(self):
         return False
+
+    @property
+    def library_source(self):
+        return self._library_source
+
+    @property
+    def is_mgi_index(self):
+       return self._is_mgi_index
+
+    @property
+    def library_type(self):
+        return self._library_type
 
     @property
     def annotation_files(self):
@@ -703,6 +723,7 @@ class MGIRawReadset(MGIReadset):
 def parse_mgi_raw_readset_files(
     readset_file,
     run_folder,
+    run_type,
     flowcell,
     lane,
     output_dir
@@ -714,10 +735,18 @@ def parse_mgi_raw_readset_files(
 
     # Parsing MGI readset sheet
     log.info("Parse MGI readset file " + readset_file + " ...")
-
     readset_csv = csv.DictReader(open(readset_file, 'rb'), delimiter=',', quotechar='"')
-
     for line in readset_csv:
+
+        adapter_file = config.param('DEFAULT', 'adapter_type_file', type='filepath', required=False)
+        if not (adapter_file and os.path.isfile(adapter_file)):
+            adapter_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_types.txt')
+        adapter_csv = csv.reader(open(adapter_file, 'rb'), delimiter=',', quotechar='"')
+
+        index_file = config.param('DEFAULT', 'index_settings_file', type='filepath', required=False)
+        if not (index_file and os.path.isfile(index_file)):
+            index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
+        index_csv = csv.reader(open(index_file, 'rb'), delimiter=',', quotechar='"')
 
         current_pool = line['Pool_ID']
         current_lane = line['Lane']
@@ -732,14 +761,14 @@ def parse_mgi_raw_readset_files(
         sample = Sample(sample_name)
         samples.append(sample)
 
-        # Parse Info file to retrieve the runtype i.e. PAIRED_END or SINGLE_END
-        run_info_file = open(os.path.join(run_folder, current_flowcell + "_Success.txt"), "r")
-        if "PE" in run_info_file.read().split(" ")[3]:
-            run_type = "PAIRED_END"
-        else:
-            run_type = "SINGLE_END"
-        if not run_type:
-            log.error("Run type could not be determined for run " + line['RUN_ID'] + " from file " + os.path.join(run_folder, current_flowcell + "_Success.txt"))
+#        # Parse Info file to retrieve the runtype i.e. PAIRED_END or SINGLE_END
+#        run_info_file = open(os.path.join(run_folder, current_flowcell + "_Success.txt"), "r")
+#        if "PE" in run_info_file.read().split(" ")[3]:
+#            run_type = "PAIRED_END"
+#        else:
+#            run_type = "SINGLE_END"
+#        if not run_type:
+#            log.error("Run type could not be determined for run " + line['RUN_ID'] + " from file " + os.path.join(run_folder, current_flowcell + "_Success.txt"))
    
         # Create readset and add it to sample
         readset = MGIRawReadset(line['Sample_Name'] + "_" + line['Library'], run_type)
@@ -747,16 +776,55 @@ def parse_mgi_raw_readset_files(
         readset._index_name = line['Index']
         #log.error(readset.index_name)
         if "MGI" in line['Index']:
+            readset._is_mgi_index = True
             m = re.search("\D+(?P<index>\d+)", line['Index'])
             if m:
                 #log.error(str(int(m.group('index'))))
-                readset._index = m.group('index').lstrip("0")
+                readset._index_number = m.group('index').lstrip("0")
+            bioinfo_csv = csv.reader(open(os.path.join(run_folder, "L0" + str(lane), "BioInfo.csv"), 'rb'))
+            for row in bioinfo_csv:
+                if row[0] == "Dual Barcode":
+                    readset._index_type = row[1]
+                    break
+            else:
+                _raise(SanitycheckError("Could not get Index 2 Cycles from " + os.path.join(run_folder, "L0" + str(lane), "BioInfo.csv")))
         else:
-            readset._index = readset.index_name
+            readset._is_mgi_index = False
+            #readset._index = readset.index_name
+            if re.search("SI-*", readset.index_name):
+                key = readset.index_name
+                for index_line in index_csv:
+                    if index_line and index_line[0] == key:
+                        readset._index = "-".join(index_line[1:])
+                        break
+                else:
+                    _raise(SanitycheckError("Could not find index " + key + " in index file file " + index_file + " Aborting..."))
+            else:
+                key = readset.index_name.split("-")[0]
+                index_to_use = ""
+                for idx, index in enumerate(readset.index_name.split("-")):
+                    for index_line in index_csv:
+                        if index_line and index_line[0] == index:
+                            if idx > 0 and len(index_line[1]) > 0:
+                                index_to_use += "-"
+                            index_to_use += index_line[1]
+                            break
+                    else:
+                        _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
+                readset._index = index_to_use
+            for adapter_line in adapter_csv:
+                if adapter_line :
+                    if adapter_line[0] == key:
+                        readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
+                        readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
+                        break
+            else:
+                _raise(SanitycheckError("Could not find adapter "+key+" in adapter file " + adapter_file + " Aborting..."))
 
         readset._project = line['Project']
         readset._project_id = line['Project_ID']
         readset._protocol = line['Protocol']
+        readset._library_source = line['Library_Source']
         readset._pool_id = line['Pool_ID']
         readset._run = line['RUN_ID']
         readset._sequencer_name = line['Sequencer']
@@ -768,17 +836,24 @@ def parse_mgi_raw_readset_files(
 
         readset._genomic_database = config.param('DEFAULT', 'scientific_name', required=True) + "." + config.param('DEFAULT', 'assembly', required=True)
 
+        readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
+
         if line.get('BED Files', None):
             readset._beds = line['BED Files'].split(";")
         else:
             readset._beds = []
 
         fastq_file_pattern = os.path.join(
-            os.path.join(output_dir, "Unaligned." + readset.lane, 'Project_' + readset.project, 'Sample_' + readset.name),
-            readset.name + "_" + readset.flow_cell + "_L0" + readset.lane + "_" + readset.index + "_R{read_number}.fastq.gz"
+            output_dir,
+            "Unaligned." + readset.lane,
+            "Project_" + readset.project,
+            "Sample_" + readset.name,
+            readset.name + '_S' + readset.sample_number + "_L00" + readset.lane + "_R{read_number}_001.fastq.gz"
         )
         readset.fastq1 = fastq_file_pattern.format(read_number=1)
         readset.fastq2 = fastq_file_pattern.format(read_number=2) if readset.run_type == "PAIRED_END" else None
+        readset.index_fastq1 = re.sub("_R1_", "_I1_", readset.fastq1)
+        readset.index_fastq2 = re.sub("_R2_", "_I2_", readset.fastq2) if readset.run_type == "PAIRED_END" and readset.index_type == "DUALINDEX" else None
 
         readsets.append(readset)
         sample.add_readset(readset)

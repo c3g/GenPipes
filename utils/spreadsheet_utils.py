@@ -94,7 +94,7 @@ def print_sample_sheet(
     f = csv.writer(open(outfile, "wb+"))
 
     # Write CSV Header
-    header = ["Sample_Name", "Readset", "Library", "Project", "Project_ID", "Protocol", "Index", "Pool_ID", "RUN_ID", "Flowcell_ID", "Lane", "Run_Date", "Sequencer", "SequencerID"]
+    header = ["Sample_Name", "Readset", "Library", "Project", "Project_ID", "Protocol", "Library_Source", "Index", "Pool_ID", "RUN_ID", "Flowcell_ID", "Lane", "Run_Date", "Sequencer", "SequencerID"]
     f.writerow(header)
 
     for x in range(len(columns['RUN_ID'])):
