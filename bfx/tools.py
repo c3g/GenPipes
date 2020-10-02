@@ -512,7 +512,8 @@ python $PYTHON_TOOLS/runProcessingEditIndexStatsFile.py \\
 def run_validation_sample_report(
     readset,
     report_inputs,
-    out_file
+    out_file,
+    main_json=None
     ):
 
     inputs = [
@@ -540,6 +541,7 @@ python $PYTHON_TOOLS/runProcessingSampleReport.py \\
   -s {sample} \\
   -l {library} \\
   {index} \\
+  {main_json} \\
   {sample_tag} \\
   -q {qc} \\
   -b {blast} \\
@@ -550,6 +552,7 @@ python $PYTHON_TOOLS/runProcessingSampleReport.py \\
             sample=readset.sample.name,
             library=readset.library,
             index="-i " + report_inputs['index'] if report_inputs.get('index') else "",
+            main_json="-m " + main_json if main_json else "",
             sample_tag="-k " + report_inputs['sample_tag'][readset.name] if report_inputs.get('sample_tag') else "",
             qc=report_inputs['qc'][readset.name],
             blast=report_inputs['blast'][readset.name],
