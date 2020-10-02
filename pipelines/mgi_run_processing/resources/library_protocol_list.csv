@@ -10,7 +10,10 @@ WGS,default DNA,,bam,WGS
 10x Genomics Single Cell RNA,default RNA,tenX_sc_RNA_v2,fastq,Single Cell RNA
 10x Genomics Linked Reads gDNA,default DNA,tenX_DNA_v2,fastq,WGS Linked Reads
 10x Genomics Single Cell CNV,default DNA,tenX_DNA_v2,fastq,Single Cell DNA
-10x Genomics Single Cell RNA VDJ,default RNA,tenX_sc_RNA_v2,fastq,Single Cell RNA
+10x Genomics Single Cell V-D-J,default RNA,tenX_sc_RNA_v2,fastq,Single Cell RNA
+10x Genomics Single Cell ATAC,default DNA,tenX_sc_ATAC_v1,fastq,Single Cell DNA
+10x Genomics Single Cell Visium Spacial RNA,default RNA,tenX_sc_RNA_visium_v2,fastq,Single Cell RNA
+10x Genomics Single Cell Feature Barcode,default RNA,FeatureBarcode,fastq,Single Cell RNA
 WGBS,default DNA,,fastq,WGBS
 MCC,default DNA,,fastq,MCC
 Exome,default DNA,,fastq,Exome
@@ -39,3 +42,8 @@ ChIPmentation,default DNA,,fastq,ChIPmentation
 ChIP-Seq,default DNA,,fastq,ChIP-Seq
 HaloPlex,default DNA,,fastq,HaloPlex
 Panel,default DNA,,fastq,Panel
+MNaseSeq,default DNA,,fastq,MnaseSeq
+Amplicon DNA,default DNA,,fastq,Amplicon DNA
+Amplicon RNA,default RNA,,fastq,Amplicon RNA
+VirusSeq,default RNA,,fastq,Amplicon RNA
+
