@@ -65,7 +65,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
     -------------
 
     The pipeline uses one input sample sheet.
-    CURRENTLY BASED ON MGI RUN PROCESSING GOOGLE SHEET
+    CURRENTLY BASED ON MGI RUN PROCESSING GOOGLE SHEET (https://docs.google.com/spreadsheets/d/1Jk11bQUJdqVg37gfn7ndfk-g9ke96tsjCfAsf3r1xdA)
     A csv file having the following columns :
 
     - Sample
@@ -134,6 +134,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         for lane in self.lanes:
             self._samples[lane] = list(OrderedDict.fromkeys([readset.sample for readset in self.readsets[lane]]))
         return self._samples
+            
 
     @property
     def lanes(self):
@@ -304,16 +305,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
             return self.args.run_dir
         else:
             _raise(SanitycheckError("Error: missing '-d/--run_dir' option!"))
-
-    @property
-    def flowcell_id(self):
-        """
-        The flow cell ID from the run folder
-        """
-        if not hasattr(self, "_flowcell_id"):
-            self._flowcell_id = os.path.basename(self.run_dir.rstrip('/'))
-        return self._flowcell_id
-
 
     @property
     def lane_number(self):
