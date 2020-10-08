@@ -239,9 +239,10 @@ def haplotype_caller(inputs, output, intervals=[], exclude_intervals=[], interva
 	if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
 		return gatk.haplotype_caller(inputs, output, intervals, exclude_intervals, interval_list)
 	else:
+                #output = [output, output+".tbi"]
 		return Job(
 			inputs,
-			[output],
+			[output, output+".tbi"],
 			[
 				['gatk_haplotype_caller', 'module_java'],
 				['gatk_haplotype_caller', 'module_gatk']

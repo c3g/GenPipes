@@ -56,7 +56,8 @@ def trimmomatic(
         outputs + [trim_log],
         [
             ['trimmomatic', 'module_java'],
-            ['trimmomatic', 'module_trimmomatic']
+            ['trimmomatic', 'module_trimmomatic'],
+            ['trimmomatic', 'module_bvatools']
         ],
 
         # CAUTION: Trimmomatic settings order is IMPORTANT!
