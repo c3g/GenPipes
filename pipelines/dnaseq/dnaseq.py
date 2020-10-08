@@ -1077,9 +1077,9 @@ class DnaSeqRaw(common.Illumina):
 
                 jobs.append(concat_jobs([
                     Job(samples=[sample]),
-                    Job([os.path.abspath(haplotype_file_prefix + ".hc.g.vcf.gz")], [output_haplotype_file_prefix + ".hc.g.vcf.gz"],
+                    Job([haplotype_file_prefix + ".hc.g.vcf.gz"], [output_haplotype_file_prefix + ".hc.g.vcf.gz"],
                         command="ln -sf " + os.path.abspath(haplotype_file_prefix + ".hc.g.vcf.gz") + " " + output_haplotype_file_prefix + ".hc.g.vcf.gz"),
-                    Job([os.path.abspath(haplotype_file_prefix + ".hc.g.vcf.gz.tbi")], [output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi"],
+                    Job([haplotype_file_prefix + ".hc.g.vcf.gz.tbi"], [output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi"],
                         command="ln -sf " + os.path.abspath(haplotype_file_prefix + ".hc.g.vcf.gz.tbi") + " " + output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi"),
                     gatk4.genotype_gvcf([output_haplotype_file_prefix + ".hc.g.vcf.gz"], output_haplotype_file_prefix + ".hc.vcf.gz", config.param('gatk_genotype_gvcf', 'options'))
                 ], name="merge_and_call_individual_gvcf.call." + sample.name))
@@ -1174,7 +1174,7 @@ class DnaSeqRaw(common.Illumina):
 
             #Combine batches altogether
             if nb_haplotype_jobs == 1 or interval_list is not None:
-                job=gatk4.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".hc.g.vcf.gz") for batch_idx in batches ], os.path.join("variants", "allSamples.hc.g.vcf.bgz"))
+                job=gatk4.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".hc.g.vcf.gz") for batch_idx in batches ], os.path.join("variants", "allSamples.hc.g.vcf.gz"))
                 job.name="gatk_combine_gvcf.AllSamples.batches"
                 job.samples = self.samples
                 jobs.append(job)
@@ -1220,8 +1220,8 @@ class DnaSeqRaw(common.Illumina):
         if nb_haplotype_jobs > 1 and interval_list is None:
             unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
 
-            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.bgz" for idx in xrange(len(unique_sequences_per_job))]
-            gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.bgz")
+            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
+            gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
             job = gatk4.cat_variants(gvcfs_to_merge, output_haplotype)
             job.name = "merge_and_call_combined_gvcf.merge.AllSample"
@@ -1295,22 +1295,6 @@ class DnaSeqRaw(common.Illumina):
 
         return jobs
 
-    def varfilter(self):
-        """
-        Filter variants based on read depth and quality
-        """
-
-        jobs = []
-        ref_fasta = config.param("bcftools_varfilter", "genome_fasta", type="filepath")
-        input_vcf_gz = os.path.join("variants", "allSamples.hc.vcf.bgz")
-        input_vcf = os.path.join("variants", "allSamples.hc.vcf")
-
-        jobs.append(concat_jobs([
-            Job([input_vcf_gz], output_files=[input_vcf], command = "zcat " + input_vcf_gz + " > " + input_vcf),
-            bcftools.bcftools_varfilter(input_vcf, os.path.join("variants", "allSamples.merged.gatk_flt.vcf")),
-            ], name = "bcftools_varfilter"))
-
-        return jobs
 
     def dna_sample_metrics(self):
         """
@@ -1488,6 +1472,20 @@ pandoc \\
         input_vcf = self.select_input_files([["variants/allSamples.merged.flt.vcf"]])
     
         job = self.vt_decompose_and_normalize(input_vcf, "variants/allSamples.merged.flt.vt.vcf.gz")
+        return job
+
+    def freebayes_decompose_and_normalize(self):
+    
+        input_vcf = self.select_input_files([["variants/allSamples.merged.freebayes.vcf"]])
+    
+        job = self.vt_decompose_and_normalize(input_vcf, "variants/allSamples.merged.freebayes.vt.vcf.gz")
+        return job
+
+    def varscan_decompose_and_normalize(self):
+    
+        input_vcf = self.select_input_files([["variants/allSamples.merged.varscan.vcf"]])
+    
+        job = self.vt_decompose_and_normalize(input_vcf, "variants/allSamples.merged.varscan.vt.vcf.gz")
         return job
 
     def filter_nstretches(self, input_vcf = "variants/allSamples.merged.flt.vcf", output_vcf = "variants/allSamples.merged.flt.NFiltered.vcf", job_name = "filter_nstretches" ):
@@ -1866,10 +1864,14 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         vcf_sample_list = os.path.join("variants", "samples.list")
         samples_list = [sample.name for sample in self.samples]
 
+
+        vcf_header_prefix = os.path.join(output_directory, "allSamples.chr1:1-56362228.varscan.vcf")
+        header_file = os.path.join(output_directory, "allSamples.headerfile.vcf.gz")
+
         jobs.append(concat_jobs([
             Job(command="mkdir -p variants"),
             Job(input_files=input_bams, output_files=[vcf_sample_list], command='echo -e "' + "\\n".join(samples_list)+'" > ' + vcf_sample_list),
-            ],name="create_sample_name"))
+        ],name="create_sample_name"))
 
         if nb_jobs == 1:
             jobs.append(concat_jobs([
@@ -1877,24 +1879,44 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 pipe_jobs([
                     samtools.mpileup(input_bams, None, config.param('varscan_per_region', 'mpileup_other_options')),
                     varscan.mpileupcns("-", os.path.join(output_directory, "allSamples.varscan.vcf"), vcf_sample_list, config.param('varscan_per_region', 'other_options')),
-                Job(module_entries=[['varscan_per_region','module_tabix']], command="bgzip -f " + os.path.join(output_directory, "allSamples.varscan.vcf")),
-                Job(module_entries=[['varscan_per_region','module_tabix']], command="tabix " + os.path.join(output_directory, "allSamples.varscan.vcf.gz") + " -p vcf")
-                ])], name="varscan_per_region.allSamples"))
+                    Job(module_entries=[['varscan_per_region','module_tabix']], command="bgzip -f " + os.path.join(output_directory, "allSamples.varscan.vcf")),
+                    Job(module_entries=[['varscan_per_region','module_tabix']], command="tabix " + os.path.join(output_directory, "allSamples.varscan.vcf.gz") + " -p vcf")
+                ])
+            ], name="varscan_per_region.allSamples"))
 
         else:
-            for region in self.generate_approximate_windows(nb_jobs):
-		vcf_prefix = os.path.join(output_directory, "allSamples." + region + ".varscan.vcf")
-		jobs.append(concat_jobs([
-		    Job(input_files=[vcf_sample_list], command="mkdir -p " + output_directory, samples=self.samples),
-		    pipe_jobs([
-			samtools.mpileup(input_bams, None, config.param('varscan_per_region', 'mpileup_other_options'), region),
-			varscan.mpileupcns("-", vcf_prefix, vcf_sample_list, config.param('varscan_per_region', 'other_options'))])
-		    ], name="varscan_per_region.allSamples." + re.sub(":", "_", region)))
 
-		jobs.append(concat_jobs([
-		    Job(input_files=[vcf_prefix],output_files=[vcf_prefix + ".gz"], module_entries=[['varscan_per_region','module_tabix']], command="bgzip -f " + vcf_prefix),
-		    Job(module_entries=[['varscan_per_region','module_tabix']], command="tabix " + vcf_prefix + ".gz" + " -p vcf")
-		    ], name="varscan_per_region_compress.allSamples." + re.sub(":", "_", region)))
+            ## create the first "allSamples.headerfile.vcf" file so that its header section can be used by the empty (ie. size -lt 100) below
+            jobs.append(concat_jobs([
+                Job(input_files=[vcf_sample_list], command="mkdir -p " + output_directory, samples=self.samples),
+                pipe_jobs([
+                    samtools.mpileup(input_bams, None, config.param('varscan_per_region', 'mpileup_other_options'), "chr1:1-56362228"),
+                    varscan.mpileupcns("-", vcf_header_prefix, vcf_sample_list, config.param('varscan_per_region', 'other_options'))])
+            ], name="varscan_per_region.HEADER.allSamples.chr1:1-56362228"))
+
+            ## compress the above vcf file into "allSamples.headerfile.vcf.gz"
+            jobs.append(concat_jobs([
+                Job(input_files=[vcf_header_prefix],output_files=[vcf_header_prefix + ".gz", header_file], module_entries=[['varscan_per_region','module_tabix']], command="bgzip -f " + vcf_header_prefix),
+                Job(module_entries=[['varscan_per_region','module_tabix']], command="tabix " + vcf_header_prefix + ".gz" + " -p vcf"),
+                Job(command="cp " + vcf_header_prefix + ".gz " + header_file)
+            ], name="varscan_per_region_compress.HEADER.allSamples.chr1:1-56362228"))
+
+
+
+            for region in self.generate_approximate_windows(nb_jobs):
+                vcf_prefix = os.path.join(output_directory, "allSamples." + region + ".varscan.vcf")
+                jobs.append(concat_jobs([
+                    Job(input_files=[vcf_sample_list, header_file], command="mkdir -p " + output_directory, samples=self.samples),
+                    pipe_jobs([
+                        samtools.mpileup(input_bams, None, config.param('varscan_per_region', 'mpileup_other_options'), region),
+                        varscan.mpileupcns("-", vcf_prefix, vcf_sample_list, config.param('varscan_per_region', 'other_options'))])
+                ], name="varscan_per_region.allSamples." + re.sub(":", "_", region)))
+
+                jobs.append(concat_jobs([
+                    Job(input_files=[vcf_prefix, header_file],output_files=[vcf_prefix + ".gz"], module_entries=[['varscan_per_region','module_tabix']], command="bgzip -f " + vcf_prefix),
+                    Job(module_entries=[['varscan_per_region','module_tabix']], command="tabix " + vcf_prefix + ".gz" + " -p vcf"),
+                    Job(command="if [ $(stat --printf='%s' " + vcf_prefix + ".gz) -lt 100 ] ; then zcat " + header_file + " | grep '^#' | bgzip -f > " + vcf_prefix + ".gz && tabix " + vcf_prefix + ".gz -fp vcf; fi")
+                ], name="varscan_per_region_compress.allSamples." + re.sub(":", "_", region)))
 
         return jobs
 
@@ -1967,23 +1989,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             Job(samples=self.samples),
             samtools.bcftools_cat(inputs, output_file)
         ], name = "merge_freebayes"))
-
-        return jobs
-
-    def vt(self):
-        """
-        Use vt to decompose, normalize, and obtain unique variants. 
-        """
-
-        jobs = []
-
-        varcallers = ["gatk_flt", "freebayes", "varscan", "flt"]
-        for varcaller in varcallers:
-            input_vcf = os.path.join("variants/allSamples.merged." + varcaller + ".vcf")
-            out_vcf = os.path.join("variants/allSamples.merged." + varcaller + ".vt.vcf")
-            jobs.append(concat_jobs([
-                vt.decompose_uniq_and_normalize_mnps(input_vcf, out_vcf)
-                ], name="vt."+varcaller))
 
         return jobs
 
@@ -2214,18 +2219,20 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.combine_gvcf,
                 self.merge_and_call_combined_gvcf,
                 self.variant_recalibrator,
-                self.varfilter,
+                self.haplotype_caller_decompose_and_normalize,
                 self.dna_sample_metrics,
                 self.varscan_per_region,
                 self.merge_varscan,
+                self.varscan_decompose_and_normalize,
                 self.freebayes_per_region,
                 self.merge_freebayes,
+                self.freebayes_decompose_and_normalize,
                 self.snp_and_indel_bcf,
                 self.merge_filter_bcf,
-                self.vt,
+                self.mpileup_decompose_and_normalize,
                 self.split_multiSampleVCF,
                 self.bcbio_ensemble,
-		self.run_multiqc
+                self.run_multiqc
             ]
         ]
 
