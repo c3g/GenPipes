@@ -1183,16 +1183,16 @@ class DnaSeqRaw(common.Illumina):
 
                 # Create one separate job for each of the first sequences
                 for idx,sequences in enumerate(unique_sequences_per_job):
-                    job=gatk4.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + "." + str(idx) + ".hc.g.vcf.gz") for batch_idx in batches ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz", intervals=sequences)
+                    job=gatk4.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + "." + str(idx) + ".hc.g.vcf.gz") for batch_idx in batches ], os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz", intervals=sequences)
                     job.name="gatk_combine_gvcf.AllSample" + "." + str(idx)
-                    job.removable_files=[os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz",os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz.tbi"]
+                    job.removable_files=[os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz.tbi"]
                     job.samples = self.samples
                     jobs.append(job)
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
-                job=gatk4.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".others.hc.g.vcf.gz") for batch_idx in batches ], os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz"), exclude_intervals=unique_sequences_per_job_others)
+                job=gatk4.combine_gvcf([ os.path.join("variants", "allSamples." + batch_idx + ".others.hc.g.vcf.gz") for batch_idx in batches ], os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz"), exclude_intervals=unique_sequences_per_job_others)
                 job.name="gatk_combine_gvcf.AllSample" + ".others"
-                job.removable_files=[os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz"),os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz.tbi")]
+                job.removable_files=[os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz"),os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz.tbi")]
                 job.samples = self.samples
                 jobs.append(job)
                 
@@ -2204,9 +2204,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.merge_trimmomatic_stats,
                 self.bwa_mem_picard_sort_sam,
                 self.sambamba_merge_sam_files,
-                self.gatk_indel_realigner,
-                self.sambamba_merge_realigned,
-                self.fix_mate_by_coordinate,
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.metrics,
