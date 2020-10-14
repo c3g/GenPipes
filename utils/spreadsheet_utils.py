@@ -58,7 +58,7 @@ def parse_google_sheet(sheet_name, authentication_file):
     # Actual data starts at line 3 
     for row in list_of_lists[2:]:
         for h, v in zip(header, row):
-            columns[h].append(v.encode('utf8').replace(" ", "_"))
+            columns[h].append(v.encode('utf8').rstrip().replace(" ", "_"))
     # Add the Readset column
     columns["Readset"] = [sample + "_" + library for sample, library in zip(columns["Sample_Name"], columns["Library"])]
 
