@@ -25,7 +25,6 @@ import gspread
 import os
 import textwrap
 import subprocess
-import csv
 
 from spreadsheet_utils import print_sample_sheet, parse_google_sheet
 
@@ -172,6 +171,17 @@ def compare_runs(
                             run_folder_basename,
                             is_demultiplexed,
                             extra_options
+                        )
+                        print "        Generating GenPipes script..."
+                        print_genpipes_scripts(
+                            outdir,
+                            process_dir,
+                            project,
+                            flowcell,
+                            run,
+                            lane,
+                            sequencer_path,
+                            genpipes_repo
                         )
             # replace referece run list by the current run list to set it as the reference for next watch round
             print_runs(
