@@ -24,12 +24,28 @@ import logging
 import gspread
 import os
 import textwrap
+import subprocess
 
 from spreadsheet_utils import print_sample_sheet, parse_google_sheet
 
 logger = logging.getLogger(__name__)
 
 columns = {}
+
+def get_sequencer_from_run(
+    columns,
+    run
+    ):
+    for x in range(len(columns['RUN_ID'])):
+        if columns['RUN_ID'][x] == run:
+            if columns['Sequencer'][x]:
+                seq = columns['Sequencer'][x]
+                if seq == "01":
+                    return "seq1/R2130400190016"
+                elif seq == "02":
+                    return "seq2/R2130400190018"
+    # If no sequencer was found
+    return None
 
 def get_flowcell_from_run(
     columns,
@@ -64,7 +80,9 @@ def get_lanes_from_run(
 
 def compare_runs(
     columns,
-    outdir
+    outdir,
+    process_dir,
+    genpipes_repo
     ):
 
     header = "RUN_ID"
@@ -78,6 +96,10 @@ def compare_runs(
             runs_added = list(set(new_list) - set(ref_list))
             print runs_added
             for run in runs_added:
+                sequencer_path = get_sequencer_from_run(
+                    columns,
+                    run
+                )
                 flowcell = get_flowcell_from_run(
                     columns,
                     run
@@ -96,6 +118,7 @@ def compare_runs(
 
                     for lane in lanes:
                         print "    Lane " + lane
+                        print "        Generating sample sheet..."
                         print_sample_sheet(
                             columns,
                             project,
@@ -103,8 +126,20 @@ def compare_runs(
                             lane,
                             outdir
                         )
+                        print "        Generating GenPipes script..."
+                        print_genpipes_scripts(
+                            outdir,
+                            process_dir,
+                            project,
+                            flowcell,
+                            run,
+                            lane,
+                            sequencer_path,
+                            genpipes_repo
+                        )
             # replace referece run list by the current run list to set it as the reference for next watch round
             print_runs(columns)
+
         else:
             print "No new run detected..."
 
@@ -114,17 +149,60 @@ def compare_runs(
         ref_list = open("/tmp/mgi_runs.ref", "r").read().split("\n")
         print ref_list
 
-def print_runs(columns, path="/tmp/mgi_runs.ref"):
+def print_runs(
+    columns,
+    path="/tmp/mgi_runs.ref"
+    ):
+
     f = open(path, "wb+")
     for i in filter(None, sorted(set(columns['RUN_ID']))):
         f.write(i + "\n")
     f.close
 
+def print_genpipes_scripts(
+    samplesheet_dir,
+    process_dir,
+    project,
+    flowcell,
+    run,
+    lane,
+    sequencer_path,
+    genpipes_repo
+    ):
+
+    if not os.path.exists(process_dir+"/genpipes_scripts/"+project+"/"+run):
+        os.makedirs(process_dir+"/genpipes_scripts/"+project+"/"+run)
+    genpipes_script = open(process_dir+"/genpipes_scripts/"+project+"/"+run+"/"+project+"."+run+".L0"+lane+".genpipes_script.sh", 'wb+') 
+    genpipes_script.write("""\
+mkdir -p {process_dir}/{project}/{run}/L0{lane} && \\
+python {genpipes_repo}/pipelines/mgi_run_processing/mgi_run_processing.py \\
+  -c {genpipes_repo}/pipelines/mgi_run_processing/mgi_run_processing.base.ini $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh38/Homo_sapiens.GRCh38.ini \\
+  --no-json -l debug \\
+  -d /nb/Research/MGISeq/{sequencer_path}/{flowcell} \\
+  -r {samplesheet_dir}/{project}/{run}/L0{lane}/{project}.{run}.L0{lane}.sample_sheet.csv \\
+  --lane {lane} \\
+  -o {process_dir}/{project}/{run}/L0{lane} \\
+  > {process_dir}/{project}/{run}/{project}.{run}.L0{lane}.sh \\
+  2> {process_dir}/{project}/{run}/{project}.{run}.L0{lane}.trace.log""".format(
+        process_dir=process_dir,
+        samplesheet_dir=samplesheet_dir,
+        genpipes_repo=genpipes_repo,
+        project=project,
+        flowcell=flowcell,
+        run=run,
+        lane=lane,
+        sequencer_path=sequencer_path
+    ))
+    genpipes_script.close()
+    subprocess.call("bash "+process_dir+"/genpipes_scripts/"+project+"/"+run+"/"+project+"."+run+".L0"+lane+".genpipes_script.sh", shell=True)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--spreadsheet_name', help='Name of the MGI run management Google spreadsheet to parse', required=True, dest="spreadsheet_name")
+    parser.add_argument('-s', '--spreadsheet_name', help='Name of the MGI run management Google spreadsheet to parse', required=False, dest="spreadsheet_name", default='ALL MGI Run Management')
     parser.add_argument('-a', '--authentication_file', help="JSON authentication file used to connect the spreadsheets", type=file, required=True, dest="json_file")
-    parser.add_argument('-o', '--outdir', help="Path of the output directory i.e. where the sample sheets will be written in their respective project folder", required=False)
+    parser.add_argument('-o', '--sample_sheet_outdir', help="Path where the sample sheets will be written in their respective project/run/lane folder", required=False, dest="outdir", default='/nb/Research/processingmgiscratch/processing/sample_sheets')
+    parser.add_argument('-p', '--processing_dir', help="Path where the MGI run processging will happen", required=False, dest="process_dir", default='/nb/Research/processingmgiscratch/processing')
+    parser.add_argument('-r', '--genpipes_repo', help="Path of the GenPipes repository to use for generating the run processing pipeline scripts", required=True, dest="genpipes_repo")
     parser.add_argument('--loglevel', help="Standard Python log level", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
 
     args = parser.parse_args()
@@ -134,7 +212,9 @@ if __name__ == '__main__':
 
     MGI_spreadsheet_name = args.spreadsheet_name
     outdir = args.outdir
+    process_dir = args.process_dir
     authentication_file = args.json_file.name
+    genpipes_repo = args.genpipes_repo
 
     dict_of_columns = parse_google_sheet(
         MGI_spreadsheet_name,
@@ -143,5 +223,7 @@ if __name__ == '__main__':
 
     compare_runs(
         dict_of_columns,
-        outdir
+        outdir,
+        process_dir,
+        genpipes_repo
     )
