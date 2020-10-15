@@ -791,7 +791,7 @@ def parse_mgi_raw_readset_files(
         else:
             readset._is_mgi_index = False
             #readset._index = readset.index_name
-            if re.search("SI-*", readset.index_name):
+            if re.search("SI-", readset.index_name):
                 key = readset.index_name
                 for index_line in index_csv:
                     if index_line and index_line[0] == key:
