@@ -1196,7 +1196,8 @@ wc -l >> {output}""".format(
                 os.path.join(self.output_dir, "report", "fastqc"),
                 summary_report_html
             ],
-            zip_output
+            zip_output,
+            recursive=True
         )
         zip_job.name = "report.zip." + self.run_id + "." + str(self.lane_number)
         zip_job.samples = self.samples
