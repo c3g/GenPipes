@@ -1584,18 +1584,17 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 
 def crosscheck_fingerprint(inputs,
                            output):
-    
-    if not isinstance(inputs, list):
-        inputs = [inputs]
+
+    matrix=output + ".matrix"
         
-        return Job(
-            inputs,
-            [output],
-            [
-                ['gatk_crosscheck_fingerprint', 'module_java'],
-                ['gatk_crosscheck_fingerprint', 'module_gatk']
-            ],
-            command="""\
+    return Job(
+        inputs,
+        [output],
+        [
+            ['gatk_crosscheck_fingerprint', 'module_java'],
+            ['gatk_crosscheck_fingerprint', 'module_gatk']
+        ],
+        command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   CrosscheckFingerprints {options} \\
   --VALIDATION_STRINGENCY SILENT \\
@@ -1603,7 +1602,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   {inputs} \\
   --HAPLOTYPE_MAP {haplotype_database} \\
   --LOD_THRESHOLD {lod_threshold} \\
-  --OUTPUT {output} """.format(
+  --OUTPUT {output} \\
+  --MATRIX_OUTPUT {matrix}""".format(
                 tmp_dir=config.param('gatk_crosscheck_fingerprint', 'tmp_dir'),
                 options=config.param('gatk_crosscheck_fingerprint', 'options'),
                 java_other_options=config.param('gatk_crosscheck_fingerprint', 'java_other_options'),
@@ -1612,6 +1612,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 ram=config.param('gatk_crosscheck_fingerprint', 'ram'),
                 inputs=" \\\n  ".join("--INPUT " + str(input) for input in inputs),
                 output=output,
+                matrix=matrix,
             )
         )
 

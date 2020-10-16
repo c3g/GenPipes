@@ -304,11 +304,13 @@ END
                         ),
                     bash.ln(
                         trim_file_prefix + "-trimmed-pair1.fastq.gz",
-                        trim_file_prefix + ".trim.pair1.fastq.gz"
+                        trim_file_prefix + ".trim.pair1.fastq.gz",
+                        self.output_dir
                         ),
                     bash.ln(
                         trim_file_prefix + "-trimmed-pair2.fastq.gz",
-                        trim_file_prefix + ".trim.pair2.fastq.gz"
+                        trim_file_prefix + ".trim.pair2.fastq.gz",
+                        self.output_dir
                         )
                     ],
                     name="skewer_trimming." + readset.name,
@@ -336,7 +338,7 @@ END
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join("alignment", readset.sample.name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
-            index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
+            index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bai")
 
             fastq1 = ""
             fastq2 = ""
@@ -572,11 +574,13 @@ END
                         ),
                         bash.ln(
                             readset_bam,
-                            sample_bam
+                            sample_bam,
+                            self.output_dir
                             ),
                         bash.ln(
                             readset_index,
                             sample_index,
+                            self.output_dir
                             )
                         ],
                         name="symlink_readset_sample_bam." + sample.name,
@@ -1058,7 +1062,7 @@ END
                         type="alignment"
                         ),
                     deliverables.sym_link(
-                        re.sub(".bam", ".bam.bai", input_bam),
+                        re.sub(".bam", ".bai", input_bam),
                         sample,
                         self.output_dir,
                         type="alignment"
@@ -1880,11 +1884,13 @@ END
                     concat_jobs([
                         bash.ln(
                             haplotype_file_prefix + ".hc.g.vcf.gz",
-                            output_haplotype_file_prefix + ".hc.g.vcf.gz"
+                            output_haplotype_file_prefix + ".hc.g.vcf.gz",
+                            self.output_dir
                             ),
                         bash.ln(
                             haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
-                            output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi"
+                            output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
+                            self.output_dir
                             ),
                         gatk4.genotype_gvcf(
                             output_haplotype_file_prefix + ".hc.g.vcf.gz",
@@ -1946,7 +1952,7 @@ END
                         mkdir_job,
                         gatk4.combine_gvcf(
                             [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
-                            os.path.join("variants", "allSamples.hc.g.vcf.bgz")
+                            os.path.join("variants", "allSamples.hc.g.vcf.gz")
                                 )
                         ],
                         name="gatk_combine_gvcf.AllSamples",
@@ -1963,7 +1969,7 @@ END
                             mkdir_job,
                             gatk.combine_gvcf(
                                 [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
-                                os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz",
+                                os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
                                 intervals=sequences
                                 )
                             ],
@@ -1979,12 +1985,12 @@ END
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 job = gatk4.combine_gvcf(
                     [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
-                    os.path.join("variants", "allSamples.others.hc.g.vcf.bgz"),
+                    os.path.join("variants", "allSamples.others.hc.g.vcf.gz"),
                     exclude_intervals=unique_sequences_per_job_others
                 )
                 job.name = "gatk_combine_gvcf.AllSample" + ".others"
                 job.removable_files = [
-                    os.path.join("variants", "allSamples.others.hc.g.vcf.bgz"),
+                    os.path.join("variants", "allSamples.others.hc.g.vcf.gz"),
                     os.path.join("variants", "allSamples.others.hc.g.vcf.gz.tbi")
                 ]
                 job.samples=self.samples
@@ -2059,7 +2065,7 @@ END
             if nb_haplotype_jobs == 1 or interval_list is not None:
                 job = gatk4.combine_gvcf(
                     [os.path.join("variants", "allSamples." + batch_idx + ".hc.g.vcf.gz") for batch_idx in batches],
-                    os.path.join("variants", "allSamples.hc.g.vcf.bgz")
+                    os.path.join("variants", "allSamples.hc.g.vcf.gz")
                 )
                 job.name = "gatk_combine_gvcf.AllSamples.batches"
                 job.samples = self.samples
@@ -2073,14 +2079,14 @@ END
                 for idx, sequences in enumerate(unique_sequences_per_job):
                     job=gatk4.combine_gvcf(
                         [os.path.join("variants", "allSamples." + batch_idx + "." + str(idx) + ".hc.g.vcf.gz") for batch_idx in batches],
-                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz",
+                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
                         intervals=sequences
                     )
                     job.name = "gatk_combine_gvcf.AllSample" + "." + str(idx)
                     job.samples = self.samples
                     job.removable_files=[
-                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz",
-                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz.tbi"
+                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
+                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz.tbi"
                     ]
 
                     jobs.append(job)
@@ -2088,14 +2094,14 @@ END
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 job = gatk4.combine_gvcf(
                     [os.path.join("variants", "allSamples." + batch_idx + ".others.hc.g.vcf.gz") for batch_idx in batches],
-                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz"),
+                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz"),
                     exclude_intervals=unique_sequences_per_job_others
                 )
                 job.name = "gatk_combine_gvcf.AllSample" + ".others"
                 job.samples = self.samples
                 job.removable_files = [
-                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz"),
-                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz.tbi")
+                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz"),
+                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz.tbi")
                 ]
                 jobs.append(job)
 
@@ -3591,8 +3597,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return [
             [
                 self.picard_sam_to_fastq,
-                self.trimmomatic,
-                self.merge_trimmomatic_stats,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 #self.bwakit_picard_sort_sam,
@@ -3635,8 +3639,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             ],
             [
                 self.picard_sam_to_fastq,
-                self.trimmomatic,
-                self.merge_trimmomatic_stats,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
