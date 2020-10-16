@@ -2384,13 +2384,13 @@ pandoc \\
                 mpileup_file_prefix = os.path.join("alignment", sample.name, "mpileup", sample.name + ".")
                 mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary if sequence['type'] is 'primary']
 
-            gzip_output = mpileup_file_prefix + "mpileup.gz"
-            job = Job(
-                mpileup_inputs,
-                [gzip_output],
-                command="zcat \\\n  " + " \\\n  ".join(mpileup_inputs) + " | \\\n  gzip -c --best > " + gzip_output,
-                name="rawmpileup_cat." + sample.name,
-                samples=[sample]
+                gzip_output = mpileup_file_prefix + "mpileup.gz"
+                job = Job(
+                    mpileup_inputs,
+                    [gzip_output],
+                    command="zcat \\\n  " + " \\\n  ".join(mpileup_inputs) + " | \\\n  gzip -c --best > " + gzip_output,
+                    name="rawmpileup_cat." + sample.name,
+                    samples=[sample]
                 )
             jobs.append(job)
 
