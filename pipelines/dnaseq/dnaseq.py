@@ -2474,32 +2474,37 @@ pandoc \\
 
         jobs = []
         nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', type='posint')
+        
+        output_file_prefix = "variants/allSamples.merged."
 
         if nb_jobs == 1:
-            inputs = ["variants/rawBCF/allSamples.vcf.gz"]
+            [inputs] = ["variants/rawBCF/allSamples.bcf"]
             jobs.append(concat_jobs([
-                htslib.tabix(inputs[0], options="-pvcf"),
+                bcftools.view(
+                    inputs,
+                    output_file_prefix + "flt.vcf.gz",
+                    filter_options="-Oz",
+                )
             ], name="merge_filter_bcf.index"))
             
         else:
             inputs = ["variants/rawBCF/allSamples." + region + ".vcf.gz" for region in self.generate_approximate_windows(nb_jobs)]
-        
-        output_file_prefix = "variants/allSamples.merged."
 
-        bcf = output_file_prefix + "bcf"
-        jobs.append(
-            concat_jobs([
-                samtools.bcftools_cat(
-                    inputs,
-                    bcf
+            jobs.append(
+                concat_jobs([
+                    bcftools.concat(
+                        inputs,
+                        output_file_prefix + "vcf.gz",
+                        options="-Oz",
                     ),
-                samtools.bcftools_view(
-                    bcf,
-                    output_file_prefix+"flt.vcf"
+                    bcftools.view(
+                        output_file_prefix + "vcf.gz",
+                        output_file_prefix + "flt.vcf.gz",
+                        filter_options="-Oz"
                     )
                 ],
-                name="merge_filter_bcf",
-                samples=self.samples
+                    name="merge_filter_bcf",
+                    samples=self.samples
                 )
             )
 
