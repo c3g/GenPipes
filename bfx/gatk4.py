@@ -222,16 +222,16 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --bqsr-recal-file {bqsr_file} \\
   --spark-master local[{threads}] \\
   --output {output}""".format(
-                tmp_dir=config.param('gatk_apply_bqsr', 'tmp_dir'),
-                java_other_options=config.param('gatk_apply_bqsr', 'java_other_options'),
-                ram=config.param('gatk_apply_bqsr', 'ram'),
-                options=config.param('gatk_apply_bqsr', 'options'),
-                threads=config.param('gatk_apply_bqsr', 'threads', type='int'),
-                reference_sequence=config.param('gatk_apply_bqsr', 'genome_2bit', type='filepath'),
-                input=input,
-                bqsr_file=base_quality_score_recalibration,
-                output=output,
-        ))
+            tmp_dir=config.param('gatk_apply_bqsr', 'tmp_dir'),
+            java_other_options=config.param('gatk_apply_bqsr', 'java_other_options'),
+            ram=config.param('gatk_apply_bqsr', 'ram'),
+            options=config.param('gatk_apply_bqsr', 'options'),
+            threads=config.param('gatk_apply_bqsr', 'threads', type='int'),
+            input=input,
+            bqsr_file=base_quality_score_recalibration,
+            output=output,
+            )
+        )
 
 def print_reads(
     input,

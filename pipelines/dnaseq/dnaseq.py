@@ -2392,7 +2392,7 @@ pandoc \\
                     name="rawmpileup_cat." + sample.name,
                     samples=[sample]
                 )
-            jobs.append(job)
+                jobs.append(job)
 
         return jobs
 
