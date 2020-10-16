@@ -409,7 +409,8 @@ gzip {input}{output}""".format(
 
 def zip(
     inputs,
-    zip_output
+    zip_output,
+    recursive=False
     ):
 
     # all the inputs are supposed to be in the same directory
@@ -420,9 +421,10 @@ def zip(
         [zip_output],
         command="""\
 pushd {archive_dir};\\
-zip {output} {inputs};\\
+zip {recursive}{output} {inputs};\\
 popd""".format(
             archive_dir=inputs_dir,
+            recursive="-r" if recursive else "",
             output=zip_output if zip_output else "",
             inputs=" ".join([os.path.basename(input) for input in inputs]) if inputs else ""
         )
