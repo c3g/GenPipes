@@ -505,14 +505,12 @@ END
             readset_bams = self.select_input_files([[os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets], [readset.bam for readset in sample.readsets]])
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
-            mkdir_job = Job(command="mkdir -p " + os.path.dirname(sample_bam))
-
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
                 readset_bam = readset_bams[0]
                 readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
                 sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
-
+    
                 jobs.append(
                     concat_jobs([
                         bash.mkdir(
@@ -522,32 +520,33 @@ END
                             readset_bam,
                             sample_bam,
                             self.output_dir
-                            ),
+                        ),
                         bash.ln(
                             readset_index,
                             sample_index,
                             self.output_dir
-                            )
-                        ],
+                        )
+                    ],
                         name="symlink_readset_sample_bam." + sample.name,
                         samples=[sample]
-                        )
                     )
+                )
 
             elif len(sample.readsets) > 1:
-                job = concat_jobs([
-                    bash.mkdir(
-                        os.path.dirname(sample_bam),
-                        remove=True
-                    ),
-                    sambamba.merge(
-                        readset_bams,
-                        sample_bam
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(
+                            os.path.dirname(sample_bam)
+                        ),
+                        sambamba.merge(
+                            readset_bams,
+                            sample_bam
+                        )
+                    ],
+                        name="sambamba_merge_sam_files." + sample.name,
+                        samples=[sample]
                     )
-                ])
-                job.name = "sambamba_merge_sam_files." + sample.name
-
-            jobs.append(job)
+                )
 
         return jobs
 
@@ -582,7 +581,7 @@ END
                 readset_bam = readset_bams[0]
                 readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
                 sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
-
+    
                 jobs.append(
                     concat_jobs([
                         bash.mkdir(
@@ -592,17 +591,17 @@ END
                             readset_bam,
                             sample_bam,
                             self.output_dir
-                            ),
+                        ),
                         bash.ln(
                             readset_index,
                             sample_index,
                             self.output_dir
-                            )
-                        ],
+                        )
+                    ],
                         name="symlink_readset_sample_bam." + sample.name,
                         samples=[sample]
-                        )
                     )
+                )
 
             elif len(sample.readsets) > 1:
                 jobs.append(
