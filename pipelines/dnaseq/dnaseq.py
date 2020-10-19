@@ -510,24 +510,40 @@ END
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
                 readset_bam = readset_bams[0]
-                if os.path.isabs(readset_bam):
-                    target_readset_bam = readset_bam
-                else:
-                    target_readset_bam = os.path.abspath(readset_bam)
-                readset_index = re.sub("\.bam$", ".bai", readset_bam)
-                target_readset_index = re.sub("\.bam$", ".bai", target_readset_bam)
-                sample_index = re.sub("\.bam$", ".bai", sample_bam)
+                readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
+                sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
 
-                job = concat_jobs([
-                    bash.mkdir(os.path.dirname(sample_bam), remove=True),
-                    Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam, removable_files=[sample_bam]),
-                    Job([readset_index], [sample_index], command="ln -s -f " + target_readset_index + " " + sample_index, removable_files=[sample_index])
-                ], name="symlink_readset_sample_bam." + sample.name)
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(
+                            os.path.dirname(sample_bam)
+                        ),
+                        bash.ln(
+                            readset_bam,
+                            sample_bam,
+                            self.output_dir
+                            ),
+                        bash.ln(
+                            readset_index,
+                            sample_index,
+                            self.output_dir
+                            )
+                        ],
+                        name="symlink_readset_sample_bam." + sample.name,
+                        samples=[sample]
+                        )
+                    )
 
             elif len(sample.readsets) > 1:
                 job = concat_jobs([
-                    bash.mkdir(os.path.dirname(sample_bam), remove=True),
-                    sambamba.merge(readset_bams, sample_bam)
+                    bash.mkdir(
+                        os.path.dirname(sample_bam),
+                        remove=True
+                    ),
+                    sambamba.merge(
+                        readset_bams,
+                        sample_bam
+                    )
                 ])
                 job.name = "sambamba_merge_sam_files." + sample.name
 
