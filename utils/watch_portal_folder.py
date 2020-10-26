@@ -101,7 +101,7 @@ def send_files(options, sample_name, details):
         data = read_json(filepath)
     except Exception as e:
         print(e)
-        print(red('Failed to read file "%s": ' % filename))
+        print(red('Failed to read file "%s": ' % filepath))
         return
 
     previous_data = None
@@ -148,7 +148,8 @@ def send_files(options, sample_name, details):
         if response.status_code == 200 and result.get('ok') is True:
             print('Sent %s (deleting %i files)' % (filepath, len(details)))
         else:
-            print(red('Request failed %d ' % response.status_code) + ('[%s] %s: %s : %s' % (bold(url), file, response.reason, response.text)))
+            print(red('Request failed %d ' % response.status_code) +
+                ('[%s] %s: %s : %s' % (bold(url), filepath, response.reason, response.text)))
             return
 
     shutil.copy(filepath, cache_filepath)
