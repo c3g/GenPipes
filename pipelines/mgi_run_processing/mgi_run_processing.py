@@ -104,6 +104,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         self.argparser.add_argument("-d", "--run", help="Run directory (mandatory)", required=True, dest="run_dir")
         self.argparser.add_argument("--lane", help="Lane number (mandatory)", type=int, required=True, dest="lane_number")
         self.argparser.add_argument("-r", "--readsets", help="Sample sheet for the MGI run to process (mandatory)", type=file, required=True)
+        self.argparser.add_argument("--raw-fastq", help="Raw fastq from the sequencer, with NO DEMULTIPLEXING performed, will be expected by the pipeline", action="store_true", required=False, dest="raw_fastq")
         self.argparser.add_argument("-x", help="First index base to use for demultiplexing (inclusive). The index from the sample sheet will be adjusted according to that value.", type=int, required=False, dest="first_index")
         self.argparser.add_argument("-y", help="Last index base to use for demultiplexing (inclusive)", type=int, required=False, dest="last_index")
         self.argparser.add_argument("-m", help="Number of index mistmaches allowed for demultiplexing (default 1). Barcode collisions are always checked.", type=int, required=False, dest="number_of_mismatches")
@@ -114,7 +115,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
     def readsets(self):
         if not hasattr(self, "_readsets"):
             self._readsets = self.load_readsets()
-            if not self.is_demultiplexed:
+            if not self.is_demultiplexed and len(self.readsets) > 1:
                 self.generate_mgi_lane_barcode_sheet()
                 self.generate_mgi_lane_sample_sheet()
         return self._readsets
@@ -128,23 +129,26 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 self._is_paired_end = False
         return self._is_paired_end
 
+    @property
     def is_dual_index(self):
         if not hasattr(self, "_is_dual_index"):
-            if self.get_index2cycles():
-                self._is_dual_index = True
-            else:
+            if self.get_index2cycles() == 0:
                 self._is_dual_index = False
+            else:
+                self._is_dual_index = True
         return self._is_dual_index
 
     @property
     def is_demultiplexed(self):
         if not hasattr(self, "_is_demultiplexed"):
-            if all(readset.is_mgi_index for readset in self.readsets):
+            if self.args.raw_fastq:
+                self._is_demultiplexed = False
+            elif all(readset.is_mgi_index for readset in self.readsets):
                 self._is_demultiplexed = True
             elif all(not readset.is_mgi_index for readset in self.readsets):
                 self._is_demultiplexed = False
             else:
-                _raise(SanitycheckError("Error: bad index settings in lane... both non-MGI and MGI adapters were detected in the readset file" + self.readset_file))
+                _raise(SanitycheckError("Error: wrong index settings in lane... both non-MGI and MGI adapters were detected in the readset file" + self.readset_file))
         return self._is_demultiplexed
 
     @property
@@ -169,9 +173,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
     @property
     def instrument(self):
-        """
-        The instrument id from the run folder
-        """
         if not hasattr(self, "_instrument"):
             self._instrument = self.get_instrument()
         return self._instrument
@@ -214,12 +215,25 @@ class MGIRunProcessing(common.MUGQICPipeline):
             _raise(SanitycheckError("Error: missing '-d/--run_dir' option!"))
 
     @property
+    def bioinfo_file(self):
+        if not hasattr(self, "_bioinfo_file"):
+            rundir = self.run_dir
+            if "(no_barcode)" in rundir:
+                rundir = rundir.split("(")[0]
+            self._bioinfo_file = os.path.join(rundir, "L0" + str(self.lane_number), "BioInfo.csv")
+        #log.error(self._bioinfo_file)
+        return self._bioinfo_file
+
+    @property
     def flowcell_id(self):
         """
         The flow cell ID from the run folder
         """
         if not hasattr(self, "_flowcell_id"):
             self._flowcell_id = os.path.basename(self.run_dir.rstrip('/'))
+            if "(" in self._flowcell_id:
+                 self._flowcell_id = self._flowcell_id.split("(")[0]
+            #log.error(self._flowcell_id)
         return self._flowcell_id
 
     @property
@@ -387,29 +401,41 @@ class MGIRunProcessing(common.MUGQICPipeline):
         # If no demultiplexing were done on the sequencer i.e. no MGI adpater used... 
         else:
             # ...then extract read2, index1 and index2 from R2 fastq, and do some renamings before demultiplexing ('fastq' step)
+            if len(self.readsets) == 1:
+                readset = self.readsets[0]
+                R1_fastq = readset.fastq1
+                R2_fastq = readset.fastq2 if self.is_paired_end else None
+                I1_fastq = readset.index_fastq1 
+                I2_fastq = readset.index_fastq2 if self.is_dual_index else None
+            else:
+                R1_fastq = os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz")
+                R2_fastq = os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R2.fastq.gz") if self.is_paired_end else None
+                I1_fastq = os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz")
+                I2_fastq = os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I2.fastq.gz") if self.is_dual_index else None
 
             # R1 fastq
-            copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz"))
+            copy_job_output_dependency.append(R1_fastq)
             fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz"))
             fastq_job = [concat_jobs(
                 [
+                    bash.mkdir(os.path.dirname(R1_fastq)),
                     bash.mv(
                         os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz"),
-                        os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz")
+                        R1_fastq
                     ),
                     bash.ln(
-                        os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz"),
+                        R1_fastq,
                         os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz")
                     )
                 ],
                 input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz")],
-                output_dependency=[os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz")],
+                output_dependency=[R1_fastq],
                 name="index.rename_R1_fastq." + self.run_id + "." + str(self.lane_number),
                 samples=self.samples
             )]
             if self.is_paired_end:
                 # R2 fastq
-                copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R2.fastq.gz"))
+                copy_job_output_dependency.append(R2_fastq)
                 fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"))
                 fastq_job.append(
                     pipe_jobs(
@@ -426,7 +452,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             ),
                             bash.gzip(
                                 None,
-                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R2.fastq.gz"),
+                                R2_fastq
                             )
                         ],
                         input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")],
@@ -436,7 +462,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 )
             if self.is_dual_index:
                 # I1 fastq
-                copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"))
+                copy_job_output_dependency.append(I1_fastq)
                 fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"))
                 fastq_job.append(
                     pipe_jobs(
@@ -458,7 +484,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             ),
                             bash.gzip(
                                 None,
-                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"),
+                                I1_fastq
                             )
                         ],
                         input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")],
@@ -467,7 +493,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     )
                 )
                 # I2 fastq
-                copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I2.fastq.gz"))
+                copy_job_output_dependency.append(I2_fastq)
                 fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"))
                 fastq_job.append(
                     pipe_jobs(
@@ -489,7 +515,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             ),
                             bash.gzip(
                                 None,
-                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I2.fastq.gz"),
+                                I2_fastq
                             )
                         ],
                         input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")],
@@ -499,7 +525,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 )
             else:
                 # I1 fastq
-                copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"))
+                copy_job_output_dependency.append(I1_fastq)
                 fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"))
                 fastq_job.append(
                     pipe_jobs(
@@ -521,7 +547,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             ),
                             bash.gzip(
                                 None,
-                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"),
+                                I1_fastq
                             )
                         ],
                         input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")],
@@ -594,7 +620,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
         """
         jobs = []
 
-        if self.is_demultiplexed:
+        if len(self.readsets) == 1:
+            log.info("Only one sample on lane : no need to demultiplex...  Skipping fastq step...")
+
+        elif self.is_demultiplexed:
             log.info("Demultiplexing done on the sequencer... Skipping fastq step...")
 
         else:
@@ -605,6 +634,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             fastq_multx_outputs, final_fastq_jobs = self.generate_fastqdemultx_outputs() 
             tmp_output_dir = os.path.dirname(fastq_multx_outputs[0])
 
+            fastq_multx_outputs.insert(0, os.path.join(tmp_output_dir, self.flowcell_id + "_L0" + str(self.lane_number) + ".demultiplex.metrics"))
             jobs.append(
                 concat_jobs(
                     [
@@ -639,7 +669,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
         """
         jobs = []
 
-        if self.is_demultiplexed:
+        if len(self.readset) == 1:
+            log.info("Only one sample on lane : no need to demultiplex...  Skipping fastq step...")
+
+        elif self.is_demultiplexed:
             log.info("Demultiplexing done on the sequencer... Skipping fastq step...")
 
         else:
@@ -736,7 +769,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
 #                    os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.I1", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq1))),
 #                    os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.I1", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq1)))
 #                ]
-#                if readset.index_type == "DUALINDEX":
+#                if self.is_dual_index:
 #                    input_dict[readset.index_fastq2] = [
 #                        os.path.join(os.path.dirname(readset.index_fastq2), "fastqc.I2", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq2))),
 #                        os.path.join(os.path.dirname(readset.index_fastq2), "fastqc.I2", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq2))),
@@ -1108,7 +1141,7 @@ wc -l >> {output}""".format(
         run_validation_inputs = []
 
         # Add barcodes info to the report_hash
-        if self.is_demultiplexed:
+        if self.is_demultiplexed or len(self.readsets) == 1:
             index_per_readset = {}
             for readset in self.readsets:
                 index_per_readset[readset.name] = [{
@@ -1232,7 +1265,7 @@ wc -l >> {output}""".format(
         """
         Parse the BioInfo.csv file for the number of read 1 cycles in the run
         """
-        bioinfo_csv = csv.reader(open(os.path.join(self.run_dir, "L0" + str(self.lane_number), "BioInfo.csv"), 'rb'))
+        bioinfo_csv = csv.reader(open(self.bioinfo_file, 'rb'))
         for row in bioinfo_csv:
             if row[0] == "Read1 Cycles":
                 return row[1]
@@ -1242,7 +1275,7 @@ wc -l >> {output}""".format(
         """
         Parse the BioInfo.csv file for the number of read 2 cycles in the run
         """
-        bioinfo_csv = csv.reader(open(os.path.join(self.run_dir, "L0" + str(self.lane_number), "BioInfo.csv"), 'rb'))
+        bioinfo_csv = csv.reader(open(self.bioinfo_file, 'rb'))
         for row in bioinfo_csv:
             if row[0] == "Read2 Cycles":
                 return row[1]
@@ -1252,7 +1285,7 @@ wc -l >> {output}""".format(
         """
         Parse the BioInfo.csv file for the number of index 1 cycles in the run
         """
-        bioinfo_csv = csv.reader(open(os.path.join(self.run_dir, "L0" + str(self.lane_number), "BioInfo.csv"), 'rb'))
+        bioinfo_csv = csv.reader(open(self.bioinfo_file, 'rb'))
         for row in bioinfo_csv:
             if row[0] == "Barcode":
                 return row[1]
@@ -1262,17 +1295,20 @@ wc -l >> {output}""".format(
         """
         Parse the BioInfo.csv file for the number of index 2 cycles in the run
         """
-        bioinfo_csv = csv.reader(open(os.path.join(self.run_dir, "L0" + str(self.lane_number), "BioInfo.csv"), 'rb'))
+        bioinfo_csv = csv.reader(open(self.bioinfo_file, 'rb'))
         for row in bioinfo_csv:
             if row[0] == "Dual Barcode":
-                return row[1]
+                if row[1] == '':
+                    return 0
+                else:
+                    return row[1]
         _raise(SanitycheckError("Could not get Index 2 Cycles from " + os.path.join(self.run_dir, "L0" + str(self.lane_number), "BioInfo.csv")))
 
     def get_instrument(self):
         """
         Parse the BioInfo.csv file for the instrument name the run has been running on
         """
-        bioinfo_csv = csv.reader(open(os.path.join(self.run_dir, "L0" + str(self.lane_number), "BioInfo.csv"), 'rb'))
+        bioinfo_csv = csv.reader(open(self.bioinfo_file, 'rb'))
         for row in bioinfo_csv:
             if row[0] == "Machine ID":
                 return row[1]
@@ -1312,7 +1348,7 @@ wc -l >> {output}""".format(
             index_per_readset[readset.name] = readset_indexes
 
             for readset_index in readset_indexes:
-                if readset.index_type == "DUALINDEX":
+                if self.is_dual_index:
                     index_to_use = readset_index['INDEX1']+"-"+ readset_index['INDEX2']
                 else:
                     index_to_use = readset_index['INDEX1']
@@ -1381,7 +1417,7 @@ wc -l >> {output}""".format(
             undet_fastqr1 = os.path.join(output_dir, "tmp", "unmatched_R1.fastq")
             undet_fastqi1 = os.path.join(output_dir, "tmp", "unmatched_I1.fastq")
             undet_fastqr2 = os.path.join(output_dir, "tmp", "unmatched_R2.fastq") if readset.run_type == "PAIRED_END" else None
-            undet_fastqi2 = os.path.join(output_dir, "tmp", "unmatched_I2.fastq") if readset.index_type == "DUALINDEX" else None
+            undet_fastqi2 = os.path.join(output_dir, "tmp", "unmatched_I2.fastq") if self.is_dual_index else None
         else:
             undet_fastqr1 = None
             undet_fastqi1 = None
@@ -1395,7 +1431,7 @@ wc -l >> {output}""".format(
 
             fastq_output_dir = os.path.join(output_dir, 'Project_' + readset.project, 'Sample_' + readset.name)
             # If 10X libraries : 4 indexes per sample
-            if re.search("tenX", readset.library_type):
+            if re.search("SI-", readset.index_name):
                 fastqr1a = os.path.join(output_dir, "tmp", readset.name + "_A_R1.fastq")
                 fastqr1b = os.path.join(output_dir, "tmp", readset.name + "_B_R1.fastq")
                 fastqr1c = os.path.join(output_dir, "tmp", readset.name + "_C_R1.fastq")
@@ -1495,7 +1531,7 @@ wc -l >> {output}""".format(
                     )
 
                     # For dual index demultiplexing, do not forget the fastq of the second index
-                    if readset.index_type == "DUALINDEX" :
+                    if self.is_dual_index:
                         fastqi2a = os.path.join(output_dir, "tmp", readset.name + "_A_I2.fastq")
                         fastqi2b = os.path.join(output_dir, "tmp", readset.name + "_B_I2.fastq")
                         fastqi2c = os.path.join(output_dir, "tmp", readset.name + "_C_I2.fastq")
@@ -1592,7 +1628,7 @@ wc -l >> {output}""".format(
                         ])
                     )
                     # For dual index multiplexing, do not forget the fastq of the second index
-                    if readset.index_type == "DUALINDEX" :
+                    if self.is_dual_index:
                         fastqi2 = os.path.join(output_dir, "tmp", readset.name + "_I2.fastq")
                         fastq_multx_outputs.extend([
                             fastqi2,
@@ -1637,7 +1673,7 @@ wc -l >> {output}""".format(
             undet_fastqr1 = os.path.join(output_dir, "tmp", "unmatched_R1.fastq")
             undet_fastqi1 = os.path.join(output_dir, "tmp", "unmatched_I1.fastq")
             undet_fastqr2 = os.path.join(output_dir, "tmp", "unmatched_R2.fastq") if readset.run_type == "PAIRED_END" else None
-            undet_fastqi2 = os.path.join(output_dir, "tmp", "unmatched_I2.fastq") if readset.index_type == "DUALINDEX" else None
+            undet_fastqi2 = os.path.join(output_dir, "tmp", "unmatched_I2.fastq") if self.is_dual_index else None
         else:
             undet_fastqr1 = None
             undet_fastqi1 = None
@@ -1751,7 +1787,7 @@ wc -l >> {output}""".format(
                     )
 
 #                    # For dual index demultiplexing, do not forget the fastq of the second index
-#                    if readset.index_type == "DUALINDEX" :
+#                    if self.is_dual_index:
 #                        fastqi2a = os.path.join(output_dir, "tmp", readset.name + "_A_I2.fastq")
 #                        fastqi2b = os.path.join(output_dir, "tmp", readset.name + "_B_I2.fastq")
 #                        fastqi2c = os.path.join(output_dir, "tmp", readset.name + "_C_I2.fastq")
@@ -1848,7 +1884,7 @@ wc -l >> {output}""".format(
                         ])
                     )
 #                    # For dual index multiplexing, do not forget the fastq of the second index
-#                    if readset.index_type == "DUALINDEX" :
+#                    if self.is_dual_index:
 #                        fastqi2 = os.path.join(output_dir, "tmp", readset.name + "_I2.fastq")
 #                        demuxfastqs_outputs.extend([
 #                            fastqi2,
@@ -1897,6 +1933,7 @@ wc -l >> {output}""".format(
             index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
 
         index_seq_pattern = "grep '%s,' %s | head -n1 | awk -F',' '{print $%d}'"
+        log.error(readset.library_type)
 
         if readset.library_type == "tenX_sc_RNA_v2" or readset.library_type == "tenX_DNA_v2" or readset.library_type == "FeatureBarcode" or readset.library_type == "tenX_sc_ATAC_v1":
             index1 = readset.index_name
@@ -1938,6 +1975,7 @@ wc -l >> {output}""".format(
                 (actual_index2seq != "") and idx_seq_array.append(actual_index2seq)
 
         else:
+            log.error(readset.index_name)
             if re.search("-", readset.index_name):
                 index1 = readset.index_name.split("-")[0]
                 index2 = readset.index_name.split("-")[1]
@@ -1973,7 +2011,7 @@ wc -l >> {output}""".format(
             index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
 
         index1cycles = int(self.get_index1cycles())
-        index2cycles = int(self.get_index2cycles())
+        index2cycles = int(self.get_index2cycles()) if self.is_dual_index else None
 
         actual_index1seq='';
         actual_index2seq='';
@@ -1995,11 +2033,15 @@ wc -l >> {output}""".format(
             main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, index1_primer), shell=True).strip()
 
             if seqtype == "dnbseqg400" :
-                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, index1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(index1_primeroffset+1)+"-"+str(index1_primeroffset+index1cycles)+" | tr 'ATGC' 'TACG' | rev"), shell=True).strip()
+                if len(index1seq) < index1cycles:
+                    index1_primer_seq = index1_primer[:len(index1seq)-index1cycles]
+                else:
+                    index1_primer_seq = index1_primer
+                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, index1_primer_seq, 2, "s/\[i7\]/"+index1seq+"/g", str(index1_primeroffset+1)+"-"+str(index1_primeroffset+index1cycles)+" | tr 'ATGC' 'TACG' | rev"), shell=True).strip()
             else:
                 actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, index1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(index1_primeroffset+1)+"-"+str(index1_primeroffset+index1cycles)), shell=True).strip()
 
-            if readset.index_type == "DUALINDEX" :
+            if self.is_dual_index:
                 main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, index2_primer), shell=True).strip()
 
                 if seqtype == "hiseqx" or seqtype == "hiseq4000" or seqtype == "iSeq" or seqtype == "dnbseqg400" :
@@ -2016,11 +2058,15 @@ wc -l >> {output}""".format(
             main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, indexn1_primer), shell=True).strip()
 
             if seqtype == "dnbseqg400" :
-                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(indexn1_primeroffset+1)+"-"+str(indexn1_primeroffset+index1cycles))+" | tr 'ATGC' 'TACG' | rev", shell=True).strip()
+                if len(index1seq) < index1cycles:
+                    indexn1_primer_seq = indexn1_primer[:len(index1seq)-index1cycles]
+                else:
+                    indexn1_primer_seq = indexn1_primer
+                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn1_primer_seq, 2, "s/\[i7\]/"+index1seq+"/g", str(indexn1_primeroffset+1)+"-"+str(indexn1_primeroffset+index1cycles))+" | tr 'ATGC' 'TACG' | rev", shell=True).strip()
             else:
                 actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(indexn1_primeroffset+1)+"-"+str(indexn1_primeroffset+index1cycles)), shell=True).strip()
 
-            if readset.index_type == "DUALINDEX" :
+            if self.is_dual_index:
                 main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, indexn2_primer), shell=True).strip()
 
                 if seqtype == "hiseqx" or seqtype == "hiseq4000" or seqtype == "iSeq" or seqtype == "dnbseqg400" :
@@ -2044,10 +2090,12 @@ wc -l >> {output}""".format(
 
         return parse_mgi_raw_readset_files(
             self.readset_file,
-            self.run_dir,
+            self.bioinfo_file,
             "PAIRED_END" if self.is_paired_end else "SINGLE_END",
             self.flowcell_id,
             int(self.lane_number),
+            self.get_read1cycles(),
+            self.get_read2cycles(),
             self.output_dir
         )
 
