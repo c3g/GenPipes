@@ -86,7 +86,9 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             # trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             host_removal_directory = os.path.join("host_removal", readset.sample.name)
             readset_bam = os.path.join(host_removal_directory, readset.name + ".hybrid.sorted.bam")
-            readset_bam_host_removed = os.path.join(host_removal_directory, readset.name + ".host_removed.nsorted.bam")
+            readset_bam_host_removed_sorted = os.path.join(host_removal_directory, readset.name + ".host_removed.sorted.bam")
+            readset_bam_host_removed_sorted_index = os.path.join(host_removal_directory, readset.name + ".host_removed.sorted.bam.bai")
+            readset_bam_host_removed_name_sorted = os.path.join(host_removal_directory, readset.name + ".host_removed.nsorted.bam")
 
             output_other = os.path.join(host_removal_directory, readset.name + ".host_removed.other.fastq.gz")
             output_single = os.path.join(host_removal_directory, readset.name + ".host_removed.single.fastq.gz")
@@ -148,15 +150,27 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                             None,
                             options=config.param('host_reads_removal', 'sambamba_view_other_options')
                             ),
+                        Job(
+                        input_files=["/dev/stdin"],
+                        output_files=[readset_bam_host_removed_sorted],
+                        command="""tee {output_file}""".format(
+                            output_file=readset_bam_host_removed_sorted,
+                            )
+                        ),
                         sambamba.sort(
                             "/dev/stdin",
-                            readset_bam_host_removed,
+                            readset_bam_host_removed_name_sorted,
                             tmp_dir=config.param('host_reads_removal', 'tmp_dir', required=True),
                             other_options=config.param('host_reads_removal', 'sambamba_sort_other_options', required=False)
                             )
                         ]),
+                    sambamba.index(
+                        readset_bam_host_removed_sorted,
+                        readset_bam_host_removed_sorted_index,
+                        other_options=config.param('host_reads_removal', 'sambamba_index_other_options', required=False)
+                        ),
                     samtools.bam2fq(
-                        input_bam=readset_bam_host_removed,
+                        input_bam=readset_bam_host_removed_name_sorted,
                         output_pair1=output_pair1,
                         output_pair2=output_pair2,
                         output_other=output_other,
@@ -787,71 +801,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         return jobs
 
 
-    def rename_consensus_header(self):
-        """
-        Rename reads headers
-        """
-
-        jobs = []
-        for sample in self.samples:
-            consensus_directory = os.path.join("consensus", sample.name)
-            [input_fa] = self.select_input_files([
-                [os.path.join(consensus_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
-                [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
-                [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
-            ])
-            quast_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics")
-            quast_html = os.path.join(quast_directory, "report.html")
-            quast_tsv = os.path.join(quast_directory, "report.tsv")
-
-            output_fa = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
-            output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="${STATUS}"))
-
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(output_fa)),
-                    Job(
-                        input_files=[quast_tsv, quast_html],
-                        output_files=[],
-                        command="""\\
-cons_len=`grep -oP "Total length \(>= 0 bp\)\\t\K.*?(?=$)" {quast_tsv}`
-N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\[\K.*?(?=])" {quast_html}`
-cons_perc_N=`echo "scale=2; 100*$N_count/$cons_len" | bc -l`
-STATUS=`awk -v cons_perc_N=$cons_perc_N 'BEGIN {{ if (cons_perc_N < 1) {{print "pass"}} else if (cons_perc_N >= 1 && cons_perc_N <= 5) {{print "flag"}} else if (cons_perc_N > 5) {{print "rej"}} }}'`
-export STATUS""".format(
-    quast_html=quast_html,
-    quast_tsv=quast_tsv
-    )
-                        ),
-                    Job(
-                        input_files=[input_fa],
-                        output_files=[output_fa],
-                        command="""\\
-awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:{assemb_method}|snv_call_method:{snv_call_method}"; next}}{{print}}' < {input_fa} > {output_status_fa} && \\
-ln -sf {output_status_fa_basename} {output_fa}
-""".format(
-    country=config.param('rename_consensus_header', 'country', required=False),
-    province=config.param('rename_consensus_header', 'province', required=False),
-    year=config.param('rename_consensus_header', 'year', required=False),
-    seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
-    assemb_method=config.param('rename_consensus_header', 'assemb_method', required=False),
-    snv_call_method=config.param('rename_consensus_header', 'snv_call_method', required=False),
-    sample=sample.name,
-    input_fa=input_fa,
-    output_status_fa_basename=os.path.basename(output_status_fa),
-    output_status_fa=output_status_fa,
-    output_fa=os.path.basename(output_fa)
-    )
-                        )
-                ],
-                name="rename_consensus_header." + sample.name,
-                samples=[sample]
-                )
-            )
-
-        return jobs
-
-
     def quast_consensus_metrics(self):
         """
         Generate QUAST metrics on consensus
@@ -880,6 +829,94 @@ ln -sf {output_status_fa_basename} {output_fa}
                     samples=[sample]
                     )
                 )
+
+        return jobs
+
+
+    def rename_consensus_header(self):
+        """
+        Rename reads headers
+        """
+
+        jobs = []
+        for sample in self.samples:
+            consensus_directory = os.path.join("consensus", sample.name)
+            [input_fa] = self.select_input_files([
+                [os.path.join(consensus_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
+                [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
+                [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
+            ])
+            quast_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics")
+            quast_html = os.path.join(quast_directory, "report.html")
+            quast_tsv = os.path.join(quast_directory, "report.tsv")
+
+            output_fa = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
+            output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="${STATUS}"))
+
+            variant_directory = os.path.join("variant", sample.name)
+            [input_vcf] = self.select_input_files([
+                [os.path.join(variant_directory, sample.name + ".sorted.filtered.primerTrim.vcf.gz")],
+                [os.path.join(variant_directory, sample.name + ".sorted.filtered.vcf.gz")],
+                [os.path.join(variant_directory, sample.name + ".sorted.vcf.gz")]
+            ])
+            annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
+
+            alignment_directory = os.path.join("alignment", sample.name)
+            [input_bam] = self.select_input_files([
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+            ])
+
+            bedgraph_file = os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(input_bam)))
+
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(os.path.dirname(output_fa)),
+                    Job(
+                        input_files=[quast_tsv, quast_html],
+                        output_files=[],
+                        command="""\\
+cons_len=`grep -oP "Total length \(>= 0 bp\)\\t\K.*?(?=$)" {quast_tsv}`
+N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\[\K.*?(?=])" {quast_html}`
+cons_perc_N=`echo "scale=2; 100*$N_count/$cons_len" | bc -l`
+frameshift=`if grep -q "frameshift_variant" {annotated_vcf}; then echo "FLAG"; fi`
+genome_size=`awk '{{print $2}}' {genome_file}`
+bam_cov50X=`awk '{{if ($4 > 50) {{count = count + $3-$2}}}} END {{if (count) {{print count}} else {{print 0}}}}' {bedgraph_file}`
+bam_cov50X=`echo "scale=2; 100*$bam_cov50X/$genome_size" | bc -l`
+STATUS=`awk -v bam_cov50X=$bam_cov50X -v frameshift=$frameshift -v cons_perc_N=$cons_perc_N 'BEGIN {{ if (cons_perc_N < 1 && (frameshift =! "FLAG" || bam_cov50X >= 90)) {{print "pass"}} else if ((cons_perc_N >= 1 && cons_perc_N <= 5) || && frameshift == "FLAG" || bam_cov50X < 90) {{print "flag"}} else if (cons_perc_N > 5) {{print "rej"}} }}'`
+export STATUS""".format(
+    quast_html=quast_html,
+    quast_tsv=quast_tsv,
+    genome_file=config.param('DEFAULT', 'igv_genome', required=False),
+    annotated_vcf=annotated_vcf,
+    bedgraph_file=bedgraph_file
+    )
+                        ),
+                    Job(
+                        input_files=[input_fa],
+                        output_files=[output_fa],
+                        command="""\\
+awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:{assemb_method}|snv_call_method:{snv_call_method}"; next}}{{print}}' < {input_fa} > {output_status_fa} && \\
+ln -sf {output_status_fa_basename} {output_fa}
+""".format(
+    country=config.param('rename_consensus_header', 'country', required=False),
+    province=config.param('rename_consensus_header', 'province', required=False),
+    year=config.param('rename_consensus_header', 'year', required=False),
+    seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
+    assemb_method=config.param('rename_consensus_header', 'assemb_method', required=False),
+    snv_call_method=config.param('rename_consensus_header', 'snv_call_method', required=False),
+    sample=sample.name,
+    input_fa=input_fa,
+    output_status_fa_basename=os.path.basename(output_status_fa),
+    output_status_fa=output_status_fa,
+    output_fa=os.path.basename(output_fa)
+    )
+                        )
+                ],
+                name="rename_consensus_header." + sample.name,
+                samples=[sample]
+                )
+            )
 
         return jobs
 
