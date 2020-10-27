@@ -156,23 +156,26 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     self._is_paired_end[lane] = False
         return self._is_paired_end
 
+    @property
     def is_dual_index(self):
         if not hasattr(self, "_is_dual_index"):
-            if self.get_index2cycles():
-                self._is_dual_index = True
-            else:
+            if self.get_index2cycles() == 0:
                 self._is_dual_index = False
+            else:
+                self._is_dual_index = True
         return self._is_dual_index
 
     @property
     def is_demultiplexed(self):
         if not hasattr(self, "_is_demultiplexed"):
-            if all(readset.is_mgi_index for readset in self.readsets):
+            if self.args.raw_fastq:
+                self._is_demultiplexed = False
+            elif all(readset.is_mgi_index for readset in self.readsets):
                 self._is_demultiplexed = True
             elif all(not readset.is_mgi_index for readset in self.readsets):
                 self._is_demultiplexed = False
             else:
-                _raise(SanitycheckError("Error: bad index settings in lane... both non-MGI and MGI adapters were detected in the readset file" + self.readset_file))
+                _raise(SanitycheckError("Error: wrong index settings in lane... both non-MGI and MGI adapters were detected in the readset file" + self.readset_file))
         return self._is_demultiplexed
 
     @property
@@ -312,12 +315,25 @@ class MGIRunProcessing(common.MUGQICPipeline):
             _raise(SanitycheckError("Error: missing '-d/--run_dir' option!"))
 
     @property
+    def bioinfo_file(self):
+        if not hasattr(self, "_bioinfo_file"):
+            rundir = self.run_dir
+            if "(no_barcode)" in rundir:
+                rundir = rundir.split("(")[0]
+            self._bioinfo_file = os.path.join(rundir, "L0" + str(self.lane_number), "BioInfo.csv")
+        #log.error(self._bioinfo_file)
+        return self._bioinfo_file
+
+    @property
     def flowcell_id(self):
         """
         The flow cell ID from the run folder
         """
         if not hasattr(self, "_flowcell_id"):
             self._flowcell_id = os.path.basename(self.run_dir.rstrip('/'))
+            if "(" in self._flowcell_id:
+                 self._flowcell_id = self._flowcell_id.split("(")[0]
+            #log.error(self._flowcell_id)
         return self._flowcell_id
 
     @property
