@@ -708,7 +708,7 @@ class MGIRawReadset(MGIReadset):
 
     @property
     def is_rna(self):
-        return False
+        return self._is_rna
 
     @property
     def library_source(self):
@@ -721,6 +721,10 @@ class MGIRawReadset(MGIReadset):
     @property
     def library_type(self):
         return self._library_type
+
+    @property
+    def protocol(self):
+        return self._protocol
 
     @property
     def annotation_files(self):
@@ -743,10 +747,12 @@ class MGIRawReadset(MGIReadset):
 
 def parse_mgi_raw_readset_files(
     readset_file,
-    run_folder,
+    bioinfo_file,
     run_type,
     flowcell,
     lane,
+    nb_cycles_r1,
+    nb_cycles_r2,
     output_dir
     ):
 
@@ -798,17 +804,18 @@ def parse_mgi_raw_readset_files(
         #log.error(readset.index_name)
         if "MGI" in line['Index']:
             readset._is_mgi_index = True
+            readset._library_type = "MGISeq"
             m = re.search("\D+(?P<index>\d+)", line['Index'])
             if m:
                 #log.error(str(int(m.group('index'))))
                 readset._index_number = m.group('index').lstrip("0")
-            bioinfo_csv = csv.reader(open(os.path.join(run_folder, "L0" + str(lane), "BioInfo.csv"), 'rb'))
+            bioinfo_csv = csv.reader(open(bioinfo_file, 'rb'))
             for row in bioinfo_csv:
                 if row[0] == "Dual Barcode":
                     readset._index_type = row[1]
                     break
             else:
-                _raise(SanitycheckError("Could not get Index 2 Cycles from " + os.path.join(run_folder, "L0" + str(lane), "BioInfo.csv")))
+                _raise(SanitycheckError("Could not get Index 2 Cycles from " + bioinfo_file))
         else:
             readset._is_mgi_index = False
             #readset._index = readset.index_name
@@ -857,7 +864,11 @@ def parse_mgi_raw_readset_files(
 
         readset._genomic_database = config.param('DEFAULT', 'scientific_name', required=True) + "." + config.param('DEFAULT', 'assembly', required=True)
 
+#        log.error(readset.library_source)
+#        log.error(readset.library_type)
+#        log.error(readset.protocol)
         readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
+#        log.error(readset.is_rna)
 
         if line.get('BED Files', None):
             readset._beds = line['BED Files'].split(";")
@@ -894,8 +905,13 @@ def parse_mgi_raw_readset_files(
             folder_name = readset.genomic_database
             current_genome_folder = os.path.join(genome_root, folder_name)
 
+            if readset.protocol == "10X_scRNA":
+                nb_cycles = nb_cycles_r2
+            else:
+                nb_cycles = nb_cycles_r1
+
             if readset.is_rna:
-                readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, nb_cycles)
+                readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles))
             else:
                 readset._aligner = run_processing_aligner.BwaRunProcessingAligner(output_dir, current_genome_folder)
 
