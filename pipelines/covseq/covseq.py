@@ -152,7 +152,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                             ),
                         Job(
                             input_files=["/dev/stdin"],
-                            output_files=[readset_bam_host_removed_sorted],
+                            output_files=readset_bam_host_removed_sorted,
                             command="""tee {output_file}""".format(
                                 output_file=readset_bam_host_removed_sorted,
                                 )
