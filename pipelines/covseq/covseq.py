@@ -144,26 +144,17 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                             other_options=""
                             )
                         ]),
-                    pipe_jobs([
-                        sambamba.view(
+                    sambamba.view(
                             readset_bam,
-                            None,
+                            readset_bam_host_removed_sorted,
                             options=config.param('host_reads_removal', 'sambamba_view_other_options')
                             ),
-                        Job(
-                            input_files=["/dev/stdin"],
-                            output_files=readset_bam_host_removed_sorted,
-                            command="""tee {output_file}""".format(
-                                output_file=readset_bam_host_removed_sorted,
-                                )
-                            ),
-                        sambamba.sort(
-                            "/dev/stdin",
+                    sambamba.sort(
+                            readset_bam_host_removed_sorted,
                             readset_bam_host_removed_name_sorted,
                             tmp_dir=config.param('host_reads_removal', 'tmp_dir', required=True),
                             other_options=config.param('host_reads_removal', 'sambamba_sort_other_options', required=False)
-                            )
-                        ]),
+                            ),
                     sambamba.index(
                         readset_bam_host_removed_sorted,
                         readset_bam_host_removed_sorted_index,
