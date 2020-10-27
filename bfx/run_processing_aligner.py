@@ -241,16 +241,16 @@ class StarRunProcessingAligner(RunProcessingAligner):
         # Adjusting the nb of cycles
         if 49 <= nb_cycles <= 51:
             nb_cycles = 50
-        elif 74<= nb_cycles <= 76:
+        elif 74 <= nb_cycles <= 76:
             nb_cycles = 75
-        elif 99<= nb_cycles <= 101:
+        elif 99 <= nb_cycles <= 101:
             nb_cycles = 100
-        elif 124<= nb_cycles <= 126:
+        elif 124 <= nb_cycles <= 126:
             nb_cycles = 125
         elif 149 <= nb_cycles <= 151:
             nb_cycles = 150
         else:
-            log.error("NumCycles " + nb_cycles + " not supported for Star aligner...")
+            raise NotImplementedError("NumCycles " + nb_cycles + " not supported for Star aligner...")
         self._nb_cycles = nb_cycles
 
     @property
