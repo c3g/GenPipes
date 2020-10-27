@@ -310,7 +310,7 @@ def md5sum(
         command="""\
 md5sum {check}{input}{output}""".format(
             check="-c " if check else "",
-            input=" ".join([os.path.abspath(input) for input in inputs]),
+            input=" ".join(["'"+os.path.abspath(input)+"'" for input in inputs]),
             output=" > " + os.path.abspath(output) if output else ""
         )
     )
@@ -424,7 +424,7 @@ pushd {archive_dir};\\
 zip {recursive}{output} {inputs};\\
 popd""".format(
             archive_dir=inputs_dir,
-            recursive="-r" if recursive else "",
+            recursive="-r " if recursive else "",
             output=zip_output if zip_output else "",
             inputs=" ".join([os.path.basename(input) for input in inputs]) if inputs else ""
         )
