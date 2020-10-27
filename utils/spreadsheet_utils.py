@@ -58,7 +58,7 @@ def parse_google_sheet(sheet_name, authentication_file):
     # Actual data starts at line 3 
     for row in list_of_lists[2:]:
         for h, v in zip(header, row):
-            columns[h].append(v.encode('utf8').rstrip().replace(" ", "_"))
+            columns[h].append(v.encode('utf8').lstrip().rstrip().replace(" ", "_"))
     # Add the Readset column
     columns["Readset"] = [sample + "_" + library for sample, library in zip(columns["Sample_Name"], columns["Library"])]
 
@@ -99,6 +99,12 @@ def print_sample_sheet(
 
     for x in range(len(columns['RUN_ID'])):
         if columns['Project_ID'][x] == project and columns['RUN_ID'][x] == run and columns['Lane'][x] == str(lane):
+            if not columns['Library_Source'][x]:
+                logger.error("Missing Library Source in run '" + run + "' (sample '" + columns['Sample'][x] + "') Skipping...")
+                break
+            if not columns['Flowcell_ID'][x]:
+                logger.error("Missing Flowcell ID in run '" + run + "' (sample '" + columns['Sample'][x] + "') Skipping...")
+                break
             if columns['Pool_ID'][x] != "FAIL":
                 f.writerow([columns[col][x] for col in header])
             else:
