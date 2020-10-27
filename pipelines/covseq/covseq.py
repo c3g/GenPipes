@@ -151,12 +151,12 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                             options=config.param('host_reads_removal', 'sambamba_view_other_options')
                             ),
                         Job(
-                        input_files=["/dev/stdin"],
-                        output_files=[readset_bam_host_removed_sorted],
-                        command="""tee {output_file}""".format(
-                            output_file=readset_bam_host_removed_sorted,
-                            )
-                        ),
+                            input_files=["/dev/stdin"],
+                            output_files=[readset_bam_host_removed_sorted],
+                            command="""tee {output_file}""".format(
+                                output_file=readset_bam_host_removed_sorted,
+                                )
+                            ),
                         sambamba.sort(
                             "/dev/stdin",
                             readset_bam_host_removed_name_sorted,
