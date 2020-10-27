@@ -25,6 +25,7 @@ import gspread
 import os
 import textwrap
 import subprocess
+import csv
 
 from spreadsheet_utils import print_sample_sheet, parse_google_sheet
 
@@ -170,14 +171,24 @@ def print_genpipes_scripts(
     genpipes_repo
     ):
 
-    if not os.path.exists(process_dir+"/genpipes_scripts/"+project+"/"+run):
-        os.makedirs(process_dir+"/genpipes_scripts/"+project+"/"+run)
-    genpipes_script = open(process_dir+"/genpipes_scripts/"+project+"/"+run+"/"+project+"."+run+".L0"+lane+".genpipes_script.sh", 'wb+') 
+    # Check if --raw-fastq' flag should be used int the pipeline call
+    sample_sheet = os.path.join(samplesheet_dir, project, run, "L0"+lane, project+"."+run+".L0"+lane+".sample_sheet.csv")
+    sample_sheet_rows = [row for row in csv.DictReader(open(sample_sheet, 'rb'), delimiter=',')]
+    print len(sample_sheet_rows)
+    print sample_sheet_rows[0]['Index']
+    if len(sample_sheet_rows) == 1 and "MGI" in sample_sheet_rows[0]['Index']:
+        raw_fastq = True
+    else: 
+        raw_fastq = False
+
+    if not os.path.exists(process_dir+"/../genpipes_scripts/"+project+"/"+run):
+        os.makedirs(process_dir+"/../genpipes_scripts/"+project+"/"+run)
+    genpipes_script = open(process_dir+"/../genpipes_scripts/"+project+"/"+run+"/"+project+"."+run+".L0"+lane+".genpipes_script.sh", 'wb+') 
     genpipes_script.write("""\
 mkdir -p {process_dir}/{project}/{run}/L0{lane} && \\
 python {genpipes_repo}/pipelines/mgi_run_processing/mgi_run_processing.py \\
   -c {genpipes_repo}/pipelines/mgi_run_processing/mgi_run_processing.base.ini $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh38/Homo_sapiens.GRCh38.ini \\
-  --no-json -l debug \\
+  --no-json -l debug {raw_fastq}\\
   -d /nb/Research/MGISeq/{sequencer_path}/{flowcell} \\
   -r {samplesheet_dir}/{project}/{run}/L0{lane}/{project}.{run}.L0{lane}.sample_sheet.csv \\
   --lane {lane} \\
@@ -187,6 +198,7 @@ python {genpipes_repo}/pipelines/mgi_run_processing/mgi_run_processing.py \\
         process_dir=process_dir,
         samplesheet_dir=samplesheet_dir,
         genpipes_repo=genpipes_repo,
+        raw_fastq="--raw-fastq " if raw_fastq else "",
         project=project,
         flowcell=flowcell,
         run=run,
@@ -194,13 +206,13 @@ python {genpipes_repo}/pipelines/mgi_run_processing/mgi_run_processing.py \\
         sequencer_path=sequencer_path
     ))
     genpipes_script.close()
-    subprocess.call("bash "+process_dir+"/genpipes_scripts/"+project+"/"+run+"/"+project+"."+run+".L0"+lane+".genpipes_script.sh", shell=True)
+    subprocess.call("bash "+process_dir+"/../genpipes_scripts/"+project+"/"+run+"/"+project+"."+run+".L0"+lane+".genpipes_script.sh", shell=True)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--spreadsheet_name', help='Name of the MGI run management Google spreadsheet to parse', required=False, dest="spreadsheet_name", default='ALL MGI Run Management')
     parser.add_argument('-a', '--authentication_file', help="JSON authentication file used to connect the spreadsheets", type=file, required=True, dest="json_file")
-    parser.add_argument('-o', '--sample_sheet_outdir', help="Path where the sample sheets will be written in their respective project/run/lane folder", required=False, dest="outdir", default='/nb/Research/processingmgiscratch/processing/sample_sheets')
+    parser.add_argument('-o', '--sample_sheet_outdir', help="Path where the sample sheets will be written in their respective project/run/lane folder", required=False, dest="outdir", default='/nb/Research/processingmgiscratch/sample_sheets')
     parser.add_argument('-p', '--processing_dir', help="Path where the MGI run processging will happen", required=False, dest="process_dir", default='/nb/Research/processingmgiscratch/processing')
     parser.add_argument('-r', '--genpipes_repo', help="Path of the GenPipes repository to use for generating the run processing pipeline scripts", required=True, dest="genpipes_repo")
     parser.add_argument('--loglevel', help="Standard Python log level", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
