@@ -149,8 +149,8 @@ def fastqmultx(
 fastq-multx \\
   -B {barcode} \\
   -m {mismatches} \\
-  {input_I1} \\
-  {input_I2} \\
+  {input_I1_fake} \\
+  {input_I2_fake} \\
   {input_R1} \\
   {input_R2} \\
   {output_I1_fake} \\
