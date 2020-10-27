@@ -158,23 +158,26 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     self._is_paired_end[lane] = False
         return self._is_paired_end
 
+    @property
     def is_dual_index(self):
         if not hasattr(self, "_is_dual_index"):
-            if self.get_index2cycles():
-                self._is_dual_index = True
-            else:
+            if self.get_index2cycles() == 0:
                 self._is_dual_index = False
+            else:
+                self._is_dual_index = True
         return self._is_dual_index
 
     @property
     def is_demultiplexed(self):
         if not hasattr(self, "_is_demultiplexed"):
-            if all(readset.is_mgi_index for readset in self.readsets):
+            if self.args.raw_fastq:
+                self._is_demultiplexed = False
+            elif all(readset.is_mgi_index for readset in self.readsets):
                 self._is_demultiplexed = True
             elif all(not readset.is_mgi_index for readset in self.readsets):
                 self._is_demultiplexed = False
             else:
-                _raise(SanitycheckError("Error: bad index settings in lane... both non-MGI and MGI adapters were detected in the readset file" + self.readset_file))
+                _raise(SanitycheckError("Error: wrong index settings in lane... both non-MGI and MGI adapters were detected in the readset file" + self.readset_file))
         return self._is_demultiplexed
 
     @property
@@ -346,12 +349,25 @@ class MGIRunProcessing(common.MUGQICPipeline):
             _raise(SanitycheckError("Error: missing '-d/--run_dir' option!"))
 
     @property
+    def bioinfo_file(self):
+        if not hasattr(self, "_bioinfo_file"):
+            rundir = self.run_dir
+            if "(no_barcode)" in rundir:
+                rundir = rundir.split("(")[0]
+            self._bioinfo_file = os.path.join(rundir, "L0" + str(self.lane_number), "BioInfo.csv")
+        #log.error(self._bioinfo_file)
+        return self._bioinfo_file
+
+    @property
     def flowcell_id(self):
         """
         The flow cell ID from the run folder
         """
         if not hasattr(self, "_flowcell_id"):
             self._flowcell_id = os.path.basename(self.run_dir.rstrip('/'))
+            if "(" in self._flowcell_id:
+                 self._flowcell_id = self._flowcell_id.split("(")[0]
+            #log.error(self._flowcell_id)
         return self._flowcell_id
 
     @property
@@ -1125,29 +1141,41 @@ class MGIRunProcessing(common.MUGQICPipeline):
         # If no demultiplexing were done on the sequencer i.e. no MGI adpater used... 
         else:
             # ...then extract read2, index1 and index2 from R2 fastq, and do some renamings before demultiplexing ('fastq' step)
+            if len(self.readsets) == 1:
+                readset = self.readsets[0]
+                R1_fastq = readset.fastq1
+                R2_fastq = readset.fastq2 if self.is_paired_end else None
+                I1_fastq = readset.index_fastq1 
+                I2_fastq = readset.index_fastq2 if self.is_dual_index else None
+            else:
+                R1_fastq = os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz")
+                R2_fastq = os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R2.fastq.gz") if self.is_paired_end else None
+                I1_fastq = os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz")
+                I2_fastq = os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I2.fastq.gz") if self.is_dual_index else None
 
             # R1 fastq
-            copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz"))
+            copy_job_output_dependency.append(R1_fastq)
             fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz"))
             fastq_job = [concat_jobs(
                 [
+                    bash.mkdir(os.path.dirname(R1_fastq)),
                     bash.mv(
                         os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz"),
-                        os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz")
+                        R1_fastq
                     ),
                     bash.ln(
-                        os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz"),
+                        R1_fastq,
                         os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz")
                     )
                 ],
                 input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz")],
-                output_dependency=[os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz")],
+                output_dependency=[R1_fastq],
                 name="index.rename_R1_fastq." + self.run_id + "." + str(self.lane_number),
                 samples=self.samples
             )]
             if self.is_paired_end:
                 # R2 fastq
-                copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R2.fastq.gz"))
+                copy_job_output_dependency.append(R2_fastq)
                 fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"))
                 fastq_job.append(
                     pipe_jobs(
@@ -1164,7 +1192,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             ),
                             bash.gzip(
                                 None,
-                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R2.fastq.gz"),
+                                R2_fastq
                             )
                         ],
                         input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")],
@@ -1174,7 +1202,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 )
             if self.is_dual_index:
                 # I1 fastq
-                copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"))
+                copy_job_output_dependency.append(I1_fastq)
                 fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"))
                 fastq_job.append(
                     pipe_jobs(
@@ -1196,7 +1224,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             ),
                             bash.gzip(
                                 None,
-                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"),
+                                I1_fastq
                             )
                         ],
                         input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")],
@@ -1205,7 +1233,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     )
                 )
                 # I2 fastq
-                copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I2.fastq.gz"))
+                copy_job_output_dependency.append(I2_fastq)
                 fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"))
                 fastq_job.append(
                     pipe_jobs(
@@ -1227,7 +1255,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             ),
                             bash.gzip(
                                 None,
-                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I2.fastq.gz"),
+                                I2_fastq
                             )
                         ],
                         input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")],
@@ -1237,7 +1265,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 )
             else:
                 # I1 fastq
-                copy_job_output_dependency.append(os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"))
+                copy_job_output_dependency.append(I1_fastq)
                 fastq_job_input_dependency.append(os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"))
                 fastq_job.append(
                     pipe_jobs(
@@ -1259,7 +1287,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             ),
                             bash.gzip(
                                 None,
-                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"),
+                                I1_fastq
                             )
                         ],
                         input_dependency=[os.path.join(self.run_dir, "L0" + str(self.lane_number), self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")],
@@ -1332,7 +1360,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
         """
         jobs = []
 
-        if self.is_demultiplexed:
+        if len(self.readsets) == 1:
+            log.info("Only one sample on lane : no need to demultiplex...  Skipping fastq step...")
+
+        elif self.is_demultiplexed:
             log.info("Demultiplexing done on the sequencer... Skipping fastq step...")
 
         else:
@@ -1343,6 +1374,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             fastq_multx_outputs, final_fastq_jobs = self.generate_fastqdemultx_outputs() 
             tmp_output_dir = os.path.dirname(fastq_multx_outputs[0])
 
+            fastq_multx_outputs.insert(0, os.path.join(tmp_output_dir, self.flowcell_id + "_L0" + str(self.lane_number) + ".demultiplex.metrics"))
             jobs.append(
                 concat_jobs(
                     [
@@ -1377,7 +1409,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
         """
         jobs = []
 
-        if self.is_demultiplexed:
+        if len(self.readset) == 1:
+            log.info("Only one sample on lane : no need to demultiplex...  Skipping fastq step...")
+
+        elif self.is_demultiplexed:
             log.info("Demultiplexing done on the sequencer... Skipping fastq step...")
 
         else:
@@ -1560,7 +1595,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
 #                    os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.I1", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq1))),
 #                    os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.I1", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq1)))
 #                ]
-#                if readset.index_type == "DUALINDEX":
+#                if self.is_dual_index:
 #                    input_dict[readset.index_fastq2] = [
 #                        os.path.join(os.path.dirname(readset.index_fastq2), "fastqc.I2", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq2))),
 #                        os.path.join(os.path.dirname(readset.index_fastq2), "fastqc.I2", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq2))),
@@ -2832,8 +2867,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 r2_out=readset.fastq2 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
                 i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
             )
-
-
 
     def get_smallest_index_length(self, lane):
         """
