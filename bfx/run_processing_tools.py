@@ -132,6 +132,7 @@ def fastqmultx(
     I2_fastq=None
     ):
 
+    metrics_file = outputs[0]
     output_dir = os.path.dirname(outputs[0])
     return Job(
         [
@@ -148,24 +149,34 @@ def fastqmultx(
 fastq-multx \\
   -B {barcode} \\
   -m {mismatches} \\
-  {input_I1} \\
-  {input_I2} \\
+  {input_I1_fake} \\
+  {input_I2_fake} \\
   {input_R1} \\
   {input_R2} \\
+  {input_I1} \\
+  {input_I2} \\
+  {output_I1_fake} \\
+  {output_I2_fake} \\
+  {output_R1} \\
+  {output_R2} \\
   {output_I1} \\
   {output_I2} \\
-  {output_R1} \\
-  {output_R2}""".format(
+  > {stdout_metrics}""".format(
             barcode=barcode_file,
             mismatches=mismatches,
+            input_I1_fake=I1_fastq,
+            input_I2_fake=I2_fastq if I2_fastq else "",
             input_I1=I1_fastq,
             input_I2=I2_fastq if I2_fastq else "",
             input_R1=R1_fastq,
             input_R2=R2_fastq,
+            output_I1_fake="-o n/a",
+            output_I2_fake="-o n/a" if I2_fastq else "",
             output_I1="-o " + os.path.join(output_dir, "%_I1.fastq"),
             output_I2="-o " + os.path.join(output_dir, "%_I2.fastq") if I2_fastq else "",
             output_R1="-o " + os.path.join(output_dir, "%_R1.fastq"),
-            output_R2="-o " + os.path.join(output_dir, "%_R2.fastq")
+            output_R2="-o " + os.path.join(output_dir, "%_R2.fastq"),
+            stdout_metrics=metrics_file
         ),
         removable_files=outputs+[output_dir]
     )
