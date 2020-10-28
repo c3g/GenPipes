@@ -141,7 +141,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                             "/dev/stdin",
                             readset_bam,
                             tmp_dir=config.param('host_reads_removal', 'tmp_dir', required=True),
-                            other_options=""
+                            other_options=config.param('host_reads_removal', 'sambamba_sort_other_options', required=False)
                             )
                         ]),
                     sambamba.view(
@@ -153,7 +153,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                             readset_bam_host_removed_sorted,
                             readset_bam_host_removed_name_sorted,
                             tmp_dir=config.param('host_reads_removal', 'tmp_dir', required=True),
-                            other_options=config.param('host_reads_removal', 'sambamba_sort_other_options', required=False)
+                            other_options=config.param('host_reads_removal', 'sambamba_name_sort_other_options', required=False)
                             ),
                     sambamba.index(
                         readset_bam_host_removed_sorted,
