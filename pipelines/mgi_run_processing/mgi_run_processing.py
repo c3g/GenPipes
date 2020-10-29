@@ -161,7 +161,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
     @property
     def is_dual_index(self):
         if not hasattr(self, "_is_dual_index"):
-            if self.get_index2cycles() == 0:
+            if self.get_index2cycles() == "0":
                 self._is_dual_index = False
             else:
                 self._is_dual_index = True
@@ -1432,8 +1432,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             self.number_of_mismatches,
                             self.mask,
                             demux_fastqs_outputs,
-                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz"),
-                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R2.fastq.gz")
+                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz"),
+                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")
                         )
                     ],
                     name="fastq.demultiplex" + self.run_id + "." + str(self.lane_number),
@@ -2482,6 +2482,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
                 readset_index['BARCODE_SEQUENCE'] = sample_barcode
 
+            for readset_index in readset.indexes:
                 csv_dict = {
                     "Sample_ID": readset_index['SAMPLESHEET_NAME'],
                     "Sample_Name": readset_index['SAMPLESHEET_NAME'] + '_' + readset_index['INDEX_NAME'],
