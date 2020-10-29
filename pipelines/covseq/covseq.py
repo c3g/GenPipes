@@ -177,6 +177,74 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         return jobs
 
 
+    def kraken_analysis(self):
+        """
+        kraken
+        """
+
+        # TODO: include kraken analysis and output in metrics
+        jobs = []
+        for readset in self.readsets:
+            host_removal_directory = os.path.join("host_removal", readset.sample.name)
+            host_removal_file_prefix = os.path.join(host_removal_directory, readset.name)
+            kraken_directory = os.path.join("metrics", "dna", readset.sample.name, "kraken_metrics")
+            kraken_out_prefix = os.path.join(kraken_directory, readset.name)
+            # readset_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam")
+            # index_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam.bai")
+
+            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [
+                    [host_removal_file_prefix + ".host_removed.pair1.fastq.gz", host_removal_file_prefix + ".host_removed.pair2.fastq.gz"]
+                    ]
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                unclassified_output = [kraken_out_prefix + ".unclassified_sequences_1.fastq", kraken_out_prefix + ".unclassified_sequences_2.fastq"]
+                classified_output = [kraken_out_prefix + ".classified_sequences_1.fastq", kraken_out_prefix + ".classified_sequences_2.fastq"]
+
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [
+                    [host_removal_file_prefix + ".host_removed.single.fastq.gz"]
+                    ]
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
+                unclassified_output = [kraken_out_prefix + ".unclassified_sequences.fastq"]
+                classified_output = [kraken_out_prefix + ".classified_sequences.fastq"]
+
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(os.path.dirname(kraken_directory)),
+                    kraken2.kraken2(
+                        fastq1,
+                        fastq2,
+                        kraken_out_prefix,
+                        other_options=config.param('kraken_analysis', 'kraken2_other_options'),
+                        nthread=config.param('kraken_analysis', 'kraken2_threads'),
+                        database=config.param('kraken_analysis', 'kraken2_database')
+                        ),
+                    Job(
+                        input_files=unclassified_output + classified_output,
+                        output_files=[fastq1 + ".gz", fastq2 + ".gz"],
+                        module_entries=[
+                            ['pigz', 'module_pigz']
+                        ],
+                        command="""pigz -p {nthreads} {input_files}""".format(
+                            input_files=" ".join(unclassified_output + classified_output),
+                            nthreads=config.param('host_reads_removal', 'pigz_threads')
+                            )
+                        )
+                    ],
+                    name="kraken_analysis." + readset.name,
+                    samples=[readset.sample]
+                    )
+                )
+
+        return jobs
+
+
     def cutadapt(self):
         """
         Raw reads quality trimming and removing adapters is performed using [Cutadapt](https://cutadapt.readthedocs.io/en/stable/index.html).
@@ -210,7 +278,8 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [
-                    [host_removal_file_prefix + ".host_removed.single.fastq.gz"]]
+                    [host_removal_file_prefix + ".host_removed.single.fastq.gz"]
+                    ]
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 [fastq1] = self.select_input_files(candidate_input_files)
@@ -234,72 +303,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                         )
                     ],
                     name="cutadapt." + readset.name)
-                )
-
-        return jobs
-
-
-    def kraken_analysis(self):
-        """
-        kraken
-        """
-
-        jobs = []
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            kraken_directory = os.path.join("metrics", "dna", readset.sample.name, "kraken_metrics")
-            prefix = os.path.join(kraken_directory, readset.name)
-            # readset_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam")
-            # index_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam.bai")
-
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [
-                    [readset.fastq1, readset.fastq2]
-                    ]
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-                unclassified_output = [prefix + ".unclassified_sequences_1.fastq", prefix + ".unclassified_sequences_2.fastq"]
-                classified_output = [prefix + ".classified_sequences_1.fastq", prefix + ".classified_sequences_2.fastq"]
-
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [
-                    [readset.fastq1]
-                    ]
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-                unclassified_output = [prefix + ".unclassified_sequences.fastq"]
-                classified_output = [prefix + ".classified_sequences.fastq"]
-
-            else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
-
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(kraken_directory)),
-                    kraken2.kraken2(
-                        fastq1,
-                        fastq2,
-                        prefix,
-                        other_options=config.param('kraken_analysis', 'kraken2_other_options'),
-                        nthread=config.param('kraken_analysis', 'kraken2_threads'),
-                        database=config.param('kraken_analysis', 'kraken2_database')
-                        ),
-                    Job(
-                        input_files=unclassified_output + classified_output,
-                        output_files=[fastq1 + ".gz", fastq2 + ".gz"],
-                        module_entries=[
-                            ['pigz', 'module_pigz']
-                        ],
-                        command="""pigz -p {nthreads} {input_files}""".format(
-                            input_files=" ".join(unclassified_output + classified_output),
-                            nthreads=config.param('host_reads_removal', 'pigz_threads')
-                            )
-                        )
-                    ],
-                    name="kraken_analysis." + readset.name,
-                    samples=[readset.sample]
-                    )
                 )
 
         return jobs
@@ -957,7 +960,7 @@ ln -sf {output_status_fa_basename} {output_fa}
     def steps(self):
         return [
             self.host_reads_removal,
-            # self.kraken_analysis,
+            self.kraken_analysis,
             self.cutadapt,
             self.mapping_bwa_mem_sambamba,
             self.sambamba_merge_sam_files,
