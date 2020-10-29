@@ -39,7 +39,6 @@ def trim(input1, input2, prefix, adapter_3p_fwd, adapter_3p_rev):
         output = [output_pair1, output_pair2]
     else:   # Single end reads
         output_pair1 = prefix + ".trim.single.fastq.gz"
-        output_pair2 = None
         inputs = [input1]
         output = [output_pair1]
 
