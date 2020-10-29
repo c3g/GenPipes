@@ -133,7 +133,7 @@ def fastqmultx(
     ):
 
     metrics_file = outputs[0]
-    output_dir = os.path.dirname(outputs[0])
+    output_dir = os.path.dirname(metrics_file)
     return Job(
         [
             R1_fastq,
@@ -164,8 +164,8 @@ fastq-multx \\
             input_I2=I2_fastq if I2_fastq else "",
             input_R1=R1_fastq,
             input_R2=R2_fastq,
-            output_I1_fake="-o n/a",
-            output_I2_fake="-o n/a" if I2_fastq else "",
+            output_I1_fake="-o " + os.path.join(output_dir, "%_I1.fastq"),
+            output_I2_fake="-o " + os.path.join(output_dir, "%_I2.fastq") if I2_fastq else "",
             output_R1="-o " + os.path.join(output_dir, "%_R1.fastq"),
             output_R2="-o " + os.path.join(output_dir, "%_R2.fastq"),
             stdout_metrics=metrics_file
@@ -187,7 +187,7 @@ def demux_fastqs(
     return Job(
         [
             R1_fastq,
-            R2_fastq,
+            R2_fastq
         ],
         outputs + [ metrics_file],
         [
@@ -204,9 +204,10 @@ java -Djava.io.tmpdir={tmp_dir} \\
   --metrics {metrics_file} \\
   --inputs {inputs} \\
   --read-structures {read_structure} \\
-  --sample-sheet {sample_sheet} \\
+  --metadata {sample_sheet} \\
   --output {output_dir} \\
-  --output-type fastq""".format(
+  --output-type fastq \\
+  --include-all-bases-in-fastqs true""".format(
             tmp_dir=config.param('fastq', 'tmp_dir'),
             java_other_options=config.param('fastq', 'java_other_options'),
             ram=config.param('fastq', 'ram'),

@@ -132,7 +132,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
     @property
     def is_dual_index(self):
         if not hasattr(self, "_is_dual_index"):
-            if self.get_index2cycles() == 0:
+            if self.get_index2cycles() == "0":
                 self._is_dual_index = False
             else:
                 self._is_dual_index = True
@@ -692,8 +692,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             self.number_of_mismatches,
                             self.mask,
                             demux_fastqs_outputs,
-                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz"),
-                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R2.fastq.gz")
+                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz"),
+                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")
                         )
                     ],
                     name="fastq.demultiplex" + self.run_id + "." + str(self.lane_number),
@@ -1230,7 +1230,7 @@ wc -l >> {output}""".format(
                 summary_report_html
             ],
             zip_output,
-            recursive=True
+            recursive=False
         )
         zip_job.name = "report.zip." + self.run_id + "." + str(self.lane_number)
         zip_job.samples = self.samples
@@ -1298,10 +1298,10 @@ wc -l >> {output}""".format(
         bioinfo_csv = csv.reader(open(self.bioinfo_file, 'rb'))
         for row in bioinfo_csv:
             if row[0] == "Dual Barcode":
-                if row[1] == '':
-                    return 0
-                else:
+                if row[1]:
                     return row[1]
+                else:
+                    return "0"
         _raise(SanitycheckError("Could not get Index 2 Cycles from " + os.path.join(self.run_dir, "L0" + str(self.lane_number), "BioInfo.csv")))
 
     def get_instrument(self):
@@ -1344,11 +1344,11 @@ wc -l >> {output}""".format(
 
         index_per_readset = {}
         for readset in self.readsets:
-            readset_indexes = self.get_index(readset)
-            index_per_readset[readset.name] = readset_indexes
+            readset.indexes = self.get_index(readset)
+            index_per_readset[readset.name] = readset.indexes
 
-            for readset_index in readset_indexes:
-                if self.is_dual_index:
+            for readset_index in readset.indexes:
+                if readset.index_type == "DUALINDEX":
                     index_to_use = readset_index['INDEX1']+"-"+ readset_index['INDEX2']
                 else:
                     index_to_use = readset_index['INDEX1']
@@ -1389,17 +1389,16 @@ wc -l >> {output}""".format(
         index_per_readset = {}
         for readset in self.readsets:
             count += 1
-            readset_indexes = self.get_index(readset)
-            index_per_readset[readset.name] = readset_indexes
+            readset.indexes = self.get_index(readset)
+            index_per_readset[readset.name] = readset.indexes
 
-            for readset_index in readset_indexes:
-
+            for readset_index in readset.indexes:
                 csv_dict = {
                     "Sample_ID": "Sample_" + readset_index['BCL2FASTQ_NAME'],
                     "Sample_Name": readset_index['BCL2FASTQ_NAME'],
                     "Library_ID": readset_index['LIBRARY'],
                     "Description": readset.name + ' - ' + readset.library_type + ' - ' + readset.library_source,
-                    "Sample_Barcode": readset_index['INDEX1'] + "-" +  readset_index['INDEX2']
+                    "Sample_Barcode": readset_index['INDEX2'] + readset_index['INDEX1']
                 }
                 writer.writerow(csv_dict)
 
@@ -1429,7 +1428,6 @@ wc -l >> {output}""".format(
                 bash.mkdir(os.path.dirname(readset.fastq1))
             ]
 
-            fastq_output_dir = os.path.join(output_dir, 'Project_' + readset.project, 'Sample_' + readset.name)
             # If 10X libraries : 4 indexes per sample
             if re.search("SI-", readset.index_name):
                 fastqr1a = os.path.join(output_dir, "tmp", readset.name + "_A_R1.fastq")
@@ -1666,92 +1664,123 @@ wc -l >> {output}""".format(
         final_fastq_jobs = []
         count = 0
 
-        output_dir = os.path.join(self.output_dir, "Unaligned.test." + str(self.lane_number))
+        output_dir = os.path.join(self.output_dir, "Unaligned.test4." + str(self.lane_number))
 
         # If True, then merge the 'Undetermined' reads
         if self.merge_undetermined:
             undet_fastqr1 = os.path.join(output_dir, "tmp", "unmatched_R1.fastq")
-            undet_fastqi1 = os.path.join(output_dir, "tmp", "unmatched_I1.fastq")
             undet_fastqr2 = os.path.join(output_dir, "tmp", "unmatched_R2.fastq") if readset.run_type == "PAIRED_END" else None
-            undet_fastqi2 = os.path.join(output_dir, "tmp", "unmatched_I2.fastq") if self.is_dual_index else None
         else:
             undet_fastqr1 = None
-            undet_fastqi1 = None
             undet_fastqr2 = None
-            undet_fastqi2 = None
 
         for readset in self.readsets:
-            final_fastq_jobs_per_readset = [
+            readset_r1_outputs = []
+            readset_r2_outputs = []
+            readset_r1_rename_jobs = []
+            readset_r2_extract_jobs = []
+            readset_i1_extract_jobs = []
+            readset_i2_extract_jobs = []
+
+#            final_fastq_jobs_per_readset = [
+#                bash.mkdir(os.path.dirname(readset.fastq1))
+#            ]
+            readset_r1_rename_jobs.append(
                 bash.mkdir(os.path.dirname(readset.fastq1))
-            ]
+            )
 
-            fastq_output_dir = os.path.join(output_dir, 'Project_' + readset.project, 'Sample_' + readset.name)
-            # If 10X libraries : 4 indexes per sample
-            if re.search("tenX", readset.library_type):
-                fastqr1a = os.path.join(output_dir, "tmp", readset.name + "_A_R1.fastq")
-                fastqr1b = os.path.join(output_dir, "tmp", readset.name + "_B_R1.fastq")
-                fastqr1c = os.path.join(output_dir, "tmp", readset.name + "_C_R1.fastq")
-                fastqr1d = os.path.join(output_dir, "tmp", readset.name + "_D_R1.fastq")
-                demuxfastqs_outputs.extend([
-                     fastqr1a,
-                     fastqr1b,
-                     fastqr1c,
-                     fastqr1d,
-                     undet_fastqr1 if undet_fastqr1 else None
-                ])
+            for index in readset.indexes:
+                readset_r1_outputs.append(
+                    os.path.join(output_dir, "tmp", "Sample_" + index['BCL2FASTQ_NAME'] + "-" + index['BCL2FASTQ_NAME'] + "-" + index['INDEX2']+index['INDEX1'] + "_R1.fastq.gz")
+                )
+                if readset.run_type == "PAIRED_END":
+                    readset_r2_outputs.append(
+                        os.path.join(output_dir, "tmp", "Sample_" + index['BCL2FASTQ_NAME'] + "-" + index['BCL2FASTQ_NAME'] + "-" + index['INDEX2']+index['INDEX1'] + "_R2.fastq.gz")
+                    )
 
-                final_fastq_jobs_per_readset.append(
-                    pipe_jobs([
+            if self.merge_undetermined:
+                readset_r1_outputs.append(
+                    os.path.join(output_dir, "tmp", "unmatched_R1.fastq")
+                )
+                if readset.run_type == "PAIRED_END":
+                    readset_r2_outputs.append(
+                        os.path.join(output_dir, "tmp", "unmatched_R2.fastq")
+                    )
+
+            if len(readset_r1_outputs) > 1:
+                readset_r1_rename_jobs.append(
+                    bash.cat(
+                        readset_r1_outputs,
+                        None,
+                        zip=True
+                    ),
+                    bash.gzip(
+                        None,
+                        readset.fastq1
+                    )
+                )
+            else:
+                readset_r1_rename_jobs.append(
+                    bash.mv(
+                        readset_r1_outputs[0],
+                        readset.fastq1
+                    )
+                )
+
+            if readset.run_type == "PAIRED_END":
+                if len(readset_r2_outputs) > 1:
+                    final_fastq_jobs_per_readset.append(
                         bash.cat(
-                            list(filter(None, [
-                                fastqr1a,
-                                fastqr1b,
-                                fastqr1c,
-                                fastqr1d,
-                                undet_fastqr1 if undet_fastqr1 else None
-                            ])),
-                            None
+                            readset_r2_outputs,
+                            None,
+                            zip=True
                         ),
                         bash.gzip(
                             None,
-                            readset.fastq1
+                            readset.fastq2
                         )
-                    ])
-                )
+                    )
 
-#                # Add the fastq of first index
-#                fastqi1a = os.path.join(output_dir, "tmp", readset.name + "_A_I1.fastq")
-#                fastqi1b = os.path.join(output_dir, "tmp", readset.name + "_B_I1.fastq")
-#                fastqi1c = os.path.join(output_dir, "tmp", readset.name + "_C_I1.fastq")
-#                fastqi1d = os.path.join(output_dir, "tmp", readset.name + "_D_I1.fastq")
-#                fastq_multx_outputs.extend([
-#                    fastqi1a,
-#                    fastqi1b,
-#                    fastqi1c,
-#                    fastqi1d,
-#                    undet_fastqi1 if undet_fastqi1 else None
-#                ])
-#
-#                final_fastq_jobs_per_readset.append(
-#                    pipe_jobs(
-#                        [
-#                            bash.cat(
-#                                list(filter(None, [
-#                                    fastqi1a,
-#                                    fastqi1b,
-#                                    fastqi1c,
-#                                    fastqi1d,
-#                                    undet_fastqi1 if undet_fastqi1 else None
-#                                ])),
-#                                None
-#                           ),
-#                           bash.gzip(
-#                                None,
-#                                readset.index_fastq1
-#                           )
-#                        ]
-#                    )
-#                )
+                final_fastq_jobs_per_readset.append(
+                    bash.cat(
+                        readset_r1_outputs,
+                        None,
+                        zip=True
+                    ),
+                    bash.gzip(
+                        None,
+                        readset.fastq1
+                    )
+                )
+                if readset.run_type == "PAIRED_END":
+                    final_fastq_jobs_per_readset.append(
+                        bash.cat(
+                            readset_r2_outputs,
+                            None,
+                            zip=True
+                        ),
+                        bash.gzip(
+                            None,
+                            readset.fastq2
+                        )
+                    )
+
+            if len(readset_demuxfastqs_outputs) > 1:
+                final_fastq_jobs_per_readset.append(
+                    bash.cat(
+                        list(filter(None, readset_demuxfastqs_outputs)),
+                        None,
+                        zip=True
+                    ),
+                    bash.gzip(
+                        None,
+                        readset.fastq1
+                    )
+                )
+            else:
+                final_fastq_jobs_per_readset.append(
+                    
+                )
 
                 # For paired-end sequencing, do not forget the fastq of the reverse reads
                 if readset.run_type == "PAIRED_END" :
@@ -1786,39 +1815,6 @@ wc -l >> {output}""".format(
                         ])
                     )
 
-#                    # For dual index demultiplexing, do not forget the fastq of the second index
-#                    if self.is_dual_index:
-#                        fastqi2a = os.path.join(output_dir, "tmp", readset.name + "_A_I2.fastq")
-#                        fastqi2b = os.path.join(output_dir, "tmp", readset.name + "_B_I2.fastq")
-#                        fastqi2c = os.path.join(output_dir, "tmp", readset.name + "_C_I2.fastq")
-#                        fastqi2d = os.path.join(output_dir, "tmp", readset.name + "_D_I2.fastq")
-#                        fastq_multx_outputs.extend([
-#                            fastqi2a,
-#                            fastqi2b,
-#                            fastqi2c,
-#                            fastqi2d,
-#                            undet_fastqi2 if undet_fastqi2 else None
-#                        ])
-#
-#                        final_fastq_jobs_per_readset.append(
-#                            pipe_jobs([
-#                                bash.cat(
-#                                    list(filter(None, [
-#                                        fastqi2a,
-#                                        fastqi2b,
-#                                        fastqi2c,
-#                                        fastqi2d,
-#                                        undet_fastqi2 if undet_fastqi2 else None
-#                                    ])),
-#                                    None
-#                                ),
-#                                bash.gzip(
-#                                    None,
-#                                    readset.index_fastq2
-#                                )
-#                            ])
-#                        )
-
             # not a 10X library : 1 index per sample
             else:
                 fastqr1 = os.path.join(output_dir, "tmp", readset.name + "_R1.fastq")
@@ -1841,26 +1837,6 @@ wc -l >> {output}""".format(
                         )
                     ])
                 )
-#                fastqi1 = os.path.join(output_dir, "tmp", readset.name + "_I1.fastq")
-#                fastq_multx_outputs.extend([
-#                    fastqi1,
-#                    undet_fastqi1 if undet_fastqi1 else None
-#                ])
-#                final_fastq_jobs_per_readset.append(
-#                    pipe_jobs([
-#                        bash.cat(
-#                            list(filter(None, [
-#                                fastqi1,
-#                                undet_fastqi1 if undet_fastqi1 else None
-#                            ])),
-#                            None
-#                        ),
-#                        bash.gzip(
-#                            None,
-#                            readset.index_fastq1
-#                        )
-#                    ])
-#                )
                 # For paired-end sequencing, do not forget the fastq of the reverse reads
                 if readset.run_type == "PAIRED_END":
                     fastqr2 = os.path.join(output_dir, "tmp", readset.name + "_R2.fastq")
@@ -1883,28 +1859,6 @@ wc -l >> {output}""".format(
                             )
                         ])
                     )
-#                    # For dual index multiplexing, do not forget the fastq of the second index
-#                    if self.is_dual_index:
-#                        fastqi2 = os.path.join(output_dir, "tmp", readset.name + "_I2.fastq")
-#                        demuxfastqs_outputs.extend([
-#                            fastqi2,
-#                            undet_fastqi2 if undet_fastqi2 else None
-#                        ])
-#                        final_fastq_jobs_per_readset.append(
-#                            pipe_jobs([
-#                                bash.cat(
-#                                    list(filter(None, [
-#                                        fastqi2,
-#                                        undet_fastqi2 if undet_fastqi2 else None
-#                                    ])),
-#                                    None
-#                                ),
-#                                bash.gzip(
-#                                    None,
-#                                    readset.index_fastq2
-#                                )
-#                            ])
-#                        )
 
             if len(final_fastq_jobs_per_readset) != 0:
                 final_fastq_jobs.append(
@@ -1935,7 +1889,7 @@ wc -l >> {output}""".format(
         index_seq_pattern = "grep '%s,' %s | head -n1 | awk -F',' '{print $%d}'"
         log.error(readset.library_type)
 
-        if readset.library_type == "tenX_sc_RNA_v2" or readset.library_type == "tenX_DNA_v2" or readset.library_type == "FeatureBarcode" or readset.library_type == "tenX_sc_ATAC_v1":
+        if re.search("SI-", readset.index_name) and (readset.library_type == "tenX_sc_RNA_v2" or readset.library_type == "tenX_DNA_v2" or readset.library_type == "FeatureBarcode" or readset.library_type == "tenX_sc_ATAC_v1"):
             index1 = readset.index_name
 
             for idx, char in enumerate(['_A', '_B', '_C', '_D']):
@@ -1954,7 +1908,7 @@ wc -l >> {output}""".format(
                 (actual_index1seq != "") and idx_seq_array.append(actual_index1seq)
                 (actual_index2seq != "") and idx_seq_array.append(actual_index2seq)
 
-        elif readset.library_type == "tenX_sc_RNA_v1" :
+        elif re.search("SI-", readset.index_name) and readset.library_type == "tenX_sc_RNA_v1":
             index2 = readset.index_name
 
 
@@ -2041,7 +1995,7 @@ wc -l >> {output}""".format(
             else:
                 actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, index1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(index1_primeroffset+1)+"-"+str(index1_primeroffset+index1cycles)), shell=True).strip()
 
-            if self.is_dual_index:
+            if readset.index_type == "DUALINDEX" and index2cycles:
                 main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, index2_primer), shell=True).strip()
 
                 if seqtype == "hiseqx" or seqtype == "hiseq4000" or seqtype == "iSeq" or seqtype == "dnbseqg400" :
@@ -2066,7 +2020,7 @@ wc -l >> {output}""".format(
             else:
                 actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(indexn1_primeroffset+1)+"-"+str(indexn1_primeroffset+index1cycles)), shell=True).strip()
 
-            if self.is_dual_index:
+            if readset.index_type == "DUALINDEX" and index2cycles:
                 main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, indexn2_primer), shell=True).strip()
 
                 if seqtype == "hiseqx" or seqtype == "hiseq4000" or seqtype == "iSeq" or seqtype == "dnbseqg400" :
@@ -2136,8 +2090,8 @@ wc -l >> {output}""".format(
     def steps(self):
         return [
             self.index,
-            self.fastq,
-#            self.demuxfastq,
+#            self.fastq,
+            self.demuxfastq,
             self.qc_graphs,
             self.fastqc,
             self.blast,
