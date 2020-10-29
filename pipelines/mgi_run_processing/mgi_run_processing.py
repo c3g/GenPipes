@@ -20,7 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
-from __future__ import print_function, division, unicode_literals, absolute_import
+#from __future__ import print_function, division, unicode_literals, absolute_import
 import argparse
 import logging
 import os
@@ -31,7 +31,7 @@ import subprocess
 import xml.etree.ElementTree as Xml
 import math
 import csv
-import collections
+from collections import OrderedDict, namedtuple
 import json
 
 # Append mugqic_pipelines directory to Python library path
@@ -159,43 +159,40 @@ class MGIRunProcessing(common.MUGQICPipeline):
     @property
     def is_dual_index(self):
         if not hasattr(self, "_is_dual_index"):
-            if self.get_index2cycles() == 0:
-                self._is_dual_index = False
-            else:
-                self._is_dual_index = True
+            self._is_dual_index = {}
+            for lane in self.lanes:
+                if self.get_index2cycles(lane) == "0":
+                    self._is_dual_index[lane] = False
+                else:
+                    self._is_dual_index[lane] = True
         return self._is_dual_index
 
     @property
     def is_demultiplexed(self):
         if not hasattr(self, "_is_demultiplexed"):
-            if self.args.raw_fastq:
-                self._is_demultiplexed = False
-            elif all(readset.is_mgi_index for readset in self.readsets):
+            if self.args.demux_fastq:
                 self._is_demultiplexed = True
-            elif all(not readset.is_mgi_index for readset in self.readsets):
-                self._is_demultiplexed = False
             else:
-                _raise(SanitycheckError("Error: wrong index settings in lane... both non-MGI and MGI adapters were detected in the readset file" + self.readset_file))
+                self._is_demultiplexed = False
         return self._is_demultiplexed
 
     @property
     def mask(self):
         if not hasattr(self, "_mask"):
-            if self.is_dual_index:
-                self._mask = self.get_read1cycles() + "T " + self.get_read2cycles() + "T" + self.get_index2cycles() + "B" + self.get_index1cycles() + "B"
-            else:
-                self._mask = self.get_read1cycles() + "T " + self.get_read2cycles() + "T" + self.get_index1cycles() + "B"
+            _raise(SanitycheckError("No mask could be found !!"))
         return self._mask 
 
     @property
     def merge_undetermined(self):
         if not hasattr(self, "_merge_undetermined"):
-            self._merge_undetermined = False
-            # If only one library on the lane
-            if len(self.readsets) == 1:
-                self._merge_undetermined = True
-            if config.param('fastq', 'merge_undetermined', required=False, type='boolean'):
-                self._merge_undetermined = config.param('fastq', 'merge_undetermined')
+            self._merge_undetermined = {}
+            for lane in self.lanes:
+                self._merge_undetermined[lane] = False
+                # If only one library on the lane
+                if len(self.readsets[lane]) == 1:
+                    self._merge_undetermined[lane] = True
+                if config.param('fastq', 'merge_undetermined', required=False, type='boolean'):
+                    self._merge_undetermined[lane] = config.param('fastq', 'merge_undetermined')
         return self._merge_undetermined
 
     @property
@@ -315,25 +312,28 @@ class MGIRunProcessing(common.MUGQICPipeline):
             _raise(SanitycheckError("Error: missing '-d/--run_dir' option!"))
 
     @property
-    def bioinfo_file(self):
-        if not hasattr(self, "_bioinfo_file"):
-            rundir = self.run_dir
-            if "(no_barcode)" in rundir:
-                rundir = rundir.split("(")[0]
-            self._bioinfo_file = os.path.join(rundir, "L0" + str(self.lane_number), "BioInfo.csv")
-        #log.error(self._bioinfo_file)
-        return self._bioinfo_file
+    def lane_number(self):
+        if self.args.lane_number:
+            return self.args.lane_number
+        else:
+            return None
 
     @property
     def flowcell_id(self):
         """
-        The flow cell ID from the run folder
+        The flow cell ID from the run folder or from parameter
         """
         if not hasattr(self, "_flowcell_id"):
-            self._flowcell_id = os.path.basename(self.run_dir.rstrip('/'))
-            if "(" in self._flowcell_id:
-                 self._flowcell_id = self._flowcell_id.split("(")[0]
-            #log.error(self._flowcell_id)
+            if self.args.flowcell_id:
+                self._flowcell_id = self.args.flowcell_id
+            else:
+                rundir_basename = os.path.basename(self.run_dir.rstrip('/'))
+                if "_" in rundir_basename:
+                    [self._flowcell_id, junk_food] = rundir_basename.split("_")
+                else:
+                    self._flowcell_id = os.path.basename(self.run_dir.rstrip('/'))
+                    if "(" in self._flowcell_id:
+                         self._flowcell_id = self._flowcell_id.split("(")[0]
         return self._flowcell_id
 
     @property
@@ -433,10 +433,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
         return self.args.last_index if self.args.last_index else 999
 
     @property
-    def index_per_readset(self):
-        return self._index_per_readset
-
-    @property
     def readset_file(self):
         if self.args.readsets:
             return self.args.readsets.name
@@ -480,6 +476,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
     
     @property
     def report_inputs(self):
+        if not hasattr(self, "_report_inputs"):
             self._report_inputs = {}
             for lane in self.lanes:
                 self._report_inputs[lane] = {
@@ -495,15 +492,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
         """
         First copy all the files of the lane from the sequencer deposit folder to the processing folder,
         into "raw_fastq".
-        Then, if MGI adapters are used (i.e. demultiplexing already done on sequencer)) then
+        Then, if demultiplexing already done on sequencer, formerly the case when MGI adapters were used, then
             rename the fastq files and move them from "raw_fastq" to "Unaligned.LANE" folder,
-            and pipeline will SKIP demultiplexing (i.e. next step, fastq).
-        Else, for all non-MGI adapters (i.e. demultiplexing still remains to be done) then prepare
-            prepare data for demultiplexing (i.e. next step, fastq) by extracting adapters from R2 fastq,
-            creating I1 and I2 fastq files for adapter i7 and i5 respectively (or only I1 form i7 in case
-            of single index sequencing). This will also create the barcode tsv file used to launch
-            fastq-multx to demultiplex the reads in fastq step.
-        *TO DO* - in both cases, retrieve index stats from the sequencer output files to build an index report
+            --> pipeline will SKIP demultiplexing (i.e. next step, fastq).
+        Else, (i.e. demultiplexing still remains to be done) nothing remains to do here : 
+            everything is in place for the demultiplexing to happen in the next step
+        *TO DO* - in both cases, retrieve index stats from the sequencer output files to build a proper index report
         """
 
         jobs = []
@@ -546,11 +540,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + lane + "_" + index_number + "_1.fq.fqStat.txt"),
                         os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + lane + "_" + index_number + ".report.html")
                     ])
-                    fastq_job_input_dependency.extend([
-                        os.path.join(self.run_dir, "L0" + str(self.lane_number), readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_2.fq.gz"),
-                        os.path.join(self.run_dir, "L0" + str(self.lane_number), readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_2.fq.fqStat.txt")
-                    ])
-                    fastq_jobs.append(
+                    rename_jobs.append(
                         concat_jobs([
                             bash.mkdir(output_dir),
                             bash.cp(
@@ -730,73 +720,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
     def fastq(self):
         """
-        First copy all the files of the lane from the sequencer deposit folder to the processing folder,
-        into "raw_fastq".
-        Then, if MGI adapters are used (i.e. demultiplexing already done on sequencer)) then
-            rename the fastq files and move them from "raw_fastq" to "Unaligned.LANE" folder,
-            and pipeline will SKIP demultiplexing (i.e. next step, fastq).
-        Else, for all non-MGI adapters (i.e. demultiplexing still remains to be done) then prepare
-            prepare data for demultiplexing (i.e. next step, fastq) by extracting adapters from R2 fastq,
-            creating I1 and I2 fastq files for adapter i7 and i5 respectively (or only I1 form i7 in case
-            of single index sequencing). This will also create the barcode tsv file used to launch
-            fastq-multx to demultiplex the reads in fastq step.
-        *TO DO* - in both cases, retrieve index stats from the sequencer output files to build an index report
-        """
-        jobs = []
-
-        if len(self.readsets) == 1:
-            log.info("Only one sample on lane : no need to demultiplex...  Skipping fastq step...")
-
-        elif self.is_demultiplexed:
-            log.info("Demultiplexing done on the sequencer... Skipping fastq step...")
-
-        else:
-            log.info("No demultiplexing done on the sequencer... Processing fastq step...")
-
-            input_fastq_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number), "raw_fastq")
-
-            fastq_multx_outputs, final_fastq_jobs = self.generate_fastqdemultx_outputs() 
-            tmp_output_dir = os.path.dirname(fastq_multx_outputs[0])
-
-            fastq_multx_outputs.insert(0, os.path.join(tmp_output_dir, self.flowcell_id + "_L0" + str(self.lane_number) + ".demultiplex.metrics"))
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(tmp_output_dir),
-                        run_processing_tools.fastqmultx(
-                            os.path.join(self.output_dir, "barcodesheet." + str(self.lane_number) + ".tsv"),
-                            self.number_of_mismatches,
-                            fastq_multx_outputs,
-                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R1.fastq.gz"),
-                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I1.fastq.gz"),
-                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_R2.fastq.gz"),
-                            os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_I2.fastq.gz") if self.is_dual_index else None
-                        )
-                    ],
-                    name="fastq.demultiplex" + self.run_id + "." + str(self.lane_number),
-                    samples=self.samples
-                )
-            )
-
-            if final_fastq_jobs:
-                jobs.extend(final_fastq_jobs)
-
-        self.add_copy_job_inputs(jobs)
-        return jobs
-
-    def demuxfastq(self):
-        """
         *** In the future, may generate the fastq files from the raw CAL files. ***
-        When fastq files are already generated by the sequencer, then copy all the fastq files in processing folder.
-        The fastq (and metrics) files which match the readsets of the sample sheet are put in the Unaligned folder and renamed accordingly to their record in the sheet.
-        All the fastq (and metrics) files which don't match any of the readsets in the sample sheet are put in the Unexpected folder without renaming.
+        Perform demultplexing of the reads with fgbio DemuxFastqs
         """
         jobs = []
 
-        if len(self.readset) == 1:
-            log.info("Only one sample on lane : no need to demultiplex...  Skipping fastq step...")
-
-        elif self.is_demultiplexed:
+        if self.is_demultiplexed:
             log.info("Demultiplexing done on the sequencer... Skipping fastq step...")
 
         elif "(no_barcode)" in self.run_dir:
@@ -1483,8 +1412,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     [" --exclude '" + excludedfile.replace(self.output_dir + os.sep, "") + "'" for excludedfile in excluded_files]),
                 lane_number=lane,
                 run_id=self.run_id,
-                source=os.path.join(self.output_dir, "L0" + lane),
-                run_name=os.path.basename(self.run_dir)
+                source=os.path.join(self.output_dir, "L0" +lane),
+                destination=full_destination_folder
             )
 
             jobs_to_concat.append(concat_jobs(
@@ -1609,7 +1538,9 @@ class MGIRunProcessing(common.MUGQICPipeline):
         bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
         for row in bioinfo_csv:
             if row[0] == "Dual Barcode":
-                if row[1]:
+                if row[1] == '':
+                    return "0"
+                else:
                     return row[1]
         _raise(SanitycheckError("Could not get Index 2 Cycles from " + self.bioinfo_files[lane]))
 
@@ -1799,7 +1730,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     "Sample_Name": readset_index['SAMPLESHEET_NAME'] + '_' + readset_index['INDEX_NAME'],
                     "Library_ID": readset_index['LIBRARY'],
                     "Description": readset.name + '_' + readset.library_type + '_' + readset.library_source,
-                    "Sample_Barcode": readset_index['INDEX2_RAW'] + readset_index['INDEX1_RAW']
+                    "Sample_Barcode": sample_barcode
                 }
                 writer.writerow(csv_dict)
 
@@ -1835,6 +1766,9 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         os.path.join(output_dir, "tmp", "unmatched_R2.fastq.gz")
                     )
 
+            # R1 fastq
+            demuxfastqs_outputs.extend(readset_r1_outputs)
+            # if more than one barcode used for the readset, aggregate all R1 fastq into one file for the current readset
             if len(readset_r1_outputs) > 1:
                 readset_cat_jobs.append(
                     bash.mkdir(os.path.dirname(readset.fastq1))
@@ -1854,6 +1788,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         ]
                     )
                 )
+            # if only one barcode, then just rename the file
             else:
                 readset_mv_jobs.append(
                     bash.mkdir(os.path.dirname(readset.fastq1))
@@ -1865,6 +1800,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     )
                 )
 
+            # "raw R2" fastq (also contains barcode sequences)
             if readset.run_type == "PAIRED_END":
                 demuxfastqs_outputs.extend(readset_r2_outputs)
                 raw_readset_fastq2 = os.path.join(
@@ -1915,7 +1851,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 pipe_jobs(
                     [
                         bash.cat(
-                            readset_r2_outputs,
+                            raw_readset_fastq2,
                             None,
                             zip=True
                         ),
@@ -1953,29 +1889,13 @@ class MGIRunProcessing(common.MUGQICPipeline):
                                 None,
                                 "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles(lane))+int(self.get_index2cycles(lane))+1)+","+self.get_index1cycles(lane)+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles(lane))+int(self.get_index2cycles(lane))+1)+","+self.get_index1cycles(lane)+") }'"
                             ),
-                            bash.pigz(
+                            bash.paste(
                                 None,
                                 readset.index_fastq1
                             )
                         ],
                         name="fastq.extract_I1_fastq." + readset.name + "." + self.run_id + "." + lane
                     )
-
-            if len(readset_demuxfastqs_outputs) > 1:
-                final_fastq_jobs_per_readset.append(
-                    bash.cat(
-                        list(filter(None, readset_demuxfastqs_outputs)),
-                        None,
-                        zip=True
-                    ),
-                    bash.gzip(
-                        None,
-                        readset.fastq1
-                    )
-                )
-            else:
-                final_fastq_jobs_per_readset.append(
-                    
                 )
                 # I2 fastq
                 fastq_jobs_to_append.append(
@@ -1996,27 +1916,44 @@ class MGIRunProcessing(common.MUGQICPipeline):
                                 None,
                                 "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index2cycles(lane)+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index2cycles(lane)+") }'"
                             ),
+                            bash.paste(
+                                None,
+                                None,
+                                options="-d '\\t' - - - -"
+                            ),
+                            bash.awk(
+                                None,
+                                None,
+                                "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index2cycles(lane)+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index2cycles(lane)+") }'"
+                            ),
                             bash.pigz(
                                 None,
-                                readset.fastq2
+                                readset.index_fastq2
                             )
                         ],
                         name="fastq.extract_I2_fastq." + readset.name + "." + self.run_id + "." + lane,
                         samples=self.samples[lane]
                     )
-
-            # not a 10X library : 1 index per sample
+                )
             else:
                 # I1 fastq
                 fastq_jobs_to_append.append(
                     pipe_jobs(
                         [
                             bash.cat(
-                                list(filter(None, [
-                                    fastqr2,
-                                    undet_fastqr2 if undet_fastqr2 else None
-                                ])),
-                                None
+                                raw_readset_fastq2,
+                                None,
+                                zip=True
+                            ),
+                            bash.paste(
+                                None,
+                                None,
+                                options="-d '\\t' - - - -"
+                            ),
+                            bash.awk(
+                                None,
+                                None,
+                                "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index1cycles(lane)+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index1cycles(lane)+") }'"
                             ),
                             bash.pigz(
                                 None,
@@ -2075,7 +2012,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         """
 
         max_jobs_per_step = config.param('default', 'max_jobs_per_step', required=False, type="int")
-        jobs_by_name = collections.OrderedDict()
+        jobs_by_name = OrderedDict()
         reply = []
 
         # group jobs by task (name)
@@ -2108,6 +2045,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.index,
 #            self.fastq,
             self.demuxfastq,
+            self.fastq,
             self.qc_graphs,
             self.fastqc,
             self.blast,
@@ -2119,6 +2057,18 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.copy,
             self.final_notification
         ]
+
+def parseMetricsFile(metrics_file):
+    reader = open(metrics_file, 'rb').readlines()
+    metrics_tsv = []
+    header = []
+    for row in reader:
+        if row!="\n" and not row[0].startswith('#'):
+            if not header:
+                header = row.strip().split("\t")
+            else:
+                metrics_tsv.append(dict(zip(header, row.strip().split("\t"))))
+    return metrics_tsv
 
 def distance(str1, str2):
     """
