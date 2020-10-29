@@ -233,7 +233,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                         ],
                         command="""pigz -p {nthreads} {input_files}""".format(
                             input_files=" ".join(unclassified_output + classified_output),
-                            nthreads=config.param('host_reads_removal', 'pigz_threads')
+                            nthreads=config.param('kraken_analysis', 'pigz_threads')
                             )
                         )
                     ],
