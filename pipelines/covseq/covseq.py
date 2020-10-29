@@ -235,7 +235,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                         module_entries=[
                             ['pigz', 'module_pigz']
                         ],
-                        command="""pigz -p {nthreads} {input_files}""".format(
+                        command="""pigz -f -p {nthreads} {input_files}""".format(
                             input_files=" ".join(unclassified_output + classified_output),
                             nthreads=config.param('kraken_analysis', 'pigz_threads')
                             )
