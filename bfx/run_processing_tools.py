@@ -164,8 +164,8 @@ fastq-multx \\
             input_I2=I2_fastq if I2_fastq else "",
             input_R1=R1_fastq,
             input_R2=R2_fastq,
-            output_I1_fake="-o n/a",
-            output_I2_fake="-o n/a" if I2_fastq else "",
+            output_I1_fake="-o " + os.path.join(output_dir, "%_I1.fastq"),
+            output_I2_fake="-o " + os.path.join(output_dir, "%_I2.fastq") if I2_fastq else "",
             output_R1="-o " + os.path.join(output_dir, "%_R1.fastq"),
             output_R2="-o " + os.path.join(output_dir, "%_R2.fastq"),
             stdout_metrics=metrics_file
