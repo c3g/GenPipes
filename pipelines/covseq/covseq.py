@@ -197,6 +197,8 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                 candidate_input_files = [
                     [host_removal_file_prefix + ".host_removed.pair1.fastq.gz", host_removal_file_prefix + ".host_removed.pair2.fastq.gz"]
                     ]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 unclassified_output = [kraken_out_prefix + ".unclassified_sequences_1.fastq", kraken_out_prefix + ".unclassified_sequences_2.fastq"]
                 classified_output = [kraken_out_prefix + ".classified_sequences_1.fastq", kraken_out_prefix + ".classified_sequences_2.fastq"]
@@ -205,6 +207,8 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                 candidate_input_files = [
                     [host_removal_file_prefix + ".host_removed.single.fastq.gz"]
                     ]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
                 unclassified_output = [kraken_out_prefix + ".unclassified_sequences.fastq"]
