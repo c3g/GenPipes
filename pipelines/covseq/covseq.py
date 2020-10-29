@@ -220,7 +220,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
             jobs.append(
                 concat_jobs([
-                    bash.mkdir(os.path.dirname(kraken_directory)),
+                    bash.mkdir(kraken_directory),
                     kraken2.kraken2(
                         fastq1,
                         fastq2,
