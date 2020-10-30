@@ -231,18 +231,19 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                         ),
                     Job(
                         input_files=unclassified_output + classified_output,
-                        output_files=[fastq1 + ".gz", fastq2 + ".gz"],
+                        output_files=[s + ".gz" for s in unclassified_output + classified_output],
                         module_entries=[
                             ['pigz', 'module_pigz']
                         ],
-                        command="""pigz -f -p {nthreads} {input_files}""".format(
+                        command="""pigz -k -f -p {nthreads} {input_files}""".format(
                             input_files=" ".join(unclassified_output + classified_output),
                             nthreads=config.param('kraken_analysis', 'pigz_threads')
                             )
                         )
                     ],
                     name="kraken_analysis." + readset.name,
-                    samples=[readset.sample]
+                    samples=[readset.sample],
+                    removable_files=unclassified_output + classified_output
                     )
                 )
 
