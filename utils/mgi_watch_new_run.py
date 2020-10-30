@@ -83,14 +83,15 @@ def compare_runs(
     columns,
     outdir,
     process_dir,
-    genpipes_repo
+    genpipes_repo,
+    mgi_runs_file
     ):
 
     header = "RUN_ID"
-    if os.path.isfile("/lb/project/mugqic/analyste_private/.mgi_runs.ref"):
+    if os.path.isfile(mgi_runs_file):
         new_list = filter(None, sorted(set(columns['RUN_ID'])))
 #        ref_list = []
-        ref_list = filter(None, open("/lb/project/mugqic/analyste_private/.mgi_runs.ref", "r").read().split("\n"))
+        ref_list = filter(None, open(mgi_runs_file, "r").read().split("\n"))
 
         if new_list != ref_list:
             print "New runs have been added to the Run Management spreadsheet... building the new samples sheets now"
@@ -146,13 +147,16 @@ def compare_runs(
 
     else:
         # print current run list and set it as the reference for next watch round
-        print_runs(columns)
-        ref_list = open("/lb/project/mugqic/analyste_private/.mgi_runs.ref", "r").read().split("\n")
+        print_runs(
+            columns,
+            mgi_runs_file
+        )
+        ref_list = open(mgi_runs_file, "r").read().split("\n")
         print ref_list
 
 def print_runs(
     columns,
-    path="/lb/project/mugqic/analyste_private/.mgi_runs.ref"
+    path
     ):
 
     f = open(path, "wb+")
@@ -233,9 +237,11 @@ if __name__ == '__main__':
         authentication_file
     )
 
+    mgi_runs_file = os.path.join(os.path.dirname(authentication_file), ".mgi_runs.ref")
     compare_runs(
         dict_of_columns,
         outdir,
         process_dir,
-        genpipes_repo
+        genpipes_repo,
+        mgi_runs_file
     )
