@@ -140,7 +140,10 @@ def compare_runs(
                             genpipes_repo
                         )
             # replace referece run list by the current run list to set it as the reference for next watch round
-            print_runs(columns)
+            print_runs(
+                columns,
+                mgi_runs_file
+            )
 
         else:
             print "No new run detected..."
