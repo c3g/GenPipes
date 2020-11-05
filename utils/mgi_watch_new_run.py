@@ -183,10 +183,7 @@ def print_genpipes_scripts(
     sample_sheet_rows = [row for row in csv.DictReader(open(sample_sheet, 'rb'), delimiter=',')]
     print len(sample_sheet_rows)
     print sample_sheet_rows[0]['Index']
-    if len(sample_sheet_rows) == 1 and "MGI" in sample_sheet_rows[0]['Index']:
-        raw_fastq = True
-    else: 
-        raw_fastq = False
+    raw_fastq = True
 
     if not os.path.exists(process_dir+"/../genpipes_scripts/"+project+"/"+run):
         os.makedirs(process_dir+"/../genpipes_scripts/"+project+"/"+run)
