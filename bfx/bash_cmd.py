@@ -378,7 +378,8 @@ paste {options} {input}{output}""".format(
 def awk(
     input,
     output,
-    instructions
+    instructions,
+    append=False
     ):
 
     return Job(
@@ -388,7 +389,8 @@ def awk(
 awk {instructions} {input}{output}""".format(
             instructions=instructions,
             input=input if input else "",
-            output=" > " + output if output else "",
+            append=" >" if append else " ",
+            output="> " + output if output else "",
         )
     )
 
