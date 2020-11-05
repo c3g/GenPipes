@@ -30,7 +30,6 @@ import itertools
 import subprocess
 import xml.etree.ElementTree as Xml
 import math
-import subprocess
 import csv
 import collections
 import json
@@ -143,21 +142,14 @@ class MGIRunProcessing(common.MUGQICPipeline):
         if not hasattr(self, "_is_demultiplexed"):
             if self.args.raw_fastq:
                 self._is_demultiplexed = False
-            elif all(readset.is_mgi_index for readset in self.readsets):
-                self._is_demultiplexed = True
-            elif all(not readset.is_mgi_index for readset in self.readsets):
-                self._is_demultiplexed = False
             else:
-                _raise(SanitycheckError("Error: wrong index settings in lane... both non-MGI and MGI adapters were detected in the readset file" + self.readset_file))
+                self._is_demultiplexed = True
         return self._is_demultiplexed
 
     @property
     def mask(self):
         if not hasattr(self, "_mask"):
-            if self.is_dual_index:
-                self._mask = self.get_read1cycles() + "T " + self.get_read2cycles() + "T" + self.get_index2cycles() + "B" + self.get_index1cycles() + "B"
-            else:
-                self._mask = self.get_read1cycles() + "T " + self.get_read2cycles() + "T" + self.get_index1cycles() + "B"
+            self._mask = self.get_mask()
         return self._mask 
 
     @property
@@ -197,10 +189,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         The run id from the readset objects.
         """
         if not hasattr(self, "_run_id"):
-            #for readset in self.readsets:
-            #    log.error(readset.run)
             runs = set([readset.run for readset in self.readsets])
-            #log.error(runs)
             if len(list(runs)) > 1:
                 _raise(SanitycheckError("Error: more than one run were parsed in the sample sheet... " + runs))
             else:
@@ -217,11 +206,13 @@ class MGIRunProcessing(common.MUGQICPipeline):
     @property
     def bioinfo_file(self):
         if not hasattr(self, "_bioinfo_file"):
-            rundir = self.run_dir
-            if "(no_barcode)" in rundir:
-                rundir = rundir.split("(")[0]
-            self._bioinfo_file = os.path.join(rundir, "L0" + str(self.lane_number), "BioInfo.csv")
-        #log.error(self._bioinfo_file)
+            if os.path.exists(os.path.join(self.output_dir, "Unaligned." + str(self.lane_number), "raw_fastq", "BioInfo.csv")):
+                self._bioinfo_file = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number), "raw_fastq", "BioInfo.csv")
+            else:
+                rundir = self.run_dir
+                if "(no_barcode)" in rundir:
+                    rundir = rundir.split("(")[0]
+                self._bioinfo_file = os.path.join(rundir, "L0" + str(self.lane_number), "BioInfo.csv")
         return self._bioinfo_file
 
     @property
@@ -233,7 +224,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self._flowcell_id = os.path.basename(self.run_dir.rstrip('/'))
             if "(" in self._flowcell_id:
                  self._flowcell_id = self._flowcell_id.split("(")[0]
-            #log.error(self._flowcell_id)
         return self._flowcell_id
 
     @property
@@ -313,8 +303,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
         unaligned_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
         raw_fastq_dir = os.path.join(unaligned_dir, 'raw_fastq')
         copy_done_file = os.path.join(raw_fastq_dir, "copy_done.Success")
-        copy_job_output_dependency = []
-        fastq_job_input_dependency = []
+        copy_job_output_dependency = [
+            os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + ".summaryReport.html"),
+            os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + ".heatmapReport.html"),
+            os.path.join(raw_fastq_dir, "summaryTable.csv")
+        ]
+        rename_job = None
 
         # If demultiplexing were done on the sequencer i.e. MGI adpaters used...
         if self.is_demultiplexed:
@@ -323,11 +317,16 @@ class MGIRunProcessing(common.MUGQICPipeline):
             # ...then do the necessary moves and renamings, from the raw_fastq folder to the Unaligned folders
             for readset in self.readsets:
                 output_dir = os.path.join(self.output_dir, "Unaligned." + readset.lane, 'Project_' + readset.project, 'Sample_' + readset.name)
+                m = re.search("\D+(?P<index>\d+)", readset.index_name)
+                if m:
+                    index_number = m.group('index').lstrip("0")
+                else:
+                    _raise(SanitycheckError("MGI Index error : unable to parse barcode # in : " + readset.index_name))
 
                 copy_job_output_dependency.extend([
-                    readset.fastq1,
-                    re.sub("gz", "fqStat.txt", readset.fastq1),
-                    re.sub("_R1.fastq.gz", ".report.html", readset.fastq1)
+                    os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + index_number + "_1.fq.gz"),
+                    os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + index_number + "_1.fq.fqStat.txt"),
+                    os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + index_number + ".report.html")
                 ])
                 fastq_job_input_dependency.extend([
                     os.path.join(self.run_dir, "L0" + str(self.lane_number), readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_1.fq.gz"),
@@ -337,24 +336,16 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 fastq_jobs.append(
                     concat_jobs([
                         bash.mkdir(output_dir),
-                        bash.mv(
-                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_1.fq.gz"),
+                        bash.cp(
+                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + index_number + "_1.fq.gz"),
                             readset.fastq1
                         ),
-                        bash.ln(
-                            readset.fastq1,
-                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_1.fq.gz")
-                        ),
-                        bash.mv(
-                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_1.fq.fqStat.txt"),
+                        bash.cp(
+                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + index_number + "_1.fq.fqStat.txt"),
                             re.sub("gz", "fqStat.txt", readset.fastq1)
                         ),
-                        bash.ln(
-                            re.sub("gz", "fqStat.txt", readset.fastq1),
-                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_1.fq.fqStat.txt")
-                        ),
-                        bash.mv(
-                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + ".report.html"),
+                        bash.cp(
+                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + index_number + ".report.html"),
                             re.sub("_R1_001.fastq.gz", ".report.html", readset.fastq1)
                         ),
                         bash.ln(
@@ -366,8 +357,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
                 if readset.run_type == "PAIRED_END":
                     copy_job_output_dependency.extend([
-                        readset.fastq2,
-                        re.sub("gz", "fqStat.txt", readset.fastq2)
+                        os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + index_number + "_2.fq.gz"),
+                        os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + index_number + "_2.fq.fqStat.txt")
                     ])
                     fastq_job_input_dependency.extend([
                         os.path.join(self.run_dir, "L0" + str(self.lane_number), readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_2.fq.gz"),
@@ -375,16 +366,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     ])
                     fastq_jobs.append(
                         concat_jobs([
-                            bash.mv(
-                                os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_2.fq.gz"),
+                            bash.cp(
+                                os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + index_number + "_2.fq.gz"),
                                 readset.fastq2,
                             ),
-                            bash.ln(
-                                readset.fastq2,
-                                os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_2.fq.gz")
-                            ),
-                            bash.mv(
-                                os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + readset.index_number + "_2.fq.fqStat.txt"),
+                            bash.cp(
+                                os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + readset.lane + "_" + index_number + "_2.fq.fqStat.txt"),
                                 re.sub("gz", "fqStat.txt", readset.fastq2),
                             ),
                             bash.ln(
@@ -397,6 +384,48 @@ class MGIRunProcessing(common.MUGQICPipeline):
             fastq_job.input_files = fastq_job_input_dependency + [copy_done_file]
             fastq_job.name = "index.copy_rename_raw." + self.run_id + "." + str(self.lane_number)
             fastq_job.samples = self.samples
+
+        elif "(no_barcode)" in self.run_dir:
+            if len(self.readsets) > 1:
+                err_msg = "LANE SETTING ERROR :\n"
+                err_msg += "Unable to demultiplex " + str(len(self.readsets)) + " samples : No barcode in fastq files...\n(in "
+                err_msg += self.run_dir + ")"
+                _raise(SanitycheckError(err_msg))
+            readset = self.readsets[0]
+            rename_job = concat_jobs(
+                [
+                    bash.mkdir(os.path.dirname(readset.fastq1)),
+                    bash.cp(
+                        os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz"),
+                        readset.fastq1,
+                    ),
+                    bash.cp(
+                        os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.fqStat.txt"),
+                        re.sub("gz", "fqStat.txt", readset.fastq1),
+                    ),
+                    bash.cp(
+                        os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read.report.html"),
+                        re.sub("_R1_001.fastq.gz", "_read.report.html", readset.fastq1),
+                    )
+                ]
+            )
+            if readset.run_type == "PAIRED_END":
+                rename_job = concat_jobs(
+                    [
+                        rename_job,
+                        bash.cp(
+                            os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz"),
+                            readset.fastq2,
+                        ),
+                        bash.cp(
+                            os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.fqStat.txt"),
+                            re.sub("gz", "fqStat.txt", readset.fastq2),
+                        )
+                    ]
+                )
+            rename_job.output_files.append(copy_done_file)
+            rename_job.name = "index.rename." + self.run_id + "." + str(self.lane_number)
+            rename_job.samples = self.samples
 
         # If no demultiplexing were done on the sequencer i.e. no MGI adpater used... 
         else:
@@ -569,7 +598,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     ),
                     pipe_jobs([
                         bash.md5sum(
-                            list(set(fastq_job_input_dependency)),
+                            [re.sub(raw_fastq_dir, os.path.dirname(file_path), file_path) for file_path in copy_job_output_dependency],
                             None
                         ),
                         bash.awk(
@@ -581,7 +610,29 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             None,
                             copy_done_file + ".md5",
                             "'{print $1,\""+raw_fastq_dir+"/\"$2}'"
+                        )
+                    ]),
+                    # Handle corner cases for BioInfo.csv
+                    bash.cp(
+                        self.bioinfo_file,
+                        raw_fastq_dir
+                    ),
+                    pipe_jobs([
+                        bash.md5sum(
+                            self.bioinfo_file,
+                            None
                         ),
+                        bash.awk(
+                             None,
+                             None,
+                             "'sub( /\/.*\//,\"\",$2 )'"
+                        ),
+                        bash.awk(
+                            None,
+                            copy_done_file + ".md5",
+                            "'{print $1,\""+raw_fastq_dir+"/\"$2}'",
+                            append=True
+                        )
                     ]),
                     bash.md5sum(
                         copy_done_file + ".md5",
@@ -590,7 +641,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     ),
                     bash.touch(copy_done_file)
                 ],
-                output_dependency=copy_job_output_dependency + [copy_done_file],
+                output_dependency=copy_job_output_dependency + [re.sub(os.path.dirname(self.bioinfo_file), raw_fastq_dir, self.bioinfo_file), copy_done_file],
                 name="index.copy_raw." + self.run_id + "." + str(self.lane_number),
                 samples=self.samples
             )
@@ -674,6 +725,9 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
         elif self.is_demultiplexed:
             log.info("Demultiplexing done on the sequencer... Skipping fastq step...")
+
+        elif "(no_barcode)" in self.run_dir:
+            log.info("No barcode in fastq files... Demultiplexing is undoable... Skipping fastq step...")
 
         else:
             log.info("No demultiplexing done on the sequencer... Processing fastq step...")
@@ -764,16 +818,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     os.path.join(os.path.dirname(readset.fastq2), "fastqc.R2", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.fastq2))),
                     os.path.join(os.path.dirname(readset.fastq2), "fastqc.R2", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.fastq2))),
                 ]
-#            if not self.is_demultiplexed:
-#                input_dict[readset.index_fastq1] = [
-#                    os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.I1", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq1))),
-#                    os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.I1", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq1)))
-#                ]
-#                if self.is_dual_index:
-#                    input_dict[readset.index_fastq2] = [
-#                        os.path.join(os.path.dirname(readset.index_fastq2), "fastqc.I2", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq2))),
-#                        os.path.join(os.path.dirname(readset.index_fastq2), "fastqc.I2", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq2))),
-#                    ]
             for input, outputs in input_dict.items():
                 job_suffix = re.search('.*fastqc\.([IR][12])', os.path.dirname(outputs[0])).group(1)
                 jobs.append(
@@ -840,6 +884,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
             command = "runBlast.sh " + str(nb_blast_to_do) + " " + output_prefix + " " + readset.fastq1 + " "
             if readset.fastq2:
                 command += readset.fastq2
+                fasta_file = output_prefix + ".R1R2.subSampled_{nb_blast_to_do}.fasta".format(
+                    nb_blast_to_do=nb_blast_to_do
+                )
+                result_file = output_prefix + ".R1R2.subSampled_{nb_blast_to_do}.blastres".format(
+                    nb_blast_to_do=nb_blast_to_do
+                )
             current_jobs.append(
                 Job(
                     inputs,
@@ -856,8 +906,14 @@ class MGIRunProcessing(common.MUGQICPipeline):
             rrna_db = config.param('blast', 'rrna_db', required=False)
             if readset.is_rna and rrna_db:
                 rrna_result_file = result_file + "Rrna"
-                rrna_output = output_prefix + ".R1.subSampled_{nb_blast_to_do}.rrna".format(
-                    nb_blast_to_do=nb_blast_to_do)
+                if readset.fastq2:
+                    rrna_output = output_prefix + ".R1R2.subSampled_{nb_blast_to_do}.rrna".format(
+                        nb_blast_to_do=nb_blast_to_do
+                    )
+                else:
+                    rrna_output = output_prefix + ".R1.subSampled_{nb_blast_to_do}.rrna".format(
+                        nb_blast_to_do=nb_blast_to_do
+                    )
                 command = """\
 blastn \\
   -query {fasta_file} \\
@@ -1011,8 +1067,6 @@ wc -l >> {output}""".format(
             for job in job_list:
                 job.samples = [readset.sample]
             jobs.extend(job_list)
-
-#            self.report_inputs['index'].append(readset.bam + '.metrics.alignment_summary_metrics')
 
             if readset.is_rna:
                 self.report_inputs['align'][readset.name] = [
@@ -1327,39 +1381,75 @@ wc -l >> {output}""".format(
 
         return subprocess.check_output("grep -m1 '"+instrument+"' %s | awk -F',' '{print $3}'" % instrument_file, shell=True).strip()
 
-    def generate_mgi_lane_barcode_sheet(self):
+    def validate_barcodes(self):
         """
-        Create a barcode sheet to use with the fastq-multix software
-        from the Clarity data.
-
-        Only the samples of the chosen lane will be in the file.
-        The sample indexes are trimmed according to the mask used.
+        Validate all index sequences against each other to ensure they aren't in collision according to the chosen
+        number of mismatches parameter.
         """
+        min_allowed_distance = (2 * self.number_of_mismatches) + 1
 
-        csv_file = os.path.join(
-            self.output_dir,
-            "barcodesheet." + str(self.lane_number) + ".tsv"
-        )
-        writer = csv.writer(open(csv_file, 'wb'), dialect="excel-tab")
+        validated_indexes = []
+        collisions = []
 
-        index_per_readset = {}
         for readset in self.readsets:
-            readset.indexes = self.get_index(readset)
-            index_per_readset[readset.name] = readset.indexes
+            current_index = readset.index.replace('-', '')
 
-            for readset_index in readset.indexes:
-                if readset.index_type == "DUALINDEX":
-                    index_to_use = readset_index['INDEX1']+"-"+ readset_index['INDEX2']
+            for candidate_index in validated_indexes:
+                if distance(current_index, candidate_index) < min_allowed_distance:
+                    collisions.append("'" + current_index + "' and '" + candidate_index + "'")
+            validated_indexes.append(current_index)
+
+        if len(collisions) > 0:
+            _raise(SanitycheckError("Barcode collisions: " + ";".join(collisions)))
+
+    def get_mask(self):
+        """
+        Returns an fgbio DemuxFastqs friendly mask of the reads cycles.
+
+        The mask is calculated using:
+            - first base and last base of index;
+            - the index length in the sample sheet;
+            - the number of index cycles on the sequencer;
+        """
+        mask = ""
+        index_lengths = self.get_smallest_index_length()
+        index_read_count = 0
+        nb_total_index_base_used = 0
+
+        index_cycles = [int(self.get_index1cycles())]
+        if self.is_dual_index:
+            index_cycles.insert(0, int(self.get_index2cycles()))
+
+        mask = self.get_read1cycles() + 'T ' + self.get_read2cycles() + 'T'
+        for idx_nb_cycles in index_cycles:
+            if idx_nb_cycles >= index_lengths[index_read_count]:
+                if index_lengths[index_read_count] == 0 or self.last_index <= nb_total_index_base_used:
+                    # Don't use any index bases for this read
+                    mask += str(idx_nb_cycles) + 'S'
                 else:
-                    index_to_use = readset_index['INDEX1']
-                csv_data = [
-                    readset_index['BCL2FASTQ_NAME'],
-                    index_to_use,
-                    readset.index_name
-                ]
-                writer.writerow(csv_data)
+                    nb_s_printed = 0
 
-        self._index_per_readset = index_per_readset
+                    # Ns in the beginning of the index read
+                    if self.first_index > (nb_total_index_base_used + 1):
+                        nb_s_printed = min(read_info.nb_cycles, self.first_index - nb_total_index_base_used - 1)
+                        if nb_s_printed >= index_lengths[index_read_count]:
+                            nb_s_printed = read_info.nb_cycles
+                        mask += str(nb_s_printed) + 'S'
+
+                    # Calculate the number of index bases
+                    nb_index_bases_used = max(index_lengths[index_read_count] - nb_s_printed, 0)
+                    nb_index_bases_used = min(self.last_index - nb_total_index_base_used - nb_s_printed, nb_index_bases_used)
+                    nb_total_index_base_used += nb_index_bases_used + min(nb_s_printed, index_lengths[index_read_count])
+                    if nb_index_bases_used > 0:
+                        mask += str(nb_index_bases_used) + 'B'
+
+                    # Ns at the end of the index read
+                    remaining_base_count = idx_nb_cycles - nb_index_bases_used - nb_s_printed
+                    if remaining_base_count > 0:
+                        mask += str(remaining_base_count) + 'S'
+            index_read_count += 1
+
+        return mask
 
     def generate_mgi_lane_sample_sheet(self):
         """
@@ -1385,17 +1475,15 @@ wc -l >> {output}""".format(
 
         writer.writeheader()
 
-        count = 0
-        index_per_readset = {}
-        for readset in self.readsets:
-            count += 1
-            readset.indexes = self.get_index(readset)
-            index_per_readset[readset.name] = readset.indexes
+        # barcode validation
+        if re.search("B", self.mask):
+            self.validate_barcodes()
 
+        for readset in self.readsets:
             for readset_index in readset.indexes:
                 csv_dict = {
-                    "Sample_ID": "Sample_" + readset_index['BCL2FASTQ_NAME'],
-                    "Sample_Name": readset_index['BCL2FASTQ_NAME'],
+                    "Sample_ID": readset_index['SAMPLESHEET_NAME'],
+                    "Sample_Name": readset_index['SAMPLESHEET_NAME'] + '_' + readset_index['INDEX_NAME'],
                     "Library_ID": readset_index['LIBRARY'],
                     "Description": readset.name + ' - ' + readset.library_type + ' - ' + readset.library_source,
                     "Sample_Barcode": readset_index['INDEX2'] + readset_index['INDEX1']
@@ -1407,16 +1495,13 @@ wc -l >> {output}""".format(
     def generate_fastqdemultx_outputs(self):
         fastq_multx_outputs = []
         final_fastq_jobs = []
-        count = 0
 
         output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
 
         # If True, then merge the 'Undetermined' reads
         if self.merge_undetermined:
             undet_fastqr1 = os.path.join(output_dir, "tmp", "unmatched_R1.fastq")
-            undet_fastqi1 = os.path.join(output_dir, "tmp", "unmatched_I1.fastq")
-            undet_fastqr2 = os.path.join(output_dir, "tmp", "unmatched_R2.fastq") if readset.run_type == "PAIRED_END" else None
-            undet_fastqi2 = os.path.join(output_dir, "tmp", "unmatched_I2.fastq") if self.is_dual_index else None
+            undet_fastqr2 = os.path.join(output_dir, "tmp", "unmatched_R2.fastq")
         else:
             undet_fastqr1 = None
             undet_fastqi1 = None
@@ -1691,11 +1776,11 @@ wc -l >> {output}""".format(
 
             for index in readset.indexes:
                 readset_r1_outputs.append(
-                    os.path.join(output_dir, "tmp", "Sample_" + index['BCL2FASTQ_NAME'] + "-" + index['BCL2FASTQ_NAME'] + "-" + index['INDEX2']+index['INDEX1'] + "_R1.fastq.gz")
+                    os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2']+index['INDEX1']+"_R1.fastq.gz")
                 )
                 if readset.run_type == "PAIRED_END":
                     readset_r2_outputs.append(
-                        os.path.join(output_dir, "tmp", "Sample_" + index['BCL2FASTQ_NAME'] + "-" + index['BCL2FASTQ_NAME'] + "-" + index['INDEX2']+index['INDEX1'] + "_R2.fastq.gz")
+                        os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2']+index['INDEX1']+"_R2.fastq.gz")
                     )
 
             if self.merge_undetermined:
@@ -1708,15 +1793,19 @@ wc -l >> {output}""".format(
                     )
 
             if len(readset_r1_outputs) > 1:
-                readset_r1_rename_jobs.append(
-                    bash.cat(
-                        readset_r1_outputs,
-                        None,
-                        zip=True
-                    ),
-                    bash.gzip(
-                        None,
-                        readset.fastq1
+                readset_rename_jobs.append(
+                    pipe_jobs(
+                        [
+                            bash.cat(
+                                readset_r1_outputs,
+                                None,
+                                zip=True
+                            ),
+                            bash.gzip(
+                                None,
+                                readset.fastq1
+                            )
+                        ]
                     )
                 )
             else:
@@ -1729,15 +1818,27 @@ wc -l >> {output}""".format(
 
             if readset.run_type == "PAIRED_END":
                 if len(readset_r2_outputs) > 1:
-                    final_fastq_jobs_per_readset.append(
-                        bash.cat(
-                            readset_r2_outputs,
-                            None,
-                            zip=True
-                        ),
-                        bash.gzip(
-                            None,
-                            readset.fastq2
+                    readset_rename_jobs.append(
+                        pipe_jobs(
+                            [
+                                bash.cat(
+                                    readset_r2_outputs,
+                                    None,
+                                    zip=True
+                                ),
+                                bash.gzip(
+                                    None,
+                                    raw_readset_fastq2
+                                )
+                            ]
+                        )
+                    )
+                # if only one barcode, then just rename the file
+                else:
+                    readset_rename_jobs.append(
+                        bash.mv(
+                            readset_r2_outputs[0],
+                            raw_readset_fastq2
                         )
                     )
 
@@ -1763,6 +1864,37 @@ wc -l >> {output}""".format(
                             None,
                             readset.fastq2
                         )
+                    ],
+                    name="fastq.extract_R2_fastq." + readset.name + "." + self.run_id + "." + str(self.lane_number),
+                    samples=self.samples
+                )
+            )
+            if self.is_dual_index:
+                # I1 fastq
+                final_fastq_jobs.append(
+                    pipe_jobs(
+                        [
+                            bash.cat(
+                                raw_readset_fastq2,
+                                None,
+                                zip=True
+                            ),
+                            bash.paste(
+                                None,
+                                None,
+                                options="-d '\\t' - - - -"
+                            ),
+                            bash.awk(
+                                None,
+                                None,
+                                "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles())+int(self.get_index2cycles())+1)+","+self.get_index1cycles()+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles())+int(self.get_index2cycles())+1)+","+self.get_index1cycles()+") }'"
+                            ),
+                            bash.gzip(
+                                None,
+                                readset.index_fastq1
+                            )
+                        ],
+                        name="fastq.extract_I1_fastq." + readset.name + "." + self.run_id + "." + str(self.lane_number)
                     )
 
             if len(readset_demuxfastqs_outputs) > 1:
@@ -1781,23 +1913,10 @@ wc -l >> {output}""".format(
                 final_fastq_jobs_per_readset.append(
                     
                 )
-
-                # For paired-end sequencing, do not forget the fastq of the reverse reads
-                if readset.run_type == "PAIRED_END" :
-                    fastqr2a = os.path.join(output_dir, "tmp", readset.name + "_A_R2.fastq")
-                    fastqr2b = os.path.join(output_dir, "tmp", readset.name + "_B_R2.fastq")
-                    fastqr2c = os.path.join(output_dir, "tmp", readset.name + "_C_R2.fastq")
-                    fastqr2d = os.path.join(output_dir, "tmp", readset.name + "_D_R2.fastq")
-                    demuxfastqs_outputs.extend([
-                        fastqr2a,
-                        fastqr2b,
-                        fastqr2c,
-                        fastqr2d,
-                        undet_fastqr2 if undet_fastqr2 else None
-                    ])
-
-                    final_fastq_jobs_per_readset.append(
-                        pipe_jobs([
+                # I2 fastq
+                final_fastq_jobs.append(
+                    pipe_jobs(
+                        [
                             bash.cat(
                                 list(filter(None, [
                                     fastqr2a,
@@ -1868,174 +1987,27 @@ wc -l >> {output}""".format(
                         samples=[readset.sample]
                     )
                 )
-
         return demuxfastqs_outputs, final_fastq_jobs
 
-    def get_index(self, readset):
+    def get_smallest_index_length(self):
         """
+        Returns a list (for each index read of the run) of the minimum between the number of index cycle on the
+        sequencer and all the index lengths.
         """
+        run_index_lengths = []
 
-        indexes = []
-        idx_seq_array = []
-        index1 = ""
-        index2 = ""
-        index1seq = ""
-        index2seq = ""
+        all_indexes = []
+        for readset in self.readsets:
+            all_indexes += readset.indexes
 
-        index_file = config.param('DEFAULT', 'index_settings_file', type='filepath', required=False)
-        if not (index_file and os.path.isfile(index_file)):
-            index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
+        if self.is_dual_index:
+            min_sample_index_length = min(len(index['INDEX2_RAW']) for index in all_indexes)
+            run_index_lengths.append(min(min_sample_index_length, int(self.get_index2cycles())))
 
-        index_seq_pattern = "grep '%s,' %s | head -n1 | awk -F',' '{print $%d}'"
-        log.error(readset.library_type)
+        min_sample_index_length = min(len(index['INDEX1_RAW']) for index in all_indexes)
+        run_index_lengths.append(min(min_sample_index_length, int(self.get_index1cycles())))
 
-        if re.search("SI-", readset.index_name) and (readset.library_type == "tenX_sc_RNA_v2" or readset.library_type == "tenX_DNA_v2" or readset.library_type == "FeatureBarcode" or readset.library_type == "tenX_sc_ATAC_v1"):
-            index1 = readset.index_name
-
-            for idx, char in enumerate(['_A', '_B', '_C', '_D']):
-                index1seq = subprocess.check_output(index_seq_pattern % (index1, index_file, idx+2), shell=True).strip()
-                [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = self.sub_get_index(readset, index1seq, index2seq)
-                indexes.append({
-                    'BCL2FASTQ_NAME': readset.name + char,
-                    'LIBRARY': readset.library,
-                    'PROJECT': readset.project,
-                    'INDEX_NAME': readset.index_name,
-                    'INDEX1': actual_index1seq,
-                    'INDEX2': actual_index2seq,
-                    'ADAPTERi7' : adapteri7,
-                    'ADAPTERi5' : adapteri5
-                })
-                (actual_index1seq != "") and idx_seq_array.append(actual_index1seq)
-                (actual_index2seq != "") and idx_seq_array.append(actual_index2seq)
-
-        elif re.search("SI-", readset.index_name) and readset.library_type == "tenX_sc_RNA_v1":
-            index2 = readset.index_name
-
-
-            for idx, char in enumerate(['_A', '_B', '_C', '_D']):
-                index2seq = subprocess.check_output(index_seq_pattern % (index2, index_file, idx+2), shell=True).strip()
-                [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = self.sub_get_index(readset, index1seq, index2seq)
-                indexes.append({
-                    'BCL2FASTQ_NAME': readset.name + char,
-                    'LIBRARY': readset.library,
-                    'PROJECT': readset.project,
-                    'INDEX_NAME': readset.index_name,
-                    'INDEX1': actual_index1seq,
-                    'INDEX2': actual_index2seq,
-                    'ADAPTERi7' : adapteri7,
-                    'ADAPTERi5' : adapteri5
-                })
-                (actual_index1seq != "") and idx_seq_array.append(actual_index1seq)
-                (actual_index2seq != "") and idx_seq_array.append(actual_index2seq)
-
-        else:
-            log.error(readset.index_name)
-            if re.search("-", readset.index_name):
-                index1 = readset.index_name.split("-")[0]
-                index2 = readset.index_name.split("-")[1]
-                index1seq = subprocess.check_output(index_seq_pattern % (index1, index_file, 2), shell=True).strip()
-                index2seq = subprocess.check_output(index_seq_pattern % (index2, index_file, 2), shell=True).strip()
-
-            else:
-                index1 = readset.index_name
-
-                index1seq = subprocess.check_output(index_seq_pattern % (index1, index_file, 2), shell=True).strip()
-
-            [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = self.sub_get_index(readset, index1seq, index2seq)
-            indexes.append({
-                'BCL2FASTQ_NAME': readset.name,
-                'LIBRARY': readset.library,
-                'PROJECT': readset.project,
-                'INDEX_NAME': readset.index_name,
-                'INDEX1': actual_index1seq,
-                'INDEX2': actual_index2seq,
-                'ADAPTERi7' : adapteri7,
-                'ADAPTERi5' : adapteri5
-            })
-            (actual_index1seq != "") and idx_seq_array.append(actual_index1seq)
-            (actual_index2seq != "") and idx_seq_array.append(actual_index2seq)
-
-        return indexes
-
-    def sub_get_index(self, readset, index1seq, index2seq):
-        """
-        """
-        index_file = config.param('DEFAULT', 'index_settings_file', type='filepath', required=False)
-        if not (index_file and os.path.isfile(index_file)):
-            index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
-
-        index1cycles = int(self.get_index1cycles())
-        index2cycles = int(self.get_index2cycles()) if self.is_dual_index else None
-
-        actual_index1seq='';
-        actual_index2seq='';
-
-        seqtype = self.seqtype
-        primer_seq_pattern = "grep -A8 '%s' %s | grep '_IDX_' | awk -F':' '{print $2}' | tr -d \"35\'\- \" | awk -F',' '{print $%d}'"
-
-        index1_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 1") % (seqtype, index_file, 1), shell=True).strip()
-        index1_primeroffset = int(subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 1") % (seqtype, index_file, 2), shell=True).strip())
-        index2_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 2") % (seqtype, index_file, 1), shell=True).strip()
-        index2_primeroffset = int(subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 2") % (seqtype, index_file, 2), shell=True).strip())
-
-        main_seq_pattern = "grep -A4 '^%s:' %s | grep -E \"^3'|^5'\" | head -n 1 | sed \"s/5'//g\"  | sed \"s/3'//g\" | tr -d \" '\-\" | grep %s"
-        actual_seq_pattern = "echo %s | awk -F\"%s\" '{print $%d}' | sed \"%s\" | cut -c %s"
-
-        present = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, "-c " + index1_primer), shell=True).strip()
-        if present == "1" :
-
-            main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, index1_primer), shell=True).strip()
-
-            if seqtype == "dnbseqg400" :
-                if len(index1seq) < index1cycles:
-                    index1_primer_seq = index1_primer[:len(index1seq)-index1cycles]
-                else:
-                    index1_primer_seq = index1_primer
-                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, index1_primer_seq, 2, "s/\[i7\]/"+index1seq+"/g", str(index1_primeroffset+1)+"-"+str(index1_primeroffset+index1cycles)+" | tr 'ATGC' 'TACG' | rev"), shell=True).strip()
-            else:
-                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, index1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(index1_primeroffset+1)+"-"+str(index1_primeroffset+index1cycles)), shell=True).strip()
-
-            if readset.index_type == "DUALINDEX" and index2cycles:
-                main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, index2_primer), shell=True).strip()
-
-                if seqtype == "hiseqx" or seqtype == "hiseq4000" or seqtype == "iSeq" or seqtype == "dnbseqg400" :
-                    actual_index2seq = subprocess.check_output(actual_seq_pattern.replace("| cut -c", "| rev | cut -c") % (main_seq, index2_primer, 1, "s/\[i5c\]/$(echo "+index2seq+" | tr 'ATGC' 'TACG' )/g", str(index2_primeroffset+1)+"-"+str(index2_primeroffset+index2cycles)), shell=True).strip()
-                else :
-                    actual_index2seq = subprocess.check_output(actual_seq_pattern % (main_seq, index2_primer, 2, "s/\[i5\]/"+index2seq+"/g", str(index2_primeroffset+1)+"-"+str(index2_primeroffset+index2cycles)), shell=True).strip()
-
-        else :
-            indexn1_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N1").replace("_DIGIT_", "1"), shell=True).strip()
-            indexn1_primeroffset = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N1").replace("_DIGIT_", "2"), shell=True).strip()
-            indexn2_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N2").replace("_DIGIT_", "1"), shell=True).strip()
-            indexn2_primeroffset = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N2").replace("_DIGIT_", "2"), shell=True).strip()
-
-            main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, indexn1_primer), shell=True).strip()
-
-            if seqtype == "dnbseqg400" :
-                if len(index1seq) < index1cycles:
-                    indexn1_primer_seq = indexn1_primer[:len(index1seq)-index1cycles]
-                else:
-                    indexn1_primer_seq = indexn1_primer
-                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn1_primer_seq, 2, "s/\[i7\]/"+index1seq+"/g", str(indexn1_primeroffset+1)+"-"+str(indexn1_primeroffset+index1cycles))+" | tr 'ATGC' 'TACG' | rev", shell=True).strip()
-            else:
-                actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(indexn1_primeroffset+1)+"-"+str(indexn1_primeroffset+index1cycles)), shell=True).strip()
-
-            if readset.index_type == "DUALINDEX" and index2cycles:
-                main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, indexn2_primer), shell=True).strip()
-
-                if seqtype == "hiseqx" or seqtype == "hiseq4000" or seqtype == "iSeq" or seqtype == "dnbseqg400" :
-                    actual_index2seq = subprocess.check_output(actual_seq_pattern.replace("| cut -c", "| rev | cut -c") % (main_seq, indexn2_primer, 1, "s/\[i5c\]/$(echo "+index2seq+" | tr 'ATGC' 'TACG' )/g", str(indexn2_primeroffset+1)+"-"+str(indexn2_primeroffset+index2cycles)), shell=True).strip()
-                else :
-                    actual_index2seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn2_primer, 2, "s/\[i5\]/"+index2seq+"/g", str(indexn2_primeroffset+1)+"-"+str(indexn2_primeroffset+index2cycles)), shell=True).strip()
-
-        main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, "\[i7\]"), shell=True).strip()
-        adapteri7 = subprocess.check_output("echo \"%s\" | awk -F\'\\\[i7\\\]\' '{print $1}' | awk -F\'\\\]\' '{print $NF}'" % (main_seq), shell=True).strip()
-
-        main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, "\[i5c\]"), shell=True).strip()
-        adapteri5 = subprocess.check_output("echo \"%s\" | awk -F\'\\\[i5c\\\]\' '{print $2}' | awk -F\'\\\[\' '{print $1}' | rev" % (main_seq), shell=True).strip()
-
-        return [actual_index1seq, actual_index2seq, adapteri7, adapteri5]
-
+        return run_index_lengths
 
     def load_readsets(self):
         """
@@ -2046,6 +2018,7 @@ wc -l >> {output}""".format(
             self.readset_file,
             self.bioinfo_file,
             "PAIRED_END" if self.is_paired_end else "SINGLE_END",
+            self.seqtype,
             self.flowcell_id,
             int(self.lane_number),
             self.get_read1cycles(),
@@ -2103,6 +2076,12 @@ wc -l >> {output}""".format(
             self.report
         ]
 
+def distance(str1, str2):
+    """
+    Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
+    """
+    return sum(itertools.imap(unicode.__ne__, str1, str2))
+
 if __name__ == '__main__':
 
     argv = sys.argv
@@ -2110,3 +2089,4 @@ if __name__ == '__main__':
         utils.utils.container_wrapper_argparse(argv)
     else:
         MGIRunProcessing()
+

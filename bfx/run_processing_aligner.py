@@ -76,7 +76,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
     downloaded_bed_files = []
     created_interval_lists = []
 
-    def get_reference_index(self):
+    def get_reference_index(self, readset=None):
         folder_name = os.path.basename(self.genome_folder)
         return os.path.join(
             self.genome_folder,
@@ -250,14 +250,14 @@ class StarRunProcessingAligner(RunProcessingAligner):
         elif 149 <= nb_cycles <= 151:
             nb_cycles = 150
         else:
-            raise NotImplementedError("NumCycles " + nb_cycles + " not supported for Star aligner...")
+            raise NotImplementedError("NumCycles " + str(nb_cycles) + " not supported for Star aligner...")
         self._nb_cycles = nb_cycles
 
     @property
     def nb_cycles(self):
         return self._nb_cycles
 
-    def get_reference_index(self):
+    def get_reference_index(self, readset=None):
         folder_name = os.path.basename(self.genome_folder)
         ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
         if os.path.isfile(ini_file):
@@ -267,10 +267,20 @@ class StarRunProcessingAligner(RunProcessingAligner):
             source = genome_config.get("DEFAULT", "source")
             version = genome_config.get("DEFAULT", "version")
 
-            return os.path.join(self.genome_folder,
-                                "genome",
-                                "star_index",
-                                source + version + ".sjdbOverhang" + str(self.nb_cycles - 1))
+            if readset and readset.is_scrna:
+                return os.path.join(
+                    self.genome_folder,
+                    "genome",
+                    "10xGenomics",
+                    genome_config.get("DEFAULT", "10x_transcriptome"),
+                    "star"
+                )
+            else:
+                return os.path.join(
+                     self.genome_folder,
+                     "genome",
+                     "star_index",
+                     source + version + ".sjdbOverhang" + str(self.nb_cycles - 1))
         else:
             return None
 
@@ -321,7 +331,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
             rg_sample=readset.sample.name,
             rg_library=readset.library if readset.library else "",
             rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
-            rg_platform="Illumina",
+            rg_platform="MGI",
             rg_center=rg_center if rg_center else ""
         )
         # we clean the output of the star job since we move the file, and the moved file is the output of the move job
@@ -339,8 +349,8 @@ class StarRunProcessingAligner(RunProcessingAligner):
 
     def get_metrics_jobs(self, readset):
         jobs = []
-        jobs += StarRunProcessingAligner._rnaseqc(readset) + StarRunProcessingAligner._picard_rna_metrics(readset) + \
-                StarRunProcessingAligner._estimate_ribosomal_rna(readset)
+        jobs += self._rnaseqc(readset) + self._picard_rna_metrics(readset) + \
+                self._estimate_ribosomal_rna(readset)
         return jobs
 
     @staticmethod
@@ -472,5 +482,4 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
             jobs.append(job)
 
         return jobs
-
 
