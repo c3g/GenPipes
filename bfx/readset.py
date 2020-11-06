@@ -875,16 +875,18 @@ def parse_mgi_raw_readset_files(
 
         genome_root = config.param('DEFAULT', 'genome_root', type="dirpath")
 
-        if len(readset.genomic_database) > 0:
+        if readset.protocol == "10X_scRNA":
+            readset._is_scrna = True
+            nb_cycles = nb_cycles_r2
+        else:
+            readset._is_scrna = False
+            nb_cycles = nb_cycles_r1
+
+        if readset.is_scrna:
+            log.info("Skipping alignment for " + readset.protocol + " library '" + readset.name + "'")
+        elif len(readset.genomic_database) > 0:
             folder_name = readset.genomic_database
             current_genome_folder = os.path.join(genome_root, folder_name)
-
-            if readset.protocol == "10X_scRNA":
-                readset._is_scrna = True
-                nb_cycles = nb_cycles_r2
-            else:
-                readset._is_scrna = False
-                nb_cycles = nb_cycles_r1
 
             if readset.is_rna:
                 readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles))

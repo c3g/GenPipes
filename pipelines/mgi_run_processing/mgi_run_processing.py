@@ -1484,6 +1484,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
             demux_fastqs_outputs, final_fastq_jobs = self.generate_demuxfastqs_outputs()
             tmp_output_dir = os.path.dirname(demux_fastqs_outputs[0])
 
+            metrics_file = os.path.join(tmp_output_dir, self.run_id + "." + str(self.lane_number) + ".DemuxFastqs.metrics.txt")
+
             jobs.append(
                 concat_jobs(
                     [
@@ -1493,11 +1495,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             self.number_of_mismatches,
                             self.mask,
                             demux_fastqs_outputs,
+                            metrics_file,
                             os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz"),
                             os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")
                         )
                     ],
-                    name="fastq.demultiplex" + self.run_id + "." + str(self.lane_number),
+                    name="fastq.demultiplex." + self.run_id + "." + str(self.lane_number),
                     samples=self.samples
                 )
             )
