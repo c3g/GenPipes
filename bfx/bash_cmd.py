@@ -57,7 +57,8 @@ def ln(target_file, link, out_dir=None):
         command="""\
 ln -s -f \\
   {target_file} \\
-  {link}""".format(
+  {link} && \\
+ls {folder}""".format(
             #target_file=os.path.relpath(target_file, folder),
             target_file=os.path.join(out_dir, target_file),
             link=os.path.join(out_dir, link),
