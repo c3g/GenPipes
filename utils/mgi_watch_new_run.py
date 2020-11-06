@@ -179,12 +179,12 @@ def compare_runs(
                         print_genpipes_scripts(
                             outdir,
                             process_dir,
+                            genpipes_scr_dir,
                             project,
                             flowcell,
                             run,
                             lane,
-                            sequencer_path,
-                            genpipes_repo
+                            sequencer_path
                         )
             # replace referece run list by the current run list to set it as the reference for next watch round
             print_runs(

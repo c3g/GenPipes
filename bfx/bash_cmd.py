@@ -432,3 +432,21 @@ popd""".format(
         )
     )
 
+def pigz(
+    input,
+    output,
+    ini_section="DEFAULT"
+    ):
+
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, 'module_pigz']
+        ],
+        command="""\
+pigz {input} -c {output}""".format(
+            input=input if input else "",
+            output=" > " + output if output else "",
+        )
+    )
