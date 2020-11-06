@@ -737,6 +737,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
             demux_fastqs_outputs, final_fastq_jobs = self.generate_demuxfastqs_outputs()
             tmp_output_dir = os.path.dirname(demux_fastqs_outputs[0])
 
+            metrics_file = os.path.join(tmp_output_dir, self.run_id + "." + str(self.lane_number) + ".DemuxFastqs.metrics.txt")
+
             jobs.append(
                 concat_jobs(
                     [
@@ -746,11 +748,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             self.number_of_mismatches,
                             self.mask,
                             demux_fastqs_outputs,
+                            metrics_file,
                             os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_1.fq.gz"),
                             os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + str(self.lane_number) + "_read_2.fq.gz")
                         )
                     ],
-                    name="fastq.demultiplex" + self.run_id + "." + str(self.lane_number),
+                    name="fastq.demultiplex." + self.run_id + "." + str(self.lane_number),
                     samples=self.samples
                 )
             )
@@ -1485,8 +1488,8 @@ wc -l >> {output}""".format(
                     "Sample_ID": readset_index['SAMPLESHEET_NAME'],
                     "Sample_Name": readset_index['SAMPLESHEET_NAME'] + '_' + readset_index['INDEX_NAME'],
                     "Library_ID": readset_index['LIBRARY'],
-                    "Description": readset.name + ' - ' + readset.library_type + ' - ' + readset.library_source,
-                    "Sample_Barcode": readset_index['INDEX2'] + readset_index['INDEX1']
+                    "Description": readset.name + '_' + readset.library_type + '_' + readset.library_source,
+                    "Sample_Barcode": readset_index['INDEX2_RAW'] + readset_index['INDEX1_RAW']
                 }
                 writer.writerow(csv_dict)
 
@@ -1497,16 +1500,6 @@ wc -l >> {output}""".format(
         final_fastq_jobs = []
 
         output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
-
-        # If True, then merge the 'Undetermined' reads
-        if self.merge_undetermined:
-            undet_fastqr1 = os.path.join(output_dir, "tmp", "unmatched_R1.fastq")
-            undet_fastqr2 = os.path.join(output_dir, "tmp", "unmatched_R2.fastq")
-        else:
-            undet_fastqr1 = None
-            undet_fastqi1 = None
-            undet_fastqr2 = None
-            undet_fastqi2 = None
 
         for readset in self.readsets:
             final_fastq_jobs_per_readset = [
@@ -1776,20 +1769,21 @@ wc -l >> {output}""".format(
 
             for index in readset.indexes:
                 readset_r1_outputs.append(
-                    os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2']+index['INDEX1']+"_R1.fastq.gz")
+                    os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2_RAW']+index['INDEX1_RAW']+"_R1.fastq.gz")
                 )
                 if readset.run_type == "PAIRED_END":
                     readset_r2_outputs.append(
-                        os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2']+index['INDEX1']+"_R2.fastq.gz")
+                        os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2_RAW']+index['INDEX1_RAW']+"_R2.fastq.gz")
                     )
 
+            # If True, then merge the 'Undetermined' reads
             if self.merge_undetermined:
                 readset_r1_outputs.append(
-                    os.path.join(output_dir, "tmp", "unmatched_R1.fastq")
+                    os.path.join(output_dir, "tmp", "unmatched_R1.fastq.gz")
                 )
                 if readset.run_type == "PAIRED_END":
                     readset_r2_outputs.append(
-                        os.path.join(output_dir, "tmp", "unmatched_R2.fastq")
+                        os.path.join(output_dir, "tmp", "unmatched_R2.fastq.gz")
                     )
 
             if len(readset_r1_outputs) > 1:
@@ -1801,7 +1795,7 @@ wc -l >> {output}""".format(
                                 None,
                                 zip=True
                             ),
-                            bash.gzip(
+                            bash.pigz(
                                 None,
                                 readset.fastq1
                             )
@@ -1817,6 +1811,12 @@ wc -l >> {output}""".format(
                 )
 
             if readset.run_type == "PAIRED_END":
+                demuxfastqs_outputs.extend(readset_r2_outputs)
+                raw_readset_fastq2 = os.path.join(
+                    os.path.dirname(readset_r2_outputs[0]),
+                    re.sub("_001.fastq.gz", "_001.raw.fastq.gz", os.path.basename(readset.fastq2))
+                )
+                # if more than one barcode used for the readset, aggregate all R2 fastq into one file for the current readset
                 if len(readset_r2_outputs) > 1:
                     readset_rename_jobs.append(
                         pipe_jobs(
@@ -1826,7 +1826,7 @@ wc -l >> {output}""".format(
                                     None,
                                     zip=True
                                 ),
-                                bash.gzip(
+                                bash.pigz(
                                     None,
                                     raw_readset_fastq2
                                 )
@@ -1860,7 +1860,12 @@ wc -l >> {output}""".format(
                             None,
                             zip=True
                         ),
-                        bash.gzip(
+                        bash.cut(
+                            None,
+                            None,
+                            options="-c 1-" + self.get_read2cycles()
+                        ),
+                        bash.pigz(
                             None,
                             readset.fastq2
                         )
@@ -1889,7 +1894,7 @@ wc -l >> {output}""".format(
                                 None,
                                 "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles())+int(self.get_index2cycles())+1)+","+self.get_index1cycles()+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles())+int(self.get_index2cycles())+1)+","+self.get_index1cycles()+") }'"
                             ),
-                            bash.gzip(
+                            bash.pigz(
                                 None,
                                 readset.index_fastq1
                             )
@@ -1927,7 +1932,7 @@ wc -l >> {output}""".format(
                                 ])),
                                 None
                             ),
-                            bash.gzip(
+                            bash.pigz(
                                 None,
                                 readset.fastq2
                             )
@@ -1972,7 +1977,7 @@ wc -l >> {output}""".format(
                                 ])),
                                 None
                             ),
-                            bash.gzip(
+                            bash.pigz(
                                 None,
                                 readset.fastq2
                             )

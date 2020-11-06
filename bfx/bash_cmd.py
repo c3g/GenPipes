@@ -421,4 +421,3 @@ pigz {input} -c {output}""".format(
             output=" > " + output if output else "",
         )
     )
-
