@@ -178,18 +178,17 @@ def demux_fastqs(
     mismatches,
     mask,
     outputs,
+    metrics_file,
     R1_fastq,
     R2_fastq
     ):
 
-    output_dir = os.path.dirname(outputs[0])
-    metrics_file = os.path.join(output_dir, "DemuxFastqs.metrics.txt")
     return Job(
         [
             R1_fastq,
             R2_fastq
         ],
-        outputs + [ metrics_file],
+        outputs + [metrics_file],
         [
             ['fastq', 'module_java'],
             ['fastq', 'module_fgbio']
@@ -217,7 +216,8 @@ java -Djava.io.tmpdir={tmp_dir} \\
             inputs=" ".join([R1_fastq, R2_fastq]),
             read_structure=mask,
             sample_sheet=sample_sheet,
-            output_dir=output_dir
-        )
+            output_dir=os.path.dirname(metrics_file)
+        ),
+        removable_files=[os.path.dirname(metrics_file)]
     )
 

@@ -82,9 +82,10 @@ def get_lanes_from_run(
 def compare_runs(
     columns,
     outdir,
+    genpipes_scr_dir,
     process_dir,
-    genpipes_repo,
-    mgi_runs_file
+    mgi_runs_file,
+    run_id
     ):
 
     header = "RUN_ID"
@@ -93,10 +94,13 @@ def compare_runs(
 #        ref_list = []
         ref_list = filter(None, open(mgi_runs_file, "r").read().split("\n"))
 
-        if new_list != ref_list:
-            print "New runs have been added to the Run Management spreadsheet... building the new samples sheets now"
-            runs_added = list(set(new_list) - set(ref_list))
-            print runs_added
+        if run_id or new_list != ref_list:
+            if run_id:
+                runs_added = [run_id]
+            else:
+                print "New runs have been added to the Run Management spreadsheet... building the new samples sheets now"
+                runs_added = list(set(new_list) - set(ref_list))
+                print runs_added
             for run in runs_added:
                 sequencer_path = get_sequencer_from_run(
                     columns,
@@ -132,12 +136,12 @@ def compare_runs(
                         print_genpipes_scripts(
                             outdir,
                             process_dir,
+                            genpipes_scr_dir,
                             project,
                             flowcell,
                             run,
                             lane,
-                            sequencer_path,
-                            genpipes_repo
+                            sequencer_path
                         )
             # replace referece run list by the current run list to set it as the reference for next watch round
             print_runs(
@@ -170,12 +174,12 @@ def print_runs(
 def print_genpipes_scripts(
     samplesheet_dir,
     process_dir,
+    genpipes_scr_dir,
     project,
     flowcell,
     run,
     lane,
-    sequencer_path,
-    genpipes_repo
+    sequencer_path
     ):
 
     # Check if --raw-fastq' flag should be used int the pipeline call
@@ -185,13 +189,14 @@ def print_genpipes_scripts(
     print sample_sheet_rows[0]['Index']
     raw_fastq = True
 
-    if not os.path.exists(process_dir+"/../genpipes_scripts/"+project+"/"+run):
-        os.makedirs(process_dir+"/../genpipes_scripts/"+project+"/"+run)
-    genpipes_script = open(process_dir+"/../genpipes_scripts/"+project+"/"+run+"/"+project+"."+run+".L0"+lane+".genpipes_script.sh", 'wb+') 
+    if not os.path.exists(os.path.join(genpipes_scr_dir, project, run)):
+        os.makedirs(os.path.join(genpipes_scr_dir, project, run))
+    genpipes_script = open(os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".L0" + lane + ".genpipes_script.sh"), 'wb+')
     genpipes_script.write("""\
+module load mugqic_dev/genpipes/3.1.6 && \\
 mkdir -p {process_dir}/{project}/{run}/L0{lane} && \\
-python {genpipes_repo}/pipelines/mgi_run_processing/mgi_run_processing.py \\
-  -c {genpipes_repo}/pipelines/mgi_run_processing/mgi_run_processing.base.ini $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh38/Homo_sapiens.GRCh38.ini \\
+python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py \\
+  -c $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.base.ini $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh38/Homo_sapiens.GRCh38.ini \\
   --no-json -l debug {raw_fastq}\\
   -d /nb/Research/MGISeq/{sequencer_path}/{flowcell} \\
   -r {samplesheet_dir}/{project}/{run}/L0{lane}/{project}.{run}.L0{lane}.sample_sheet.csv \\
@@ -201,7 +206,6 @@ python {genpipes_repo}/pipelines/mgi_run_processing/mgi_run_processing.py \\
   2> {process_dir}/{project}/{run}/{project}.{run}.L0{lane}.trace.log""".format(
         process_dir=process_dir,
         samplesheet_dir=samplesheet_dir,
-        genpipes_repo=genpipes_repo,
         raw_fastq="--raw-fastq " if raw_fastq else "",
         project=project,
         flowcell=flowcell,
@@ -210,15 +214,16 @@ python {genpipes_repo}/pipelines/mgi_run_processing/mgi_run_processing.py \\
         sequencer_path=sequencer_path
     ))
     genpipes_script.close()
-    subprocess.call("bash "+process_dir+"/../genpipes_scripts/"+project+"/"+run+"/"+project+"."+run+".L0"+lane+".genpipes_script.sh", shell=True)
+    subprocess.call("bash " + os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".L0" + lane + ".genpipes_script.sh"), shell=True)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--spreadsheet_name', help='Name of the MGI run management Google spreadsheet to parse', required=False, dest="spreadsheet_name", default='ALL MGI Run Management')
     parser.add_argument('-a', '--authentication_file', help="JSON authentication file used to connect the spreadsheets", type=file, required=True, dest="json_file")
-    parser.add_argument('-o', '--sample_sheet_outdir', help="Path where the sample sheets will be written in their respective project/run/lane folder", required=False, dest="outdir", default='/nb/Research/processingmgiscratch/sample_sheets')
+    parser.add_argument('-o', '--sample_sheet_outdir', help="Path where the sample sheets will be written in their respective project/run/lane subfolder", required=False, dest="outdir", default='/nb/Research/processingmgiscratch/sample_sheets')
+    parser.add_argument('-g', '--genpipes_scripts_outdir', help="Path where the genpipes scripts will be written and executed in their respective project/run/lane subfolder", required=False, dest="genpipes_scr_dir", default='/nb/Research/processingmgiscratch/genpipes_scripts')
     parser.add_argument('-p', '--processing_dir', help="Path where the MGI run processging will happen", required=False, dest="process_dir", default='/nb/Research/processingmgiscratch/processing')
-    parser.add_argument('-r', '--genpipes_repo', help="Path of the GenPipes repository to use for generating the run processing pipeline scripts", required=True, dest="genpipes_repo")
+    parser.add_argument('-r', '--run', help="RUN ID : sample sheets and genpipes_scripts will only be created for the specified RUN ID", required=False, dest="run_id")
     parser.add_argument('--loglevel', help="Standard Python log level", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
 
     args = parser.parse_args()
@@ -228,9 +233,10 @@ if __name__ == '__main__':
 
     MGI_spreadsheet_name = args.spreadsheet_name
     outdir = args.outdir
+    genpipes_scr_dir = args.genpipes_scr_dir
     process_dir = args.process_dir
     authentication_file = args.json_file.name
-    genpipes_repo = args.genpipes_repo
+    run_id = args.run_id
 
     dict_of_columns = parse_google_sheet(
         MGI_spreadsheet_name,
@@ -241,7 +247,8 @@ if __name__ == '__main__':
     compare_runs(
         dict_of_columns,
         outdir,
+        genpipes_scr_dir,
         process_dir,
-        genpipes_repo,
-        mgi_runs_file
+        mgi_runs_file,
+        run_id
     )
