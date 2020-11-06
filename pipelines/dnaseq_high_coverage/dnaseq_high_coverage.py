@@ -40,7 +40,7 @@ from bfx import bvatools
 from bfx import gq_seq_utils
 from bfx import gatk
 from bfx import igvtools
-from bfx import picard
+from bfx import picard2
 from bfx import samtools
 from bfx import tools
 from bfx import varscan
@@ -83,7 +83,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
             input_file = os.path.join(sample_directory, sample.name + ".realigned.sorted.bam")
             output_file = os.path.join(sample_directory, sample.name + ".matefixed.sorted.bam")
 
-            job = picard.fix_mate_information(input_file, output_file)
+            job = picard2.fix_mate_information(input_file, output_file)
             job.name = "picard_fix_mate_information." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -106,7 +106,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
             input_file_prefix = os.path.join("alignment", sample.name, sample.name + ".matefixed.sorted.")
             input = input_file_prefix + "bam"
 
-            job = picard.collect_multiple_metrics(input, input_file_prefix + "all.metrics")
+            job = picard2.collect_multiple_metrics(input, input_file_prefix + "all.metrics")
             job.name = "picard_collect_multiple_metrics." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -150,7 +150,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
                     created_interval_lists.append(interval_list)
 
                 input_file_prefix = os.path.join("alignment", sample.name, sample.name + ".matefixed.sorted.")
-                job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list)
+                job = picard2.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list)
                 job.name = "picard_calculate_hs_metrics." + sample.name
                 job.samples = [sample]
                 jobs.append(job)
