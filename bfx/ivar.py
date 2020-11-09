@@ -45,10 +45,12 @@ def trim_primers(input_bam, prefix):
 ivar trim -i {input_bam} \\
   -p {prefix} \\
   {bed_file} \\
+  {primer_pair} \\
   {other_options}""".format(
             input_bam=input_bam,
             prefix=prefix,
             bed_file="-b " + config.param('ivar_trim_primers', 'bed_primers', type='filepath') if config.param('ivar_trim_primers', 'bed_primers') else "",
+            primer_pair="-f " + config.param('ivar_trim_primers', 'tsv_primer_pair', type='filepath') if config.param('ivar_trim_primers', 'tsv_primer_pair') else "",
             other_options=config.param('ivar_trim_primers', 'other_options')
             ),
         )
