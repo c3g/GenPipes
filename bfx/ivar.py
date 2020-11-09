@@ -37,7 +37,8 @@ def trim_primers(input_bam, prefix):
         input_files=inputs,
         output_files=output,
         module_entries=[
-            ['ivar', 'module_ivar']
+            ['ivar', 'module_ivar'],
+            ['htslib', 'module_htslib']
         ],
 
         command="""\
@@ -60,7 +61,8 @@ def call_variants(prefix):
         input_files=[],
         output_files=output,
         module_entries=[
-            ['ivar', 'module_ivar']
+            ['ivar', 'module_ivar'],
+            ['htslib', 'module_htslib']
         ],
 
         command="""\
@@ -83,7 +85,8 @@ def create_consensus(prefix):
         input_files=[],
         output_files=output,
         module_entries=[
-            ['ivar', 'module_ivar']
+            ['ivar', 'module_ivar'],
+            ['htslib', 'module_htslib']
         ],
 
         command="""\
@@ -101,7 +104,8 @@ def tsv_to_vcf(input, output):
         input_files=input,
         output_files=output,
         module_entries=[
-            ['ivar', 'module_ivar']
+            ['ivar', 'module_ivar'],
+            ['htslib', 'module_htslib']
         ],
 
         command="""\
