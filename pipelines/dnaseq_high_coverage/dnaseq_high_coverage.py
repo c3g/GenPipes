@@ -80,7 +80,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             sample_directory = os.path.join("alignment", sample.name)
-            input_file = os.path.join(sample_directory, sample.name + ".realigned.sorted.bam")
+            input_file = os.path.join(sample_directory, sample.name + ".sorted.realigned.bam")
             output_file = os.path.join(sample_directory, sample.name + ".matefixed.sorted.bam")
 
             job = picard2.fix_mate_information(input_file, output_file)
