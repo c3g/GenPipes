@@ -115,24 +115,29 @@ MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
 # NOTE: this is somewhat complicated because we want the ROOT dir MUGQIC_INSTALL_HOME to be resolved at module execution.
 # TCLROOT is just a variable holding the TCL script value for the 'root' variable in the module file.
 
-if [ `lsb_release -i | cut -f 2` == "Ubuntu" ]
+if [[ $INSTALL_PREFIX_ENV_VARNAME != "MUGQIC_INSTALL_HOME_DEV" ]]
 then
-  echo "Ubuntu" > /dev/null
-  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
-  LIB=lib
-  INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB:$INSTALL_DIR/$LIB/R/lib
-elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
-then
-  echo "CentOS" > /dev/null
-  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
-  LIB=lib64
-  INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
-  LIBDIR=$INSTALL_DIR/$LIB/R/lib:$INSTALL_DIR/$LIB/R/library:$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/lib64:$C3G_SYSTEM_LIBRARY/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/lib:$C3G_SYSTEM_LIBRARY/usr/lib64/mysql:$C3G_SYSTEM_LIBRARY/$LIB/mysql
+  if [ `lsb_release -i | cut -f 2` == "Ubuntu" ]
+  then
+    echo "Ubuntu" > /dev/null
+    C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
+    LIB=lib
+    INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+    LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB:$INSTALL_DIR/$LIB/R/lib
+  elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
+  then
+    echo "CentOS" > /dev/null
+    C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
+    LIB=lib64
+    INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
+    LIBDIR=$INSTALL_DIR/$LIB/R/lib:$INSTALL_DIR/$LIB/R/library:$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/lib64:$C3G_SYSTEM_LIBRARY/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/lib:$C3G_SYSTEM_LIBRARY/usr/lib64/mysql:$C3G_SYSTEM_LIBRARY/$LIB/mysql
+  else
+    echo "*** ERROR ***"
+    echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
+    exit 1
+  fi
 else
-  echo "*** ERROR ***"
-  echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
-  exit 1
+  LIB=lib64
 fi
 
 echo "The software install location is $INSTALL_DIR"
@@ -248,7 +253,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
 
     ## Define the list of packages to standard packages to install.
     deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "allgown", "annotate", "AnnotationDbi", "AnnotationForge", "annotatr", "ape", "ash", "ASCAT",
-    "ballgown", "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "biomformat", "Biostrings" "biovizBase", "bit",
+    "ballgown", "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "biomformat", "Biostrings", "biovizBase", "bit",
     "biovizBase", "bit", "bit64", "bitops", "boot", "brew", "BSgenome", "BSgenome.Hsapiens.1000genomes.hs37d5", "BSgenome.Hsapiens.UCSC.hg19", "bumphunter",
     "Cairo", "caTools", "charm", "charmData", "ChIPseeker", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "cn.mops", "codetools", "colorspace", "ConsensusClusterPlus",
     "ConsensusClusterPlus", "corpcor", "crlmm", "ctc", "cummeRbund",
@@ -320,31 +325,34 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     write.table(data.table(installed.packages())[,c(1,3)], paste(c(Sys.getenv('R_HOME')),"/../../installed.packages.txt", sep=""), sep="\t", row.names=F, quote=F)
 EOF
 
-echo "Patching C3G executables..."
-for i in `find $INSTALL_DIR/ -type f -executable -exec file {} \; | grep ELF | cut -d":" -f1`; do
-  if readelf -l $i | grep go.build > /dev/null
-  then
-    echo "GO Done" > /dev/null
-  elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]{1,2})*$ ]]
-  then
-    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $($MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --print-rpath $i):$LIBDIR $i
-  else
-    echo $i
-    $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $($MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --print-rpath $i):$LIBDIR $i
-  fi
-done
+if [[ $INSTALL_PREFIX_ENV_VARNAME != "MUGQIC_INSTALL_HOME_DEV" ]]
+then
+  echo "Patching C3G executables..."
+  for i in `find $INSTALL_DIR/ -type f -executable -exec file {} \; | grep ELF | cut -d":" -f1`; do
+    if readelf -l $i | grep go.build > /dev/null
+    then
+      echo "GO Done" > /dev/null
+    elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]{1,2})*$ ]]
+    then
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $($MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --print-rpath $i):$LIBDIR $i
+    else
+      echo $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $($MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --print-rpath $i):$LIBDIR $i
+    fi
+  done
 
-echo "Building C3G wrappers for executables..."
-sed -i "s,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}/R,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}.wrap/R," $INSTALL_DIR/bin/R
-sed -i "s,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}/R,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}.wrap/R," $INSTALL_DIR/$LIB/R/bin/R
-mkdir $INSTALL_DIR/$LIB/R/bin/exec.wrap
-echo "$INTERPRETER --library-path $LIBDIR $INSTALL_DIR/$LIB/R/bin/exec/R \${args} \${@}" > $INSTALL_DIR/$LIB/R/bin/exec.wrap/R
-chmod 775 $INSTALL_DIR/$LIB/R/bin/exec.wrap/R
-for i in $INSTALL_DIR/bin/Rscript $INSTALL_DIR/$LIB/R/bin/Rscript; do
-  mv $i $i.raw;
-  echo "$INTERPRETER --library-path $LIBDIR $i.raw \${@}" > $i;
-  chmod 775 $i;
-done
+  echo "Building C3G wrappers for executables..."
+  sed -i "s,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}/R,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}.wrap/R," $INSTALL_DIR/bin/R
+  sed -i "s,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}/R,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}.wrap/R," $INSTALL_DIR/$LIB/R/bin/R
+  mkdir $INSTALL_DIR/$LIB/R/bin/exec.wrap
+  echo "$INTERPRETER --library-path $LIBDIR $INSTALL_DIR/$LIB/R/bin/exec/R \${args} \${@}" > $INSTALL_DIR/$LIB/R/bin/exec.wrap/R
+  chmod 775 $INSTALL_DIR/$LIB/R/bin/exec.wrap/R
+  for i in $INSTALL_DIR/bin/Rscript $INSTALL_DIR/$LIB/R/bin/Rscript; do
+    mv $i $i.raw;
+    echo "$INTERPRETER --library-path $LIBDIR $i.raw \${@}" > $i;
+    chmod 775 $i;
+  done
+fi
 
 echo "Adjusting permissions..."
 ## Adjust permissions
