@@ -26,6 +26,7 @@ import re
 import xml.etree.ElementTree as Xml
 import sys
 import subprocess
+from Bio.Seq import Seq
 
 # MUGQIC Modules
 from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner 
@@ -802,27 +803,32 @@ def parse_mgi_raw_readset_files(
         readset = MGIRawReadset(line['Sample_Name'] + "_" + line['Library'], run_type)
         readset._library = line['Library']
         readset._index_name = line['Index']
-        if re.search("SI-", readset.index_name):
-            key = readset.index_name
-            for index_line in index_csv:
-                if index_line and index_line[0] == key:
-                    readset._index = "-".join(index_line[1:])
-                    break
-            else:
-                _raise(SanitycheckError("Could not find index " + key + " in index file file " + index_file + " Aborting..."))
-        else:
-            key = readset.index_name.split("-")[0]
-            index_to_use = ""
+
+        # Dual Index
+        if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name):
+            key = readset.index_name.split('-')[0]
             for idx, index in enumerate(readset.index_name.split("-")):
                 for index_line in index_csv:
                     if index_line and index_line[0] == index:
                         if idx > 0 and len(index_line[1]) > 0:
-                            index_to_use += "-"
-                        index_to_use += index_line[1]
+                            index2 = index_line[1]
+                        else:
+                            index1 = index_line[1]
                         break
                 else:
-                    _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
-            readset._index = index_to_use
+                     _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
+            index_from_lims = [{'INDEX1':index1, 'INDEX2':index2}] 
+        # Single-index (pooled or not)
+        else:
+            key = readset.index_name
+            for index_line in index_csv:
+                if index_line and index_line[0] == key:
+                    index_from_lims = [{'INDEX1':index, 'INDEX2':""} for index in index_line[1:] if len(index) > 0]
+                    break
+            else:
+                _raise(SanitycheckError("Could not find index " + key + " in index file file " + index_file + " Aborting..."))
+        readset._index = index_from_lims
+
         for adapter_line in adapter_csv:
             if adapter_line :
                 if adapter_line[0] == key:
@@ -1176,6 +1182,10 @@ def get_index(
             index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
 
         index_str_pattern = "grep '%s,' %s | head -n1"
+#        if len(readset.index.split('-')) > 2:    # pool of single-index barcodes
+#            indexes = readset.index.split('-')
+#        else:                                    # either regular single-index or dual-index
+#            indexes = [readset.index.replace('-', '')]
         if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name):
             index1 = readset.index_name.split("-")[0]
             index2 = readset.index_name.split("-")[1]

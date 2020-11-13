@@ -1358,12 +1358,23 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             copy_done_file + ".md5",
                             "'{print $1,\""+raw_fastq_dir+"/\"$2}'"
                         )
-                    ]),
-                    # Handle corner cases for BioInfo.csv
-                    bash.cp(
-                        self.bioinfo_file,
-                        raw_fastq_dir
-                    ),
+                    ])
+                ]
+            )
+            # Handle corner cases for BioInfo.csv
+            if "(no_barcode)" in self.run_dir:
+                copy_job = concat_jobs(
+                    [
+                        copy_job,
+                        bash.cp(
+                            self.bioinfo_file,
+                            raw_fastq_dir
+                        )
+                    ]
+                )
+            copy_job = concat_jobs(
+                [
+                    copy_job,
                     pipe_jobs([
                         bash.md5sum(
                             self.bioinfo_file,
@@ -2536,8 +2547,17 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
                 readset_index['BARCODE_SEQUENCE'] = sample_barcode
 
+        index_lengths = self.get_smallest_index_length()
         for readset in self.readsets:
             for readset_index in readset.indexes:
+                # Barcode sequence should only match with the barcode cycles defined in the mask
+                # so we adjust thw lenght of the index sequences accordingly for the "Sample_Barcode" field
+                sample_barcode = readset_index['INDEX2'][0:index_lengths[0]] + readset_index['INDEX1'][0:index_lengths[1]]
+                if self.last_index < len(sample_barcode):
+                    sample_barcode = sample_barcode[0:self.last_index]
+                if self.first_index > 1:
+                    sample_barcode = sample_barcode[self.first_index-1:]
+
                 csv_dict = {
                     "Sample_ID": readset_index['SAMPLESHEET_NAME'],
                     "Sample_Name": readset_index['SAMPLESHEET_NAME'] + '_' + readset_index['INDEX_NAME'],
