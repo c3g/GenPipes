@@ -1232,7 +1232,6 @@ class DnaSeqRaw(common.Illumina):
         for sample in self.samples:
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
-                log.warning(re.sub("\.[^.]+$", ".interval_list", coverage_bed))
                 if os.path.isfile(re.sub("\.[^.]+$", ".interval_list", coverage_bed)):
                     interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
                 else:
