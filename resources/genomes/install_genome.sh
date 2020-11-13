@@ -18,7 +18,7 @@ module_star=mugqic/star/2.7.2b
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
 module_ucsc=mugqic/ucsc/v359
-module_hicup=mugqic/hicup/v0.7.2
+module_hicup=mugqic/HiCUP/v0.7.2
 module_kallisto=mugqic/kallisto/0.44.0
 
 HOST=`hostname`
