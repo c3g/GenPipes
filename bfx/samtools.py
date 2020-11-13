@@ -343,7 +343,7 @@ samtools bam2fq {nthread} \\
   {output_pair2} \\
   {output_other} \\
   {output_single} \\
-  {input_bam} \\""".format(
+  {input_bam}""".format(
       nthread="-@ " + config.param(ini_section, 'samtools_bam2fq_threads', required=False),
       other_options=config.param(ini_section, 'samtools_bam2fq_other_options', required=False),
       output_pair1="-1 " + output_pair1,
