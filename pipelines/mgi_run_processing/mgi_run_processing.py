@@ -611,12 +611,23 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             copy_done_file + ".md5",
                             "'{print $1,\""+raw_fastq_dir+"/\"$2}'"
                         )
-                    ]),
-                    # Handle corner cases for BioInfo.csv
-                    bash.cp(
-                        self.bioinfo_file,
-                        raw_fastq_dir
-                    ),
+                    ])
+                ]
+            )
+            # Handle corner cases for BioInfo.csv
+            if "(no_barcode)" in self.run_dir:
+                copy_job = concat_jobs(
+                    [
+                        copy_job,
+                        bash.cp(
+                            self.bioinfo_file,
+                            raw_fastq_dir
+                        )
+                    ]
+                )
+            copy_job = concat_jobs(
+                [
+                    copy_job,
                     pipe_jobs([
                         bash.md5sum(
                             self.bioinfo_file,
@@ -1390,17 +1401,17 @@ wc -l >> {output}""".format(
         number of mismatches parameter.
         """
         min_allowed_distance = (2 * self.number_of_mismatches) + 1
+        index_lengths = self.get_smallest_index_length()
 
         validated_indexes = []
         collisions = []
 
         for readset in self.readsets:
-            current_index = readset.index.replace('-', '')
-
-            for candidate_index in validated_indexes:
-                if distance(current_index, candidate_index) < min_allowed_distance:
-                    collisions.append("'" + current_index + "' and '" + candidate_index + "'")
-            validated_indexes.append(current_index)
+            for current_index in readset.indexes:
+                for candidate_index in validated_indexes:
+                    if distance(current_index['INDEX2'][0:index_lengths[0]]+current_index['INDEX1'][0:index_lengths[1]], candidate_index) < min_allowed_distance:
+                        collisions.append("'" + current_index + "' and '" + candidate_index + "'")
+                validated_indexes.append(current_index)
 
         if len(collisions) > 0:
             _raise(SanitycheckError("Barcode collisions: " + ";".join(collisions)))
@@ -1434,9 +1445,9 @@ wc -l >> {output}""".format(
 
                     # Ns in the beginning of the index read
                     if self.first_index > (nb_total_index_base_used + 1):
-                        nb_s_printed = min(read_info.nb_cycles, self.first_index - nb_total_index_base_used - 1)
+                        nb_s_printed = min(idx_nb_cycles, self.first_index - nb_total_index_base_used - 1)
                         if nb_s_printed >= index_lengths[index_read_count]:
-                            nb_s_printed = read_info.nb_cycles
+                            nb_s_printed = idx_nb_cycles
                         mask += str(nb_s_printed) + 'S'
 
                     # Calculate the number of index bases
@@ -1482,14 +1493,23 @@ wc -l >> {output}""".format(
         if re.search("B", self.mask):
             self.validate_barcodes()
 
+        index_lengths = self.get_smallest_index_length()
         for readset in self.readsets:
             for readset_index in readset.indexes:
+                # Barcode sequence should only match with the barcode cycles defined in the mask
+                # so we adjust thw lenght of the index sequences accordingly for the "Sample_Barcode" field
+                sample_barcode = readset_index['INDEX2'][0:index_lengths[0]] + readset_index['INDEX1'][0:index_lengths[1]]
+                if self.last_index < len(sample_barcode):
+                    sample_barcode = sample_barcode[0:self.last_index]
+                if self.first_index > 1:
+                    sample_barcode = sample_barcode[self.first_index-1:]
+
                 csv_dict = {
                     "Sample_ID": readset_index['SAMPLESHEET_NAME'],
                     "Sample_Name": readset_index['SAMPLESHEET_NAME'] + '_' + readset_index['INDEX_NAME'],
                     "Library_ID": readset_index['LIBRARY'],
                     "Description": readset.name + '_' + readset.library_type + '_' + readset.library_source,
-                    "Sample_Barcode": readset_index['INDEX2_RAW'] + readset_index['INDEX1_RAW']
+                    "Sample_Barcode": sample_barcode
                 }
                 writer.writerow(csv_dict)
 
@@ -1769,11 +1789,11 @@ wc -l >> {output}""".format(
 
             for index in readset.indexes:
                 readset_r1_outputs.append(
-                    os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2_RAW']+index['INDEX1_RAW']+"_R1.fastq.gz")
+                    os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2']+index['INDEX1']+"_R1.fastq.gz")
                 )
                 if readset.run_type == "PAIRED_END":
                     readset_r2_outputs.append(
-                        os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2_RAW']+index['INDEX1_RAW']+"_R2.fastq.gz")
+                        os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2']+index['INDEX1']+"_R2.fastq.gz")
                     )
 
             # If True, then merge the 'Undetermined' reads
@@ -1795,7 +1815,7 @@ wc -l >> {output}""".format(
                                 None,
                                 zip=True
                             ),
-                            bash.pigz(
+                            bash.gzip(
                                 None,
                                 readset.fastq1
                             )
@@ -1826,7 +1846,7 @@ wc -l >> {output}""".format(
                                     None,
                                     zip=True
                                 ),
-                                bash.pigz(
+                                bash.gzip(
                                     None,
                                     raw_readset_fastq2
                                 )
@@ -1865,7 +1885,7 @@ wc -l >> {output}""".format(
                             None,
                             options="-c 1-" + self.get_read2cycles()
                         ),
-                        bash.pigz(
+                        bash.gzip(
                             None,
                             readset.fastq2
                         )
@@ -1894,7 +1914,7 @@ wc -l >> {output}""".format(
                                 None,
                                 "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles())+int(self.get_index2cycles())+1)+","+self.get_index1cycles()+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles())+int(self.get_index2cycles())+1)+","+self.get_index1cycles()+") }'"
                             ),
-                            bash.pigz(
+                            bash.gzip(
                                 None,
                                 readset.index_fastq1
                             )
@@ -1932,7 +1952,7 @@ wc -l >> {output}""".format(
                                 ])),
                                 None
                             ),
-                            bash.pigz(
+                            bash.gzip(
                                 None,
                                 readset.fastq2
                             )
@@ -1977,7 +1997,7 @@ wc -l >> {output}""".format(
                                 ])),
                                 None
                             ),
-                            bash.pigz(
+                            bash.gzip(
                                 None,
                                 readset.fastq2
                             )
@@ -2003,13 +2023,13 @@ wc -l >> {output}""".format(
 
         all_indexes = []
         for readset in self.readsets:
-            all_indexes += readset.indexes
+            all_indexes += readset.index
 
         if self.is_dual_index:
-            min_sample_index_length = min(len(index['INDEX2_RAW']) for index in all_indexes)
+            min_sample_index_length = min(len(index['INDEX2']) for index in all_indexes)
             run_index_lengths.append(min(min_sample_index_length, int(self.get_index2cycles())))
 
-        min_sample_index_length = min(len(index['INDEX1_RAW']) for index in all_indexes)
+        min_sample_index_length = min(len(index['INDEX1']) for index in all_indexes)
         run_index_lengths.append(min(min_sample_index_length, int(self.get_index1cycles())))
 
         return run_index_lengths
@@ -2085,7 +2105,7 @@ def distance(str1, str2):
     """
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
-    return sum(itertools.imap(unicode.__ne__, str1, str2))
+    return sum(itertools.imap(str.__ne__, str1, str2))
 
 if __name__ == '__main__':
 

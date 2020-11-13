@@ -110,6 +110,7 @@ def compare_runs(
                     columns,
                     run
                 )
+                print flowcell
                 if flowcell:
                     print "Processing run " + run
                     project = get_project_from_run(
@@ -193,7 +194,7 @@ def print_genpipes_scripts(
         os.makedirs(os.path.join(genpipes_scr_dir, project, run))
     genpipes_script = open(os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".L0" + lane + ".genpipes_script.sh"), 'wb+')
     genpipes_script.write("""\
-module load mugqic_dev/genpipes/3.1.6 && \\
+module load mugqic/python/2.7.14 mugqic_dev/genpipes/3.1.6 && \\
 mkdir -p {process_dir}/{project}/{run}/L0{lane} && \\
 python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py \\
   -c $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.base.ini $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh38/Homo_sapiens.GRCh38.ini \\
