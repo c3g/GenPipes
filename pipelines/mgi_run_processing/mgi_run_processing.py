@@ -2552,7 +2552,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
             for readset_index in readset.indexes:
                 # Barcode sequence should only match with the barcode cycles defined in the mask
                 # so we adjust thw lenght of the index sequences accordingly for the "Sample_Barcode" field
-                sample_barcode = readset_index['INDEX2'][0:index_lengths[0]] + readset_index['INDEX1'][0:index_lengths[1]]
+                if self.is_dual_index:
+                    sample_barcode = readset_index['INDEX2'][0:index_lengths[0]] + readset_index['INDEX1'][0:index_lengths[1]]
+                else: 
+                    sample_barcode = readset_index['INDEX1'][0:index_lengths[0]]
                 if self.last_index < len(sample_barcode):
                     sample_barcode = sample_barcode[0:self.last_index]
                 if self.first_index > 1:
