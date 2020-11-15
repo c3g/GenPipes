@@ -1408,10 +1408,14 @@ wc -l >> {output}""".format(
 
         for readset in self.readsets:
             for current_index in readset.indexes:
+                if self.is_dual_index:
+                    current_barcode = current_index['INDEX2'][0:index_lengths[0]]+current_index['INDEX1'][0:index_lengths[1]]
+                else:
+                    current_barcode = current_index['INDEX1'][0:index_lengths[0]]
                 for candidate_index in validated_indexes:
-                    if distance(current_index['INDEX2'][0:index_lengths[0]]+current_index['INDEX1'][0:index_lengths[1]], candidate_index) < min_allowed_distance:
-                        collisions.append("'" + current_index + "' and '" + candidate_index + "'")
-                validated_indexes.append(current_index)
+                    if distance(current_barcode, candidate_index) < min_allowed_distance:
+                        collisions.append("'" + current_barcode + "' and '" + candidate_index + "'")
+                validated_indexes.append(current_barcode)
 
         if len(collisions) > 0:
             _raise(SanitycheckError("Barcode collisions: " + ";".join(collisions)))
@@ -1498,7 +1502,10 @@ wc -l >> {output}""".format(
             for readset_index in readset.indexes:
                 # Barcode sequence should only match with the barcode cycles defined in the mask
                 # so we adjust thw lenght of the index sequences accordingly for the "Sample_Barcode" field
-                sample_barcode = readset_index['INDEX2'][0:index_lengths[0]] + readset_index['INDEX1'][0:index_lengths[1]]
+                if self.is_dual_index:
+                    sample_barcode = readset_index['INDEX2'][0:index_lengths[0]] + readset_index['INDEX1'][0:index_lengths[1]]
+                else: 
+                    sample_barcode = readset_index['INDEX1'][0:index_lengths[0]]
                 if self.last_index < len(sample_barcode):
                     sample_barcode = sample_barcode[0:self.last_index]
                 if self.first_index > 1:
