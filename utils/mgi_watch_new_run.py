@@ -85,7 +85,9 @@ def compare_runs(
     genpipes_scr_dir,
     process_dir,
     mgi_runs_file,
-    run_id
+    run_id,
+    is_demultiplexed,
+    extra_options
     ):
 
     header = "RUN_ID"
@@ -142,7 +144,9 @@ def compare_runs(
                             flowcell,
                             run,
                             lane,
-                            sequencer_path
+                            sequencer_path,
+                            is_demultiplexed,
+                            extra_options
                         )
             # replace referece run list by the current run list to set it as the reference for next watch round
             print_runs(
@@ -180,7 +184,9 @@ def print_genpipes_scripts(
     flowcell,
     run,
     lane,
-    sequencer_path
+    sequencer_path,
+    is_demultiplexed,
+    extra_options
     ):
 
     # Check if --raw-fastq' flag should be used int the pipeline call
@@ -188,7 +194,10 @@ def print_genpipes_scripts(
     sample_sheet_rows = [row for row in csv.DictReader(open(sample_sheet, 'rb'), delimiter=',')]
     print len(sample_sheet_rows)
     print sample_sheet_rows[0]['Index']
-    raw_fastq = True
+    if is_demultiplexed:
+        raw_fastq = False
+    else:
+        raw_fastq = True
 
     if not os.path.exists(os.path.join(genpipes_scr_dir, project, run)):
         os.makedirs(os.path.join(genpipes_scr_dir, project, run))
@@ -198,7 +207,7 @@ module load mugqic/python/2.7.14 mugqic_dev/genpipes/3.1.6 && \\
 mkdir -p {process_dir}/{project}/{run}/L0{lane} && \\
 python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py \\
   -c $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.base.ini $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh38/Homo_sapiens.GRCh38.ini \\
-  --no-json -l debug {raw_fastq}\\
+  --no-json -l debug {raw_fastq} {extra_options} \\
   -d /nb/Research/MGISeq/{sequencer_path}/{flowcell} \\
   -r {samplesheet_dir}/{project}/{run}/L0{lane}/{project}.{run}.L0{lane}.sample_sheet.csv \\
   --lane {lane} \\
@@ -212,7 +221,8 @@ python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py
         flowcell=flowcell,
         run=run,
         lane=lane,
-        sequencer_path=sequencer_path
+        sequencer_path=sequencer_path,
+        extra_options=extra_options
     ))
     genpipes_script.close()
     subprocess.call("bash " + os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".L0" + lane + ".genpipes_script.sh"), shell=True)
@@ -225,6 +235,8 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--genpipes_scripts_outdir', help="Path where the genpipes scripts will be written and executed in their respective project/run/lane subfolder", required=False, dest="genpipes_scr_dir", default='/nb/Research/processingmgiscratch/genpipes_scripts')
     parser.add_argument('-p', '--processing_dir', help="Path where the MGI run processging will happen", required=False, dest="process_dir", default='/nb/Research/processingmgiscratch/processing')
     parser.add_argument('-r', '--run', help="RUN ID : sample sheets and genpipes_scripts will only be created for the specified RUN ID", required=False, dest="run_id")
+    parser.add_argument('-d', '--demultiplexed-fastqs', help="Fastqs of the run are expected to be demultiplexed : will prepare genpipes scripts without --raw-fastq flag", action="store_true", required=False, dest="is_demultiplexed")
+    parser.add_argument('-e', '--extra-options', help="Extra parameters to include in the genpipes command - mostly used for tests and corner cases...", required=False, dest="extra_options", default="")
     parser.add_argument('--loglevel', help="Standard Python log level", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
 
     args = parser.parse_args()
@@ -238,6 +250,11 @@ if __name__ == '__main__':
     process_dir = args.process_dir
     authentication_file = args.json_file.name
     run_id = args.run_id
+    if args.is_demultiplexed:
+        is_demultiplexed = True
+    else:
+        is_demultiplexed = False
+    extra_options = args.extra_options
 
     dict_of_columns = parse_google_sheet(
         MGI_spreadsheet_name,
@@ -251,5 +268,7 @@ if __name__ == '__main__':
         genpipes_scr_dir,
         process_dir,
         mgi_runs_file,
-        run_id
+        run_id,
+        is_demultiplexed,
+        extra_options
     )
