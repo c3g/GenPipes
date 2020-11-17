@@ -2566,7 +2566,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     "Sample_Name": readset_index['SAMPLESHEET_NAME'] + '_' + readset_index['INDEX_NAME'],
                     "Library_ID": readset_index['LIBRARY'],
                     "Description": readset.name + '_' + readset.library_type + '_' + readset.library_source,
-                    "Sample_Barcode": sample_barcode
+                    "Sample_Barcode": readset_index['INDEX2_RAW'] + readset_index['INDEX1_RAW']
                 }
                 writer.writerow(csv_dict)
 
