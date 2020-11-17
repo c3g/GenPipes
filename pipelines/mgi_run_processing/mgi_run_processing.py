@@ -1516,7 +1516,7 @@ wc -l >> {output}""".format(
                     "Sample_Name": readset_index['SAMPLESHEET_NAME'] + '_' + readset_index['INDEX_NAME'],
                     "Library_ID": readset_index['LIBRARY'],
                     "Description": readset.name + '_' + readset.library_type + '_' + readset.library_source,
-                    "Sample_Barcode": sample_barcode
+                    "Sample_Barcode": readset_index['INDEX2_RAW'] + readset_index['INDEX1_RAW']
                 }
                 writer.writerow(csv_dict)
 
@@ -1771,14 +1771,6 @@ wc -l >> {output}""".format(
 
         output_dir = os.path.join(self.output_dir, "Unaligned.test4." + str(self.lane_number))
 
-        # If True, then merge the 'Undetermined' reads
-        if self.merge_undetermined:
-            undet_fastqr1 = os.path.join(output_dir, "tmp", "unmatched_R1.fastq")
-            undet_fastqr2 = os.path.join(output_dir, "tmp", "unmatched_R2.fastq") if readset.run_type == "PAIRED_END" else None
-        else:
-            undet_fastqr1 = None
-            undet_fastqr2 = None
-
         for readset in self.readsets:
             readset_r1_outputs = []
             readset_r2_outputs = []
@@ -1796,11 +1788,11 @@ wc -l >> {output}""".format(
 
             for index in readset.indexes:
                 readset_r1_outputs.append(
-                    os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2']+index['INDEX1']+"_R1.fastq.gz")
+                    os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2_RAW']+index['INDEX1_RAW']+"_R1.fastq.gz")
                 )
                 if readset.run_type == "PAIRED_END":
                     readset_r2_outputs.append(
-                        os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2']+index['INDEX1']+"_R2.fastq.gz")
+                        os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2_RAW']+index['INDEX1_RAW']+"_R2.fastq.gz")
                     )
 
             # If True, then merge the 'Undetermined' reads
@@ -1822,7 +1814,7 @@ wc -l >> {output}""".format(
                                 None,
                                 zip=True
                             ),
-                            bash.gzip(
+                            bash.pigz(
                                 None,
                                 readset.fastq1
                             )
@@ -1853,7 +1845,7 @@ wc -l >> {output}""".format(
                                     None,
                                     zip=True
                                 ),
-                                bash.gzip(
+                                bash.pigz(
                                     None,
                                     raw_readset_fastq2
                                 )
@@ -1892,7 +1884,7 @@ wc -l >> {output}""".format(
                             None,
                             options="-c 1-" + self.get_read2cycles()
                         ),
-                        bash.gzip(
+                        bash.pigz(
                             None,
                             readset.fastq2
                         )
@@ -1921,7 +1913,7 @@ wc -l >> {output}""".format(
                                 None,
                                 "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles())+int(self.get_index2cycles())+1)+","+self.get_index1cycles()+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles())+int(self.get_index2cycles())+1)+","+self.get_index1cycles()+") }'"
                             ),
-                            bash.gzip(
+                            bash.pigz(
                                 None,
                                 readset.index_fastq1
                             )
@@ -1959,7 +1951,7 @@ wc -l >> {output}""".format(
                                 ])),
                                 None
                             ),
-                            bash.gzip(
+                            bash.pigz(
                                 None,
                                 readset.fastq2
                             )
@@ -2004,7 +1996,7 @@ wc -l >> {output}""".format(
                                 ])),
                                 None
                             ),
-                            bash.gzip(
+                            bash.pigz(
                                 None,
                                 readset.fastq2
                             )
