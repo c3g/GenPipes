@@ -183,7 +183,9 @@ def compare_runs(
                             flowcell,
                             run,
                             lane,
-                            sequencer_path
+                            sequencer_path,
+                            is_demultiplexed,
+                            extra_options
                         )
             # replace referece run list by the current run list to set it as the reference for next watch round
             print_runs(
