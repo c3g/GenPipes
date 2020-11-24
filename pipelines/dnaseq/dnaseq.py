@@ -35,19 +35,13 @@ from core.job import Job, concat_jobs, pipe_jobs
 from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 import utils.utils
 from pipelines import common
-from core.pipeline import *
 from bfx.readset import *
-from core.config import *
-from core.job import *
-from pipelines import common
 from core.pipeline import *
-from bfx.readset import *
-from bfx.sequence_dictionary import *
 
 from bfx import adapters
 from bfx import bvatools
 from bfx import bwa
-#from bfx import bwakit
+from bfx import bwakit
 from bfx import gatk4
 from bfx import gatk
 from bfx import igvtools
@@ -58,12 +52,6 @@ from bfx import tools
 from bfx import vcftools
 from bfx import skewer
 from bfx import sambamba
-from bfx import picard2
-from bfx import vt
-from bfx import htslib
-from bfx import gemini
-from bfx import dna_damage
-from bfx import picard
 from bfx import picard2
 from bfx import vt
 from bfx import htslib
@@ -270,6 +258,8 @@ END
                     adapter_file
                 )
 
+            fastq1 = ""
+            fastq2 = ""
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
@@ -345,6 +335,8 @@ END
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
 
+            fastq1 = ""
+            fastq2 = ""
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
@@ -476,7 +468,7 @@ END
                                     "'"
                     ),
                     bwakit.bwa_postalt("/dev/stdin", "/dev/stdout"),
-                    picard.sort_sam(
+                    picard2.sort_sam(
                         "/dev/stdin",
                         readset_bam,
                         "coordinate"
@@ -638,8 +630,7 @@ END
                 realign_prefix = os.path.join(realign_directory, "all")
                 realign_intervals = realign_prefix + ".intervals"
                 output_bam = realign_prefix + ".bam"
-                sample_output_bam = os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")
-                
+                sample_output_bam = os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")
                 jobs.append(
                     concat_jobs([
                         mkdir_job,
@@ -770,12 +761,12 @@ END
             readset = sample.readsets[0]
 
             [input] = self.select_input_files([
-                [alignment_file_prefix + "realigned.sorted.bam"],
+                [alignment_file_prefix + "sorted.realigned.bam"],
                 [alignment_file_prefix + "sorted.bam"],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
-            output_bam = alignment_file_prefix + "matefixed.sorted.bam"
+            output_bam = alignment_file_prefix + "sorted.matefixed.bam"
             jobs.append(
                 pipe_jobs([
                     bvatools.groupfixmate(
@@ -809,12 +800,12 @@ END
             readset = sample.readsets[0]
 
             [input] = self.select_input_files([
-                [alignment_file_prefix + "realigned.sorted.bam"],
+                [alignment_file_prefix + "sorted.realigned.bam"],
                 [alignment_file_prefix + "sorted.bam"],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
-            output_bam = alignment_file_prefix + "matefixed.sorted.bam"
+            output_bam = alignment_file_prefix + "sorted.matefixed.bam"
             jobs.append(
                 pipe_jobs([
                     sambamba.sort(
@@ -856,8 +847,8 @@ END
             readset = sample.readsets[0]
 
             [input] = self.select_input_files([
-                [alignment_file_prefix + "matefixed.sorted.bam"],
-                [alignment_file_prefix + "realigned.sorted.bam"],
+                [alignment_file_prefix + "sorted.matefixed.bam"],
+                [alignment_file_prefix + "sorted.realigned.bam"],
                 [alignment_file_prefix + "sorted.bam"],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
@@ -900,8 +891,8 @@ END
             readset = sample.readsets[0]
 
             [input] = self.select_input_files([
-                [alignment_file_prefix + "matefixed.sorted.bam"],
-                [alignment_file_prefix + "realigned.sorted.bam"],
+                [alignment_file_prefix + "sorted.matefixed.bam"],
+                [alignment_file_prefix + "sorted.realigned.bam"],
                 [alignment_file_prefix + "sorted.bam"],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
@@ -934,8 +925,8 @@ END
             readset = sample.readsets[0]
 
             [input] = self.select_input_files([
-                [alignment_file_prefix + "matefixed.sorted.bam"],
-                [alignment_file_prefix + "realigned.sorted.bam"],
+                [alignment_file_prefix + "sorted.matefixed.bam"],
+                [alignment_file_prefix + "sorted.realigned.bam"],
                 [alignment_file_prefix + "sorted.bam"],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
@@ -1039,8 +1030,8 @@ END
             [input_bam] = self.select_input_files([
                 [alignment_file_prefix + "sorted.recal.bam"],
                 [alignment_file_prefix + "sorted.dup.bam"],
-                [alignment_file_prefix + "matefixed.sorted.bam"],
-                [alignment_file_prefix + "realigned.sorted.bam"],
+                [alignment_file_prefix + "sorted.matefixed.bam"],
+                [alignment_file_prefix + "sorted.realigned.bam"],
                 [alignment_file_prefix + "sorted.bam"],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
@@ -1097,10 +1088,10 @@ END
 
             [input] = self.select_input_files([
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
@@ -1160,10 +1151,10 @@ END
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
@@ -1207,10 +1198,10 @@ END
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
             output = os.path.join(flagstat_directory, sample.name + ".flagstat")
@@ -1242,10 +1233,9 @@ END
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
             output_dir = os.path.join(fastqc_directory)
@@ -1348,8 +1338,8 @@ END
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
@@ -1422,8 +1412,8 @@ END
                     # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
                 ])
@@ -1451,8 +1441,8 @@ END
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
@@ -1480,8 +1470,8 @@ END
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
@@ -1740,8 +1730,8 @@ END
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
@@ -1756,7 +1746,7 @@ END
             if coverage_bed:
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
                 if not interval_list in created_interval_lists:
-                    job = picard2.bed2interval_list(
+                    job = tools.bed2interval_list(
                         None,
                         coverage_bed,
                         interval_list
@@ -2275,8 +2265,8 @@ pandoc \\
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
             
@@ -2331,6 +2321,8 @@ pandoc \\
         nb_jobs = config.param('rawmpileup', 'nb_jobs', type='posint')
         
         for sample in self.samples:
+            mpileup_file_prefix = ""
+            mpileup_inputs = ""
             if nb_jobs > 1:
                 mpileup_file_prefix = os.path.join("alignment", sample.name, "mpileup", sample.name + ".")
                 mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary if sequence['type'] is 'primary']
@@ -2360,8 +2352,8 @@ pandoc \\
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam") for sample in self.samples],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam") for sample in self.samples],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam") for sample in self.samples],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam") for sample in self.samples],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam") for sample in self.samples],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam") for sample in self.samples],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam") for sample in self.samples]
             ])
             nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', type='posint')
