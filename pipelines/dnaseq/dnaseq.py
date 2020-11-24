@@ -43,7 +43,6 @@ from bfx import bvatools
 from bfx import bwa
 from bfx import bwakit
 from bfx import gatk4
-from bfx import gatk
 from bfx import igvtools
 from bfx import metrics
 from bfx import samtools
@@ -63,6 +62,7 @@ from bfx import peddy
 from bfx import verify_bam_id
 from bfx import multiqc
 from bfx import deliverables
+
 from bfx import bash_cmd as bash
 
 from pipelines import common
@@ -1649,37 +1649,6 @@ END
         
         return jobs
 
-    # def metrics_gatk_cluster_fingerprint_sample(self):
-    #     """
-    #     CheckFingerprint (Picard)
-    #     Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
-    #     input: sample SAM/BAM or VCF
-    #     output: fingerprint file
-    #     """
-    #     job = self.metrics_gatk_cluster_fingerprint(
-    #         os.path.join("metrics", "dna", "sample.fingerprint"),
-    #         os.path.join("metrics", "dna", "sample.cluster.fingerprint"),
-    #         "gatk_cluster_fingerprint.sample"
-    #     )
-    #     return job
-    #
-    # def metrics_gatk_cluster_fingerprint_variant(self) :
-    #     """
-    #     CheckFingerprint (Picard)
-    #     Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
-    #     input: sample SAM/BAM or VCF
-    #     output: fingerprint file
-    #     """
-    #
-    #     job = self.metrics_gatk_cluster_fingerprint(
-    #         os.path.join("metrics", "dna", "variant.fingerprint"),
-    #         os.path.join("metrics", "dna", "variant.cluster.fingerprint"),
-    #         "gatk_cluster_fingerprint.variant"
-    #     )
-    #     #job.samples = self.samples
-    #
-    #     return job
-
     def metrics_ngscheckmate(self):
         """
         NGSCheckMate is a software package for identifying next generation sequencing (NGS) data files from the same individual.
@@ -1983,7 +1952,7 @@ END
                     jobs.append(
                         concat_jobs([
                             mkdir_job,
-                            gatk.combine_gvcf(
+                            gatk4.combine_gvcf(
                                 [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
                                 os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
                                 intervals=sequences
