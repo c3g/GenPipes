@@ -37,17 +37,20 @@ def trim_primers(input_bam, prefix):
         input_files=inputs,
         output_files=output,
         module_entries=[
-            ['ivar', 'module_ivar']
+            ['ivar', 'module_ivar'],
+            ['htslib', 'module_htslib']
         ],
 
         command="""\
 ivar trim -i {input_bam} \\
   -p {prefix} \\
   {bed_file} \\
+  {primer_pair} \\
   {other_options}""".format(
             input_bam=input_bam,
             prefix=prefix,
             bed_file="-b " + config.param('ivar_trim_primers', 'bed_primers', type='filepath') if config.param('ivar_trim_primers', 'bed_primers') else "",
+            primer_pair="-f " + config.param('ivar_trim_primers', 'tsv_primer_pair', type='filepath') if config.param('ivar_trim_primers', 'tsv_primer_pair') else "",
             other_options=config.param('ivar_trim_primers', 'other_options')
             ),
         )
@@ -60,7 +63,8 @@ def call_variants(prefix):
         input_files=[],
         output_files=output,
         module_entries=[
-            ['ivar', 'module_ivar']
+            ['ivar', 'module_ivar'],
+            ['htslib', 'module_htslib']
         ],
 
         command="""\
@@ -83,7 +87,8 @@ def create_consensus(prefix):
         input_files=[],
         output_files=output,
         module_entries=[
-            ['ivar', 'module_ivar']
+            ['ivar', 'module_ivar'],
+            ['htslib', 'module_htslib']
         ],
 
         command="""\
@@ -101,7 +106,8 @@ def tsv_to_vcf(input, output):
         input_files=input,
         output_files=output,
         module_entries=[
-            ['ivar', 'module_ivar']
+            ['ivar', 'module_ivar'],
+            ['htslib', 'module_htslib']
         ],
 
         command="""\

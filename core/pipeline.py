@@ -327,6 +327,7 @@ class Pipeline(object):
             _raise(SanitycheckError("Error: missing candidate input files: " + str(candidate_input_files) +
                 " neither found in dependencies nor on file system!"))
 
+
     def dependency_jobs(self, current_job):
         dependency_jobs = []
         dependency_input_files = set()

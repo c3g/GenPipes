@@ -1229,14 +1229,13 @@ class DnaSeqRaw(common.Illumina):
 
         jobs = []
 
-        created_interval_lists = []
-
         for sample in self.samples:
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
-                interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
-
-                if not interval_list in created_interval_lists:
+                if os.path.isfile(re.sub("\.[^.]+$", ".interval_list", coverage_bed)):
+                    interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                else:
+                    interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
                     job = picard2.bed2interval_list(
                         None,
                         coverage_bed,
@@ -1244,7 +1243,6 @@ class DnaSeqRaw(common.Illumina):
                         )
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
-                    created_interval_lists.append(interval_list)
 
                 alignment_directory = os.path.join("alignment", sample.name)
                 [input] = self.select_input_files([

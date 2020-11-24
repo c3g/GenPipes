@@ -29,27 +29,28 @@ from core.job import *
 log = logging.getLogger(__name__)
 
 def kraken2(input1, input2, prefix, other_options=config.param('kraken2', 'other_options', required=False), nthread=config.param('kraken2', 'threads', required=False), database=config.param('kraken2', 'database', required=False)):
-    # unclassified_output = prefix + ".unclassified_sequences#.fastq"
-    # classified_output = prefix + ".classified_sequences#.fastq"
     output = prefix + ".kraken2_output"
     report = prefix + ".kraken2_report"
 
-    if input2:  # Paired end reads
-        inputs = [input1, input2]
-        unclassified_output = prefix + ".unclassified_sequences.fastq"
-        classified_output = prefix + ".classified_sequences.fastq"
-    else:   # Single end reads
-        inputs = [input1]
-        unclassified_output = prefix + ".unclassified_sequences#.fastq"
-        classified_output = prefix + ".classified_sequences#.fastq"
-
-    # inputs = [input]
     outputs = [
-        unclassified_output,
-        classified_output,
         output,
         report
         ]
+
+    if input2:  # Paired end reads
+        inputs = [input1, input2]
+        unclassified_output_1 = prefix + ".unclassified_sequences_1.fastq"
+        unclassified_output_2 = prefix + ".unclassified_sequences_2.fastq"
+        unclassified_output_paired = prefix + ".unclassified_sequences#.fastq"
+        classified_output_1 = prefix + ".classified_sequences_1.fastq"
+        classified_output_2 = prefix + ".classified_sequences_2.fastq"
+        classified_output_paired = prefix + ".classified_sequences#.fastq"
+        outputs.extend((unclassified_output_1, unclassified_output_2, classified_output_1, classified_output_2))
+    else:   # Single end reads
+        inputs = [input1]
+        unclassified_output = prefix + ".unclassified_sequences.fastq"
+        classified_output = prefix + ".classified_sequences.fastq"
+        outputs.extend((unclassified_output, classified_output))
 
     return Job(
         inputs,
@@ -72,8 +73,8 @@ kraken2 \\
       other_options=other_options,
       nthread="--threads " + nthread,
       database="--db " + database,
-      unclassified_output="--unclassified-out " + unclassified_output,
-      classified_output="--classified-out " + classified_output,
+      unclassified_output="--unclassified-out " + unclassified_output_paired if input2 else unclassified_output,
+      classified_output="--classified-out " + classified_output_paired if input2 else classified_output,
       paired="--paired" if input2 else "",
       output="--output " + output,
       report="--report " + report,
