@@ -32,15 +32,15 @@ get_n_jobs () {
 
 cancel_jobs () {
   echo ""
-  job_script=$1
-  echo cancel all jobs from ${job_script%.sh}.out
-
+  job_list=$1
+  echo cancel all jobs from ${job_list}
   if [[ ${SCHEDULER} ==  'slurm' ]]; then
-    scancel $(cat ${job_script%.sh}.out | awk -F'=' '{print $2}')
+    scancel $(cat ${job_list} | awk -F'=' '{print $2}')
   elif [[ ${SCHEDULER} ==  'pbs' ]]; then
-    qdel $(cat ${job_script%.sh}.out | awk -F'=' '{print $2}')
+    qdel $(cat ${job_list} | awk -F'=' '{print $2}')
   fi
-  rm ${job_script%.sh}.out
+  rm ${job_list}
+  echo canceled all jobs from ${job_list}
 }
 
 cancel_trap () {
@@ -50,19 +50,21 @@ cancel_trap () {
 
 submit () {
   job_script=${1}
+  job_list=${job_script%.sh}.out
   while true; do
     # clean cancel if there is an interruption
-    trap "cancel_trap ${job_script%.sh}.out" EXIT
+    trap "echo cleanup; cancel_trap ${job_list}" EXIT
     bash ${job_script}
     ret_code=$?
     if [ ${ret_code} -eq 0 ]; then
       trap - SIGTERM
-      touch ${job_script%.sh}.done
+      touch ${job_list}
       echo ${job_script} was sucssfully submitted
       break
     else
-      echo cancel all jobs from ${job_script%.sh}.out
-      cancel_jobs ${job_script%.sh}.out
+      echo error in submition
+      cancel_jobs ${job_list}
+      echo restarting submition
     fi
   done
 }
