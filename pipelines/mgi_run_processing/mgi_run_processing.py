@@ -2561,6 +2561,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 if self.first_index > 1:
                     sample_barcode = sample_barcode[self.first_index-1:]
 
+                readset_index['BARCODE_SEQUENCE'] = sample_barcode
+
                 csv_dict = {
                     "Sample_ID": readset_index['SAMPLESHEET_NAME'],
                     "Sample_Name": readset_index['SAMPLESHEET_NAME'] + '_' + readset_index['INDEX_NAME'],
