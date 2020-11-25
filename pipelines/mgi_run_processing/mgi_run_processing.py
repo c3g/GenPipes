@@ -1511,6 +1511,8 @@ wc -l >> {output}""".format(
                 if self.first_index > 1:
                     sample_barcode = sample_barcode[self.first_index-1:]
 
+                readset_index['BARCODE_SEQUENCE'] = sample_barcode
+
                 csv_dict = {
                     "Sample_ID": readset_index['SAMPLESHEET_NAME'],
                     "Sample_Name": readset_index['SAMPLESHEET_NAME'] + '_' + readset_index['INDEX_NAME'],
@@ -1788,11 +1790,11 @@ wc -l >> {output}""".format(
 
             for index in readset.indexes:
                 readset_r1_outputs.append(
-                    os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2_RAW']+index['INDEX1_RAW']+"_R1.fastq.gz")
+                    os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['BARCODE_SEQUENCE']+"_R1.fastq.gz")
                 )
                 if readset.run_type == "PAIRED_END":
                     readset_r2_outputs.append(
-                        os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['INDEX2_RAW']+index['INDEX1_RAW']+"_R2.fastq.gz")
+                        os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['BARCODE_SEQUENCE']+"_R2.fastq.gz")
                     )
 
             # If True, then merge the 'Undetermined' reads
