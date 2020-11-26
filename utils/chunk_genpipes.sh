@@ -19,18 +19,19 @@ load_previous_submit_id (){
 echo load_previous_submit_id on $1
  current_file=$1
 cat << 'EOF' >> ${current_file}
-SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 for file in $(ls ${SCRIPTPATH}/*out | sort -n ); do
-source $file
+source ${SCRIPTPATH}/$file
 done
 EOF
 }
 
 start_new_chunk () {
 echo start_new_chunk on $1
+header=$(basename "$2")
   cat << EOF > $1
 #!/usr/bin/env bash
-source $2
+SCRIPTPATH="\$( cd "\$(dirname "\$0")" >/dev/null 2>&1 ; pwd -P )"
+source \${SCRIPTPATH}/${header}
 STEP=$3
 mkdir -p \$JOB_OUTPUT_DIR/\$STEP
 EOF
@@ -119,9 +120,9 @@ while read -r line ; do
       fi
 
     elif [[ $line =~ echo.*\ \>\>..JOB_LIST ]]; then
-      job_list_chunk=${out_dir}/chunk_${chunk}.out
+      job_list_chunk=chunk_${chunk}.out
       bidon=$(echo "$line" | sed 's/echo\s"$\(.*\)\s$JOB_NAME.*/echo "export \1=$\1 "/g')
-      echo "$bidon >> ${job_list_chunk}" >> ${out_file}
+      echo "$bidon >> \${SCRIPTPATH}/${job_list_chunk}" >> ${out_file}
     fi
 done < ${genpipes_in}
 

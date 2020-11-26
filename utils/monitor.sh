@@ -33,6 +33,7 @@ get_n_jobs () {
 cancel_jobs () {
   echo ""
   job_list=$1
+  echo $job_list
   echo cancel all jobs from ${job_list}
   if [[ ${SCHEDULER} ==  'slurm' ]]; then
     scancel $(cat ${job_list} | awk -F'=' '{print $2}')
@@ -44,11 +45,13 @@ cancel_jobs () {
 }
 
 cancel_trap () {
-    cancel_jobs "$@"
+    cancel_jobs "$@" 2>/dev/null
+    rm -rf $chunk_folder/.lockdir
     exit 0
 }
 
 submit () {
+  echo submit $1
   job_script=${1}
   job_list=${job_script%.sh}.out
   while true; do
@@ -109,7 +112,9 @@ if [ $# -lt 1 ]; then
   usage
   exit 1
 fi
-chunk_folder=$1
+chunk_folder=$(realpath "$1")
+
+
 
 if [ ! -d  ${chunk_folder} ]; then
   echo ${chunk_folder} does not exist
@@ -117,16 +122,17 @@ if [ ! -d  ${chunk_folder} ]; then
 fi
 # sourcing to get the value of CHUNK_SIZE
 source ${chunk_folder}/header.sh
+set +e
 
 
 
-
-
-mkdir $chunk_folder/.lockdir 2>/dev/null
+mkdir ${chunk_folder}/.lockdir 2>/dev/null
 ret_code=$?
 if [[ $ret_code -ne 0 ]] ; then
-  echo it seems that another $0 process is runnning, stop it
-  echo before restating
+  echo it seems that another $0 process is runnning
+  echo If you are sure that no other process in running, run "'rm -r ${chunk_folder}/.lockdir'"
+  echo and restart $0 
+  exit 1 
 else
   trap "rm -rf $chunk_folder/.lockdir" EXIT
 fi
