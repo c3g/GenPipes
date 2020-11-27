@@ -20,7 +20,7 @@ echo load_previous_submit_id on $1
  current_file=$1
 cat << 'EOF' >> ${current_file}
 for file in $(ls ${SCRIPTPATH}/*out | sort -n ); do
-source ${SCRIPTPATH}/$file
+source $file
 done
 EOF
 }
