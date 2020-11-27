@@ -40,7 +40,6 @@ cancel_jobs () {
   elif [[ ${SCHEDULER} ==  'pbs' ]]; then
     qdel $(cat ${job_list} | awk -F'=' '{print $2}')
   fi
-  rm ${job_list}
   echo canceled all jobs from ${job_list}
 }
 
@@ -149,6 +148,8 @@ for sh_script in "${all_sh[@]}"; do
       curent_n_jobs=$(get_n_jobs)
       if [[ $((MAX_QUEUE-curent_n_jobs)) -gt $CHUNK_SIZE ]]; then
        submit ${sh_script}
+       touch ${done_script}
+       trap "rm -rf $chunk_folder/.lockdir" EXIT
        break
       else
         echo to many jobs, sleeping for $SLEEP_TIME sec
