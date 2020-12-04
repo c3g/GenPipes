@@ -739,8 +739,7 @@ def parse_mgi_raw_readset_files(
     seqtype,
     flowcell,
     lane,
-    nb_cycles_r1,
-    nb_cycles_r2,
+    nb_cycles,
     output_dir
     ):
 
@@ -767,7 +766,7 @@ def parse_mgi_raw_readset_files(
         current_lane = line['Lane']
         current_flowcell = line['Flowcell_ID']
 
-        if current_pool == "FAIL" or int(current_lane) != lane or current_flowcell != flowcell:
+        if current_pool == "FAIL" or int(current_lane) != int(lane) or current_flowcell != flowcell:
             continue
 
         sample_name = line['Sample_Name']
@@ -860,10 +859,8 @@ def parse_mgi_raw_readset_files(
 
         if readset.protocol == "10X_scRNA":
             readset._is_scrna = True
-            nb_cycles = nb_cycles_r2
         else:
             readset._is_scrna = False
-            nb_cycles = nb_cycles_r1
 
         if readset.is_scrna:
             log.info("Skipping alignment for " + readset.protocol + " library '" + readset.name + "'")
