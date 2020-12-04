@@ -483,3 +483,144 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
 
         return jobs
 
+class StarRunProcessingAligner(RNARunProcessingAligner):
+    def __init__(self, output_dir, genome_folder, nb_cycles):
+        super(StarRunProcessingAligner, self).__init__(output_dir, genome_folder)
+        # Adjusting the nb of cycles
+        if 49 <= nb_cycles <= 51:
+            nb_cycles = 50
+        elif 74 <= nb_cycles <= 76:
+            nb_cycles = 75
+        elif 99 <= nb_cycles <= 101:
+            nb_cycles = 100
+        elif 124 <= nb_cycles <= 126:
+            nb_cycles = 125
+        elif 149 <= nb_cycles <= 151:
+            nb_cycles = 150
+        else:
+            raise NotImplementedError("NumCycles " + str(nb_cycles) + " not supported for Star aligner...")
+        self._nb_cycles = nb_cycles
+
+    @property
+    def nb_cycles(self):
+        return self._nb_cycles
+
+    def get_reference_index(self, readset=None):
+        folder_name = os.path.basename(self.genome_folder)
+        ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
+        if os.path.isfile(ini_file):
+            genome_config = ConfigParser.SafeConfigParser()
+            genome_config.read(ini_file)
+
+            source = genome_config.get("DEFAULT", "source")
+            version = genome_config.get("DEFAULT", "version")
+
+            return os.path.join(
+                 self.genome_folder,
+                 "genome",
+                 "star_index",
+                 source + version + ".sjdbOverhang" + str(self.nb_cycles - 1))
+        else:
+            return None
+
+    def get_alignment_job(self, readset):
+        output = readset.bam + ".bam"
+
+        rg_center = config.param('star_align', 'sequencing_center', required=False)
+
+        # We can't set the exact bam filename for STAR, so we output the result in a specific directory, and move the
+        # bam to the expected place with the right name.
+        star_bam_name = "Aligned.sortedByCoord.out.bam"
+        star_output_directory = os.path.join(os.path.dirname(output), readset.library)
+
+        star_job = star.align(
+            reads1=readset.fastq1,
+            reads2=readset.fastq2,
+            output_directory=star_output_directory,
+            sort_bam=True,
+            genome_index_folder=readset.aligner_reference_index,
+            rg_id=readset.library + "_" + readset.run + "_" + readset.lane,
+            rg_sample=readset.sample.name,
+            rg_library=readset.library if readset.library else "",
+            rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
+            rg_platform="MGI",
+            rg_center=rg_center if rg_center else ""
+        )
+        # we clean the output of the star job since we move the file, and the moved file is the output of the move job
+        star_job._output_files = []
+
+        move_job = bash.mv(
+            os.path.join(star_output_directory, star_bam_name),
+            output
+        )
+        # we clean the input of the move job to be conistent with te star job
+        move_job._input_files = []
+
+        job = concat_jobs(
+            [
+                star_job,
+                move_job,
+                picard.build_bam_index(
+                    output,
+                    output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1]
+                )
+            ],
+            name="star_align." + readset.name + "." + readset.run + "." + readset.lane,
+            samples=[readset.sample]
+        )
+        return job
+
+class CellrangerRunProcessingAligner(RNARunProcessingAligner):
+    def get_reference_index(self, readset=None):
+        folder_name = os.path.basename(self.genome_folder)
+        ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
+        if os.path.isfile(ini_file):
+            genome_config = ConfigParser.SafeConfigParser()
+            genome_config.read(ini_file)
+
+            return os.path.join(
+                self.genome_folder,
+                "genome",
+                "10xGenomics",
+                genome_config.get("DEFAULT", "10x_transcriptome"),
+                "star"
+            )
+        else:
+            return None
+
+    def get_alignment_job(self, readset):
+        output = readset.bam + ".bam"
+
+        rg_center = config.param('cellranger_count', 'sequencing_center', required=False)
+
+        # We can't set the exact bam filename for iCELLRANGER COUNT, so we output the result in a specific directory, and move the
+        # bam to the expected place with the right name.
+        cellranger_bam_name = "possorted_genome_bam.bam"
+        cellranger_output_directory = os.path.join(os.path.dirname(output), readset.library)
+
+        cellranger_job = cellranger.count(
+            [readset.fastq1, readset.fastq2],
+            os.path.join(cellranger_output_directory, cellranger_bam_name),
+            readset.name,
+            readset.aligner_reference_index,
+            [readset.fastq1, readset.fastq2]
+        )
+
+        job = concat_jobs(
+            [
+                cellranger_job,
+                bash.mv(
+                    os.path.join(cellranger_output_directory, cellranger_bam_name),
+                    output
+                ),
+                picard.build_bam_index(
+                    output,
+                    output[::-1].replace(".bam"[::-1], ".bai"[::-1], 1)[::-1]
+                )
+            ],
+            name="cellranger_count." + readset.name + "." + readset.run + "." + readset.lane,
+            samples=[readset.sample]
+        )
+        return job
+
+

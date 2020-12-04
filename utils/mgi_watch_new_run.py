@@ -120,11 +120,33 @@ def compare_runs(
                         run
                     )
                     print project
+                    print "    Generating sample sheet..."
+                    print_sample_sheet(
+                        columns,
+                        project,
+                        run,
+                        None,
+                        outdir,
+                        group=True
+                    )
+                    print "    Generating GenPipes script..."
+                    print_genpipes_scripts(
+                        outdir,
+                        process_dir,
+                        genpipes_scr_dir,
+                        project,
+                        flowcell,
+                        run,
+                        None,
+                        sequencer_path,
+                        is_demultiplexed,
+                        extra_options
+                    )
+
                     lanes = get_lanes_from_run(
                         columns,
                         run
                     )
-
                     for lane in lanes:
                         print "    Lane " + lane
                         print "        Generating sample sheet..."
@@ -133,7 +155,8 @@ def compare_runs(
                             project,
                             run,
                             lane,
-                            outdir
+                            outdir,
+                            group=False
                         )
                         print "        Generating GenPipes script..."
                         print_genpipes_scripts(
@@ -189,11 +212,16 @@ def print_genpipes_scripts(
     extra_options
     ):
 
-    # Check if --raw-fastq' flag should be used int the pipeline call
-    sample_sheet = os.path.join(samplesheet_dir, project, run, "L0"+lane, project+"."+run+".L0"+lane+".sample_sheet.csv")
+    if lane:
+        sample_sheet = os.path.join(samplesheet_dir, project, run, "L0"+lane, project+"."+run+".L0"+lane+".sample_sheet.csv")
+    else:
+        sample_sheet = os.path.join(samplesheet_dir, project, run, project+"."+run+".sample_sheet.csv")
+
     sample_sheet_rows = [row for row in csv.DictReader(open(sample_sheet, 'rb'), delimiter=',')]
     print len(sample_sheet_rows)
     print sample_sheet_rows[0]['Index']
+
+    # Check if --raw-fastq' flag should be used in the pipeline call
     if is_demultiplexed:
         raw_fastq = False
     else:
@@ -201,31 +229,42 @@ def print_genpipes_scripts(
 
     if not os.path.exists(os.path.join(genpipes_scr_dir, project, run)):
         os.makedirs(os.path.join(genpipes_scr_dir, project, run))
-    genpipes_script = open(os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".L0" + lane + ".genpipes_script.sh"), 'wb+')
+
+    if lane:
+        genpipes_script = open(os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".L0" + lane + ".genpipes_script.sh"), 'wb+')
+    else:
+        genpipes_script = open(os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".genpipes_script.sh"), 'wb+')
+
     genpipes_script.write("""\
 module load mugqic/python/2.7.14 mugqic_dev/genpipes/3.1.6 && \\
-mkdir -p {process_dir}/{project}/{run}/L0{lane} && \\
+mkdir -p {process_dir}/{process_dir_suffix} && \\
 python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py \\
   -c $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.base.ini $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh38/Homo_sapiens.GRCh38.ini \\
   --no-json -l debug {raw_fastq} {extra_options} \\
   -d /nb/Research/MGISeq/{sequencer_path}/{flowcell} \\
-  -r {samplesheet_dir}/{project}/{run}/L0{lane}/{project}.{run}.L0{lane}.sample_sheet.csv \\
-  --lane {lane} \\
-  -o {process_dir}/{project}/{run}/L0{lane} \\
-  > {process_dir}/{project}/{run}/{project}.{run}.L0{lane}.sh \\
-  2> {process_dir}/{project}/{run}/{project}.{run}.L0{lane}.trace.log""".format(
+  -r {samplesheet_dir}/{process_dir_suffix}/{outfile_prefix}.sample_sheet.csv \\
+  {lane} \\
+  -o {process_dir}/{process_dir_suffix} \\
+  > {process_dir}/{project}/{run}/{outfile_prefix}.sh \\
+  2> {process_dir}/{project}/{run}/{outfile_prefix}.trace.log""".format(
         process_dir=process_dir,
+        process_dir_suffix=project+"/"+run+"/L0"+lane if lane else project+"/"+run,
+        outfile_prefix=project+"."+run+".L0"+lane if lane else project+"."+run,
         samplesheet_dir=samplesheet_dir,
         raw_fastq="--raw-fastq " if raw_fastq else "",
         project=project,
         flowcell=flowcell,
         run=run,
-        lane=lane,
+        lane="--lane "+lane if lane else "",
         sequencer_path=sequencer_path,
         extra_options=extra_options
     ))
     genpipes_script.close()
-    subprocess.call("bash " + os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".L0" + lane + ".genpipes_script.sh"), shell=True)
+
+    if lane:
+        subprocess.call("bash " + os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".L0" + lane + ".genpipes_script.sh"), shell=True)
+    else:
+        subprocess.call("bash " + os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".genpipes_script.sh"), shell=True)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
