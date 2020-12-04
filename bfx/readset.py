@@ -762,8 +762,7 @@ def parse_mgi_raw_readset_files(
     seqtype,
     flowcell,
     lane,
-    nb_cycles_r1,
-    nb_cycles_r2,
+    nb_cycles,
     output_dir
     ):
 
@@ -790,7 +789,7 @@ def parse_mgi_raw_readset_files(
         current_lane = line['Lane']
         current_flowcell = line['Flowcell_ID']
 
-        if current_pool == "FAIL" or int(current_lane) != lane or current_flowcell != flowcell:
+        if current_pool == "FAIL" or int(current_lane) != int(lane) or current_flowcell != flowcell:
             continue
 
         sample_name = line['Sample_Name']
@@ -883,18 +882,21 @@ def parse_mgi_raw_readset_files(
 
         if readset.protocol == "10X_scRNA":
             readset._is_scrna = True
-            nb_cycles = nb_cycles_r2
         else:
             readset._is_scrna = False
-            nb_cycles = nb_cycles_r1
 
-        if readset.is_scrna:
-            log.info("Skipping alignment for " + readset.protocol + " library '" + readset.name + "'")
-        elif len(readset.genomic_database) > 0:
+        if len(readset.genomic_database) > 0 and not readset.is_scrna:
             folder_name = readset.genomic_database
             current_genome_folder = os.path.join(genome_root, folder_name)
 
-            if readset.is_rna:
+            if readset.is_scrna:
+                readset._aligner = run_processing_aligner.CellrangerRunProcessingAligner(output_dir, current_genome_folder)
+            elif readset.is_rna:
+                bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
+                for row in bioinfo_csv:
+                    if row[0] == "Read1 Cycles":
+                        return row[1]
+                _raise(SanitycheckError("Could not get Read 1 Cycles from " + self.bioinfo_files[lane]))
                 readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles))
             else:
                 readset._aligner = run_processing_aligner.BwaRunProcessingAligner(output_dir, current_genome_folder)
@@ -926,6 +928,8 @@ def parse_mgi_raw_readset_files(
             else:
                 log.warning("Unable to access the reference file: '" + reference_file + "'")
 
+        elif readset.is_scrna:
+            log.info("Skipping alignment for scRNA assay on " + readset.name)
         elif readset.bam is None and len(readset.genomic_database) > 0:
             log.info("Skipping alignment for the genomic database: '" + readset.genomic_database + "'")
 
