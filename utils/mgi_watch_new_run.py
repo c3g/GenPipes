@@ -29,8 +29,6 @@ import csv
 
 from spreadsheet_utils import print_sample_sheet, parse_google_sheet
 
-from spreadsheet_utils import print_sample_sheet, parse_google_sheet
-
 logger = logging.getLogger(__name__)
 
 columns = {}
@@ -172,19 +170,6 @@ def compare_runs(
                             lane,
                             sequencer_path,
                             run_folder_basename,
-                            is_demultiplexed,
-                            extra_options
-                        )
-                        print "        Generating GenPipes script..."
-                        print_genpipes_scripts(
-                            outdir,
-                            process_dir,
-                            genpipes_scr_dir,
-                            project,
-                            flowcell,
-                            run,
-                            lane,
-                            sequencer_path,
                             is_demultiplexed,
                             extra_options
                         )
