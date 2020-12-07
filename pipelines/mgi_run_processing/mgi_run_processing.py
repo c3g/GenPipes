@@ -1688,6 +1688,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
             "L0" + lane,
             "samplesheet." + str(lane) + ".csv"
         )
+        if not os.path.exists(os.path.dirname(csv_file)):
+            os.makedirs(os.path.dirname(csv_file))
         writer = csv.DictWriter(
             open(csv_file, 'wb'),
             delimiter=str(','),
