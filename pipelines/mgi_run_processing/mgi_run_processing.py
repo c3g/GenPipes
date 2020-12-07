@@ -249,9 +249,13 @@ class MGIRunProcessing(common.MUGQICPipeline):
         The flow cell ID from the run folder
         """
         if not hasattr(self, "_flowcell_id"):
-            self._flowcell_id = os.path.basename(self.run_dir.rstrip('/'))
-            if "(" in self._flowcell_id:
-                 self._flowcell_id = self._flowcell_id.split("(")[0]
+            rundir_basename = os.path.basename(self.run_dir.rstrip('/'))
+            if "_" in rundir_basename:
+                [self._flowcell_id, junk_food] = rundir_basename.split("_")
+            else:
+                self._flowcell_id = os.path.basename(self.run_dir.rstrip('/'))
+                if "(" in self._flowcell_id:
+                     self._flowcell_id = self._flowcell_id.split("(")[0]
         return self._flowcell_id
 
     @property
@@ -298,16 +302,14 @@ class MGIRunProcessing(common.MUGQICPipeline):
     @property
     def report_hash(self):
         if not hasattr(self, "_report_hash"):
-            self._report_hash = {
-                "run" : self.run_id,
-                "instrument" : self.instrument,
-                "flowcell" : self.flowcell_id,
-                "lane" : {},
-                "seqtype" : self.seqtype
-            }
+            self._report_hash = {}
             for lane in self.lanes:
-                self._report_hash["lane"][lane] = {
-                    "lane_number" : lane,
+                self._report_hash[lane] = {
+                    "run" : self.run_id,
+                    "instrument" : self.instrument,
+                    "flowcell" : self.flowcell_id,
+                    "lane" : lane,
+                    "seqtype" : self.seqtype,
                     "sequencing_method" : "PAIRED_END" if self.is_paired_end[lane] else "SINGLE_END",
                     "steps" : [],
                     "barcodes" : {}
@@ -316,13 +318,14 @@ class MGIRunProcessing(common.MUGQICPipeline):
     
     @property
     def report_inputs(self):
-        if not hasattr(self, "_report_inputs"):
-            self._report_inputs = {
-                'qc' : {},
-                'blast' : {},
-                'mark_dup' : {},
-                'align' : {}
-            }
+            self._report_inputs = {}
+            for lane in self.lanes:
+                self._report_inputs[lane] = {
+                    'index': {},
+                    'qc' : {},
+                    'blast' : {},
+                    'align' : {},
+                }
         return self._report_inputs
 
     def index(self):
@@ -676,7 +679,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     jobs.extend(fastq_jobs_to_append)
     
                 for readset in self.readsets[lane]:
-                    self.report_inputs['index'][readset.name] = [metrics_file]
+                    self.report_inputs[lane]['index'][readset.name] = [metrics_file]
     
             self.add_copy_job_inputs(jobs)
         return jobs
@@ -713,7 +716,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     name="qc." + readset.name + ".qc." + self.run_id + "." + str(lane),
                     samples=[readset.sample]
                 ))
-                self.report_inputs['qc'][readset.name] = os.path.join(output_dir, "mpsQC_" + region_name + "_stats.xml")
+                self.report_inputs[lane]['qc'][readset.name] = os.path.join(output_dir, "mpsQC_" + region_name + "_stats.xml")
     
                 # Also process the fastq of the indexes
                 jobs.append(
@@ -763,7 +766,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         job_suffix = "R1"
                         input2 = None
                         unzip = True
-                        self.report_inputs['index'][readset.name].append(outputs[0])
+                        self.report_inputs[lane]['index'][readset.name].append(outputs[0])
                     elif "R2" in input1:
                         job_suffix = "R2"
                         input2 = None
@@ -822,7 +825,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     readset.name + "_" + readset.sample_number + "_L00" + lane
                 )
                 output = output_prefix + '.R1.RDP.blastHit_20MF_species.txt'
-                self.report_inputs['blast'][readset.name] = os.path.join(output)
+                self.report_inputs[lane]['blast'][readset.name] = os.path.join(output)
                 current_jobs = [
                     bash.mkdir(os.path.dirname(output))
                 ]
@@ -1025,14 +1028,14 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 jobs.extend(job_list)
     
                 if readset.is_rna:
-                    self.report_inputs['align'][readset.name] = [
+                    self.report_inputs[lane]['align'][readset.name] = [
                         readset.bam + '.metrics.alignment_summary_metrics',
                         readset.bam + '.metrics.insert_size_metrics',
                         os.path.join(os.path.dirname(readset.bam), readset.sample.name + "." + readset.library + '.rnaseqc.sorted.dup.metrics.tsv'),
                         readset.bam + '.metrics.rRNA.tsv'
                     ]
                 else:
-                    self.report_inputs['align'][readset.name] = [
+                    self.report_inputs[lane]['align'][readset.name] = [
                         readset.bam + '.metrics.alignment_summary_metrics',
                         readset.bam + '.metrics.insert_size_metrics',
                         readset.bam + ".dup.metrics",
@@ -1137,6 +1140,14 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             self.instrument + "_" + self.flowcell_id + "_" + self.run_id
                         ),
                         recursive=True
+                    ),
+                    bash.touch(
+                        os.path.join(
+                            config.param("copy", "mgi_runs_root", type="dirpath"),
+                            self.seqtype,
+                            self.year,
+                            self.instrument + "_" + self.flowcell_id + "_" + self.run_id
+                        )
                     )
                 ],
                 input_dependency=self.copy_job_inputs,
@@ -1158,11 +1169,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
             run_validation_inputs = []
     
             # Add barcodes info to the report_hash
-            self.report_hash["barcodes"] = dict([(readset.name, readset.indexes) for readset in self.readsets[lane]])
+            self.report_hash[lane]["barcodes"] = dict([(readset.name, readset.indexes) for readset in self.readsets[lane]])
     
             general_information_file = os.path.join(self.output_dir, "L0" + lane, self.run_id + "." + str(lane) + ".general_information.json")
             with open(general_information_file, 'w') as out_json:
-                json.dump(self.report_hash, out_json, indent=4)
+                json.dump(self.report_hash[lane], out_json, indent=4)
     
             # Build JSON report for each sample
             for readset in self.readsets[lane]:
@@ -1173,7 +1184,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         bash.mkdir(sample_report_dir),
                         tools.run_validation_sample_report(
                             readset,
-                            self.report_inputs,
+                            self.report_inputs[lane],
                             output_file,
                             general_information_file
                         )],
@@ -1270,8 +1281,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 }
     
                 # BARCODES and DEMULTIPLEXING metrics
-                if self.report_inputs.get('index'):
-                    demux_metrics_tsv = parseMetricsFile(self.report_inputs['index'][readset.name][0])
+                if self.report_inputs[lane].get('index'):
+                    demux_metrics_tsv = parseMetricsFile(self.report_inputs[lane]['index'][readset.name][0])
     
                     total_pf = sum([int(row['pf_templates']) for row in demux_metrics_tsv])
                     total_pf_onindex_inlane = sum([int(row['pf_templates']) for row in demux_metrics_tsv if row['library_name'] != "unmatched"])
@@ -1292,7 +1303,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         else:
                             log.error(name + " could not be parsed for barcode...")
     
-                    fastqc_file = self.report_inputs['index'][readset.name][1]
+                    fastqc_file = self.report_inputs[lane]['index'][readset.name][1]
                     q30_reads = int(subprocess.check_output("sed -n '/#Quality/,/END_MODULE/p' %s | awk '{if($1!=\">>END_MODULE\" && $1!=\"#Quality\" && $1>=30){sum+=$2}} END {print sum}'" % fastqc_file, shell=True).strip())
                     seq_length = int(subprocess.check_output("grep 'Sequence length' %s | cut -f 2" % fastqc_file, shell=True).strip())
                     readset_yield = seq_length * float(pf_clusters)
@@ -1314,7 +1325,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         'Mean Quality Score': mean_quality_score
                     }
     
-                elif self.report_inputs.get('align'):
+                elif self.report_inputs[lane].get('align'):
                     alignment_summary_metrics_file = self.report_inputs['align'][readset.name][0]
                     align_tsv = parseMetricsFile(alignment_summary_metrics_file)
     
@@ -1521,7 +1532,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 "modules" : job.modules
             } for job in jobs]
         }
-        self.report_hash["lane"][lane]["steps"].append(report_hash)
+        self.report_hash[lane]["steps"].append(report_hash)
 
     def get_read1cycles(self, lane):
         """

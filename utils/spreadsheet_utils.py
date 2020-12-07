@@ -85,11 +85,10 @@ def print_sample_sheet(
     if lane and str(lane) not in columns['Lane']:
         logger.error("Lane " + str(lane) + " was not found in the spreadsheet...")
 
+    process_dir = os.path.join(str(project) , str(run))
     if group:
-        process_dir = os.path.join(str(project) , str(run))
         outfile = str(project) + "." + str(run) + ".sample_sheet.csv"
     elif lane:
-        process_dir = os.path.join(str(project) , str(run), "L0" + str(lane))
         outfile = str(project) + "." + str(run) + ".L0" + str(lane) + ".sample_sheet.csv"
     else:
         print "Error :  no lane... no group..."
