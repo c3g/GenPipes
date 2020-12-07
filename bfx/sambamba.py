@@ -25,7 +25,7 @@
 from core.config import *
 from core.job import *
 
-def sort(input_bam, output_bam, tmp_dir, options):
+def sort(input_bam, output_bam, tmp_dir, other_options=None):
 
     return Job(
         [input_bam],
@@ -39,7 +39,7 @@ sambamba sort {options} \\
   {input} \\
   --tmpdir {temp} \\
   {output}""".format(
-        options=options if options else "",
+        options=other_options if other_options else "",
         input=input_bam,
         output="--out " + output_bam if output_bam else "",
         temp=tmp_dir
@@ -84,12 +84,12 @@ sambamba merge {options} \\
         )
     )
 
-def markdup(input_bam, output_bam):
+def markdup(input_bam, output_bam, temp_dir):
     if not isinstance(input_bam, list):
         input_bam=[input_bam]
 
     return Job(
-        [input_bam],
+        input_bam,
         [output_bam],
         [
             ['sambamba_mark_duplicates', 'module_samtools'],
@@ -101,8 +101,8 @@ sambamba markdup {options} \\
   --tmpdir {temp} \\
   {output}""".format(
         options=config.param('sambamba_mark_duplicates', 'options', required=False),
-        temp=config.param('sambamba_mark_duplicate', 'tmp_dir'),
-        input=input_bam,
+        temp=temp_dir,
+        input=" \\\n  ".join(input for input in input_bam),
         output=output_bam,
         )
     )

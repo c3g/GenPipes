@@ -79,6 +79,7 @@ bcftools \\
   -f {reference_fasta} \\
   {inputs} \\
   {regions} \\
+  {regionFile} \\
   {output}""".format(
         options=options if options else "",
         reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),

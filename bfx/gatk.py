@@ -347,7 +347,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         inputNormal=inputNormal,
         inputTumor=inputTumor,
         outputVCF=outputVCF,
-        interval_list=" \\\n  --interval_padding 100 --intervals " + interval_list if interval_list else "",
+        #interval_list=" \\\n  --interval_padding 100 --intervals " + interval_list if interval_list else "",
+        interval_list=" \\\n  --intervals " + interval_list if interval_list else "",
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )

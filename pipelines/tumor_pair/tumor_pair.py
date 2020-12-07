@@ -478,10 +478,14 @@ END`""".format(
         jobs = []
         for sample in self.samples:
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
-            input = alignment_file_prefix + "realigned.sorted.bam"
             output = alignment_file_prefix + "sorted.dup.bam"
+            [input] = self.select_input_files([
+                [alignment_file_prefix + "sorted.matefixed.bam"],
+                [alignment_file_prefix + "sorted.realigned.bam"],
+                [alignment_file_prefix + "sorted.bam"]
+            ])
 
-            job = sambamba.markdup(input, output, os.path.join("alignment", sample.name, sample.name))
+            job = sambamba.markdup(input, output, os.path.join("alignment", sample.name))
             job.name = "sambamba_mark_duplicates." + sample.name
             job.samples=[sample]
             jobs.append(job)
@@ -1077,7 +1081,9 @@ END`""".format(
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
             bed_file = None
-            coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
+            coverage_bed = bvatools.resolve_readset_coverage_bed(
+                tumor_pair.normal.readsets[0]
+            )
 
             if coverage_bed:
                 bed_file = coverage_bed
@@ -1833,8 +1839,10 @@ END`""".format(
                                                    [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
                                                    [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")]])
 
-            bed_file = None
-            coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
+            bed_file = ""
+            coverage_bed = bvatools.resolve_readset_coverage_bed(
+                tumor_pair.normal.readsets[0]
+            )
 
             if coverage_bed:
                 bed_file = coverage_bed
@@ -1849,13 +1857,13 @@ END`""".format(
                         bcftools.mpileup(
                             [input_normal[0], input_tumor[0]],
                             None,
-                            config.param('samtools_paired', 'mpileup_other_options'),
+                            options=config.param('samtools_paired', 'mpileup_other_options'),
                             regionFile=bed_file
                         ),
                         bcftools.call(
                             "",
                             os.path.join(samtools_directory, tumor_pair.name + ".bcf"),
-                            config.param('samtools_paired', 'bcftools_calls_options')
+                            options=config.param('samtools_paired', 'bcftools_calls_options')
                         ),
                     ]),
                     bcftools.index(
@@ -1947,7 +1955,6 @@ END`""".format(
                             output_vcf
                         ),
                     ]),
-                    vt.decompose_and_normalize_mnps(output_vcf, output_vcf_vt),
                     pipe_jobs([
                         vt.decompose_and_normalize_mnps(
                             output_vcf,

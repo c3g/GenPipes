@@ -389,8 +389,8 @@ END
                                 "\\tID:" + readset.name + \
                                 "\\tSM:" + readset.sample.name + \
                                 "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
-                                ("\\tPU:" + readset.name) + \
-                                #("\\tPU:" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                                #("\\tPU:" + readset.name) + \
+                                ("\\tPU:" + readset.run + "." + readset.lane if readset.run and readset.lane else "") + \
                                 ("\\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
                                 ("\\tPL:" + config.param('bwa_mem', 'sequencing_technology') if config.param('bwa_mem', 'sequencing_technology', required=False) else "Illumina") + \
                                 "'"
@@ -403,7 +403,8 @@ END
                         sambamba.sort(
                             "/dev/stdin",
                             readset_bam,
-                            config.param('sambamba_sort_sam', 'tmp_dir', required=True)
+                            tmp_dir=config.param('sambamba_sort_sam', 'tmp_dir', required=True),
+                            other_options=config.param('sambamba_sort_sam', 'options', required=True),
                             )
                         ]),
                     sambamba.index(

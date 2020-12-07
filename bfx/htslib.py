@@ -70,8 +70,8 @@ def bgzip_tabix(input, output):
         command="""\
 bgzip -cf \\
 {input} > \\
-{output} && tabix -pvcf {output} \\
-        """.format(
+{output} && \\
+tabix -pvcf {output}""".format(
         input=" \\\n " + input if input else "",
         output=output,
         options=config.param('DEFAULT', 'tabix_options', required=False),
