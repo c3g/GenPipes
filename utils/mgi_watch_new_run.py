@@ -213,7 +213,7 @@ def print_genpipes_scripts(
     ):
 
     if lane:
-        sample_sheet = os.path.join(samplesheet_dir, project, run, "L0"+lane, project+"."+run+".L0"+lane+".sample_sheet.csv")
+        sample_sheet = os.path.join(samplesheet_dir, project, run, project+"."+run+".L0"+lane+".sample_sheet.csv")
     else:
         sample_sheet = os.path.join(samplesheet_dir, project, run, project+"."+run+".sample_sheet.csv")
 
@@ -248,8 +248,8 @@ python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py
   > {process_dir}/{project}/{run}/{outfile_prefix}.sh \\
   2> {process_dir}/{project}/{run}/{outfile_prefix}.trace.log""".format(
         process_dir=process_dir,
-        process_dir_suffix=project+"/"+run+"/L0"+lane if lane else project+"/"+run,
-        outfile_prefix=project+"."+run+".L0"+lane if lane else project+"."+run,
+        process_dir_suffix=project+"/"+run,
+        outfile_prefix=project+"."+run,
         samplesheet_dir=samplesheet_dir,
         raw_fastq="--raw-fastq " if raw_fastq else "",
         project=project,
