@@ -689,7 +689,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                     bash.mkdir(variant_directory),
                     pipe_jobs([
                         samtools.mpileup(
-                            input_bams=input_bam,
+                            input_bam,
                             output=None,
                             other_options=config.param('ivar_call_variants', 'mpileup_options'),
                             region=None,
@@ -779,7 +779,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                     bash.mkdir(os.path.dirname(output_prefix)),
                     pipe_jobs([
                         samtools.mpileup(
-                            input_bams=input_bam,
+                            input_bam,
                             output=None,
                             other_options=config.param('ivar_create_consensus', 'mpileup_options'),
                             region=None,
