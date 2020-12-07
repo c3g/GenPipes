@@ -751,7 +751,8 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                         )
                     ],
                     name="snpeff_annotate." + sample.name,
-                    samples=[sample]
+                    samples=[sample],
+                    removable_files=[output_vcf]
                     )
                 )
 
