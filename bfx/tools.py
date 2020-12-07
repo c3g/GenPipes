@@ -717,6 +717,7 @@ def run_validation_sample_report(
 python $PYTHON_TOOLS/runProcessingSampleReport.py \\
   -p {project} \\
   -s {sample} \\
+  -n {lane_sample} \\
   -l {library} \\
   {index} \\
   {main_json} \\
@@ -728,6 +729,7 @@ python $PYTHON_TOOLS/runProcessingSampleReport.py \\
   -o {outfile}""".format(
             project=readset.project,
             sample=readset.sample.name,
+            lane_sample=readset.lane + "_" + readset.sample_number,
             library=readset.library,
             index="-i " + report_inputs['index'] if report_inputs.get('index') else "",
             main_json="-m " + main_json if main_json else "",
