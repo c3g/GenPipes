@@ -511,8 +511,8 @@ END
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
                 readset_bam = readset_bams[0]
-                readset_index = re.sub("\.bam$", ".bai", readset_bam)
-                sample_index = re.sub("\.bam$", ".bai", sample_bam)
+                readset_index = re.sub("\.bam$", "bam.bai", readset_bam)
+                sample_index = re.sub("\.bam$", "bam.bai", sample_bam)
     
                 jobs.append(
                     concat_jobs([
