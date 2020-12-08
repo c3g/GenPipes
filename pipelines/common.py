@@ -37,13 +37,11 @@ from core.job import Job, concat_jobs
 from core.pipeline import Pipeline
 from bfx.design import parse_design_file
 from bfx.readset import parse_illumina_readset_file
-from core.job import *
-from core.pipeline import *
-from bfx.design import *
-from bfx.readset import *
 from bfx.sample_tumor_pairs import *
 
 from bfx import metrics
+from bfx import bvatools
+from bfx import verify_bam_id
 from bfx import picard
 from bfx import trimmomatic
 from bfx import samtools

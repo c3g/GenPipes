@@ -600,13 +600,13 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --tumor-sample {tumor_name} \\
   --input {inputNormal} \\
   --normal-sample {normal_name} \\
-  --output {outputVCF}{interval_list}{intervals}{exclude_intervals}{pon}{known_sites}""".format(
+  --output {outputVCF}{interval_list}{intervals}{exclude_intervals}""".format(
 			tmp_dir=config.param('gatk_mutect', 'tmp_dir'),
 			java_other_options=config.param('gatk_mutect2', 'java_other_options'),
 			ram=config.param('gatk_mutect2', 'ram'),
 			options=config.param('gatk_mutect2', 'options'),
 			reference_sequence=config.param('gatk_mutect2', 'genome_fasta', type='filepath'),
-			known_sites="\\\n --germline-resource " + config.param('gatk_mutect2', 'known_sites', type='filepath') if config.param('gatk_mutect2', 'known_sites', type='filepath') else "",
+			#known_sites="\\\n --germline-resource " + config.param('gatk_mutect2', 'known_sites', type='filepath') if config.param('gatk_mutect2', 'known_sites', type='filepath') else "",
 			inputNormal=inputNormal,
 			normal_name=normal_name,
 			inputTumor=inputTumor,
@@ -615,7 +615,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 			#interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
             interval_list=" \\\n --intervals " + interval_list if interval_list else "",
 			intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-			pon="\\\n --panel-of-normals " + config.param('gatk_mutect2', 'pon', type='filepath') if config.param('gatk_mutect2', 'pon', type='filepath') else "",
+			#pon="\\\n --panel-of-normals " + config.param('gatk_mutect2', 'pon', type='filepath') if config.param('gatk_mutect2', 'pon', type='filepath') else "",
 			exclude_intervals="".join(" \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
 		)
 	)

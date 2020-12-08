@@ -32,11 +32,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
+from pipelines import common
 from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 import utils.utils
-from pipelines import common
-from bfx.readset import *
-from core.pipeline import *
 
 from bfx import adapters
 from bfx import bvatools
