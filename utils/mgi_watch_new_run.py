@@ -68,6 +68,15 @@ def get_project_from_run(
             if columns['Project_ID'][x]:
                 return columns['Project_ID'][x]
 
+def get_date_from_run(
+    columns,
+    run
+    ):
+    for x in range(len(columns['RUN_ID'])):
+        if columns['RUN_ID'][x] == run:
+            if columns['Run_Date'][x]:
+                return columns['Run_Date'][x]
+
 def get_lanes_from_run(
     columns,
     run
@@ -78,6 +87,23 @@ def get_lanes_from_run(
             if columns['Lane'][x] and columns['Lane'][x] not in lanes:
                 lanes.append(columns['Lane'][x])
     return lanes
+
+def new_naming_convention(
+    run_date
+    ):
+
+    is_new_naming = True
+
+    [year, month, day] = run_date.split("-")
+    if int(year) == 2020:
+        if int(month) == 12:
+            if int(day) < 1:
+                is_new_naming = False
+        elif int(month) < 12:
+            is_new_naming = False
+
+    return is_new_naming
+
 
 def compare_runs(
     columns,
@@ -114,6 +140,15 @@ def compare_runs(
                 )
                 print flowcell
                 if flowcell:
+                    run_date = get_date_from_run(
+                        columns,
+                        run
+                    )
+                    if new_naming_convention(run_date):
+                        run_folder_basename = flowcell + "_" + run
+                    else:
+                        run_folder_basename = flowcell
+
                     print "Processing run " + run
                     project = get_project_from_run(
                         columns,
@@ -135,10 +170,10 @@ def compare_runs(
                         process_dir,
                         genpipes_scr_dir,
                         project,
-                        flowcell,
                         run,
                         None,
                         sequencer_path,
+                        run_folder_basename,
                         is_demultiplexed,
                         extra_options
                     )
@@ -164,10 +199,10 @@ def compare_runs(
                             process_dir,
                             genpipes_scr_dir,
                             project,
-                            flowcell,
                             run,
                             lane,
                             sequencer_path,
+                            run_folder_basename,
                             is_demultiplexed,
                             extra_options
                         )
@@ -204,10 +239,10 @@ def print_genpipes_scripts(
     process_dir,
     genpipes_scr_dir,
     project,
-    flowcell,
     run,
     lane,
     sequencer_path,
+    run_folder_basename,
     is_demultiplexed,
     extra_options
     ):
@@ -241,7 +276,7 @@ mkdir -p {process_dir}/{process_dir_suffix} && \\
 python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py \\
   -c $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.base.ini $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh38/Homo_sapiens.GRCh38.ini \\
   --no-json -l debug {raw_fastq} {extra_options} \\
-  -d /nb/Research/MGISeq/{sequencer_path}/{flowcell} \\
+  -d /nb/Research/MGISeq/{sequencer_path}/{run_folder_basename} \\
   -r {samplesheet_dir}/{process_dir_suffix}/{outfile_prefix}.sample_sheet.csv \\
   {lane} \\
   -o {process_dir}/{process_dir_suffix} \\
@@ -253,7 +288,7 @@ python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py
         samplesheet_dir=samplesheet_dir,
         raw_fastq="--raw-fastq " if raw_fastq else "",
         project=project,
-        flowcell=flowcell,
+        run_folder_basename=run_folder_basename,
         run=run,
         lane="--lane "+lane if lane else "",
         sequencer_path=sequencer_path,
