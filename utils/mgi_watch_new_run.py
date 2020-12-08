@@ -68,6 +68,15 @@ def get_date_from_run(
             if columns['Run_Date'][x]:
                 return columns['Run_Date'][x]
 
+def get_date_from_run(
+    columns,
+    run
+    ):
+    for x in range(len(columns['RUN_ID'])):
+        if columns['RUN_ID'][x] == run:
+            if columns['Run_Date'][x]:
+                return columns['Run_Date'][x]
+
 def get_lanes_from_run(
     columns,
     run
@@ -179,10 +188,10 @@ def compare_runs(
                             process_dir,
                             genpipes_scr_dir,
                             project,
-                            flowcell,
                             run,
                             lane,
                             sequencer_path,
+                            run_folder_basename,
                             is_demultiplexed,
                             extra_options
                         )
