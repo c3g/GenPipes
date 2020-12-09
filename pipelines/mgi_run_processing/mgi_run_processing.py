@@ -1258,7 +1258,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     bash.cp(
                         os.path.join(self.output_dir, "L0" + lane, "."),
                         full_destination_folder,
-                        recursive=True
+                        recursive=True,
+                        update=True
                     ),
                     bash.touch(output)
                 ],
@@ -1287,13 +1288,13 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 full_destination_folder,
                 "copyCompleted." + lane + ".out"
             ))
+            log.error("\n".join(inputs))
 
         notification_job = bash.touch(os.path.join(self.output_dir,  self.run_id + "_" + self.flowcell_id + "_processing.done"))
-        notification_job.input_dependency = inputs
-        notification_job.output_dependency = [os.path.join(self.output_dir,  self.run_id + "_" + self.flowcell_id + "_processing.done")]
+        notification_job.input_files = inputs
+        notification_job.output_files = [os.path.join(self.output_dir,  self.run_id + "_" + self.flowcell_id + "_processing.done")]
         notification_job.name = "final_notification." + self.run_id
         notification_job.samples = self.samples[lane]
-
 
         return [notification_job]
 
