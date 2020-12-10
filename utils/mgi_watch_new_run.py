@@ -284,7 +284,7 @@ python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py
   2> {process_dir}/{project}/{run}/{outfile_prefix}.trace.log""".format(
         process_dir=process_dir,
         process_dir_suffix=project+"/"+run,
-        outfile_prefix=project+"."+run,
+        outfile_prefix=project+"."+run+".L0"+lane if lane else project+"."+run,
         samplesheet_dir=samplesheet_dir,
         raw_fastq="--raw-fastq " if raw_fastq else "",
         project=project,
