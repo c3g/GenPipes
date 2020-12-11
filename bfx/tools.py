@@ -243,6 +243,42 @@ python $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
         )
     )
 
+def fix_genotypes_strelka(input, output, normal, tumor):
+        return Job(
+            [input],
+            [output],
+            [
+                ['DEFAULT', 'module_mugqic_tools'],
+                ['DEFAULT', 'module_python']
+            ],
+            command="""\
+	python $PYTHON_TOOLS/update_genotypes_strelka.py \\
+	    -i {input} \\
+	    -o {output} \\
+	    -n {normal} \\
+	    -t {tumor}""".format(
+                input=input if input else "",
+                output=output if input else "",
+                normal=normal,
+                tumor=tumor,
+            )
+        )
+def cpg_cov_stats(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/CpG_coverageStats.py \\
+ -i {input} \\
+ -o {output}""".format(
+            input=input,
+            output=output
+         )
+    )
 
 ## functions for perl tools ##
 
@@ -900,4 +936,21 @@ bash IHEC_methylseq_metrics.sh \\
             counter=count,
             targeted_flag=1 if target_bed else 0
         )
+    )
+
+def r_somatic_signature(input, output, remove_file=None):
+    return Job(
+        [input],
+        [os.path.join(output,"Alexandrov_weigth.tsv")],
+        [
+            ['somatic_signature', 'module_mugqic_tools'],
+            ['somatic_signature', 'module_R']
+        ],
+        command="""\
+Rscript $R_TOOLS/somaticSignatureAlexandrov.R \\
+  {input} \\
+  {output} """.format(
+        input=input,
+        output=output
+        ),removable_files=remove_file
     )

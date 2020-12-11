@@ -36,9 +36,12 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 from core.pipeline import Pipeline
 from bfx.design import parse_design_file
-from bfx.readset import parse_illumina_readset_file 
+from bfx.readset import parse_illumina_readset_file
+from bfx.sample_tumor_pairs import *
 
 from bfx import metrics
+from bfx import bvatools
+from bfx import verify_bam_id
 from bfx import picard
 from bfx import trimmomatic
 from bfx import samtools
@@ -204,8 +207,11 @@ class Illumina(MUGQICPipeline):
         if FASTQ files are not already specified in the readset file. Do nothing otherwise.
         """
         jobs = []
+        analyses_dir = os.path.join("analyses")
+
         for readset in self.readsets:
             # If readset FASTQ files are available, skip this step
+            sym_link_job = []
             if not readset.fastq1:
                 if readset.bam:
                     ## check if bam file has been sorted:
@@ -247,7 +253,6 @@ class Illumina(MUGQICPipeline):
                             )
                         ], name="picard_sam_to_fastq."+readset.name, samples=[readset.sample])
                     )
-
                 else:
                     _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
         return jobs
@@ -347,7 +352,7 @@ END
 
             jobs.append(concat_jobs([
                 # Trimmomatic does not create output directory by default
-                Job(command="mkdir -p " + trim_directory),
+                Job(command="mkdir -p " + trim_directory, samples=[readset.sample]),
                 job
             ], name="trimmomatic." + readset.name, samples=[readset.sample]))
         return jobs
@@ -545,5 +550,4 @@ pandoc \\
 
             jobs.append(job)
             
-        return jobs    
- 
+        return jobs

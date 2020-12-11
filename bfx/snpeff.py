@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+	#!/usr/bin/env python
 
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
@@ -44,7 +44,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
   -csvStats {output_stats} \\
   -stats {output_stats_html} \\
   {reference_snpeff_genome} \\
-  {input} > {output}""".format(
+  {input}{output}""".format(
         tmp_dir=config.param('compute_effects', 'tmp_dir'),
         java_other_options=config.param('compute_effects', 'java_other_options'),
         ram=config.param('compute_effects', 'ram'),
@@ -54,7 +54,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
         output_stats_html=output_stats_html,
         reference_snpeff_genome=config.param('compute_effects', 'snpeff_genome'),
         input=input,
-        output=output
+        output=" \\\n  > " + output if output else ""
         )
     )
 

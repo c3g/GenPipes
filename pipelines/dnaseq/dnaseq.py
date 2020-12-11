@@ -20,12 +20,10 @@
 ################################################################################
 
 # Python Standard Modules
-import argparse
 import logging
 import math
 import os
 import re
-import subprocess
 import sys
 
 # Append mugqic_pipelines directory to Python library path
@@ -41,8 +39,8 @@ import utils.utils
 from bfx import adapters
 from bfx import bvatools
 from bfx import bwa
+from bfx import bwakit
 from bfx import gatk4
-from bfx import gatk
 from bfx import igvtools
 from bfx import metrics
 from bfx import samtools
@@ -51,16 +49,35 @@ from bfx import tools
 from bfx import vcftools
 from bfx import skewer
 from bfx import sambamba
-from bfx import picard
 from bfx import picard2
 from bfx import vt
 from bfx import htslib
 from bfx import gemini
 from bfx import qualimap
 from bfx import fastqc
+from bfx import ngscheckmate
+from bfx import peddy
+from bfx import verify_bam_id
 from bfx import multiqc
 from bfx import deliverables
+
 from bfx import bash_cmd as bash
+
+from pipelines import common
+
+##Structural variants
+from bfx import delly
+from bfx import manta
+from bfx import lumpy
+from bfx import wham
+from bfx import cnvkit
+from bfx import breakseq2
+from bfx import metasv
+from bfx import svtyper
+from bfx import bcftools
+from bfx import metric_tools
+from bfx import vawk
+from bfx import svaba
 
 log = logging.getLogger(__name__)
 
@@ -127,7 +144,6 @@ class DnaSeqRaw(common.Illumina):
 
         :return:
         """
-
         jobs = []
         sym_link_job = ""
         for readset in self.readsets:
@@ -188,6 +204,40 @@ class DnaSeqRaw(common.Illumina):
 
         return jobs
 
+    def build_adapter_file(self, directory, readset):
+        adapter_file = os.path.join(directory, "adapter.tsv")
+        if readset.run_type == "SINGLE_END":
+            if readset.adapter1:
+                adapter_job = Job(
+                    command="""\
+`cat > {adapter_file} << END
+>Adapter\n{sequence}\n
+END
+`""".format(
+                        adapter_file=adapter_file,
+                        sequence=readset.adapter1
+                    )
+                )
+            else:
+                raise Exception("Error: missing adapter1 for SINGLE_END readset \"" + readset.name + "\", or missing adapter_file parameter in config file!")
+
+        elif readset.run_type == "PAIRED_END":
+            if readset.adapter1 and readset.adapter2:
+                adapter_job = Job(
+                    command="""\
+`cat > {adapter_file} << END
+>Adapter1\n{sequence1}\n
+>Adapter2\n{sequence2}\n
+END
+`""".format(
+                        adapter_file=adapter_file,
+                        sequence1=readset.adapter1,
+                        sequence2=readset.adapter2,
+                    )
+                )
+
+        return adapter_job
+
     def skewer_trimming(self):
         """
         """
@@ -208,6 +258,8 @@ class DnaSeqRaw(common.Illumina):
                     adapter_file
                 )
 
+            fastq1 = ""
+            fastq2 = ""
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
@@ -239,7 +291,10 @@ class DnaSeqRaw(common.Illumina):
 
             jobs.append(
                 concat_jobs([
-                    bash.mkdir(output_dir, remove=True),
+                    bash.mkdir(
+                        output_dir,
+                        remove=True
+                    ),
                     adapter_job,
                     skewer.trim(
                         fastq1,
@@ -249,11 +304,13 @@ class DnaSeqRaw(common.Illumina):
                         ),
                     bash.ln(
                         trim_file_prefix + "-trimmed-pair1.fastq.gz",
-                        trim_file_prefix + ".trim.pair1.fastq.gz"
+                        trim_file_prefix + ".trim.pair1.fastq.gz",
+                        self.output_dir
                         ),
                     bash.ln(
                         trim_file_prefix + "-trimmed-pair2.fastq.gz",
-                        trim_file_prefix + ".trim.pair2.fastq.gz"
+                        trim_file_prefix + ".trim.pair2.fastq.gz",
+                        self.output_dir
                         )
                     ],
                     name="skewer_trimming." + readset.name,
@@ -268,8 +325,7 @@ class DnaSeqRaw(common.Illumina):
         """
         The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
         The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-        BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
-
+        BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
         This step takes as input files:
 
         1. Trimmed FASTQ files if available
@@ -284,6 +340,8 @@ class DnaSeqRaw(common.Illumina):
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
 
+            fastq1 = ""
+            fastq2 = ""
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
@@ -329,7 +387,8 @@ class DnaSeqRaw(common.Illumina):
                                 "\\tID:" + readset.name + \
                                 "\\tSM:" + readset.sample.name + \
                                 "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
-                                ("\\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                                #("\\tPU:" + readset.name) + \
+                                ("\\tPU:" + readset.run + "." + readset.lane if readset.run and readset.lane else "") + \
                                 ("\\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
                                 ("\\tPL:" + config.param('bwa_mem', 'sequencing_technology') if config.param('bwa_mem', 'sequencing_technology', required=False) else "Illumina") + \
                                 "'"
@@ -342,7 +401,8 @@ class DnaSeqRaw(common.Illumina):
                         sambamba.sort(
                             "/dev/stdin",
                             readset_bam,
-                            config.param('sambamba_sort_sam', 'tmp_dir', required=True)
+                            tmp_dir=config.param('sambamba_sort_sam', 'tmp_dir', required=True),
+                            other_options=config.param('sambamba_sort_sam', 'options', required=True),
                             )
                         ]),
                     sambamba.index(
@@ -354,10 +414,143 @@ class DnaSeqRaw(common.Illumina):
                     samples=[readset.sample]
                     )
                 )
+            
+        return jobs
 
+    def bwakit_picard_sort_sam(self):
+        """
+        The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
+        The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+        BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
+
+        This step takes as input files:
+
+        1. Trimmed FASTQ files if available
+        2. Else, FASTQ files from the readset file if available
+        3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+        """
+    
+        jobs = []
+        for readset in self.readsets:
+            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            alignment_directory = os.path.join("alignment", readset.sample.name)
+            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+        
+            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.sorted.bam$|\.bam$", ".pair1.fastq.gz", readset.bam),
+                                                  re.sub("\.sorted.bam$|\.bam$", ".pair2.fastq.gz", readset.bam)])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+        
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                if readset.bam:
+                    candidate_input_files.append([re.sub("\.sorted.bam$|\.bam$", ".single.fastq.gz", readset.bam)])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
+        
+            else:
+                raise Exception("Error: run type \"" + readset.run_type +
+                                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+        
+            job = concat_jobs([
+                bash.mkdir(os.path.dirname(readset_bam), remove=True),
+                pipe_jobs([
+                    bwa.mem(
+                        fastq1,
+                        fastq2,
+                        read_group="'@RG" + \
+                                    "\tID:" + readset.name + \
+                                    "\tSM:" + readset.sample.name + \
+                                    "\tLB:" + (readset.library if readset.library else readset.sample.name) + \
+                                    ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                                    ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem','sequencing_center', required=False) else "") + \
+                                    "\tPL:Illumina" + \
+                                    "'"
+                    ),
+                    bwakit.bwa_postalt("/dev/stdin", "/dev/stdout"),
+                    picard2.sort_sam(
+                        "/dev/stdin",
+                        readset_bam,
+                        "coordinate"
+                    )
+                ])
+            ])
+            job.name = "bwakit_picard_sort_sam." + readset.name
+            job.samples = [readset.sample]
+        
+            jobs.append(job)
+    
         return jobs
 
     def sambamba_merge_sam_files(self):
+        """
+        BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+
+        This step takes as input files:
+
+        1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
+        2. Else, BAM files from the readset file
+        """
+
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
+            readset_bams = self.select_input_files([[os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets], [readset.bam for readset in sample.readsets]])
+            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+
+            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
+            if len(sample.readsets) == 1:
+                readset_bam = readset_bams[0]
+                readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
+                sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
+    
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(
+                            os.path.dirname(sample_bam)
+                        ),
+                        bash.ln(
+                            readset_bam,
+                            sample_bam,
+                            self.output_dir
+                        ),
+                        bash.ln(
+                            readset_index,
+                            sample_index,
+                            self.output_dir
+                        )
+                    ],
+                        name="symlink_readset_sample_bam." + sample.name,
+                        samples=[sample]
+                    )
+                )
+
+            elif len(sample.readsets) > 1:
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(
+                            os.path.dirname(sample_bam)
+                        ),
+                        sambamba.merge(
+                            readset_bams,
+                            sample_bam
+                        )
+                    ],
+                        name="sambamba_merge_sam_files." + sample.name,
+                        samples=[sample]
+                    )
+                )
+        return jobs
+
+    def picard_merge_sam_files(self):
         """
         BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
@@ -386,30 +579,36 @@ class DnaSeqRaw(common.Illumina):
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
                 readset_bam = readset_bams[0]
-                readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
-                sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
-
+                readset_index = re.sub("\.bam$", ".bai", readset_bam)
+                sample_index = re.sub("\.bam$", ".bai", sample_bam)
+    
                 jobs.append(
                     concat_jobs([
-                        mkdir_job,
+                        bash.mkdir(
+                            os.path.dirname(sample_bam)
+                        ),
                         bash.ln(
                             readset_bam,
-                            sample_bam
-                            ),
+                            sample_bam,
+                            self.output_dir
+                        ),
                         bash.ln(
                             readset_index,
                             sample_index,
-                            )
-                        ],
+                            self.output_dir
+                        )
+                    ],
                         name="symlink_readset_sample_bam." + sample.name,
                         samples=[sample]
-                        )
                     )
+                )
 
             elif len(sample.readsets) > 1:
                 jobs.append(
                     concat_jobs([
-                        mkdir_job,
+                        bash.mkdir(
+                            os.path.dirname(sample_bam)
+                        ),
                         sambamba.merge(
                             readset_bams,
                             sample_bam
@@ -458,30 +657,32 @@ class DnaSeqRaw(common.Illumina):
                 realign_prefix = os.path.join(realign_directory, "all")
                 realign_intervals = realign_prefix + ".intervals"
                 output_bam = realign_prefix + ".bam"
-                sample_output_bam = os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")
+                sample_output_bam = os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")
                 jobs.append(
                     concat_jobs([
                         mkdir_job,
                         gatk4.realigner_target_creator(
                             input,
-                            realign_intervals
+                            realign_intervals,
+                            output_dir=self.output_dir,
                         ),
                         gatk4.indel_realigner(
                             input,
                             output=output_bam,
+                            output_dir=self.output_dir,
                             target_intervals=realign_intervals
                         ),
                         # Create sample realign symlink since no merging is required
                         bash.ln(
-                            output_bam,
-                            sample_output_bam
-                            )
+                            realign_prefix + ".bam",
+                            sample_output_bam,
+                            self.output_dir,
+                            ),
                         ],
                         name="gatk_indel_realigner." + sample.name,
                         samples=[sample]
                         )
                     )
-
             else:
                 # The first sequences are the longest to process.
                 # Each of them must be processed in a separate job.
@@ -502,10 +703,12 @@ class DnaSeqRaw(common.Illumina):
                             gatk4.realigner_target_creator(
                                 input,
                                 realign_intervals,
+                                output_dir=self.output_dir,
                                 intervals=intervals
                             ),
                             gatk4.indel_realigner(
                                 input,
+                                output_dir=self.output_dir,
                                 output=output_bam,
                                 target_intervals=realign_intervals,
                                 intervals=intervals
@@ -520,6 +723,7 @@ class DnaSeqRaw(common.Illumina):
                 realign_prefix = os.path.join(realign_directory)
                 realign_intervals = os.path.join(realign_prefix, sample.name + ".sorted.realigned.others.intervals")
                 output_bam = os.path.join(realign_prefix, sample.name + ".sorted.realigned.others.bam")
+                
                 jobs.append(
                     concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
@@ -527,10 +731,12 @@ class DnaSeqRaw(common.Illumina):
                         gatk4.realigner_target_creator(
                             input,
                             realign_intervals,
+                            output_dir=self.output_dir,
                             exclude_intervals=unique_sequences_per_job_others
                         ),
                         gatk4.indel_realigner(
                             input,
+                            output_dir=self.output_dir,
                             output=output_bam,
                             target_intervals=realign_intervals,
                             exclude_intervals=unique_sequences_per_job_others
@@ -540,7 +746,6 @@ class DnaSeqRaw(common.Illumina):
                         samples=[sample]
                         )
                     )
-
         return jobs
 
     def sambamba_merge_realigned(self):
@@ -555,12 +760,11 @@ class DnaSeqRaw(common.Illumina):
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             realign_directory = os.path.join(alignment_directory, "realign")
-            merged_realigned_bam = os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")
+            merged_realigned_bam = os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")
 
             # if nb_jobs == 1, symlink has been created in indel_realigner and merging is not necessary
             if nb_jobs > 1:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary, nb_jobs - 1)
-
                 inputs = []
                 for idx, sequences in enumerate(unique_sequences_per_job):
                     inputs.append(
@@ -577,7 +781,6 @@ class DnaSeqRaw(common.Illumina):
 
         return jobs
 
-
     def fix_mate_by_coordinate(self):
         """
         Fix the read mates. Once local regions are realigned, the read mate coordinates of the aligned reads
@@ -592,12 +795,12 @@ class DnaSeqRaw(common.Illumina):
             readset = sample.readsets[0]
 
             [input] = self.select_input_files([
-                [alignment_file_prefix + "realigned.sorted.bam"],
+                [alignment_file_prefix + "sorted.realigned.bam"],
                 [alignment_file_prefix + "sorted.bam"],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
-            output_bam = alignment_file_prefix + "matefixed.sorted.bam"
+            output_bam = alignment_file_prefix + "sorted.matefixed.bam"
             jobs.append(
                 pipe_jobs([
                     bvatools.groupfixmate(
@@ -631,12 +834,12 @@ class DnaSeqRaw(common.Illumina):
             readset = sample.readsets[0]
 
             [input] = self.select_input_files([
-                [alignment_file_prefix + "realigned.sorted.bam"],
+                [alignment_file_prefix + "sorted.realigned.bam"],
                 [alignment_file_prefix + "sorted.bam"],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
-            output_bam = alignment_file_prefix + "matefixed.sorted.bam"
+            output_bam = alignment_file_prefix + "sorted.matefixed.bam"
             jobs.append(
                 pipe_jobs([
                     sambamba.sort(
@@ -674,12 +877,13 @@ class DnaSeqRaw(common.Illumina):
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
+            picard_directory = os.path.join("metrics", "dna", sample.name, "picard_metrics")
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
             [input] = self.select_input_files([
-                [alignment_file_prefix + "matefixed.sorted.bam"],
-                [alignment_file_prefix + "realigned.sorted.bam"],
+                [alignment_file_prefix + "sorted.matefixed.bam"],
+                [alignment_file_prefix + "sorted.realigned.bam"],
                 [alignment_file_prefix + "sorted.bam"],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
@@ -690,21 +894,27 @@ class DnaSeqRaw(common.Illumina):
 
             jobs.append(
                 concat_jobs([
+                    bash.mkdir(
+                        picard_directory,
+                        remove=False,
+                    ),
                     gatk4.picard_mark_duplicates(
                         input,
                         output,
                         metrics_file
                         ),
-                    sambamba.index(
-                        output,
-                        output_index
-                        )
-                    ],
-                    name="picard_mark_duplicates." + sample.name,
-                    samples=[sample]
-                    )
+                    Job(
+                        [metrics_file],
+                        [os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")],
+                        command="sed -e 's#.realigned##g' " + metrics_file + " > "
+                                + os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")
+                    ),
+                ],
+                name="picard_mark_duplicates." + sample.name,
+                samples=[sample]
                 )
-
+            )
+            
         return jobs
 
     def gatk_mark_duplicates(self):
@@ -722,8 +932,8 @@ class DnaSeqRaw(common.Illumina):
             readset = sample.readsets[0]
 
             [input] = self.select_input_files([
-                [alignment_file_prefix + "matefixed.sorted.bam"],
-                [alignment_file_prefix + "realigned.sorted.bam"],
+                [alignment_file_prefix + "sorted.matefixed.bam"],
+                [alignment_file_prefix + "sorted.realigned.bam"],
                 [alignment_file_prefix + "sorted.bam"],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
@@ -756,8 +966,8 @@ class DnaSeqRaw(common.Illumina):
             readset = sample.readsets[0]
 
             [input] = self.select_input_files([
-                [alignment_file_prefix + "matefixed.sorted.bam"],
-                [alignment_file_prefix + "realigned.sorted.bam"],
+                [alignment_file_prefix + "sorted.matefixed.bam"],
+                [alignment_file_prefix + "sorted.realigned.bam"],
                 [alignment_file_prefix + "sorted.bam"],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
@@ -767,12 +977,11 @@ class DnaSeqRaw(common.Illumina):
             job = sambamba.markdup(
                 input,
                 output,
-                config.param('sambamba_mark_duplicates', 'tmp_dir', required=True)
             )
             job.name = "sambamba_mark_duplicates." + sample.name
             job.samples = [sample]
             jobs.append(job)
-
+            
         return jobs
 
     def recalibration(self):
@@ -787,8 +996,6 @@ class DnaSeqRaw(common.Illumina):
 
         jobs = []
 
-        created_interval_lists = []
-
         for sample in self.samples:
             duplicate_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
             input = duplicate_file_prefix + "bam"
@@ -797,15 +1004,20 @@ class DnaSeqRaw(common.Illumina):
 
             interval_list = None
             
-            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            coverage_bed = bvatools.resolve_readset_coverage_bed(
+                sample.readsets[0]
+            )
             if coverage_bed:
-                interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
+                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
-                if not interval_list in created_interval_lists:
-                    job = tools.bed2interval_list(None, coverage_bed, interval_list)
+                if not os.path.isfile(interval_list):
+                    job = tools.bed2interval_list(
+                        None,
+                        coverage_bed,
+                        interval_list
+                    )
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
-                    created_interval_lists.append(interval_list)
 
             jobs.append(
                 concat_jobs([
@@ -818,39 +1030,20 @@ class DnaSeqRaw(common.Illumina):
                     name="gatk_base_recalibrator." + sample.name
                     )
                 )
-
-            if config.param('gatk_apply_bqsr', 'module_gatk').split("/")[2] > "3":
-                jobs.append(
-                    concat_jobs([
-                        gatk4.print_reads(
-                            input,
-                            print_reads_output,
-                            base_recalibrator_output
-                            ),
-                        sambamba.index(
-                            print_reads_output,
-                            print_reads_output + ".bai"
-                            )
-                        ],
-                        name="gatk_print_reads." + sample.name
-                        )
-                    )
-
-            else:
-                jobs.append(
-                    concat_jobs([
-                        gatk4.print_reads(
-                            input,
-                            print_reads_output,
-                            base_recalibrator_output
-                            ),
-                        ],
-                        name="gatk_print_reads." + sample.name
-                        )
-                    )
+            
+            jobs.append(
+                concat_jobs([
+                    gatk4.print_reads(
+                        input,
+                        print_reads_output,
+                        base_recalibrator_output
+                        ),
+                    ],
+                    name="gatk_print_reads." + sample.name
+                )
+            )
 
         return jobs
-
 
     def sym_link_final_bam(self):
         jobs = []
@@ -863,8 +1056,8 @@ class DnaSeqRaw(common.Illumina):
             [input_bam] = self.select_input_files([
                 [alignment_file_prefix + "sorted.recal.bam"],
                 [alignment_file_prefix + "sorted.dup.bam"],
-                [alignment_file_prefix + "matefixed.sorted.bam"],
-                [alignment_file_prefix + "realigned.sorted.bam"],
+                [alignment_file_prefix + "sorted.matefixed.bam"],
+                [alignment_file_prefix + "sorted.realigned.bam"],
                 [alignment_file_prefix + "sorted.bam"],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
@@ -884,7 +1077,7 @@ class DnaSeqRaw(common.Illumina):
                         type="alignment"
                         ),
                     deliverables.sym_link(
-                        re.sub(".bam", ".bam.bai", input_bam),
+                        re.sub(".bam", ".bai", input_bam),
                         sample,
                         self.output_dir,
                         type="alignment"
@@ -921,18 +1114,20 @@ class DnaSeqRaw(common.Illumina):
 
             [input] = self.select_input_files([
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
             ])
             # log.info(input)
-            mkdir_job = bash.mkdir(picard_directory, remove=True)
-
+            mkdir_job = bash.mkdir(
+                picard_directory,
+                remove=True
+            )
             jobs.append(
                 concat_jobs([
                     mkdir_job,
@@ -981,14 +1176,14 @@ class DnaSeqRaw(common.Illumina):
 
         jobs = []
         for sample in self.samples:
-            qualimap_directory = os.path.join("metrics", "dna", sample.name, "qualimap")
+            qualimap_directory = os.path.join("metrics", "dna", sample.name, "qualimap", sample.name)
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
@@ -1008,7 +1203,7 @@ class DnaSeqRaw(common.Illumina):
                 concat_jobs([
                     bash.mkdir(
                         qualimap_directory,
-                        remove=True
+                        remove=False
                         ),
                     qualimap.bamqc(
                         input,
@@ -1032,10 +1227,10 @@ class DnaSeqRaw(common.Illumina):
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
             output = os.path.join(flagstat_directory, sample.name + ".flagstat")
@@ -1052,7 +1247,7 @@ class DnaSeqRaw(common.Illumina):
                         config.param('dna_sambamba_flagstat', 'flagstat_options')
                         )
                     ],
-                    name="dna_sambamba_flagstat."+sample.name,
+                    name="dna_sambamba_flagstat." + sample.name,
                     samples=[sample]
                     )
                 )
@@ -1067,14 +1262,14 @@ class DnaSeqRaw(common.Illumina):
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
             output_dir = os.path.join(fastqc_directory)
-            output = os.path.join(fastqc_directory, sample.name + ".fastqc.zip")
+            file = re.sub(".bam", "", os.path.basename(input))
+            output = os.path.join(fastqc_directory, file + "_fastqc.zip")
 
             adapter_file = config.param('fastqc', 'adapter_file', required=False, type='filepath')
             adapter_job = None
@@ -1086,7 +1281,7 @@ class DnaSeqRaw(common.Illumina):
                     adapter_file,
                     fastqc=True
                 )
-
+                
             jobs.append(
                 concat_jobs([
                     bash.mkdir(
@@ -1120,17 +1315,18 @@ class DnaSeqRaw(common.Illumina):
             input_oxog = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".oxog_metrics.txt")
             input_qcbias = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".qcbias_metrics.txt")
             input_all_picard = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".all.metrics.quality_distribution.pdf")
-            input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", "genome_results.txt")
-            input_fastqc = os.path.join(metrics_directory, sample.name, "fastqc", sample.name + ".fastqc.zip")
-            input_flagstat = os.path.join(metrics_directory, sample.name, "flagstat", sample.name + ".flagstat")
+            input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", sample.name,"genome_results.txt")
+            [input_fastqc] = self.select_input_files([
+                [os.path.join(metrics_directory, sample.name, "fastqc", sample.name + ".sorted.dup_fastqc.zip")],
+                [os.path.join(metrics_directory, sample.name, "fastqc", sample.name + "_fastqc.zip")],
+            ])
 
             input_dep += [
                 input_oxog,
                 input_qcbias,
                 input_all_picard,
                 input_qualimap,
-                input_fastqc,
-                input_flagstat
+                input_fastqc
             ]
 
             inputs += [os.path.join(metrics_directory, sample.name)]
@@ -1175,8 +1371,8 @@ class DnaSeqRaw(common.Illumina):
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
@@ -1195,7 +1391,9 @@ class DnaSeqRaw(common.Illumina):
             job = gatk4.depth_of_coverage(
                 input,
                 input_file_prefix + "all.coverage",
-                bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+                bvatools.resolve_readset_coverage_bed(
+                    sample.readsets[0]
+                )
             )
             job.name = "gatk_depth_of_coverage." + sample.name + ".genome"
             job.samples = [sample]
@@ -1205,7 +1403,9 @@ class DnaSeqRaw(common.Illumina):
             job = bvatools.depth_of_coverage(
                 input,
                 input_file_prefix + "coverage.tsv",
-                bvatools.resolve_readset_coverage_bed(sample.readsets[0]),
+                bvatools.resolve_readset_coverage_bed(
+                    sample.readsets[0]
+                ),
                 other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
             )
             job.name = "bvatools_depth_of_coverage." + sample.name
@@ -1249,8 +1449,8 @@ class DnaSeqRaw(common.Illumina):
                     # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
                 ])
@@ -1278,8 +1478,8 @@ class DnaSeqRaw(common.Illumina):
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
@@ -1307,8 +1507,8 @@ class DnaSeqRaw(common.Illumina):
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
@@ -1345,14 +1545,212 @@ class DnaSeqRaw(common.Illumina):
 
         return jobs
 
+    def metrics_vcftools_missing_indiv(self):
+        """
+		vcftools: --missing_indv: Generates a file reporting the missingness on a per-individual basis. The file has the suffix ".imiss".
+		input: bgzipped vcf file
+		ouput: missingness flat file
+		"""
+    
+        jobs = []
+
+        input_prefix = os.path.join("variants", "allSamples")
+
+        job = vcftools.missing_indv(input_prefix + ".hc.vcf.gz", input_prefix)
+        job.name = "vcftools_depth." + "allSamples"
+        jobs.append(job)
+    
+        return jobs
+
+    def metrics_vcftools_depth_indiv(self):
+        """
+    	vcftools: --depth: Generates a file containing the mean depth per individual. This file has the suffix ".idepth".
+    	input: bgzipped vcf file
+    	ouput: idepth flat file
+    	"""
+    
+        jobs = []
+    
+        input_prefix = os.path.join("variants", "allSamples")
+    
+        job = vcftools.depth(input_prefix + ".hc.vcf.gz", input_prefix)
+        job.name = "vcftools_depth." + "allSamples"
+        jobs.append(job)
+            
+        return jobs
+
+    def metrics_gatk_sample_fingerprint(self):
+        """
+		CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
+		"""
+    
+        jobs = []
+        inputs = []
+        
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            [input] = self.select_input_files([
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.cram")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".hc.vcf.gz")]
+            ])
+            inputs.append(input)
+            
+        output = os.path.join("metrics", "dna", "sample.fingerprint")
+        jobs.append(
+            concat_jobs([
+                bash.mkdir(
+                    os.path.join("metrics", "dna"),
+                    remove=False
+                ),
+                gatk4.crosscheck_fingerprint(
+                    inputs,
+                    output,
+                ),
+            ], name="gatk_crosscheck_fingerprint.sample.AllSamples",
+            )
+        )
+        
+        return jobs
+
+    def metrics_gatk_cluster_fingerprint(self):
+        """
+        CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
+        """
+        
+        jobs = []
+
+        metrics_directory = os.path.join("metrics", "dna")
+        input = os.path.join(metrics_directory, "sample.fingerprint")
+        
+        output = os.path.join("metrics", "dna", "cluster.fingerprints")
+        jobs.append(
+            concat_jobs([
+                bash.mkdir(
+                    metrics_directory,
+                    remove=False
+                ),
+                gatk4.cluster_crosscheck_metrics(
+                    input,
+                    output,
+                ),
+            ], name="gatk_cluster_crosscheck_metrics.allSamples",
+            )
+        )
+        
+        return jobs
+
+    def metrics_ngscheckmate(self):
+        """
+        NGSCheckMate is a software package for identifying next generation sequencing (NGS) data files from the same individual.
+        It analyzes various types of NGS data files including (but not limited to) whole genome sequencing (WGS), whole exome
+        sequencing (WES), RNA-seq, ChIP-seq, and targeted sequencing of various depths. Data types can be mixed (e.g. WES and
+        RNA-seq, or RNA-seq and ChIP-seq). It takes BAM (reads aligned to the genome), VCF (variants) or FASTQ (unaligned reads)
+        files as input. NGSCheckMate uses depth-dependent correlation models of allele fractions of known single-nucleotide
+        polymorphisms (SNPs) to identify samples from the same individual.
+        input: file containing all vcfs in project
+        output:
+        """
+
+        jobs = []
+
+        inputs = []
+        for sample in self.samples:
+            inputs.append(os.path.join("alignment", sample.name, sample.name + ".hc.vcf.gz"))
+
+        output = os.path.join("metrics", "dna", "checkmate")
+        vcf_file = os.path.join(output, 'checkmate.tsv')
+   
+        jobs.append(concat_jobs([
+            bash.mkdir(
+                output,
+                remove=False
+            ),
+            Job(
+                inputs,
+                [vcf_file],
+                command="ls " + " ".join(inputs) + " > " + vcf_file
+            ),
+            ngscheckmate.run(
+                vcf_file,
+                output
+            ),
+        ], name="run_checkmate.sample_level"))
+
+        return jobs
+
+    def metrics_peddy(self):
+        """
+        peddy compares familial-relationships and sexes as reported in a PED/FAM file with those inferred from a VCF.
+        input: one vcf with all project samples
+        output: qc files and corrected sex ped file
+		"""
+    
+        jobs = []
+    
+        peddy_file = os.path.join('peddy.ped')
+        input = os.path.join("variants", "AllSamples.hc.vcf.gz")
+    
+        output = os.path.join("metrics", "dna", "peddy")
+    
+        if(peddy_file):
+            job = peddy.run(
+                input,
+                peddy_file,
+                output
+            )
+            job.name = "run_peddy.sample_level"
+            jobs.append(job)
+    
+        else:
+            sys.stderr.write("Please create ped file using given sex designations")
+    
+        return jobs
+
+    def metrics_verify_bam_id(self):
+        """
+        
+        :param self:
+        :return:
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            output = os.path.join("metrics", "dna", sample.name, "verifyBamId")
+            input = self.select_input_files(
+                [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])[0]
+
+            jobs.append(concat_jobs([
+                bash.mkdir(
+                    output,
+                    remove=False
+                ),
+                verify_bam_id.verify(
+                    input,
+                    os.path.join(output, sample.name)
+                )
+            ], name="verify_bam_id." + sample.name))
+            
+        return jobs
+
     def gatk_haplotype_caller(self):
         """
         GATK haplotype caller for snps and small indels.
         """
 
         jobs = []
-
-        created_interval_lists = []
 
         nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_jobs', type='posint')
         if nb_haplotype_jobs > 50:
@@ -1366,8 +1764,8 @@ class DnaSeqRaw(common.Illumina):
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
@@ -1382,15 +1780,14 @@ class DnaSeqRaw(common.Illumina):
             if coverage_bed:
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
-                if not interval_list in created_interval_lists:
-                    job = picard2.bed2interval_list(
+                if not os.path.isfile(interval_list):
+                    job = tools.bed2interval_list(
                         None,
                         coverage_bed,
                         interval_list
                     )
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
-                    created_interval_lists.append(interval_list)
 
             if nb_haplotype_jobs == 1 or interval_list:
                 jobs.append(
@@ -1407,7 +1804,6 @@ class DnaSeqRaw(common.Illumina):
                         samples=[sample]
                         )
                     )
-
             else:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
 
@@ -1445,7 +1841,6 @@ class DnaSeqRaw(common.Illumina):
                         samples=[sample]
                         )
                     )
-
         return jobs
 
     def merge_and_call_individual_gvcf(self):
@@ -1469,16 +1864,17 @@ class DnaSeqRaw(common.Illumina):
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
             if nb_haplotype_jobs == 1 or interval_list is not None:
-
                 jobs.append(
                     concat_jobs([
                         bash.ln(
                             haplotype_file_prefix + ".hc.g.vcf.gz",
-                            output_haplotype_file_prefix + ".hc.g.vcf.gz"
+                            output_haplotype_file_prefix + ".hc.g.vcf.gz",
+                            self.output_dir
                             ),
                         bash.ln(
                             haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
-                            output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi"
+                            output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
+                            self.output_dir
                             ),
                         gatk4.genotype_gvcf(
                             output_haplotype_file_prefix + ".hc.g.vcf.gz",
@@ -1490,7 +1886,6 @@ class DnaSeqRaw(common.Illumina):
                         samples=[sample]
                         )
                     )
-
             else:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
                 gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
@@ -1541,7 +1936,7 @@ class DnaSeqRaw(common.Illumina):
                         mkdir_job,
                         gatk4.combine_gvcf(
                             [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
-                            os.path.join("variants", "allSamples.hc.g.vcf.bgz")
+                            os.path.join("variants", "allSamples.hc.g.vcf.gz")
                                 )
                         ],
                         name="gatk_combine_gvcf.AllSamples",
@@ -1556,9 +1951,9 @@ class DnaSeqRaw(common.Illumina):
                     jobs.append(
                         concat_jobs([
                             mkdir_job,
-                            gatk.combine_gvcf(
+                            gatk4.combine_gvcf(
                                 [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
-                                os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz",
+                                os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
                                 intervals=sequences
                                 )
                             ],
@@ -1574,12 +1969,12 @@ class DnaSeqRaw(common.Illumina):
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 job = gatk4.combine_gvcf(
                     [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
-                    os.path.join("variants", "allSamples.others.hc.g.vcf.bgz"),
+                    os.path.join("variants", "allSamples.others.hc.g.vcf.gz"),
                     exclude_intervals=unique_sequences_per_job_others
                 )
                 job.name = "gatk_combine_gvcf.AllSample" + ".others"
                 job.removable_files = [
-                    os.path.join("variants", "allSamples.others.hc.g.vcf.bgz"),
+                    os.path.join("variants", "allSamples.others.hc.g.vcf.gz"),
                     os.path.join("variants", "allSamples.others.hc.g.vcf.gz.tbi")
                 ]
                 job.samples=self.samples
@@ -1654,7 +2049,7 @@ class DnaSeqRaw(common.Illumina):
             if nb_haplotype_jobs == 1 or interval_list is not None:
                 job = gatk4.combine_gvcf(
                     [os.path.join("variants", "allSamples." + batch_idx + ".hc.g.vcf.gz") for batch_idx in batches],
-                    os.path.join("variants", "allSamples.hc.g.vcf.bgz")
+                    os.path.join("variants", "allSamples.hc.g.vcf.gz")
                 )
                 job.name = "gatk_combine_gvcf.AllSamples.batches"
                 job.samples = self.samples
@@ -1668,14 +2063,14 @@ class DnaSeqRaw(common.Illumina):
                 for idx, sequences in enumerate(unique_sequences_per_job):
                     job=gatk4.combine_gvcf(
                         [os.path.join("variants", "allSamples." + batch_idx + "." + str(idx) + ".hc.g.vcf.gz") for batch_idx in batches],
-                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz",
+                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
                         intervals=sequences
                     )
                     job.name = "gatk_combine_gvcf.AllSample" + "." + str(idx)
                     job.samples = self.samples
                     job.removable_files=[
-                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz",
-                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.bgz.tbi"
+                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
+                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz.tbi"
                     ]
 
                     jobs.append(job)
@@ -1683,14 +2078,14 @@ class DnaSeqRaw(common.Illumina):
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 job = gatk4.combine_gvcf(
                     [os.path.join("variants", "allSamples." + batch_idx + ".others.hc.g.vcf.gz") for batch_idx in batches],
-                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz"),
+                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz"),
                     exclude_intervals=unique_sequences_per_job_others
                 )
                 job.name = "gatk_combine_gvcf.AllSample" + ".others"
                 job.samples = self.samples
                 job.removable_files = [
-                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz"),
-                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.bgz.tbi")
+                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz"),
+                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz.tbi")
                 ]
                 jobs.append(job)
 
@@ -1716,9 +2111,9 @@ class DnaSeqRaw(common.Illumina):
 
         if nb_haplotype_jobs > 1 and interval_list is None:
             unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
-
-            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.bgz" for idx in xrange(len(unique_sequences_per_job))]
-            gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.bgz")
+            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
+            
+            gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
             job = gatk4.cat_variants(
                 gvcfs_to_merge,
@@ -1768,7 +2163,6 @@ class DnaSeqRaw(common.Illumina):
         variant_recal_indels_prefix = os.path.join(output_directory, "allSamples.hc.indels")
 
         mkdir_job = bash.mkdir(output_directory)
-
         jobs.append(
             concat_jobs([
                 mkdir_job,
@@ -1815,14 +2209,13 @@ class DnaSeqRaw(common.Illumina):
                     variant_apply_indels_prefix + ".recal",
                     variant_apply_indels_prefix + ".tranches",
                     apply_indels_other_options,
-                    os.path.join(output_directory, "allSamples.hc.vqsr.vcf")
+                    os.path.join(output_directory, "allSamples.hc.vqsr.vcf.gz")
                     )
                 ],
                 name="variant_recalibrator.apply.allSamples",
                 samples=self.samples
                 )
             )
-
         return jobs
 
     def dna_sample_metrics(self):
@@ -1899,6 +2292,8 @@ pandoc \\
         """
 
         jobs = []
+        nb_jobs = config.param('rawmpileup', 'nb_jobs', type='posint')
+        
         for sample in self.samples:
             mpileup_directory = os.path.join("alignment", sample.name, "mpileup")
             alignment_directory = os.path.join("alignment", sample.name)
@@ -1906,36 +2301,56 @@ pandoc \\
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
-
-            for sequence in self.sequence_dictionary:
-                if sequence['type'] is 'primary':
-                    output = os.path.join(mpileup_directory, sample.name + "." + sequence['name'] + ".mpileup.gz")
-                    jobs.append(
-                        concat_jobs([
-                            bash.mkdir(mpileup_directory),
-                            pipe_jobs([
-                                samtools.mpileup(
-                                    input,
-                                    None,
-                                    config.param('rawmpileup', 'mpileup_other_options'),
-                                    sequence['name']
-                                    ),
-                                Job(
-                                    output_files=[output],
-                                    command="gzip -1 -c > " + output,
-                                    samples=[sample]
-                                    )
-                                ])
-                            ],
-                            name="rawmpileup."+sample.name+"."+sequence['name'],
+            
+            if nb_jobs == 1:
+                output = os.path.join(mpileup_directory, sample.name + ".mpileup.gz")
+                jobs.append(concat_jobs([
+                    bash.mkdir(mpileup_directory, remove=True),
+                    pipe_jobs([
+                        samtools.mpileup(
+                            input,
+                            None,
+                            other_options=config.param('rawmpileup', 'mpileup_other_options'),
+                            region=None,
+                            regionFile=None,
+                        ),
+                        Job(output_files=[output],
+                            command="gzip -1 -c > " + output,
                             samples=[sample]
-                            )
-                        )
+                            ),
+                    ])
+                ], name="rawmpileup." + sample.name + ".all"))
 
+            else:
+                for sequence in self.sequence_dictionary:
+                    if sequence['type'] is 'primary':
+                        output = os.path.join(mpileup_directory, sample.name + "." + sequence['name'] + ".mpileup.gz")
+                        jobs.append(
+                            concat_jobs([
+                                bash.mkdir(mpileup_directory),
+                                pipe_jobs([
+                                    samtools.mpileup(
+                                        input,
+                                        None,
+                                        other_options=config.param('rawmpileup', 'mpileup_other_options'),
+                                        region=sequence['name'],
+                                        regionFile=None,
+                                        ),
+                                    Job(
+                                        output_files=[output],
+                                        command="gzip -1 -c > " + output,
+                                        samples=[sample]
+                                        )
+                                    ])
+                                ],
+                                name="rawmpileup."+sample.name+"."+sequence['name'],
+                                samples=[sample]
+                                )
+                            )
         return jobs
 
     def rawmpileup_cat(self):
@@ -1944,19 +2359,24 @@ pandoc \\
         """
 
         jobs = []
+        nb_jobs = config.param('rawmpileup', 'nb_jobs', type='posint')
+        
         for sample in self.samples:
-            mpileup_file_prefix = os.path.join("alignment", sample.name, "mpileup", sample.name + ".")
-            mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary if sequence['type'] is 'primary']
+            mpileup_file_prefix = ""
+            mpileup_inputs = ""
+            if nb_jobs > 1:
+                mpileup_file_prefix = os.path.join("alignment", sample.name, "mpileup", sample.name + ".")
+                mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary if sequence['type'] is 'primary']
 
-            gzip_output = mpileup_file_prefix + "mpileup.gz"
-            job = Job(
-                mpileup_inputs,
-                [gzip_output],
-                command="zcat \\\n  " + " \\\n  ".join(mpileup_inputs) + " | \\\n  gzip -c --best > " + gzip_output,
-                name="rawmpileup_cat." + sample.name,
-                samples=[sample]
+                gzip_output = mpileup_file_prefix + "mpileup.gz"
+                job = Job(
+                    mpileup_inputs,
+                    [gzip_output],
+                    command="zcat \\\n  " + " \\\n  ".join(mpileup_inputs) + " | \\\n  gzip -c --best > " + gzip_output,
+                    name="rawmpileup_cat." + sample.name,
+                    samples=[sample]
                 )
-            jobs.append(job)
+                jobs.append(job)
 
         return jobs
 
@@ -1973,8 +2393,8 @@ pandoc \\
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam") for sample in self.samples],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam") for sample in self.samples],
-                [os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam") for sample in self.samples],
-                [os.path.join(alignment_directory, sample.name + ".realigned.sorted.bam") for sample in self.samples],
+                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam") for sample in self.samples],
+                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam") for sample in self.samples],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam") for sample in self.samples]
             ])
             nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', type='posint')
@@ -2026,7 +2446,6 @@ pandoc \\
                             samples=self.samples
                             )
                         )
-
         return jobs
 
     def merge_filter_bcf(self):
@@ -2039,27 +2458,37 @@ pandoc \\
 
         jobs = []
         nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', type='posint')
-
-        if nb_jobs == 1:
-            inputs = ["variants/rawBCF/allSamples.bcf"]
-        else:
-            inputs = ["variants/rawBCF/allSamples." + region + ".bcf" for region in self.generate_approximate_windows(nb_jobs)]
+        
         output_file_prefix = "variants/allSamples.merged."
 
-        bcf = output_file_prefix + "bcf"
-        jobs.append(
-            concat_jobs([
-                samtools.bcftools_cat(
+        if nb_jobs == 1:
+            [inputs] = ["variants/rawBCF/allSamples.bcf"]
+            jobs.append(concat_jobs([
+                bcftools.view(
                     inputs,
-                    bcf
+                    output_file_prefix + "flt.vcf.gz",
+                    filter_options="-Oz",
+                )
+            ], name="merge_filter_bcf.index"))
+            
+        else:
+            inputs = ["variants/rawBCF/allSamples." + region + ".vcf.gz" for region in self.generate_approximate_windows(nb_jobs)]
+
+            jobs.append(
+                concat_jobs([
+                    bcftools.concat(
+                        inputs,
+                        output_file_prefix + "vcf.gz",
+                        options="-Oz",
                     ),
-                samtools.bcftools_view(
-                    bcf,
-                    output_file_prefix+"flt.vcf"
+                    bcftools.view(
+                        output_file_prefix + "vcf.gz",
+                        output_file_prefix + "flt.vcf.gz",
+                        filter_options="-Oz"
                     )
                 ],
-                name="merge_filter_bcf",
-                samples=self.samples
+                    name="merge_filter_bcf",
+                    samples=self.samples
                 )
             )
 
@@ -2078,7 +2507,8 @@ pandoc \\
 
     def haplotype_caller_decompose_and_normalize(self):
     
-        input_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf"], ["variants/allSamples.hc.vcf.gz"]])
+        #input_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf.gz"], ["variants/allSamples.hc.vcf.gz"]])
+        input_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf.gz"]])
     
         job = self.vt_decompose_and_normalize(input_vcf, "variants/allSamples.hc.vqsr.vt.vcf.gz")
         return job
@@ -2086,7 +2516,7 @@ pandoc \\
 
     def mpileup_decompose_and_normalize(self):
     
-        input_vcf = self.select_input_files([["variants/allSamples.merged.flt.vcf"]])
+        input_vcf = self.select_input_files([["variants/allSamples.merged.flt.vcf"], ["variants/allSamples.merged.flt.vcf.gz"]])
     
         job = self.vt_decompose_and_normalize(input_vcf, "variants/allSamples.merged.flt.vt.vcf.gz")
         return job
@@ -2110,7 +2540,6 @@ pandoc \\
 
         # Find input vcf first from VSQR, then from non recalibrate hapotype calleroriginal BAMs in the readset sheet.
         hc_vcf = self.select_input_files([["variants/allSamples.hc.vqsr.vcf"], ["variants/allSamples.hc.vcf.gz"]])
-
         job = self.filter_nstretches(hc_vcf[0], "variants/allSamples.hc.vqsr.NFiltered.vcf", "haplotype_caller_filter_nstretches")
 
         #job.samples = self.samples
@@ -2287,7 +2716,12 @@ pandoc \\
         )
         return jobs
 
-    def dbnsfp_annotation(self, input_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz", output_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf", job_name="dbnsfp_annotation"):
+    def dbnsfp_annotation(
+            self,
+            input_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
+            output_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
+            job_name="dbnsfp_annotation"
+            ):
         """
         Additional SVN annotations. Provides extra information about SVN by using numerous published databases.
         Applicable to human samples. Databases available include Biomart (adds GO annotations based on gene information)
@@ -2389,7 +2823,11 @@ pandoc \\
         return job
 
 
-    def metrics_vcf_stats(self, variants_file_prefix="variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff", job_name="metrics_change_rate"):
+    def metrics_vcf_stats(
+            self,
+            variants_file_prefix="variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff",
+            job_name="metrics_change_rate"
+            ):
         """
         Metrics SNV. Multiple metrics associated to annotations and effect prediction are generated at this step:
         change rate by chromosome, changes by type, effects by impact, effects by functional class, counts by effect,
@@ -2438,7 +2876,12 @@ pandoc \\
         )
         return job
 
-    def metrics_snv_graph_metrics(self, variants_file_prefix="variants/allSamples.merged.flt.mil.snpId", snv_metrics_prefix="metrics/allSamples.SNV", job_name="metrics_snv_graph"):
+    def metrics_snv_graph_metrics(
+            self,
+            variants_file_prefix="variants/allSamples.merged.flt.mil.snpId",
+            snv_metrics_prefix="metrics/allSamples.SNV",
+            job_name="metrics_snv_graph"
+            ):
         """
         """
 
@@ -2527,72 +2970,693 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         )
         return jobs
 
+    def delly_call_filter(self):
+        """
+        Delly2 is an integrated structural variant prediction method that can
+        discover, genotype and visualize deletions, tandem duplications, inversions and translocations
+        at single-nucleotide resolution in short-read massively parallel sequencing data. It uses paired-ends
+        and split-reads to sensitively and accurately delineate genomic rearrangements throughout the genome.
+        Structural variants can be visualized using Delly-maze and Delly-suave.
+        input: normal and tumor final bams
+        Returns:bcf file
+
+        """
+
+        jobs = []
+        for sample in self.samples:
+
+            pair_directory = os.path.join("SVariants", sample.name)
+            delly_directory = os.path.join(pair_directory, "rawDelly")
+
+            input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
+
+            inputs = [input]
+
+            SV_types = config.param('delly_call_filter', 'sv_types_options').split(",")
+
+            for sv_type in SV_types:
+                output_bcf = os.path.join(delly_directory, sample.name + ".delly." + str(sv_type) + ".bcf")
+                output_vcf = os.path.join(delly_directory, sample.name + ".delly." + str(sv_type) + ".germline.flt.vcf.gz")
+
+                jobs.append(concat_jobs([
+                    bash.mkdir(
+                        delly_directory,
+                        remove=True
+                    ),
+                    delly.call(
+                        [input],
+                        output_bcf,
+                        sv_type
+                    ),
+                    pipe_jobs([
+                        bcftools.view(
+                            output_bcf,
+                            None,
+                            config.param('delly_call_filter_germline', 'bcftools_options')
+                        ),
+                        htslib.bgzip_tabix(
+                            None,
+                            output_vcf
+                        ),
+                    ]),
+                ], name="delly_call_filter." + str(sv_type) + "." + sample.name))
+
+        return jobs
+
+    def delly_sv_annotation(self):
+        jobs = []
+
+        for sample in self.samples:
+        
+            directory = os.path.join("SVariants", sample.name)
+            final_directory = os.path.join("SVariants", sample.name, sample.name)
+            delly_directory = os.path.join(directory, "rawDelly")
+            output_vcf = os.path.join(delly_directory, sample.name + ".delly.merge.sort.vcf.gz")
+            germline_vcf = os.path.join(directory, sample.name + ".delly.germline.vcf.gz")
+        
+            SV_types = config.param('delly_call_filter', 'sv_types_options').split(",")
+        
+            inputBCF = []
+            for sv_type in SV_types:
+                inputBCF.append(os.path.join(delly_directory, sample.name + ".delly." + str(sv_type) + ".bcf"))
+        
+            jobs.append(concat_jobs([
+                pipe_jobs([
+                    bcftools.concat(
+                        inputBCF,
+                        None,
+                        "-O v"
+                    ),
+                    vt.sort(
+                        "-",
+                        "-",
+                        "-m full"
+                    ),
+                    htslib.bgzip(
+                        None,
+                        output_vcf
+                    ),
+                ]),
+                pipe_jobs([
+                    vawk.single_germline(
+                        output_vcf,
+                        sample.name,
+                        None
+                    ),
+                    htslib.bgzip_tabix(
+                        None,
+                        germline_vcf
+                    ),
+                ]),
+            ], name="sv_annotation.delly.merge_sort_filter." + sample.name))
+        
+            jobs.append(concat_jobs([
+                snpeff.compute_effects(
+                    germline_vcf,
+                    final_directory + ".delly.germline.snpeff.vcf.gz"
+                ),
+            ], name="sv_annotation.delly.germline." + sample.name))
+    
+        return jobs
+
+    def manta_sv_calls(self):
+        """
+        Manta calls structural variants (SVs) and indels from mapped paired-end sequencing reads. It is optimized for
+        analysis of germline variation in small sets of individuals and somatic variation in tumor/normal sample pairs.
+        Manta discovers, assembles and scores large-scale SVs, medium-sized indels and large insertions within a
+        single efficient workflow.
+        Returns:Manta accepts input read mappings from BAM or CRAM files and reports all SV and indel inferences
+         in VCF 4.1 format.
+
+        """
+        jobs = []
+
+        bed_file = None
+        for sample in self.samples:
+            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", sample.name))
+            #tmp_directory = os.path.join(str(config.param("manta_sv", 'tmp_dir')), "SVariants", sample.name)
+            manta_directory = os.path.join(pair_directory, "rawManta")
+            output_prefix = os.path.join(pair_directory, sample.name)
+
+            input = self.select_input_files(
+                [[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+                 [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
+                 [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])[0]
+        
+            manta_germline_output = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz")
+            manta_germline_output_tbi = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz.tbi")
+
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+
+            if coverage_bed and not bed_file:
+                bed_file = coverage_bed + ".gz"
+                jobs.append(concat_jobs([
+                    Job(
+                        [coverage_bed],
+                        [coverage_bed + ".sort"],
+                        command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > "
+                                + coverage_bed + ".sort ; sleep 180"
+                    ),
+                    htslib.bgzip(
+                        coverage_bed + ".sort",
+                        bed_file
+                    ),
+                    htslib.tabix(
+                        coverage_bed + ".gz",
+                        "-p bed"
+                    ),
+                 ],name="bed_index." + sample.name))
+
+            output_dep = [manta_germline_output, manta_germline_output_tbi]
+
+            jobs.append(concat_jobs([
+                bash.mkdir(manta_directory, remove=True),
+                manta.manta_config(input, None, manta_directory, bed_file),
+                manta.manta_run(manta_directory, output_dep=output_dep),
+                #Job([tmp_directory], [manta_directory], command="mv " + tmp_directory + " " + manta_directory),
+                bash.ln(
+                    manta_germline_output,
+                    output_prefix + ".manta.germline.vcf.gz",
+                    self.output_dir
+                ),
+                bash.ln(
+                    manta_germline_output_tbi,
+                    output_prefix + ".manta.germline.vcf.gz.tbi",
+                    self.output_dir
+                ),
+            ], name="manta_sv." + sample.name))
+
+        return jobs
+
+    def manta_sv_annotation(self):
+
+        jobs = []
+
+        for sample in self.samples:
+            pair_directory = os.path.abspath(os.path.join("SVariants", sample.name, sample.name))
+
+            jobs.append(concat_jobs([
+                snpeff.compute_effects(pair_directory + ".manta.germline.vcf.gz", pair_directory + ".manta.germline.snpeff.vcf.gz"),
+            ], name="sv_annotation.manta_germline." + sample.name))
+
+        return jobs
+
+    def lumpy_paired_sv(self):
+        """
+        A probabilistic framework for structural variant discovery.
+        Lumpy traditional with paired ends and split reads on tumor normal pair.
+        Returns:bams.
+
+        """
+        jobs = []
+    
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            lumpy_directory = os.path.join(pair_directory, "rawLumpy")
+            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+        
+            discordants_normal = os.path.join(lumpy_directory, sample.name + ".discordants.sorted.bam")
+        
+            splitters_normal = os.path.join(lumpy_directory, sample.name + ".splitters.sorted.bam")
+        
+            output_vcf = os.path.join(pair_directory, sample.name + ".lumpy.vcf")
+            gzip_vcf = os.path.join(pair_directory, sample.name + ".lumpy.vcf.gz")
+        
+            genotype_vcf = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf")
+            genotype_gzip = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf.gz")
+            germline_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
+
+            jobs.append(concat_jobs([
+                bash.mkdir(lumpy_directory, remove=True),
+                pipe_jobs([
+                    samtools.view(inputNormal, None, "-b -F 1294"),
+                    sambamba.sort("/dev/stdin", discordants_normal, lumpy_directory, config.param('extract_discordant_reads', 'discordants_sort_option')),
+                ]),
+            ], name="extract_discordant_reads." + sample.name))
+
+            jobs.append(concat_jobs([
+                bash.mkdir(lumpy_directory, remove=True),
+                pipe_jobs([
+                    samtools.view(inputNormal, None, "-h"),
+                    Job([None], [None], [['lumpy_sv', 'module_lumpy']], command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"),
+                    samtools.view("-", None, " -Sb "),
+                    sambamba.sort("/dev/stdin", splitters_normal, lumpy_directory, config.param('extract_split_reads', 'split_sort_option')),
+                ]),
+            ], name="extract_split_reads." + sample.name))
+
+            jobs.append(concat_jobs([
+                bash.mkdir(lumpy_directory, remove=True),
+                lumpy.lumpyexpress_pair(inputNormal, None, output_vcf, spl_normal=splitters_normal, dis_normal=discordants_normal),
+                htslib.bgzip(output_vcf, gzip_vcf),
+            ], name="lumpy_paired_sv_calls." + sample.name))
+        
+            jobs.append(concat_jobs([
+                pipe_jobs([
+                    Job([gzip_vcf], [None], command="zcat " + gzip_vcf + " | grep -v \"^##contig\""),
+                    bcftools.annotate(None, None, config.param('lumpy_paired_sv_calls', 'header_options')),
+                    vt.sort("-", os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"), "-m full"),
+                ]),
+                svtyper.genotyper(None, inputNormal, os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"), genotype_vcf),
+                htslib.bgzip(genotype_vcf, genotype_gzip),
+                pipe_jobs([
+                    vawk.single_germline(genotype_vcf, sample.name, None),
+                    vt.sort("-", "-", "-m full"),
+                    htslib.bgzip_tabix(None, germline_vcf),
+                ]),
+            ], name="lumpy_paired_sv_calls.genotype." + sample.name))
+    
+        return jobs
+
+    def lumpy_sv_annotation(self):
+    
+        jobs = []
+    
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            prefix = os.path.join("SVariants", sample.name, sample.name)
+       
+            germline_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
+        
+            jobs.append(concat_jobs([
+                snpeff.compute_effects(germline_vcf, prefix + ".lumpy.germline.snpeff.vcf.gz"),
+            ], name="sv_annotation.lumpy.germline." + sample.name))
+    
+        return jobs
+
+    def wham_call_sv(self):
+        """
+        Wham (Whole-genome Alignment Metrics) to provide a single, integrated framework for both structural variant
+        calling and association testing, thereby bypassing many of the difficulties that currently frustrate attempts
+        to employ SVs in association testing.
+        Returns:vcf.
+
+        """
+        jobs = []
+    
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            wham_directory = os.path.join(pair_directory, "rawWham")
+            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+        
+            output_vcf = os.path.join(wham_directory, sample.name + ".wham.vcf")
+            merge_vcf = os.path.join(wham_directory, sample.name + ".wham.merged.vcf")
+            genotyped_vcf = os.path.join(pair_directory, sample.name + ".wham.merged.genotyped.vcf.gz")
+            germline_vcf = os.path.join(pair_directory, sample.name + ".wham.germline.vcf.gz")
+        
+            mkdir_job = Job(command="mkdir -p " + wham_directory, removable_files=[wham_directory], samples=self.samples)
+        
+            jobs.append(concat_jobs([
+                bash.mkdir(wham_directory, remove=True),
+                wham.call_sv(inputNormal, None, output_vcf),
+                pipe_jobs([
+                    wham.merge(output_vcf, None),
+                    Job([None], [merge_vcf], command="sed 's/NONE/" + sample.name + "/g' | sed -e 's#\"\"#\"#g' > " + merge_vcf),
+                ]),
+            ], name="wham_call_sv.call_merge." + sample.name))
+        
+            jobs.append(concat_jobs([
+                bash.mkdir(wham_directory, remove=True),
+                pipe_jobs([
+                    Job([merge_vcf], [None], command="cat " + merge_vcf + " | grep -v \"^##contig\""),
+                    bcftools.annotate(None, None, config.param('wham_call_sv', 'header_options')),
+                    vt.sort("-", os.path.join(pair_directory, sample.name + ".wham.sorted.vcf"), "-m full"),
+                ]),
+                pipe_jobs([
+                    svtyper.genotyper(None, inputNormal, os.path.join(pair_directory, sample.name + ".wham.sorted.vcf"), None),
+                    Job([None], [None], command="sed -e 's#\"\"#\"#g'"),
+                    htslib.bgzip_tabix(None, genotyped_vcf),
+                ]),
+                pipe_jobs([
+                    vawk.single_germline(genotyped_vcf, sample.name, None),
+                    htslib.bgzip_tabix(None, germline_vcf),
+                ]),
+            ], name="wham_call_sv.genotype." + sample.name))
+    
+        return jobs
+
+    def wham_sv_annotation(self):
+    
+        jobs = []
+    
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            
+            germline_vcf = os.path.join(pair_directory, sample.name + ".wham.germline.vcf.gz")
+        
+            jobs.append(concat_jobs([
+                snpeff.compute_effects(germline_vcf, os.path.join(pair_directory, sample.name + ".wham.germline.snpeff.vcf.gz")),
+            ], name="sv_annotation.wham.germline." + sample.name))
+    
+        return jobs
+    
+    def cnvkit_batch(self):
+        """
+        """
+        jobs = []
+        
+        #print len(self.samples)
+        
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
+            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+            
+            tarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.targetcoverage.cnn")
+            antitarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.antitargetcoverage.cnn")
+            ref_cnn = os.path.join(cnvkit_dir, sample.name + ".reference.cnn")
+
+            metrics = os.path.join("SVariants", "cnvkit_background")
+            poolRef = os.path.join(metrics, "pooledReference.cnn")
+
+            if os.path.isfile(poolRef):
+                pool_ref_cnn = poolRef
+                ref_cnn = None
+
+            else:
+                pool_ref_cnn = None
+
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+
+            bed = None
+
+            if coverage_bed:
+                bed = coverage_bed
+
+            gatk_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.vcf.gz")
+
+            input_vcf = None
+            normal = None
+            if os.path.isfile(gatk_vcf):
+                input_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.flt.vcf.gz")
+                jobs.append(concat_jobs([
+                    bcftools.view(gatk_vcf, input_vcf, filter_options="-i '%QUAL>=50'")
+                ], name="cnvkit_batch.vcf_flt." + sample.name))
+                normal = sample.name
+                
+            if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples'):
+                jobs.append(concat_jobs([
+                    bash.mkdir(cnvkit_dir, remove=True),
+                    cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn,
+                                 target_bed=bed, reference=pool_ref_cnn, output_cnn=ref_cnn),
+                ], name="cnvkit_batch." + sample.name))
+    
+                jobs.append(concat_jobs([
+                    bash.mkdir(cnvkit_dir, remove=True),
+                    cnvkit.fix(tarcov_cnn, antitarcov_cnn, os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                               reference=pool_ref_cnn, ref_cnn=ref_cnn),
+                    cnvkit.segment(os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                                   os.path.join(cnvkit_dir, sample.name + ".cns"), vcf=input_vcf,
+                                   sample_id=sample.name),
+                    cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                                   os.path.join(cnvkit_dir, sample.name + ".cns"),
+                                   os.path.join(metrics, sample.name + ".metrics.tsv")),
+                ], name="cnvkit_batch.correction." + sample.name))
+                
+                background = [os.path.join(metrics, sample.name + ".metrics.tsv") for sample in self.samples]
+
+            else:
+           
+                jobs.append(concat_jobs([
+                    bash.mkdir(cnvkit_dir, remove=True),
+                    cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn, target_bed=bed, reference=pool_ref_cnn, output_cnn=ref_cnn),
+                ], name="cnvkit_batch." + sample.name))
+
+                jobs.append(concat_jobs([
+                    bash.mkdir(cnvkit_dir, remove=True),
+                    cnvkit.fix(tarcov_cnn, antitarcov_cnn, os.path.join(cnvkit_dir, sample.name + ".cnr"), reference=pool_ref_cnn, ref_cnn=ref_cnn),
+                    cnvkit.segment(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".cns"), vcf=input_vcf, sample_id=sample.name),
+                    cnvkit.segmetrics(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".cns"), os.path.join(cnvkit_dir, sample.name + ".segmetrics.cns")),
+                    cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
+                ], name="cnvkit_batch.correction." + sample.name))
+            
+                jobs.append(concat_jobs([
+                    bash.mkdir(cnvkit_dir, remove=True),
+                    cnvkit.call(os.path.join(cnvkit_dir, sample.name + ".segmetrics.cns"), os.path.join(cnvkit_dir, sample.name + ".call.cns")),
+                    #cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".call.cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
+                    pipe_jobs([
+                        cnvkit.export(os.path.join(cnvkit_dir, sample.name + ".call.cns"), None, sample_id=sample.name),
+                        htslib.bgzip_tabix(None, os.path.join(pair_directory, sample.name + ".cnvkit.germline.vcf.gz")),
+                    ]),
+                ], name="cnvkit_batch.call." + sample.name))
+
+                jobs.append(concat_jobs([
+                    bash.mkdir(cnvkit_dir, remove=True),
+                    cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                                   os.path.join(cnvkit_dir, sample.name + ".call.cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
+                    cnvkit.scatter(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".call.cns"),
+                                   os.path.join(cnvkit_dir, sample.name + ".scatter.pdf"), input_vcf, normal),
+                    cnvkit.diagram(os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                                   os.path.join(cnvkit_dir, sample.name + ".call.cns"),
+                                   os.path.join(cnvkit_dir, sample.name + ".diagram.pdf")),
+                ], name="cnvkit_batch.metrics." + sample.name))
+
+        return jobs
+    
+    def cnvkit_sv_annotation(self):
+
+        jobs = []
+
+        for sample in self.samples.itervalues():
+            pair_directory = os.path.join("SVariants", sample.name, sample.name)
+
+            jobs.append(concat_jobs([
+                snpeff.compute_effects(pair_directory + ".cnvkit.germline.vcf.gz", pair_directory + ".cnvkit.snpeff.vcf"),
+            ], name="sv_annotation.cnvkit." + sample.name))
+
+        return jobs
+
+    def run_breakseq2(self):
+        """
+        BreakSeq2: Ultrafast and accurate nucleotide-resolution analysis of structural variants
+
+        """
+    
+        jobs = []
+        for sample in self.samples:
+        
+            pair_directory = os.path.join("SVariants", sample.name)
+            output_dir = os.path.join(pair_directory, "rawBreakseq2")
+            output = os.path.join(pair_directory, "rawBreakseq2", "breakseq.vcf.gz")
+            final_vcf = os.path.join(pair_directory, sample.name + ".breakseq.germline.vcf.gz")
+        
+            input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])[0]
+            
+            jobs.append(concat_jobs([
+                bash.mkdir(output_dir, remove=True),
+                breakseq2.run(input, sample.name, output_dir),
+                pipe_jobs([
+                    bcftools.view(output, None, config.param('run_breakseq2', 'bcftools_options')),
+                    htslib.bgzip_tabix(None, final_vcf),
+                ]),
+            ], name="run_breakseq2." + sample.name))
+    
+        return jobs
+
+    def ensemble_metasv(self):
+        """
+
+		"""
+        jobs = []
+	
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            ensemble_directory = os.path.join("SVariants", "ensemble", sample.name)
+		
+            inputTumor = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])[0]
+
+            isize_file = os.path.join("metrics", "dna", sample.name, "picard_metrics.all.metrics.insert_size_metrics")
+            gatk_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.vcf.gz")
+            gatk_pass = os.path.join("alignment", sample.name, sample.name + ".hc.flt.vcf.gz")
+            lumpy_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
+            manta_vcf = os.path.join(pair_directory, sample.name + ".manta.germline.vcf.gz")
+            abs_manta = os.path.abspath(manta_vcf)
+            wham_vcf = os.path.join(pair_directory, sample.name + ".wham.germline.vcf.gz")
+            delly_vcf = os.path.join(pair_directory, sample.name + ".delly.germline.vcf.gz")
+            cnvkit_vcf = os.path.join(pair_directory, sample.name + ".cnvkit.germline.vcf.gz")
+            breakseq_vcf = os.path.join(pair_directory, sample.name + ".breakseq.germline.vcf.gz")
+
+            if os.path.isfile(isize_file):
+                isize_mean, isize_sd = metric_tools.extract_isize(isize_file)
+
+            else:
+                isize_mean = 325
+                isize_sd = 50
+
+            mkdir_job = Job(command="mkdir -p " + ensemble_directory, samples=self.samples)
+			
+            input_cnvkit = None
+            if os.path.isfile(cnvkit_vcf):
+                input_cnvkit = cnvkit_vcf
+
+            input_gatk = None
+            if os.path.isfile(gatk_vcf):
+                input_gatk = gatk_pass
+                
+                jobs.append(concat_jobs([
+	                bash.mkdir(ensemble_directory, remove=True),
+	                bcftools.view(
+                        gatk_vcf,
+                        gatk_pass,
+                        config.param('metasv_ensemble', 'filter_pass_options')
+                    ),
+                    htslib.tabix(
+                        gatk_pass
+                    ),
+                ], name="metasv_ensemble.gatk_pass." + sample.name))
+                
+            jobs.append(concat_jobs([
+                bash.mkdir(
+                    ensemble_directory,
+                    remove=True
+                ),
+	            metasv.ensemble(
+                    lumpy_vcf,
+                    abs_manta,
+                    input_cnvkit,
+                    wham_vcf,
+                    delly_vcf,
+                    input_gatk,
+                    inputTumor,
+                    sample.name,
+                    os.path.join(ensemble_directory, "rawMetaSV"),
+                    ensemble_directory,
+                    isize_mean=str(isize_mean),
+                    isize_sd=str(isize_sd),
+                    output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"),
+                    breakseq=breakseq_vcf
+                ),
+            ], name="metasv_ensemble." + sample.name))
+	        
+        return jobs
+    
+    def metasv_sv_annotation(self):
+
+        jobs = []
+
+        for sample in self.samples:
+            ensemble_directory = os.path.join("SVariants", "ensemble", sample.name)
+
+            jobs.append(concat_jobs([
+                snpeff.compute_effects(os.path.join(ensemble_directory, "variants.vcf.gz"),
+                                       os.path.join(ensemble_directory, sample.name + ".metasv.snpeff.vcf")),
+            ], name="sv_annotation.metasv_ensemble." + sample.name))
+            
+        return jobs
+
+    def svaba_assemble(self):
+        jobs = []
+
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+            svaba_directory = os.path.join(pair_directory, "rawSvaba")
+
+            input_normal = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])[0]
+
+            germline_input = os.path.join(svaba_directory, sample.name + ".svaba.sv.vcf")
+            germline_output = os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.vcf.gz")
+            #cd_job = Job(command="cd " + svaba_directory)
+
+            coverage_bed = bvatools.resolve_readset_coverage_bed(
+                sample.readsets[0]
+            )
+
+            bed = None
+
+            if coverage_bed:
+                bed = coverage_bed
+
+            jobs.append(concat_jobs([
+                bash.mkdir(svaba_directory, remove=True),
+                #cd_job,
+                svaba.run(input_normal, os.path.join(svaba_directory, sample.name), None, bed),
+                pipe_jobs([
+                    Job([germline_input], [None], command="sed -e 's#" + os.path.abspath(input_normal) + "#" + sample.name + "#g' " + germline_input),
+                    htslib.bgzip_tabix(None, germline_output)
+                ]),
+            ], name="svaba_run." + sample.name))
+
+        return jobs
+
+    def svaba_sv_annotation(self):
+
+        jobs = []
+
+        for sample in self.samples:
+            pair_directory = os.path.join("SVariants", sample.name)
+
+            jobs.append(concat_jobs([
+                Job([os.path.abspath(pair_directory) + ".svaba.germline.vcf"], [os.path.abspath(pair_directory) + ".svaba.germline.flt.vcf"],
+                    command="cat <(grep \"^#\" " + os.path.abspath(pair_directory) + ".svaba.germline.vcf) <(grep -v \"^#\" " + os.path.abspath(pair_directory) + ".svaba.germline.vcf | cut -f1-9,13-14) > "
+                            + os.path.abspath(pair_directory) + ".svaba.germline.flt.vcf"),
+                snpeff.compute_effects(os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.flt.vcf.gz"), os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf")),
+                htslib.bgzip_tabix(os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf"), os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf.gz")),
+            ], name="sv_annotation.svaba_germline." + sample.name))
+
+        return jobs
+
     @property
     def steps(self):
         return [
             [
                 self.picard_sam_to_fastq,
-                self.sym_link_fastq,
-                self.trimmomatic,
-                self.merge_trimmomatic_stats,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
+                #self.bwakit_picard_sort_sam,
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                # self.fix_mate_by_coordinate,
-                self.fix_mate_by_coordinate_samtools,
+                #self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
-                self.sym_link_final_bam,
-                self.metrics_dna_picard_metrics,
-                self.metrics_dna_sample_qualimap,
-                self.metrics_dna_sambamba_flagstat,
-                self.metrics_dna_fastqc,
-                self.picard_calculate_hs_metrics,
-                self.gatk_callable_loci,
-                self.extract_common_snp_freq,
-                self.baf_plot,
                 self.gatk_haplotype_caller,
                 self.merge_and_call_individual_gvcf,
                 self.combine_gvcf,
                 self.merge_and_call_combined_gvcf,
                 self.variant_recalibrator,
-                #self.haplotype_caller_filter_nstretches,
                 self.haplotype_caller_decompose_and_normalize,
                 self.haplotype_caller_flag_mappability,
                 self.haplotype_caller_snp_id_annotation,
                 self.haplotype_caller_snp_effect,
                 self.haplotype_caller_dbnsfp_annotation,
                 self.haplotype_caller_gemini_annotations,
-                self.haplotype_caller_metrics_vcf_stats,
-                #self.haplotype_caller_metrics_snv_graph_metrics,
+                self.metrics_dna_picard_metrics,
+                self.metrics_dna_sample_qualimap,
+                self.metrics_dna_fastqc,
+                self.picard_calculate_hs_metrics,
+                self.metrics,
+                self.gatk_callable_loci,
+                self.extract_common_snp_freq,
+                self.baf_plot,
                 self.run_multiqc,
-                self.cram_output
+                self.cram_output,
+                self.sym_link_fastq,
+                self.sym_link_final_bam,
+	            self.metrics_ngscheckmate,
+	            self.metrics_verify_bam_id,
+	            self.metrics_vcftools_missing_indiv,
+	            self.metrics_vcftools_depth_indiv,
+	            self.metrics_gatk_sample_fingerprint,
+	            self.metrics_gatk_cluster_fingerprint,
+	            #self.metrics_peddy,
             ],
             [
                 self.picard_sam_to_fastq,
-                self.sym_link_fastq,
-                self.trimmomatic,
-                self.merge_trimmomatic_stats,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                # self.fix_mate_by_coordinate,
-                self.fix_mate_by_coordinate_samtools,
+                #self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
-                self.sym_link_final_bam,
-                self.metrics_dna_picard_metrics,
-                self.metrics_dna_sample_qualimap,
-                self.metrics_dna_sambamba_flagstat,
-                self.metrics_dna_fastqc,
-                self.picard_calculate_hs_metrics,
-                self.gatk_callable_loci,
-                self.extract_common_snp_freq,
-                self.baf_plot,
                 self.rawmpileup,
                 self.rawmpileup_cat,
                 self.snp_and_indel_bcf,
@@ -2604,8 +3668,18 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.mpileup_dbnsfp_annotation,
                 self.mpileup_gemini_annotations,
                 self.mpileup_metrics_vcf_stats,
+                self.cram_output,
+                self.metrics_dna_picard_metrics,
+                self.metrics_dna_sample_qualimap,
+                self.metrics_dna_fastqc,
+                self.picard_calculate_hs_metrics,
+                self.gatk_callable_loci,
+                self.extract_common_snp_freq,
+                self.baf_plot,
+                #self.mpileup_metrics_snv_graph_metrics,
                 self.run_multiqc,
-                self.cram_output
+                self.sym_link_fastq,
+                self.sym_link_final_bam
             ],
             [
                 self.picard_sam_to_fastq,
@@ -2636,15 +3710,74 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.haplotype_caller_gemini_annotations,
                 self.run_multiqc,
                 self.cram_output
-            ]
+             ],
+            [
+                self.picard_sam_to_fastq,
+                self.skewer_trimming,
+                self.bwa_mem_sambamba_sort_sam,
+                self.sambamba_merge_sam_files,
+                self.gatk_indel_realigner,
+                self.sambamba_merge_realigned,
+                self.picard_mark_duplicates,
+                self.recalibration,
+                self.sym_link_final_bam,
+                self.metrics_dna_picard_metrics,
+                self.metrics_dna_sample_qualimap,
+                self.metrics_dna_sambamba_flagstat,
+                self.metrics_dna_fastqc,
+                self.picard_calculate_hs_metrics,
+                self.gatk_callable_loci,
+                self.extract_common_snp_freq,
+                self.baf_plot,
+                self.gatk_haplotype_caller,
+                self.merge_and_call_individual_gvcf,
+                self.combine_gvcf,
+                self.merge_and_call_combined_gvcf,
+                self.variant_recalibrator,
+                self.haplotype_caller_decompose_and_normalize,
+                self.haplotype_caller_flag_mappability,
+                self.haplotype_caller_snp_id_annotation,
+                self.haplotype_caller_snp_effect,
+                self.haplotype_caller_dbnsfp_annotation,
+                self.haplotype_caller_gemini_annotations,
+                self.run_multiqc,
+                self.cram_output
+            ],
+            [
+                self.picard_sam_to_fastq,
+                self.skewer_trimming,
+                self.bwa_mem_sambamba_sort_sam,
+                self.sambamba_merge_sam_files,
+                self.gatk_indel_realigner,
+                self.sambamba_merge_realigned,
+                self.picard_mark_duplicates,
+                self.recalibration,
+                self.gatk_haplotype_caller,
+                self.merge_and_call_individual_gvcf,
+                self.metrics_dna_picard_metrics,
+                self.delly_call_filter,
+                self.delly_sv_annotation,
+                self.manta_sv_calls,
+                self.manta_sv_annotation,
+                self.lumpy_paired_sv,
+                self.lumpy_sv_annotation,
+                self.wham_call_sv,
+                self.wham_sv_annotation,
+                self.cnvkit_batch,
+                self.cnvkit_sv_annotation,
+                self.run_breakseq2,
+	            self.ensemble_metasv,
+                self.metasv_sv_annotation,
+                #self.svaba_assemble,
+                #self.svaba_sv_annotation
+            ],
         ]
 
 class DnaSeq(DnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light"],
-                                    default="mugqic")
+        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light", "sv"], default="mugqic")
         super(DnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
@@ -2652,4 +3785,4 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        DnaSeq(protocol=['mugqic', 'mpileup', "light"])
+        DnaSeq(protocol=['mugqic', 'mpileup', "light", "sv"])

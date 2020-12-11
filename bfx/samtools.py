@@ -75,13 +75,13 @@ samtools flagstat \\
         removable_files=[output]
         )
 
-def mpileup(input_bams, output, other_options="", region=None, regionFile=None, ini_section='rawmpileup'):
+def mpileup(inputs, output, other_options=None, region=None, regionFile=None, ini_section='rawmpileup'):
 
-    if not isinstance(input_bams, list):
-        input_bams = [input_bams]
+    if not isinstance(inputs, list):
+        inputs = [inputs]
 
     return Job(
-        input_bams,
+        inputs,
         [output],
         [
             [ini_section, 'module_samtools']
@@ -97,7 +97,7 @@ samtools mpileup {other_options} \\
             reference_fasta="-f " + config.param('samtools_mpileup', 'genome_fasta', type='filepath') if config.param('samtools_mpileup', 'genome_fasta', type='filepath') else "",
             region="-r " + region if region else "",
             regionFile="-l " + regionFile if regionFile else "",
-            input_bams="\\\n  ".join([input_bam for input_bam in input_bams]),
+            input_bams="\\\n  ".join([input_bam for input_bam in inputs]),
             output="> " + output if output else ""
             )
         )
@@ -121,6 +121,26 @@ samtools merge \\
             input_bams=" ".join(map(str.strip, input_bams))
             )
         )
+
+def bcftools_mpileup(inputs, output, options, region=None, regionFile=None, ini_section='rawmpileup'):
+
+    return Job(
+        inputs,
+        [output],
+        [
+            [ini_section, 'module_samtools']
+        ],
+    command="""\
+bcftools mpileup {options} \\
+  -f {reference_fasta}{region}{regionFile}{inputs}{output}""".format(
+        options=options if options else "",
+        reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),
+        regionFile=" \\\n  -l " + regionFile if regionFile else "",
+        region=" \\\n  -r " + region if region else "",
+        inputs="".join([" \\\n  " + input for input in inputs]),
+        output=" \\\n  > " + output if output else ""
+         )
+    )
 
 def sort(input_bam, output_prefix, sort_by_name=False):
     output_bam = output_prefix + ".bam"
@@ -186,7 +206,7 @@ def bcftools_cat(inputs, output):
 
     if not isinstance(inputs, list):
         inputs = [inputs]
-
+        
     return Job(
         inputs,
         [output],

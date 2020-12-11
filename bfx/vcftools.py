@@ -31,7 +31,7 @@ def annotate_mappability(input, output):
         [output],
         [
             ['annotate_mappability', 'module_vcftools'],
-            ['annotate_mappability', 'module_tabix']
+            ['annotate_mappability', 'module_htslib']
         ],
         command="""\
 vcf-annotate \\
@@ -42,6 +42,46 @@ vcf-annotate \\
         annotations=config.param('annotate_mappability', 'genome_mappability_bed_indexed', type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
+        ),
+        removable_files=[output]
+    )
+
+def missing_indv(input, output):
+    out = output + ".imiss"
+    return Job(
+        [input],
+        [out],
+        [
+            ['vcftools_missing_indv', 'module_vcftools'],
+            ['vcftools_missing_indv', 'module_htslib']
+        ],
+        command="""\
+vcftools {options} --missing-indv \\
+  --gzvcf {input} \\
+  --out {output}""".format(
+        options=config.param('vcftools_missing_indv', 'options'),
+        input=input,
+        output=output,
+        ),
+        removable_files=[output]
+    )
+
+def depth(input, output):
+    out = output + ".idepth"
+    return Job(
+        [input],
+        [out],
+        [
+            ['vcftools_depth', 'module_vcftools'],
+            ['vcftools_depth', 'module_htslib']
+        ],
+        command="""\
+vcftools {options} --depth \\
+  --gzvcf {input} \\
+  --out {output}""".format(
+        options=config.param('vcftools_depth', 'options'),
+        input=input,
+        output=output,
         ),
         removable_files=[output]
     )

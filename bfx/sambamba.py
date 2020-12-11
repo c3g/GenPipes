@@ -25,7 +25,7 @@
 from core.config import *
 from core.job import *
 
-def sort(input_bam, output_bam, tmp_dir, sort_by_name=False, other_options=config.param('sambamba_sort_sam', 'options', required=False)):
+def sort(input_bam, output_bam, tmp_dir, other_options=None):
 
     return Job(
         [input_bam],
@@ -35,12 +35,11 @@ def sort(input_bam, output_bam, tmp_dir, sort_by_name=False, other_options=confi
             ['sambamba_sort_sam', 'module_sambamba']
         ],
         command="""\
-sambamba sort {options} {sort_by_name}\\
+sambamba sort {options} \\
   {input} \\
   --tmpdir {temp} \\
   {output}""".format(
-        options=other_options,
-        sort_by_name="-n" if sort_by_name else "",
+        options=other_options if other_options else "",
         input=input_bam,
         output="--out " + output_bam if output_bam else "",
         temp=tmp_dir
@@ -85,10 +84,12 @@ sambamba merge {options} \\
         )
     )
 
-def markdup(input_bam, output_bam, tmp_dir):
+def markdup(input_bam, output_bam, temp_dir):
+    if not isinstance(input_bam, list):
+        input_bam=[input_bam]
 
     return Job(
-        [input_bam],
+        input_bam,
         [output_bam],
         [
             ['sambamba_mark_duplicates', 'module_samtools'],
@@ -100,8 +101,8 @@ sambamba markdup {options} \\
   --tmpdir {temp} \\
   {output}""".format(
         options=config.param('sambamba_mark_duplicates', 'options', required=False),
-        temp=config.param('sambamba_mark_duplicate', 'tmp_dir'),
-        input=input_bam,
+        temp=temp_dir,
+        input=" \\\n  ".join(input for input in input_bam),
         output=output_bam,
         )
     )
@@ -112,7 +113,7 @@ def view(input_bam, output_bam, options, chr=[]):
         [input_bam],
         [output_bam],
         [
-            ['sambamba_view', 'module_sambamba'],
+            ['DEFAULT', 'module_sambamba'],
         ],
         command="""\
 sambamba view {options} \\
@@ -131,7 +132,7 @@ def flagstat(input, output, options):
         [input],
         [output],
         [
-            ['sambamba_flagstat', 'module_sambamba'],
+            ['DEFAULT', 'module_sambamba'],
         ],
         command="""\
 sambamba flagstat {options} \\

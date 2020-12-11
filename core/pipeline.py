@@ -406,7 +406,6 @@ class Pipeline(object):
                 for sample in self.sample_list:
                     self.sample_paths.append(jsonator.create(self, sample))
 
-
         log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
     def submit_jobs(self):
@@ -426,7 +425,6 @@ class Pipeline(object):
 #                #------------------------------------------------------------------------------
 #                {copy_commands}
 #            """).format(copy_commands='\n'.join(copy_commands)))
-
 
     def report_jobs(self, output_dir=None):
         if not output_dir:
@@ -493,7 +491,6 @@ pandoc \\
             if os.path.exists(removable_file):
                 print("rm -rf " + removable_file)
 
-
 # Return a range list given a string.
 # e.g. parse_range('1,3,5-12') returns [1, 3, 5, 6, 7, 8, 9, 10, 11, 12]
 def parse_range(astr):
@@ -502,7 +499,6 @@ def parse_range(astr):
         x = part.split('-')
         result.update(range(int(x[0]), int(x[-1]) + 1))
     return sorted(result)
-
 
 class ValidateContainer(argparse.Action):
 

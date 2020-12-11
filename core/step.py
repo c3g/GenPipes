@@ -72,3 +72,7 @@ class Step(object):
     def add_job(self, job):
         self.jobs.append(job)
         job.id = self.name + "_" + str(len(self.jobs)) + "_JOB_ID"
+        
+    def add_job(self, job):
+        self.jobs.append(job)
+        job.id = self.name + "_" + str(len(self.jobs)) + "_JOB_ID"

@@ -26,15 +26,23 @@ import re
 from core.job import *
 import core.config
 import gatk4
+import picard
+import picard2
 
 config = core.config.config
 
 def base_recalibrator(input, output, intervals):
+    if intervals:
+        inputs = [input, intervals]
+    
+    else:
+        inputs = [input]
+        
     if config.param('gatk_base_recalibrator', 'module_gatk').split("/")[2] >= "4":
         return gatk4.base_recalibrator(input, output, intervals)
     else:
         return Job(
-            [input, intervals],
+            inputs,
             [output],
             [
                 ['gatk_base_recalibrator', 'module_java'],
@@ -301,14 +309,20 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $MUTECT_JAR 
 def mutect2(inputNormal, normal_name, inputTumor, tumor_name, outputVCF, intervals=[], exclude_intervals=[], interval_list=None):
     cosmic = config.param('gatk_mutect2', 'cosmic', type='filepath', required=False)
     # if set add arg prefix
-    if cosmic :
+    if cosmic and os.path.isfile(cosmic):
         cosmic = " --cosmic " + cosmic
+    
+    if interval_list:
+        inputs = [inputNormal, inputTumor, interval_list]
         
+    else:
+        inputs = [inputNormal, inputTumor]
+    
     if config.param('gatk_mutect2', 'module_gatk').split("/")[2] >= "4":
         return gatk4.mutect2(inputNormal, normal_name, inputTumor, tumor_name, outputVCF, intervals, exclude_intervals, interval_list)
     else:
         return Job(
-            [inputNormal, inputTumor, interval_list],
+            inputs,
             [outputVCF],
             [
                 ['gatk_mutect2', 'module_java'],
@@ -322,7 +336,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --dbsnp {known_sites}{cosmic} \\
   --input_file:normal {inputNormal} \\
   --input_file:tumor {inputTumor} \\
-  --out {outputVCF}{interval_list}{intervals}{exclude_intervals}""".format(
+  --out {outputVCF}{intervals}{exclude_intervals}{interval_list}""".format(
         tmp_dir=config.param('gatk_mutect', 'tmp_dir'),
         java_other_options=config.param('gatk_mutect2', 'java_other_options'),
         ram=config.param('gatk_mutect2', 'ram'),
@@ -333,17 +347,31 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         inputNormal=inputNormal,
         inputTumor=inputTumor,
         outputVCF=outputVCF,
-        interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
+        #interval_list=" \\\n  --interval_padding 100 --intervals " + interval_list if interval_list else "",
+        interval_list=" \\\n  --intervals " + interval_list if interval_list else "",
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
 
-def indel_realigner(input, target_intervals, input2=[], output=[], output_norm_dep=[], output_tum_dep=[], intervals=[], exclude_intervals=[], optional=[]):
-
+def indel_realigner(input,
+                    target_intervals,
+                    input2=[],
+                    output=[],
+                    output_dir=[],
+                    output_norm_dep=[],
+                    output_tum_dep=[],
+                    intervals=[],
+                    exclude_intervals=[],
+                    optional=[]
+                    ):
+    
+    output_dep = output_norm_dep + output_tum_dep
+    output_dep.append(output)
+    
     return Job(
         [input, target_intervals, input2],
-        [output, output_norm_dep, output_tum_dep],
+        output_dep,
         [
             ['gatk_indel_realigner', 'module_java'],
             ['gatk_indel_realigner', 'module_gatk']
@@ -365,13 +393,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         other_options=config.param('gatk_indel_realigner', 'other_options'),
         reference_sequence=config.param('gatk_indel_realigner', 'genome_fasta', type='filepath'),
         optional="--nWayOut " + optional if optional else "",
-        input=input,
-        input2="--input_file " + input2 if input2 else "",
-        target_intervals=target_intervals,
-        #known_indel_sites=config.param('gatk_realigner_target_creator', 'known_indel_sites', type='filepath'),
+        input=os.path.join(output_dir, input),
+        input2="--input_file " + os.path.join(output_dir, input2) if input2 else "",
+        target_intervals=os.path.join(output_dir, target_intervals),
         known_mills=config.param('gatk_realigner_target_creator', 'known_mills', type='filepath'),
-        #known_1000G=config.param('gatk_realigner_target_creator', 'known_1000G', type='filepath'),
-        output=" \\\n  --out " + output if output else "",
+        output=" \\\n  --out " + os.path.join(output_dir,output) if output else "",
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
         max_reads_in_memory=config.param('gatk_indel_realigner', 'max_reads_in_memory')
@@ -384,7 +410,7 @@ def print_reads(input, output, base_quality_score_recalibration):
     else:
         return Job(
             [input, base_quality_score_recalibration],
-            [output, re.sub("\.([sb])am$", ".\\1ai", output)],
+            [output, re.sub(".bam", ".bai", output)],
             [
                 ['gatk_print_reads', 'module_java'],
                 ['gatk_print_reads', 'module_gatk']
@@ -408,7 +434,13 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def realigner_target_creator(input, output, input2=[], intervals=[], exclude_intervals=[]):
+def realigner_target_creator(input,
+                             output,
+                             output_dir=[],
+                             input2=[],
+                             intervals=[],
+                             exclude_intervals=[]
+                             ):
 
     return Job(
         [input, input2],
@@ -430,11 +462,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         ram=config.param('gatk_realigner_target_creator', 'ram'),
         other_options=config.param('gatk_realigner_target_creator', 'other_options'),
         reference_sequence=config.param('gatk_realigner_target_creator', 'genome_fasta', type='filepath'),
-        input=input,
-        input2="--input_file " + input2 if input2 else "",
+        input= os.path.join(output_dir, input),
+        input2="--input_file " + os.path.join(output_dir, input2) if input2 else "",
         known_mills=config.param('gatk_realigner_target_creator', 'known_mills', type='filepath'),
         #known_1000G=config.param('gatk_realigner_target_creator', 'known_1000G', type='filepath'),
-        output=output,
+        output=os.path.join(output_dir, output),
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
@@ -479,7 +511,7 @@ def variant_annotator(input_normal, input_tumor, input_variants, output, interva
 
     return Job(
         [input_normal, input_tumor, input_variants],
-        [output],
+        [output, output + ".tbi"],
         [
             ['gatk_variant_annotator', 'module_java'],
             ['gatk_variant_annotator', 'module_gatk']
@@ -588,8 +620,13 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
 
 
 def split_n_cigar_reads(input, output, intervals=[], exclude_intervals=[], interval_list=None):
+    if interval_list:
+        inputs = [input]
+    
+    else:
+        inputs = [input]
     return Job(
-        [input],
+        inputs,
         [output],
         [
             ['gatk_split_N_trim', 'module_java'],
@@ -606,7 +643,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
             ram=config.param('gatk_split_N_trim', 'ram'),
             other_options=config.param('gatk_split_N_trim', 'other_options', required=False),
             reference_sequence=config.param('gatk_split_N_trim', 'reference', type='filepath'),
-            input=input,
+            input=" \\\n  ".join(input for input in inputs),
             output=output,
             intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
             interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",

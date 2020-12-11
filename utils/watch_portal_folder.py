@@ -10,7 +10,6 @@ import shutil
 import requests
 from deepdiff import DeepDiff
 
-
 def main():
 
     options = get_arguments()

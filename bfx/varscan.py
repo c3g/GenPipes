@@ -50,10 +50,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JA
         )
     )
 
-def somatic(input_normal, input_tumor, output, other_options=None, output_vcf_dep=[], output_snp_dep=[], output_indel_dep=[]):
+def somatic(input_pair, output, other_options=None, output_vcf_dep=[], output_snp_dep=[], output_indel_dep=[]):
 
     return Job(
-        [input_normal, input_tumor],
+        [input_pair],
         [output_vcf_dep, output_snp_dep, output_indel_dep],
         [
             ['varscan', 'module_java'],
@@ -61,17 +61,15 @@ def somatic(input_normal, input_tumor, output, other_options=None, output_vcf_de
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JAR somatic \\
-  {input_normal} \\
-  {input_tumor} \\
+  {input_pair} \\
   {output} \\
   {other_options} \\
-  --output-vcf 1""".format(
+  --output-vcf 1 --mpileup 1""".format(
         tmp_dir=config.param('varscan2_somatic', 'tmp_dir'),
         java_other_options=config.param('varscan2_somatic', 'java_other_options'),
         ram=config.param('varscan2_somatic', 'ram'),
         other_options=other_options,
-        input_normal=input_normal,
-        input_tumor=input_tumor,
+        input_pair=input_pair,
         output=output,
         )
     )

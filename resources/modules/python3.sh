@@ -3,8 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=python
-VERSION=3.7.3
-SETUPTOOLS_VERSION=28.8.0
+VERSION=3.8.1
+SETUPTOOLS_VERSION=45.1.0
 # Remove the version last number
 LIBVERSION=${VERSION%.[0-9]*}
 # Uppercase first P in python

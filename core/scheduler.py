@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-
+import json
 import logging
 import os
 import tempfile
@@ -251,14 +251,13 @@ module load {module_python}
 module unload {module_python} {command_separator}""".format(
             job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
             module_python=config.param('DEFAULT', 'module_python'),
+            module_mugqic_tools=config.param('DEFAULT', 'module_mugqic_tools'),
             step=step,
             jsonfiles=json_file_list,
             config_files=",".join([ os.path.abspath(c.name) for c in self._config_files ]),
             status=job_status,
             command_separator="&&" if (job_status=='\\"running\\"') else ""
         ) if json_file_list else ""
-
-
 
 class PBSScheduler(Scheduler):
 
@@ -317,7 +316,7 @@ exit \$MUGQIC_STATE" | \\
 """.format(
                         container_line=self.container_line,
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
-                        job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE')
+                        job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE'),
                     )
                         #sleep_time=sleepTime
 

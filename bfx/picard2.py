@@ -25,27 +25,28 @@
 from core.config import *
 from core.job import *
 import picard
+import gatk4
 
-def build_bam_index(input, output, ini_section='picard_build_bam_index'):
+def build_bam_index(input, output):
 
-    if config.param(ini_section, 'module_picard').split("/")[2] < "2":
+    if config.param('build_bam_index', 'module_picard').split("/")[2] < "2":
         return picard.build_bam_index(input, output)
     else:
         return Job(
             [input],
             [output],
             [
-                [ini_section, 'module_java'],
-                [ini_section, 'module_picard']
+                ['build_bam_index', 'module_java'],
+                ['build_bam_index', 'module_picard']
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar BuildBamIndex \\
  VALIDATION_STRINGENCY=SILENT \\
  INPUT={input} \\
  OUTPUT={output} """.format(
-            tmp_dir=config.param(ini_section, 'tmp_dir'),
-            java_other_options=config.param(ini_section, 'java_other_options'),
-            ram=config.param(ini_section, 'ram'),
+            tmp_dir=config.param('build_bam_index', 'tmp_dir'),
+            java_other_options=config.param('build_bam_index', 'java_other_options'),
+            ram=config.param('build_bam_index', 'ram'),
             input=input,
             output=output,
             )
@@ -89,11 +90,13 @@ def collect_multiple_metrics(input, output, reference_sequence=None, library_typ
 
     if  library_type == "PAIRED_END" :
         outputs = [
-         output + ".quality_by_cycle.pdf",
+         output + ".base_distribution_by_cycle_metrics",
+         output + ".base_distribution_by_cycle.pdf",
          output + ".alignment_summary_metrics",
          output + ".insert_size_histogram.pdf",
          output + ".insert_size_metrics",
          output + ".quality_by_cycle_metrics",
+         output + ".quality_by_cycle.pdf",
          output + ".quality_distribution_metrics",
          output + ".quality_distribution.pdf"
         ]
@@ -117,7 +120,7 @@ def collect_multiple_metrics(input, output, reference_sequence=None, library_typ
             [
                 ['picard_collect_multiple_metrics', 'module_java'],
                 ['picard_collect_multiple_metrics', 'module_picard'],
-                ['picard_collect_rna_metrics', 'module_R']
+                ['picard_collect_multiple_metrics', 'module_R']
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CollectMultipleMetrics \\
@@ -290,6 +293,8 @@ def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
         inputs=[inputs]
     if config.param('picard_mark_duplicates', 'module_picard').split("/")[2] < "2" and config.param('picard_mark_duplicates', 'module_gatk').split("/")[2] < "4":
         return picard.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
+    elif config.param('picard_mark_duplicates', 'module_gatk').split("/")[2] > "4":
+        return gatk4.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
     else:
         return Job(
             inputs,
@@ -316,6 +321,40 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             max_records_in_ram=config.param('picard_mark_duplicates', 'max_records_in_ram', type='int'),
             other_options=config.param('picard_mark_duplicates', 'other_options',required = False) if config.param('picard_mark_duplicates', 'other_options',required = False) else ""
             ),
+            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
+        )
+
+def mark_duplicates_mate_cigar(inputs, output, metrics_file, remove_duplicates="false"):
+    if not isinstance(inputs, list):
+        inputs=[inputs]
+    if config.param('mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] > "4":
+        return gatk4.mark_duplicates_mate_cigar(inputs, output, metrics_file, remove_duplicates)
+    else:
+        return Job(
+            inputs,
+            [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
+            [
+                ['mark_duplicates_mate_cigar', 'module_java'],
+                ['mark_duplicates_mate_cigar', 'module_picard']
+            ],
+            command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar \\
+ MarkDuplicatesWithMateCigar \\
+ REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
+ TMP_DIR={tmp_dir} \\
+ {inputs} \\
+ OUTPUT={output} \\
+ METRICS_FILE={metrics_file} \\
+ MAX_RECORDS_IN_RAM={max_records_in_ram} {other_options}""".format(
+            tmp_dir=config.param('mark_duplicates_mate_cigar', 'tmp_dir'),
+            java_other_options=config.param('mark_duplicates_mate_cigar', 'java_other_options'),
+            ram=config.param('mark_duplicates_mate_cigar', 'ram'),
+            remove_duplicates=remove_duplicates,
+            inputs=" \\\n  ".join(["INPUT=" + str(input) for input in inputs]),
+            output=output,
+            metrics_file=metrics_file,
+            max_records_in_ram=config.param('mark_duplicates_mate_cigar', 'max_records_in_ram', type='int'),
+            other_options=config.param('mark_duplicates_mate_cigar', 'other_options',required = False) if config.param('picard_mark_duplicates', 'other_options',required = False) else ""),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
@@ -399,6 +438,7 @@ def sam_to_fastq(input, fastq, second_end_fastq=None):
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar SamToFastq \\
  VALIDATION_STRINGENCY=LENIENT \\
+ CREATE_MD5_FILE=TRUE \\
  INPUT={input} \\
  FASTQ={fastq}{second_end_fastq}""".format(
             tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir'),
@@ -474,6 +514,33 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
+def mergeVcfs(variants, output):
+    return Job(
+            variants,
+            [output],
+            [
+                ['picard_merge_vcfs', 'module_java'],
+                ['picard_merge_vcfs', 'module_picard']
+            ],
+            command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar \\
+  MergeVcfs {options} \\
+  --TMP_DIR {tmp_dir} \\
+  --REFERENCE_SEQUENCE {reference}{variants} \\
+  --OUTPUT {output} \\
+  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
+                tmp_dir=config.param('picard_merge_vcfs', 'tmp_dir'),
+                java_other_options=config.param('picard_merge_vcfs', 'java_other_options'),
+                ram=config.param('picard_merge_vcfs', 'ram'),
+                options=config.param('picard_merge_vcfs', 'options'),
+                reference=config.param('picard_merge_vcfs', 'genome_fasta', type='filepath'),
+                variants="".join(" \\\n  --INPUT " + variant for variant in variants),
+                output=output,
+                max_records_in_ram=config.param('picard_merge_vcfs', 'max_records_in_ram', type='int')
+        )
+  )
+
+
 def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
 
     if config.param('picard_collect_rna_metrics', 'module_picard').split("/")[2] < "2":
@@ -513,7 +580,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         )
 
 def add_read_groups(input, output, readgroup, library, processing_unit, sample, sort_order="coordinate"):
-
     if config.param('picard_add_read_groups', 'module_picard').split("/")[2] < "2":
         return picard.add_read_groups(input, output, readgroup, library, processing_unit, sample, sort_order)
     else:
@@ -559,8 +625,7 @@ def bed2interval_list(dictionary, bed, output):
             dictionary,
             bed,
             output
-            )
-
+        )
     return Job(
         [dictionary, bed],
         [output],
@@ -578,6 +643,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             ram=config.param('picard_bed2interval_list', 'ram'),
             dictionary=dictionary if dictionary else config.param('picard_bed2interval_list', 'genome_dictionary', type='filepath'),
             bed=bed,
-            output=output
-            )
+            output=output,
         )
+    )

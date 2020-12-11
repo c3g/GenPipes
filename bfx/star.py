@@ -54,7 +54,6 @@ def align(
         [['star_align', 'module_star']],
         removable_files=[os.path.join(output_directory, bam_name)]
     )
-
     ## Get param from config file
     num_threads = config.param('star_align', 'threads', type='int')
     ram_limit = config.param('star_align', 'ram')
@@ -64,7 +63,6 @@ def align(
     stranded = config.param('star_align', 'strand_info')
     wig_prefix = config.param('star_align', 'wig_prefix')
     chimere_segment_min = config.param('star_align','chimere_segment_min', type='int', required=False)
-
     ## Wiggle information
     if create_wiggle_track:
         wig_cmd = "--outWigType wiggle read1_5p"
