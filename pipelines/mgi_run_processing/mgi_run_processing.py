@@ -650,8 +650,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 demuxfastqs_outputs, fastq_jobs_to_concat, fastq_jobs_to_append = self.generate_demuxfastqs_outputs(lane)
 
                 fastq_job_output_dependency = []
-                for job in fastq_jobs_to_concat:
-                    fastq_job_output_dependency.extend(job.output_files)
+                if len(fastq_jobs_to_concat) == 0:
+                    fastq_job_output_dependency.extend(demuxfastqs_outputs)
+                else: 
+                    for job in fastq_jobs_to_concat:
+                        fastq_job_output_dependency.extend(job.output_files)
 
                 tmp_output_dir = os.path.dirname(demuxfastqs_outputs[0])    
                 tmp_metrics_file = os.path.join(tmp_output_dir, self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
