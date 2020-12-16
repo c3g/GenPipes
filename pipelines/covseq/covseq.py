@@ -751,7 +751,8 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                         )
                     ],
                     name="snpeff_annotate." + sample.name,
-                    samples=[sample]
+                    samples=[sample],
+                    removable_files=[output_vcf]
                     )
                 )
 
@@ -882,7 +883,7 @@ frameshift=`if grep -q "frameshift_variant" {annotated_vcf}; then echo "FLAG"; f
 genome_size=`awk '{{print $2}}' {genome_file}`
 bam_cov50X=`awk '{{if ($4 > 50) {{count = count + $3-$2}}}} END {{if (count) {{print count}} else {{print 0}}}}' {bedgraph_file}`
 bam_cov50X=`echo "scale=2; 100*$bam_cov50X/$genome_size" | bc -l`
-STATUS=`awk -v bam_cov50X=$bam_cov50X -v frameshift=$frameshift -v cons_perc_N=$cons_perc_N 'BEGIN {{ if (cons_perc_N < 1 && (frameshift =! "FLAG" || bam_cov50X >= 90)) {{print "pass"}} else if ((cons_perc_N >= 1 && cons_perc_N <= 5) || frameshift == "FLAG" || bam_cov50X < 90) {{print "flag"}} else if (cons_perc_N > 5) {{print "rej"}} }}'`
+STATUS=`awk -v bam_cov50X=$bam_cov50X -v frameshift=$frameshift -v cons_perc_N=$cons_perc_N 'BEGIN {{ if (cons_perc_N < 1 && frameshift != "FLAG" && bam_cov50X >= 90) {{print "pass"}} else if ((cons_perc_N >= 1 && cons_perc_N <= 5) || frameshift == "FLAG" || bam_cov50X < 90) {{print "flag"}} else if (cons_perc_N > 5) {{print "rej"}} }}'`
 export STATUS""".format(
     quast_html=quast_html,
     quast_tsv=quast_tsv,
