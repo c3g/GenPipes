@@ -218,8 +218,8 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                 concat_jobs([
                     verify_bam_id.verify(
                         input_bam,
-                        known_variants_annotated_filtered,
                         output_prefix,
+                        vcf=known_variants_annotated_filtered,
                     ),
                     # the first column starts with a # (a comment for nanuq) so we remove the column and output the result
                     # in a file with the name supported by nanuq

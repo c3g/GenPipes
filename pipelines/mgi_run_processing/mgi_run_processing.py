@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#p!/usr/bin/env python
 
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
@@ -99,14 +99,18 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
     def __init__(self, protocol=None):
         self._protocol=protocol
-        self.copy_job_inputs = []
+        self.copy_job_inputs = {}
         self.argparser.add_argument("-r", "--readsets", help="Sample sheet for the MGI run to process (mandatory)", type=file, required=True)
         self.argparser.add_argument("-d", "--run", help="Run directory (mandatory)", required=True, dest="run_dir")
+        self.argparser.add_argument("--run-id", help="Run ID. Default is parsed from the run folder", required=False, dest="run_id")
+        self.argparser.add_argument("--flowcell-id", help="Flowcell ID. Default is parsed from the run folder", required=False, dest="flowcell_id")
+        self.argparser.add_argument("--raw-fastq-prefix", help="Prefix used to search for the raw fastq from the sequencer. Default <FLOWCELL_ID>_<RUN_ID>", required=False, dest="raw_fastq_prefix")
         self.argparser.add_argument("--lane", help="Lane number (to only process the given lane)", type=int, required=False, dest="lane_number")
-        self.argparser.add_argument("--raw-fastq", help="Raw fastq from the sequencer, with NO DEMULTIPLEXING performed, will be expected by the pipeline", action="store_true", required=False, dest="raw_fastq")
+        self.argparser.add_argument("--demux-fastq", help="Fastq files given by the sequencer are already demultiplexed : NO DEMULTIPLEXING will be performed by the pipeline", action="store_true", required=False, dest="demux_fastq")
         self.argparser.add_argument("-x", help="First index base to use for demultiplexing (inclusive). The index from the sample sheet will be adjusted according to that value.", type=int, required=False, dest="first_index")
         self.argparser.add_argument("-y", help="Last index base to use for demultiplexing (inclusive)", type=int, required=False, dest="last_index")
         self.argparser.add_argument("-m", help="Number of index mistmaches allowed for demultiplexing (default 1). Barcode collisions are always checked.", type=int, required=False, dest="number_of_mismatches")
+        self.argparser.add_argument("--allow-barcode-collision", help="Allow barcode collision by not comparing barcode sequences to each other (usually decreases the demultiplexing efficiency).", action="store_true", required=False, dest="allow_barcode_collision")
 
         super(MGIRunProcessing, self).__init__(protocol)
 
@@ -120,6 +124,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 self._readsets[lane] = self.load_readsets(lane)
                 self._mask[lane] = self.get_mask(lane)
                 self.generate_mgi_lane_sample_sheet(lane)
+                self.copy_job_inputs[lane] = []
         return self._readsets
 
     @property
@@ -165,10 +170,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
     @property
     def is_demultiplexed(self):
         if not hasattr(self, "_is_demultiplexed"):
-            if self.args.raw_fastq:
-                self._is_demultiplexed = False
-            else:
+            if self.args.demux_fastq:
                 self._is_demultiplexed = True
+            else:
+                self._is_demultiplexed = False
         return self._is_demultiplexed
 
     @property
@@ -216,18 +221,18 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self._year = "2020"
         return self._year 
 
-    @property
-    def run_id(self):
-        """
-        The run id from the readset objects.
-        """
-        if not hasattr(self, "_run_id"):
-            runs = set([line['RUN_ID'] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter=',', quotechar='"')])
-            if len(list(runs)) > 1:
-                _raise(SanitycheckError("Error: more than one run were parsed in the sample sheet... " + runs))
-            else:
-                self._run_id = list(runs)[0]
-        return self._run_id
+#    @property
+#    def run_id(self):
+#        """
+#        The run id from the readset objects.
+#        """
+#        if not hasattr(self, "_run_id"):
+#            runs = set([line['RUN_ID'] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter=',', quotechar='"')])
+#            if len(list(runs)) > 1:
+#                _raise(SanitycheckError("Error: more than one run were parsed in the sample sheet... " + runs))
+#            else:
+#                self._run_id = list(runs)[0]
+#        return self._run_id
 
     @property
     def run_dir(self):
@@ -246,17 +251,50 @@ class MGIRunProcessing(common.MUGQICPipeline):
     @property
     def flowcell_id(self):
         """
-        The flow cell ID from the run folder
+        The flow cell ID from the run folder or from parameter
         """
         if not hasattr(self, "_flowcell_id"):
-            rundir_basename = os.path.basename(self.run_dir.rstrip('/'))
-            if "_" in rundir_basename:
-                [self._flowcell_id, junk_food] = rundir_basename.split("_")
+            if self.args.flowcell_id:
+                self._flowcell_id = self.args.flowcell_id
             else:
-                self._flowcell_id = os.path.basename(self.run_dir.rstrip('/'))
-                if "(" in self._flowcell_id:
-                     self._flowcell_id = self._flowcell_id.split("(")[0]
+                rundir_basename = os.path.basename(self.run_dir.rstrip('/'))
+                if "_" in rundir_basename:
+                    [self._flowcell_id, junk_food] = rundir_basename.split("_")
+                else:
+                    self._flowcell_id = os.path.basename(self.run_dir.rstrip('/'))
+                    if "(" in self._flowcell_id:
+                         self._flowcell_id = self._flowcell_id.split("(")[0]
         return self._flowcell_id
+
+    @property
+    def run_id(self):
+        """
+        The RUN ID from the run folder or from parameter
+        """
+        if not hasattr(self, "_run_id"):
+            if self.args.run_id:
+                self._run_id = self.args.run_id
+            else:
+                rundir_basename = os.path.basename(self.run_dir.rstrip('/'))
+                if "_" in rundir_basename:
+                    [junk_food, self._run_id] = rundir_basename.split("_")
+                else:
+                    _raise(SanitycheckError("Error: Run ID could not parsed from the RUN folder : " + self.run_dir))
+        return self._run_id
+
+    @property
+    def raw_fastq_prefix(self):
+        """
+        """
+        if not hasattr(self, "_raw_fastq_prefix"):
+            if self.args.raw_fastq_prefix:
+                self._raw_fastq_prefix = self.args.raw_fastq_prefix
+            else:
+                if self.is_demultiplexed:
+                    self._raw_fastq_prefix = self.flowcell_id
+                else:
+                    self._raw_fastq_prefix = self.flowcell_id + "_" + self.run_id
+        return self._raw_fastq_prefix
 
     @property
     def number_of_mismatches(self):
@@ -352,10 +390,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             raw_fastq_dir = os.path.join(unaligned_dir, "raw_fastq")
             copy_done_file = os.path.join(raw_fastq_dir, "copy_done.Success")
 
-            if "_" in os.path.basename(self.run_dir.rstrip('/')):
-                raw_name_prefix = self.flowcell_id + "_" + self.run_id + "_L0" + lane
-            else:
-                raw_name_prefix = self.flowcell_id + "_L0" + lane
+            raw_name_prefix = self.raw_fastq_prefix +  "_L0" + lane
             copy_job_output_dependency = [
                 os.path.join(raw_fastq_dir, raw_name_prefix + ".summaryReport.html"),
                 os.path.join(raw_fastq_dir, raw_name_prefix + ".heatmapReport.html"),
@@ -563,7 +598,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             if rename_job:
                 jobs.append(rename_job)
     
-            self.add_copy_job_inputs(jobs)
+            self.add_copy_job_inputs(jobs, lane)
         return jobs
 
     def fastq(self):
@@ -639,12 +674,9 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
             for lane in self.lanes:
                 input_fastq_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "raw_fastq")
-                if "_" in os.path.basename(self.run_dir.rstrip('/')):
-                    input1 = os.path.join(input_fastq_dir, self.flowcell_id + "_" + self.run_id + "_L0" + lane + "_read_1.fq.gz")
-                    input2 = os.path.join(input_fastq_dir, self.flowcell_id + "_" + self.run_id + "_L0" + lane + "_read_2.fq.gz")
-                else:
-                    input1 = os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + lane + "_read_1.fq.gz")
-                    input2 = os.path.join(input_fastq_dir, self.flowcell_id + "_L0" + lane + "_read_2.fq.gz")
+                raw_name_prefix = self.raw_fastq_prefix +  "_L0" + lane
+                input1 = os.path.join(input_fastq_dir, raw_name_prefix + "_read_1.fq.gz")
+                input2 = os.path.join(input_fastq_dir, raw_name_prefix + "_read_2.fq.gz")
 
     
                 demuxfastqs_outputs, fastq_jobs_to_concat, fastq_jobs_to_append = self.generate_demuxfastqs_outputs(lane)
@@ -652,7 +684,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 fastq_job_output_dependency = []
                 if len(fastq_jobs_to_concat) == 0:
                     fastq_job_output_dependency.extend(demuxfastqs_outputs)
-                else: 
+                else:
                     for job in fastq_jobs_to_concat:
                         fastq_job_output_dependency.extend(job.output_files)
 
@@ -698,7 +730,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     self.report_inputs[lane]['index'][readset.name] = [metrics_file]
    
             jobs.extend(self.throttle_jobs(jobs_to_throttle)) 
-            self.add_copy_job_inputs(jobs)
+            self.add_copy_job_inputs(jobs, lane)
         return jobs
 
     def qc_graphs(self):
@@ -734,24 +766,25 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     samples=[readset.sample]
                 ))
                 self.report_inputs[lane]['qc'][readset.name] = os.path.join(output_dir, "mpsQC_" + region_name + "_stats.xml")
-    
-                # Also process the fastq of the indexes
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(output_dir + "_index"),
-                        bvatools.readsqc(
-                            readset.index_fastq1,
-                            readset.index_fastq2 if self.is_dual_index[lane] else None,
-                            "FASTQ",
-                            region_name,
-                            output_dir + "_index"
-                    )],
-                    name="qc." + readset.name + ".qc_index." + self.run_id + "." + lane,
-                    samples=[readset.sample]
-                ))
+   
+                if not self.is_demultiplexed:
+                    # Also process the fastq of the indexes
+                        jobs.append(
+                            concat_jobs([
+                            bash.mkdir(output_dir + "_index"),
+                            bvatools.readsqc(
+                                readset.index_fastq1,
+                                readset.index_fastq2 if self.is_dual_index[lane] else None,
+                                "FASTQ",
+                                region_name,
+                                output_dir + "_index"
+                        )],
+                        name="qc." + readset.name + ".qc_index." + self.run_id + "." + lane,
+                        samples=[readset.sample]
+                    ))
     
             self.add_to_report_hash("qc_graphs", lane, jobs)
-            self.add_copy_job_inputs(jobs)
+            self.add_copy_job_inputs(jobs, lane)
         return self.throttle_jobs(jobs)
 
     def fastqc(self):
@@ -773,17 +806,21 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         os.path.join(os.path.dirname(readset.fastq2), "fastqc.R2", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.fastq2))),
                         os.path.join(os.path.dirname(readset.fastq2), "fastqc.R2", re.sub(".fastq.gz", "_fastqc", os.path.basename(readset.fastq2)), re.sub(".fastq.gz", "_fastqc", "fastqc_data.txt"))
                     ]
-                input_dict[readset.index_fastq1] = [
-                    os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.Barcodes", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq1))),
-                    os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.Barcodes", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq1)))
-                ]
+                if not self.is_demultiplexed:
+                    input_dict[readset.index_fastq1] = [
+                        os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.Barcodes", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq1))),
+                        os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.Barcodes", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq1)))
+                    ]
                 for input1, outputs in input_dict.items():
                     unzip = False
                     if "R1" in input1:
                         job_suffix = "R1"
                         input2 = None
                         unzip = True
-                        self.report_inputs[lane]['index'][readset.name].append(outputs[0])
+                        if self.is_demultiplexed:
+                            self.report_inputs[lane]['index'][readset.name] = [outputs[0]]
+                        else:
+                            self.report_inputs[lane]['index'][readset.name].append(outputs[0])
                     elif "R2" in input1:
                         job_suffix = "R2"
                         input2 = None
@@ -810,7 +847,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     ))
     
             self.add_to_report_hash("fastqc", lane, jobs)
-            self.add_copy_job_inputs(jobs)
+            self.add_copy_job_inputs(jobs, lane)
         return self.throttle_jobs(jobs)
 
     def blast(self):
@@ -964,7 +1001,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 jobs.append(job)
     
             self.add_to_report_hash("blast", lane, jobs)
-            self.add_copy_job_inputs(jobs)
+            self.add_copy_job_inputs(jobs, lane)
         return self.throttle_jobs(jobs)
 
     def align(self):
@@ -988,7 +1025,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 jobs.append(job)
 
             self.add_to_report_hash("align", lane, jobs)
-            self.add_copy_job_inputs(jobs)
+            self.add_copy_job_inputs(jobs, lane)
         return self.throttle_jobs(jobs)
 
     def picard_mark_duplicates(self):
@@ -1015,7 +1052,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 jobs.append(job)
     
             self.add_to_report_hash("picard_mark_duplicates", lane, jobs)
-            self.add_copy_job_inputs(jobs)
+            self.add_copy_job_inputs(jobs, lane)
         return self.throttle_jobs(jobs)
 
     def metrics(self):
@@ -1062,7 +1099,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     ]
     
             self.add_to_report_hash("metrics", lane, jobs)
-            self.add_copy_job_inputs(jobs)
+            self.add_copy_job_inputs(jobs, lane)
         return self.throttle_jobs(jobs)
 
     def md5(self):
@@ -1126,10 +1163,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     name="md5." + self.run_id + "." + lane,
                     samples=self.readsets[lane]
                 )
-                self.add_copy_job_inputs([lane_job])
+                self.add_copy_job_inputs([lane_job], lane)
                 jobs.append(lane_job)
             else:
-                self.add_copy_job_inputs(lane_jobs)
+                self.add_copy_job_inputs(lane_jobs, lane)
                 jobs.extend(lane_jobs)
 
         return jobs
@@ -1205,10 +1242,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             copy_fastqc_jobs[0].output_files.append(os.path.join(self.output_dir, "L0" + lane, "report", "fastqc"))
     
             # Copy the MGI summary HTML report into the report folder
-            if "_" in os.path.basename(self.run_dir.rstrip('/')):
-                raw_name_prefix = self.flowcell_id + "_" + self.run_id + "_L0" + lane
-            else:
-                raw_name_prefix = self.flowcell_id + "_L0" + lane
+            raw_name_prefix = self.raw_fastq_prefix +  "_L0" + lane
             summary_report_html = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + readset.lane, "raw_fastq", raw_name_prefix + ".summaryReport.html")
             jobs.append(
                 concat_jobs(
@@ -1236,42 +1270,76 @@ class MGIRunProcessing(common.MUGQICPipeline):
             zip_job.samples = self.samples[lane]
             jobs.append(zip_job)
 
-        self.add_copy_job_inputs(jobs)
+        self.add_copy_job_inputs(jobs, lane)
         return self.throttle_jobs(jobs)
 
     def copy(self):
         """
         Copy the whole processing foler to where they can be serve or loaded into a LIMS
         """
-        jobs = []
+        jobs_to_concat = []
+
+        full_destination_folder = os.path.join(
+            config.param("copy", "destination_folder", type="dirpath"),
+            self.seqtype,
+            self.year,
+            self.instrument + "_" + self.flowcell_id + "_" + self.run_id
+        )
+        jobs_to_concat.append(
+            bash.mkdir(full_destination_folder)
+        )
+
         for lane in self.lanes:
-            full_destination_folder = os.path.join(
-                config.param("copy", "mgi_runs_root", type="dirpath"),
-                self.seqtype,
-                self.year,
-                self.instrument + "_" + self.flowcell_id + "_" + self.run_id
-            )
+
+            inputs = self.copy_job_inputs[lane]
             output = os.path.join(
                 full_destination_folder,
                 "copyCompleted." + lane + ".out"
             )
-            jobs.append(concat_jobs(
+
+            exclude_bam = config.param('copy', 'exclude_bam', required=False, type='boolean')
+            exclude_fastq_with_bam = config.param('copy', 'exclude_fastq_with_bam', required=False, type='boolean')
+            if exclude_bam and exclude_fastq_with_bam:
+                log.warn("Excluding both BAM and fastq files")
+
+            excluded_files = []
+
+            if exclude_bam or exclude_fastq_with_bam:
+                for readset in [readset for readset in self.readsets if readset.bam]:
+                    if exclude_bam:
+                        excluded_files.append(readset.bam + ".bam*")
+                        excluded_files.append(readset.bam + ".bai*")
+                    if exclude_fastq_with_bam and not exclude_bam:
+                        excluded_files.append(readset.fastq1)
+                        if readset.fastq2:
+                            excluded_files.append(readset.fastq2)
+
+            copy_command_output_folder = config.param('copy', 'copy_command', required=False).format(
+                exclusion_clauses="\\\n".join(
+                    [" --exclude '" + excludedfile.replace(self.output_dir + os.sep, "") + "'" for excludedfile in excluded_files]),
+                lane_number=lane,
+                run_id=self.run_id,
+                source=self.output_dir,
+                run_name=os.path.basename(self.run_dir)
+            )
+
+            jobs_to_concat.append(concat_jobs(
                 [
-                    bash.mkdir(os.path.join(os.path.dirname(full_destination_folder))),
-                    bash.cp(
-                        os.path.join(self.output_dir, "L0" + lane, "."),
-                        full_destination_folder,
-                        recursive=True,
-                        update=True
+                    Job(
+                        command=copy_command_output_folder
                     ),
                     bash.touch(output)
                 ],
-                input_dependency=self.copy_job_inputs,
-                output_dependency=[output],
-                name="copy." + self.run_id + "." + lane,
-                samples=self.samples[lane]
+                input_dependency=inputs,
+                output_dependency=[output]
             ))
-        return jobs
+
+        job = concat_jobs(
+            jobs_to_concat,
+            name="copy." + self.run_id,
+            samples=self.samples[lane]
+        )
+        return [job]
 
     def final_notification(self):
         """
@@ -1282,7 +1350,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         inputs = []
         for lane in self.lanes:
             full_destination_folder = os.path.join(
-                config.param("copy", "mgi_runs_root", type="dirpath"),
+                config.param("copy", "destination_folder", type="dirpath"),
                 self.seqtype,
                 self.year,
                 self.instrument + "_" + self.flowcell_id + "_" + self.run_id
@@ -1291,7 +1359,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 full_destination_folder,
                 "copyCompleted." + lane + ".out"
             ))
-            log.error("\n".join(inputs))
 
         notification_job = bash.touch(os.path.join(self.output_dir,  self.run_id + "_" + self.flowcell_id + "_processing.done"))
         notification_job.input_files = inputs
@@ -1305,11 +1372,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
     # Utility methods
     #
 
-    def add_copy_job_inputs(self, jobs):
+    def add_copy_job_inputs(self, jobs, lane):
         for job in jobs:
             # we first remove dependencies of the current job, since we will have a dependency on that job
-            self.copy_job_inputs = [item for item in self.copy_job_inputs if item not in job.input_files]
-            self.copy_job_inputs.extend(job.output_files)
+            self.copy_job_inputs[lane] = [item for item in self.copy_job_inputs[lane] if item not in job.input_files]
+            self.copy_job_inputs[lane].extend(job.output_files)
 
     def add_to_report_hash(self, step_name, lane, jobs=[]):
         report_hash = {
@@ -1488,7 +1555,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
         writer.writeheader()
         # barcode validation
-        if re.search("B", self.mask[lane]):
+        if re.search("B", self.mask[lane]) and not self.args.allow_barcode_collision:
             self.validate_barcodes(lane)
         index_lengths = self.get_smallest_index_length(lane)
         for readset in self.readsets[lane]:

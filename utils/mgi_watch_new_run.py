@@ -256,12 +256,6 @@ def print_genpipes_scripts(
     print len(sample_sheet_rows)
     print sample_sheet_rows[0]['Index']
 
-    # Check if --raw-fastq' flag should be used in the pipeline call
-    if is_demultiplexed:
-        raw_fastq = False
-    else:
-        raw_fastq = True
-
     if not os.path.exists(os.path.join(genpipes_scr_dir, project, run)):
         os.makedirs(os.path.join(genpipes_scr_dir, project, run))
 
@@ -275,10 +269,9 @@ module load mugqic/python/2.7.14 mugqic_dev/genpipes/3.1.6 && \\
 mkdir -p {process_dir}/{process_dir_suffix} && \\
 python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py \\
   -c $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.base.ini $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh38/Homo_sapiens.GRCh38.ini \\
-  --no-json -l debug {raw_fastq} {extra_options} \\
+  --no-json -l debug {demux_fastq}{lane}{extra_options} \\
   -d /nb/Research/MGISeq/{sequencer_path}/{run_folder_basename} \\
   -r {samplesheet_dir}/{process_dir_suffix}/{outfile_prefix}.sample_sheet.csv \\
-  {lane} \\
   -o {process_dir}/{process_dir_suffix} \\
   > {process_dir}/{project}/{run}/{outfile_prefix}.sh \\
   2> {process_dir}/{project}/{run}/{outfile_prefix}.trace.log""".format(
@@ -286,11 +279,11 @@ python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py
         process_dir_suffix=project+"/"+run,
         outfile_prefix=project+"."+run+".L0"+lane if lane else project+"."+run,
         samplesheet_dir=samplesheet_dir,
-        raw_fastq="--raw-fastq " if raw_fastq else "",
+        demux_fastq="--demux-fastq " if is_demultiplexed else "",
         project=project,
         run_folder_basename=run_folder_basename,
         run=run,
-        lane="--lane "+lane if lane else "",
+        lane="--lane "+lane+" " if lane else "",
         sequencer_path=sequencer_path,
         extra_options=extra_options
     ))
