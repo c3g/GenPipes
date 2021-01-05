@@ -848,11 +848,11 @@ def parse_mgi_raw_readset_files(
         readset.index_fastq1 = re.sub("_R1_", "_I1_", readset.fastq1)
         readset.index_fastq2 = re.sub("_R2_", "_I2_", readset.fastq2)
 
-        readsets.append(readset)
-        sample.add_readset(readset)
+#        readsets.append(readset)
+#        sample.add_readset(readset)
 
-    # Searching for a matching reference for the specified species
-    for readset in readsets:
+        # Searching for a matching reference for the specified species
+#    for readset in readsets:
         readset._indexes = get_index(readset, bioinfo_file, seqtype)
 
         genome_root = config.param('DEFAULT', 'genome_root', type="dirpath")
@@ -889,9 +889,9 @@ def parse_mgi_raw_readset_files(
                         output_dir,
                         "Aligned." + readset.lane,
                         'alignment',
-                        readset.sample.name,
+                        sample_name,
                         'run' + readset.run + "_" + readset.lane,
-                        readset.sample.name + "." + readset.library + ".sorted"
+                        sample_name + "." + readset.library + ".sorted"
                     )
 
                 else:
