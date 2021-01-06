@@ -216,10 +216,16 @@ class MGIRunProcessing(common.MUGQICPipeline):
     @property
     def year(self):
         """
+        Get year from sample sheet
         """
         if not hasattr(self, "_year"):
-            self._year = "2020"
-        return self._year 
+            dates = set([date for date in list(set([line['Run_Date'] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter=',', quotechar='"')]))])
+            if len(list(dates)) > 1:
+                _raise(SanitycheckError("More than one date were found in the sample sheet for the run \"" + self._run_id + "\""))
+            else:
+                self._year = list(dates)[0].split("-")[0]
+        return self._year
+ 
 
 #    @property
 #    def run_id(self):
