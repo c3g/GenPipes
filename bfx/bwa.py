@@ -44,7 +44,7 @@ def mem(in1fastq, in2fastq=None, out_sam=None, read_group=None, ref=None, ini_se
     return Job(
         [in1fastq, in2fastq, ref + ".bwt" if ref else None],
         [out_sam],
-        [["bwa_mem", "module_bwa"]],
+        [[ini_section, "module_bwa"]],
         command="""\
 bwa mem {other_options} \\
   {read_group} \\

@@ -27,7 +27,7 @@ import os
 from core.config import *
 from core.job import * 
 
-def bamqc(input_bam, output_directory, output, options):
+def bamqc(input_bam, output_directory, output, options, ini_section='qualimap'):
 
     inputs = [input_bam]
     outputs = [output]
@@ -38,8 +38,8 @@ def bamqc(input_bam, output_directory, output, options):
         inputs,
         outputs,
         [
-            ['qualimap', 'module_java'],
-            ['qualimap', 'module_qualimap'],
+            [ini_section, 'module_java'],
+            [ini_section, 'module_qualimap'],
         ],
         command="""\
 qualimap bamqc {other_options} \\
@@ -48,8 +48,8 @@ qualimap bamqc {other_options} \\
             input_bam=input_bam,
             output_directory=output_directory,
             other_options=options,
-#            bed="\\\n  --feature-file " + bed if bed else "", 
-            ram=config.param('qualimap', 'ram'),
+#            bed="\\\n  --feature-file " + bed if bed else "",
+            ram=config.param(ini_section, 'ram'),
         ),
         removable_files=[]
     )
