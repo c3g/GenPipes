@@ -1209,7 +1209,8 @@ END
                         input,
                         qualimap_directory,
                         output,
-                        options
+                        options,
+                        'dna_sample_qualimap'
                         )
                     ],
                     name="dna_sample_qualimap."+sample.name,
