@@ -111,8 +111,8 @@ hic:
 14- identify_peaks
 15- create_hic_file
 16- Cram output
-17- Reproducibility Score
-18- Quality Score
+17- Reproducibility_Score
+18- Quality_Score
 19- multiqc_report
 ----
 ```
