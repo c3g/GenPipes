@@ -1445,6 +1445,7 @@ done""".format(
                 name="macs2_callpeak_report." + str(time.time())#".".join([sample.name for sample in self.samples])
                 )
             )
+        return jobs
 
 
     def homer_annotate_peaks(self):
