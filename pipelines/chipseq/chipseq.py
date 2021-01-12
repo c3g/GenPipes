@@ -39,7 +39,6 @@ import utils.utils
 
 from pipelines import common
 
-from bfx import bash
 from bfx import bwa
 from bfx import gq_seq_utils
 from bfx import homer
@@ -51,6 +50,8 @@ from bfx import samtools
 from bfx import tools
 from bfx import ucsc
 # from pipelines.dnaseq import dnaseq
+
+from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
 
