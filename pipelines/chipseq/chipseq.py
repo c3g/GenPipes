@@ -463,13 +463,17 @@ pandoc --to=markdown \\
             # metrics_file = alignment_file_prefix + ".sorted.dup.metrics"
 
             jobs.append(
-                sambamba.markdup(
-                    input_bam,
-                    output_bam,
-                    tmp_dir=config.param('sambamba_mark_duplicates', 'tmp_dir', required=True)
-                ),
+                concat_jobs([
+                    bash.mkdir(os.path.dirname(output_bam)),
+                    sambamba.markdup(
+                        input_bam,
+                        output_bam,
+                        tmp_dir=config.param('sambamba_mark_duplicates', 'tmp_dir', required=True)
+                        )
+                    ],
                 name="picard_mark_duplicates." + sample.name,
                 sample=[sample]
+                )
             )
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.picard_mark_duplicates.md")
