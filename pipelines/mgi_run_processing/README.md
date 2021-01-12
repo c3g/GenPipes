@@ -1,59 +1,46 @@
 [TOC]
 
 
-Illumina Run Processing Pipeline
+MGI Run Processing Pipeline
 ================================
 
-The standard MUGQIC Illumina Run Processing pipeline uses the Illumina bcl2fastq
-software to convert and demultiplex the base call files to fastq files. The
+The standard MUGQIC MGI Run Processing pipeline uses fastq files produced
+by the sequencer, then does demultiplexing. Finally, the
 pipeline runs some QCs on the raw data, on the fastq and on the alignment.
 
 Sample Sheets
 -------------
 
-The pipeline uses two input sample sheets. The first one is the standard Casava
-sheet, a csv file having the following columns (please refer to the Illumina
-Casava user guide):
+The pipeline uses one input sample sheet.
+CURRENTLY BASED ON MGI RUN PROCESSING GOOGLE SHEET (https://docs.google.com/spreadsheets/d/1Jk11bQUJdqVg37gfn7ndfk-g9ke96tsjCfAsf3r1xdA)
+A csv file having the following columns :
 
-- `SampleID`
-- `FCID`
-- `SampleRef`
-- `Index`
-- `Description`
-- `Control`
-- `Recipe`
-- `Operator`
-- `SampleProject`
-
-Example:
-
-    FCID,Lane,SampleID,SampleRef,Index,Description,Control,Recipe,Operator,SampleProject
-    H84WNADXX,1,sample1_MPS0001,,TAAGGCGA-AGAGTAGA,,N,,,nanuq
-    H84WNADXX,1,sample47_MPS0047,,GTAGAGGA-CTAAGCCT,,N,,,nanuq
-
-
-The second sample sheet is called the Nanuq run sheet. It's a csv file with the
-following minimal set of mandatory columns (the column order in the file doesn't
-matter)
-
-- `ProcessingSheetId` Must be the same as the `SampleID` from the Casava Sheet.
-- `Name` The sample name put in RG headers of bam files and on filename on disk.
-- `Run` The run number.
-- `Region` The lane number.
-- `Library Barcode` The library barcode put in .bam's RG headers and on disk
-- `Library Source` The type of library. If this value contains `RNA` or `cDNA`,
-`STAR` will be used to make the aligmnent, otherwise, `bwa_mem` will be used
-- `Library Type` Used to determine is the sample is from cDNA/RNA when the
-`Library Source` is `Library`
-- `BED Files` The name of the BED file containing the genomic targets. This is
-the `filename` parameter passed to the `fetch_bed_file_command`
-- `Genomic Database` The reference used to make the alignment and calculate aligments metrics
+- Sample
+- Readset
+- Library
+- Project
+- Project ID
+- Protocol
+- Index
+- Pool ID
+- Run ID
+- Flowcell ID
+- Lane
+- Sequencer
+- Sequencer ID
 
 Example:
+    Sample,Readset,Library,Project,Project ID,Protocol,Index,PoolID,RunID,FlowcellID,Lane,Sequencer,SequencerID
+    LSPQ_Viral_Culture_dil_10-1_10cycles,LSPQ_Viral_Culture_dil_10-1_10cycles_PROD_000034-A01,PROD_000034-A01,LSPQ,,CleanPlex_MGI,1,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+    LSPQ_Viral_Culture_dil_10-2_10cycles,LSPQ_Viral_Culture_dil_10-2_10cycles_PROD_000034-B01,PROD_000034-B01,LSPQ,,CleanPlex_MGI,2,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+    LSPQ_Viral_Culture_dil_10-3_10cycles,LSPQ_Viral_Culture_dil_10-3_10cycles_PROD_000034-C01,PROD_000034-C01,LSPQ,,CleanPlex_MGI,3,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+    LSPQ_Nasal_Swab_Neg_ctl_10cycles,LSPQ_Nasal_Swab_Neg_ctl_10cycles_PROD_000034-A02,PROD_000034-A02,LSPQ,,CleanPlex_MGI,25,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+    LSPQ_Viral_Culture_dil_10-4_13cycles,LSPQ_Viral_Culture_dil_10-4_13cycles_PROD_000034-A03,PROD_000034-A03,LSPQ,,CleanPlex_MGI,28,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+    LSPQ_Viral_Culture_dil_10-5_13cycles,LSPQ_Viral_Culture_dil_10-5_13cycles_PROD_000034-B03,PROD_000034-B03,LSPQ,,CleanPlex_MGI,29,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+    L00241026_dil_10-1_13cycles,L00241026_dil_10-1_13cycles_PROD_000034-E03,PROD_000034-E03,LSPQ,,CleanPlex_MGI,33,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+    L00241026_dil_10-2_13cycles,L00241026_dil_10-2_13cycles_PROD_000034-F03,PROD_000034-F03,LSPQ,,CleanPlex_MGI,34,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
+    Arctic_RT_reaction_13cycles,Arctic_RT_reaction_13cycles_PROD_000034-B04,PROD_000034-B04,LSPQ,,CleanPlex_MGI,4,LSPQ_Pool_01,1004MG01B,V300035341,2,Marie Curie,01
 
-    Name,Genomic Database,Library Barcode,Library Source,Library Type,Run,Region,BED Files,ProcessingSheetId
-    sample1,Rattus_norvegicus:Rnor_5.0,MPS0001,RNA,Nextera XT,1419,1,toto.bed,sample1_MPS0001
-    sample47,,MPS1047,Library,Nextera XT,1419,2,toto.bed,sample47_MPS1047
 
 
 Usage
@@ -61,19 +48,23 @@ Usage
 ```
 #!text
 
-usage: illumina_run_processing.py [-h] [--help] [-c CONFIG [CONFIG ...]]
-                                  [-s STEPS] [-o OUTPUT_DIR]
-                                  [-j {pbs,batch,daemon,slurm}] [-f] [--json]
-                                  [--report] [--clean]
-                                  [-l {debug,info,warning,error,critical}]
-                                  [-d RUN_DIR] [--lane LANE_NUMBER]
-                                  [-r READSETS] [-i CASAVA_SHEET_FILE]
-                                  [-x FIRST_INDEX] [-y LAST_INDEX]
-                                  [-m NUMBER_OF_MISMATCHES] [-w] [-v]
+usage: mgi_run_processing.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
+                             [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}]
+                             [-f] [--no-json] [--report] [--clean]
+                             [-l {debug,info,warning,error,critical}]
+                             [--sanity-check]
+                             [--container {wrapper, singularity} <IMAGE PATH>]
+                             [-r READSETS] [-d RUN_DIR] [--run-id RUN_ID]
+                             [--flowcell-id FLOWCELL_ID]
+                             [--raw-fastq-prefix RAW_FASTQ_PREFIX]
+                             [--lane LANE_NUMBER] [--demux-fastq]
+                             [-x FIRST_INDEX] [-y LAST_INDEX]
+                             [-m NUMBER_OF_MISMATCHES]
+                             [--allow-barcode-collision] [-v]
 
-Version: 3.1.4
+Version: 3.1.6-beta
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
@@ -89,8 +80,9 @@ optional arguments:
                         job scheduler type (default: slurm)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
-  --json                create a JSON file per analysed sample to track the
-                        analysis status (default: false)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -102,68 +94,93 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
-  -d RUN_DIR, --run RUN_DIR
-                        run directory
-  --lane LANE_NUMBER    lane number
+  --sanity-check        run the pipeline in `sanity check mode` to verify that
+                        all the input files needed for the pipeline to run are
+                        available on the system (default: false)
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a validsingularity
+                        image path
   -r READSETS, --readsets READSETS
-                        nanuq readset file. The default file is
-                        'run.nanuq.csv' in the output folder. Will be
-                        automatically downloaded if not present.
-  -i CASAVA_SHEET_FILE  illumina casava sheet. The default file is
-                        'SampleSheet.nanuq.csv' in the output folder. Will be
-                        automatically downloaded if not present
-  -x FIRST_INDEX        first index base to use for demultiplexing
+                        Sample sheet for the MGI run to process (mandatory)
+  -d RUN_DIR, --run RUN_DIR
+                        Run directory (mandatory)
+  --run-id RUN_ID       Run ID. Default is parsed from the run folder
+  --flowcell-id FLOWCELL_ID
+                        Flowcell ID. Default is parsed from the run folder
+  --raw-fastq-prefix RAW_FASTQ_PREFIX
+                        Prefix used to search for the raw fastq from the
+                        sequencer. Default <FLOWCELL_ID>_<RUN_ID>
+  --lane LANE_NUMBER    Lane number (to only process the given lane)
+  --demux-fastq         Fastq files given by the sequencer are already
+                        demultiplexed : NO DEMULTIPLEXING will be performed by
+                        the pipeline
+  -x FIRST_INDEX        First index base to use for demultiplexing
                         (inclusive). The index from the sample sheet will be
                         adjusted according to that value.
-  -y LAST_INDEX         last index base to use for demultiplexing (inclusive)
+  -y LAST_INDEX         Last index base to use for demultiplexing (inclusive)
   -m NUMBER_OF_MISMATCHES
-                        number of index mistmaches allowed for demultiplexing
+                        Number of index mistmaches allowed for demultiplexing
                         (default 1). Barcode collisions are always checked.
-  -w, --force-download  force the download of the samples sheets (default:
-                        false)
+  --allow-barcode-collision
+                        Allow barcode collision by not comparing barcode
+                        sequences to each other (usually decreases the
+                        demultiplexing efficiency).
   -v, --version         show the version information and exit
 
 Steps:
 ------
 1- index
 2- fastq
-3- align
-4- picard_mark_duplicates
-5- metrics
-6- blast
-7- qc_graphs
-8- md5
-9- copy
-10- end_copy_notification
+3- qc_graphs
+4- fastqc
+5- blast
+6- align
+7- picard_mark_duplicates
+8- metrics
+9- report
+10- copy
+11- final_notification
 
 ```
 index
 -----
-Generate a file with all the indexes found in the index-reads of the run.
-
-The input barcode file is a two columns tsv file. Each line has a
-`barcode_sequence` and the corresponding `barcode_name`. This file can be
-generated by a LIMS.
-
-The output is a tsv file named `RUNFOLDER_LANENUMBER.metrics` that will be
-saved in the output directory. This file has four columns, the barcode/index
-sequence, the index name, the number of reads and the number of reads that have
-passed the filter.
+First copy all the files of the lane from the sequencer deposit folder to the processing folder,
+into "raw_fastq".
+Then, if demultiplexing already done on sequencer, formerly the case when MGI adapters were used, then
+    rename the fastq files and move them from "raw_fastq" to "Unaligned.LANE" folder,
+    --> pipeline will SKIP demultiplexing (i.e. next step, fastq).
+Else, (i.e. demultiplexing still remains to be done) nothing remains to do here : 
+    everything is in place for the demultiplexing to happen in the next step
+*TO DO* - in both cases, retrieve index stats from the sequencer output files to build a proper index report
 
 fastq
 -----
-Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
-software.
+*** In the future, may generate the fastq files from the raw CAL files. ***
+Perform demultplexing of the reads with fgbio DemuxFastqs
 
-The index base mask is calculated according to the sample and run configuration;
-and also according the mask parameters received (first/last index bases). The
-Casava sample sheet is generated with this mask. The default number of
-mismatches allowed in the index sequence is 1 and can be overrided with an
-command line argument. No demultiplexing occurs when there is only one sample in
-the lane.
+qc_graphs
+---------
+Generate some QC Graphics and a summary XML file for each sample using 
+[BVATools](https://bitbucket.org/mugqic/bvatools/).
 
-An optional notification command can be launched to notify the start of the
-fastq generation with the calculated mask.
+Files are created in a 'qc' subfolder of the fastq directory. Examples of
+output graphic:
+
+- Per cycle qualities, sequence content and sequence length;
+- Known sequences (adaptors);
+- Abundant Duplicates;
+
+fastqc
+------
+
+blast
+-----
+Run blast on a subsample of the reads of each sample to find the 20 most
+frequent hits.
+
+The `runBlast.sh` tool from MUGQIC Tools is used. The number of reads to
+subsample can be configured by sample or for the whole lane. The output will be
+in the `Blast_sample` folder, under the Unaligned folder.
 
 align
 -----
@@ -171,7 +188,7 @@ Align the reads from the fastq file, sort the resulting .bam and create an index
 of that .bam.
 
 An basic aligment is performed on a sample when the `SampleRef` field of the
-Illumina sample sheet match one of the regexp in the configuration file and the
+MGI sample sheet match one of the regexp in the configuration file and the
 corresponding genome (and indexes) are installed.
 
 `STAR` is used as a splice-junctions aware aligner when the sample
@@ -200,49 +217,16 @@ calculate the coverage of each target region.
 metrics from the BAM file. The bait and interval list is automatically created
 from the specicied `BED Files`.
 
-blast
------
-Run blast on a subsample of the reads of each sample to find the 20 most
-frequent hits.
-
-The `runBlast.sh` tool from MUGQIC Tools is used. The number of reads to
-subsample can be configured by sample or for the whole lane. The output will be
-in the `Blast_sample` folder, under the Unaligned folder.
-
-qc_graphs
----------
-Generate some QC Graphics and a summary XML file for each sample using 
-[BVATools](https://bitbucket.org/mugqic/bvatools/).
-
-Files are created in a 'qc' subfolder of the fastq directory. Examples of
-output graphic:
-
-- Per cycle qualities, sequence content and sequence length;
-- Known sequences (adaptors);
-- Abundant Duplicates;
-
-md5
----
-Create md5 checksum files for the fastq, bam and bai using the system 'md5sum'
-util.
-
-One checksum file is created for each file.
+report
+------
+Generate a JSON file reporting the whole pipeline
 
 copy
 ----
-Copy processed files to another place where they can be served or loaded into a
-LIMS.
+Copy the whole processing foler to where they can be serve or loaded into a LIMS
 
-The destination folder and the command used can be set in the configuration
-file.
-
-An optional notification can be sent before the copy. The command used is in the configuration file.
-
-end_copy_notification
----------------------
-Send an optional notification to notify that the copy is finished.
-
-The command used is in the configuration file. This step is skipped when no
-command is provided.
+final_notification
+------------------
+Writes a simple '.done' file when all pipeline is done processing
 
 
