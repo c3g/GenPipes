@@ -302,14 +302,18 @@ class ChipSeq(common.Illumina):
             filtered_readset_bam = readset_bam_prefix + "filtered.bam"
 
             jobs.append(
-                samtools.view(
-                    readset_bam,
-                    filtered_readset_bam,
-                    "-b -F4 -q " + config.param('samtools_view_filter', 'min_mapq') + " -@ " + config.param('samtools_view_filter', 'threads')
-                    ),
-            name="samtools_view_filter." + readset.name,
-            samples=[readset.sample]
-            )
+                concat_jobs([
+                        bash.mkdir(os.path.dirname(filtered_readset_bam)),
+                        samtools.view(
+                            readset_bam,
+                            filtered_readset_bam,
+                            "-b -F4 -q " + config.param('samtools_view_filter', 'min_mapq') + " -@ " + config.param('samtools_view_filter', 'threads')
+                            ),
+                        ],
+                        name="samtools_view_filter." + readset.name,
+                        samples=[readset.sample]
+                        )
+                )
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.samtools_view_filter.md")
         jobs.append(
@@ -331,7 +335,8 @@ pandoc --to=markdown \\
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="samtools_view_filter_report")
+                name="samtools_view_filter_report"
+                )
         )
 
         return jobs
