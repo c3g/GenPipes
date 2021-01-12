@@ -302,7 +302,7 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--genpipes_scripts_outdir', help="Path where the genpipes scripts will be written and executed in their respective project/run/lane subfolder", required=False, dest="genpipes_scr_dir", default='/nb/Research/processingmgiscratch/genpipes_scripts')
     parser.add_argument('-p', '--processing_dir', help="Path where the MGI run processging will happen", required=False, dest="process_dir", default='/nb/Research/processingmgiscratch/processing')
     parser.add_argument('-r', '--run', help="RUN ID : sample sheets and genpipes_scripts will only be created for the specified RUN ID", required=False, dest="run_id")
-    parser.add_argument('-d', '--demultiplexed-fastqs', help="Fastqs of the run are expected to be demultiplexed : will prepare genpipes scripts without --raw-fastq flag", action="store_true", required=False, dest="is_demultiplexed")
+    parser.add_argument('-d', '--demultiplexed-fastqs', help="Fastqs of the run are expected to be demultiplexed : will prepare genpipes scripts with the --demux-fastq flag", action="store_true", required=False, dest="is_demultiplexed")
     parser.add_argument('-e', '--extra-options', help="Extra parameters to include in the genpipes command - mostly used for tests and corner cases...", required=False, dest="extra_options", default="")
     parser.add_argument('--loglevel', help="Standard Python log level", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
 
