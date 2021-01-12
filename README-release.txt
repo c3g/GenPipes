@@ -42,6 +42,9 @@ pipelines/tumor_pair/tumor_pair.py --help > pipelines/tumor_pair/README.md
 # For Illumina pipeline, just produce a regular README, without diagram
 pipelines/illumina_run_processing/illumina_run_processing.py --help > pipelines/illumina_run_processing/README.md
 
+# For MGI pipeline, just produce a regular README, without diagram
+pipelines/mgi_run_processing/mgi_run_processing.py --help > pipelines/mgi_run_processing/README.md
+
 # Tag the branch and push the tag. You'll need to have a gpg signature for this. Extra precaution
 git tag -s 3.5.0 -m 'Release 3.5.0'
 git push -u origin --tags
