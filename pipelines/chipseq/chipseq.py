@@ -1252,7 +1252,7 @@ done""".format(
             readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
             sample_merge_bam = os.path.join(output_dir, sample.name + ".merged.bam")
             sample_merge_mdup_bam = os.path.join(output_dir, sample.name + ".merged.mdup.bam")
-            sample_merge_mdup_metrics_file = os.path.join(output_dir, sample.name + ".merged.mdup.metrics")
+            # sample_merge_mdup_metrics_file = os.path.join(output_dir, sample.name + ".merged.mdup.metrics")
 
             mkdir_job = bash.mkdir(output_dir)
 
@@ -1282,11 +1282,16 @@ done""".format(
                     Job(
                         command="export TMPDIR={tmp_dir}".format(tmp_dir=config.param('ihec_preprocess_files', 'tmp_dir'))
                         ),
-                    picard.mark_duplicates(
-                        [sample_merge_bam],
+                    sambamba.markdup(
+                        sample_merge_bam,
                         sample_merge_mdup_bam,
-                        sample_merge_mdup_metrics_file
+                        tmp_dir=config.param('sambamba_mark_duplicates', 'tmp_dir', required=True)
                         )
+                    # picard.mark_duplicates(
+                    #     [sample_merge_bam],
+                    #     sample_merge_mdup_bam,
+                    #     sample_merge_mdup_metrics_file
+                    #     )
                     ],
                     name="ihec_preprocess_mark_duplicates." + sample.name
                     )
