@@ -841,9 +841,10 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                             output,
                             other_options
                             )
-                        ]),
-                    name="macs2_callpeak." + contrast.real_name,
-                    removable_files=[output_dir]
+                        ],
+                        name="macs2_callpeak." + contrast.real_name,
+                        removable_files=[output_dir]
+                        )
                     )
 
               ## For ihec: exchange peak score by log10 q-value and generate bigBed
