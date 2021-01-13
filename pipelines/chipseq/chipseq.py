@@ -853,7 +853,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                         Job([os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")],
                             [os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")],
                             command="""\
-awk '{if ($9 > 1000) {$9 = 1000}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}' {peak_file} > {peak_bed_file}""".format(
+awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}' {peak_file} > {peak_bed_file}""".format(
     peak_file=os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak"),
     peak_bed_file=os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")
     )
@@ -953,7 +953,7 @@ done""".format(
                         Job([os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")],
                             [os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")],
                             command="""\
-awk '{if ($9 > 1000) {$9 = 1000}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}' {peak_file} > {peak_bed_file}""".format(
+awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
     peak_file=os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak"),
     peak_bed_file=os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")
     )
