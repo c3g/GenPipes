@@ -355,15 +355,15 @@ pandoc --to=markdown \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
-            readset_bams = self.select_input_files([[os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets], [readset.bam for readset in sample.readsets]])
-            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam") for readset in sample.readsets]
+            sample_bam = os.path.join(alignment_directory, sample.name + ".merged.bam")
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
                 readset_bam = readset_bams[0]
                 readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
                 sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
-    
+
                 jobs.append(
                     concat_jobs([
                         bash.mkdir(
@@ -471,12 +471,12 @@ pandoc --to=markdown \\
                         tmp_dir=config.param('sambamba_mark_duplicates', 'tmp_dir', required=True)
                         )
                     ],
-                name="picard_mark_duplicates." + sample.name,
+                name="sambamba_mark_duplicates." + sample.name,
                 samples=[sample]
                 )
             )
 
-        report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.picard_mark_duplicates.md")
+        report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.sambamba_mark_duplicates.md")
         jobs.append(
             Job(
                 [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam") for sample in self.samples],
