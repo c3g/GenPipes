@@ -472,7 +472,7 @@ pandoc --to=markdown \\
                         )
                     ],
                 name="picard_mark_duplicates." + sample.name,
-                sample=[sample]
+                samples=[sample]
                 )
             )
 
