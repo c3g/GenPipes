@@ -677,7 +677,7 @@ pandoc --to=markdown \\
                 illuminaPE=False,
                 other_options=other_options
                 )
-            job.name = "homer_make_tag_directory." + sample.name,
+            job.name = "homer_make_tag_directory." + sample.name
             job.removable_files = [output_dir]
             jobs.append(job)
 
