@@ -300,6 +300,7 @@ class ChipSeq(common.Illumina):
             readset_bam_prefix = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.name, readset.name + ".sorted.")
             readset_bam = readset_bam_prefix + "bam"
             filtered_readset_bam = readset_bam_prefix + "filtered.bam"
+            filtered_readset_index_bam = readset_bam_prefix + "filtered.bam.bai"
 
             jobs.append(
                 concat_jobs([
@@ -309,6 +310,10 @@ class ChipSeq(common.Illumina):
                             filtered_readset_bam,
                             "-b -F4 -q " + config.param('samtools_view_filter', 'min_mapq') + " -@ " + config.param('samtools_view_filter', 'threads')
                             ),
+                        sambamba.index(
+                            filtered_readset_bam,
+                            filtered_readset_index_bam
+                            )
                         ],
                         name="samtools_view_filter." + readset.name,
                         samples=[readset.sample]
