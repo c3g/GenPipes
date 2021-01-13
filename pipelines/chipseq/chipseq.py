@@ -602,7 +602,7 @@ cp \\
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.metrics.md")
         jobs.append(
             Job(
-                [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam.flagstat") for sample in self.samples],
+                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam.flagstat") for sample in self.samples],
                 [report_metrics_file],
                 [['metrics', 'module_pandoc']],
                 # Retrieve number of aligned and duplicate reads from sample flagstat files
