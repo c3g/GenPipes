@@ -126,7 +126,7 @@ sambamba view {options} \\
         )
     )
 
-def flagstat(input, output, options):
+def flagstat(input, output, options=""):
 
     return Job(
         [input],
