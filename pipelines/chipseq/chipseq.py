@@ -547,8 +547,6 @@ cp \\
         The number of raw/filtered and aligned reads per sample are computed at this stage.
         """
 
-        alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name)
-
         # check the library status
         library, bam = {}, {}
         for readset in self.readsets:
@@ -564,6 +562,7 @@ cp \\
         jobs = []
 
         for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name)
             file_prefix = os.path.join(alignment_directory, sample.name + ".sorted.dup.")
 
             candidate_input_files = [[file_prefix + "bam"]]
