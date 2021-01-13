@@ -547,6 +547,8 @@ cp \\
         The number of raw/filtered and aligned reads per sample are computed at this stage.
         """
 
+        alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name)
+
         # check the library status
         library, bam = {}, {}
         for readset in self.readsets:
@@ -562,7 +564,7 @@ cp \\
         jobs = []
 
         for sample in self.samples:
-            file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
+            file_prefix = os.path.join(alignment_directory, sample.name + ".sorted.dup.")
 
             candidate_input_files = [[file_prefix + "bam"]]
             if bam[sample]:
@@ -570,22 +572,30 @@ cp \\
             [input] = self.select_input_files(candidate_input_files)
 
             jobs.append(
-                picard.collect_multiple_metrics(
-                    input,
-                    re.sub("bam", "all.metrics", input),
-                    library_type=library[sample]
-                ),
-                name="picard_collect_multiple_metrics." + sample.name,
-                samples=[sample]
-            )
+                concat_jobs([
+                    bash.mkdir(os.path.dirname(input)),
+                    picard.collect_multiple_metrics(
+                        input,
+                        re.sub("bam", "all.metrics", input),
+                        library_type=library[sample]
+                        )
+                    ],
+                    name="picard_collect_multiple_metrics." + sample.name,
+                    samples=[sample]
+                    )
+                )
 
             jobs.append(
-                sambamba.flagstat(
-                    os.path.join(self.output_dirs['alignment_output_directory'],sample.name, sample.name + ".sorted.dup.bam"),
-                    os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam.flagstat")
-                ),
-                name="metrics.flagstat." + sample.name
-            )
+                concat_jobs([
+                    bash.mkdir(os.path.dirname(input)),
+                    sambamba.flagstat(
+                        os.path.join(alignment_directory, sample.name + ".sorted.dup.bam"),
+                        os.path.join(alignment_directory, sample.name + ".sorted.dup.bam.flagstat")
+                        )
+                    ],
+                    name="metrics.flagstat." + sample.name
+                    )
+                )
 
         trim_metrics_file = os.path.join(self.output_dirs['metrics_output_directory'], "trimSampleTable.tsv")
         metrics_file = os.path.join(self.output_dirs['metrics_output_directory'], "SampleMetrics.stats")
@@ -593,7 +603,7 @@ cp \\
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.metrics.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam.flagstat") for sample in self.samples],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam.flagstat") for sample in self.samples],
                 [report_metrics_file],
                 [['metrics', 'module_pandoc']],
                 # Retrieve number of aligned and duplicate reads from sample flagstat files
@@ -660,17 +670,17 @@ pandoc --to=markdown \\
             output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name)
             other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
 
-            jobs.append(
-                homer.makeTagDir(
-                    output_dir,
-                    alignment_file,
-                    self.ucsc_genome,
-                    restriction_site=None,
-                    illuminaPE=False,
-                    other_options=other_options),
-            name="homer_make_tag_directory." + sample.name,
-            removable_files=[output_dir]
-            )
+            job = homer.makeTagDir(
+                output_dir,
+                alignment_file,
+                self.ucsc_genome,
+                restriction_site=None,
+                illuminaPE=False,
+                other_options=other_options
+                )
+            job.name = "homer_make_tag_directory." + sample.name,
+            job.removable_files = [output_dir]
+            jobs.append(job)
 
         return jobs
 
