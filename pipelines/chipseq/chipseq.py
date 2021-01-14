@@ -290,61 +290,61 @@ class ChipSeq(common.Illumina):
         return jobs
 
 
-    def samtools_view_filter(self):
-        """
-        Filter unique reads by mapping quality using [Samtools](http://www.htslib.org/).
-        """
+#     def samtools_view_filter(self):
+#         """
+#         Filter unique reads by mapping quality using [Samtools](http://www.htslib.org/).
+#         """
 
-        jobs = []
-        for readset in self.readsets:
-            readset_bam_prefix = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.name, readset.name + ".sorted.")
-            readset_bam = readset_bam_prefix + "bam"
-            filtered_readset_bam = readset_bam_prefix + "filtered.bam"
-            filtered_readset_index_bam = readset_bam_prefix + "filtered.bam.bai"
+#         jobs = []
+#         for readset in self.readsets:
+#             readset_bam_prefix = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.name, readset.name + ".sorted.")
+#             readset_bam = readset_bam_prefix + "bam"
+#             filtered_readset_bam = readset_bam_prefix + "filtered.bam"
+#             filtered_readset_index_bam = readset_bam_prefix + "filtered.bam.bai"
 
-            jobs.append(
-                concat_jobs([
-                        bash.mkdir(os.path.dirname(filtered_readset_bam)),
-                        samtools.view(
-                            readset_bam,
-                            filtered_readset_bam,
-                            "-b -F4 -q " + config.param('samtools_view_filter', 'min_mapq') + " -@ " + config.param('samtools_view_filter', 'threads')
-                            ),
-                        sambamba.index(
-                            filtered_readset_bam,
-                            filtered_readset_index_bam
-                            )
-                        ],
-                        name="samtools_view_filter." + readset.name,
-                        samples=[readset.sample]
-                        )
-                )
+#             jobs.append(
+#                 concat_jobs([
+#                         bash.mkdir(os.path.dirname(filtered_readset_bam)),
+#                         samtools.view(
+#                             readset_bam,
+#                             filtered_readset_bam,
+#                             "-b -F4 -q " + config.param('samtools_view_filter', 'min_mapq') + " -@ " + config.param('samtools_view_filter', 'threads')
+#                             ),
+#                         sambamba.index(
+#                             filtered_readset_bam,
+#                             filtered_readset_index_bam
+#                             )
+#                         ],
+#                         name="samtools_view_filter." + readset.name,
+#                         samples=[readset.sample]
+#                         )
+#                 )
 
-        report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.samtools_view_filter.md")
-        jobs.append(
-            Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.name, readset.name + ".sorted.filtered.bam") for readset in self.readsets],
-                [report_file],
-                [['samtools_view_filter', 'module_pandoc']],
-                command="""\
-mkdir -p {report_dir} && \\
-pandoc --to=markdown \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable min_mapq="{min_mapq}" \\
-  {report_template_dir}/{basename_report_file} \\
-  > {report_file}""".format(
-    min_mapq=config.param('samtools_view_filter', 'min_mapq', type='int'),
-    report_template_dir=self.report_template_dir,
-    basename_report_file=os.path.basename(report_file),
-    report_file=report_file, 
-    report_dir=self.output_dirs['report_output_directory']
-    ),
-                report_files=[report_file],
-                name="samtools_view_filter_report"
-                )
-        )
+#         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.samtools_view_filter.md")
+#         jobs.append(
+#             Job(
+#                 [os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.name, readset.name + ".sorted.filtered.bam") for readset in self.readsets],
+#                 [report_file],
+#                 [['samtools_view_filter', 'module_pandoc']],
+#                 command="""\
+# mkdir -p {report_dir} && \\
+# pandoc --to=markdown \\
+#   --template {report_template_dir}/{basename_report_file} \\
+#   --variable min_mapq="{min_mapq}" \\
+#   {report_template_dir}/{basename_report_file} \\
+#   > {report_file}""".format(
+#     min_mapq=config.param('samtools_view_filter', 'min_mapq', type='int'),
+#     report_template_dir=self.report_template_dir,
+#     basename_report_file=os.path.basename(report_file),
+#     report_file=report_file, 
+#     report_dir=self.output_dirs['report_output_directory']
+#     ),
+#                 report_files=[report_file],
+#                 name="samtools_view_filter_report"
+#                 )
+#         )
 
-        return jobs
+#         return jobs
 
     def sambamba_merge_bam_files(self):
         """
@@ -360,8 +360,8 @@ pandoc --to=markdown \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
-            readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam") for readset in sample.readsets]
-            sample_bam = os.path.join(alignment_directory, sample.name + ".merged.bam")
+            readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
+            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
@@ -406,6 +406,69 @@ pandoc --to=markdown \\
                     )
                 )
         return jobs
+
+
+    def samtools_view_filter(self):
+        """
+        Filter unique reads by mapping quality using [Samtools](http://www.htslib.org/).
+        """
+
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            output_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
+            output_bam_index = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam.bai")
+
+            # readset_bam_prefix = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.name, readset.name + ".sorted.")
+            # readset_bam = readset_bam_prefix + "bam"
+            # filtered_readset_bam = readset_bam_prefix + "filtered.bam"
+            # filtered_readset_index_bam = readset_bam_prefix + "filtered.bam.bai"
+
+            jobs.append(
+                concat_jobs([
+                        bash.mkdir(os.path.dirname(output_bam)),
+                        samtools.view(
+                            input_bam,
+                            output_bam,
+                            "-b -F4 -q " + config.param('samtools_view_filter', 'min_mapq') + " -@ " + config.param('samtools_view_filter', 'threads')
+                            ),
+                        sambamba.index(
+                            output_bam,
+                            output_bam_index
+                            )
+                        ],
+                        name="samtools_view_filter." + sample.name,
+                        samples=[sample]
+                        )
+                )
+
+        report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.samtools_view_filter.md")
+        jobs.append(
+            Job(
+                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.bam") for sample in self.samples],
+                [report_file],
+                [['samtools_view_filter', 'module_pandoc']],
+                command="""\
+mkdir -p {report_dir} && \\
+pandoc --to=markdown \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable min_mapq="{min_mapq}" \\
+  {report_template_dir}/{basename_report_file} \\
+  > {report_file}""".format(
+    min_mapq=config.param('samtools_view_filter', 'min_mapq', type='int'),
+    report_template_dir=self.report_template_dir,
+    basename_report_file=os.path.basename(report_file),
+    report_file=report_file, 
+    report_dir=self.output_dirs['report_output_directory']
+    ),
+                report_files=[report_file],
+                name="samtools_view_filter_report"
+                )
+        )
+
+        return jobs
+
 
     def picard_merge_sam_files(self):
         """
@@ -463,8 +526,8 @@ pandoc --to=markdown \\
         jobs = []
         for sample in self.samples:
             alignment_file_prefix = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name)
-            input_bam = alignment_file_prefix + ".merged.bam"
-            output_bam = alignment_file_prefix + ".sorted.dup.bam"
+            input_bam = alignment_file_prefix + ".sorted.filtered.bam"
+            output_bam = alignment_file_prefix + ".sorted.filtered.dup.bam"
             # metrics_file = alignment_file_prefix + ".sorted.dup.metrics"
 
             jobs.append(
@@ -485,7 +548,7 @@ pandoc --to=markdown \\
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.sambamba_mark_duplicates.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam") for sample in self.samples],
+                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in self.samples],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -589,8 +652,8 @@ cp \\
                 concat_jobs([
                     bash.mkdir(os.path.dirname(input)),
                     sambamba.flagstat(
-                        os.path.join(alignment_directory, sample.name + ".sorted.dup.bam"),
-                        os.path.join(alignment_directory, sample.name + ".sorted.dup.bam.flagstat")
+                        os.path.join(alignment_directory, sample.name + ".sorted.filtered.dup.bam"),
+                        os.path.join(alignment_directory, sample.name + ".sorted.filtered.dup.flagstat")
                         )
                     ],
                     name="metrics.flagstat." + sample.name
@@ -603,7 +666,7 @@ cp \\
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.metrics.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam.flagstat") for sample in self.samples],
+                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.flagstat") for sample in self.samples],
                 [report_metrics_file],
                 [['metrics', 'module_pandoc']],
                 # Retrieve number of aligned and duplicate reads from sample flagstat files
@@ -614,8 +677,8 @@ module load {sambamba} && \\
 cp /dev/null {metrics_file} && \\
 for sample in {samples}
 do
-  flagstat_file={alignment_dir}/$sample/$sample.sorted.dup.bam.flagstat
-  bam_file={alignment_dir}/$sample/$sample.sorted.dup.bam
+  flagstat_file={alignment_dir}/$sample/$sample.sorted.filtered.dup.flagstat
+  bam_file={alignment_dir}/$sample/$sample.sorted.filtered.dup.bam
   supplementarysecondary_alignment=`bc <<< $(grep "secondary" $flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
   mapped_reads=`bc <<< $(grep "mapped (" $flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$supplementarysecondary_alignment`
   duplicated_reads=`grep "duplicates" $flagstat_file | sed -e 's/ + [[:digit:]]* duplicates$//'`
@@ -666,7 +729,7 @@ pandoc --to=markdown \\
 
         jobs = []
         for sample in self.samples:
-            alignment_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam")
+            alignment_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam")
             output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name)
             other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
 
@@ -810,8 +873,8 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
 
         for contrast in self.contrasts:
             if contrast.treatments:
-                treatment_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam") for sample in contrast.treatments]
-                control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam") for sample in contrast.controls]
+                treatment_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.treatments]
+                control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.controls]
                 output_dir = os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name)
 
 
@@ -909,8 +972,8 @@ done""".format(
 
         for contrast in self.contrasts:
             if contrast.treatments:
-                treatment_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam") for sample in contrast.treatments]
-                control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam") for sample in contrast.controls]
+                treatment_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.treatments]
+                control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.controls]
                 output_dir = os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name)
 
 
@@ -1305,11 +1368,13 @@ done""".format(
         runs spp to estimate NSC and RSC ENCODE metrics. For more information: https://github.com/kundajelab/phantompeakqualtools
         """
         jobs = []
-        alignment_dir = self.output_dirs['ihecA_output_directory']
+        # alignment_dir = self.output_dirs['ihecA_output_directory']
+        alignment_dir = self.output_dirs['alignment_output_directory']
+
         output_dir = self.output_dirs['ihecM_output_directory']
 
         for sample in self.samples:
-            sample_merge_mdup_bam = os.path.join(alignment_dir, sample.name + ".merged.mdup.bam")
+            sample_merge_mdup_bam = os.path.join(alignment_dir, sample.name, sample.name + ".sorted.filtered.dup.bam")
             output = os.path.join(output_dir, sample.name + ".crosscor")
 
             spp_cmd = """Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir}""".format(
@@ -1349,6 +1414,8 @@ Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -t
         """
         #sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, chip_type, chip_bed, output_dir)
         jobs = []
+
+        alignment_dir = self.output_dirs['alignment_output_directory']
         output_dir = self.output_dirs['ihecM_output_directory']
 
         ##generate couples chip/input/treatment_name/peak_type
@@ -1376,37 +1443,37 @@ Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -t
                     else:
                         couples[sample.name] = [input_file, contrast.real_name, contrast.type]
 
-        for key, values in couples.iteritems():
-            chip_bam = os.path.join(self.output_dirs['ihecA_output_directory'], key + ".merged.mdup.bam")
-            input_sample = values[0] if values[0] is not "no_input" else key
-            input_bam = os.path.join(self.output_dirs['ihecA_output_directory'], input_sample + ".merged.mdup.bam")
-            chip_type = values[2]
-            chip_bed = os.path.join(self.output_dirs['macs_output_directory'], values[1], values[1] + "_peaks." + values[2] + "Peak")
+        for sample_name, sample_list_info in couples.iteritems():
+            chip_bam = os.path.join(alignment_dir, sample_name + ".sorted.filtered.dup.bam")
+            input_sample = sample_list_info[0] if sample_list_info[0] is not "no_input" else sample_name
+            input_bam = os.path.join(alignment_dir, input_sample + ".sorted.filtered.dup.bam")
+            chip_type = sample_list_info[2]
+            chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample_list_info[1], sample_list_info[1] + "_peaks." + sample_list_info[2] + "Peak")
             genome = config.param('IHEC_chipseq_metrics', 'assembly')
 
             job = concat_jobs([
                 Job(command="mkdir -p " + output_dir),
-                tools.sh_ihec_chip_metrics(chip_bam, input_bam, key, values[0], chip_type, chip_bed, output_dir, genome)
-                ], name="IHEC_chipseq_metrics." + key)
+                tools.sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, sample_list_info[0], chip_type, chip_bed, output_dir, genome)
+                ], name="IHEC_chipseq_metrics." + sample_name)
             jobs.append(
                 concat_jobs([
                     bash.mkdir(output_dir),
                     tools.sh_ihec_chip_metrics(
                         chip_bam,
                         input_bam,
-                        key,
-                        values[0],
+                        sample_name,
+                        sample_list_info[0],
                         chip_type,
                         chip_bed,
                         output_dir,
                         genome
                         )
                     ],
-                    name="IHEC_chipseq_metrics." + key
+                    name="IHEC_chipseq_metrics." + sample_name
                     )
                 )
 
-            metrics_to_merge.append(os.path.join(self.output_dirs['ihecM_output_directory'], "IHEC_metrics_chipseq_" + sample.name + ".txt"))
+            metrics_to_merge.append(os.path.join(self.output_dirs['ihecM_output_directory'], "IHEC_metrics_chipseq_" + sample_name + ".txt"))
 
         metrics_merged = "IHEC_metrics_AllSamples.tsv"
         metrics_merged_out = os.path.join(self.output_dirs['ihecM_output_directory'], metrics_merged)
@@ -1491,9 +1558,10 @@ pandoc --to=markdown \\
                 self.merge_trimmomatic_stats,
                 self.mapping_bwa_mem_sambamba,
                 # self.bwa_mem_picard_sort_sam,
-                self.samtools_view_filter,
+                # self.samtools_view_filter,
                 # self.picard_merge_sam_files,
                 self.sambamba_merge_bam_files,
+                self.samtools_view_filter,
                 # self.picard_mark_duplicates,
                 self.sambamba_mark_duplicates,
                 self.metrics,
@@ -1504,7 +1572,7 @@ pandoc --to=markdown \\
                 self.homer_annotate_peaks,
                 self.homer_find_motifs_genome,
                 self.annotation_graphs,
-                self.ihec_preprocess_files,
+                # self.ihec_preprocess_files,
                 self.run_spp,
                 self.ihec_metrics,
                 self.multiqc_report,
@@ -1515,9 +1583,10 @@ pandoc --to=markdown \\
                 self.merge_trimmomatic_stats,
                 self.mapping_bwa_mem_sambamba,
                 # self.bwa_mem_picard_sort_sam,
-                self.samtools_view_filter,
+                # self.samtools_view_filter,
                 # self.picard_merge_sam_files,
                 self.sambamba_merge_bam_files,
+                self.samtools_view_filter,
                 # self.picard_mark_duplicates,
                 self.sambamba_mark_duplicates,
                 self.metrics,
@@ -1528,7 +1597,7 @@ pandoc --to=markdown \\
                 self.homer_annotate_peaks,
                 self.homer_find_motifs_genome,
                 self.annotation_graphs,
-                self.ihec_preprocess_files,
+                # self.ihec_preprocess_files,
                 self.run_spp,
                 self.ihec_metrics,
                 self.multiqc_report,
