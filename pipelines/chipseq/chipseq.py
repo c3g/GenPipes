@@ -473,7 +473,8 @@ pandoc --to=markdown \\
                     sambamba.markdup(
                         input_bam,
                         output_bam,
-                        tmp_dir=config.param('sambamba_mark_duplicates', 'tmp_dir', required=True)
+                        tmp_dir=config.param('sambamba_mark_duplicates', 'tmp_dir', required=True),
+                        other_options=config.param('sambamba_mark_duplicates', 'other_options', required=False)
                         )
                     ],
                 name="sambamba_mark_duplicates." + sample.name,
