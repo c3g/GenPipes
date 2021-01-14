@@ -167,7 +167,7 @@ class Pipeline(object):
                 self.submit_jobs()
             except SanitycheckError as e:
                 log.error("""
-***The pipeline encounterered an error :
+***The pipeline encountered an error :
     {error}
 ***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag to check for more potential issues...""".format(
                    error=e

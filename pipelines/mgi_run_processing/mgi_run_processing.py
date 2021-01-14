@@ -1298,9 +1298,13 @@ class MGIRunProcessing(common.MUGQICPipeline):
         for lane in self.lanes:
 
             inputs = self.copy_job_inputs[lane]
-            output = os.path.join(
+            copy_output = os.path.join(
                 full_destination_folder,
                 "copyCompleted." + lane + ".out"
+            )
+            report_transfer_output = os.path.join(
+                full_destination_folder,
+                "reportTransferCompleted." + lane + ".out"
             )
 
             exclude_bam = config.param('copy', 'exclude_bam', required=False, type='boolean')
@@ -1334,10 +1338,27 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     Job(
                         command=copy_command_output_folder
                     ),
-                    bash.touch(output)
+                    bash.touch(copy_output)
                 ],
                 input_dependency=inputs,
-                output_dependency=[output]
+                output_dependency=[copy_output]
+            ))
+
+            # transfer reports to data-hub
+            transfer_command_report_zip = config.param('copy', 'transfer_report_command', required=False).format(
+                year=self.year,
+                file=os.path.join(self.output_dir, "L0" + lane, "report", self.run_id + "_" + self.flowcell_id + "_L00" + lane + "_report.zip")
+            )
+
+            jobs_to_concat.append(concat_jobs(
+                [
+                    Job(
+                        command=transfer_command_report_zip
+                    ),
+                    bash.touch(report_transfer_output)
+                ],
+                input_dependency=[os.path.join(self.output_dir, "L0" + lane, "report", self.run_id + "_" + self.flowcell_id + "_L00" + lane + "_report.zip")],
+                output_dependency=[report_transfer_output]
             ))
 
         job = concat_jobs(
