@@ -627,7 +627,7 @@ cp \\
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name)
-            file_prefix = os.path.join(alignment_directory, sample.name + ".sorted.dup.")
+            file_prefix = os.path.join(alignment_directory, sample.name + ".sorted.filtered.dup.")
 
             candidate_input_files = [[file_prefix + "bam"]]
             if bam[sample]:
