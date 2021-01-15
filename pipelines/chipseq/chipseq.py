@@ -1535,7 +1535,7 @@ pandoc --to=markdown \\
         yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
         input_files = []
         for sample in self.samples:
-            input_files.append(os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.all.metrics.alignment_summary_metrics"))
+            input_files.append(os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.all.metrics.alignment_summary_metrics"))
             input_files.append(os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt"))
         # input_files = [os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt") for sample in self.samples]
 
