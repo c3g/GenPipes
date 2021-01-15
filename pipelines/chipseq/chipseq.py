@@ -1444,9 +1444,9 @@ Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -t
                         couples[sample.name] = [input_file, contrast.real_name, contrast.type]
 
         for sample_name, sample_list_info in couples.iteritems():
-            chip_bam = os.path.join(alignment_dir, sample_name + ".sorted.filtered.dup.bam")
+            chip_bam = os.path.join(alignment_dir, sample_name,sample_name + ".sorted.filtered.dup.bam")
             input_sample = sample_list_info[0] if sample_list_info[0] is not "no_input" else sample_name
-            input_bam = os.path.join(alignment_dir, input_sample + ".sorted.filtered.dup.bam")
+            input_bam = os.path.join(alignment_dir, input_sample, input_sample + ".sorted.filtered.dup.bam")
             chip_type = sample_list_info[2]
             chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample_list_info[1], sample_list_info[1] + "_peaks." + sample_list_info[2] + "Peak")
             genome = config.param('IHEC_chipseq_metrics', 'assembly')
