@@ -528,30 +528,31 @@ pandoc --to=markdown \\
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.mark_name)
-            input_bam = os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.bam")
-            output_bam = os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.bam")
-            # metrics_file = alignment_file_prefix + ".sorted.dup.metrics"
+            for mark_name in sample.mark_names:
+                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
+                input_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.bam")
+                output_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
+                # metrics_file = alignment_file_prefix + ".sorted.dup.metrics"
 
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(output_bam)),
-                    sambamba.markdup(
-                        input_bam,
-                        output_bam,
-                        tmp_dir=config.param('sambamba_mark_duplicates', 'tmp_dir', required=True),
-                        other_options=config.param('sambamba_mark_duplicates', 'other_options', required=False)
-                        )
-                    ],
-                name="sambamba_mark_duplicates." + sample.name + "." + sample.mark_name,
-                samples=[sample]
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(os.path.dirname(output_bam)),
+                        sambamba.markdup(
+                            input_bam,
+                            output_bam,
+                            tmp_dir=config.param('sambamba_mark_duplicates', 'tmp_dir', required=True),
+                            other_options=config.param('sambamba_mark_duplicates', 'other_options', required=False)
+                            )
+                        ],
+                    name="sambamba_mark_duplicates." + sample.name + "." + mark_name,
+                    samples=[sample]
+                    )
                 )
-            )
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.sambamba_mark_duplicates.md")
         jobs.append(
             Job(
-                [os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.bam") for sample in self.samples],
+                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam") for sample in self.samples for mark_name in sample.mark_names],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -560,7 +561,7 @@ cp \\
   {report_file}""".format(
     report_template_dir=self.report_template_dir,
     basename_report_file=os.path.basename(report_file),
-    report_file=report_file, 
+    report_file=report_file,
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
