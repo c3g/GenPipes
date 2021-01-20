@@ -717,17 +717,17 @@ pandoc --to=markdown \\
   > {report_file}
 """.format(
     sambamba=config.param('DEFAULT', 'module_sambamba'),
+    metrics_file=metrics_file,
     # samples=" ".join([sample.name for sample in self.samples]),
     samples_associative_array=" ".join(samples_associative_array),
+    alignment_dir=self.output_dirs['alignment_output_directory'],
+    report_dir=self.output_dirs['report_output_directory'],
     trim_metrics_file=trim_metrics_file,
-    metrics_file=metrics_file,
     report_metrics_file=report_metrics_file,
     report_template_dir=self.report_template_dir,
     basename_report_file=os.path.basename(report_file),
-    report_file=report_file,
-    alignment_dir=self.output_dirs['alignment_output_directory'],
-    report_dir=self.output_dirs['report_output_directory']
-        ),
+    report_file=report_file
+    ),
                 name="metrics_report",
                 samples=self.samples,
                 removable_files=[report_metrics_file],
