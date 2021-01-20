@@ -148,7 +148,7 @@ class ChipSeq(common.Illumina):
 
         jobs = []
         for readset in self.readsets:
-            log.info("...PWET... " + readset.sample + "\t" + readset.mark_name)
+            log.info("...PWET... " + readset.sample.name + "\t" + readset.mark_name)
             trim_directory = os.path.join("trim", readset.sample.name)
             trim_file_prefix = os.path.join(trim_directory, readset.name)
             alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.mark_name)
