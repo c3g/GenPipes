@@ -689,7 +689,7 @@ cp /dev/null {metrics_file} && \\
 declare -A samples_associative_array=({samples_associative_array}) && \\
 for sample in ${{!samples_associative_array[@]}}
 do
-  for mark_name in ${samples_associative_array[$sample]}
+  for mark_name in ${{samples_associative_array[$sample]}}
     flagstat_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.sorted.filtered.dup.flagstat
     bam_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.sorted.filtered.dup.bam
     supplementarysecondary_alignment=`bc <<< $(grep "secondary" $flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
