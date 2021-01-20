@@ -444,7 +444,7 @@ class ChipSeq(common.Illumina):
                             samples=[sample]
                             )
                     )
-
+        log.info(sample.mark_names for sample in self.samples)
         log.info([os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + "." + sample.mark_names + ".sorted.filtered.bam") for sample in self.samples])
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.samtools_view_filter.md")
         jobs.append(
