@@ -76,7 +76,7 @@ class IlluminaReadset(Readset):
             return None
         else:
             return self._bam
-    
+
     @property
     def umi(self):
         if not hasattr(self, "_umi"):
@@ -103,14 +103,14 @@ class IlluminaReadset(Readset):
     @property
     def adapter2(self):
         return self._adapter2
-    
+
     @property
     def primer1(self):
         if not hasattr(self, "_primer1"):
             return None
         else:
             return self._primer1
-    
+
     @property
     def primer2(self):
         if not hasattr(self, "_primer2"):
@@ -125,6 +125,28 @@ class IlluminaReadset(Readset):
     @property
     def beds(self):
         return self._beds
+
+    # For ChIP-Seq only
+    @property
+    def mark_name(self):
+        if not hasattr(self, "_mark_name"):
+            return None
+        else:
+            return self._mark_name
+    
+    @property
+    def mark_type(self):
+        if not hasattr(self, "_mark_type"):
+            return None
+        else:
+            return self._mark_type
+
+    @property
+    def input_sample(self):
+        if not hasattr(self, "_input_sample"):
+            return None
+        else:
+            return self._input_sample
 
 def parse_illumina_readset_file(illumina_readset_file):
     readsets = []
@@ -172,12 +194,18 @@ def parse_illumina_readset_file(illumina_readset_file):
             readset._primer1 = readset._primer1.replace(readset._adapter1,"")
         if readset._primer2 :
             readset._primer2 = readset._primer2.replace(readset._adapter2,"")
-        
+
         readset._quality_offset = int(line['QualityOffset']) if line.get('QualityOffset', None) else None
         readset._beds = line['BED'].split(";") if line.get('BED', None) else []
 
+        # For ChIP-Seq only
+        readset._mark_name = line.get('MarkName', None)
+        readset._mark_type = line.get('MarkType', None)
+        readset._input_sample = line.get('InputSample', None)
+
         readsets.append(readset)
         sample.add_readset(readset)
+        sample.add_mark_name(readset.mark_name)
 
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")

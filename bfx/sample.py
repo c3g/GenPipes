@@ -38,6 +38,8 @@ class Sample(object):
 
         self._json_file = name + ".json"
 
+        self._mark_names = []
+
     def show(self):
         print("Sample -- name: " + self._name + ", readsets: " +
             ", ".join([readset.name for readset in self._readsets]))
@@ -45,6 +47,10 @@ class Sample(object):
     @property
     def name(self):
         return self._name
+
+    @property
+    def mark_names(self):
+        return self._mark_names
 
     @property
     def readsets(self):
@@ -64,3 +70,7 @@ class Sample(object):
         else:
             self.readsets.append(readset)
             readset._sample = self
+
+    def add_mark_name(self, mark_name):
+        if mark_name not in self.mark_names:
+            self.mark_names.append(mark_name)
