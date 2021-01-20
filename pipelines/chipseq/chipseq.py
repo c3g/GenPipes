@@ -670,7 +670,7 @@ cp \\
                         )
                     )
 
-        log.info(samples_associative_array)
+        log.info(" ".join(samples_associative_array))
         trim_metrics_file = os.path.join(self.output_dirs['metrics_output_directory'], "trimSampleTable.tsv")
         metrics_file = os.path.join(self.output_dirs['metrics_output_directory'], "SampleMetrics.stats")
         report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "trimMemSampleTable.tsv")
