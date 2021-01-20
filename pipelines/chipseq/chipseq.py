@@ -150,7 +150,7 @@ class ChipSeq(common.Illumina):
         for readset in self.readsets:
             trim_directory = os.path.join("trim", readset.sample.name)
             trim_file_prefix = os.path.join(trim_directory, readset.name)
-            alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.sample.mark_name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.mark_name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
 
