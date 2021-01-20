@@ -661,7 +661,7 @@ cp \\
                         bash.mkdir(os.path.dirname(input)),
                         sambamba.flagstat(
                             input,
-                            [re.sub("\.bam$", ".flagstat", os.path.basename(input_bam)) for input_bam in input]
+                            re.sub("\.bam$", ".flagstat", os.path.basename(input))
                             # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.bam"),
                             # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.flagstat")
                             )
