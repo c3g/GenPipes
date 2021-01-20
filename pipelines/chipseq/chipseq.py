@@ -629,42 +629,46 @@ cp \\
 
         jobs = []
 
+        samples_associative_array = []
+
         for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.mark_name)
-            file_prefix = os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.")
+            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.mark_names) + "\"")
+            for mark_name in sample.mark_names:
+                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
+                file_prefix = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.dup.")
 
-            candidate_input_files = [[file_prefix + "bam"]]
-            if bam[sample]:
-                candidate_input_files.append([bam[sample]])
-            [input] = self.select_input_files(candidate_input_files)
+                candidate_input_files = [[file_prefix + "bam"]]
+                if bam[sample]:
+                    candidate_input_files.append([bam[sample]])
+                [input] = self.select_input_files(candidate_input_files)
 
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(input)),
-                    picard.collect_multiple_metrics(
-                        input,
-                        re.sub("bam", "all.metrics", input),
-                        library_type=library[sample]
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(os.path.dirname(input)),
+                        picard.collect_multiple_metrics(
+                            input,
+                            re.sub("bam", "all.metrics", input),
+                            library_type=library[sample]
+                            )
+                        ],
+                        name="picard_collect_multiple_metrics." + sample.name,
+                        samples=[sample]
                         )
-                    ],
-                    name="picard_collect_multiple_metrics." + sample.name,
-                    samples=[sample]
                     )
-                )
 
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(input)),
-                    sambamba.flagstat(
-                        input,
-                        [re.sub("\.bam$", ".flagstat", os.path.basename(input_bam)) for input_bam in input]
-                        # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.bam"),
-                        # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.flagstat")
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(os.path.dirname(input)),
+                        sambamba.flagstat(
+                            input,
+                            [re.sub("\.bam$", ".flagstat", os.path.basename(input_bam)) for input_bam in input]
+                            # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.bam"),
+                            # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.flagstat")
+                            )
+                        ],
+                        name="metrics.flagstat." + sample.name + "." + mark_name
                         )
-                    ],
-                    name="metrics.flagstat." + sample.name + "." + sample.mark_name
                     )
-                )
 
         trim_metrics_file = os.path.join(self.output_dirs['metrics_output_directory'], "trimSampleTable.tsv")
         metrics_file = os.path.join(self.output_dirs['metrics_output_directory'], "SampleMetrics.stats")
@@ -672,7 +676,7 @@ cp \\
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.metrics.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.mark_name, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.flagstat") for sample in self.samples],
+                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam") for sample in self.samples for mark_name in sample.mark_names],
                 [report_metrics_file],
                 [['metrics', 'module_pandoc']],
                 # Retrieve number of aligned and duplicate reads from sample flagstat files
@@ -681,20 +685,22 @@ cp \\
                 command="""\
 module load {sambamba} && \\
 cp /dev/null {metrics_file} && \\
-declare -A sample_markname=({samples_dict}) && \\
-for sample in "${{!sample_markname[@]}}"
+declare -A samples_associative_array=({samples_associative_array}) && \\
+for sample in ${{!samples_associative_array[@]}}
 do
-  flagstat_file={alignment_dir}/$sample/${{sample_markname[$sample]}}/$sample.${{sample_markname[$sample]}}.sorted.filtered.dup.flagstat
-  bam_file={alignment_dir}/$sample/${{sample_markname[$sample]}}/$sample.${{sample_markname[$sample]}}.sorted.filtered.dup.bam
-  supplementarysecondary_alignment=`bc <<< $(grep "secondary" $flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
-  mapped_reads=`bc <<< $(grep "mapped (" $flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$supplementarysecondary_alignment`
-  duplicated_reads=`grep "duplicates" $flagstat_file | sed -e 's/ + [[:digit:]]* duplicates$//'`
-  duplicated_rate=$(echo "100*$duplicated_reads/$mapped_reads" | bc -l)
-  mito_reads=$(sambamba view -c $bam_file chrM)
-  mito_rate=$(echo "100*$mito_reads/$mapped_reads" | bc -l)
-  echo -e "$sample\t$mapped_reads\t$duplicated_reads\t$duplicated_rate\t$mito_reads\t$mito_rate" >> {metrics_file}
+  for mark_name in ${samples_associative_array[$sample]}
+    flagstat_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.sorted.filtered.dup.flagstat
+    bam_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.sorted.filtered.dup.bam
+    supplementarysecondary_alignment=`bc <<< $(grep "secondary" $flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
+    mapped_reads=`bc <<< $(grep "mapped (" $flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$supplementarysecondary_alignment`
+    duplicated_reads=`grep "duplicates" $flagstat_file | sed -e 's/ + [[:digit:]]* duplicates$//'`
+    duplicated_rate=$(echo "100*$duplicated_reads/$mapped_reads" | bc -l)
+    mito_reads=$(sambamba view -c $bam_file chrM)
+    mito_rate=$(echo "100*$mito_reads/$mapped_reads" | bc -l)
+    echo -e "$sample\t$mark_name\t$mapped_reads\t$duplicated_reads\t$duplicated_rate\t$mito_reads\t$mito_rate" >> {metrics_file}
+    done
 done && \\
-sed -i -e "1 i\\Sample\tAligned Filtered Reads #\tDuplicate Reads #\tDuplicate %\tMitchondrial Reads #\tMitochondrial %" {metrics_file} && \\
+sed -i -e "1 i\\Sample\tMark Name\tAligned Filtered Reads #\tDuplicate Reads #\tDuplicate %\tMitchondrial Reads #\tMitochondrial %" {metrics_file} && \\
 mkdir -p {report_dir} && \\
 if [[ -f {trim_metrics_file} ]]
 then
@@ -711,8 +717,8 @@ pandoc --to=markdown \\
   > {report_file}
 """.format(
     sambamba=config.param('DEFAULT', 'module_sambamba'),
-    # samples=" ".join([sample.name for sample in self.samples]), """declare -A sample_markname=([{sample_name}]={sample_mark_name})""" """[{sample_name}]={sample_mark_name} """
-    samples_dict=" ".join(["[\"" + sample.name + "\"]=\"" + sample.mark_name + "\"" for sample in self.samples]),
+    # samples=" ".join([sample.name for sample in self.samples]),
+    samples_associative_array=" ".join(samples_associative_array),
     trim_metrics_file=trim_metrics_file,
     metrics_file=metrics_file,
     report_metrics_file=report_metrics_file,
