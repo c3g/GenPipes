@@ -448,7 +448,7 @@ class ChipSeq(common.Illumina):
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.samtools_view_filter.md")
         jobs.append(
             Job(
-                [[os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + "." + mark_name + ".sorted.filtered.bam") for mark_name in sample.mark_names] for sample in self.samples],
+                ["".join([os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + "." + mark_name + ".sorted.filtered.bam") for mark_name in sample.mark_names] for sample in self.samples)],
                 [report_file],
                 [['samtools_view_filter', 'module_pandoc']],
                 command="""\
