@@ -150,7 +150,7 @@ class ChipSeq(common.Illumina):
         for readset in self.readsets:
             trim_directory = os.path.join("trim", readset.sample.name)
             trim_file_prefix = os.path.join(trim_directory, readset.name)
-            alignment_directory = os.path.join("alignment", readset.sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.sample.mark_name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
 
@@ -219,75 +219,75 @@ class ChipSeq(common.Illumina):
         return jobs
 
 
-    def bwa_mem_picard_sort_sam(self):
-        """
-        The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
-        The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-        BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
+    # def bwa_mem_picard_sort_sam(self):
+    #     """
+    #     The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
+    #     The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+    #     BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
 
-        This step takes as input files:
+    #     This step takes as input files:
 
-        1. Trimmed FASTQ files if available
-        2. Else, FASTQ files from the readset file if available
-        3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
-        """
+    #     1. Trimmed FASTQ files if available
+    #     2. Else, FASTQ files from the readset file if available
+    #     3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+    #     """
 
-        jobs = []
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+    #     jobs = []
+    #     for readset in self.readsets:
+    #         trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+    #         alignment_directory = os.path.join("alignment", readset.sample.name)
+    #         readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
 
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+    #         # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+    #         if readset.run_type == "PAIRED_END":
+    #             candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+    #             if readset.fastq1 and readset.fastq2:
+    #                 candidate_input_files.append([readset.fastq1, readset.fastq2])
+    #             if readset.bam:
+    #                 candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+    #             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
+    #         elif readset.run_type == "SINGLE_END":
+    #             candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+    #             if readset.fastq1:
+    #                 candidate_input_files.append([readset.fastq1])
+    #             if readset.bam:
+    #                 candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+    #             [fastq1] = self.select_input_files(candidate_input_files)
+    #             fastq2 = None
 
-            else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                                        "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+    #         else:
+    #             _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+    #                                     "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
-            job = concat_jobs([
-                Job(command="mkdir -p " + os.path.dirname(readset_bam), samples=[readset.sample]),
-                pipe_jobs([
-                    bwa.mem(
-                        fastq1,
-                        fastq2,
-                        read_group="'@RG" + \
-                            "\tID:" + readset.name + \
-                            "\tSM:" + readset.sample.name + \
-                            "\tLB:" + (readset.library if readset.library else readset.sample.name) + \
-                            ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                            ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
-                            "\tPL:Illumina" + \
-                            "'"
-                    ),
-                    picard.sort_sam(
-                        "/dev/stdin",
-                        readset_bam,
-                        "coordinate"
-                    )
-                ])
-            ])
-            job.name = "bwa_mem_picard_sort_sam." + readset.name
-            job.samples = [readset.sample]
+    #         job = concat_jobs([
+    #             Job(command="mkdir -p " + os.path.dirname(readset_bam), samples=[readset.sample]),
+    #             pipe_jobs([
+    #                 bwa.mem(
+    #                     fastq1,
+    #                     fastq2,
+    #                     read_group="'@RG" + \
+    #                         "\tID:" + readset.name + \
+    #                         "\tSM:" + readset.sample.name + \
+    #                         "\tLB:" + (readset.library if readset.library else readset.sample.name) + \
+    #                         ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+    #                         ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
+    #                         "\tPL:Illumina" + \
+    #                         "'"
+    #                 ),
+    #                 picard.sort_sam(
+    #                     "/dev/stdin",
+    #                     readset_bam,
+    #                     "coordinate"
+    #                 )
+    #             ])
+    #         ])
+    #         job.name = "bwa_mem_picard_sort_sam." + readset.name
+    #         job.samples = [readset.sample]
 
-            jobs.append(job)
+    #         jobs.append(job)
 
-        return jobs
+    #     return jobs
 
 
 #     def samtools_view_filter(self):
@@ -358,53 +358,54 @@ class ChipSeq(common.Illumina):
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
-            readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
-            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            for mark_name in sample.mark_names:
+                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
+                # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
+                readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets if readset.mark_name == mark_name]
+                sample_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.bam")
 
-            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            if len(sample.readsets) == 1:
-                readset_bam = readset_bams[0]
-                readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
-                sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
+                # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
+                if len(readset_bams) == 1:
+                    readset_bam = readset_bams[0]
+                    readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
+                    sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
 
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(
-                            os.path.dirname(sample_bam)
-                        ),
-                        bash.ln(
-                            readset_bam,
-                            sample_bam,
-                            self.output_dir
-                        ),
-                        bash.ln(
-                            readset_index,
-                            sample_index,
-                            self.output_dir
-                        )
-                    ],
-                        name="symlink_readset_sample_bam." + sample.name,
+                    jobs.append(
+                        concat_jobs([
+                            bash.mkdir(
+                                os.path.dirname(sample_bam)
+                            ),
+                            bash.ln(
+                                readset_bam,
+                                sample_bam,
+                                self.output_dir
+                            ),
+                            bash.ln(
+                                readset_index,
+                                sample_index,
+                                self.output_dir
+                            )
+                        ],
+                        name="symlink_readset_sample_bam." + sample.name + "." + mark_name,
                         samples=[sample]
-                    )
-                )
-
-            elif len(sample.readsets) > 1:
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(
-                            os.path.dirname(sample_bam)
-                        ),
-                        sambamba.merge(
-                            readset_bams,
-                            sample_bam
                         )
-                    ],
-                        name="sambamba_merge_sam_files." + sample.name,
-                        samples=[sample]
                     )
-                )
+
+                elif len(sample.readsets) > 1:
+                    jobs.append(
+                        concat_jobs([
+                            bash.mkdir(
+                                os.path.dirname(sample_bam)
+                            ),
+                            sambamba.merge(
+                                readset_bams,
+                                sample_bam
+                            )
+                        ],
+                        name="sambamba_merge_sam_files." + sample.name + "." + mark_name,
+                        samples=[sample]
+                        )
+                    )
         return jobs
 
 
@@ -415,38 +416,39 @@ class ChipSeq(common.Illumina):
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            output_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
-            output_bam_index = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam.bai")
+            for mark_name in sample.mark_names:
+                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
+                input_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.bam")
+                output_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.bam")
+                output_bam_index = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.bam.bai")
 
-            # readset_bam_prefix = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.name, readset.name + ".sorted.")
-            # readset_bam = readset_bam_prefix + "bam"
-            # filtered_readset_bam = readset_bam_prefix + "filtered.bam"
-            # filtered_readset_index_bam = readset_bam_prefix + "filtered.bam.bai"
+                # readset_bam_prefix = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.name, readset.name + ".sorted.")
+                # readset_bam = readset_bam_prefix + "bam"
+                # filtered_readset_bam = readset_bam_prefix + "filtered.bam"
+                # filtered_readset_index_bam = readset_bam_prefix + "filtered.bam.bai"
 
-            jobs.append(
-                concat_jobs([
-                        bash.mkdir(os.path.dirname(output_bam)),
-                        samtools.view(
-                            input_bam,
-                            output_bam,
-                            "-b -F4 -q " + config.param('samtools_view_filter', 'min_mapq') + " -@ " + config.param('samtools_view_filter', 'threads')
-                            ),
-                        sambamba.index(
-                            output_bam,
-                            output_bam_index
+                jobs.append(
+                    concat_jobs([
+                            bash.mkdir(os.path.dirname(output_bam)),
+                            samtools.view(
+                                input_bam,
+                                output_bam,
+                                "-b -F4 -q " + config.param('samtools_view_filter', 'min_mapq') + " -@ " + config.param('samtools_view_filter', 'threads')
+                                ),
+                            sambamba.index(
+                                output_bam,
+                                output_bam_index
+                                )
+                            ],
+                            name="samtools_view_filter." + sample.name + "." + mark_name,
+                            samples=[sample]
                             )
-                        ],
-                        name="samtools_view_filter." + sample.name,
-                        samples=[sample]
-                        )
-                )
+                    )
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.samtools_view_filter.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.bam") for sample in self.samples],
+                [[os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + "." + mark_name + ".sorted.filtered.bam") for mark_name in sample.mark_names] for sample in self.samples],
                 [report_file],
                 [['samtools_view_filter', 'module_pandoc']],
                 command="""\
@@ -459,7 +461,7 @@ pandoc --to=markdown \\
     min_mapq=config.param('samtools_view_filter', 'min_mapq', type='int'),
     report_template_dir=self.report_template_dir,
     basename_report_file=os.path.basename(report_file),
-    report_file=report_file, 
+    report_file=report_file,
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
@@ -470,51 +472,51 @@ pandoc --to=markdown \\
         return jobs
 
 
-    def picard_merge_sam_files(self):
-        """
-        BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+    # def picard_merge_sam_files(self):
+    #     """
+    #     BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
 
-        This step takes as input files:
+    #     This step takes as input files:
 
-        1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
-        2. Else, BAM files from the readset file
-        """
+    #     1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
+    #     2. Else, BAM files from the readset file
+    #     """
 
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name)
-            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
-            readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam") for readset in sample.readsets]
-            sample_bam = os.path.join(alignment_directory, sample.name + ".merged.bam")
+    #     jobs = []
+    #     for sample in self.samples:
+    #         alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name)
+    #         # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
+    #         readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam") for readset in sample.readsets]
+    #         sample_bam = os.path.join(alignment_directory, sample.name + ".merged.bam")
 
-            mkdir_job = Job(command="mkdir -p " + os.path.dirname(sample_bam))
+    #         mkdir_job = Job(command="mkdir -p " + os.path.dirname(sample_bam))
 
-            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            if len(sample.readsets) == 1:
-                readset_bam = readset_bams[0]
-                if os.path.isabs(readset_bam):
-                    target_readset_bam = readset_bam
-                else:
-                    target_readset_bam = os.path.relpath(readset_bam, alignment_directory)
+    #         # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
+    #         if len(sample.readsets) == 1:
+    #             readset_bam = readset_bams[0]
+    #             if os.path.isabs(readset_bam):
+    #                 target_readset_bam = readset_bam
+    #             else:
+    #                 target_readset_bam = os.path.relpath(readset_bam, alignment_directory)
 
-                job = concat_jobs([
-                    mkdir_job,
-                    Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam, removable_files=[sample_bam]),
-                ])
-                job.sample = [sample]
-                job.name = "symlink_readset_sample_bam." + sample.name
+    #             job = concat_jobs([
+    #                 mkdir_job,
+    #                 Job([readset_bam], [sample_bam], command="ln -s -f " + target_readset_bam + " " + sample_bam, removable_files=[sample_bam]),
+    #             ])
+    #             job.sample = [sample]
+    #             job.name = "symlink_readset_sample_bam." + sample.name
 
-            elif len(sample.readsets) > 1:
-                job = concat_jobs([
-                    mkdir_job,
-                    picard.merge_sam_files(readset_bams, sample_bam)
-                ])
-                job.sample = [sample]
-                job.name = "picard_merge_sam_files." + sample.name
+    #         elif len(sample.readsets) > 1:
+    #             job = concat_jobs([
+    #                 mkdir_job,
+    #                 picard.merge_sam_files(readset_bams, sample_bam)
+    #             ])
+    #             job.sample = [sample]
+    #             job.name = "picard_merge_sam_files." + sample.name
 
-            jobs.append(job)
+    #         jobs.append(job)
 
-        return jobs
+    #     return jobs
 
     def sambamba_mark_duplicates(self):
         """
@@ -525,9 +527,9 @@ pandoc --to=markdown \\
 
         jobs = []
         for sample in self.samples:
-            alignment_file_prefix = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name)
-            input_bam = alignment_file_prefix + ".sorted.filtered.bam"
-            output_bam = alignment_file_prefix + ".sorted.filtered.dup.bam"
+            alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.mark_name)
+            input_bam = os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.bam")
+            output_bam = os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.bam")
             # metrics_file = alignment_file_prefix + ".sorted.dup.metrics"
 
             jobs.append(
@@ -540,7 +542,7 @@ pandoc --to=markdown \\
                         other_options=config.param('sambamba_mark_duplicates', 'other_options', required=False)
                         )
                     ],
-                name="sambamba_mark_duplicates." + sample.name,
+                name="sambamba_mark_duplicates." + sample.name + "." + sample.mark_name,
                 samples=[sample]
                 )
             )
@@ -548,7 +550,7 @@ pandoc --to=markdown \\
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.sambamba_mark_duplicates.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in self.samples],
+                [os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.bam") for sample in self.samples],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -566,45 +568,45 @@ cp \\
 
         return jobs
 
-    def picard_mark_duplicates(self):
-        """
-        Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
-        (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
-        will be marked as a duplicate in the BAM file. Marking duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
-        """
+#     def picard_mark_duplicates(self):
+#         """
+#         Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
+#         (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
+#         will be marked as a duplicate in the BAM file. Marking duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
+#         """
 
-        jobs = []
-        for sample in self.samples:
-            alignment_file_prefix = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name)
-            input = alignment_file_prefix + ".merged.bam"
-            output = alignment_file_prefix + ".sorted.dup.bam"
-            metrics_file = alignment_file_prefix + ".sorted.dup.metrics"
+#         jobs = []
+#         for sample in self.samples:
+#             alignment_file_prefix = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name)
+#             input = alignment_file_prefix + ".merged.bam"
+#             output = alignment_file_prefix + ".sorted.dup.bam"
+#             metrics_file = alignment_file_prefix + ".sorted.dup.metrics"
 
-            job = picard.mark_duplicates([input], output, metrics_file)
-            job.name = "picard_mark_duplicates." + sample.name
-            job.sample = [sample]
-            jobs.append(job)
+#             job = picard.mark_duplicates([input], output, metrics_file)
+#             job.name = "picard_mark_duplicates." + sample.name
+#             job.sample = [sample]
+#             jobs.append(job)
 
-        report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.picard_mark_duplicates.md")
-        jobs.append(
-            Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam") for sample in self.samples],
-                [report_file],
-                command="""\
-mkdir -p {report_dir} && \\
-cp \\
-  {report_template_dir}/{basename_report_file} \\
-  {report_file}""".format(
-    report_template_dir=self.report_template_dir,
-    basename_report_file=os.path.basename(report_file),
-    report_file=report_file, 
-    report_dir=self.output_dirs['report_output_directory']
-    ),
-                report_files=[report_file],
-                name="picard_mark_duplicates_report")
-        )
+#         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.picard_mark_duplicates.md")
+#         jobs.append(
+#             Job(
+#                 [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.bam") for sample in self.samples],
+#                 [report_file],
+#                 command="""\
+# mkdir -p {report_dir} && \\
+# cp \\
+#   {report_template_dir}/{basename_report_file} \\
+#   {report_file}""".format(
+#     report_template_dir=self.report_template_dir,
+#     basename_report_file=os.path.basename(report_file),
+#     report_file=report_file, 
+#     report_dir=self.output_dirs['report_output_directory']
+#     ),
+#                 report_files=[report_file],
+#                 name="picard_mark_duplicates_report")
+#         )
 
-        return jobs
+#         return jobs
 
     def metrics(self):
         """
@@ -626,8 +628,8 @@ cp \\
         jobs = []
 
         for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name)
-            file_prefix = os.path.join(alignment_directory, sample.name + ".sorted.filtered.dup.")
+            alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.mark_name)
+            file_prefix = os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.")
 
             candidate_input_files = [[file_prefix + "bam"]]
             if bam[sample]:
@@ -652,11 +654,13 @@ cp \\
                 concat_jobs([
                     bash.mkdir(os.path.dirname(input)),
                     sambamba.flagstat(
-                        os.path.join(alignment_directory, sample.name + ".sorted.filtered.dup.bam"),
-                        os.path.join(alignment_directory, sample.name + ".sorted.filtered.dup.flagstat")
+                        input,
+                        [re.sub("\.bam$", ".flagstat", os.path.basename(input_bam)) for input_bam in input]
+                        # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.bam"),
+                        # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.flagstat")
                         )
                     ],
-                    name="metrics.flagstat." + sample.name
+                    name="metrics.flagstat." + sample.name + "." + sample.mark_name
                     )
                 )
 
@@ -666,7 +670,7 @@ cp \\
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.metrics.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.flagstat") for sample in self.samples],
+                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.mark_name, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.flagstat") for sample in self.samples],
                 [report_metrics_file],
                 [['metrics', 'module_pandoc']],
                 # Retrieve number of aligned and duplicate reads from sample flagstat files
@@ -675,10 +679,11 @@ cp \\
                 command="""\
 module load {sambamba} && \\
 cp /dev/null {metrics_file} && \\
-for sample in {samples}
+declare -A sample_markname=({samples_dict}) && \\
+for sample in "${{!sample_markname[@]}}"
 do
-  flagstat_file={alignment_dir}/$sample/$sample.sorted.filtered.dup.flagstat
-  bam_file={alignment_dir}/$sample/$sample.sorted.filtered.dup.bam
+  flagstat_file={alignment_dir}/$sample/${{sample_markname[$sample]}}/$sample.${{sample_markname[$sample]}}.sorted.filtered.dup.flagstat
+  bam_file={alignment_dir}/$sample/${{sample_markname[$sample]}}/$sample.${{sample_markname[$sample]}}.sorted.filtered.dup.bam
   supplementarysecondary_alignment=`bc <<< $(grep "secondary" $flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
   mapped_reads=`bc <<< $(grep "mapped (" $flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$supplementarysecondary_alignment`
   duplicated_reads=`grep "duplicates" $flagstat_file | sed -e 's/ + [[:digit:]]* duplicates$//'`
@@ -704,7 +709,8 @@ pandoc --to=markdown \\
   > {report_file}
 """.format(
     sambamba=config.param('DEFAULT', 'module_sambamba'),
-    samples=" ".join([sample.name for sample in self.samples]),
+    # samples=" ".join([sample.name for sample in self.samples]), """declare -A sample_markname=([{sample_name}]={sample_mark_name})""" """[{sample_name}]={sample_mark_name} """
+    samples_dict=" ".join(["[\"" + sample.name + "\"]=\"" + sample.mark_name + "\"" for sample in self.samples]),
     trim_metrics_file=trim_metrics_file,
     metrics_file=metrics_file,
     report_metrics_file=report_metrics_file,
@@ -729,8 +735,8 @@ pandoc --to=markdown \\
 
         jobs = []
         for sample in self.samples:
-            alignment_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam")
-            output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name)
+            alignment_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.mark_name, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.bam")
+            output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.mark_name)
             other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
 
             job = homer.makeTagDir(
@@ -758,13 +764,13 @@ pandoc --to=markdown \\
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.qc_metrics.md")
-        output_files = [os.path.join(self.output_dirs['graphs_output_directory'], sample.name + "_QC_Metrics.ps") for sample in self.samples] + [report_file]
+        output_files = [os.path.join(self.output_dirs['graphs_output_directory'], sample.name + "." + sample.mark_name + "_QC_Metrics.ps") for sample in self.samples] + [report_file]
 
         jobs = []
 
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt") for sample in self.samples],
+                [os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.mark_name, "tagInfo.txt") for sample in self.samples],
                 output_files,
                 [
                     ['qc_plots_R', 'module_mugqic_tools'],
@@ -776,14 +782,16 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
   {design_file} \\
   {output_dir} && \\
 cp {report_template_dir}/{basename_report_file} {report_file} && \\
-for sample in {samples}
+declare -A sample_markname=({samples_dict}) && \\
+for sample in "${{!sample_markname[@]}}"
 do
-  cp --parents {graphs_dir}/${{sample}}_QC_Metrics.ps {report_dir}/
-  convert -rotate 90 {graphs_dir}/${{sample}}_QC_Metrics.ps {report_dir}/graphs/${{sample}}_QC_Metrics.png
-  echo -e "----\n\n![QC Metrics for Sample $sample ([download high-res image]({graphs_dir}/${{sample}}_QC_Metrics.ps))]({graphs_dir}/${{sample}}_QC_Metrics.png)\n" \\
+  cp --parents {graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.ps {report_dir}/
+  convert -rotate 90 {graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.ps {report_dir}/graphs/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.png
+  echo -e "----\n\n![QC Metrics for Sample $sample ([download high-res image]({graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.ps))]({graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.png)\n" \\
   >> {report_file}
 done""".format(
-    samples=" ".join([sample.name for sample in self.samples]),
+    samples_dict=" ".join(["[\"" + sample.name + "\"]=\"" + sample.mark_name + "\"" for sample in self.samples]),
+    # samples=" ".join([sample.name for sample in self.samples]),
     design_file=design_file,
     output_dir=self.output_dir,
     report_template_dir=self.report_template_dir,
@@ -813,8 +821,8 @@ done""".format(
         for sample in self.samples:
             tag_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name)
             bedgraph_dir = os.path.join(self.output_dirs['tracks_output_directory'], sample.name)
-            bedgraph_file = os.path.join(bedgraph_dir, sample.name + ".ucsc.bedGraph")
-            big_wig_output = os.path.join(bedgraph_dir, "bigWig", sample.name + ".bw")
+            bedgraph_file = os.path.join(bedgraph_dir, sample.name + "." + sample.mark_name + ".ucsc.bedGraph")
+            big_wig_output = os.path.join(bedgraph_dir, "bigWig", sample.name + "." + sample.mark_name + ".bw")
 
             jobs.append(
                 concat_jobs([
@@ -824,7 +832,7 @@ done""".format(
                         bedgraph_file
                         )
                     ],
-                    name="homer_make_ucsc_file." + sample.name,
+                    name="homer_make_ucsc_file." + sample.name + "." + sample.mark_name,
                     removable_files=[bedgraph_dir]
                     )
                 )
@@ -838,13 +846,13 @@ done""".format(
                         big_wig_output,
                         header=True)
                     ],
-                    name="homer_make_ucsc_file_bigWig." + sample.name)
+                    name="homer_make_ucsc_file_bigWig." + sample.name + "." + sample.mark_name)
                 )
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_make_ucsc_file.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['tracks_output_directory'], sample.name, sample.name + ".ucsc.bedGraph.gz") for sample in self.samples],
+                [os.path.join(self.output_dirs['tracks_output_directory'], sample.name, sample.name + "." + sample.mark_name + ".ucsc.bedGraph.gz") for sample in self.samples],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -871,8 +879,30 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
 
         jobs = []
 
-        for contrast in self.contrasts:
-            if contrast.treatments:
+        # for contrast in self.contrasts:
+        #     if contrast.treatments:
+        #         if len(contrast.controls) > 1:
+        #             _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
+        #         elif len(contrast.controls) == 1:
+        #             input_file = contrast.controls[0].name
+        #         elif not contrast.controls:
+        #             input_file = "no_input"
+        #         for sample in contrast.treatments:
+        #             log.debug("adding sample" + sample.name)
+        #             if couples.has_key(sample.name):
+        #                 if couples[sample.name][0] == input_file:
+        #                     pass
+        #                 else:
+        #                     _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
+        #                 if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
+        #                     pass
+        #                 else:
+        #                     _raise(SanitycheckError("Error: sample \"" + sample.name + "\" is involved in several different contrasts, please use one contrast per sample !"))
+        #             else:
+        #                 couples[sample.name] = [input_file, contrast.real_name, contrast.type]
+
+        for sample in self.samples:
+            if sample.input_sample:
                 treatment_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.treatments]
                 control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.controls]
                 output_dir = os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name)
@@ -930,8 +960,10 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
                         name="macs2_callpeak_bigBed."+ contrast.real_name
                         )
                     )
+            elif sample.mark_type == "I":
+                log.warning(sample.name + "is an Input ... skipping")
             else:
-                log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+                raise Exception("Error: readset \"" + sample.name + "\" estimated_genome_size is not defined!")
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
         jobs.append(
