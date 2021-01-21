@@ -913,7 +913,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
 
         for sample in self.samples:
             for mark_name in sample.mark_names:
-                log.info("Sample: %s\nMarkName: %s\nMarkType: %s\nInputSample: %s\n" % (sample.name, mark_name, sample.mark_type, sample.input_sample))
+                log.info("Sample: %s\nMarkName: %s\nMarkType: %s\nInputSample: %s\n" % (sample.name, mark_name, sample.readset.mark_type, sample.readset.input_sample))
                 if sample.input_sample:
                     treatment_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.treatments]
                     control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.controls]
