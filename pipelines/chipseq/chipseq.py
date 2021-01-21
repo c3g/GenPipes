@@ -773,15 +773,14 @@ pandoc --to=markdown \\
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.qc_metrics.md")
-        output_files = [os.path.join(self.output_dirs['graphs_output_directory'], sample.name + "." + sample.mark_name + "_QC_Metrics.ps") for sample in self.samples] + [report_file]
+        output_files = [os.path.join(self.output_dirs['graphs_output_directory'], sample.name + "." + mark_name + "_QC_Metrics.ps") for sample in self.samples for mark_name in sample.mark_names] + [report_file]
 
         jobs = []
 
         jobs.append(
             Job(
                 [os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name, "tagInfo.txt") for sample in self.samples for mark_name in sample.mark_names],
-                [os.path.join(self.output_dirs['graphs_output_directory'], sample.name + "." + mark_name + "_QC_Metrics.ps") for sample in self.samples for mark_name in sample.mark_names] + [report_file],
-                # output_files,
+                output_files,
                 [
                     ['qc_plots_R', 'module_mugqic_tools'],
                     ['qc_plots_R', 'module_R']
