@@ -799,7 +799,7 @@ do
   echo -e "----\n\n![QC Metrics for Sample $sample ([download high-res image]({graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.ps))]({graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.png)\n" \\
   >> {report_file}
 done""".format(
-    samples_dict=" ".join(["[\"" + sample.name + "\"]=\"" + sample.mark_name + "\"" for sample in self.samples]),
+    samples_dict=" ".join(["[\"" + sample.name + "\"]=\"" + mark_name + "\"" for sample in self.samples for mark_name in sample.mark_names]),
     # samples=" ".join([sample.name for sample in self.samples]),
     design_file=design_file,
     output_dir=self.output_dir,
