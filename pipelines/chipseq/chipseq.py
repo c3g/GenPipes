@@ -829,8 +829,8 @@ done""".format(
 
         for sample in self.samples:
             for mark_name in sample.mark_names:
-                tag_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name)
-                bedgraph_dir = os.path.join(self.output_dirs['tracks_output_directory'], sample.name)
+                tag_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name)
+                bedgraph_dir = os.path.join(self.output_dirs['tracks_output_directory'], sample.name, mark_name)
                 bedgraph_file = os.path.join(bedgraph_dir, sample.name + "." + mark_name + ".ucsc.bedGraph")
                 big_wig_output = os.path.join(bedgraph_dir, "bigWig", sample.name + "." + mark_name + ".bw")
 
