@@ -670,7 +670,6 @@ cp \\
                         )
                     )
 
-        log.info(" ".join(samples_associative_array))
         trim_metrics_file = os.path.join(self.output_dirs['metrics_output_directory'], "trimSampleTable.tsv")
         metrics_file = os.path.join(self.output_dirs['metrics_output_directory'], "SampleMetrics.stats")
         report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "trimMemSampleTable.tsv")
@@ -698,19 +697,19 @@ do
     duplicated_rate=$(echo "100*$duplicated_reads/$mapped_reads" | bc -l)
     mito_reads=$(sambamba view -c $bam_file chrM)
     mito_rate=$(echo "100*$mito_reads/$mapped_reads" | bc -l)
-    echo -e "$sample\t$mark_name\t$mapped_reads\t$duplicated_reads\t$duplicated_rate\t$mito_reads\t$mito_rate" >> {metrics_file}
+    echo -e "$sample\\t$mark_name\\t$mapped_reads\\t$duplicated_reads\\t$duplicated_rate\\t$mito_reads\\t$mito_rate" >> {metrics_file}
     done
 done && \\
-sed -i -e "1 i\\Sample\tMark Name\tAligned Filtered Reads #\tDuplicate Reads #\tDuplicate %\tMitchondrial Reads #\tMitochondrial %" {metrics_file} && \\
+sed -i -e "1 i\\Sample\\tMark Name\\tAligned Filtered Reads #\\tDuplicate Reads #\\tDuplicate %\\tMitchondrial Reads #\\tMitochondrial %" {metrics_file} && \\
 mkdir -p {report_dir} && \\
 if [[ -f {trim_metrics_file} ]]
 then
-  awk -F "\t" 'FNR==NR{{trim_line[$1]=$0; surviving[$1]=$3; next}}{{OFS="\t"; if ($1=="Sample") {{print trim_line[$1], $2, "Aligned Filtered %", $3, $4, $5, $6}} else {{print trim_line[$1], $2, $2 / surviving[$1] * 100, $3, $4, $5, $6}}}}' {trim_metrics_file} {metrics_file} \\
+  awk -F "\\t" 'FNR==NR{{trim_line[$1]=$0; surviving[$1]=$3; next}}{{OFS="\\t"; if ($1=="Sample") {{print trim_line[$1], $2, "Aligned Filtered %", $3, $4, $5, $6}} else {{print trim_line[$1], $2, $2 / surviving[$1] * 100, $3, $4, $5, $6}}}}' {trim_metrics_file} {metrics_file} \\
   > {report_metrics_file}
 else
   cp {metrics_file} {report_metrics_file}
 fi && \\
-trim_mem_sample_table=`if [[ -f {trim_metrics_file} ]] ; then LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%.1f", $8), sprintf("%\\47d", $9), sprintf("%.1f", $10)}}}}' {report_metrics_file} ; else LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6)}}}}' {report_metrics_file} ; fi` && \\
+trim_mem_sample_table=`if [[ -f {trim_metrics_file} ]] ; then LC_NUMERIC=en_CA awk -F "\\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%.1f", $8), sprintf("%\\47d", $9), sprintf("%.1f", $10)}}}}' {report_metrics_file} ; else LC_NUMERIC=en_CA awk -F "\\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6)}}}}' {report_metrics_file} ; fi` && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable trim_mem_sample_table="$trim_mem_sample_table" \\
@@ -744,21 +743,22 @@ pandoc --to=markdown \\
 
         jobs = []
         for sample in self.samples:
-            alignment_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.mark_name, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.bam")
-            output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.mark_name)
-            other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
+            for mark_name in sample.mark_names:
+                alignment_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
+                output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name)
+                other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
 
-            job = homer.makeTagDir(
-                output_dir,
-                alignment_file,
-                self.ucsc_genome,
-                restriction_site=None,
-                illuminaPE=False,
-                other_options=other_options
-                )
-            job.name = "homer_make_tag_directory." + sample.name
-            job.removable_files = [output_dir]
-            jobs.append(job)
+                job = homer.makeTagDir(
+                    output_dir,
+                    alignment_file,
+                    self.ucsc_genome,
+                    restriction_site=None,
+                    illuminaPE=False,
+                    other_options=other_options
+                    )
+                job.name = "homer_make_tag_directory." + sample.name + "." + mark_name
+                job.removable_files = [output_dir]
+                jobs.append(job)
 
         return jobs
 
@@ -828,40 +828,41 @@ done""".format(
 
 
         for sample in self.samples:
-            tag_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name)
-            bedgraph_dir = os.path.join(self.output_dirs['tracks_output_directory'], sample.name)
-            bedgraph_file = os.path.join(bedgraph_dir, sample.name + "." + sample.mark_name + ".ucsc.bedGraph")
-            big_wig_output = os.path.join(bedgraph_dir, "bigWig", sample.name + "." + sample.mark_name + ".bw")
+            for mark_name in sample.mark_names:
+                tag_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name)
+                bedgraph_dir = os.path.join(self.output_dirs['tracks_output_directory'], sample.name)
+                bedgraph_file = os.path.join(bedgraph_dir, sample.name + "." + mark_name + ".ucsc.bedGraph")
+                big_wig_output = os.path.join(bedgraph_dir, "bigWig", sample.name + "." + mark_name + ".bw")
 
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(bedgraph_dir),
-                    homer.makeUCSCfile(
-                        tag_dir,
-                        bedgraph_file
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(bedgraph_dir),
+                        homer.makeUCSCfile(
+                            tag_dir,
+                            bedgraph_file
+                            )
+                        ],
+                        name="homer_make_ucsc_file." + sample.name + "." + mark_name,
+                        removable_files=[bedgraph_dir]
                         )
-                    ],
-                    name="homer_make_ucsc_file." + sample.name + "." + sample.mark_name,
-                    removable_files=[bedgraph_dir]
                     )
-                )
 
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.join(bedgraph_dir, "bigWig")),
-                    Job(command="export TMPDIR={tmp_dir}".format(tmp_dir=config.param('homer_make_ucsc_file', 'tmp_dir'))),
-                    ucsc.bedGraphToBigWig(
-                        bedgraph_file,
-                        big_wig_output,
-                        header=True)
-                    ],
-                    name="homer_make_ucsc_file_bigWig." + sample.name + "." + sample.mark_name)
-                )
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(os.path.join(bedgraph_dir, "bigWig")),
+                        Job(command="export TMPDIR={tmp_dir}".format(tmp_dir=config.param('homer_make_ucsc_file', 'tmp_dir'))),
+                        ucsc.bedGraphToBigWig(
+                            bedgraph_file,
+                            big_wig_output,
+                            header=True)
+                        ],
+                        name="homer_make_ucsc_file_bigWig." + sample.name + "." + mark_name)
+                    )
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_make_ucsc_file.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['tracks_output_directory'], sample.name, sample.name + "." + sample.mark_name + ".ucsc.bedGraph.gz") for sample in self.samples],
+                [os.path.join(self.output_dirs['tracks_output_directory'], sample.name, sample.name + "." + mark_name + ".ucsc.bedGraph.gz") for sample in self.samples for mark_name in sample.mark_names],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -911,68 +912,70 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
         #                 couples[sample.name] = [input_file, contrast.real_name, contrast.type]
 
         for sample in self.samples:
-            if sample.input_sample:
-                treatment_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.treatments]
-                control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.controls]
-                output_dir = os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name)
+            for mark_name in sample.mark_names:
+                log.info("Sample: %s\nMarkName: %s\nMarkType: %s\nInputSample: %s\n" % (sample.name, mark_name, sample.mark_type, sample.input_sample))
+                if sample.input_sample:
+                    treatment_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.treatments]
+                    control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.controls]
+                    output_dir = os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name)
 
 
-                ## set macs2 variables:
+                    ## set macs2 variables:
 
-                format = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
-                genome_size = self.mappable_genome_size()
-                output_prefix_name = os.path.join(output_dir, contrast.real_name)
-                output = os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")
+                    format = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
+                    genome_size = self.mappable_genome_size()
+                    output_prefix_name = os.path.join(output_dir, contrast.real_name)
+                    output = os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")
 
-                if contrast.type == 'broad':  # Broad region
-                    other_options = " --broad --nomodel"
-                else:  # Narrow region
-                    if control_files:
-                        other_options = " --nomodel"
-                    else:
-                        other_options = " --fix-bimodal"
+                    if contrast.type == 'broad':  # Broad region
+                        other_options = " --broad --nomodel"
+                    else:  # Narrow region
+                        if control_files:
+                            other_options = " --nomodel"
+                        else:
+                            other_options = " --fix-bimodal"
 
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(output_dir),
-                        macs2.callpeak(
-                            format,
-                            genome_size,
-                            treatment_files,
-                            control_files,
-                            output_prefix_name,
-                            output,
-                            other_options
+                    jobs.append(
+                        concat_jobs([
+                            bash.mkdir(output_dir),
+                            macs2.callpeak(
+                                format,
+                                genome_size,
+                                treatment_files,
+                                control_files,
+                                output_prefix_name,
+                                output,
+                                other_options
+                                )
+                            ],
+                            name="macs2_callpeak." + contrast.real_name,
+                            removable_files=[output_dir]
                             )
-                        ],
-                        name="macs2_callpeak." + contrast.real_name,
-                        removable_files=[output_dir]
                         )
-                    )
 
-              ## For ihec: exchange peak score by log10 q-value and generate bigBed
-                jobs.append(
-                    concat_jobs([
-                        Job([os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")],
-                            [os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")],
-                            command="""\
+                  ## For ihec: exchange peak score by log10 q-value and generate bigBed
+                    jobs.append(
+                        concat_jobs([
+                            Job([os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")],
+                                [os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")],
+                                command="""\
 awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
     peak_file=os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak"),
     peak_bed_file=os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")
     )
-                            ),
-                        ucsc.bedToBigBed(
-                            os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed"),
-                            os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bb")
+                                ),
+                            ucsc.bedToBigBed(
+                                os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed"),
+                                os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bb")
+                                )
+                            ],
+                            name="macs2_callpeak_bigBed."+ contrast.real_name
                             )
-                        ],
-                        name="macs2_callpeak_bigBed."+ contrast.real_name
                         )
-                    )
-            elif sample.mark_type == "I":
-                log.warning(sample.name + "is an Input ... skipping")
-            else:
-                raise Exception("Error: readset \"" + sample.name + "\" estimated_genome_size is not defined!")
+                elif sample.mark_type == "I":
+                    log.warning(sample.name + "is an Input ... skipping")
+                else:
+                    raise Exception("Error: readset \"" + sample.name + "\" estimated_genome_size is not defined!")
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
         jobs.append(
