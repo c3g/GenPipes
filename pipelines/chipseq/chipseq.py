@@ -779,8 +779,9 @@ pandoc --to=markdown \\
 
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.mark_name, "tagInfo.txt") for sample in self.samples],
-                output_files,
+                [os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name, "tagInfo.txt") for sample in self.samples for mark_name in sample.mark_names],
+                [os.path.join(self.output_dirs['graphs_output_directory'], sample.name + "." + mark_name + "_QC_Metrics.ps") for sample in self.samples for mark_name in sample.mark_names] + [report_file],
+                # output_files,
                 [
                     ['qc_plots_R', 'module_mugqic_tools'],
                     ['qc_plots_R', 'module_R']
