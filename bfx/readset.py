@@ -133,7 +133,7 @@ class IlluminaReadset(Readset):
             return None
         else:
             return self._mark_name
-    
+
     @property
     def mark_type(self):
         if not hasattr(self, "_mark_type"):
@@ -141,12 +141,12 @@ class IlluminaReadset(Readset):
         else:
             return self._mark_type
 
-    @property
-    def input_sample(self):
-        if not hasattr(self, "_input_sample"):
-            return None
-        else:
-            return self._input_sample
+    # @property
+    # def input_sample(self):
+    #     if not hasattr(self, "_input_sample"):
+    #         return None
+    #     else:
+    #         return self._input_sample
 
 def parse_illumina_readset_file(illumina_readset_file):
     readsets = []
@@ -200,12 +200,16 @@ def parse_illumina_readset_file(illumina_readset_file):
 
         # For ChIP-Seq only
         readset._mark_name = line.get('MarkName', None)
-        readset._mark_type = line.get('MarkType', None)
-        readset._input_sample = line.get('InputSample', None)
+        if re.search("^[NBI]$", line.get('MarkType', None)):
+            readset._mark_type = line.get('MarkType', None)
+        else:
+            raise Exception("Mark Error: MarkType \"" + line.get('MarkName', None) +
+                "\" is invalid (should be either N, B or I)!")
+        # readset._input_sample = line.get('InputSample', None)
 
         readsets.append(readset)
         sample.add_readset(readset)
-        sample.add_mark_name(readset.mark_name)
+        sample.add_mark(readset.mark_name, readset.mark_type)
 
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
