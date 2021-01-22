@@ -889,32 +889,11 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
 
         jobs = []
 
-        # for contrast in self.contrasts:
-        #     if contrast.treatments:
-        #         if len(contrast.controls) > 1:
-        #             _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
-        #         elif len(contrast.controls) == 1:
-        #             input_file = contrast.controls[0].name
-        #         elif not contrast.controls:
-        #             input_file = "no_input"
-        #         for sample in contrast.treatments:
-        #             log.debug("adding sample" + sample.name)
-        #             if couples.has_key(sample.name):
-        #                 if couples[sample.name][0] == input_file:
-        #                     pass
-        #                 else:
-        #                     _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
-        #                 if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
-        #                     pass
-        #                 else:
-        #                     _raise(SanitycheckError("Error: sample \"" + sample.name + "\" is involved in several different contrasts, please use one contrast per sample !"))
-        #             else:
-        #                 couples[sample.name] = [input_file, contrast.real_name, contrast.type]
-
         samples_associative_array = []
 
         for sample in self.samples:
-            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
+            # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
+            mark_list = []
             # if no Input file
             input_file = []
             input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam") for mark_name, mark_type in sample.marks.items() if mark_type == "I"]
@@ -923,8 +902,9 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                     raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
                 input_file = [input_file_list[0]]
             for mark_name, mark_type in sample.marks.items():
-                log.info("Sample: %s\nMarkName: %s\nMarkType: %s" % (sample.name, mark_name, mark_type))
                 if mark_type != "I":
+                    mark_list.append(mark_name)
+
                     mark_file = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")]
                     # control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.controls]
                     output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
@@ -983,12 +963,13 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
                         )
                 # Else if mark type is Input
                 else:
-                    log.warning(sample.name + "is an Input ... skipping")
+                    log.warning("Mark " + mark_name + " for Sample " + sample.name + "is an Input ... skipping")
+            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak") for contrast in self.contrasts],
+                [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + mark_type + "Peak") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -1000,6 +981,7 @@ do
   do
     cp -a --parents {macs_dir}/$sample/$mark_name/ {report_dir}/ && \\
     echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{mark_name}}_peaks.xls)" >> {report_file}
+  done
 done""".format(
     samples_associative_array=" ".join(samples_associative_array),
     report_template_dir=self.report_template_dir,
@@ -1024,95 +1006,104 @@ done""".format(
 
         jobs = []
 
-        for contrast in self.contrasts:
-            if contrast.treatments:
-                treatment_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.treatments]
-                control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.controls]
-                output_dir = os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name)
+        samples_associative_array = []
 
+        for sample in self.samples:
+            # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
+            mark_list = []
+            # if no Input file
+            input_file = []
+            input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam") for mark_name, mark_type in sample.marks.items() if mark_type == "I"]
+            if len(input_file_list) > 0:
+                if len(input_file_list) > 1:
+                    raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
+                input_file = [input_file_list[0]]
+            for mark_name, mark_type in sample.marks.items():
+                if mark_type != "I":
+                    mark_list.append(mark_name)
 
-                ## set macs2 variables:
+                    mark_file = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")]
+                    # control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.controls]
+                    output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
 
-                format = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
-                genome_size = self.mappable_genome_size()
-                output_prefix_name = os.path.join(output_dir, contrast.real_name)
-                output = os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")
+                    ## set macs2 variables:
 
-                other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
-                # if contrast.type == 'broad':  # Broad region
-                #   other_options = " --broad --nomodel"
-                # else:  # Narrow region
-                #     if control_files:
-                #         other_options = " --nomodel"
-                #     else:
-                #         other_options = " --fix-bimodal"
+                    format = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
+                    genome_size = self.mappable_genome_size()
+                    output_prefix_name = os.path.join(output_dir, mark_name)
+                    output = os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak")
+                    other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
 
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(output_dir),
-                        macs2.callpeak(
-                            format,
-                            genome_size,
-                            treatment_files,
-                            control_files,
-                            output_prefix_name,
-                            output,
-                            other_options
+                    jobs.append(
+                        concat_jobs([
+                            bash.mkdir(output_dir),
+                            macs2.callpeak(
+                                format,
+                                genome_size,
+                                mark_file,
+                                input_file,
+                                output_prefix_name,
+                                output,
+                                other_options
+                                )
+                            ],
+                            name="macs2_callpeak." + sample.name + "." + mark_name,
+                            removable_files=[output_dir]
                             )
-                        ],
-                        name="macs2_callpeak." + contrast.real_name,
-                        removable_files=[output_dir]
                         )
-                    )
 
-              ## For ihec: exchange peak score by log10 q-value and generate bigBed
-                jobs.append(
-                    concat_jobs([
-                        Job([os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")],
-                            [os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")],
-                            command="""\
+                  ## For ihec: exchange peak score by log10 q-value and generate bigBed
+                    jobs.append(
+                        concat_jobs([
+                            Job([os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak")],
+                                [os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bed")],
+                                command="""\
 awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
-    peak_file=os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak"),
-    peak_bed_file=os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")
+    peak_file=os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak"),
+    peak_bed_file=os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bed")
     )
-                            ),
-                        ucsc.bedToBigBed(
-                            os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed"),
-                            os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bb")
+                                ),
+                            ucsc.bedToBigBed(
+                                os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bed"),
+                                os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bb")
+                                )
+                            ],
+                            name="macs2_callpeak_bigBed." + sample.name + "." + mark_name
                             )
-                        ],
-                        name="macs2_callpeak_bigBed."+ contrast.real_name
                         )
-                    )
-            else:
-                log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+                # Else if mark type is Input
+                else:
+                    log.warning("Mark " + mark_name + " for Sample " + sample.name + "is an Input ... skipping")
+            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak") for contrast in self.contrasts],
+                [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + mark_type + "Peak") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
 cp {report_template_dir}/{basename_report_file} {report_dir}/ && \\
-for contrast in {contrasts}
+declare -A samples_associative_array=({samples_associative_array}) && \\
+for sample in ${{!samples_associative_array[@]}}
 do
-  cp -a --parents {macs_dir}/$contrast/ {report_dir}/ && \\
-  echo -e "* [Peak Calls File for Design $contrast]({macs_dir}/$contrast/${{contrast}}_peaks.xls)" \\
-  >> {report_file}
+  for mark_name in ${{samples_associative_array[$sample]}}
+  do
+    cp -a --parents {macs_dir}/$sample/$mark_name/ {report_dir}/ && \\
+    echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{mark_name}}_peaks.xls)" >> {report_file}
+  done
 done""".format(
-    contrasts=" ".join([contrast.real_name for contrast in self.contrasts]),
+    samples_associative_array=" ".join(samples_associative_array),
     report_template_dir=self.report_template_dir,
     basename_report_file=os.path.basename(report_file),
-    report_file=report_file, 
-    macs_dir=self.output_dirs['macs_output_directory'], 
+    report_file=report_file,
+    macs_dir=self.output_dirs['macs_output_directory'],
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
                 name="macs2_callpeak_report")
             )
 
-        return jobs
 
     def homer_annotate_peaks(self):
         """
@@ -1122,31 +1113,38 @@ done""".format(
 
         jobs = []
 
-        for contrast in self.contrasts:
-            if contrast.treatments:
-                peak_file = os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak")
-                output_prefix = os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name)
-                annotation_file = output_prefix + ".annotated.csv"
+        samples_associative_array = []
 
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(output_prefix),
-                        homer.annotatePeaks(
-                            peak_file,
-                            self.ucsc_genome,
-                            output_prefix,
-                            annotation_file
-                            ),
-                        Job(
-                            [annotation_file],
-                            [
-                                output_prefix + ".tss.stats.csv",
-                                output_prefix + ".exon.stats.csv",
-                                output_prefix + ".intron.stats.csv",
-                                output_prefix + ".tss.distance.csv"
-                            ],
-                            [['homer_annotate_peaks', 'module_perl'], ['homer_annotate_peaks', 'module_mugqic_tools']],
-                            command="""\
+        for sample in self.samples:
+            # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
+            mark_list = []
+            for mark_name, mark_type in sample.marks.items():
+                if mark_type != "I":
+                    mark_list.append(mark_name)
+
+                    peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + mark_type + "Peak")
+                    output_prefix = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name)
+                    annotation_file = output_prefix + ".annotated.csv"
+
+                    jobs.append(
+                        concat_jobs([
+                            bash.mkdir(output_prefix),
+                            homer.annotatePeaks(
+                                peak_file,
+                                self.ucsc_genome,
+                                output_prefix,
+                                annotation_file
+                                ),
+                            Job(
+                                [annotation_file],
+                                [
+                                    output_prefix + ".tss.stats.csv",
+                                    output_prefix + ".exon.stats.csv",
+                                    output_prefix + ".intron.stats.csv",
+                                    output_prefix + ".tss.distance.csv"
+                                ],
+                                [['homer_annotate_peaks', 'module_perl'], ['homer_annotate_peaks', 'module_mugqic_tools']],
+                                command="""\
 perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
   "{annotation_file}",
   "{output_prefix}",
@@ -1164,30 +1162,34 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
     distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', type='int'),
     gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', type='int')
     ),
-                            removable_files=[os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name)],
-                            )
-                        ],
-                        name="homer_annotate_peaks." + contrast.real_name)
-                    )
+                                removable_files=[os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)],
+                                )
+                            ],
+                            name="homer_annotate_peaks." + sample.name + "." + mark_name)
+                        )
 
-            else:
-                log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+                else:
+                    log.warning("Mark " + mark_name + " for Sample " + sample.name + "is an Input ... skipping")
+            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_annotate_peaks.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name + ".annotated.csv") for contrast in self.contrasts],
+                [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name + ".annotated.csv") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
                 [report_file],
                 command="""\
 mkdir -p {report_dir}/annotation/ && \\
 cp {report_template_dir}/{basename_report_file} {report_dir} && \\
-for contrast in {contrasts}
+declare -A samples_associative_array=({samples_associative_array}) && \\
+for sample in ${{!samples_associative_array[@]}}
 do
-  rsync -rvP annotation/$contrast {report_dir}/annotation/ && \\
-  echo -e "* [Gene Annotations for Design $contrast](annotation/$contrast/${{contrast}}.annotated.csv)\n* [HOMER Gene Ontology Annotations for Design $contrast](annotation/$contrast/$contrast/geneOntology.html)\n* [HOMER Genome Ontology Annotations for Design $contrast](annotation/$contrast/$contrast/GenomeOntology.html)" \\
-  >> {report_file}
+  for mark_name in ${{samples_associative_array[$sample]}}
+  do
+    rsync -rvP annotation/$sample {report_dir}/annotation/ && \\
+    echo -e "* [Gene Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/${{mark_name}}.annotated.csv)\n* [HOMER Gene Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/geneOntology.html)\n* [HOMER Genome Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/GenomeOntology.html)" >> {report_file}
+  done
 done""".format(
-    contrasts=" ".join([contrast.real_name for contrast in self.contrasts]),
+    samples_associative_array=" ".join(samples_associative_array),
     report_template_dir=self.report_template_dir,
     basename_report_file=os.path.basename(report_file),
     report_file=report_file,
@@ -1207,53 +1209,66 @@ done""".format(
         jobs = []
 
         counter = 0
-        for contrast in self.contrasts:
-            # Don't find motifs for broad peaks
-            if contrast.type == 'narrow' and contrast.treatments:
-                peak_file = os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name, contrast.real_name + "_peaks." + contrast.type + "Peak")
-                output_dir = os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name)
-                threads = config.param('homer_find_motifs_genome', 'threads', type='posint')
 
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(output_dir),
-                        homer.findMotifsGenome(
-                            peak_file,
-                            self.ucsc_genome,
-                            output_dir,
-                            threads)
-                        ],
-                        name="homer_find_motifs_genome." + contrast.real_name,
-                        removable_files=[os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name)]
+        samples_associative_array = []
+
+        for sample in self.samples:
+            mark_list = []
+            # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
+            for mark_name, mark_type in sample.marks.items():
+                # Don't find motifs for broad peaks
+                if mark_type == "N":
+                    mark_list.append(mark_name)
+
+                    peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + mark_type + "Peak")
+                    output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name)
+
+                    jobs.append(
+                        concat_jobs([
+                            bash.mkdir(output_dir),
+                            homer.findMotifsGenome(
+                                peak_file,
+                                self.ucsc_genome,
+                                output_dir,
+                                config.param('homer_find_motifs_genome', 'threads', type='posint')
+                                )
+                            ],
+                            name="homer_find_motifs_genome." + sample.name + "." + mark_name,
+                            removable_files=[os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)]
+                            )
                         )
-                    )
-                counter = counter +1
-            else:
-                #log.warning("No treatment found for contrast " + contrast.name + "... skipping")
-                log.warning("Contrast " + contrast.name + " is broad; homer_find_motifs_genome is run on narrow peaks ... skipping")
+                    counter = counter +1
+                else:
+                    #log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+                    # log.warning("Contrast " + contrast.name + " is broad; homer_find_motifs_genome is run on narrow peaks ... skipping")
+                    log.warning("Mark " + mark_name + " for Sample " + sample.name + "is not Narrow; homer_find_motifs_genome is run on narrow peaks ... skipping")
+            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
 
         if counter > 0:
             report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_find_motifs_genome.md")
             jobs.append(
                 Job(
-                    [os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name, "homerResults.html") for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments] +
-                    [os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name, "knownResults.html") for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments],
+                    [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name, "homerResults.html") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type == "N"] +
+                    [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name, "knownResults.html") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type == "N"],
                     [report_file],
                     command="""\
-    mkdir -p {report_dir}/annotation/ && \\
-    cp {report_template_dir}/{basename_report_file} {report_dir}/ && \\
-    for contrast in {contrasts}
-    do
-      rsync -avP annotation/$contrast {report_dir}/annotation/ && \\
-      echo -e "* [HOMER _De Novo_ Motif Results for Design $contrast](annotation/$contrast/$contrast/homerResults.html)\n* [HOMER Known Motif Results for Design $contrast](annotation/$contrast/$contrast/knownResults.html)" \\
-      >> {report_file}
-    done""".format(
-        contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
-        report_template_dir=self.report_template_dir,
-        basename_report_file=os.path.basename(report_file),
-        report_file=report_file,
-        report_dir=self.output_dirs['report_output_directory']
-        ),
+mkdir -p {report_dir}/annotation/ && \\
+cp {report_template_dir}/{basename_report_file} {report_dir}/ && \\
+declare -A samples_associative_array=({samples_associative_array}) && \\
+for sample in ${{!samples_associative_array[@]}}
+do
+  for mark_name in ${{samples_associative_array[$sample]}}
+  do
+    rsync -rvP annotation/$sample {report_dir}/annotation/ && \\
+    echo -e "* [HOMER _De Novo_ Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/$mark_name/homerResults.html)\n* [HOMER Known Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/$mark_name/knownResults.html)" >> {report_file}
+  done
+done""".format(
+    samples_associative_array=" ".join(samples_associative_array),
+    report_template_dir=self.report_template_dir,
+    basename_report_file=os.path.basename(report_file),
+    report_file=report_file,
+    report_dir=self.output_dirs['report_output_directory']
+    ),
                     report_files=[report_file],
                     name="homer_find_motifs_genome_report")
                 )
