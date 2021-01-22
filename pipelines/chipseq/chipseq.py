@@ -358,7 +358,7 @@ class ChipSeq(common.Illumina):
 
         jobs = []
         for sample in self.samples:
-            for mark_name in sample.mark_names:
+            for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
                 readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets if readset.mark_name == mark_name]
@@ -416,7 +416,7 @@ class ChipSeq(common.Illumina):
 
         jobs = []
         for sample in self.samples:
-            for mark_name in sample.mark_names:
+            for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 input_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.bam")
                 output_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.bam")
@@ -444,12 +444,12 @@ class ChipSeq(common.Illumina):
                             samples=[sample]
                             )
                     )
-        # log.info(mark_name for sample in self.samples for mark_name in sample.mark_names)
-        # log.info([os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + "." + sample.mark_names + ".sorted.filtered.bam") for sample in self.samples])
+        # log.info(mark_name for sample in self.samples for mark_name in sample.marks)
+        # log.info([os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + "." + sample.marks + ".sorted.filtered.bam") for sample in self.samples])
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.samtools_view_filter.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.bam") for sample in self.samples for mark_name in sample.mark_names],
+                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.bam") for sample in self.samples for mark_name in sample.marks],
                 [report_file],
                 [['samtools_view_filter', 'module_pandoc']],
                 command="""\
@@ -528,7 +528,7 @@ pandoc --to=markdown \\
 
         jobs = []
         for sample in self.samples:
-            for mark_name in sample.mark_names:
+            for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 input_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.bam")
                 output_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
@@ -552,7 +552,7 @@ pandoc --to=markdown \\
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.sambamba_mark_duplicates.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam") for sample in self.samples for mark_name in sample.mark_names],
+                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam") for sample in self.samples for mark_name in sample.marks],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -632,8 +632,8 @@ cp \\
         samples_associative_array = []
 
         for sample in self.samples:
-            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.mark_names) + "\"")
-            for mark_name in sample.mark_names:
+            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
+            for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 file_prefix = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.dup.")
 
@@ -676,7 +676,7 @@ cp \\
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.metrics.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam") for sample in self.samples for mark_name in sample.mark_names],
+                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam") for sample in self.samples for mark_name in sample.marks],
                 [report_metrics_file],
                 [['metrics', 'module_pandoc']],
                 # Retrieve number of aligned and duplicate reads from sample flagstat files
@@ -743,7 +743,7 @@ pandoc --to=markdown \\
 
         jobs = []
         for sample in self.samples:
-            for mark_name in sample.mark_names:
+            for mark_name in sample.marks:
                 alignment_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
                 output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name)
                 other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
@@ -773,13 +773,13 @@ pandoc --to=markdown \\
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.qc_metrics.md")
-        output_files = [os.path.join(self.output_dirs['graphs_output_directory'], sample.name + "." + mark_name + "_QC_Metrics.ps") for sample in self.samples for mark_name in sample.mark_names] + [report_file]
+        output_files = [os.path.join(self.output_dirs['graphs_output_directory'], sample.name + "." + mark_name + "_QC_Metrics.ps") for sample in self.samples for mark_name in sample.marks] + [report_file]
 
         jobs = []
 
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name, "tagInfo.txt") for sample in self.samples for mark_name in sample.mark_names],
+                [os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name, "tagInfo.txt") for sample in self.samples for mark_name in sample.marks],
                 output_files,
                 [
                     ['qc_plots_R', 'module_mugqic_tools'],
@@ -799,7 +799,7 @@ do
   echo -e "----\n\n![QC Metrics for Sample $sample ([download high-res image]({graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.ps))]({graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.png)\n" \\
   >> {report_file}
 done""".format(
-    samples_dict=" ".join(["[\"" + sample.name + "\"]=\"" + mark_name + "\"" for sample in self.samples for mark_name in sample.mark_names]),
+    samples_dict=" ".join(["[\"" + sample.name + "\"]=\"" + mark_name + "\"" for sample in self.samples for mark_name in sample.marks]),
     # samples=" ".join([sample.name for sample in self.samples]),
     design_file=design_file,
     output_dir=self.output_dir,
@@ -828,7 +828,7 @@ done""".format(
 
 
         for sample in self.samples:
-            for mark_name in sample.mark_names:
+            for mark_name in sample.marks:
                 tag_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name)
                 bedgraph_dir = os.path.join(self.output_dirs['tracks_output_directory'], sample.name, mark_name)
                 bedgraph_file = os.path.join(bedgraph_dir, sample.name + "." + mark_name + ".ucsc.bedGraph")
@@ -862,7 +862,7 @@ done""".format(
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_make_ucsc_file.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['tracks_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".ucsc.bedGraph.gz") for sample in self.samples for mark_name in sample.mark_names],
+                [os.path.join(self.output_dirs['tracks_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".ucsc.bedGraph.gz") for sample in self.samples for mark_name in sample.marks],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -912,25 +912,31 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
         #                 couples[sample.name] = [input_file, contrast.real_name, contrast.type]
 
         for sample in self.samples:
-            for mark_name in sample.mark_names:
-                log.info("Sample: %s\nMarkName: %s\nMarkType: %s\nInputSample: %s\n" % (sample.name, mark_name, sample.readset.mark_type, sample.readset.input_sample))
-                if sample.input_sample:
-                    treatment_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.treatments]
-                    control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.controls]
-                    output_dir = os.path.join(self.output_dirs['macs_output_directory'], contrast.real_name)
-
+            # if no Input file
+            input_file = None
+            input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam") for mark_name, mark_type in sample.marks.items() if mark_type == "I"]
+            if len(input_file_list) > 0:
+                if len(input_file_list) > 1:
+                    raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
+                input_file = input_file_list[0]
+            for mark_name, mark_type in sample.marks.items():
+                log.info("Sample: %s\nMarkName: %s\nMarkType: %s" % (sample.name, mark_name, mark_type))
+                if mark_type != "I":
+                    mark_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
+                    # control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.controls]
+                    output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
 
                     ## set macs2 variables:
 
                     format = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
                     genome_size = self.mappable_genome_size()
-                    output_prefix_name = os.path.join(output_dir, contrast.real_name)
-                    output = os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")
+                    output_prefix_name = os.path.join(output_dir, mark_name)
+                    output = os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak")
 
-                    if contrast.type == 'broad':  # Broad region
+                    if mark_type == "B":  # Broad region
                         other_options = " --broad --nomodel"
                     else:  # Narrow region
-                        if control_files:
+                        if input_file:
                             other_options = " --nomodel"
                         else:
                             other_options = " --fix-bimodal"
@@ -941,14 +947,14 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                             macs2.callpeak(
                                 format,
                                 genome_size,
-                                treatment_files,
-                                control_files,
+                                [mark_file],
+                                [input_file],
                                 output_prefix_name,
                                 output,
                                 other_options
                                 )
                             ],
-                            name="macs2_callpeak." + contrast.real_name,
+                            name="macs2_callpeak." + sample.name + "." + mark_name,
                             removable_files=[output_dir]
                             )
                         )
@@ -956,26 +962,25 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                   ## For ihec: exchange peak score by log10 q-value and generate bigBed
                     jobs.append(
                         concat_jobs([
-                            Job([os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak")],
-                                [os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")],
+                            Job([os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak")],
+                                [os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bed")],
                                 command="""\
 awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
-    peak_file=os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak"),
-    peak_bed_file=os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed")
+    peak_file=os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak"),
+    peak_bed_file=os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bed")
     )
                                 ),
                             ucsc.bedToBigBed(
-                                os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bed"),
-                                os.path.join(output_dir, contrast.real_name + "_peaks." + contrast.type + "Peak.bb")
+                                os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bed"),
+                                os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bb")
                                 )
                             ],
-                            name="macs2_callpeak_bigBed."+ contrast.real_name
+                            name="macs2_callpeak_bigBed." + sample.name + "." + mark_name
                             )
                         )
-                elif sample.mark_type == "I":
-                    log.warning(sample.name + "is an Input ... skipping")
+                # Else if mark type is Input
                 else:
-                    raise Exception("Error: readset \"" + sample.name + "\" estimated_genome_size is not defined!")
+                    log.warning(sample.name + "is an Input ... skipping")
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
         jobs.append(
