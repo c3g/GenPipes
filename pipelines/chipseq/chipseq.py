@@ -911,7 +911,10 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
         #             else:
         #                 couples[sample.name] = [input_file, contrast.real_name, contrast.type]
 
+        samples_associative_array = []
+
         for sample in self.samples:
+            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
             # if no Input file
             input_file = []
             input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam") for mark_name, mark_type in sample.marks.items() if mark_type == "I"]
@@ -990,13 +993,15 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
                 command="""\
 mkdir -p {report_dir} && \\
 cp {report_template_dir}/{basename_report_file} {report_dir}/ && \\
-for contrast in {contrasts}
+declare -A samples_associative_array=({samples_associative_array}) && \\
+for sample in ${{!samples_associative_array[@]}}
 do
-  cp -a --parents {macs_dir}/$contrast/ {report_dir}/ && \\
-  echo -e "* [Peak Calls File for Design $contrast]({macs_dir}/$contrast/${{contrast}}_peaks.xls)" \\
-  >> {report_file}
+  for mark_name in ${{samples_associative_array[$sample]}}
+  do
+    cp -a --parents {macs_dir}/$sample/$mark_name/ {report_dir}/ && \\
+    echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{mark_name}}_peaks.xls)" >> {report_file}
 done""".format(
-    contrasts=" ".join([contrast.real_name for contrast in self.contrasts]),
+    samples_associative_array=" ".join(samples_associative_array),
     report_template_dir=self.report_template_dir,
     basename_report_file=os.path.basename(report_file),
     report_file=report_file,
