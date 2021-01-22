@@ -913,16 +913,16 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
 
         for sample in self.samples:
             # if no Input file
-            input_file = None
+            input_file = []
             input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam") for mark_name, mark_type in sample.marks.items() if mark_type == "I"]
             if len(input_file_list) > 0:
                 if len(input_file_list) > 1:
                     raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
-                input_file = input_file_list[0]
+                input_file = [input_file_list[0]]
             for mark_name, mark_type in sample.marks.items():
                 log.info("Sample: %s\nMarkName: %s\nMarkType: %s" % (sample.name, mark_name, mark_type))
                 if mark_type != "I":
-                    mark_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
+                    mark_file = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")]
                     # control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.filtered.dup.bam") for sample in contrast.controls]
                     output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
 
@@ -933,9 +933,9 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                     output_prefix_name = os.path.join(output_dir, mark_name)
                     output = os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak")
 
-                    if mark_type == "B":  # Broad region
+                    if mark_type == "B": # Broad region
                         other_options = " --broad --nomodel"
-                    else:  # Narrow region
+                    else: # Narrow region
                         if input_file:
                             other_options = " --nomodel"
                         else:
@@ -947,8 +947,8 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                             macs2.callpeak(
                                 format,
                                 genome_size,
-                                [mark_file],
-                                [input_file],
+                                mark_file,
+                                input_file,
                                 output_prefix_name,
                                 output,
                                 other_options
