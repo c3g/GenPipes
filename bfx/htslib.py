@@ -53,7 +53,7 @@ def tabix(input, options=None):
         command="""\
 tabix {options}  \\
 {input} \\
-        """.format(
+&& sleep 15""".format(
         input=input,
         options=options,
         )
@@ -63,17 +63,18 @@ def bgzip_tabix(input, output):
 
     return Job(
         [input],
-        [output],
+        [output, output + ".tbi"],
         [
             ['htslib_bgziptabix', 'module_htslib'],
         ],
         command="""\
 bgzip -cf \\
 {input} > \\
-{output} && tabix -pvcf {output} \\
-        """.format(
+{output} && \\
+tabix -pvcf {output}""".format(
         input=" \\\n " + input if input else "",
-        output=output
+        output=output,
+        options=config.param('DEFAULT', 'tabix_options', required=False),
         )
     )
 
@@ -83,7 +84,7 @@ def tabix_split(input, output, chr):
         [input],
         [output],
         [
-            ['htslib_tabixsplit', 'module_htslib'],
+            ['DEFAULT', 'module_htslib'],
         ],
         command="""\
 tabix -h {input} {chr} \\

@@ -230,3 +230,25 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
         )
     )
 
+def bincounter(bam, refbam, out=None, window=None):
+
+    return Job(
+        [bam,refbam],
+        [out],
+        [
+            ['bvatools_bincounter', 'module_java'],
+            ['bvatools_bincounter', 'module_bvatools']
+        ],
+        command="""\
+java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
+  bincounter {other_options} \\
+  --bam {bam} --refbam {refbam} {window} {out} """.format(
+        java_other_options=config.param('bvatools_bincounter', 'java_other_options'),
+        ram=config.param('bvatools_bincounter', 'ram'),
+        other_options=config.param('bvatools_bincounter', 'other_options', required=False),
+        bam=bam,
+        refbam=refbam,
+        window=" \\\n  --window " + window if window else "",
+        out=" \\\n  > " + out if out else ""
+        )
+    )

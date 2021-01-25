@@ -53,6 +53,33 @@ Rscript $R_TOOLS/deseq.R \\
         localfit=localfit
     ))
 
+def deseq2(
+    design_file,
+    count_matrix,
+    output_dir
+    ):
+
+    localfit = "-l" if config.param('differential_expression_deseq', 'localfit') else ""
+
+    return  Job(
+        [count_matrix],
+        [os.path.join(output_dir, "deseq_results.csv"), os.path.join(output_dir, "dge_results.csv")],
+        [
+            ['differential_expression_deseq', 'module_mugqic_tools'],
+            ['differential_expression_deseq', 'module_R']
+        ],
+        command="""\
+Rscript $R_TOOLS/deseq2.R \\
+  -d {design_file} \\
+  -c {count_matrix} \\
+  -o {output_dir} \\
+  {localfit}""".format(
+        design_file=design_file,
+        count_matrix=count_matrix,
+        output_dir=output_dir,
+        localfit=localfit
+    ))
+
 def edger(
     design_file,
     count_matrix,

@@ -26,9 +26,9 @@ import os
 from core.config import *
 from core.job import *
 
-def verify(input_bam, input_vcf, output_prefix):
+def verify(input_bam, output_prefix):
     return Job(
-        [input_bam, input_vcf],
+        [input_bam],
         [output_prefix + ".selfSM"],
         [
             ['verify_bam_id', 'module_verify_bam_id']
@@ -39,9 +39,9 @@ verifyBamID \\
   --bam {input_bam} \\
   --out {output_prefix} \\
   {other_options}""".format(
-            input_vcf=input_vcf,
+            input_vcf=config.param('verify_bam_id', 'vcf', type='filepath'),
             input_bam=input_bam,
             output_prefix=output_prefix,
-            other_options=config.param('verify_bam_id', 'other_options')
+            other_options=config.param('verify_bam_id', 'options')
         )
     )

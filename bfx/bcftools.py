@@ -63,31 +63,98 @@ bcftools \\
         )
     )
 
-def concat(inputs, output, options=None):
+def mpileup(inputs, output, options=None, regions=None, regionFile=None):
     """
-    Concatenate or combine VCF/BCF files
+    New bcftools mpileup function
     """
-    if not isinstance(inputs, list):
-        inputs=[inputs]
-    
     return Job(
         inputs,
         [output],
         [
-            ['bcftools_concat', 'module_bcftools']
+            ['bcftools_mpileup', 'module_bcftools']
         ],
         command="""\
 bcftools \\
-  concat -a {options} \\
+  mpileup {options} \\
+  -f {reference_fasta} \\
   {inputs} \\
+  {regions} \\
+  {regionFile} \\
   {output}""".format(
         options=options if options else "",
+        reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),
         inputs="".join(" \\\n  " + input for input in inputs),
+        regions="-r " + regions if regions else "",
+        regionFile="-R " + regionFile if regionFile else "",
         output=" \\\n > " + output if output else ""
         )
     )
 
-def view(input, output, filter_options):
+
+def call(inputs, output, options=None):
+    """
+    New bcftools call function
+    """
+    return Job(
+        inputs,
+        [output],
+        [
+            ['bcftools_call', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  call {options} \\
+  {output} \\
+  {inputs}""".format(
+        options=options if options else "",
+        inputs="".join(" \\\n  " + input for input in inputs),
+        output=" \\\n -o " + output if output else ""
+        )
+    )
+
+def index(inputs, options=None):
+    """
+    New bcftools index function
+    """
+    output = inputs + ".csi"
+
+    return Job(
+        [inputs],
+        [output],
+        [
+            ['bcftools_index', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  index -f {options} \\
+  {inputs}""".format(
+        options=options if options else "",
+        inputs=inputs,
+        )
+    )
+
+def concat(inputs, output, options=None):
+    """
+    Concatenate or combine VCF/BCF files
+    """
+    return Job(
+        inputs,
+        [output],
+        [
+            ['bcftools_concat', 'module_bcftools'],
+        ],
+        command="""\
+bcftools \\
+  concat -a {options} \\
+  {output} \\
+  {inputs}""".format(
+        options=options if options else "",
+        inputs="".join(" \\\n  " + input for input in inputs),
+        output=" \\\n -o " + output if output else ""
+        )
+    )
+
+def view(input, output, filter_options=None):
     """
     Generalized view 
     """
@@ -100,10 +167,10 @@ def view(input, output, filter_options):
         command="""\
 bcftools \\
   view {filter_options} \\
-  {input}{output}""".format(
-        filter_options=filter_options,
+  {output}{input}""".format(
+        filter_options=filter_options if filter_options else "",
         input=" \\\n " + input if input else "",
-        output=" \\\n > " + output if output else ""
+        output=" \\\n -o " + output if output else ""
         )
     )
 
@@ -127,3 +194,22 @@ bcftools \\
         )
     )
 
+def annotate(input, output, options):
+    """
+    Generalized merge
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['bcftools_annotate', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  annotate {options} \\
+  {input}{output}""".format(
+        options=options if options else "",
+        input=" \\\n " + input if input else "",
+        output=" \\\n -o " + output if output else ""
+        )
+    )

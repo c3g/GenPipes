@@ -44,12 +44,12 @@ usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                  [--no-json] [--report] [--clean]
                  [-l {debug,info,warning,error,critical}] [--sanity-check]
-                 [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
-                 [-d DESIGN] [-t {cufflinks,stringtie}] [-r READSETS] [-v]
+                 [--container {wrapper, singularity} <IMAGE PATH>] [-d DESIGN]
+                 [-t {cufflinks,stringtie}] [-r READSETS] [-v]
 
-Version: 3.1.5
+Version: 3.2.0
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
@@ -82,9 +82,9 @@ optional arguments:
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
-                        run pipeline inside a container providing a container
-                        image path or accessible docker/singularity hub path
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a validsingularity
+                        image path
   -d DESIGN, --design DESIGN
                         design file
   -t {cufflinks,stringtie}, --type {cufflinks,stringtie}

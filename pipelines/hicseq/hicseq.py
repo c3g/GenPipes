@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
@@ -37,6 +38,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import config, SanitycheckError, _raise
 from core.job import Job, concat_jobs, pipe_jobs
 from pipelines import common
+import utils.utils
 
 from bfx import picard
 from bfx import samtools
@@ -156,10 +158,10 @@ class HicSeq(common.Illumina):
                 candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam.strip())])
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-            job_fastq1 = tools.sh_fastq_readname_edit(fastq1, "fastq_readName_Edit.fq1." + readset.name)
+            job_fastq1 = tools.sh_fastq_readname_edit(fastq1, self.output_dir, "fastq_readName_Edit.fq1." + readset.name)
             job_fastq1.samples = [readset.sample]
 
-            job_fastq2 = tools.sh_fastq_readname_edit(fastq2, "fastq_readName_Edit.fq2." + readset.name)
+            job_fastq2 = tools.sh_fastq_readname_edit(fastq2, self.output_dir, "fastq_readName_Edit.fq2." + readset.name)
             job_fastq2.samples = [readset.sample]
 
             jobs.extend([job_fastq1, job_fastq2])
@@ -823,4 +825,8 @@ class HicSeq(common.Illumina):
         ]
 
 if __name__ == '__main__':
-    HicSeq(protocol=['hic','capture'])
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        HicSeq(protocol=['hic','capture'])

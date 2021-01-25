@@ -20,10 +20,12 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
 import re
+import subprocess
 import sys
 
 # Append mugqic_pipelines directory to Python library path
@@ -32,12 +34,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config
 from core.job import Job, concat_jobs, pipe_jobs
+import utils.utils
 
 from bfx import bvatools
 from bfx import gq_seq_utils
 from bfx import gatk
 from bfx import igvtools
-from bfx import picard
+from bfx import picard2
 from bfx import samtools
 from bfx import tools
 from bfx import varscan
@@ -77,10 +80,10 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         jobs = []
         for sample in self.samples:
             sample_directory = os.path.join("alignment", sample.name)
-            input_file = os.path.join(sample_directory, sample.name + ".realigned.sorted.bam")
+            input_file = os.path.join(sample_directory, sample.name + ".sorted.realigned.bam")
             output_file = os.path.join(sample_directory, sample.name + ".matefixed.sorted.bam")
 
-            job = picard.fix_mate_information(input_file, output_file)
+            job = picard2.fix_mate_information(input_file, output_file)
             job.name = "picard_fix_mate_information." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -103,7 +106,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
             input_file_prefix = os.path.join("alignment", sample.name, sample.name + ".matefixed.sorted.")
             input = input_file_prefix + "bam"
 
-            job = picard.collect_multiple_metrics(input, input_file_prefix + "all.metrics")
+            job = picard2.collect_multiple_metrics(input, input_file_prefix + "all.metrics")
             job.name = "picard_collect_multiple_metrics." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -147,7 +150,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
                     created_interval_lists.append(interval_list)
 
                 input_file_prefix = os.path.join("alignment", sample.name, sample.name + ".matefixed.sorted.")
-                job = picard.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list)
+                job = picard2.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list)
                 job.name = "picard_calculate_hs_metrics." + sample.name
                 job.samples = [sample]
                 jobs.append(job)
@@ -314,12 +317,11 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
     def steps(self):
         return [
             self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.bwa_mem_picard_sort_sam,
-            self.picard_merge_sam_files,
+            self.skewer_trimming,
+            self.bwa_mem_sambamba_sort_sam,
+            self.sambamba_merge_sam_files,
             self.gatk_indel_realigner,
-            self.merge_realigned,
+            self.sambamba_merge_realigned,
             self.picard_fixmate,
             self.metrics,
             self.picard_calculate_hs_metrics,
@@ -331,5 +333,9 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
             self.cram_output
         ]
 
-if __name__ == '__main__': 
-    DnaSeqHighCoverage()
+if __name__ == '__main__':
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        DnaSeqHighCoverage()

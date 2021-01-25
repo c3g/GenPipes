@@ -44,12 +44,14 @@ def align(input1, input2, output_directory, outputs):
         command="""\
 bismark -q \\
   {other_options} \\
+  {min_insert_size_PE} \\
   {genome_directory} \\
   {input1} \\
   {input2} \\
   --output_dir {output_directory} \\
   --temp_dir {tmp_dir}""".format(
             other_options=config.param('bismark_align', 'other_options'),
+            min_insert_size_PE=("-X " + config.param('bismark_align', 'min_insert_size_PE')) if input2 else "",
             genome_directory=config.param('bismark_align', 'bismark_assembly_dir'),
             input1="-1 "+input1 if input2 else input1,
             input2="-2 "+input2 if input2 else "",
@@ -57,6 +59,7 @@ bismark -q \\
             tmp_dir=config.param('bismark_align', 'tmp_dir')
         )
     )
+
 
 def dedup(input, outputs, library_type="PAIRED_END"):
 

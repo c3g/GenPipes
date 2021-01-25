@@ -50,6 +50,11 @@ def create(pipeline, sample):
             'library_type' : config.param("DEFAULT", 'library_type'),
             'blast_db' : config.param("DEFAULT", 'blast_db')
         }
+    elif pipeline.__class__.__name__ == "Nanopore":
+        general_info = {
+            'instrument': config.param("DEFAULT", 'instrument_type'),
+            'blast_db': config.param("DEFAULT", 'blast_db')
+        }
     elif pipeline.__class__.__name__ == "RnaSeqDeNovoAssembly":
         general_info = {
             'swissprot_db' : config.param("DEFAULT", 'swissprot_db'),
@@ -117,6 +122,30 @@ def create(pipeline, sample):
                     'software' : [{
                         'name' : software['name'],
                         'version' : software['version']
+                    } for software in softwares],
+                    'step': []
+                }
+            }
+        elif pipeline.__class__.__name__ == "Nanopore":
+            json_hash = {
+                'version': jsonator_version,
+                'project': project_name,
+                'submission_date': "",
+                # Create a submission time entry and let it empty : will be updated as the bash script is launched
+                'sample_name': sample.name,
+                'readset': [{
+                    "name": readset.name,
+                    "run": readset.run,
+                    "flowcell": readset.flowcell,
+                    "library": readset.library,
+                    "summary": readset.summary_file,
+                } for readset in sample.readsets],
+                'pipeline': {
+                    'name': pipeline.__class__.__name__,
+                    'general_information': general_info,
+                    'software': [{
+                        'name': software['name'],
+                        'version': software['version']
                     } for software in softwares],
                     'step': []
                 }
