@@ -28,12 +28,12 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                   [--no-json] [--report] [--clean]
                   [-l {debug,info,warning,error,critical}] [--sanity-check]
-                  [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
-                  [-d DESIGN] [-t {mugqic,mpileup,light}] [-r READSETS] [-v]
+                  [--container {wrapper, singularity} <IMAGE PATH>]
+                  [-d DESIGN] [-t {chipseq,atacseq}] [-r READSETS] [-v]
 
-Version: 3.1.5
+Version: 3.2.0
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
@@ -66,23 +66,26 @@ optional arguments:
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
-                        run pipeline inside a container providing a container
-                        image path or accessible docker/singularity hub path
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a validsingularity
+                        image path
   -d DESIGN, --design DESIGN
                         design file
-  -t {mugqic,mpileup,light}, --type {mugqic,mpileup,light}
-                        DNAseq analysis type
+  -t {chipseq,atacseq}, --type {chipseq,atacseq}
+                        Type of pipeline (default chipseq)
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
 
 Steps:
-```
-![chipseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq.png)
-```
 ------
+
+----
+```
+![chipseq chipseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_chipseq.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_chipseq.png)
+```
+chipseq:
 1- picard_sam_to_fastq
 2- trimmomatic
 3- merge_trimmomatic_stats
@@ -95,6 +98,32 @@ Steps:
 10- qc_metrics
 11- homer_make_ucsc_file
 12- macs2_callpeak
+13- homer_annotate_peaks
+14- homer_find_motifs_genome
+15- annotation_graphs
+16- ihec_preprocess_files
+17- run_spp
+18- ihec_metrics
+19- multiqc_report
+20- cram_output
+----
+```
+![chipseq atacseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_atacseq.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_atacseq.png)
+```
+atacseq:
+1- picard_sam_to_fastq
+2- trimmomatic
+3- merge_trimmomatic_stats
+4- bwa_mem_picard_sort_sam
+5- samtools_view_filter
+6- picard_merge_sam_files
+7- picard_mark_duplicates
+8- metrics
+9- homer_make_tag_directory
+10- qc_metrics
+11- homer_make_ucsc_file
+12- macs2_atacseq_callpeak
 13- homer_annotate_peaks
 14- homer_find_motifs_genome
 15- annotation_graphs
@@ -165,7 +194,7 @@ The number of raw/filtered and aligned reads per sample are computed at this sta
 
 homer_make_tag_directory
 ------------------------
-The Homer Tag directories, used to check for quality metrics, are computed at this step. 
+The Homer Tag directories, used to check for quality metrics, are computed at this step.
 
 qc_metrics
 ----------
@@ -207,16 +236,13 @@ ihec_preprocess_files
 ---------------------
 Generate IHEC's files.
 
-
 run_spp
 -------
 runs spp to estimate NSC and RSC ENCODE metrics. For more information: https://github.com/kundajelab/phantompeakqualtools
 
-
 ihec_metrics
 ------------
 Generate IHEC's standard metrics.
-
 
 multiqc_report
 --------------
@@ -227,5 +253,12 @@ cram_output
 -----------
 Generate long term storage version of the final alignment files in CRAM format
 Using this function will include the orginal final bam file into the  removable file list 
+
+macs2_atacseq_callpeak
+----------------------
+Peaks are called using the MACS2 software. Different calling strategies are used for narrow and broad peaks.
+The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
+The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
+The default mfold parameter of MACS2 is [10,30].
 
 
