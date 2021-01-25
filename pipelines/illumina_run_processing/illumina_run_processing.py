@@ -1061,6 +1061,6 @@ def distance(str1, str2):
 if __name__ == '__main__':
     argv = sys.argv
     if '--wrap' in argv:
-utils.utils.container_wrapper_argparse(argv)
+        utils.utils.container_wrapper_argparse(argv)
     else:
         pipeline = IlluminaRunProcessing()
