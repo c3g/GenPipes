@@ -1293,12 +1293,20 @@ done""".format(
 
         input_files = []
         output_files = []
-        for contrast in self.contrasts:
-            annotation_prefix = os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name)
-            input_files.append(annotation_prefix + ".tss.stats.csv")
-            input_files.append(annotation_prefix + ".exon.stats.csv")
-            input_files.append(annotation_prefix + ".intron.stats.csv")
-            input_files.append(annotation_prefix + ".tss.distance.csv")
+        for sample in self.samples:
+            for mark_name, mark_type in sample.marks.items():
+                annotation_prefix = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name)
+                input_files.append(annotation_prefix + ".tss.stats.csv")
+                input_files.append(annotation_prefix + ".exon.stats.csv")
+                input_files.append(annotation_prefix + ".intron.stats.csv")
+                input_files.append(annotation_prefix + ".tss.distance.csv")
+
+        # for contrast in self.contrasts:
+        #     annotation_prefix = os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name)
+        #     input_files.append(annotation_prefix + ".tss.stats.csv")
+        #     input_files.append(annotation_prefix + ".exon.stats.csv")
+        #     input_files.append(annotation_prefix + ".intron.stats.csv")
+        #     input_files.append(annotation_prefix + ".tss.distance.csv")
 
             #output_files.append(os.path.join(self.output_dirs['graphs_output_directory'], contrast.real_name + "_Misc_Graphs.ps"))
 
@@ -1364,7 +1372,6 @@ done""".format(
     graphs_dir=self.output_dirs['graphs_output_directory']
     ),
                 name="annotation_graphs",
-                samples=contrast.treatments,
                 report_files=[report_file],
                 removable_files=output_files
                 )
@@ -1373,64 +1380,70 @@ done""".format(
         return jobs
 
 
-    def ihec_preprocess_files(self):
-        """
-        Generate IHEC's files.
-        """
-        output_dir = self.output_dirs['ihecA_output_directory']
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name)
-            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
-            readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
-            sample_merge_bam = os.path.join(output_dir, sample.name + ".merged.bam")
-            sample_merge_mdup_bam = os.path.join(output_dir, sample.name + ".merged.mdup.bam")
-            # sample_merge_mdup_metrics_file = os.path.join(output_dir, sample.name + ".merged.mdup.metrics")
+    # def ihec_preprocess_files(self):
+    #     """
+    #     Generate IHEC's files.
+    #     """
+    #     output_dir = self.output_dirs['ihecA_output_directory']
+    #     jobs = []
 
-            mkdir_job = bash.mkdir(output_dir)
+    #     for sample in self.samples:
+    #         for mark_name in sample.marks:
+    #             pass
 
-            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            if len(sample.readsets) == 1:
-                readset_bam = readset_bams[0]
-                if os.path.isabs(readset_bam):
-                    target_readset_bam = readset_bam
-                else:
-                    target_readset_bam = os.path.relpath(readset_bam, output_dir)
+    #     for sample in self.samples:
+    #         alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
+    #         # alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name)
+    #         # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
+    #         readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
+    #         sample_merge_bam = os.path.join(output_dir, sample.name + ".merged.bam")
+    #         sample_merge_mdup_bam = os.path.join(output_dir, sample.name + ".merged.mdup.bam")
+    #         # sample_merge_mdup_metrics_file = os.path.join(output_dir, sample.name + ".merged.mdup.metrics")
 
-                job = concat_jobs([
-                    mkdir_job,
-                    Job([readset_bam], [sample_merge_bam], command="ln -s -f " + target_readset_bam + " " + sample_merge_bam, removable_files=[sample_merge_bam]),
-                ], name="ihec_preprocess_symlink." + sample.name)
+    #         mkdir_job = bash.mkdir(output_dir)
 
-            elif len(sample.readsets) > 1:
-                job = concat_jobs([
-                    mkdir_job,
-                    picard.merge_sam_files(readset_bams, sample_merge_bam)
-                ], name="ihec_preprocess_merge." + sample.name)
+    #         # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
+    #         if len(sample.readsets) == 1:
+    #             readset_bam = readset_bams[0]
+    #             if os.path.isabs(readset_bam):
+    #                 target_readset_bam = readset_bam
+    #             else:
+    #                 target_readset_bam = os.path.relpath(readset_bam, output_dir)
 
-            jobs.append(job)
+    #             job = concat_jobs([
+    #                 mkdir_job,
+    #                 Job([readset_bam], [sample_merge_bam], command="ln -s -f " + target_readset_bam + " " + sample_merge_bam, removable_files=[sample_merge_bam]),
+    #             ], name="ihec_preprocess_symlink." + sample.name)
 
-            jobs.append(
-                concat_jobs([
-                    Job(
-                        command="export TMPDIR={tmp_dir}".format(tmp_dir=config.param('ihec_preprocess_files', 'tmp_dir'))
-                        ),
-                    sambamba.markdup(
-                        sample_merge_bam,
-                        sample_merge_mdup_bam,
-                        tmp_dir=config.param('sambamba_mark_duplicates', 'tmp_dir', required=True)
-                        )
-                    # picard.mark_duplicates(
-                    #     [sample_merge_bam],
-                    #     sample_merge_mdup_bam,
-                    #     sample_merge_mdup_metrics_file
-                    #     )
-                    ],
-                    name="ihec_preprocess_mark_duplicates." + sample.name
-                    )
-                )
+    #         elif len(sample.readsets) > 1:
+    #             job = concat_jobs([
+    #                 mkdir_job,
+    #                 picard.merge_sam_files(readset_bams, sample_merge_bam)
+    #             ], name="ihec_preprocess_merge." + sample.name)
 
-        return jobs
+    #         jobs.append(job)
+
+    #         jobs.append(
+    #             concat_jobs([
+    #                 Job(
+    #                     command="export TMPDIR={tmp_dir}".format(tmp_dir=config.param('ihec_preprocess_files', 'tmp_dir'))
+    #                     ),
+    #                 sambamba.markdup(
+    #                     sample_merge_bam,
+    #                     sample_merge_mdup_bam,
+    #                     tmp_dir=config.param('sambamba_mark_duplicates', 'tmp_dir', required=True)
+    #                     )
+    #                 # picard.mark_duplicates(
+    #                 #     [sample_merge_bam],
+    #                 #     sample_merge_mdup_bam,
+    #                 #     sample_merge_mdup_metrics_file
+    #                 #     )
+    #                 ],
+    #                 name="ihec_preprocess_mark_duplicates." + sample.name
+    #                 )
+    #             )
+
+    #     return jobs
 
     def run_spp(self):
         """
@@ -1438,41 +1451,37 @@ done""".format(
         """
         jobs = []
         # alignment_dir = self.output_dirs['ihecA_output_directory']
-        alignment_dir = self.output_dirs['alignment_output_directory']
+        # alignment_dir = self.output_dirs['alignment_output_directory']
 
         output_dir = self.output_dirs['ihecM_output_directory']
 
         for sample in self.samples:
-            sample_merge_mdup_bam = os.path.join(alignment_dir, sample.name, sample.name + ".sorted.filtered.dup.bam")
-            output = os.path.join(output_dir, sample.name + ".crosscor")
+            for mark_name in sample.marks:
+                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
+                sample_merge_mdup_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
+                output = os.path.join(output_dir, sample.name + ".crosscor")
 
-            spp_cmd = """Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir}""".format(
-                sample_merge_mdup_bam=sample_merge_mdup_bam,
-                output=output,
-                tmp_dir=config.param('run_spp', 'tmp_dir'))
-
-
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(output_dir),
-                    Job(
-                        [sample_merge_mdup_bam],
-                        [output],
-                        [
-                            ['run_spp', 'module_samtools'],
-                            ['run_spp', 'module_mugqic_tools'],
-                            ['run_spp', 'module_R']
-                        ],
-                        command="""\
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(output_dir),
+                        Job(
+                            [sample_merge_mdup_bam],
+                            [output],
+                            [
+                                ['run_spp', 'module_samtools'],
+                                ['run_spp', 'module_mugqic_tools'],
+                                ['run_spp', 'module_R']
+                            ],
+                            command="""\
 Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir}""".format(
     sample_merge_mdup_bam=sample_merge_mdup_bam,
     output=output,
     tmp_dir=config.param('run_spp', 'tmp_dir')
     )
-                        )
-                    ],
-                    name="run_spp." + sample.name)
-                )
+                            )
+                        ],
+                        name="run_spp." + sample.name)
+                    )
 
         return jobs
 
@@ -1485,64 +1494,90 @@ Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -t
         jobs = []
 
         alignment_dir = self.output_dirs['alignment_output_directory']
-        output_dir = self.output_dirs['ihecM_output_directory']
+        # output_dir = self.output_dirs['ihecM_output_directory']
 
-        ##generate couples chip/input/treatment_name/peak_type
-        couples = {}
+        # samples_associative_array = []
         metrics_to_merge = []
-        for contrast in self.contrasts:
-            if contrast.treatments:
-                if len(contrast.controls) > 1:
-                    _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
-                elif len(contrast.controls) == 1:
-                    input_file = contrast.controls[0].name
-                elif not contrast.controls:
-                    input_file = "no_input"
-                for sample in contrast.treatments:
-                    log.debug("adding sample" + sample.name)
-                    if couples.has_key(sample.name):
-                        if couples[sample.name][0] == input_file:
-                            pass
-                        else:
-                            _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" has several input files, please use one input for pairing!"))
-                        if couples[sample.name][1] == contrast.real_name and couples[sample.name][2] == contrast.type:
-                            pass
-                        else:
-                            _raise(SanitycheckError("Error: sample \"" + sample.name + "\" is involved in several different contrasts, please use one contrast per sample !"))
-                    else:
-                        couples[sample.name] = [input_file, contrast.real_name, contrast.type]
 
-        for sample_name, sample_list_info in couples.iteritems():
-            chip_bam = os.path.join(alignment_dir, sample_name,sample_name + ".sorted.filtered.dup.bam")
-            input_sample = sample_list_info[0] if sample_list_info[0] is not "no_input" else sample_name
-            input_bam = os.path.join(alignment_dir, input_sample, input_sample + ".sorted.filtered.dup.bam")
-            chip_type = sample_list_info[2]
-            chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample_list_info[1], sample_list_info[1] + "_peaks." + sample_list_info[2] + "Peak")
-            genome = config.param('IHEC_chipseq_metrics', 'assembly')
+        for sample in self.samples:
+            mark_list = []
+            # if no Input file
+            input_file = {}
+            input_file_list = [os.path.join(alignment_dir, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam") for mark_name, mark_type in sample.marks.items() if mark_type == "I"]
+            if len(input_file_list) > 0:
+                if len(input_file_list) > 1:
+                    raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
+                input_file[sample.name] = input_file_list[0]
+            for mark_name, mark_type in sample.marks.items():
+                if mark_type != "I":
+                    mark_list.append(mark_name)
 
-            job = concat_jobs([
-                Job(command="mkdir -p " + output_dir),
-                tools.sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, sample_list_info[0], chip_type, chip_bed, output_dir, genome)
-                ], name="IHEC_chipseq_metrics." + sample_name)
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(output_dir),
-                    tools.sh_ihec_chip_metrics(
-                        chip_bam,
-                        input_bam,
-                        sample_name,
-                        sample_list_info[0],
-                        chip_type,
-                        chip_bed,
-                        output_dir,
-                        genome
+                    chip_bam = os.path.join(alignment_dir, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
+                    chip_bed = os.path.join(self.output_dirs['macs_output_directory'], mark_name + "_peaks." + mark_type + "Peak")
+                    output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
+                    genome = config.param('IHEC_chipseq_metrics', 'assembly')
+                    if mark_type == "N":
+                        chip_type = "narrow"
+                    elif mark_type == "B":
+                        chip_type = "broad"
+
+                    jobs.append(
+                        concat_jobs([
+                            bash.mkdir(output_dir),
+                            tools.sh_ihec_chip_metrics(
+                                chip_bam,
+                                input_file[sample.name],
+                                sample.name,
+                                "".join(input_file.keys()),
+                                mark_name,
+                                chip_type,
+                                chip_bed,
+                                output_dir,
+                                genome
+                                )
+                            ],
+                            name="IHEC_chipseq_metrics." + sample.name + "." + mark_name,
+                            removable_files=[output_dir]
+                            )
                         )
-                    ],
-                    name="IHEC_chipseq_metrics." + sample_name
-                    )
-                )
+                    metrics_to_merge.append(os.path.join(output_dir, "IHEC_metrics_chipseq_" + sample.name + "." + mark_name + ".txt"))
 
-            metrics_to_merge.append(os.path.join(self.output_dirs['ihecM_output_directory'], "IHEC_metrics_chipseq_" + sample_name + ".txt"))
+                # # Else if mark type is Input
+                # else:
+                #     log.warning("Mark " + mark_name + " for Sample " + sample.name + "is an Input ... skipping")
+            # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
+
+        # for sample_name, sample_list_info in couples.iteritems():
+        #     chip_bam = os.path.join(alignment_dir, sample_name,sample_name + ".sorted.filtered.dup.bam")
+        #     input_sample = sample_list_info[0] if sample_list_info[0] is not "no_input" else sample_name
+        #     input_bam = os.path.join(alignment_dir, input_sample, input_sample + ".sorted.filtered.dup.bam")
+        #     chip_type = sample_list_info[2]
+        #     chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample_list_info[1], sample_list_info[1] + "_peaks." + sample_list_info[2] + "Peak")
+        #     genome = config.param('IHEC_chipseq_metrics', 'assembly')
+
+        #     job = concat_jobs([
+        #         Job(command="mkdir -p " + output_dir),
+        #         tools.sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, sample_list_info[0], chip_type, chip_bed, output_dir, genome)
+        #         ], name="IHEC_chipseq_metrics." + sample_name)
+        #     jobs.append(
+        #         concat_jobs([
+        #             bash.mkdir(output_dir),
+        #             tools.sh_ihec_chip_metrics(
+        #                 chip_bam,
+        #                 input_bam,
+        #                 sample_name,
+        #                 sample_list_info[0],
+        #                 chip_type,
+        #                 chip_bed,
+        #                 output_dir,
+        #                 genome
+        #                 )
+        #             ],
+        #             name="IHEC_chipseq_metrics." + sample_name
+        #             )
+        #         )
+
+            # metrics_to_merge.append(os.path.join(self.output_dirs['ihecM_output_directory'], "IHEC_metrics_chipseq_" + sample_name + ".txt"))
 
         metrics_merged = "IHEC_metrics_AllSamples.tsv"
         metrics_merged_out = os.path.join(self.output_dirs['ihecM_output_directory'], metrics_merged)
