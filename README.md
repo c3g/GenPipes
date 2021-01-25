@@ -112,7 +112,9 @@ git clone git@bitbucket.org:mugqic/genpipes.git
 
 A new installation with a better taste:
 
-Make sure that you have fuse installed on your system,  if `ls /dev/fuse` returns no error, you are all set.
+Singularity needs to be [installed on your system]https://github.com/hpcng/singularity/blob/master/INSTALL.md)
+
+Then, make sure that you have fuse installed on your system,  if `ls /dev/fuse` returns no error, you are all set.
 
 Once the genpipes repo has been cloned, run the following command to install the container and wrapper code for the fuse libraries.
 
@@ -121,7 +123,7 @@ Once the genpipes repo has been cloned, run the following command to install the
 ./genpipes/resources/container/get_wrapper.sh
 ```
 
-You can access the the Genpipes container  by typing  
+You can access the the Genpipes container by typing:
 
 ```
 #!bash
