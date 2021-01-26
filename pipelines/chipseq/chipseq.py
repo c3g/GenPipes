@@ -661,7 +661,7 @@ cp \\
                         bash.mkdir(os.path.dirname(input)),
                         sambamba.flagstat(
                             input,
-                            re.sub("\.bam$", ".flagstat", os.path.basename(input))
+                            os.path.join(alignment_directory, re.sub("\.bam$", ".flagstat", os.path.basename(input)))
                             # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.bam"),
                             # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.flagstat")
                             )
@@ -689,6 +689,7 @@ declare -A samples_associative_array=({samples_associative_array}) && \\
 for sample in ${{!samples_associative_array[@]}}
 do
   for mark_name in ${{samples_associative_array[$sample]}}
+  do
     flagstat_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.sorted.filtered.dup.flagstat
     bam_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.sorted.filtered.dup.bam
     supplementarysecondary_alignment=`bc <<< $(grep "secondary" $flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
@@ -698,7 +699,7 @@ do
     mito_reads=$(sambamba view -c $bam_file chrM)
     mito_rate=$(echo "100*$mito_reads/$mapped_reads" | bc -l)
     echo -e "$sample\\t$mark_name\\t$mapped_reads\\t$duplicated_reads\\t$duplicated_rate\\t$mito_reads\\t$mito_rate" >> {metrics_file}
-    done
+  done
 done && \\
 sed -i -e "1 i\\Sample\\tMark Name\\tAligned Filtered Reads #\\tDuplicate Reads #\\tDuplicate %\\tMitchondrial Reads #\\tMitochondrial %" {metrics_file} && \\
 mkdir -p {report_dir} && \\
@@ -791,7 +792,8 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
   {design_file} \\
   {output_dir} && \\
 cp {report_template_dir}/{basename_report_file} {report_file} && \\
-declare -A sample_markname=({samples_dict}) && \\
+declare -A samples_associative_array=({samples_associative_array}) && \\
+# declare -A sample_markname=({samples_dict}) && \\
 for sample in "${{!sample_markname[@]}}"
 do
   cp --parents {graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.ps {report_dir}/
@@ -799,7 +801,8 @@ do
   echo -e "----\n\n![QC Metrics for Sample $sample ([download high-res image]({graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.ps))]({graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.png)\n" \\
   >> {report_file}
 done""".format(
-    samples_dict=" ".join(["[\"" + sample.name + "\"]=\"" + mark_name + "\"" for sample in self.samples for mark_name in sample.marks]),
+    samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
+    # samples_dict=" ".join(["[\"" + sample.name + "\"]=\"" + mark_name + "\"" for sample in self.samples for mark_name in sample.marks]),
     # samples=" ".join([sample.name for sample in self.samples]),
     design_file=design_file,
     output_dir=self.output_dir,
@@ -866,7 +869,7 @@ done""".format(
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
-zip -r {report_dir}/tracks.zip tracks/*/*.ucsc.bedGraph.gz && \\
+zip -r {report_dir}/tracks.zip tracks/*/*/*.ucsc.bedGraph.gz && \\
 cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
     report_template_dir=self.report_template_dir,
     basename_report_file=os.path.basename(report_file),
