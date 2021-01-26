@@ -25,20 +25,20 @@
 from core.config import *
 from core.job import *
 
-def run(inputs, output):
+def run(inputs, output, ini_section='multiqc'):
     output = output + ".html"
     return Job(
         inputs,
         [output],
         [
-            ['multiqc', 'module_python'],
-            ['multiqc', 'module_multiqc'],
+            [ini_section, 'module_python'],
+            [ini_section, 'module_multiqc'],
         ],
         command="""\
 multiqc -f {options} \\
 {input} \\
 -n {output}""".format(
-            options=config.param('multiqc', 'options', required=False) if config.param('multiqc', 'options', required=False) else "",
+            options=config.param(ini_section, 'options', required=False) if config.param(ini_section, 'options', required=False) else "",
             input=" ".join([" \\\n  " + input for input in inputs]),
             output=output,
             )
