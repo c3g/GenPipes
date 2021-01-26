@@ -1524,19 +1524,24 @@ Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -t
                     elif mark_type == "B":
                         chip_type = "broad"
 
+                    if not input_file:
+                        input_name = "no_input"
+                    else:
+                        input_name = "".join(input_file.keys())
+
                     jobs.append(
                         concat_jobs([
                             bash.mkdir(output_dir),
                             tools.sh_ihec_chip_metrics(
-                                chip_bam,
-                                input_file[sample.name],
-                                sample.name,
-                                "".join(input_file.keys()),
-                                mark_name,
-                                chip_type,
-                                chip_bed,
-                                output_dir,
-                                genome
+                                chip_bam=chip_bam,
+                                input_bam=input_file[sample.name],
+                                sample_name=sample.name,
+                                input_name=input_name,
+                                chip_name=mark_name,
+                                chip_type=chip_type,
+                                chip_bed=chip_bed,
+                                output_dir=output_dir,
+                                assembly=genome
                                 )
                             ],
                             name="IHEC_chipseq_metrics." + sample.name + "." + mark_name,
