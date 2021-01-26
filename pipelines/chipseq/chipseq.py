@@ -1516,7 +1516,7 @@ Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -t
                     mark_list.append(mark_name)
 
                     chip_bam = os.path.join(alignment_dir, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
-                    chip_bed = os.path.join(self.output_dirs['macs_output_directory'], mark_name + "_peaks." + mark_type + "Peak")
+                    chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + mark_type + "Peak")
                     output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
                     genome = config.param('IHEC_chipseq_metrics', 'assembly')
                     if mark_type == "N":
