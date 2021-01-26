@@ -793,7 +793,6 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
   {output_dir} && \\
 cp {report_template_dir}/{basename_report_file} {report_file} && \\
 declare -A samples_associative_array=({samples_associative_array}) && \\
-# declare -A sample_markname=({samples_dict}) && \\
 for sample in "${{!sample_markname[@]}}"
 do
   cp --parents {graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.ps {report_dir}/
