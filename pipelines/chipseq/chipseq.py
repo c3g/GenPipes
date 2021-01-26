@@ -1649,12 +1649,12 @@ pandoc --to=markdown \\
         output = os.path.join(self.output_dirs['report_output_directory'], "multiqc_report")
         log.info(output)
 
-        jobs.append(
-            multiqc.run(
-                input_files,
-                output
-                )
+        job = multiqc.run(
+            input_files,
+            output,
+            ini_section='multiqc_report'
             )
+        job.name = "multiqc_report"
 
         return jobs
 

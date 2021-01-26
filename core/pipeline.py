@@ -166,7 +166,7 @@ class Pipeline(object):
                 log.error("""
 ***The pipeline encounterered an error :
     {error}
-***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag to check for more petential issues...""".format(
+***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag to check for more potential issues...""".format(
                    error=e
                    ))
                 exit(1)
