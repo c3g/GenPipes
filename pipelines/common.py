@@ -508,11 +508,11 @@ pandoc \\
         )
 
         return jobs
-    
+
     def cram_output(self):
         """
         Generate long term storage version of the final alignment files in CRAM format
-        Using this function will include the orginal final bam file into the  removable file list 
+        Using this function will include the orginal final bam file into the  removable file list
         """
 
 
@@ -536,7 +536,7 @@ pandoc \\
             input_bam = self.select_input_files(candidate_input_files)[0]
 
             output_cram = re.sub("\.bam$", ".cram", input_bam)
-            
+
             # Run samtools
             job = samtools.view(
                 input_bam,
@@ -549,5 +549,5 @@ pandoc \\
             job.removable_files = input_bam
 
             jobs.append(job)
-            
+
         return jobs

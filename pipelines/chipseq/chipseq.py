@@ -1658,6 +1658,33 @@ pandoc --to=markdown \\
 
         return jobs
 
+    def cram_output(self):
+        """
+        Generate long term storage version of the final alignment files in CRAM format
+        Using this function will include the orginal final bam file into the  removable file list
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            for mark_name in sample.marks:
+                input_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
+                output_cram = re.sub("\.bam$", ".cram", input_bam)
+
+                # Run samtools
+                job = samtools.view(
+                    input_bam,
+                    output_cram,
+                    options=config.param('samtools_cram_output', 'options'),
+                    removable=False
+                )
+                job.name = "cram_output." + sample.name + "." + mark_name
+                job.removable_files = input_bam
+
+                jobs.append(job)
+
+        return jobs
+
 
     @property
     def steps(self):
