@@ -70,7 +70,6 @@ def parse_google_sheet(sheet_name, authentication_file):
 
 def print_sample_sheet(
     columns,
-    project,
     run,
     lane,
     output_dir=None,
@@ -78,18 +77,16 @@ def print_sample_sheet(
     verbose=None
     ):
 
-    if project not in columns['Project_ID']:
-        logger.error("Project ID" + str(project) + " was not found in the spreadsheet...")
     if run not in columns['RUN_ID']:
         logger.error("Run ID " + str(run) + " was not found in the spreadsheet...")
     if lane and str(lane) not in columns['Lane']:
         logger.error("Lane " + str(lane) + " was not found in the spreadsheet...")
 
-    process_dir = os.path.join(str(project) , str(run))
+    process_dir = str(run)
     if group:
-        outfile = str(project) + "." + str(run) + ".sample_sheet.csv"
+        outfile = str(run) + ".sample_sheet.csv"
     elif lane:
-        outfile = str(project) + "." + str(run) + ".L0" + str(lane) + ".sample_sheet.csv"
+        outfile = str(run) + ".L0" + str(lane) + ".sample_sheet.csv"
     else:
         print "Error :  no lane... no group..."
         exit(10)
@@ -107,7 +104,7 @@ def print_sample_sheet(
     f.writerow(header)
 
     for x in range(len(columns['RUN_ID'])):
-        if columns['Project_ID'][x] == project and columns['RUN_ID'][x] == run and (group or (lane and columns['Lane'][x] == str(lane))):
+        if columns['RUN_ID'][x] == run and (group or (lane and columns['Lane'][x] == str(lane))):
             if not columns['Library_Source'][x]:
                 logger.error("Missing Library Source in run '" + run + "' (sample '" + columns['Sample'][x] + "') Skipping...")
                 break
