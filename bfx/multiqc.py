@@ -25,10 +25,10 @@
 from core.config import *
 from core.job import *
 
-def run(inputs, output, input_dep=False):
+def run(inputs, output):
     output = output + ".html"
     return Job(
-        input_dep,
+        inputs,
         [output],
         [
             ['multiqc', 'module_python'],
