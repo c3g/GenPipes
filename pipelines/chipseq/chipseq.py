@@ -1639,18 +1639,19 @@ pandoc --to=markdown \\
         """
         ## set multiQc config file so we can customize one for every pipeline:
         jobs = []
-        yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
+        # yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
         input_files = []
         for sample in self.samples:
             for mark_name in sample.marks:
                 input_files.append(os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.all.metrics.alignment_summary_metrics"))
                 input_files.append(os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name, "tagInfo.txt"))
         # input_files = [os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt") for sample in self.samples]
+        output = os.path.join(self.output_dirs['report_output_directory'], "multiqc_report")
 
         jobs.append(
-            multiqc.mutliqc_run(
-                yamlFile,
-                input_files
+            multiqc.run(
+                input_files,
+                output
                 )
             )
 
