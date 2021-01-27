@@ -466,7 +466,7 @@ pandoc --to=markdown \\
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="samtools_view_filter_report"
+                name="samtools_view_filter_report." + ".".join([sample.name for sample in self.samples])
                 )
         )
 
@@ -565,7 +565,8 @@ cp \\
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="sambamba_mark_duplicates_report")
+                name="sambamba_mark_duplicates_report." + ".".join([sample.name for sample in self.samples])
+                )
         )
 
         return jobs
@@ -729,7 +730,7 @@ pandoc --to=markdown \\
     basename_report_file=os.path.basename(report_file),
     report_file=report_file
     ),
-                name="metrics_report",
+                name="metrics_report." + ".".join([sample.name for sample in self.samples]),
                 samples=self.samples,
                 removable_files=[report_metrics_file],
                 report_files=[report_file]
@@ -876,7 +877,8 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="homer_make_ucsc_file_report")
+                name="homer_make_ucsc_file_report." + ".".join([sample.name for sample in self.samples])
+                )
         )
 
         return jobs
@@ -993,7 +995,8 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="macs2_callpeak_report")
+                name="macs2_callpeak_report." + ".".join([sample.name for sample in self.samples])
+                )
             )
 
         return jobs
@@ -1103,7 +1106,8 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="macs2_callpeak_report")
+                name="macs2_callpeak_report." + ".".join([sample.name for sample in self.samples])
+                )
             )
 
 
@@ -1198,7 +1202,8 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="homer_annotate_peaks_report")
+                name="homer_annotate_peaks_report." + ".".join([sample.name for sample in self.samples])
+                )
             )
 
         return jobs
@@ -1272,7 +1277,8 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                     report_files=[report_file],
-                    name="homer_find_motifs_genome_report")
+                    name="homer_find_motifs_genome_report." + ".".join([sample.name for sample in self.samples])
+                    )
                 )
 
         return jobs
@@ -1616,7 +1622,7 @@ sed -i -e "1 i\\\$header" {metrics_merged}""".format(
             Job(
                 input_files=[metrics_merged_out],
                 output_files=[report_file],
-                name="merge_ihec_metrics_report",
+                name="merge_ihec_metrics_report." + ".".join([sample.name for sample in self.samples]),
                 module_entries=[['merge_ihec_metrics_report', 'module_pandoc']],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -1661,7 +1667,7 @@ pandoc --to=markdown \\
             output,
             ini_section='multiqc_report'
             )
-        job.name = "multiqc_report"
+        job.name = "multiqc_report." + ".".join([sample.name for sample in self.samples])
 
         return jobs
 
