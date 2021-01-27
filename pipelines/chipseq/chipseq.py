@@ -1483,7 +1483,7 @@ Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -t
     )
                             )
                         ],
-                        name="run_spp." + sample.name)
+                        name="run_spp." + sample.name + "." + mark_name)
                     )
 
         return jobs
