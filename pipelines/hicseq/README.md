@@ -110,8 +110,10 @@ hic:
 13- identify_TADs_RobusTAD
 14- identify_peaks
 15- create_hic_file
-16- multiqc_report
-17- cram_output
+16- Cram output
+17- Reproducibility_Score
+18- Quality_Score
+19- multiqc_report
 ----
 ```
 ![hicseq capture workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_capture.resized.png)
@@ -228,16 +230,6 @@ create_hic_file
 A .hic file is created per sample in order to visualize in JuiceBox, WashU epigenome browser or as input for other tools.
 For more detailed information about the JuiceBox visit: [JuiceBox] (http://www.aidenlab.org/software.html)
 
-multiqc_report
---------------
-A quality control report for all samples is generated.
-For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
-
-cram_output
------------
-Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list 
-
 create_rmap_file
 ----------------
 rmap file for Chicago capture analysis is created using the hicup digestion file.
@@ -274,4 +266,34 @@ capture_intersect
 provided with a bed file, for example a bed of GWAS snps or features of interest, this method returns the lines in the bed file that intersect with the captured ends ("Other Ends") that have significant interactions.
 Input bed must have 4 columns (<chr> <start> <end> <annotation>) and must be tab separated.
 
+cram _output
+-----------------
+Generate long term storage version of the final alignment files in CRAM format.
+Using this function will include the orginal final bam file into the  removable file list 
 
+reproducibility_scores
+-----------------
+
+hic-rep is a R package for calculating the inter-chromosmal reproducibility score. 
+Pairwise reproducibility scores for each chromosome pair in each sample pair are calculated using
+hic-rep at resolutions (bin size) defined in interaction_matrices_Chr step
+and other parameters defined in reproducibility_scores step of ini config file. All the scores are finally merged
+together and output a csv file with parameters used in analysis with chromosome number, reproducibility scores,
+standard deviation and smoothing value used for the analysis (in order to compare samples smoothing value
+and the sequencing depth should be similar across samples.
+Down-sampling of samples can be performed using the down_sampling parameter in the ini config file.
+Correlation matrices and weight matrices can be saved using  corr=TRUE and weights=TRUE in ini config file
+for more information visit: [https://bioconductor.org/packages/release/bioc/html/hicrep.html]      
+
+quality_scores
+-----------------
+
+Quality score per chromosome for each sample is calculated using QUSAR-QC at all resolutions
+and sequencing depths (coverages) and down_sampling value (coverage) defined in quality_scores step of ini config file
+QUSAR-QC is a part of the hifive hic-seq analysis suit
+for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_scoring.html]
+
+multiqc_report
+--------------
+A quality control report for all samples is generated.
+For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
