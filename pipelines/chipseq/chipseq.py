@@ -1526,15 +1526,17 @@ Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -t
 
                     if not input_file:
                         input_name = "no_input"
+                        input_bam = None
                     else:
                         input_name = "".join(input_file.keys())
+                        input_bam = input_file[sample.name]
 
                     jobs.append(
                         concat_jobs([
                             bash.mkdir(output_dir),
                             tools.sh_ihec_chip_metrics(
                                 chip_bam=chip_bam,
-                                input_bam=input_file[sample.name],
+                                input_bam=input_bam,
                                 sample_name=sample.name,
                                 input_name=input_name,
                                 chip_name=mark_name,
