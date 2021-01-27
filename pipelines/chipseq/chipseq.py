@@ -98,6 +98,13 @@ class ChipSeq(common.Illumina):
                 }
         return dirs
 
+    @property
+    def mark_type_conversion(self):
+        dirs = {'N': 'narrow',
+                'B': 'broad',
+                'I': 'Input'
+                }
+        return dirs
 
     @property
     def ucsc_genome(self):
@@ -918,7 +925,6 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                     format = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
                     genome_size = self.mappable_genome_size()
                     output_prefix_name = os.path.join(output_dir, mark_name)
-                    output = os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak")
 
                     if mark_type == "B": # Broad region
                         other_options = " --broad --nomodel"
@@ -927,6 +933,8 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                             other_options = " --nomodel"
                         else:
                             other_options = " --fix-bimodal"
+
+                    output = os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
 
                     jobs.append(
                         concat_jobs([
@@ -949,17 +957,17 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                   ## For ihec: exchange peak score by log10 q-value and generate bigBed
                     jobs.append(
                         concat_jobs([
-                            Job([os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak")],
-                                [os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bed")],
+                            Job([os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")],
+                                [os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")],
                                 command="""\
 awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
-    peak_file=os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak"),
-    peak_bed_file=os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bed")
+    peak_file=os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak"),
+    peak_bed_file=os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
     )
                                 ),
                             ucsc.bedToBigBed(
-                                os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bed"),
-                                os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bb")
+                                os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed"),
+                                os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bb")
                                 )
                             ],
                             name="macs2_callpeak_bigBed." + sample.name + "." + mark_name
@@ -973,7 +981,7 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + mark_type + "Peak") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
+                [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -1036,7 +1044,7 @@ done""".format(
                     format = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
                     genome_size = self.mappable_genome_size()
                     output_prefix_name = os.path.join(output_dir, mark_name)
-                    output = os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak")
+                    output = os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
                     other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
 
                     jobs.append(
@@ -1060,17 +1068,17 @@ done""".format(
                   ## For ihec: exchange peak score by log10 q-value and generate bigBed
                     jobs.append(
                         concat_jobs([
-                            Job([os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak")],
-                                [os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bed")],
+                            Job([os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")],
+                                [os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")],
                                 command="""\
 awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
-    peak_file=os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak"),
-    peak_bed_file=os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bed")
+    peak_file=os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak"),
+    peak_bed_file=os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
     )
                                 ),
                             ucsc.bedToBigBed(
-                                os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bed"),
-                                os.path.join(output_dir, mark_name + "_peaks." + mark_type + "Peak.bb")
+                                os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed"),
+                                os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bb")
                                 )
                             ],
                             name="macs2_callpeak_bigBed." + sample.name + "." + mark_name
@@ -1084,7 +1092,7 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + mark_type + "Peak") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
+                [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -1128,7 +1136,7 @@ done""".format(
                 if mark_type != "I":
                     mark_list.append(mark_name)
 
-                    peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + mark_type + "Peak")
+                    peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
                     output_prefix = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name)
                     annotation_file = output_prefix + ".annotated.csv"
 
@@ -1227,7 +1235,7 @@ done""".format(
                 if mark_type == "N":
                     mark_list.append(mark_name)
 
-                    peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + mark_type + "Peak")
+                    peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
                     output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name)
 
                     jobs.append(
@@ -1522,13 +1530,13 @@ Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -t
                     mark_list.append(mark_name)
 
                     chip_bam = os.path.join(alignment_dir, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
-                    chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + mark_type + "Peak")
+                    chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
                     output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
                     genome = config.param('IHEC_chipseq_metrics', 'assembly')
-                    if mark_type == "N":
-                        chip_type = "narrow"
-                    elif mark_type == "B":
-                        chip_type = "broad"
+                    # if mark_type == "N":
+                    #     chip_type = "narrow"
+                    # elif mark_type == "B":
+                    #     chip_type = "broad"
 
                     if not input_file:
                         input_name = "no_input"
@@ -1546,7 +1554,7 @@ Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -t
                                 sample_name=sample.name,
                                 input_name=input_name,
                                 chip_name=mark_name,
-                                chip_type=chip_type,
+                                chip_type=self.mark_type_conversion[mark_type],
                                 chip_bed=chip_bed,
                                 output_dir=output_dir,
                                 assembly=genome
