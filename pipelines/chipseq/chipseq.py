@@ -48,6 +48,7 @@ from bfx import picard
 from bfx import sambamba
 from bfx import samtools
 from bfx import tools
+from bfx import trimmomatic
 from bfx import ucsc
 # from pipelines.dnaseq import dnaseq
 
