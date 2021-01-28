@@ -140,6 +140,196 @@ class ChipSeq(common.Illumina):
         return sum([int(chromosome[1]) for chromosome in genome_index]) * 0.8
 
 
+
+    def trimmomatic(self):
+        """
+        Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+        If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
+        it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
+        an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
+        reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
+        only Adapter1 is used and left unchanged.
+
+        This step takes as input files:
+
+        1. FASTQ files from the readset file if available
+        2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+        """
+        jobs = []
+        for readset in self.readsets:
+            log.info(readset.mark_name)
+            trim_directory = os.path.join("trim", readset.sample.name)
+            trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
+            trim_log = trim_file_prefix + "log"
+
+            # Use adapter FASTA in config file if any, else create it from readset file
+            adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, type='filepath')
+            adapter_job = None
+            if not adapter_fasta:
+                adapter_fasta = trim_file_prefix + "adapters.fa"
+                if readset.run_type == "PAIRED_END":
+                    if readset.adapter1 and readset.adapter2:
+                        # WARNING: Reverse-complement and swap readset adapters for Trimmomatic Palindrome strategy
+                        adapter_job = Job(command="""\
+`cat > {adapter_fasta} << END
+>Prefix/1
+{sequence1}
+>Prefix/2
+{sequence2}
+END
+`""".format(adapter_fasta=adapter_fasta, sequence1=readset.adapter2.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1], sequence2=readset.adapter1.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1]))
+                    else:
+                        _raise(SanitycheckError("Error: missing adapter1 and/or adapter2 for PAIRED_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
+                elif readset.run_type == "SINGLE_END":
+                    if readset.adapter1:
+                        adapter_job = Job(command="""\
+`cat > {adapter_fasta} << END
+>Single
+{sequence}
+END
+`""".format(adapter_fasta=adapter_fasta, sequence=readset.adapter1))
+                    else:
+                        _raise(SanitycheckError("Error: missing adapter1 for SINGLE_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
+
+            trim_stats = trim_file_prefix + "stats.csv"
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[readset.fastq1, readset.fastq2]]
+                if readset.bam:
+                    candidate_fastq1 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")
+                    candidate_fastq2 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")
+                    candidate_input_files.append([candidate_fastq1, candidate_fastq2])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                job = trimmomatic.trimmomatic(
+                    fastq1,
+                    fastq2,
+                    trim_file_prefix + "pair1.fastq.gz",
+                    trim_file_prefix + "single1.fastq.gz",
+                    trim_file_prefix + "pair2.fastq.gz",
+                    trim_file_prefix + "single2.fastq.gz",
+                    None,
+                    readset.quality_offset,
+                    adapter_fasta,
+                    trim_log
+                )
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [[readset.fastq1]]
+                if readset.bam:
+                    candidate_input_files.append([os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".single.fastq.gz")])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                job = trimmomatic.trimmomatic(
+                    fastq1,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    trim_file_prefix + "single.fastq.gz",
+                    readset.quality_offset,
+                    adapter_fasta,
+                    trim_log
+                )
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+            if adapter_job:
+                job = concat_jobs([adapter_job, job])
+
+            jobs.append(concat_jobs([
+                # Trimmomatic does not create output directory by default
+                Job(command="mkdir -p " + trim_directory, samples=[readset.sample]),
+                job
+            ], name="trimmomatic." + readset.name, samples=[readset.sample]))
+        return jobs
+
+
+    def merge_trimmomatic_stats(self):
+        """
+        The trim statistics per readset are merged at this step.
+        """
+
+        read_type = "Paired" if self.run_type == 'PAIRED_END' else "Single"
+        readset_merge_trim_stats = os.path.join("metrics", "trimReadsetTable.tsv")
+        job = concat_jobs([
+            bash.mkdir(self.output_dirs['metrics_output_directory']),
+            Job(
+                command="echo 'Sample\tReadset\tRaw {read_type} Reads #\tSurviving {read_type} Reads #\tSurviving {read_type} Reads %' > ".format(read_type=read_type) + readset_merge_trim_stats
+                )
+            ])
+
+        for readset in self.readsets:
+            trim_log = os.path.join("trim", readset.sample.name, readset.name + ".trim.log")
+            if readset.run_type == "PAIRED_END":
+                # Retrieve readset raw and surviving reads from trimmomatic log using ugly Perl regexp
+                perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
+            elif readset.run_type == "SINGLE_END":
+                perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
+
+            job = concat_jobs([
+                job,
+                Job(
+                    [trim_log],
+                    [readset_merge_trim_stats],
+                    module_entries=[['merge_trimmomatic_stats', 'module_perl']],
+                    # Create readset trimming stats TSV file with paired or single read count using ugly awk
+                    command="""\
+grep ^Input {trim_log} | \\
+{perl_command} | \\
+awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
+  >> {readset_merge_trim_stats}""".format(
+                        trim_log=trim_log,
+                        perl_command=perl_command,
+                        readset_merge_trim_stats=readset_merge_trim_stats
+                    ),
+                    samples=[readset.sample]
+                )
+            ])
+
+        sample_merge_trim_stats = os.path.join("metrics", "trimSampleTable.tsv")
+        report_file = os.path.join("report", "Illumina.merge_trimmomatic_stats.md")
+        return [concat_jobs([
+            job,
+            Job(
+                [readset_merge_trim_stats],
+                [sample_merge_trim_stats],
+                # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
+                command="""\
+cut -f1,3- {readset_merge_trim_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{if ($2=="Raw Paired Reads #") {{paired=1}};print "Sample", "Raw Reads #", "Surviving Reads #", "Surviving %"}} else {{if (paired) {{$2=$2*2; $3=$3*2}}; raw[$1]+=$2; surviving[$1]+=$3}}}}END{{for (sample in raw){{print sample, raw[sample], surviving[sample], surviving[sample] / raw[sample] * 100}}}}' \\
+  > {sample_merge_trim_stats}""".format(
+                    readset_merge_trim_stats=readset_merge_trim_stats,
+                    sample_merge_trim_stats=sample_merge_trim_stats
+                )
+            ),
+            Job(
+                [sample_merge_trim_stats],
+                [report_file],
+                [['merge_trimmomatic_stats', 'module_pandoc']],
+                command="""\
+mkdir -p report && \\
+cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/ && \\
+trim_readset_table_md=`LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:"}} else {{print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5)}}}}' {readset_merge_trim_stats}` && \\
+pandoc \\
+  {report_template_dir}/{basename_report_file} \\
+  --template {report_template_dir}/{basename_report_file} \\
+  --variable trailing_min_quality={trailing_min_quality} \\
+  --variable min_length={min_length} \\
+  --variable read_type={read_type} \\
+  --variable trim_readset_table="$trim_readset_table_md" \\
+  --to markdown \\
+  > {report_file}""".format(
+                    trailing_min_quality=config.param('trimmomatic', 'trailing_min_quality', type='int'),
+                    min_length=config.param('trimmomatic', 'min_length', type='posint'),
+                    read_type=read_type,
+                    report_template_dir=self.report_template_dir,
+                    readset_merge_trim_stats=readset_merge_trim_stats,
+                    sample_merge_trim_stats=sample_merge_trim_stats,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file
+                ),
+                report_files=[report_file]
+            )], name="merge_trimmomatic_stats")]
+
+
     def mapping_bwa_mem_sambamba(self):
         """
         The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
