@@ -629,6 +629,7 @@ IHEC_chipseq_metrics_max.sh \\
     -s {sample_name} \\
     -j {input_name} \\
     -t {chip_type} \\
+    -c {chip_name} \\
     -n {threads} \\
     -p {chip_bed} \\
     -o {output_dir} \\
@@ -638,6 +639,7 @@ IHEC_chipseq_metrics_max.sh \\
             sample_name=sample_name,
             chip_bam=chip_bam,
             chip_type=chip_type,
+            chip_name=chip_name,
             threads=config.param('IHEC_chipseq_metrics', 'thread', type='int') if config.param('IHEC_chipseq_metrics', 'thread', type='int', required=False) else 1,
             chip_bed=chip_bed,
             output_dir=output_dir,
