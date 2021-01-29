@@ -187,7 +187,6 @@ def compare_runs(
                             outdir,
                             process_dir,
                             genpipes_scr_dir,
-                            project,
                             run,
                             lane,
                             sequencer_path,
