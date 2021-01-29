@@ -142,7 +142,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             if self.lane_number:
                 self._lanes = [str(self.lane_number)]
             else:
-                self._lanes = [lane for lane in list(set([line['Lane'] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter=',', quotechar='"')]))]
+                self._lanes = [lane for lane in list(set([line['Position'].split(":")[0] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter='\t', quotechar='"')]))]
         return self._lanes
 
     @property
@@ -219,26 +219,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
         Get year from sample sheet
         """
         if not hasattr(self, "_year"):
-            dates = set([date for date in list(set([line['Run_Date'] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter=',', quotechar='"')]))])
+            dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter='\t', quotechar='"')]))])
             if len(list(dates)) > 1:
                 _raise(SanitycheckError("More than one date were found in the sample sheet for the run \"" + self._run_id + "\""))
             else:
                 self._year = list(dates)[0].split("-")[0]
         return self._year
- 
-
-#    @property
-#    def run_id(self):
-#        """
-#        The run id from the readset objects.
-#        """
-#        if not hasattr(self, "_run_id"):
-#            runs = set([line['RUN_ID'] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter=',', quotechar='"')])
-#            if len(list(runs)) > 1:
-#                _raise(SanitycheckError("Error: more than one run were parsed in the sample sheet... " + runs))
-#            else:
-#                self._run_id = list(runs)[0]
-#        return self._run_id
 
     @property
     def run_dir(self):
@@ -285,7 +271,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 if "_" in rundir_basename:
                     [junk_food, self._run_id] = rundir_basename.split("_")
                 else:
-                    _raise(SanitycheckError("Error: Run ID could not parsed from the RUN folder : " + self.run_dir))
+                    _raise(SanitycheckError("Error: Run ID could not be parsed from the RUN folder : " + self.run_dir))
         return self._run_id
 
     @property
@@ -1329,8 +1315,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     [" --exclude '" + excludedfile.replace(self.output_dir + os.sep, "") + "'" for excludedfile in excluded_files]),
                 lane_number=lane,
                 run_id=self.run_id,
-                source=os.path.join(self.output_dir, "L0" +lane),
-                destination=full_destination_folder
+                source=os.path.join(self.output_dir, "L0" + lane),
+                run_name=os.path.basename(self.run_dir)
             )
 
             jobs_to_concat.append(concat_jobs(
@@ -1869,7 +1855,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.seqtype,
             self.flowcell_id,
             lane,
-            self.get_read1cycles(lane),
             os.path.join(self.output_dir, "L0" + lane)
         )
 
