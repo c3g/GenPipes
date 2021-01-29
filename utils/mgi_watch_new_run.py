@@ -150,15 +150,14 @@ def compare_runs(
                         run_folder_basename = flowcell
 
                     print "Processing run " + run
-                    project = get_project_from_run(
-                        columns,
-                        run
-                    )
-                    print project
+#                    project = get_project_from_run(
+#                        columns,
+#                        run
+#                    )
+#                    print project
                     print "    Generating sample sheet..."
                     print_sample_sheet(
                         columns,
-                        project,
                         run,
                         None,
                         outdir,
@@ -169,7 +168,6 @@ def compare_runs(
                         outdir,
                         process_dir,
                         genpipes_scr_dir,
-                        project,
                         run,
                         None,
                         sequencer_path,
@@ -187,7 +185,6 @@ def compare_runs(
                         print "        Generating sample sheet..."
                         print_sample_sheet(
                             columns,
-                            project,
                             run,
                             lane,
                             outdir,
@@ -198,7 +195,6 @@ def compare_runs(
                             outdir,
                             process_dir,
                             genpipes_scr_dir,
-                            project,
                             run,
                             lane,
                             sequencer_path,
@@ -238,7 +234,6 @@ def print_genpipes_scripts(
     samplesheet_dir,
     process_dir,
     genpipes_scr_dir,
-    project,
     run,
     lane,
     sequencer_path,
@@ -248,21 +243,19 @@ def print_genpipes_scripts(
     ):
 
     if lane:
-        sample_sheet = os.path.join(samplesheet_dir, project, run, project+"."+run+".L0"+lane+".sample_sheet.csv")
+        sample_sheet = os.path.join(samplesheet_dir, run, run+".L0"+lane+".sample_sheet.csv")
     else:
-        sample_sheet = os.path.join(samplesheet_dir, project, run, project+"."+run+".sample_sheet.csv")
+        sample_sheet = os.path.join(samplesheet_dir, run, run+".sample_sheet.csv")
 
     sample_sheet_rows = [row for row in csv.DictReader(open(sample_sheet, 'rb'), delimiter=',')]
-    print len(sample_sheet_rows)
-    print sample_sheet_rows[0]['Index']
 
-    if not os.path.exists(os.path.join(genpipes_scr_dir, project, run)):
-        os.makedirs(os.path.join(genpipes_scr_dir, project, run))
+    if not os.path.exists(os.path.join(genpipes_scr_dir, run)):
+        os.makedirs(os.path.join(genpipes_scr_dir, run))
 
     if lane:
-        genpipes_script = open(os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".L0" + lane + ".genpipes_script.sh"), 'wb+')
+        genpipes_script = open(os.path.join(genpipes_scr_dir, run, run + ".L0" + lane + ".genpipes_script.sh"), 'wb+')
     else:
-        genpipes_script = open(os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".genpipes_script.sh"), 'wb+')
+        genpipes_script = open(os.path.join(genpipes_scr_dir, run, run + ".genpipes_script.sh"), 'wb+')
 
     genpipes_script.write("""\
 module load mugqic/python/2.7.14 mugqic_dev/genpipes/3.1.6 && \\
@@ -273,14 +266,13 @@ python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py
   -d /nb/Research/MGISeq/{sequencer_path}/{run_folder_basename} \\
   -r {samplesheet_dir}/{process_dir_suffix}/{outfile_prefix}.sample_sheet.csv \\
   -o {process_dir}/{process_dir_suffix} \\
-  > {process_dir}/{project}/{run}/{outfile_prefix}.sh \\
-  2> {process_dir}/{project}/{run}/{outfile_prefix}.trace.log""".format(
+  > {process_dir}/{run}/{outfile_prefix}.sh \\
+  2> {process_dir}/{run}/{outfile_prefix}.trace.log""".format(
         process_dir=process_dir,
-        process_dir_suffix=project+"/"+run,
-        outfile_prefix=project+"."+run+".L0"+lane if lane else project+"."+run,
+        process_dir_suffix=run,
+        outfile_prefix=run+".L0"+lane if lane else run,
         samplesheet_dir=samplesheet_dir,
         demux_fastq="--demux-fastq " if is_demultiplexed else "",
-        project=project,
         run_folder_basename=run_folder_basename,
         run=run,
         lane="--lane "+lane+" " if lane else "",
@@ -290,9 +282,9 @@ python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py
     genpipes_script.close()
 
     if lane:
-        subprocess.call("bash " + os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".L0" + lane + ".genpipes_script.sh"), shell=True)
+        subprocess.call("bash " + os.path.join(genpipes_scr_dir, run, run + ".L0" + lane + ".genpipes_script.sh"), shell=True)
     else:
-        subprocess.call("bash " + os.path.join(genpipes_scr_dir, project, run, project + "." + run + ".genpipes_script.sh"), shell=True)
+        subprocess.call("bash " + os.path.join(genpipes_scr_dir, run, run + ".genpipes_script.sh"), shell=True)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
