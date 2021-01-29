@@ -820,7 +820,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 for input1, outputs in input_dict.items():
                     unzip = False
                     if "R1" in input1:
-                        job_suffix = "R1"
+                        job_suffix = "R1."
                         input2 = None
                         unzip = True
                         if self.is_demultiplexed:
@@ -828,11 +828,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         else:
                             self.report_inputs[lane]['index'][readset.name].append(outputs[0])
                     elif "R2" in input1:
-                        job_suffix = "R2"
+                        job_suffix = "R2."
                         input2 = None
                         unzip=True
                     elif "I1" in input1:
-                        job_suffix = "Barcodes"
+                        job_suffix = "Barcodes."
                         input2 = readset.index_fastq2 if self.is_dual_index[lane] else None
                     jobs.append(
                         concat_jobs([
@@ -848,7 +848,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                                 extract=unzip,
                                 use_tmp=True
                         )],
-                        name="fastqc." + readset.name + "_" + job_suffix,
+                        name="fastqc." + readset.name + "_" + job_suffix + self.run_id + "." + lane,
                         samples=[readset.sample]
                     ))
     
@@ -1329,8 +1329,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     [" --exclude '" + excludedfile.replace(self.output_dir + os.sep, "") + "'" for excludedfile in excluded_files]),
                 lane_number=lane,
                 run_id=self.run_id,
-                source=self.output_dir,
-                run_name=os.path.basename(self.run_dir)
+                source=os.path.join(self.output_dir, "L0" +lane),
+                destination=full_destination_folder
             )
 
             jobs_to_concat.append(concat_jobs(
