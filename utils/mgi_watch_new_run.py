@@ -59,15 +59,6 @@ def get_flowcell_from_run(
     # If no flowcell was found
     return None
 
-def get_project_from_run(
-    columns,
-    run
-    ):
-    for x in range(len(columns['RUN_ID'])):
-        if columns['RUN_ID'][x] == run:
-            if columns['Project_ID'][x]:
-                return columns['Project_ID'][x]
-
 def get_date_from_run(
     columns,
     run
@@ -107,7 +98,6 @@ def new_naming_convention(
 
 def compare_runs(
     columns,
-    outdir,
     genpipes_scr_dir,
     process_dir,
     mgi_runs_file,
@@ -150,24 +140,12 @@ def compare_runs(
                         run_folder_basename = flowcell
 
                     print "Processing run " + run
-#                    project = get_project_from_run(
-#                        columns,
-#                        run
-#                    )
-#                    print project
-                    print "    Generating sample sheet..."
-                    print_sample_sheet(
-                        columns,
-                        run,
-                        None,
-                        outdir,
-                        group=True
-                    )
                     print "    Generating GenPipes script..."
                     print_genpipes_scripts(
-                        outdir,
                         process_dir,
                         genpipes_scr_dir,
+                        run_date,
+                        flowcell,
                         run,
                         None,
                         sequencer_path,
@@ -182,19 +160,12 @@ def compare_runs(
                     )
                     for lane in lanes:
                         print "    Lane " + lane
-                        print "        Generating sample sheet..."
-                        print_sample_sheet(
-                            columns,
-                            run,
-                            lane,
-                            outdir,
-                            group=False
-                        )
                         print "        Generating GenPipes script..."
                         print_genpipes_scripts(
-                            outdir,
                             process_dir,
                             genpipes_scr_dir,
+                            run_date,
+                            flowcell,
                             run,
                             lane,
                             sequencer_path,
@@ -231,9 +202,10 @@ def print_runs(
     f.close
 
 def print_genpipes_scripts(
-    samplesheet_dir,
     process_dir,
     genpipes_scr_dir,
+    run_date,
+    flowcell,
     run,
     lane,
     sequencer_path,
@@ -242,12 +214,9 @@ def print_genpipes_scripts(
     extra_options
     ):
 
-    if lane:
-        sample_sheet = os.path.join(samplesheet_dir, run, run+".L0"+lane+".sample_sheet.csv")
-    else:
-        sample_sheet = os.path.join(samplesheet_dir, run, run+".sample_sheet.csv")
-
-    sample_sheet_rows = [row for row in csv.DictReader(open(sample_sheet, 'rb'), delimiter=',')]
+    year = run_date.split("-")[0]
+    events = "/lb/robot/research/processing/events/system/" + year + "/*/*"
+    sample_sheet = subprocess.check_output("grep -l " + flowcell + " " + events, shell=True).strip()
 
     if not os.path.exists(os.path.join(genpipes_scr_dir, run)):
         os.makedirs(os.path.join(genpipes_scr_dir, run))
@@ -258,20 +227,20 @@ def print_genpipes_scripts(
         genpipes_script = open(os.path.join(genpipes_scr_dir, run, run + ".genpipes_script.sh"), 'wb+')
 
     genpipes_script.write("""\
-module load mugqic/python/2.7.14 mugqic_dev/genpipes/3.1.6 && \\
+module load mugqic/python/2.7.14 && \\
 mkdir -p {process_dir}/{process_dir_suffix} && \\
 python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py \\
   -c $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.base.ini $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh38/Homo_sapiens.GRCh38.ini \\
   --no-json -l debug {demux_fastq}{lane}{extra_options} \\
   -d /nb/Research/MGISeq/{sequencer_path}/{run_folder_basename} \\
-  -r {samplesheet_dir}/{process_dir_suffix}/{outfile_prefix}.sample_sheet.csv \\
+  -r {readset_file} \\
   -o {process_dir}/{process_dir_suffix} \\
   > {process_dir}/{run}/{outfile_prefix}.sh \\
   2> {process_dir}/{run}/{outfile_prefix}.trace.log""".format(
         process_dir=process_dir,
         process_dir_suffix=run,
+        readset_file=sample_sheet,
         outfile_prefix=run+".L0"+lane if lane else run,
-        samplesheet_dir=samplesheet_dir,
         demux_fastq="--demux-fastq " if is_demultiplexed else "",
         run_folder_basename=run_folder_basename,
         run=run,
@@ -290,8 +259,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--spreadsheet_name', help='Name of the MGI run management Google spreadsheet to parse', required=False, dest="spreadsheet_name", default='ALL MGI Run Management')
     parser.add_argument('-a', '--authentication_file', help="JSON authentication file used to connect the spreadsheets", type=file, required=True, dest="json_file")
-    parser.add_argument('-o', '--sample_sheet_outdir', help="Path where the sample sheets will be written in their respective project/run/lane subfolder", required=False, dest="outdir", default='/nb/Research/processingmgiscratch/sample_sheets')
-    parser.add_argument('-g', '--genpipes_scripts_outdir', help="Path where the genpipes scripts will be written and executed in their respective project/run/lane subfolder", required=False, dest="genpipes_scr_dir", default='/nb/Research/processingmgiscratch/genpipes_scripts')
+    parser.add_argument('-g', '--genpipes_scripts_outdir', help="Path where the genpipes scripts will be written and executed in their respective run/lane subfolder", required=False, dest="genpipes_scr_dir", default='/nb/Research/processingmgiscratch/genpipes_scripts')
     parser.add_argument('-p', '--processing_dir', help="Path where the MGI run processging will happen", required=False, dest="process_dir", default='/nb/Research/processingmgiscratch/processing')
     parser.add_argument('-r', '--run', help="RUN ID : sample sheets and genpipes_scripts will only be created for the specified RUN ID", required=False, dest="run_id")
     parser.add_argument('-d', '--demultiplexed-fastqs', help="Fastqs of the run are expected to be demultiplexed : will prepare genpipes scripts with the --demux-fastq flag", action="store_true", required=False, dest="is_demultiplexed")
@@ -304,7 +272,6 @@ if __name__ == '__main__':
     logging.basicConfig(level=log_level)
 
     MGI_spreadsheet_name = args.spreadsheet_name
-    outdir = args.outdir
     genpipes_scr_dir = args.genpipes_scr_dir
     process_dir = args.process_dir
     authentication_file = args.json_file.name
@@ -323,7 +290,6 @@ if __name__ == '__main__':
     mgi_runs_file = os.path.join(os.path.dirname(authentication_file), ".mgi_runs.ref")
     compare_runs(
         dict_of_columns,
-        outdir,
         genpipes_scr_dir,
         process_dir,
         mgi_runs_file,
