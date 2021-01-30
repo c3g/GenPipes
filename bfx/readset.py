@@ -892,11 +892,11 @@ def parse_mgi_raw_readset_files(
             if readset.is_scrna:
                 readset._aligner = run_processing_aligner.CellrangerRunProcessingAligner(output_dir, current_genome_folder)
             elif readset.is_rna:
-                bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
+                bioinfo_csv = csv.reader(open(bioinfo_file, 'rb'))
                 for row in bioinfo_csv:
                     if row[0] == "Read1 Cycles":
                         return row[1]
-                _raise(SanitycheckError("Could not get Read 1 Cycles from " + self.bioinfo_files[lane]))
+                _raise(SanitycheckError("Could not get Read 1 Cycles from " + bioinfo_file))
                 readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles))
             else:
                 readset._aligner = run_processing_aligner.BwaRunProcessingAligner(output_dir, current_genome_folder)
