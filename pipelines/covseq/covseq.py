@@ -39,6 +39,7 @@ from bfx import bwa
 from bfx import bedtools
 from bfx import cutadapt
 from bfx import fgbio
+from bfx import freebayes
 from bfx import gatk4
 from bfx import htslib
 from bfx import ivar
@@ -718,6 +719,45 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         return jobs
 
 
+    def freebayes_calling(self):
+        """
+        freebayes calling
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            variant_directory = os.path.join("variant", sample.name)
+
+            [input_bam] = self.select_input_files([
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+            ])
+
+            output_prefix = os.path.join(variant_directory, sample.name) + ".variants"
+            output_vcf = output_prefix + ".tsv"
+
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(variant_directory),
+                    freebayes.freebayes(
+                        input_bam,
+                        output_vcf,
+                        options=None,
+                        ini_section='freebayes_call_variants'
+                        )
+                    ],
+                    name="freebayes_call_variants." + sample.name,
+                    samples=[sample],
+                    removable_files=[output_vcf]
+                    )
+                )
+
+        return jobs
+
+
     def snpeff_annotate(self):
         """
         Consensus annotation with SnpEff
@@ -974,6 +1014,7 @@ ln -sf {output_status_fa_basename} {output_fa}
             # self.fgbio_trim_primers,
             self.ivar_trim_primers,
             self.covseq_metrics,
+            self.freebayes_calling,
             self.ivar_calling,
             self.snpeff_annotate,
             self.ivar_create_consensus,
