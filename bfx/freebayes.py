@@ -48,7 +48,7 @@ freebayes -f {reference_genome} \\
   {input_bam} \\
   > {output_file}""".format(
     reference_genome=config.param(ini_section, 'genome_fasta', type='filepath'),
-    bed_targets="-t " + config.param(ini_section, 'bed_targets', type='filepath') if config.param(ini_section, 'bed_targets') else "",
+    bed_targets="-t " + config.param(ini_section, 'bed_targets', type='filepath', required=False) if config.param(ini_section, 'bed_targets', required=False) else "",
     options=options,
     other_options=config.param(ini_section, 'other_options'),
     input_bam=input_bam,
