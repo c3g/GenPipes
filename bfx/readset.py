@@ -748,6 +748,14 @@ class MGIRawReadset(MGIReadset):
         return self._genomic_database
 
     @property
+    def species(self):
+        return self._species
+
+    @property
+    def project_id(self):
+        return self._project_id
+
+    @property
     def project(self):
         return self._project
 
@@ -850,7 +858,8 @@ def parse_mgi_raw_readset_files(
         readset._sample_number = str(len(readsets) + 1)
         readset._quality_offset = 33
 
-        readset._genomic_database = config.param('DEFAULT', 'scientific_name', required=True) + "." + config.param('DEFAULT', 'assembly', required=True)
+        readset._genomic_database = line['Reference']
+        readset._species = line['Species']
 
         readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
 
@@ -885,8 +894,22 @@ def parse_mgi_raw_readset_files(
         else:
             readset._is_scrna = False
 
-        if len(readset.genomic_database) > 0 and not readset.is_scrna:
-            folder_name = readset.genomic_database
+        # Searching for a matching reference for the specified species
+        genome_root = config.param('DEFAULT', 'genome_root', type="dirpath")
+
+        m = re.search("(?P<build>\w+):(?P<assembly>[\w\.]+)", readset.genomic_database)
+        genome_build = None
+        if m:
+            genome_build = GenomeBuild(m.group('build'), m.group('assembly'))
+        # Setting default human ref if needed
+        elif "Homo sapiens" in readset.species:
+            genome_build = GenomeBuild("Homo_sapiens", "GRCh38")
+        # Setting default mouse ref if needed
+        elif "Mus musculus" in readset.species:
+            genome_build = GenomeBuild("Mus_musculus", "GRCm38")
+
+        if genome_build is not None:
+            folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
             current_genome_folder = os.path.join(genome_root, folder_name)
 
 #            if readset.is_scrna:
