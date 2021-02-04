@@ -626,7 +626,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 def get_pileup_summaries(
     input_bam,
     output,
-    intervals=None,
     ):
 
     return Job(
@@ -640,14 +639,14 @@ def get_pileup_summaries(
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   GetPileupSummaries {options} \\
   --input {input_bam} \\
-  --variant {variants} {intervals} \\
+  --variant {variants} --intervals {intervals} \\
   --output {output}""".format(
             tmp_dir=config.param('gatk_get_pileup_summaries', 'tmp_dir'),
             java_other_options=config.param('gatk_get_pileup_summaries', 'java_other_options'),
             ram=config.param('gatk_get_pileup_summaries', 'ram'),
             options=config.param('gatk_get_pileup_summaries', 'options'),
             variants=config.param('gatk_get_pileup_summaries', 'known_sites', type='filepath'),
-            intervals=" \\\n --intervals " + intervals if intervals else "",
+            intervals=config.param('gatk_get_pileup_summaries', 'known_intervals', type='filepath'),
             input_bam=input_bam,
             output=output
         )
@@ -656,8 +655,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 def calculate_contamination(
         input,
         output,
-        tumor_segment,
-        match_normal=None
+        match_normal=None,
+        tumor_segment=None
     ):
 
     return Job(
@@ -670,18 +669,16 @@ def calculate_contamination(
         command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   CalculateContamination {options} \\
-  --tmp_dir {tmp_dir} \\
   --input {input} \\
-  {normal} \\
   --output {output} \\
-  --tumor-segmentation {tumor_segment}""".format(
+  {normal}{tumor_segment}""".format(
             tmp_dir=config.param('gatk_calculate_contamination', 'tmp_dir'),
-            java_other_options=config.param('ggatk_calculate_contamination', 'java_other_options'),
+            java_other_options=config.param('gatk_calculate_contamination', 'java_other_options'),
             ram=config.param('gatk_calculate_contamination', 'ram'),
             options=config.param('gatk_calculate_contamination', 'options'),
             input=input,
             normal=" \\\n --matched-normal " + match_normal if match_normal else "",
-            tumor_segment=tumor_segment,
+            tumor_segment=" \\\n --tumor-segmentation " + tumor_segment if tumor_segment else "",
             output=output,
         )
     )
@@ -713,8 +710,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 options=config.param('gatk_filter_mutect_calls', 'options'),
                 reference=config.param('gatk_filter_mutect_calls', 'genome_fasta', type='filepath'),
                 variants=variants,
-                contamination_table=" \\\n --contamination-table " + contamination if contamination else "",
-                segment_table=" \\\n --tumor-segmentation" + segment if segment else "",
+                contamination_table="  \\\n --contamination-table " + contamination if contamination else "",
+                segment_table="  \\\n --tumor-segmentation " + segment if segment else "",
                 output=output
             )
         )
