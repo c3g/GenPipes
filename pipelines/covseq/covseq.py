@@ -736,8 +736,8 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
-            output_prefix = os.path.join(variant_directory, sample.name) + ".variants"
-            output_vcf = output_prefix + ".tsv"
+            output_prefix = os.path.join(variant_directory, sample.name) + ".freebayes_variants"
+            output_vcf = output_prefix + ".vcf"
 
             jobs.append(
                 concat_jobs([
