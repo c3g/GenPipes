@@ -955,7 +955,7 @@ ln -sf {output_status_fa_basename} {output_fa}
     )
                     )
             ],
-            name="rename_consensus_header." + sample.name,
+            # name="rename_consensus_header." + sample.name,
             samples=[sample]
             )
 
