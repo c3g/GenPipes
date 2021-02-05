@@ -179,7 +179,7 @@ def cat(
 {cat} {input} {append}{output}""".format(
             cat=cat_call,
             input=" ".join(inputs) if input else "",
-            append=">" if appand else "",
+            append=">" if append else "",
             output="> " + output if output else ""
         )
     )
