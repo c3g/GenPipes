@@ -49,7 +49,7 @@ freebayes -f {reference_genome} \\
   > {output_file}""".format(
     reference_genome=config.param(ini_section, 'genome_fasta', type='filepath'),
     bed_targets="-t " + config.param(ini_section, 'bed_targets', type='filepath', required=False) if config.param(ini_section, 'bed_targets', required=False) else "",
-    options=options,
+    options=options if options else "",
     other_options=config.param(ini_section, 'other_options'),
     input_bam=input_bam,
     output_file=output_file
