@@ -823,7 +823,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         in the `Blast_sample` folder, under the Unaligned folder.
         """
         jobs = []
-        self.report_inputs['blast'] = {}
 
         nb_blast_to_do = config.param('blast', 'nb_blast_to_do', type="posint")
         is_nb_blast_per_lane = config.param('blast', 'is_nb_for_whole_lane', type="boolean")
