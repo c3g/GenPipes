@@ -1097,7 +1097,7 @@ END
 
             job = sambamba.markdup(
                 input,
-                output,
+                output
             )
             job.name = "sambamba_mark_duplicates." + sample.name
             job.samples = [sample]
