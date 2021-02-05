@@ -242,7 +242,10 @@ def bcl2fastq_for_index(
 
     return Job(
         [run_dir],
-        [os.path.join(output_dir, "Reports/html", flowcell, "all/all/all/lane.html"), os.path.join(output_dir, "Stats/Stats.json")],
+        [
+            os.path.join(output_dir, "Reports/html", flowcell, "all/all/all/lane.html"),
+            os.path.join(output_dir, "Stats/Stats.json")
+        ],
         [
             ['bcl2fastq_index', 'module_bcl_to_fastq']
         ],

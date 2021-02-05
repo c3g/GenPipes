@@ -151,7 +151,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     def readsets(self):
         if not hasattr(self, "_readsets"):
             self._readsets = self.load_readsets()
-            self.generate_illumina_lane_sample_sheet()
+            self.generate_illumina_lane_casava_sheet()
         return self._readsets
 
     @property
@@ -236,19 +236,20 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
 
     @property
     def umi(self):
-        if not hasattr(self, "umi"):
-            return False
+        if not hasattr(self, "_umi"):
+            self._umi = False
         return self._umi
 
     @property
     def merge_undetermined(self):
-        merge = False
-        # If only one library on the lane
-        if len(self.readsets) == 1:
-            merge = True
-        if config.param('fastq', 'merge_undetermined', required=False, type='boolean'):
-            merge = config.param('fastq', 'merge_undetermined')
-        return merge
+        if not hasattr(self, "_merge_undetermined"):
+            self._merge_undetermined = False
+            # If only one library on the lane
+            if len(self.readsets) == 1:
+                self._merge_undetermined = True
+            if config.param('fastq', 'merge_undetermined', required=False, type='boolean'):
+                self._merge_undetermined = config.param('fastq', 'merge_undetermined')
+        return self._merge_undetermined
 
     @property
     def bcl2fastq_extra_option(self):
@@ -311,7 +312,14 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     @property
     def report_inputs(self):
         if not hasattr(self, "_report_inputs"):
-            self._report_inputs = {}
+            self._report_inputs = {
+                'index' : {},
+                'sample_tag' : {},
+                'qc' : {},
+                'blast' : {},
+                'mark_dup' : {},
+                'align' : {}
+            }
         return self._report_inputs
 
     def index(self):
@@ -346,6 +354,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             output = os.path.join(self.output_dir, "index",  self.run_id + "_" + str(self.lane_number) + '.metrics')
             basecalls_dir = os.path.join(self.output_dir, "index", "BaseCalls")
 
+            # CountIlluminaBarcode
             jobs.append(
                 concat_jobs([
                     bash.mkdir(basecalls_dir),
@@ -369,25 +378,39 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                 samples=self.samples
             ))
 
-            bcl2fastq_index_job = run_processing_tools.bcl2fastq_for_index(
-                self.run_dir,
-                os.path.join(self.output_dir, "index", "bcl2fastq"),
-                os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".indexed.csv"),
-                self.flowcell_id,
-                self.lane_number,
-                demultiplex=True,
-                mismatches=self.number_of_mismatches,
-                mask=self.mask
+            # BCL2fasq
+            jobs.append(
+                concat_jobs([
+                    run_processing_tools.bcl2fastq_for_index(
+                        self.run_dir,
+                        os.path.join(self.output_dir, "index", "bcl2fastq"),
+                        os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".indexed.csv"),
+                        self.flowcell_id,
+                        self.lane_number,
+                        demultiplex=True,
+                        mismatches=self.number_of_mismatches,
+                        mask=self.mask
+                    ),
+                    bash.cp(
+                        os.path.join(self.output_dir, "index", "bcl2fastq", "Reports", "html", flowcell, "all/all/all/lane.html")
+                        os.path.join(self.output_dir, "index", "index_stats.html")
+                    )
+                    tools.edit_index_stats(
+                        os.path.join(self.output_dir, "index", "index_per_readset.json"),
+                        os.path.join(self.output_dir, "index", "bcl2fastq", "Stats", "Stats.json"),
+                        os.path.join(self.output_dir, "index", "index_stats.json")
+                    )
+                ],
+                name="bcl2fastq_index." + self.run_id + "." + str(self.lane_number),
+                samples=self.samples,
+                removable_files=[os.path.join(self.output_dir, "index", "bcl2fastq")]
             )
-            bcl2fastq_index_job.name = "bcl2fastq_index." + self.run_id + "." + str(self.lane_number)
-            bcl2fastq_index_job.samples = self.samples
-            jobs.append(bcl2fastq_index_job)
 
         # Index Validation
         idx_val_job = tools.index_validation(
             os.path.join(self.output_dir, "index", "index_per_readset.json"),
             output,
-            bcl2fastq_index_job.output_files[0],
+            os.path.join(self.output_dir, "index", "index_stats.html"),
             self.lane_number,
             self.number_of_mismatches
         )
@@ -396,7 +419,11 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         jobs.append(idx_val_job)
 
         self.add_to_report_hash("index", jobs)
-        self.report_inputs['index'] = os.path.join(self.output_dir, "index", "bcl2fastq", "Stats", "Stats.json")
+        for readset in self.reasdets:
+            self.report_inputs['index'][readset.name] = [
+                os.path.join(self.output_dir, "index", "index_stats.json"),
+                os.path.join(self.output_dir, "index", "index_per_readset.json")
+            ]
         self.add_copy_job_inputs(jobs)
 
         return jobs
@@ -472,7 +499,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             jobs.append(bcl2fastq_job)
 
         if final_fastq_jobs:
-            log.error(len(final_fastq_jobs))
             jobs.extend(final_fastq_jobs)
 
         # don't depend on notification commands
@@ -523,10 +549,9 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         """
         """
         jobs = []
-        self.report_inputs['sample_tag'] = {}
 
         for readset in self.readsets:
-            ouput_directory = os.path.join(self.output_dir, "Unaligned." + readset.lane, 'Project_' + readset.project, 'Sample_' + readset.name, "sample_tag.R1")                                           
+            ouput_directory = os.path.join(self.output_dir, "Unaligned." + readset.lane, 'Project_' + readset.project_id, 'Sample_' + readset.name, "sample_tag.R1")                                           
             jobs.append(
                 concat_jobs([
                     bash.mkdir(ouput_directory),
@@ -563,7 +588,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         - Abundant Duplicates;
         """
         jobs = []
-        self.report_inputs['qc'] = {}
 
         for readset in self.readsets:
             output_dir = os.path.join(os.path.dirname(readset.fastq1), "qc")
@@ -651,7 +675,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         in the `Blast_sample` folder, under the Unaligned folder.
         """
         jobs = []
-        self.report_inputs['blast'] = {}
 
         nb_blast_to_do = config.param('blast', 'nb_blast_to_do', type="posint")
         is_nb_blast_per_lane = config.param('blast', 'is_nb_for_whole_lane', type="boolean")
@@ -778,7 +801,6 @@ wc -l >> {output}""".format(
             )
             jobs.append(job)
 
-
         self.add_to_report_hash("blast", jobs)
         self.add_copy_job_inputs(jobs)
         return self.throttle_jobs(jobs)
@@ -811,7 +833,6 @@ wc -l >> {output}""".format(
         Runs Picard mark duplicates on the sorted bam file.
         """
         jobs = []
-        self.report_inputs['mark_dup'] = {}
 
         for readset in [readset for readset in self.readsets if readset.bam]:
             input_file_prefix = readset.bam + '.'
@@ -852,7 +873,6 @@ wc -l >> {output}""".format(
         from the specicied `BED Files`.
         """
         jobs = []
-        self.report_inputs['align'] = {}
 
         for readset in [readset for readset in self.readsets if readset.bam]:
             job_list = readset.aligner.get_metrics_jobs(readset)
@@ -871,7 +891,9 @@ wc -l >> {output}""".format(
                 self.report_inputs['align'][readset.name] = [
                     readset.bam + '.metrics.alignment_summary_metrics',
                     readset.bam + '.metrics.insert_size_metrics',
-                    
+                    readset.bam + ".dup.metrics",
+                    readset.bam + ".metrics.verifyBamId.tsv",
+                    readset.bam + ".metrics.targetCoverage.txt"
                 ]
 
         self.add_to_report_hash("metrics", jobs)
@@ -1116,7 +1138,6 @@ wc -l >> {output}""".format(
                 bash.mkdir(report_dir),
                 tools.run_validation_aggregate_report(
                     general_information_file,
-                    os.path.join(self.output_dir, "index", "index_per_readset.json"),
                     run_validation_inputs,
                     run_validation_report_json
                 )],
@@ -1261,19 +1282,13 @@ wc -l >> {output}""".format(
                 mask += 'Y' + str(read_info.nb_cycles)
         return mask
 
-    def generate_illumina_lane_sample_sheet(self):
+    def generate_illumina_lane_casava_sheet(self):
         """
-        Create a sample sheet to use with the BCL2FASTQ software.
+        Create a CASAVA sheet to use with the BCL2FASTQ software
+        from the Clarity data.
 
         Only the samples of the chosen lane will be in the file.
         The sample indexes are trimmed according to the mask used.
-        """
-        jobs = self.generate_clarity_sample_sheet()
-        return jobs
-
-    def generate_clarity_sample_sheet(self):
-        """
-        Create a sample sheet for bcl2fastq from the Clarity data
         """
 
         csv_headers = [
@@ -1374,7 +1389,7 @@ wc -l >> {output}""".format(
                 fastq_file_pattern = os.path.join(
                     self.output_dir,
                     "Unaligned." + readset.lane,
-                    'Project_' + readset.project,
+                    'Project_' + readset.project_id,
                     'Sample_' + readset.name,
                     readset.name + '_S' + readset.sample_number + '_L00' + readset.lane +
                     '_R{read_number}_001.fastq.gz'
@@ -1396,7 +1411,7 @@ wc -l >> {output}""".format(
                     "Control": readset.control,
                     "Recipe": readset.recipe,
                     "Operator": readset.operator,
-                    "Sample_Project": "Project_" + readset.project
+                    "Sample_Project": "Project_" + readset.project_id
                 }
                 writer.writerow(csv_dict)
         self._index_per_readset = index_per_readset
@@ -1443,19 +1458,17 @@ wc -l >> {output}""".format(
 
     def generate_fastq_outputs(self):
         bcl2fastq_outputs = []
-        mkdir_jobs = []
         final_fastq_jobs = []
         count = 0
         merge = self.merge_undetermined
 
         output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
-        casava_sample_sheet = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".indexed.csv")
 
         for readset in self.readsets:
             final_fastq_jobs_per_readset = []
             count += 1
 
-            fastq_output_dir = os.path.join(output_dir, 'Project_' + readset.project, 'Sample_' + readset.name)
+            fastq_output_dir = os.path.join(output_dir, 'Project_' + readset.project_id, 'Sample_' + readset.name)
             # If 10X libraries : 4 indexes per sample
             if re.search("tenX", readset.library_type):
                 fastq1 = os.path.basename(readset.fastq1)
@@ -1749,7 +1762,7 @@ wc -l >> {output}""".format(
                 indexes.append({
                     'BCL2FASTQ_NAME': readset.name + char,
                     'LIBRARY': readset.library,
-                    'PROJECT': readset.project,
+                    'PROJECT': readset.project_id,
                     'INDEX_NAME': readset.description,
                     'INDEX1': actual_index1seq,
                     'INDEX2': actual_index2seq,
@@ -1769,7 +1782,7 @@ wc -l >> {output}""".format(
                 indexes.append({
                     'BCL2FASTQ_NAME': readset.name + char,
                     'LIBRARY': readset.library,
-                    'PROJECT': readset.project,
+                    'PROJECT': readset.project_id,
                     'INDEX_NAME': readset.description,
                     'INDEX1': actual_index1seq,
                     'INDEX2': actual_index2seq,
@@ -1795,7 +1808,7 @@ wc -l >> {output}""".format(
             indexes.append({
                 'BCL2FASTQ_NAME': readset.name,
                 'LIBRARY': readset.library,
-                'PROJECT': readset.project,
+                'PROJECT': readset.project_id,
                 'INDEX_NAME': readset.description,
                 'INDEX1': actual_index1seq,
                 'INDEX2': actual_index2seq,
@@ -1879,7 +1892,7 @@ wc -l >> {output}""".format(
 
     def get_smallest_index_length(self):
         """
-        Returns a list (for each index read of the run) of the minimum between the number of index cycle on the
+        Returns a list (for each index read of the lane) of the minimum between the number of index cycle on the
         sequencer and all the index lengths.
         """
         run_index_lengths = [r.nb_cycles for r in self.read_infos if r.is_index] # from RunInfo
@@ -1888,7 +1901,7 @@ wc -l >> {output}""".format(
             _raise(SanitycheckError("Multiple samples on a lane, but no indexes were read from the sequencer."))
 
         # loop on all index reads, to compare with samples index length
-        for i in range(0, len(run_index_lengths)):
+        for i in range(len(run_index_lengths)):
             min_sample_index_length = 0
             try:
                 min_sample_index_length = min(len(readset.index.split("-")[i])
@@ -1916,8 +1929,7 @@ wc -l >> {output}""".format(
 
     def load_readsets(self):
         """
-        Download the sample sheets if required or asked for; call the load of these files and return a list of
-        readsets.
+        Parse the sample sheet and return a list of readsets.
         """
 
         return parse_illumina_raw_readset_files(

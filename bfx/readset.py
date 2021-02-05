@@ -289,6 +289,10 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._genomic_database
 
     @property
+    def project_id(self):
+        return self._project_id
+
+    @property
     def project(self):
         return self._project
 
@@ -431,14 +435,11 @@ def parse_illumina_raw_readset_files(
         readset._control = "N"
         readset._recipe = None
         readset._operator = None
-#        readset._project = line['ProjectName']
-        readset._project = line['ProjectLUID']
+        readset._project = line['ProjectName']
+        readset._project_id = line['ProjectLUID']
         readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
 
-        if line['Capture REF_BED'] and line['Capture REF_BED'] != "N/A":
-            readset._beds = line['Capture REF_BED'].split(";")
-        else:
-            readset._beds = []
+        readset._beds = line['Capture REF_BED'].split(";") if line['Capture REF_BED'] and line['Capture REF_BED'] != "N/A" else []
         readsets.append(readset)
         sample.add_readset(readset)
 
