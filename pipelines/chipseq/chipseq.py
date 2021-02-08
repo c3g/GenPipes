@@ -1667,7 +1667,7 @@ done""".format(
             for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 sample_merge_mdup_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
-                output = os.path.join(output_dir, sample.name + ".crosscor")
+                output = os.path.join(output_dir, sample.name, sample.name + ".crosscor")
 
                 jobs.append(
                     concat_jobs([
