@@ -995,12 +995,15 @@ Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
   {output_dir} && \\
 cp {report_template_dir}/{basename_report_file} {report_file} && \\
 declare -A samples_associative_array=({samples_associative_array}) && \\
-for sample in "${{!sample_markname[@]}}"
+for sample in ${{!samples_associative_array[@]}}
 do
-  cp --parents {graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.ps {report_dir}/
-  convert -rotate 90 {graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.ps {report_dir}/graphs/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.png
-  echo -e "----\n\n![QC Metrics for Sample $sample ([download high-res image]({graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.ps))]({graphs_dir}/${{sample}}.${{sample_markname[$sample]}}_QC_Metrics.png)\n" \\
-  >> {report_file}
+  for mark_name in ${{samples_associative_array[$sample]}}
+  do
+    cp --parents {graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps {report_dir}/
+    convert -rotate 90 {graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps {report_dir}/graphs/${{sample}}.${{mark_name}}_QC_Metrics.png
+    echo -e "----\n\n![QC Metrics for Sample $sample ([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps))]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.png)\n" \\
+    >> {report_file}
+  done
 done""".format(
     samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
     # samples_dict=" ".join(["[\"" + sample.name + "\"]=\"" + mark_name + "\"" for sample in self.samples for mark_name in sample.marks]),
