@@ -1882,7 +1882,14 @@ pandoc --to=markdown \\
                         ]
                 input_files.extend(picard_files)
                 input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.flagstat"))
-                input_files.append(os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name, "tagInfo.txt"))
+                homer_prefix = os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name)
+                homer_files = [
+                    homer_prefix + "tagGCcontent.txt",
+                    homer_prefix + "genomeGCcontent.txt",
+                    homer_prefix + "tagLengthDistribution.txt",
+                    homer_prefix + "tagInfo.txt"
+                ]
+                input_files.extend(homer_files)
         # input_files = [os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt") for sample in self.samples]
         output = os.path.join(self.output_dirs['report_output_directory'], "multiqc_report")
         log.info(output)
