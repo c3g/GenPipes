@@ -845,10 +845,10 @@ cp \\
 
                 jobs.append(
                     concat_jobs([
-                        bash.mkdir(metrics_output_directory),
+                        bash.mkdir(os.path.join(metrics_output_directory, sample.name, mark_name)),
                         picard.collect_multiple_metrics(
                             bam_file,
-                            os.path.join(metrics_output_directory, re.sub("bam$", "all.metrics", os.path.basename(bam_file))),
+                            os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("bam$", "all.metrics", os.path.basename(bam_file))),
                             library_type=self.run_type
                             )
                         ],
@@ -859,10 +859,10 @@ cp \\
 
                 jobs.append(
                     concat_jobs([
-                        bash.mkdir(metrics_output_directory),
+                        bash.mkdir(os.path.join(metrics_output_directory, sample.name, mark_name)),
                         sambamba.flagstat(
                             bam_file,
-                            os.path.join(metrics_output_directory, re.sub("\.bam$", ".flagstat", os.path.basename(bam_file)))
+                            os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(bam_file)))
                             # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.bam"),
                             # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.flagstat")
                             )
@@ -892,7 +892,7 @@ for sample in ${{!samples_associative_array[@]}}
 do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
-    flagstat_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.sorted.filtered.dup.flagstat
+    flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.sorted.filtered.dup.flagstat
     bam_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.sorted.filtered.dup.bam
     supplementarysecondary_alignment=`bc <<< $(grep "secondary" $flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
     mapped_reads=`bc <<< $(grep "mapped (" $flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$supplementarysecondary_alignment`
