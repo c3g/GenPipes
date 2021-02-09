@@ -602,8 +602,8 @@ def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_name
     output_dedup_input_bai = None
     # crosscor_input = None
     if input_bam:
-        output_dedup_input_bam = os.path.join(output_dir, sample_name + "." + "_INPUT.dedup.bam")
-        output_dedup_input_bai = os.path.join(output_dir, sample_name + "." + "_INPUT.dedup.bam.bai")
+        output_dedup_input_bam = os.path.join(output_dir, sample_name + "." + "Iput.dedup.bam")
+        output_dedup_input_bai = os.path.join(output_dir, sample_name + "." + "Input.dedup.bam.bai")
         # crosscor_input = os.path.join(output_dir, sample_name + "." + chip_name + ".crosscor")
     output_metrics = os.path.join(output_dir, "IHEC_metrics_chipseq_"+ sample_name + "." + chip_name + ".txt")
     output_fingerprints = os.path.join(output_dir, sample_name + "." + chip_name + ".fingerprint.txt")
