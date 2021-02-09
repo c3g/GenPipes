@@ -852,8 +852,7 @@ cp \\
                             library_type=self.run_type
                             )
                         ],
-                        name="picard_collect_multiple_metrics." + sample.name,
-                        samples=[sample]
+                        name="picard_collect_multiple_metrics." + sample.name + "." + mark_name
                         )
                     )
 
