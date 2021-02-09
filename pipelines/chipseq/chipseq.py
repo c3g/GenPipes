@@ -815,39 +815,41 @@ cp \\
         """
 
         # check the library status
-        library, bam = {}, {}
-        for readset in self.readsets:
-            if not library.has_key(readset.sample):
-                library[readset.sample] = "SINGLE_END"
-            if readset.run_type == "PAIRED_END":
-                library[readset.sample] = "PAIRED_END"
-            if not bam.has_key(readset.sample):
-                bam[readset.sample] = ""
-            if readset.bam:
-                bam[readset.sample] = readset.bam
+        # library, bam = {}, {}
+        # for readset in self.readsets:
+        #     if not library.has_key(readset.sample):
+        #         library[readset.sample] = "SINGLE_END"
+        #     if readset.run_type == "PAIRED_END":
+        #         library[readset.sample] = "PAIRED_END"
+        #     if not bam.has_key(readset.sample):
+        #         bam[readset.sample] = ""
+        #     if readset.bam:
+        #         bam[readset.sample] = readset.bam
 
         jobs = []
 
         samples_associative_array = []
 
+        metrics_output_directory = self.output_dirs['metrics_output_directory']
+
         for sample in self.samples:
             samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
             for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
-                file_prefix = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.dup.")
+                bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
 
-                candidate_input_files = [[file_prefix + "bam"]]
-                if bam[sample]:
-                    candidate_input_files.append([bam[sample]])
-                [input] = self.select_input_files(candidate_input_files)
+                # candidate_input_files = [[file_prefix + "bam"]]
+                # if bam[sample]:
+                #     candidate_input_files.append([bam[sample]])
+                # [input] = self.select_input_files(candidate_input_files)
 
                 jobs.append(
                     concat_jobs([
-                        bash.mkdir(os.path.dirname(input)),
+                        bash.mkdir(metrics_output_directory),
                         picard.collect_multiple_metrics(
-                            input,
-                            re.sub("bam", "all.metrics", input),
-                            library_type=library[sample]
+                            bam_file,
+                            os.path.join(metrics_output_directory, re.sub("bam$", "all.metrics", os.path.basename(bam_file))),
+                            library_type=self.run_type
                             )
                         ],
                         name="picard_collect_multiple_metrics." + sample.name,
@@ -857,10 +859,10 @@ cp \\
 
                 jobs.append(
                     concat_jobs([
-                        bash.mkdir(os.path.dirname(input)),
+                        bash.mkdir(metrics_output_directory),
                         sambamba.flagstat(
-                            input,
-                            os.path.join(alignment_directory, re.sub("\.bam$", ".flagstat", os.path.basename(input)))
+                            bam_file,
+                            os.path.join(metrics_output_directory, re.sub("\.bam$", ".flagstat", os.path.basename(bam_file)))
                             # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.bam"),
                             # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.filtered.dup.flagstat")
                             )
@@ -869,8 +871,8 @@ cp \\
                         )
                     )
 
-        trim_metrics_file = os.path.join(self.output_dirs['metrics_output_directory'], "trimSampleTable.tsv")
-        metrics_file = os.path.join(self.output_dirs['metrics_output_directory'], "SampleMetrics.stats")
+        trim_metrics_file = os.path.join(metrics_output_directory, "trimSampleTable.tsv")
+        metrics_file = os.path.join(metrics_output_directory, "SampleMetrics.stats")
         report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "trimMemSampleTable.tsv")
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.metrics.md")
         jobs.append(
@@ -883,6 +885,7 @@ cp \\
                 # Format merge stats into markdown table using ugly awk (knitr may do this better)
                 command="""\
 module load {sambamba} && \\
+mkdir -p {metrics_dir}
 cp /dev/null {metrics_file} && \\
 declare -A samples_associative_array=({samples_associative_array}) && \\
 for sample in ${{!samples_associative_array[@]}}
@@ -917,6 +920,7 @@ pandoc --to=markdown \\
   > {report_file}
 """.format(
     sambamba=config.param('DEFAULT', 'module_sambamba'),
+    metrics_dir=metrics_output_directory,
     metrics_file=metrics_file,
     # samples=" ".join([sample.name for sample in self.samples]),
     samples_associative_array=" ".join(samples_associative_array),
