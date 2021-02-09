@@ -1860,7 +1860,7 @@ pandoc --to=markdown \\
         for sample in self.samples:
             for mark_name in sample.marks:
                 picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.all.metrics.")
-                if self.run_type == 'PAIRED_END':
+                if self.run_type == 'SINGLE_END':
                     picard_files = [
                         picard_prefix + "quality_by_cycle.pdf",
                         picard_prefix + "alignment_summary_metrics",
@@ -1868,7 +1868,7 @@ pandoc --to=markdown \\
                         picard_prefix + "quality_distribution_metrics",
                         picard_prefix + "quality_distribution.pdf"
                         ]
-                else:
+                elif self.run_type == 'PAIRED_END':
                     picard_files = [
                         picard_prefix + "base_distribution_by_cycle.pdf",
                         picard_prefix + "alignment_summary_metrics",
