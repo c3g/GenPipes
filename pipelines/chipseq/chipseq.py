@@ -1884,10 +1884,10 @@ pandoc --to=markdown \\
                 input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.flagstat"))
                 homer_prefix = os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name)
                 homer_files = [
-                    os.path.join(homer_prefix + "tagGCcontent.txt"),
-                    os.path.join(homer_prefix + "genomeGCcontent.txt"),
-                    os.path.join(homer_prefix + "tagLengthDistribution.txt"),
-                    os.path.join(homer_prefix + "tagInfo.txt")
+                    os.path.join(homer_prefix, "tagGCcontent.txt"),
+                    os.path.join(homer_prefix, "genomeGCcontent.txt"),
+                    os.path.join(homer_prefix, "tagLengthDistribution.txt"),
+                    os.path.join(homer_prefix, "tagInfo.txt")
                 ]
                 input_files.extend(homer_files)
         # input_files = [os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt") for sample in self.samples]
