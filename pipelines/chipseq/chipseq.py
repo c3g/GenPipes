@@ -1857,9 +1857,32 @@ pandoc --to=markdown \\
         jobs = []
         # yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
         input_files = []
+        metrics_output_directory = self.output_dirs['metrics_output_directory']
         for sample in self.samples:
             for mark_name in sample.marks:
-                input_files.append(os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.all.metrics.alignment_summary_metrics"))
+                picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.all.metrics.")
+                if self.run_type == 'PAIRED_END':
+                    picard_files = [
+                        picard_prefix + "quality_by_cycle.pdf",
+                        picard_prefix + "alignment_summary_metrics",
+                        picard_prefix + "quality_by_cycle_metrics",
+                        picard_prefix + "quality_distribution_metrics",
+                        picard_prefix + "quality_distribution.pdf"
+                        ]
+                else:
+                    picard_files = [
+                        picard_prefix + "base_distribution_by_cycle.pdf",
+                        picard_prefix + "alignment_summary_metrics",
+                        picard_prefix + "insert_size_histogram.pdf",
+                        picard_prefix + "insert_size_metrics",
+                        picard_prefix + "quality_by_cycle_metrics",
+                        picard_prefix + "quality_by_cycle.pdf",
+                        picard_prefix + "quality_distribution_metrics",
+                        picard_prefix + "quality_distribution.pdf"
+
+                        ]
+                input_files.extend(picard_files)
+                input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.flagstat"))
                 input_files.append(os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name, "tagInfo.txt"))
         # input_files = [os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt") for sample in self.samples]
         output = os.path.join(self.output_dirs['report_output_directory'], "multiqc_report")
