@@ -1895,6 +1895,8 @@ pandoc --to=markdown \\
             )
         job.name = "multiqc_report." + ".".join([sample.name for sample in self.samples])
 
+        jobs.append(job)
+
         return jobs
 
     def cram_output(self):
