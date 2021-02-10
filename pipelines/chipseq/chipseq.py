@@ -975,6 +975,8 @@ pandoc --to=markdown \\
         if self.contrasts:
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
+        readset_file = os.path.relpath(self.args.readset.name, self.output_dir)
+
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.qc_metrics.md")
         output_files = [os.path.join(self.output_dirs['graphs_output_directory'], sample.name + "." + mark_name + "_QC_Metrics.ps") for sample in self.samples for mark_name in sample.marks] + [report_file]
 
@@ -991,7 +993,7 @@ pandoc --to=markdown \\
                 command="""\
 mkdir -p {graphs_dir} && \\
 Rscript $R_TOOLS/chipSeqGenerateQCMetrics.R \\
-  {design_file} \\
+  {readset_file} \\
   {output_dir} && \\
 cp {report_template_dir}/{basename_report_file} {report_file} && \\
 declare -A samples_associative_array=({samples_associative_array}) && \\
@@ -1008,7 +1010,7 @@ done""".format(
     samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
     # samples_dict=" ".join(["[\"" + sample.name + "\"]=\"" + mark_name + "\"" for sample in self.samples for mark_name in sample.marks]),
     # samples=" ".join([sample.name for sample in self.samples]),
-    design_file=design_file,
+    readset_file=readset_file,
     output_dir=self.output_dir,
     report_template_dir=self.report_template_dir,
     basename_report_file=os.path.basename(report_file),
@@ -1334,7 +1336,7 @@ done""".format(
                     mark_list.append(mark_name)
 
                     peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
-                    output_prefix = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name)
+                    output_prefix = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, sample.name + "." + mark_name)
                     annotation_file = output_prefix + ".annotated.csv"
 
                     jobs.append(
