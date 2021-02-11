@@ -55,22 +55,26 @@ def somatic_config(input_normal,input_tumor, output_dir, callRegions=None, manta
     )
 
 def germline_config(input_normal, output_dir, callRegions=None):
+    
+    if not isinstance(input_normal, list):
+        input_normal = [input_normal]
+        
     return Job(
-        [input_normal],
+        input_normal,
         [os.path.join(output_dir, "runWorkflow.py")],
         [
-            ['strelka2_germline', 'module_python'],
-            ['strelka2_germline', 'module_strelka2']
+            ['strelka2_paired_germline', 'module_python'],
+            ['strelka2_paired_germline', 'module_strelka2']
         ],
         command="""\
  python $STRELKA2_HOME/bin/configureStrelkaGermlineWorkflow.py \\
-        --bam {normal} \\
+        {normal} \\
         --referenceFasta {genome} \\
         {experiment_type} {callRegions} \\
         --runDir {output}""".format(
-            normal=input_normal,
-            genome=config.param('strelka2_germline','genome_fasta',type='filepath'),
-            experiment_type=config.param('strelka2_germline','experiment_type_option') if config.param('strelka2_germline','experiment_type_option') else "",
+            normal="\\\n  --bam ".join(input for input in input_normal),
+            genome=config.param('strelka2_paired_germline','genome_fasta',type='filepath'),
+            experiment_type=config.param('strelka2_paired_germline','experiment_type_option') if config.param('strelka2_paired_germline','experiment_type_option') else "",
             callRegions="\\\n        --callRegions " + callRegions if callRegions else "",
             output=output_dir
         )
