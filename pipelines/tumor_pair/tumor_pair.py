@@ -1845,15 +1845,8 @@ END`""".format(
                  [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
                  [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")]])
         
-            input = [input_normal, input_tumor]
+            input = [input_normal[0], input_tumor[0]]
         
-            mantaIndels = None
-            if os.path.isfile(os.path.join("SVariants", tumor_pair.name, "rawManta", "results", "variants",
-                                           "candidateSmallIndels.vcf.gz")):
-                mantaIndels = os.path.join("SVariants", tumor_pair.name, "rawManta", "results", "variants",
-                                           "candidateSmallIndels.vcf.gz")
-        
-            bed_file = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 tumor_pair.normal.readsets[0]
             )
@@ -1885,10 +1878,9 @@ END`""".format(
                 ], name="bed_index." + tumor_pair.name))
             
             else:
-                bed_file = config.param('strelka2_paired_somatic', 'bed_file')
+                bed_file = config.param('strelka2_paired_germline', 'bed_file')
                 
-            output_dep = [os.path.join(germline_dir, "results/variants/somatic.snvs.vcf.gz"),
-                          os.path.join(germline_dir, "results/variants/somatic.indels.vcf.gz")]
+            output_dep = [os.path.join(germline_dir, "results/variants/variants.vcf.gz")]
         
             jobs.append(concat_jobs([
                 strelka2.germline_config(
@@ -1912,25 +1904,25 @@ END`""".format(
                         [None],
                         [None],
                         command="sed 's/TUMOR/" + tumor_pair.tumor.name + "/g' | sed 's/NORMAL/" + tumor_pair.normal.name
-                                + "/g' | sed 's/Number=R/Number=./g' | grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
+                                + "/g' | sed 's/Number=R/Number=./g' | grep -vE 'GL00|hs37d5' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
                     ),
                     htslib.bgzip_tabix(
                         None,
-                        output_prefix + ".strelka2.vcf.gz"
+                        output_prefix + ".strelka2.germline.vcf.gz"
                     ),
                 ]),
                 pipe_jobs([
                     vt.decompose_and_normalize_mnps(
-                        output_prefix + ".strelka2.vcf.gz",
+                        output_prefix + ".strelka2.germline.vcf.gz",
                         None
                     ),
                     htslib.bgzip_tabix(
                         None,
-                        output_prefix + ".strelka2.vt.vcf.gz"
+                        output_prefix + ".strelka2.germline.vcf.gz"
                     ),
                 ]),
                 tools.fix_genotypes_strelka(
-                    output_prefix + ".strelka2.vt.vcf.gz",
+                    output_prefix + ".strelka2.germline.vcf.gz",
                     output_prefix + ".strelka2.germline.gt.vcf.gz",
                     tumor_pair.normal.name,
                     tumor_pair.tumor.name
@@ -2311,7 +2303,7 @@ END`""".format(
             paired_ensemble_directory = os.path.join(ensemble_directory, tumor_pair.name)
             input_directory = os.path.join("pairedVariants", tumor_pair.name)
 
-            input_strelka2 = os.path.join(input_directory, tumor_pair.name + ".strelka2.germline.vt.vcf.gz")
+            input_strelka2 = os.path.abspath(os.path.join(input_directory, tumor_pair.name + ".strelka2.germline.vt.vcf.gz"))
             input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
             input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.germline.vt.vcf.gz")
             inputs_germline = [input_strelka2, input_vardict, input_varscan2]
