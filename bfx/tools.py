@@ -549,7 +549,7 @@ python $PYTHON_TOOLS/runProcessingSampleReport.py \\
   {align} \\
   -g {gender} \\
   -o {outfile}""".format(
-            project=readset.project,
+            project=readset.project_id,
             sample=readset.sample.name,
             lane_sample=readset.lane + "_" + readset.sample_number,
             library=readset.library,
