@@ -1229,7 +1229,8 @@ END
 
         jobs = []
         for sample in self.samples:
-            picard_directory = os.path.join("metrics", "dna", sample.name, "picard_metrics")
+            picard_directory = os.path.join(self.output_dir, "metrics", "dna", sample.name, "picard_metrics")
+
             alignment_directory = os.path.join("alignment", sample.name)
             readset = sample.readsets[0]
 
@@ -1298,7 +1299,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            qualimap_directory = os.path.join("metrics", "dna", sample.name, "qualimap", sample.name)
+            qualimap_directory = os.path.join(self.output_dir, "metrics", "dna", sample.name, "qualimap", sample.name)
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
@@ -1381,7 +1382,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            fastqc_directory = os.path.join("metrics", "dna", sample.name, "fastqc")
+            fastqc_directory = os.path.join(self.output_dir,"metrics", "dna", sample.name, "fastqc")
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
@@ -1391,7 +1392,7 @@ END
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
-            output_dir = os.path.join(fastqc_directory)
+            output_dir = os.path.join(self.output_dir, fastqc_directory)
             file = re.sub(".bam", "", os.path.basename(input))
             output = os.path.join(fastqc_directory, file + "_fastqc.zip")
 
@@ -1432,7 +1433,7 @@ END
 
         jobs = []
 
-        metrics_directory = os.path.join("metrics", "dna")
+        metrics_directory = os.path.join(self.output_dir,"metrics", "dna")
         input_dep = []
         inputs = []
         for sample in self.samples:
