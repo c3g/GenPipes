@@ -975,7 +975,7 @@ pandoc --to=markdown \\
         # if self.contrasts:
         #     design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
-        readset_file = os.path.relpath(self.args.readset.name, self.output_dir)
+        readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.qc_metrics.md")
         output_files = [os.path.join(self.output_dirs['graphs_output_directory'], sample.name + "." + mark_name + "_QC_Metrics.ps") for sample in self.samples for mark_name in sample.marks] + [report_file]
@@ -1506,7 +1506,7 @@ done""".format(
         # if self.contrasts:
         #     design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
-        readset_file = os.path.relpath(self.args.readset.name, self.output_dir)
+        readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
 
         input_files = []
         output_files = []
