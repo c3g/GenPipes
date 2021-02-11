@@ -1388,7 +1388,7 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_annotate_peaks.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name + ".annotated.csv") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
+                [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".annotated.csv") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
                 [report_file],
                 command="""\
 mkdir -p {report_dir}/annotation/ && \\
@@ -1399,7 +1399,7 @@ do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
     rsync -rvP annotation/$sample {report_dir}/annotation/ && \\
-    echo -e "* [Gene Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/${{mark_name}}.annotated.csv)\n* [HOMER Gene Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/geneOntology.html)\n* [HOMER Genome Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/GenomeOntology.html)" >> {report_file}
+    echo -e "* [Gene Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/${{sample}}.${{mark_name}}.annotated.csv)\n* [HOMER Gene Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/geneOntology.html)\n* [HOMER Genome Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/GenomeOntology.html)" >> {report_file}
   done
 done""".format(
     samples_associative_array=" ".join(samples_associative_array),
