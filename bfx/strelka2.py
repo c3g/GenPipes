@@ -55,7 +55,7 @@ def somatic_config(input_normal,input_tumor, output_dir, callRegions=None, manta
     )
 
 def germline_config(input_normal, output_dir, callRegions=None):
-    
+
     if not isinstance(input_normal, list):
         input_normal = [input_normal]
         
@@ -72,7 +72,7 @@ def germline_config(input_normal, output_dir, callRegions=None):
         --referenceFasta {genome} \\
         {experiment_type} {callRegions} \\
         --runDir {output}""".format(
-            normal="\\\n  --bam ".join(input for input in input_normal),
+            normal="".join(" \\\n  --bam " + input for input in input_normal),
             genome=config.param('strelka2_paired_germline','genome_fasta',type='filepath'),
             experiment_type=config.param('strelka2_paired_germline','experiment_type_option') if config.param('strelka2_paired_germline','experiment_type_option') else "",
             callRegions="\\\n        --callRegions " + callRegions if callRegions else "",
