@@ -79,7 +79,7 @@ class ChipSeq(common.Illumina):
     def __init__(self, protocol="chipseq"):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=file)
+        self.argparser.add_argument("-d", "--design", help="design file", type=file, required=False)
         self.argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)", choices=["chipseq", "atacseq"], default="chipseq")
         super(ChipSeq, self).__init__(protocol)
 
@@ -972,8 +972,8 @@ pandoc --to=markdown \\
         """
 
          # If --design <design_file> option is missing, self.contrasts call will raise an Exception
-        if self.contrasts:
-            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+        # if self.contrasts:
+        #     design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
         readset_file = os.path.relpath(self.args.readset.name, self.output_dir)
 
@@ -1503,8 +1503,10 @@ done""".format(
         """
 
          # If --design <design_file> option is missing, self.contrasts call will raise an Exception
-        if self.contrasts:
-            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+        # if self.contrasts:
+        #     design_file = os.path.relpath(self.args.design.name, self.output_dir)
+
+        readset_file = os.path.relpath(self.args.readset.name, self.output_dir)
 
         input_files = []
         output_files = []
@@ -1545,7 +1547,7 @@ done""".format(
                 command="""\
 mkdir -p {graphs_dir} && \\
 Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
-  {design_file} \\
+  {readset_file} \\
   {output_dir} && \\
 mkdir -p {report_dir}/annotation/ && \\
 if [[ -f {peak_stats_file} ]]
@@ -1572,7 +1574,7 @@ do
   echo -e "----\n\n![Annotation Statistics for Design $contrast ([download high-res image]({graphs_dir}/${{contrast}}_Misc_Graphs.ps))]({graphs_dir}/${{contrast}}_Misc_Graphs.png)\n" \\
   >> {report_file}
 done""".format(
-    design_file=design_file,
+    readset_file=readset_file,
     output_dir=self.output_dir,
     peak_stats_file=peak_stats_file,
     contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
