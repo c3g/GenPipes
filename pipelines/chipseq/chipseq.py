@@ -1513,7 +1513,7 @@ done""".format(
         for sample in self.samples:
             for mark_name, mark_type in sample.marks.items():
                 if mark_type != "I":
-                    annotation_prefix = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name)
+                    annotation_prefix = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, sample.name + "." + mark_name)
                     input_files.append(annotation_prefix + ".tss.stats.csv")
                     input_files.append(annotation_prefix + ".exon.stats.csv")
                     input_files.append(annotation_prefix + ".intron.stats.csv")
