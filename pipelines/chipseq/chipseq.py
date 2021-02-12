@@ -254,7 +254,11 @@ END
         job = concat_jobs([
             bash.mkdir(self.output_dirs['metrics_output_directory']),
             Job(
-                command="echo 'Sample\tReadset\tRaw {read_type} Reads #\tSurviving {read_type} Reads #\tSurviving {read_type} Reads %' > ".format(read_type=read_type) + readset_merge_trim_stats
+                command="""
+echo -e "Sample\\tReadset\\tRaw {read_type} Reads #\\tSurviving {read_type} Reads #\\tSurviving {read_type} Reads %" > {readset_merge_trim_stats}""".format(
+    read_type=read_type,
+    readset_merge_trim_stats=readset_merge_trim_stats
+    )
                 )
             ])
 
@@ -1696,6 +1700,7 @@ done""".format(
                                 ['run_spp', 'module_R']
                             ],
                             command="""\
+echo -e "Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag) > {output}"
 Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir}""".format(
     sample_merge_mdup_bam=sample_merge_mdup_bam,
     output=output,
