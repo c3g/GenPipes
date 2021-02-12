@@ -1683,36 +1683,27 @@ done""".format(
         output_dir = self.output_dirs['ihecM_output_directory']
 
         for sample in self.samples:
-            output = os.path.join(output_dir, sample.name, sample.name + ".crosscor")
-            jobs.append(
-                Job(
-                    [],
-                    [output],
-                    [],
-                    command="""\
-echo -e "Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag) > {output}"
-""".format(
-    output=output
-    ),
-                    name="prepare_run_spp." + sample.name
-                    )
-                )
             for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 sample_merge_mdup_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
+                output = os.path.join(output_dir, sample.name, sample.name + ".crosscor")
 
                 jobs.append(
                     concat_jobs([
                         bash.mkdir(output_dir),
                         Job(
-                            [sample_merge_mdup_bam, output],
-                            [],
+                            [sample_merge_mdup_bam],
+                            [output],
                             [
                                 ['run_spp', 'module_samtools'],
                                 ['run_spp', 'module_mugqic_tools'],
                                 ['run_spp', 'module_R']
                             ],
                             command="""\
+if ! [ -s {output} ]
+  then
+    echo -e "Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag) > {output}"
+fi
 Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir}""".format(
     sample_merge_mdup_bam=sample_merge_mdup_bam,
     output=output,
