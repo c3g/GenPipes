@@ -117,22 +117,22 @@ class ChipSeq(common.Illumina):
         return genome
 
 
-    @property
-    def contrasts(self):
-        contrasts = super(ChipSeq, self).contrasts
+    # @property
+    # def contrasts(self):
+    #     contrasts = super(ChipSeq, self).contrasts
 
-        # Parse contrasts to retrieve name and type
-        for contrast in contrasts:
-            if re.search("^\w[\w.-]*,[BN]$", contrast.name):
-                contrast.real_name = contrast.name.split(",")[0]
-                if contrast.name.split(",")[1] == 'B':
-                    contrast.type = 'broad'
-                elif contrast.name.split(",")[1] == 'N':
-                    contrast.type = 'narrow'
-            else:
-                _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" is invalid (should be <contrast>,B for broad or <contrast>,N for narrow)!"))
+    #     # Parse contrasts to retrieve name and type
+    #     for contrast in contrasts:
+    #         if re.search("^\w[\w.-]*,[BN]$", contrast.name):
+    #             contrast.real_name = contrast.name.split(",")[0]
+    #             if contrast.name.split(",")[1] == 'B':
+    #                 contrast.type = 'broad'
+    #             elif contrast.name.split(",")[1] == 'N':
+    #                 contrast.type = 'narrow'
+    #         else:
+    #             _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" is invalid (should be <contrast>,B for broad or <contrast>,N for narrow)!"))
 
-        return contrasts
+    #     return contrasts
 
     def mappable_genome_size(self):
         genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', type='filepath') + ".fai", 'rb'), delimiter='\t')
@@ -1567,17 +1567,22 @@ pandoc --to=markdown \\
   --variable gene_desert_size="{gene_desert_size}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file} && \\
-for contrast in {contrasts}
+declare -A samples_associative_array=({samples_associative_array}) && \\
+for sample in ${{!samples_associative_array[@]}}
 do
-  cp --parents {graphs_dir}/${{contrast}}_Misc_Graphs.ps {report_dir}/
-  convert -rotate 90 {graphs_dir}/${{contrast}}_Misc_Graphs.ps {report_dir}/graphs/${{contrast}}_Misc_Graphs.png
-  echo -e "----\n\n![Annotation Statistics for Design $contrast ([download high-res image]({graphs_dir}/${{contrast}}_Misc_Graphs.ps))]({graphs_dir}/${{contrast}}_Misc_Graphs.png)\n" \\
-  >> {report_file}
+  for mark_name in ${{samples_associative_array[$sample]}}
+  do
+    cp --parents {graphs_dir}/${{contrast}}_Misc_Graphs.ps {report_dir}/
+    convert -rotate 90 {graphs_dir}/${{contrast}}_Misc_Graphs.ps {report_dir}/graphs/${{contrast}}_Misc_Graphs.png
+    echo -e "----\n\n![Annotation Statistics for Design $contrast ([download high-res image]({graphs_dir}/${{contrast}}_Misc_Graphs.ps))]({graphs_dir}/${{contrast}}_Misc_Graphs.png)\n" \\
+    >> {report_file}
+  done
 done""".format(
     readset_file=readset_file,
     output_dir=self.output_dir,
     peak_stats_file=peak_stats_file,
-    contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
+    samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
+    # contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
     proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int') / -1000,
     distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int') / -1000,
     distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', type='int') / -1000,
