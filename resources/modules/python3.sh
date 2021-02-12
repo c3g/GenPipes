@@ -3,9 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=python
-
-VERSION=3.8.5
-SETUPTOOLS_VERSION=49.3.1
+VERSION=3.9.1
+SETUPTOOLS_VERSION=53.0.0
 # Remove the version last number
 LIBVERSION=${VERSION%.[0-9]*}
 # Uppercase first P in python
@@ -27,15 +26,15 @@ build() {
   export PYTHONHOME=$INSTALL_DIR/$SOFTWARE_DIR
   export PYTHONPATH=$PYTHONHOME/lib/python$LIBVERSION/site-packages:$PYTHONHOME/lib/python$LIBVERSION
 
-  # Install setuptools => easy_install
-  cd $INSTALL_DOWNLOAD
-  SETUPTOOLS_ARCHIVE=setuptools-${SETUPTOOLS_VERSION}.tar.gz
-  download_archive https://github.com/pypa/setuptools/archive v${SETUPTOOLS_VERSION}.tar.gz 
-  tar zxvf v${SETUPTOOLS_VERSION}.tar.gz
-  cd ${SETUPTOOLS_ARCHIVE/.tar.gz/}
-  $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 bootstrap.py
-  $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 setup.py build
-  $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 setup.py install
+#  # Install setuptools => easy_install
+#  cd $INSTALL_DOWNLOAD
+#  SETUPTOOLS_ARCHIVE=setuptools-${SETUPTOOLS_VERSION}.tar.gz
+#  download_archive https://github.com/pypa/setuptools/archive v${SETUPTOOLS_VERSION}.tar.gz 
+#  tar zxvf v${SETUPTOOLS_VERSION}.tar.gz
+#  cd ${SETUPTOOLS_ARCHIVE/.tar.gz/}
+#  $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 bootstrap.py
+#  $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 setup.py build
+#  $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 setup.py install
 
 #  for i in `find $INSTALL_DIR/$SOFTWARE_DIR/bin -type f`; do sed -i 's/^\#!.*/#!\/usr\/bin\/env python/' $i; done
 

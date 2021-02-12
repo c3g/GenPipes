@@ -3144,6 +3144,7 @@ END`""".format(
 
         """
         jobs = []
+        nb_jobs = config.param('sequenza', 'nb_jobs', type='posint')
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             sequenza_directory = os.path.join(pair_directory, "sequenza")
@@ -3159,165 +3160,100 @@ END`""".format(
                  [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
                  [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")]])
 
-            bed_file = None
-            coverage_bed = bvatools.resolve_readset_coverage_bed(
-                tumor_pair.normal.readsets[0]
-            )
-
-            if coverage_bed:
-                bed_file = coverage_bed
-
-            for sequence in self.sequence_dictionary_variant():
-                if sequence['type'] is 'primary':
-                    normal_mpileup = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.normal.name + "." + sequence['name'] + ".mpileup")
-                    tumor_mpileup = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.tumor.name + "." + sequence['name'] + ".mpileup")
-                    normal_gz = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.normal.name + "." + sequence['name'] + ".mpileup.gz")
-                    tumor_gz = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.tumor.name + "." + sequence['name'] + ".mpileup.gz")
-                    out_seqz = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + "." + sequence['name'] + ".seqz.gz")
-                    binned_seqz = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + ".binned.seqz." + sequence['name'] + ".gz")
-
-                    if os.path.isfile(normal_mpileup) and os.path.isfile(tumor_mpileup):
-                        jobs.append(concat_jobs([
-                            bash.mkdir(
-                                rawSequenza_directory,
-                                remove=True
-                            ),
-                            Job(
-                                [normal_mpileup],
-                                [normal_gz],
-                                command="gzip -cf " + normal_mpileup + " > " + normal_gz
-                            ),
-                            Job(
-                                [tumor_mpileup],
-                                [tumor_gz],
-                                command="gzip -cf " + tumor_mpileup + " > " + tumor_gz
-                            ),
-                            pipe_jobs([
-                                sequenza.seqz(
-                                    normal_gz,
-                                    tumor_gz,
-                                    config.param('sequenza', 'gc_file'),
-                                    None
-                                ),
-                                Job(
-                                    [None],
-                                    [out_seqz],
-                                    command="gzip -cf > " + out_seqz
-                                )
-                            ]),
-                            pipe_jobs([
-                                sequenza.bin(
-                                    out_seqz,
-                                    None
-                                ),
-                                Job(
-                                    [None],
-                                    [binned_seqz],
-                                    command="gzip -c > " + binned_seqz
-                                ),
-                            ]),
-                        ], name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name))
-
-                    else:
-
-                        jobs.append(concat_jobs([
-                            bash.mkdir(
-                                rawSequenza_directory,
-                                remove=True
-                            ),
-                            pipe_jobs([
-                                samtools.mpileup(
-                                    [inputNormal[0]],
-                                    None,
-                                    config.param('sequenza', 'mpileup_options'),
-                                    sequence['name'],
-                                    bed_file
-                                ),
-                                Job(
-                                    [None],
-                                    [normal_gz],
-                                    command="gzip -cf > " + normal_gz
-                                ),
-                            ]),
-                            pipe_jobs([
-                                samtools.mpileup(
-                                    [inputTumor[0]],
-                                    None,
-                                    config.param('sequenza', 'mpileup_options'),
-                                    sequence['name'],
-                                    bed_file
-                                ),
-                                Job(
-                                    [None],
-                                    [tumor_gz],
-                                    command="gzip -cf > " + tumor_gz
-                                ),
-                            ]),
-                        ], name="mpileup_sequenza." + sequence['name'] + "." + tumor_pair.name))
-
-                        jobs.append(concat_jobs([
-                            bash.mkdir(
-                                rawSequenza_directory,
-                                remove=True
-                            ),
-                            pipe_jobs([
-                                sequenza.seqz(
-                                    normal_gz,
-                                    tumor_gz,
-                                    config.param('sequenza', 'gc_file'),
-                                    None
-                                ),
-                                Job(
-                                    [None],
-                                    [out_seqz],
-                                    command="gzip -c > " + out_seqz
-                                ),
-                            ]),
-                            pipe_jobs([
-                                sequenza.bin(
-                                    out_seqz,
-                                    None
-                                ),
-                                Job(
-                                    [None],
-                                    [binned_seqz],
-                                    command="gzip -c > " + binned_seqz
-                                ),
-                            ]),
-                        ], name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name))
-
-            seqz_outputs = [os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + ".binned.seqz." + sequence['name'] + ".gz")
-                            for sequence in self.sequence_dictionary_variant() if sequence['type'] is 'primary']
-            #seqz_input = seqz_outputs[0]
-            merged_seqz = os.path.join(sequenza_directory, tumor_pair.name + ".binned.merged.seqz.gz")
-
-            jobs.append(concat_jobs([
-                bash.mkdir(
-                    rawSequenza_directory,
-                    remove=True
-                ),
-                Job(seqz_outputs,
-                    [merged_seqz],
-                    command="zcat " + " \\\n".join(seqz_outputs)
-                            + " \\\n | gawk 'FNR==1 && NR==1{print;}{ if($1!=\"chromosome\" && $1!=\"MT\" && $1!=\"chrMT\" && $1!=\"chrM\") {print $0} }' | \\\n   gzip -cf > "
-                            + merged_seqz
+            rawOutput = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + ".")
+            output = os.path.join(sequenza_directory, tumor_pair.name + ".")
+            
+            if nb_jobs == 1:
+                jobs.append(concat_jobs([
+                    bash.mkdir(
+                        rawSequenza_directory,
+                        remove=True
                     ),
-            ], name="sequenza.merge_binned_seqz." + tumor_pair.name))
+                    sequenza.bam2seqz(
+                        inputNormal[0],
+                        inputTumor[0],
+                        config.param('sequenza', 'gc_file'),
+                        rawOutput + "all.seqz.gz",
+                        None
+                    ),
+                    sequenza.bin(
+                        rawOutput + "all.seqz.gz",
+                        output + "all.binned.seqz.gz",
+                    ),
+                    ], name="sequenza.create_seqz." + tumor_pair.name)
+                )
+                
+                jobs.append(concat_jobs([
+                    bash.mkdir(
+                        rawSequenza_directory,
+                        remove=True
+                    ),
+                    sequenza.main(
+                        output + "all.binned.seqz.gz",
+                        sequenza_directory,
+                        tumor_pair.name
+                    ),
+                    #sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
+                    #sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
+                    #                  os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
+                ], name="sequenza." + tumor_pair.name))
+                
+            else:
+                for sequence in self.sequence_dictionary_variant():
+                    if sequence['type'] is 'primary':
+                        
+                        jobs.append(concat_jobs([
+                            bash.mkdir(
+                                rawSequenza_directory,
+                                remove=True
+                            ),
+                            sequenza.bam2seqz(
+                                inputNormal[0],
+                                inputTumor[0],
+                                config.param('sequenza', 'gc_file'),
+                                rawOutput + ".seqz." + sequence['name'] + ".gz",
+                                sequence['name']
+                            ),
+                            sequenza.bin(
+                                rawOutput + ".seqz." + sequence['name'] + ".gz",
+                                rawOutput + ".binned.seqz." + sequence['name'] + ".gz",
+                            ),
+                        ], name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name))
 
-            jobs.append(concat_jobs([
-                bash.mkdir(
-                    rawSequenza_directory,
-                    remove=True
-                ),
-                sequenza.main(
-                    merged_seqz,
-                    sequenza_directory,
-                    tumor_pair.name
-                ),
-                #sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
-                #sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
-                #                  os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
-            ], name="sequenza." + tumor_pair.name))
+                        seqz_outputs = [rawOutput + ".binned.seqz." + sequence['name'] + ".gz"
+                                        for sequence in self.sequence_dictionary_variant() if
+                                        sequence['type'] is 'primary']
+
+                        jobs.append(concat_jobs([
+                            bash.mkdir(
+                                rawSequenza_directory,
+                                remove=True
+                            ),
+                            Job(
+                                seqz_outputs,
+                                [output + ".binned.merged.seqz.gz"],
+                                command = "zcat "
+                                        + " \\\n".join(seqz_outputs)
+                                        + " \\\n | gawk 'FNR==1 && NR==1{print;}{ if($1!=\"chromosome\" && $1!=\"MT\" && $1!=\"chrMT\" && $1!=\"chrM\") {print $0} }' | "
+                                        + " \\\n gzip -cf > "
+                                        + output + ".binned.merged.seqz.gz"
+                                ),
+                        ], name="sequenza.merge_binned_seqz." + tumor_pair.name))
+    
+                        jobs.append(concat_jobs([
+                            bash.mkdir(
+                                rawSequenza_directory,
+                                remove=True
+                            ),
+                            sequenza.main(
+                                output + ".binned.merged.seqz.gz",
+                                sequenza_directory,
+                                tumor_pair.name
+                            ),
+                            # sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
+                            # sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
+                            #                  os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
+                        ], name="sequenza." + tumor_pair.name))
 
         return jobs
 
