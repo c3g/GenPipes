@@ -615,7 +615,7 @@ def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_name
 
     return Job(
         [chip_bam, input_bam, chip_bed],
-        [output_metrics, output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bai, output_flagstats, output_dedup_input_bam, output_dedup_input_bai, crosscor],
+        [output_metrics, output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bai, output_flagstats, output_dedup_input_bam, output_dedup_input_bai],
         [
             ['IHEC_chipseq_metrics', 'module_mugqic_tools'],
             ['IHEC_chipseq_metrics', 'module_samtools'],
