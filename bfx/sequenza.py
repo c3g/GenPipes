@@ -46,7 +46,7 @@ sequenza-utils \\
   )
 
 
-def seqz(normal_gz, tumor_gz, genome, output):
+def bam2seqz_mpileup(normal_gz, tumor_gz, genome, output):
     return Job(
         [normal_gz, tumor_gz],
         [output],
@@ -56,7 +56,7 @@ def seqz(normal_gz, tumor_gz, genome, output):
         ],
         command="""\\
 sequenza-utils \\
-    bam2seqz {pileup_options} \\
+    bam2seqz -p {pileup_options} \\
     -gc  {gen}   \\
     -n {normal}  \\
     -t {tumor}{out}""".format(
@@ -65,6 +65,32 @@ sequenza-utils \\
         tumor=tumor_gz,
         pileup_options=config.param('sequenza','pileup_options'),
         out=" \\\n > " + output if output else ""
+        )
+    )
+
+def bam2seqz(normal, tumor, genome, output, chr=None):
+    return Job(
+        [normal, tumor],
+        [output],
+        [
+            ['sequenza', 'module_python'],
+            ['sequenza', 'module_samtools'],
+            ['sequenza', 'module_htslib'],
+        ],
+        command="""\\
+sequenza-utils \\
+    bam2seqz {pileup_options} --samtools samtools --tabix tabix \\
+    {chr} \\
+    -gc {gen} \\
+    --normal {normal} \\
+    --tumor {tumor} \\
+    --output {out}""".format(
+        chr="\\\n " + chr if chr else "",
+        gen=genome,
+        normal=normal,
+        tumor=tumor,
+        pileup_options=config.param('sequenza','pileup_options'),
+        out=output
         )
     )
 
@@ -81,10 +107,10 @@ sequenza-utils  \\
     seqz_binning  \\
     -w {window}  \\
     -s {seqz_gz} \\
-    {output}""".format(
+    -o {output}""".format(
         window=config.param('sequenza','bin_window_size'),
         seqz_gz=seqz_gz,
-        output=" \\\n > " + output if output else "",
+        output=output,
         )
     )
 
