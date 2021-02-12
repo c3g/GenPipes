@@ -1532,8 +1532,8 @@ done""".format(
 
             #output_files.append(os.path.join(self.output_dirs['graphs_output_directory'], contrast.real_name + "_Misc_Graphs.ps"))
 
-        peak_stats_file = os.path.join(self.output_dirs['anno_output_directory'], "peak_stats.csv")
-        output_files.append(peak_stats_file)
+            peak_stats_file = os.path.join(self.output_dirs['anno_output_directory'], sample.name, "peak_stats.csv")
+            output_files.append(peak_stats_file)
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.annotation_graphs.md")
         output_files.append(report_file)
 
@@ -1553,38 +1553,38 @@ mkdir -p {graphs_dir} && \\
 Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
   {readset_file} \\
   {output_dir} && \\
-mkdir -p {report_dir}/annotation/ && \\
-if [[ -f {peak_stats_file} ]]
-then
-  cp {peak_stats_file} {report_dir}/annotation/
-peak_stats_table=`LC_NUMERIC=en_CA awk -F "," '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, $2,  sprintf("%\\47d", $3), $4, sprintf("%\\47.1f", $5), sprintf("%\\47.1f", $6), sprintf("%\\47.1f", $7), sprintf("%\\47.1f", $8)}}}}' {peak_stats_file}`
-else
-  peak_stats_table=""
-fi
-pandoc --to=markdown \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable peak_stats_table="$peak_stats_table" \\
-  --variable proximal_distance="{proximal_distance}" \\
-  --variable distal_distance="{distal_distance}" \\
-  --variable distance5d_lower="{distance5d_lower}" \\
-  --variable distance5d_upper="{distance5d_upper}" \\
-  --variable gene_desert_size="{gene_desert_size}" \\
-  {report_template_dir}/{basename_report_file} \\
-  > {report_file} && \\
 declare -A samples_associative_array=({samples_associative_array}) && \\
 for sample in ${{!samples_associative_array[@]}}
 do
+  mkdir -p {report_dir}/annotation/$sample && \\
+  if [[ -f annotation/$sample/peak_stats.csv ]]
+  then
+    cp annotation/$sample/peak_stats.csv {report_dir}/annotation/$sample
+  peak_stats_table=`LC_NUMERIC=en_CA awk -F "," '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, $2,  sprintf("%\\47d", $3), $4, sprintf("%\\47.1f", $5), sprintf("%\\47.1f", $6), sprintf("%\\47.1f", $7), sprintf("%\\47.1f", $8)}}}}' annotation/$sample/peak_stats.csv`
+  else
+    peak_stats_table=""
+  fi
+  pandoc --to=markdown \\
+    --template {report_template_dir}/{basename_report_file} \\
+    --variable peak_stats_table="$peak_stats_table" \\
+    --variable proximal_distance="{proximal_distance}" \\
+    --variable distal_distance="{distal_distance}" \\
+    --variable distance5d_lower="{distance5d_lower}" \\
+    --variable distance5d_upper="{distance5d_upper}" \\
+    --variable gene_desert_size="{gene_desert_size}" \\
+    {report_template_dir}/{basename_report_file} \\
+    > {report_file} && \\
   for mark_name in ${{samples_associative_array[$sample]}}
   do
-    cp --parents {graphs_dir}/${{contrast}}_Misc_Graphs.ps {report_dir}/
-    convert -rotate 90 {graphs_dir}/${{contrast}}_Misc_Graphs.ps {report_dir}/graphs/${{contrast}}_Misc_Graphs.png
-    echo -e "----\n\n![Annotation Statistics for Design $contrast ([download high-res image]({graphs_dir}/${{contrast}}_Misc_Graphs.ps))]({graphs_dir}/${{contrast}}_Misc_Graphs.png)\n" \\
+    cp --parents {graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps {report_dir}/
+    convert -rotate 90 {graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps {report_dir}/graphs/${{sample}}.${{mark_name}}_Misc_Graphs.png
+    echo -e "----\n\n![Annotation Statistics for Sample $sample and Mark $mark_name ([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps))]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.png)\n" \\
     >> {report_file}
   done
 done""".format(
     readset_file=readset_file,
     output_dir=self.output_dir,
-    peak_stats_file=peak_stats_file,
+    # peak_stats_file=peak_stats_file,
     samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
     # contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
     proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int') / -1000,
