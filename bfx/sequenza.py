@@ -82,7 +82,7 @@ sequenza-utils \\
     bam2seqz {pileup_options} --samtools samtools --tabix tabix \\
     {chr} \\
     -gc {gen} \\
-    --fasta {reference_sequence}
+    --fasta {reference_sequence} \\
     --normal {normal} \\
     --tumor {tumor} \\
     --output {out}""".format(
