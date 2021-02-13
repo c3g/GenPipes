@@ -1896,12 +1896,8 @@ END`""".format(
         
             jobs.append(concat_jobs([
                 pipe_jobs([
-                    bcftools.concat(
-                        output_dep,
-                        None
-                    ),
                     Job(
-                        [None],
+                        [os.path.join(germline_dir, "results/variants/variants.vcf.gz")],
                         [None],
                         command="sed 's/TUMOR/" + tumor_pair.tumor.name + "/g' | sed 's/NORMAL/" + tumor_pair.normal.name
                                 + "/g' | sed 's/Number=R/Number=./g' | grep -vE 'GL00|hs37d5' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
@@ -1918,15 +1914,9 @@ END`""".format(
                     ),
                     htslib.bgzip_tabix(
                         None,
-                        output_prefix + ".strelka2.germline.vcf.gz"
+                        output_prefix + ".strelka2.germline.gt.vcf.gz"
                     ),
                 ]),
-                tools.fix_genotypes_strelka(
-                    output_prefix + ".strelka2.germline.vcf.gz",
-                    output_prefix + ".strelka2.germline.gt.vcf.gz",
-                    tumor_pair.normal.name,
-                    tumor_pair.tumor.name
-                ),
                 bcftools.view(
                     output_prefix + ".strelka2.germline.gt.vcf.gz",
                     output_prefix + ".strelka2.germline.vt.vcf.gz",
