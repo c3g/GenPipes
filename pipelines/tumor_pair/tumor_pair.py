@@ -1899,7 +1899,9 @@ END`""".format(
                     Job(
                         [os.path.join(germline_dir, "results/variants/variants.vcf.gz")],
                         [None],
-                        command="sed 's/TUMOR/" + tumor_pair.tumor.name + "/g' | sed 's/NORMAL/" + tumor_pair.normal.name
+                        command="zcat " + os.path.join(germline_dir, "results/variants/variants.vcf.gz")
+                                + " | sed 's/TUMOR/" + tumor_pair.tumor.name + "/g'"
+                                + " | sed 's/NORMAL/" + tumor_pair.normal.name
                                 + "/g' | sed 's/Number=R/Number=./g' | grep -vE 'GL00|hs37d5' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
                     ),
                     htslib.bgzip_tabix(
