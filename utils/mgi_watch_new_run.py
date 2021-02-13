@@ -232,6 +232,9 @@ mkdir -p {process_dir}/{process_dir_suffix} && \\
 python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py \\
   -c $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.base.ini $MUGQIC_INSTALL_HOME/genomes/species/Homo_sapiens.GRCh38/Homo_sapiens.GRCh38.ini \\
   --no-json -l debug {demux_fastq}{lane}{extra_options} \\
+  --run-id {run} \\
+  --flowcell-id {fcid} \\
+  --raw-fastq-prefix {run_folder_basename} \\
   -d /nb/Research/MGISeq/{sequencer_path}/{run_folder_basename} \\
   -r {readset_file} \\
   -o {process_dir}/{process_dir_suffix} \\
@@ -244,6 +247,7 @@ python $MUGQIC_PIPELINES_HOME/pipelines/mgi_run_processing/mgi_run_processing.py
         demux_fastq="--demux-fastq " if is_demultiplexed else "",
         run_folder_basename=run_folder_basename,
         run=run,
+        fcid=run_folder_basename.split("_")[0],
         lane="--lane "+lane+" " if lane else "",
         sequencer_path=sequencer_path,
         extra_options=extra_options
