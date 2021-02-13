@@ -258,7 +258,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         Get whole date of the run from sample sheet
         """
         if not hasattr(self, "_date"):
-            dates = set([date for date in list(set([line['Run_Date'] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter=',', quotechar='"')]))])
+            dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter='\t', quotechar='"')]))])
             if len(list(dates)) > 1:
                 _raise(SanitycheckError("More than one date were found in the sample sheet for the run \"" + self._run_id + "\""))
             else:
