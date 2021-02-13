@@ -209,6 +209,31 @@ class MGIRunProcessing(common.MUGQICPipeline):
         return self._instrument
 
     @property
+    def flowcell_position(self):
+        if not hasattr(self, "_flowcell_position"):
+            self._flowcell_position = ""
+            for lane in self.lanes:
+                lane_flowcell_position = self.get_flowcell_position(lane)
+                if self._flowcell_position and self._flowcell_position != lane_flowcell_position:
+                    _raise(SanitycheckError("One run (\"" + self.run_id + "\") cannot be placed on multiple flowcell positions !! (\"" + lane_flowcell_position + "\" vs. \"" +  self._flowcell_position + "\")"))
+                else:
+                    self._flowcell_position = lane_flowcell_position
+        return self._flowcell_position
+
+    @property
+    def run_counter(self):
+        if not hasattr(self, "_run_counter"):
+            run_counter = ""
+            for lane in self.lanes:
+                lane_run_counter = self.get_run_counter(lane)
+                if run_counter and run_counter != lane_run_counter:
+                    _raise(SanitycheckError("One run (\"" + self.run_id + "\") cannot be defined by more than one run counter !! (\"" + lane_run_counter + "\" vs. \"" +  run_counter + "\")"))
+                else:
+                    run_counter = lane_run_counter
+            self._run_counter = run_counter 
+        return self._run_counter
+
+    @property
     def seqtype(self):
         if not hasattr(self, "_seqtype"):
             self._seqtype = self.get_seqtype()
@@ -217,7 +242,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
     @property
     def year(self):
         """
-        Get year from sample sheet
+        Get year of the from sample sheet
         """
         if not hasattr(self, "_year"):
             dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter='\t', quotechar='"')]))])
@@ -226,6 +251,20 @@ class MGIRunProcessing(common.MUGQICPipeline):
             else:
                 self._year = list(dates)[0].split("-")[0]
         return self._year
+
+    @property
+    def date(self):
+        """
+        Get whole date of the run from sample sheet
+        """
+        if not hasattr(self, "_date"):
+            dates = set([date for date in list(set([line['Run_Date'] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter=',', quotechar='"')]))])
+            if len(list(dates)) > 1:
+                _raise(SanitycheckError("More than one date were found in the sample sheet for the run \"" + self._run_id + "\""))
+            else:
+                date = list(dates)[0].split("-")
+                self._date = date[0][-2:] + date[1] + date[2]
+        return self._date
 
     @property
     def run_dir(self):
@@ -403,7 +442,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
     
                 # ...then do the renamings from the raw_fastq folder to the Unaligned folder
                 for readset in self.readsets[lane]:
-                    output_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, 'Project_' + readset.project, 'Sample_' + readset.name)
+                    output_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, 'Project_' + readset.project_id, 'Sample_' + readset.name)
                     m = re.search("\D+(?P<index>\d+)", readset.index_name)
                     if m:
                         index_number = m.group('index').lstrip("0")
@@ -1276,7 +1315,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
     
             # Create a report zip archive containing all the above...
             zip_output = os.path.join(self.output_dir, "L0" + lane, "report", self.run_id + "_" + self.flowcell_id + "_L00" + lane + "_report.zip")
-            zip_job =  bash.zip(
+            zip_job = bash.zip(
                 [
                     run_validation_report_json,
                     os.path.join(self.output_dir, "L0" + lane, "report", "fastqc"),
@@ -1305,7 +1344,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             config.param("copy", "destination_folder", type="dirpath"),
             self.seqtype,
             self.year,
-            self.instrument + "_" + self.flowcell_id + "_" + self.run_id
+            self.date + "_" + self.instrument + "_" + self.run_counter + "_" + self.flowcell_position + self.flowcell_id + "_" + self.run_id + "-" + self.seqtype
         )
         jobs_to_concat.append(
             bash.mkdir(full_destination_folder)
@@ -1396,7 +1435,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 config.param("copy", "destination_folder", type="dirpath"),
                 self.seqtype,
                 self.year,
-                self.instrument + "_" + self.flowcell_id + "_" + self.run_id
+                self.date + "_" + self.instrument + "_" + self.run_counter + "_" + self.flowcell_position + self.flowcell_id + "_" + self.run_id + "-" + self.seqtype
             )
             inputs.append(os.path.join(
                 full_destination_folder,
@@ -1485,9 +1524,37 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 return row[1]
         _raise(SanitycheckError("Could not find intrument from " + self.bioinfo_files[lane]))
 
+    def get_flowcell_position(self, lane):
+        """
+        Parse the BioInfo.csv file for flowcell position of the run
+        """
+        bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
+        for row in bioinfo_csv:
+            if row[0] == "Flowcell Pos":
+                return row[1]
+        _raise(SanitycheckError("Could not find flowcell position from " + self.bioinfo_files[lane]))
+
+    def get_run_counter(self, lane):
+        """
+        Parse the BioInfo.csv file for the ID of the run to extract the run counter
+        """
+        bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
+        for row in bioinfo_csv:
+            if row[0] == "DNB ID":
+                # dnb_id format looks like : 10074MG01B_Lane4
+                # where run_id is : 10074MG01B
+                # and run counter is : 10074
+                run_counter = row[1].split("_")[0][:-5]
+                # sometimes, format is misleading : 1074
+                # so we correct it to : 10074
+                while len(run_counter) < 5:
+                    run_counter[:1] + "0" +  run_counter[1:]
+                return run_counter
+        _raise(SanitycheckError("Could not find intrument from " + self.bioinfo_files[lane]))
+
     def get_seqtype(self):
         """
-        Determine which kind of sequencing (iseq, miseq, novaseq, hiseqx, hiseq4000 or hiseq2500) was performed,
+        Determine which kind of sequencing (iseq, miseq, novaseq, hiseqx, hiseq4000, hiseq2500 or dnbseqg400) was performed,
         depending on the instrument used for the run
         """
 
