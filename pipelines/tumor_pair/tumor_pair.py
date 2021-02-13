@@ -1571,8 +1571,11 @@ END`""".format(
                         Job(
                             [None],
                             [None],
-                            command="sed 's/TUMOR/" + tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"
-                                    + tumor_pair.normal.name + "/g' | sed 's/Number=R/Number=./g' | grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
+                            command="sed 's/TUMOR/" + tumor_pair.tumor.name
+                                    + "/g' | sed 's/NORMAL/"
+                                    + tumor_pair.normal.name
+                                    + "/g' | sed 's/Number=R/Number=./g' | grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -vE 'EBV|hs37d5'"
+                                    + " | sed -e 's#/\.##g'"
                         ),
                         htslib.bgzip_tabix(
                             None,
@@ -1625,7 +1628,8 @@ END`""".format(
                             Job(
                                 [None],
                                 [None],
-                                command=" grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
+                                command=" grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -vE 'EBV|hs37d5'"
+                                        + " | sed -e 's#/\.##g'"
                             ),
                             htslib.bgzip_tabix(
                                 None,
