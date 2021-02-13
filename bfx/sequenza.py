@@ -82,11 +82,13 @@ sequenza-utils \\
     bam2seqz {pileup_options} --samtools samtools --tabix tabix \\
     {chr} \\
     -gc {gen} \\
+    --fasta {reference_sequence}
     --normal {normal} \\
     --tumor {tumor} \\
     --output {out}""".format(
         chr="\\\n " + chr if chr else "",
         gen=genome,
+        reference_sequence=config.param('sequenza', 'genome_fasta', type='filepath'),
         normal=normal,
         tumor=tumor,
         pileup_options=config.param('sequenza','pileup_options'),
