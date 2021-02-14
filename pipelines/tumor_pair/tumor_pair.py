@@ -2302,7 +2302,8 @@ END`""".format(
             input_strelka2 = os.path.abspath(os.path.join(input_directory, tumor_pair.name + ".strelka2.germline.vt.vcf.gz"))
             input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
             input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.germline.vt.vcf.gz")
-            inputs_germline = [input_strelka2, input_vardict, input_varscan2]
+            
+            inputs_germline = [input_vardict, input_strelka2, input_varscan2]
 
             for input_vcf in inputs_germline:
                 if not self.is_gz_file(input_vcf):
