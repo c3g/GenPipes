@@ -2303,7 +2303,7 @@ END`""".format(
             input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
             input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.germline.vt.vcf.gz")
             
-            inputs_germline = [input_vardict, input_strelka2, input_varscan2]
+            inputs_germline = [input_strelka2, input_vardict, input_varscan2]
 
             for input_vcf in inputs_germline:
                 if not self.is_gz_file(input_vcf):
@@ -2364,9 +2364,10 @@ END`""".format(
                         input_normal,
                         input_tumor,
                         input_somatic_variants,
-                        output_somatic_variants
+                        output_somatic_variants,
+                        config.param('gatk_variant_annotator_somatic', 'other_options')
                     ),
-                ], name="gatk_variant_annotator.somatic." + tumor_pair.name))
+                ], name="gatk_variant_annotator_somatic." + tumor_pair.name))
                 
             else:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
@@ -2385,7 +2386,7 @@ END`""".format(
                             output_somatic_variants,
                             intervals=sequences
                         ),
-                    ], name="gatk_variant_annotator.somatic." + str(idx) + "." + tumor_pair.name))
+                    ], name="gatk_variant_annotator_somatic." + str(idx) + "." + tumor_pair.name))
 
                 output_somatic_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.others.vcf.gz")
 
@@ -2399,9 +2400,10 @@ END`""".format(
                         input_tumor,
                         input_somatic_variants,
                         output_somatic_variants,
+                        config.param('gatk_variant_annotator_somatic', 'other_options'),
                         exclude_intervals=unique_sequences_per_job_others
                     ),
-                ], name="gatk_variant_annotator.somatic.others." + tumor_pair.name))
+                ], name="gatk_variant_annotator_somatic.others." + tumor_pair.name))
 
         return jobs
 
@@ -2436,9 +2438,10 @@ END`""".format(
                         input_normal,
                         input_tumor,
                         input_germline_variants,
-                        output_germline_variants
+                        output_germline_variants,
+                        config.param('gatk_variant_annotator_somatic', 'other_options'),
                     ),
-                ], name="gatk_variant_annotator.germline." + tumor_pair.name))
+                ], name="gatk_variant_annotator_germline." + tumor_pair.name))
     
             else:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
@@ -2457,7 +2460,7 @@ END`""".format(
                             output_germline_variants,
                             intervals=sequences
                         ),
-                    ], name="gatk_variant_annotator.germline." + str(idx) + "." + tumor_pair.name))
+                    ], name="gatk_variant_annotator_germline." + str(idx) + "." + tumor_pair.name))
         
                 output_germline_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot.others.vcf.gz")
         
@@ -2471,9 +2474,10 @@ END`""".format(
                         input_tumor,
                         input_germline_variants,
                         output_germline_variants,
+                        config.param('gatk_variant_annotator_germline', 'other_options'),
                         exclude_intervals=unique_sequences_per_job_others
                     ),
-                ], name="gatk_variant_annotator.germline.others." + tumor_pair.name))
+                ], name="gatk_variant_annotator_germline.others." + tumor_pair.name))
 
         return jobs
 
@@ -2548,53 +2552,6 @@ END`""".format(
                     ]),
                 ], name="merge_gatk_variant_annotator.germline." + tumor_pair.name))
 
-        return jobs
-
-    def somatic_signature(self):
-        """
-		Extract somatic signature composition of each sample based on Alexandrov signature reference
-		Analysis is done using the SomaticSignatures and the deconstructSigs R packages
-		"""
-    
-        jobs = []
-    
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
-        somatic_signature_directory = os.path.join("somaticSignature")
-        # input_merged_vcfs = [os.path.join(ensemble_directory, tumor_pair.name , tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
-
-        for tumor_pair in self.tumor_pairs.itervalues():
-            jobs.append(concat_jobs([
-                bash.mkdir(
-                    somatic_signature_directory + "/tmp_vcf",
-                    remove=True
-                ),
-                Job(
-                    [os.path.join(ensemble_directory, tumor_pair.name,
-                                  tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")],
-                    [os.path.join(somatic_signature_directory, "tmp_vcf", tumor_pair.name + "list_tmp.tsv")],
-                    command="echo -e '" + tumor_pair.tumor.name + "\t" + os.path.join(ensemble_directory, tumor_pair.name,
-                                  tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz") + "' > " + os.path.join(
-                        somatic_signature_directory, "tmp_vcf", tumor_pair.name + "list_tmp.tsv"))
-            ], name="somatic_signature.gzip." + tumor_pair.name)
-            )
-    
-        input_list = [os.path.join(somatic_signature_directory, "tmp_vcf", tumor_pair.name + "list_tmp.tsv") for
-                      tumor_pair in self.tumor_pairs.itervalues()]
-    
-        jobs.append(concat_jobs([
-            Job(
-                input_list,
-                [os.path.join(somatic_signature_directory, "Samplelist.tsv")],
-                command="echo -e 'tumor\tpath' > " + os.path.join(somatic_signature_directory, "Samplelist.tsv")
-                        + " && cat " + " ".join(input_list) + " >> " + os.path.join(somatic_signature_directory, "Samplelist.tsv"),
-                removable_files=input_list
-            ),
-            tools.r_somatic_signature(
-                os.path.join(somatic_signature_directory, "Samplelist.tsv"),
-                somatic_signature_directory
-            )
-        ], name="somatic_signature.allPairs"))
-    
         return jobs
 
     def compute_cancer_effects_somatic(self):

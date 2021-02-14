@@ -507,7 +507,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def variant_annotator(input_normal, input_tumor, input_variants, output, intervals=[], exclude_intervals=[]):
+def variant_annotator(input_normal, input_tumor, input_variants, output, other_options, intervals=[], exclude_intervals=[]):
 
     return Job(
         [input_normal, input_tumor, input_variants],
@@ -527,7 +527,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         tmp_dir=config.param('gatk_variant_annotator', 'tmp_dir'),
         java_other_options=config.param('gatk_variant_annotator', 'java_other_options'),
         ram=config.param('gatk_variant_annotator', 'ram'),
-        other_options=config.param('gatk_variant_annotator', 'other_options',required=False),
+        other_options=other_options,
         reference_sequence=config.param('gatk_variant_annotator', 'genome_fasta', type='filepath'),
         input_normal=input_normal,
         input_tumor=input_tumor,
