@@ -384,7 +384,7 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
                 metrics.rnaseqc(
                     sample_file,
                     output_directory,
-                    readset.fastq2 is not None,
+                    readset.fastq2 is None,
                     gtf_file=gtf_transcript_id,
                     ribosomal_interval_file=ribosomal_interval_file,
                     reference=reference
