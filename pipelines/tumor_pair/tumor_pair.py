@@ -200,11 +200,11 @@ END`""".format(
             for key,input in inputs.iteritems():
                 for readset in input:
                     jobs.append(concat_jobs([
-                        deliverables.md5sum(
-                            readset,
-                            readset + ".md5",
-                            self.output_dir
-                        ),
+                        #deliverables.md5sum(
+                        #    readset,
+                        #    readset + ".md5",
+                        #    self.output_dir
+                        #),
                         deliverables.sym_link_pair(
                             readset,
                             tumor_pair,
@@ -213,14 +213,14 @@ END`""".format(
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                        deliverables.sym_link_pair(
-                            readset + ".md5",
-                            tumor_pair,
-                            self.output_dir,
-                            type="raw_reads",
-                            sample=key,
-                            profyle=self.args.profyle
-                        ),
+                        #deliverables.sym_link_pair(
+                        #    readset + ".md5",
+                        #    tumor_pair,
+                        #    self.output_dir,
+                        #    type="raw_reads",
+                        #    sample=key,
+                        #    profyle=self.args.profyle
+                        #),
                     ], name="sym_link_fastq.pairs." + tumor_pair.name + "." + key))
 
         return jobs
@@ -514,8 +514,8 @@ END`""".format(
                             self.output_dir
                         ),
                         deliverables.md5sum(
-                            sample_bam + ".bai",
-                            sample_bam + ".bai.md5",
+                            sample_bam + ".bam.bai",
+                            sample_bam + ".bam.bai.md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
@@ -527,7 +527,7 @@ END`""".format(
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample_bam + ".bai",
+                            sample_bam + ".bam.bai",
                             tumor_pair,
                             self.output_dir,
                             type="alignment",
@@ -543,7 +543,7 @@ END`""".format(
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample_bam + ".bai.md5",
+                            sample_bam + ".bam.bai.md5",
                             tumor_pair,
                             self.output_dir,
                             type="alignment",
@@ -561,10 +561,11 @@ END`""".format(
         jobs = []
         for tumor_pair in self.tumor_pairs.itervalues():
             metrics_directory = os.path.join(self.output_dir, "metrics")
-            input_normal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam")
-            input_tumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")
-            pileup_normal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".gatkPileup")
-            pileup_tumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".gatkPileup")
+            align_dir = os.path.join(self.output_dir, "alignment")
+            input_normal = os.path.join(align_dir, tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam")
+            input_tumor = os.path.join(align_dir, tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")
+            pileup_normal = os.path.join(align_dir, tumor_pair.normal.name, tumor_pair.normal.name + ".gatkPileup")
+            pileup_tumor = os.path.join(align_dir, tumor_pair.tumor.name, tumor_pair.tumor.name + ".gatkPileup")
 
             concordance_out = os.path.join(metrics_directory, tumor_pair.name + ".concordance.tsv")
             contamination_out = os.path.join(metrics_directory, tumor_pair.name + ".contamination.tsv")
@@ -2439,7 +2440,7 @@ END`""".format(
                         input_tumor,
                         input_germline_variants,
                         output_germline_variants,
-                        config.param('gatk_variant_annotator_somatic', 'other_options'),
+                        config.param('gatk_variant_annotator_germline', 'other_options'),
                     ),
                 ], name="gatk_variant_annotator_germline." + tumor_pair.name))
     
@@ -2458,6 +2459,7 @@ END`""".format(
                             input_tumor,
                             input_germline_variants,
                             output_germline_variants,
+                            config.param('gatk_variant_annotator_germline', 'other_options'),
                             intervals=sequences
                         ),
                     ], name="gatk_variant_annotator_germline." + str(idx) + "." + tumor_pair.name))
