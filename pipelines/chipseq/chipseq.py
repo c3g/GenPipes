@@ -1704,11 +1704,13 @@ if ! [ -s {output} ]
   then
     cat /dev/null > {output}
 fi && \\
+sed -i /{sample_merge_mdup_bam}/d {output} && \\
 Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir} && \\
 current_head=`head -n 1 {output}`
-if ! [ "Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag)" == "$current_head" ]
+header="Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag)"
+if ! [ "$header" == "$current_head" ]
   then
-    sed -i "1 i Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag)" {output}
+    sed -i "1 i $header" {output}
 fi""".format(
     sample_merge_mdup_bam=sample_merge_mdup_bam,
     output=output,
