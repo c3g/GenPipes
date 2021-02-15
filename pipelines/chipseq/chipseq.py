@@ -1682,11 +1682,11 @@ done""".format(
 
 
         for sample in self.samples:
-            output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
             for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 sample_merge_mdup_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
-                output = os.path.join(output_dir, sample.name + ".crosscor")
+                output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, mark_name)
+                output = os.path.join(output_dir, sample.name + "." + mark_name + ".crosscor")
 
                 jobs.append(
                     concat_jobs([
@@ -1700,18 +1700,9 @@ done""".format(
                                 ['run_spp', 'module_R']
                             ],
                             command="""\
-if ! [ -s {output} ]
-  then
-    cat /dev/null > {output}
-fi && \\
-sed -i /{sample_merge_mdup_bam}/d {output} && \\
+cat /dev/null > {output} && \\
 Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir} && \\
-current_head=`head -n 1 {output}`
-header="Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag)"
-if ! [ "$header" == "$current_head" ]
-  then
-    sed -i "1 i $header" {output}
-fi""".format(
+""".format(
     sample_merge_mdup_bam=sample_merge_mdup_bam,
     output=output,
     tmp_dir=config.param('run_spp', 'tmp_dir')
@@ -1720,6 +1711,27 @@ fi""".format(
                         ],
                         name="run_spp." + sample.name + "." + mark_name)
                     )
+
+        jobs.append(
+            Job(
+                [os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".crosscor") for sample in self.samples for mark_name, mark_type in sample.marks.items()],
+                [os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, sample.name + ".crosscor") for sample in self.samples],
+                [],
+                command="""\
+declare -A samples_associative_array=({samples_associative_array}) && \\
+for sample in ${{!samples_associative_array[@]}}
+do
+  echo -e "Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag)" > ihec_metrics/${{sample}}/${{sample}}.crosscor
+  for mark_name in ${{samples_associative_array[$sample]}}
+  do
+    cat ihec_metrics/${{sample}}/${{mark_name}}/${{sample}}.${{mark_name}}.crosscor >> ihec_metrics/${{sample}}/${{sample}}.crosscor
+  done
+done""".format(
+    samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples])
+    ),
+                name="run_spp_report"
+                )
+            )
 
         return jobs
 
