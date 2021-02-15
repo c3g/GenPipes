@@ -1701,8 +1701,7 @@ done""".format(
                             ],
                             command="""\
 cat /dev/null > {output} && \\
-Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir} && \\
-""".format(
+Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir}""".format(
     sample_merge_mdup_bam=sample_merge_mdup_bam,
     output=output,
     tmp_dir=config.param('run_spp', 'tmp_dir')
