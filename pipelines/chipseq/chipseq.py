@@ -1702,9 +1702,14 @@ done""".format(
                             command="""\
 if ! [ -s {output} ]
   then
-    echo -e "Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag) > {output}"
-fi
-Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir}""".format(
+    cat /dev/null > {output}
+fi && \\
+Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir} && \\
+current_head=`head -n 1 {output}`
+if ! [ "Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag)" == "$current_head" ]
+  then
+    sed -i "1 i Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag)" {output}
+fi""".format(
     sample_merge_mdup_bam=sample_merge_mdup_bam,
     output=output,
     tmp_dir=config.param('run_spp', 'tmp_dir')
