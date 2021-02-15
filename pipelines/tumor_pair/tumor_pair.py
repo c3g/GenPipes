@@ -562,8 +562,8 @@ END`""".format(
         for tumor_pair in self.tumor_pairs.itervalues():
             metrics_directory = os.path.join(self.output_dir, "metrics")
             align_dir = os.path.join(self.output_dir, "alignment")
-            input_normal = os.path.join(align_dir, tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam")
-            input_tumor = os.path.join(align_dir, tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")
+            input_normal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam")
+            input_tumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")
             pileup_normal = os.path.join(align_dir, tumor_pair.normal.name, tumor_pair.normal.name + ".gatkPileup")
             pileup_tumor = os.path.join(align_dir, tumor_pair.tumor.name, tumor_pair.tumor.name + ".gatkPileup")
 
