@@ -72,6 +72,49 @@ class RunProcessingAligner(object):
                "\tPL:" + config.param(ini_section, 'platform', required=True) + \
                "'"
 
+    def verify_bam_id(self, readset, type="DNA"):
+        """
+            verifyBamID is a software that verifies whether the reads in particular file match previously known
+            genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
+            as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
+            genotypes are available. When external genotypes are not available, verifyBamID still robustly
+            detects sample swaps.
+        """
+        jobs = []
+        known_variants_annotated_filtered = ""
+        if type == "RNA":
+            if len(readset.annotation_files) > 3 and os.path.isfile(readset.annotation_files[3]):
+                known_variants_annotated = readset.annotation_files[3]
+        else:
+            if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
+                known_variants_annotated = readset.annotation_files[0]
+
+        known_variants_annotated_filtered = known_variants_annotated
+
+        if known_variants_annotated_filtered:
+
+            input_bam = readset.bam + ".bam"
+            output_prefix = readset.bam + ".metrics.verifyBamId"
+            jobs.append(
+                concat_jobs([
+                    verify_bam_id.verify(
+                        input_bam,
+                        output_prefix,
+                        vcf=known_variants_annotated_filtered,
+                    ),
+                    # the first column starts with a # (a comment for nanuq) so we remove the column and output the result
+                    # in a file with the name supported by nanuq
+                    Job(
+                        [output_prefix + ".selfSM"],
+                        [output_prefix + ".tsv"],
+                        command="cut -f2- " + output_prefix + ".selfSM > " + output_prefix + ".tsv"
+                )],
+                name="verify_bam_id." + readset.name + "." + readset.run + "." + readset.lane,
+                samples=[readset.sample]
+            ))
+
+        return jobs
+
 class BwaRunProcessingAligner(RunProcessingAligner):
     downloaded_bed_files = []
     created_interval_lists = []
@@ -183,7 +226,8 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             job.samples = [readset.sample]
             jobs.append(job)
 
-        jobs.extend(self.verify_bam_id(readset))
+        if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
+            jobs.extend(self.verify_bam_id(readset, "DNA"))
 
         job = bvatools.depth_of_coverage(
             input,
@@ -198,92 +242,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
         return jobs
 
-    def verify_bam_id(self, readset):
-        """
-            verifyBamID is a software that verifies whether the reads in particular file match previously known
-            genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
-            as a mixture of two samples. verifyBamID can detect sample contamination and swaps when external
-            genotypes are available. When external genotypes are not available, verifyBamID still robustly
-            detects sample swaps.
-        """
-        jobs = []
-        if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
-
-            known_variants_annotated = readset.annotation_files[0]
-            known_variants_annotated_filtered = known_variants_annotated
-
-            input_bam = readset.bam + ".bam"
-            output_prefix = readset.bam + ".metrics.verifyBamId"
-            jobs.append(
-                concat_jobs([
-                    verify_bam_id.verify(
-                        input_bam,
-                        output_prefix,
-                        vcf=known_variants_annotated_filtered,
-                    ),
-                    # the first column starts with a # (a comment for nanuq) so we remove the column and output the result
-                    # in a file with the name supported by nanuq
-                    Job(
-                        [output_prefix + ".selfSM"],
-                        [output_prefix + ".tsv"],
-                        command="cut -f2- " + output_prefix + ".selfSM > " + output_prefix + ".tsv"
-                )],
-                name="verify_bam_id." + readset.name + "." + readset.run + "." + readset.lane,
-                samples=[readset.sample]
-            ))
-
-        return jobs
-
-
-class StarRunProcessingAligner(RunProcessingAligner):
-    def __init__(self, output_dir, genome_folder, nb_cycles):
-        super(StarRunProcessingAligner, self).__init__(output_dir, genome_folder)
-        # Adjusting the nb of cycles
-        if 49 <= nb_cycles <= 51:
-            nb_cycles = 50
-        elif 74 <= nb_cycles <= 76:
-            nb_cycles = 75
-        elif 99 <= nb_cycles <= 101:
-            nb_cycles = 100
-        elif 124 <= nb_cycles <= 126:
-            nb_cycles = 125
-        elif 149 <= nb_cycles <= 151:
-            nb_cycles = 150
-        else:
-            raise NotImplementedError("NumCycles " + str(nb_cycles) + " not supported for Star aligner...")
-        self._nb_cycles = nb_cycles
-
-    @property
-    def nb_cycles(self):
-        return self._nb_cycles
-
-    def get_reference_index(self, readset=None):
-        folder_name = os.path.basename(self.genome_folder)
-        ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
-        if os.path.isfile(ini_file):
-            genome_config = configparser.SafeConfigParser()
-            genome_config.read(ini_file)
-
-            source = genome_config.get("DEFAULT", "source")
-            version = genome_config.get("DEFAULT", "version")
-
-            if readset and readset.is_scrna:
-                return os.path.join(
-                    self.genome_folder,
-                    "genome",
-                    "10xGenomics",
-                    genome_config.get("DEFAULT", "10x_transcriptome"),
-                    "star"
-                )
-            else:
-                return os.path.join(
-                     self.genome_folder,
-                     "genome",
-                     "star_index",
-                     source + version + ".sjdbOverhang" + str(self.nb_cycles - 1))
-        else:
-            return None
-
+class RNARunProcessingAligner(RunProcessingAligner):
     def get_annotation_files(self):
         folder_name = os.path.basename(self.genome_folder)
         ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
@@ -291,10 +250,11 @@ class StarRunProcessingAligner(RunProcessingAligner):
             genome_config = configparser.SafeConfigParser()
             genome_config.read(ini_file)
 
-            source = genome_config.get("DEFAULT", "source")
-            version = genome_config.get("DEFAULT", "version")
+            section = "DEFAULT"
+            source = genome_config.get(section, "source")
+            version = genome_config.get(section, "version")
 
-            return [
+            annotation_files = [
                 os.path.join(self.genome_folder,
                              "annotations",
                              folder_name + '.' + source + version + ".transcript_id.gtf"),
@@ -308,6 +268,20 @@ class StarRunProcessingAligner(RunProcessingAligner):
                              "annotations",
                              folder_name + '.' + source + version + ".ref_flat.tsv")
             ]
+
+            dbsnp_option_name = "dbsnp_version"
+            af_option_name = "population_AF"
+            if genome_config.has_option(section, dbsnp_option_name) and genome_config.has_option(section, af_option_name):
+                dbsnp_version = genome_config.get(section, dbsnp_option_name)
+                af_name = genome_config.get(section, af_option_name)
+                annotation_files.append(
+                    os.path.join(
+                        self.genome_folder,
+                        "annotations",
+                        folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf.gz"
+                    )
+                )
+            return annotation_files
         else:
             return None
 
@@ -349,7 +323,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
 
     def get_metrics_jobs(self, readset):
         jobs = []
-        jobs += self._rnaseqc(readset) + self._picard_rna_metrics(readset) + \
+        jobs += self.verify_bam_id(readset, "RNA") + self._rnaseqc(readset) + self._picard_rna_metrics(readset) + \
                 self._estimate_ribosomal_rna(readset)
         return jobs
 
