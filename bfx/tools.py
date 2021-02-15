@@ -611,7 +611,7 @@ def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_name
     output_dedup_chip_bam = os.path.join(output_dir, sample_name + "." + chip_name + ".dedup.bam")
     output_dedup_chip_bai = os.path.join(output_dir, sample_name + "." + chip_name + ".dedup.bam.bai")
     output_flagstats = os.path.join(output_dir, sample_name + "." + chip_name + ".markDup_flagstat.txt")
-    crosscor = os.path.join(output_dir, sample_name  + ".crosscor")
+    crosscor = os.path.join(output_dir, sample_name + ".crosscor")
 
     return Job(
         [chip_bam, input_bam, chip_bed, crosscor],
