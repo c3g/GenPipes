@@ -1680,13 +1680,13 @@ done""".format(
         # alignment_dir = self.output_dirs['ihecA_output_directory']
         # alignment_dir = self.output_dirs['alignment_output_directory']
 
-        output_dir = self.output_dirs['ihecM_output_directory']
 
         for sample in self.samples:
+            output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
             for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 sample_merge_mdup_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
-                output = os.path.join(output_dir, sample.name, sample.name + ".crosscor")
+                output = os.path.join(output_dir, sample.name + ".crosscor")
 
                 jobs.append(
                     concat_jobs([
