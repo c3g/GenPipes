@@ -1764,6 +1764,7 @@ done""".format(
                     chip_bam = os.path.join(alignment_dir, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
                     chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
                     output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, mark_name)
+                    crosscor_input = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".crosscor")
                     genome = config.param('IHEC_chipseq_metrics', 'assembly')
                     # if mark_type == "N":
                     #     chip_type = "narrow"
@@ -1789,7 +1790,8 @@ done""".format(
                                 chip_type=self.mark_type_conversion[mark_type],
                                 chip_bed=chip_bed,
                                 output_dir=output_dir,
-                                assembly=genome
+                                assembly=genome,
+                                crosscor_input=crosscor_input
                                 )
                             ],
                             name="IHEC_chipseq_metrics." + sample.name + "." + mark_name,

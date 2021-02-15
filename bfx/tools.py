@@ -597,7 +597,7 @@ IHEC_rnaseq_metrics.sh \\
         )
     )
 
-def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_name, chip_type, chip_bed, output_dir, assembly):
+def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_name, chip_type, chip_bed, output_dir, assembly, crosscor_input):
     output_dedup_input_bam = None
     output_dedup_input_bai = None
     # crosscor_input = None
@@ -611,10 +611,10 @@ def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_name
     output_dedup_chip_bam = os.path.join(output_dir, sample_name + "." + chip_name + ".dedup.bam")
     output_dedup_chip_bai = os.path.join(output_dir, sample_name + "." + chip_name + ".dedup.bam.bai")
     output_flagstats = os.path.join(output_dir, sample_name + "." + chip_name + ".markDup_flagstat.txt")
-    crosscor = os.path.join(output_dir, sample_name + ".crosscor")
+    # crosscor = os.path.join(output_dir, sample_name + ".crosscor")
 
     return Job(
-        [chip_bam, input_bam, chip_bed, crosscor],
+        [chip_bam, input_bam, chip_bed, crosscor_input],
         [output_metrics, output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bai, output_flagstats, output_dedup_input_bam, output_dedup_input_bai],
         [
             ['IHEC_chipseq_metrics', 'module_mugqic_tools'],
