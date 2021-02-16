@@ -953,7 +953,7 @@ pandoc --to=markdown \\
         for sample in self.samples:
             for mark_name in sample.marks:
                 alignment_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
-                output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name)
+                output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name)
                 other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
 
                 job = homer.makeTagDir(
@@ -989,7 +989,7 @@ pandoc --to=markdown \\
 
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name, "tagInfo.txt") for sample in self.samples for mark_name in sample.marks],
+                [os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name, "tagInfo.txt") for sample in self.samples for mark_name in sample.marks],
                 output_files,
                 [
                     ['qc_plots_R', 'module_mugqic_tools'],
@@ -1043,7 +1043,7 @@ done""".format(
 
         for sample in self.samples:
             for mark_name in sample.marks:
-                tag_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name)
+                tag_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name)
                 bedgraph_dir = os.path.join(self.output_dirs['tracks_output_directory'], sample.name, mark_name)
                 bedgraph_file = os.path.join(bedgraph_dir, sample.name + "." + mark_name + ".ucsc.bedGraph")
                 big_wig_output = os.path.join(bedgraph_dir, "bigWig", sample.name + "." + mark_name + ".bw")
@@ -1126,17 +1126,21 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
 
                     ## set macs2 variables:
 
-                    format = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
+                    options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
                     genome_size = self.mappable_genome_size()
                     output_prefix_name = os.path.join(output_dir, mark_name)
 
                     if mark_type == "B": # Broad region
-                        other_options = " --broad --nomodel"
+                        other_options = "--broad --nomodel"
                     else: # Narrow region
                         if input_file:
-                            other_options = " --nomodel"
+                            other_options = "--nomodel"
                         else:
-                            other_options = " --fix-bimodal"
+                            other_options = "--fix-bimodal"
+
+                    other_options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param('macs2_callpeak', 'shift') else ""
+                    other_options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param('macs2_callpeak', 'extsize') else ""
+                    other_options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param('macs2_callpeak', 'pvalue') else ""
 
                     output = os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
 
@@ -1144,7 +1148,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                         concat_jobs([
                             bash.mkdir(output_dir),
                             macs2.callpeak(
-                                format,
+                                options,
                                 genome_size,
                                 mark_file,
                                 input_file,
@@ -1245,17 +1249,21 @@ done""".format(
 
                     ## set macs2 variables:
 
-                    format = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
+                    options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
                     genome_size = self.mappable_genome_size()
                     output_prefix_name = os.path.join(output_dir, mark_name)
                     output = os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
-                    other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
+                    # other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
+                    other_options = "--nomodel --call-summits"
+                    other_options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param('macs2_callpeak', 'shift') else " --shift -75 "
+                    other_options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param('macs2_callpeak', 'extsize') else " --extsize 150 "
+                    other_options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param('macs2_callpeak', 'pvalue') else " -p 0.01 "
 
                     jobs.append(
                         concat_jobs([
                             bash.mkdir(output_dir),
                             macs2.callpeak(
-                                format,
+                                options,
                                 genome_size,
                                 mark_file,
                                 input_file,
@@ -1923,7 +1931,7 @@ pandoc --to=markdown \\
                         ]
                 input_files.extend(picard_files)
                 input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.flagstat"))
-                homer_prefix = os.path.join(self.output_dirs['homer_output_directory'], sample.name, mark_name)
+                homer_prefix = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name)
                 homer_files = [
                     os.path.join(homer_prefix, "tagGCcontent.txt"),
                     os.path.join(homer_prefix, "genomeGCcontent.txt"),
