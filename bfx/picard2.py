@@ -68,7 +68,7 @@ def calculate_hs_metrics(input, output, intervals, reference_sequence=None):
                 ['picard_calculate_hs_metrics', 'module_picard']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CalculateHsMetrics \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CollectHsMetrics \\
  TMP_DIR={tmp_dir} \\
  INPUT={input} \\
  OUTPUT={output} \\
