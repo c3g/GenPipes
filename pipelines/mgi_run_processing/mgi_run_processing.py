@@ -315,6 +315,19 @@ class MGIRunProcessing(common.MUGQICPipeline):
         return self._run_id
 
     @property
+    def sequencer_run_id(self):
+        if not hasattr(self, "_sequencer_run_id"):
+            sequencer_run_id = ""
+            for lane in self.lanes:
+                lane_sequencer_run_id = self.get_sequencer_run_id(lane)
+                if sequencer_run_id and sequencer_run_id != lane_sequencer_run_id:
+                    _raise(SanitycheckError("Sequencer Run ID conflct (\"" + lane_sequencer_run_id + "\" vs. \"" +  sequencer_run_id + "\")"))
+                else:
+                    sequencer_run_id = lane_sequencer_run_id
+            self._sequencer_run_id = sequencer_run_id
+        return self._sequencer_run_id
+
+    @property
     def raw_fastq_prefix(self):
         """
         """
@@ -1344,7 +1357,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             config.param("copy", "destination_folder", type="dirpath"),
             self.seqtype,
             self.year,
-            self.date + "_" + self.instrument + "_" + self.run_counter + "_" + self.flowcell_position + self.flowcell_id + "_" + self.run_id + "-" + self.seqtype
+            self.date + "_" + self.instrument + "_" + self.run_counter + "_" + self.flowcell_position + self.flowcell_id + "_" + self.sequencer_run_id + "-" + self.seqtype
         )
         jobs_to_concat.append(
             bash.mkdir(full_destination_folder)
@@ -1435,7 +1448,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 config.param("copy", "destination_folder", type="dirpath"),
                 self.seqtype,
                 self.year,
-                self.date + "_" + self.instrument + "_" + self.run_counter + "_" + self.flowcell_position + self.flowcell_id + "_" + self.run_id + "-" + self.seqtype
+                self.date + "_" + self.instrument + "_" + self.run_counter + "_" + self.flowcell_position + self.flowcell_id + "_" + self.sequencer_run_id + "-" + self.seqtype
             )
             inputs.append(os.path.join(
                 full_destination_folder,
@@ -1533,6 +1546,18 @@ class MGIRunProcessing(common.MUGQICPipeline):
             if row[0] == "Flowcell Pos":
                 return row[1]
         _raise(SanitycheckError("Could not find flowcell position from " + self.bioinfo_files[lane]))
+
+    def get_sequencer_run_id(self, lane):
+        """
+        Parse the BioInfo.csv file for the ID of the run given by the sequencer
+        """
+        bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
+        for row in bioinfo_csv:
+            if row[0] == "DNB ID":
+                # dnb_id format looks like : 10074MG01B_Lane4
+                # where run_id is : 10074MG01B
+                return row[1].split("_")[0]
+        _raise(SanitycheckError("Could not find DNB ID from " + self.bioinfo_files[lane]))
 
     def get_run_counter(self, lane):
         """
