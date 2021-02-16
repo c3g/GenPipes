@@ -161,7 +161,7 @@ class ChipSeq(common.Illumina):
         for readset in self.readsets:
             log.info(readset.mark_name)
             trim_directory = os.path.join("trim", readset.sample.name)
-            trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
+            trim_file_prefix = os.path.join(trim_directory, readset.mark_name, readset.name + ".trim.")
             trim_log = trim_file_prefix + "log"
 
             # Use adapter FASTA in config file if any, else create it from readset file
@@ -264,7 +264,7 @@ echo -e "Sample\\tReadset\\tRaw {read_type} Reads #\\tSurviving {read_type} Read
             ])
 
         for readset in self.readsets:
-            trim_log = os.path.join("trim", readset.sample.name, readset.name + ".trim.log")
+            trim_log = os.path.join("trim", readset.sample.name, readset.mark_name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
                 # Retrieve readset raw and surviving reads from trimmomatic log using ugly Perl regexp
                 perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
@@ -352,7 +352,7 @@ pandoc \\
         jobs = []
         for readset in self.readsets:
             trim_directory = os.path.join("trim", readset.sample.name)
-            trim_file_prefix = os.path.join(trim_directory, readset.name)
+            trim_file_prefix = os.path.join(trim_directory, readset.mark_name, readset.name)
             alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.mark_name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
