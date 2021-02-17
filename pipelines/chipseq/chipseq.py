@@ -160,8 +160,8 @@ class ChipSeq(common.Illumina):
         jobs = []
         for readset in self.readsets:
             log.info(readset.mark_name)
-            trim_directory = os.path.join("trim", readset.sample.name)
-            trim_file_prefix = os.path.join(trim_directory, readset.mark_name, readset.name + ".trim.")
+            trim_directory = os.path.join("trim", readset.sample.name, readset.mark_name)
+            trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
             trim_log = trim_file_prefix + "log"
 
             # Use adapter FASTA in config file if any, else create it from readset file
@@ -239,7 +239,7 @@ END
 
             jobs.append(concat_jobs([
                 # Trimmomatic does not create output directory by default
-                Job(command="mkdir -p " + trim_directory, samples=[readset.sample]),
+                bash.mkdir(trim_directory),
                 job
             ], name="trimmomatic." + readset.name, samples=[readset.sample]))
         return jobs
@@ -351,8 +351,8 @@ pandoc \\
 
         jobs = []
         for readset in self.readsets:
-            trim_directory = os.path.join("trim", readset.sample.name)
-            trim_file_prefix = os.path.join(trim_directory, readset.mark_name, readset.name)
+            trim_directory = os.path.join("trim", readset.sample.name, readset.mark_name)
+            trim_file_prefix = os.path.join(trim_directory, readset.name)
             alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.mark_name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
