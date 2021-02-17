@@ -44,6 +44,7 @@ from bfx import bvatools
 from bfx import verify_bam_id
 from bfx import picard
 from bfx import trimmomatic
+from bfx import variantBam
 from bfx import samtools
 from bfx import rmarkdown
 from bfx import jsonator
@@ -515,7 +516,6 @@ pandoc \\
         Using this function will include the orginal final bam file into the  removable file list
         """
 
-
         jobs = []
 
         for sample in self.samples:
@@ -536,15 +536,22 @@ pandoc \\
             input_bam = self.select_input_files(candidate_input_files)[0]
 
             output_cram = re.sub("\.bam$", ".cram", input_bam)
-
-            # Run samtools
-            job = samtools.view(
-                input_bam,
-                output_cram,
-                options=config.param('samtools_cram_output', 'options'),
-                removable=False
-            )
-            job.name = "cram_output." + sample.name
+      
+            if "recal" in input_bam:
+                job = variantBam.run(
+                    input_bam,
+                    output_cram,
+                )
+            else:
+                # Run samtools
+                job = samtools.view(
+                    input_bam,
+                    output_cram,
+                    options=config.param('samtools_cram_output', 'options'),
+                    removable=False
+                )
+                
+            job.name = "samtools_cram_output." + sample.name
             job.samples = [sample]
             job.removable_files = input_bam
 

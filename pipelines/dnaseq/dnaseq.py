@@ -320,6 +320,13 @@ END
                         re.sub("\.bam$", ".", os.path.basename(readset.bam))
                     )
                     candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        readset.name + "."
+                    )
+                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
             elif readset.run_type == "SINGLE_END":
