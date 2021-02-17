@@ -1807,7 +1807,7 @@ done""".format(
                             removable_files=[output_dir]
                             )
                         )
-                    metrics_to_merge.append(os.path.join(output_dir, "IHEC_metrics_chipseq_" + sample.name + "." + mark_name + ".txt"))
+                    metrics_to_merge.append(os.path.join(output_dir, mark_name, "IHEC_metrics_chipseq_" + sample.name + "." + mark_name + ".txt"))
 
                 # # Else if mark type is Input
                 # else:
@@ -1854,7 +1854,7 @@ done""".format(
             Job(
                 input_files=metrics_to_merge,
                 output_files=[metrics_merged_out],
-                name="merge_ihec_metrics",
+                name="merge_ihec_metrics." + ".".join([sample.name for sample in self.samples]),
                 command="""\
 cp /dev/null {metrics_merged} && \\
 for sample in {samples}
