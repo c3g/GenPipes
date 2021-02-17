@@ -1140,7 +1140,6 @@ END
 
                 if not os.path.isfile(interval_list):
                     job = tools.bed2interval_list(
-                        None,
                         coverage_bed,
                         interval_list
                     )
