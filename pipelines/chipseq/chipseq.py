@@ -1761,7 +1761,7 @@ done""".format(
             mark_list = []
             # if no Input file
             input_file = {}
-            input_file_list = [os.path.join(alignment_dir, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam") for mark_name, mark_type in sample.marks.items() if mark_type == "I"]
+            input_file_list = [mark_name for mark_name, mark_type in sample.marks.items() if mark_type == "I"]
             if len(input_file_list) > 0:
                 if len(input_file_list) > 1:
                     raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
@@ -1772,7 +1772,7 @@ done""".format(
 
                     chip_bam = os.path.join(alignment_dir, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
                     chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
-                    output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, mark_name)
+                    output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
                     crosscor_input = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".crosscor")
                     genome = config.param('IHEC_chipseq_metrics', 'assembly')
                     # if mark_type == "N":
@@ -1784,8 +1784,8 @@ done""".format(
                         input_name = "no_input"
                         input_bam = None
                     else:
-                        input_name = "".join(input_file.keys())
-                        input_bam = input_file[sample.name]
+                        input_name = input_file[sample.name]#"".join(input_file.keys())
+                        input_bam = os.path.join(alignment_dir, sample.name, input_name, sample.name + "." + input_name + ".sorted.filtered.dup.bam")#input_file[sample.name]
 
                     jobs.append(
                         concat_jobs([
