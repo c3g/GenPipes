@@ -282,9 +282,9 @@ python $PYTHON_TOOLS/CpG_coverageStats.py \\
 
 ## functions for perl tools ##
 
-def bed2interval_list(dictionary, bed, output):
+def bed2interval_list( bed, output):
     return Job(
-        [dictionary, bed],
+        [bed],
         [output],
         [
             ['bed2interval_list', 'module_mugqic_tools'],
@@ -295,7 +295,7 @@ bed2IntervalList.pl \\
   --dict {dictionary} \\
   --bed {bed} \\
   > {output}""".format(
-            dictionary=dictionary if dictionary else config.param('bed2interval_list', 'genome_dictionary', type='filepath'),
+            dictionary=config.param('bed2interval_list', 'genome_dictionary', type='filepath'),
             bed=bed,
             output=output
         )

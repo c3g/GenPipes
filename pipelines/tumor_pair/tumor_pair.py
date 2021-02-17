@@ -200,11 +200,11 @@ END`""".format(
             for key,input in inputs.iteritems():
                 for readset in input:
                     jobs.append(concat_jobs([
-                        #deliverables.md5sum(
-                        #    readset,
-                        #    readset + ".md5",
-                        #    self.output_dir
-                        #),
+                        deliverables.md5sum(
+                            readset,
+                            readset + ".md5",
+                            self.output_dir
+                        ),
                         deliverables.sym_link_pair(
                             readset,
                             tumor_pair,
@@ -213,14 +213,14 @@ END`""".format(
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                        #deliverables.sym_link_pair(
-                        #    readset + ".md5",
-                        #    tumor_pair,
-                        #    self.output_dir,
-                        #    type="raw_reads",
-                        #    sample=key,
-                        #    profyle=self.args.profyle
-                        #),
+                        deliverables.sym_link_pair(
+                            readset + ".md5",
+                            tumor_pair,
+                            self.output_dir,
+                            type="raw_reads",
+                            sample=key,
+                            profyle=self.args.profyle
+                        ),
                     ], name="sym_link_fastq.pairs." + tumor_pair.name + "." + key))
 
         return jobs
@@ -1466,7 +1466,6 @@ END`""".format(
     
                 if not interval_list in created_interval_lists:
                     job = tools.bed2interval_list(
-                        None,
                         coverage_bed,
                         interval_list
                     )
@@ -1953,7 +1952,7 @@ END`""".format(
         if use_bed:
             bed = self.samples[0].readsets[0].beds[0]
             bed_intervals, interval_size = bed_file.parse_bed_file(
-                bed
+                os.path.expandvars(bed)
             )
             last_bed_file = 'vardict.tmp.' + str(nb_jobs - 1) + '.bed'
             if not os.path.exists(last_bed_file):
