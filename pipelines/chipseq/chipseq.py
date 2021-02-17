@@ -333,7 +333,10 @@ pandoc \\
                     report_file=report_file
                 ),
                 report_files=[report_file]
-            )], name="merge_trimmomatic_stats")]
+                )
+            ],
+            name="merge_trimmomatic_stats." + ".".join([sample.name for sample in self.samples]))
+        ]
 
 
     def mapping_bwa_mem_sambamba(self):
