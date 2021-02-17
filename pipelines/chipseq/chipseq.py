@@ -1026,7 +1026,7 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory'],
     graphs_dir=self.output_dirs['graphs_output_directory']
         ),
-                name="qc_plots_R",
+                name="qc_plots_R." + ".".join([sample.name for sample in self.samples]),
                 samples=self.samples,
                 removable_files=output_files,
                 report_files=[report_file]
@@ -1610,7 +1610,7 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory'],
     graphs_dir=self.output_dirs['graphs_output_directory']
     ),
-                name="annotation_graphs",
+                name="annotation_graphs." + ".".join([sample.name for sample in self.samples]),
                 report_files=[report_file],
                 removable_files=output_files
                 )
@@ -1740,7 +1740,7 @@ do
 done""".format(
     samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples])
     ),
-                name="run_spp_report"
+                name="run_spp_report." + ".".join([sample.name for sample in self.samples])
                 )
             )
 
