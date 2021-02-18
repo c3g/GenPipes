@@ -267,9 +267,9 @@ echo -e "Sample\\tReadset\\tMark Name\\tRaw {read_type} Reads #\\tSurviving {rea
             trim_log = os.path.join("trim", readset.sample.name, readset.mark_name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
                 # Retrieve readset raw and surviving reads from trimmomatic log using ugly Perl regexp
-                perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t{readset.mark_name}\t\\1\t\\2/'".format(readset=readset)
+                perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\\t{readset.name}\\t{readset.mark_name}\\t\\1\\t\\2/'".format(readset=readset)
             elif readset.run_type == "SINGLE_END":
-                perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t{readset.mark_name}\t\\1\t\\2/'".format(readset=readset)
+                perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\\t{readset.name}\\t{readset.mark_name}\\t\\1\\t\\2/'".format(readset=readset)
 
             job = concat_jobs([
                 job,
@@ -281,7 +281,7 @@ echo -e "Sample\\tReadset\\tMark Name\\tRaw {read_type} Reads #\\tSurviving {rea
                     command="""\
 grep ^Input {trim_log} | \\
 {perl_command} | \\
-awk '{{OFS="\\t"; print $0, $4 / $3 * 100}}' \\
+awk '{{OFS="\\t"; print $0, $5 / $4 * 100}}' \\
   >> {readset_merge_trim_stats}""".format(
                         trim_log=trim_log,
                         perl_command=perl_command,
