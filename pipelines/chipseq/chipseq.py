@@ -1810,7 +1810,7 @@ done""".format(
                             removable_files=[output_dir]
                             )
                         )
-                    metrics_to_merge.append(os.path.join(output_dir, mark_name, "IHEC_metrics_chipseq_" + sample.name + "." + mark_name + ".txt"))
+                    metrics_to_merge.append(os.path.join(output_dir, mark_name, "IHEC_metrics_chipseq_" + sample.name + "." + mark_name + ".tsv"))
 
                 # # Else if mark type is Input
                 # else:
