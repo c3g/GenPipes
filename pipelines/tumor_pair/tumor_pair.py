@@ -1960,7 +1960,8 @@ END`""".format(
                     bed_intervals,
                     interval_size,
                     nb_jobs,
-                    output="./vardict.tmp")
+                    output=os.path.join(self.output_dir, "vardict.tmp")
+                )
             else:
                 for idx in range(nb_jobs):
                     bed_file_list.append(os.path.join("vardict.tmp." + str(idx) + ".bed"))
