@@ -1774,7 +1774,7 @@ done""".format(
                     mark_list.append(mark_name)
 
                     chip_bam = os.path.join(alignment_dir, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.filtered.dup.bam")
-                    chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
+                    chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
                     output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
                     crosscor_input = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, sample.name + ".crosscor")
                     genome = config.param('IHEC_chipseq_metrics', 'assembly')
