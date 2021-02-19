@@ -1878,7 +1878,7 @@ done""".format(
                     jobs.append(
                         concat_jobs([
                             bash.mkdir(output_dir),
-                            tools.sh_ihec_metrics(
+                            tools.sh_ihec_chip_metrics(
                                 chip_bam=chip_bam,
                                 input_bam=input_bam,
                                 sample_name=sample.name,
