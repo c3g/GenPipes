@@ -754,7 +754,7 @@ cp \\
                             sambamba.view(
                                 input_bam,
                                 output_bam,
-                                """-t {threads} -f bam -F \"not unmapped and not failed_quality_control and mapping_quality >= {min_mapq}\"""".format(threads=config.param('samtools_view_filter', 'threads'), min_mapq=config.param('samtools_view_filter', 'min_mapq'))
+                                """-t {threads} -f bam -F \"not unmapped and not failed_quality_control and mapping_quality >= {min_mapq}\"""".format(threads=config.param('sambamba_view_filter', 'threads'), min_mapq=config.param('sambamba_view_filter', 'min_mapq'))
                                 ),
                             sambamba.index(
                                 output_bam,
