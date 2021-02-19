@@ -73,7 +73,7 @@ class ChipSeq(common.Illumina):
     An example of the ChIP-Seq report for an analysis on public ENCODE data is available for illustration purpose only:
     [ChIP-Seq report](http://gqinnovationcenter.com/services/bioinformatics/tools/chipReport/index.html).
 
-    [Here](https://bitbucket.org/mugqic/mugqic_pipelines/downloads/MUGQIC_Bioinfo-Seq.pptx)
+    [Here](https://bitbucket.org/mugqic/mugqic_pipelines/downloads/MUGQIC_Bioinfo_ChIP-Seq.pptx)
     is more information about ChIP-Seq pipeline that you may find interesting.
     """
 
@@ -1836,7 +1836,6 @@ done""".format(
         """
         Generate IHEC's standard metrics.
         """
-        #sh_ihec_metrics(chip_bam, input_bam, sample_name, chip_type, chip_bed, output_dir)
         jobs = []
 
         alignment_dir = self.output_dirs['alignment_output_directory']
@@ -1862,7 +1861,7 @@ done""".format(
                     chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
                     output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
                     crosscor_input = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, sample.name + ".crosscor")
-                    genome = config.param('IHECseq_metrics', 'assembly')
+                    genome = config.param('IHEC_chipseq_metrics', 'assembly')
                     # if mark_type == "N":
                     #     chip_type = "narrow"
                     # elif mark_type == "B":
@@ -1891,48 +1890,11 @@ done""".format(
                                 crosscor_input=crosscor_input
                                 )
                             ],
-                            name="IHECseq_metrics." + sample.name + "." + mark_name,
+                            name="IHEC_metrics_chipseq_." + sample.name + "." + mark_name,
                             removable_files=[output_dir]
                             )
                         )
-                    metrics_to_merge.append(os.path.join(output_dir, mark_name, "IHEC_metricsseq_" + sample.name + "." + mark_name + ".tsv"))
-
-                # # Else if mark type is Input
-                # else:
-                #     log.warning("Mark " + mark_name + " for Sample " + sample.name + "is an Input ... skipping")
-            # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
-
-        # for sample_name, sample_list_info in couples.iteritems():
-        #     chip_bam = os.path.join(alignment_dir, sample_name,sample_name + ".sorted.dup.filtered.bam")
-        #     input_sample = sample_list_info[0] if sample_list_info[0] is not "no_input" else sample_name
-        #     input_bam = os.path.join(alignment_dir, input_sample, input_sample + ".sorted.dup.filtered.bam")
-        #     chip_type = sample_list_info[2]
-        #     chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample_list_info[1], sample_list_info[1] + "_peaks." + sample_list_info[2] + "Peak")
-        #     genome = config.param('IHECseq_metrics', 'assembly')
-
-        #     job = concat_jobs([
-        #         Job(command="mkdir -p " + output_dir),
-        #         tools.sh_ihec_metrics(chip_bam, input_bam, sample_name, sample_list_info[0], chip_type, chip_bed, output_dir, genome)
-        #         ], name="IHECseq_metrics." + sample_name)
-        #     jobs.append(
-        #         concat_jobs([
-        #             bash.mkdir(output_dir),
-        #             tools.sh_ihec_metrics(
-        #                 chip_bam,
-        #                 input_bam,
-        #                 sample_name,
-        #                 sample_list_info[0],
-        #                 chip_type,
-        #                 chip_bed,
-        #                 output_dir,
-        #                 genome
-        #                 )
-        #             ],
-        #             name="IHECseq_metrics." + sample_name
-        #             )
-        #         )
-
-            # metrics_to_merge.append(os.path.join(self.output_dirs['ihecM_output_directory'], "IHEC_metricsseq_" + sample_name + ".txt"))
+                    metrics_to_merge.append(os.path.join(output_dir, mark_name, "IHEC_metrics_chipseq_" + sample.name + "." + mark_name + ".tsv"))
 
         metrics_merged = "IHEC_metrics_AllSamples.tsv"
         metrics_merged_out = os.path.join(self.output_dirs['ihecM_output_directory'], metrics_merged)
