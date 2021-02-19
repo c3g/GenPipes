@@ -1964,7 +1964,7 @@ END`""".format(
                 )
             else:
                 for idx in range(nb_jobs):
-                    bed_file_list.append(os.path.join("vardict.tmp." + str(idx) + ".bed"))
+                    bed_file_list.append(os.path.join(self.output_dir, "vardict.tmp." + str(idx) + ".bed"))
 
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
