@@ -1753,7 +1753,8 @@ END`""".format(
                     Job(
                         [coverage_bed],
                         [coverage_bed + ".sort"],
-                        command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > "
+                        command="sort -V -k1,1 -k2,2n -k3,3n "
+                                + coverage_bed + " > "
                                 + coverage_bed + ".sort ; sleep 15"
                     ),
                     htslib.bgzip(
@@ -1868,7 +1869,8 @@ END`""".format(
                     Job(
                         [coverage_bed],
                         [coverage_bed + ".sort"],
-                        command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > "
+                        command="sort -V -k1,1 -k2,2n -k3,3n "
+                                + coverage_bed + " > "
                                 + coverage_bed + ".sort ; sleep 15"
                     ),
                     htslib.bgzip(
