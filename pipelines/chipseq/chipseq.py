@@ -907,7 +907,7 @@ pandoc --to=markdown \\
             samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
             for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
-                raw_bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.bam")
+                raw_bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.bam")
                 bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
 
                 # candidate_input_files = [[file_prefix + "bam"]]
