@@ -973,29 +973,32 @@ do
     filtered_flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.filtered.flagstat
     bam_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.filtered.bam
     raw_supplementarysecondary_reads=`bc <<< $(grep "secondary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
+    mapped_reads=`bc <<< $(grep "mapped (" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$raw_supplementarysecondary_reads`
     filtered_supplementarysecondary_reads=`bc <<< $(grep "secondary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
+    filtered_reads=`bc <<< $(grep "in total" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* in total .*//')-$filtered_supplementarysecondary_reads`
     filtered_mapped_reads=`bc <<< $(grep "mapped (" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$filtered_supplementarysecondary_reads`
+    filtered_mapped_rate=`echo "scale=4; 100*$filtered_mapped_reads/$filtered_reads" | bc -l`
     filtered_dup_reads=`grep "duplicates" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* duplicates$//'`
     filtered_dup_rate=`echo "scale=4; 100*$filtered_dup_reads/$filtered_mapped_reads" | bc -l`
     filtered_dedup_reads=`echo "$filtered_mapped_reads-$filtered_dup_reads" | bc -l`
-    if [[ -s ${trim_metrics_file} ]]
+    if [[ -s {trim_metrics_file} ]]
       then
-        raw_reads=$(grep "$mark_name" ${trim_metrics_file} | cut -f 3)
+        raw_reads=$(grep "$mark_name" {trim_metrics_file} | cut -f 3)
         raw_trimmed_reads=`bc <<< $(grep "in total" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* in total .*//')-$raw_supplementarysecondary_reads`
-        filtered_mapped_rate=`echo "scale=4; 100*$filtered_mapped_reads/$raw_trimmed_reads" | bc -l`
+        mapped_reads_rate=`echo "scale=4; 100*$mapped_reads/$raw_trimmed_reads" | bc -l`
         raw_trimmed_rate=`echo "scale=4; 100*$raw_trimmed_reads/$raw_reads" | bc -l`
       else
         raw_reads=`bc <<< $(grep "in total" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* in total .*//')-$raw_supplementarysecondary_reads`
         raw_trimmed_reads="NULL"
-        filtered_mapped_rate=`echo "scale=4; 100*$filtered_mapped_reads/$raw_reads" | bc -l`
+        mapped_reads_rate=`echo "scale=4; 100*$mapped_reads/$raw_reads" | bc -l`
         raw_trimmed_rate="NULL"
     fi
     filtered_mito_reads=$(sambamba view -F "not duplicate" -c $bam_file chrM)
     filtered_mito_rate=$(echo "scale=4; 100*$filtered_mito_reads/$filtered_mapped_reads" | bc -l)
-    echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$filtered_mapped_reads\\t$filtered_mapped_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate" >> {metrics_file}
+    echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$mapped_reads\\t$mapped_reads_rate\\t$filtered_mapped_reads\\t$filtered_mapped_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate" >> {metrics_file}
   done
 done && \\
-sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tSurving Reads #\\tSurving Reads %\\tAligned Filtered Reads #\\tAligned Filtered Reads %\\tDuplicate Reads #\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads\\tMitochondrial Reads #\\tMitochondrial Reads %" {metrics_file} && \\
+sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tSurving Reads #\\tSurving Reads %\\tAligned Reads #\\tAligned Reads %\\tAligned Filtered Reads #\\tAligned Filtered Reads %\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads\\tMitochondrial Reads #\\tMitochondrial Reads %" {metrics_file} && \\
 mkdir -p {report_dir} && \\
 if [[ -f {trim_metrics_file} ]]
 then
@@ -1909,9 +1912,18 @@ done""".format(
 cp /dev/null {metrics_merged} && \\
 for sample in {samples}
 do
-    header=$(head -n 1 $sample)
-    tail -n 1 $sample >> {metrics_merged}
+    header=$(head -n 1 $sample | cut -f -3,5-17,30-33,35,37,39-)
+    tail -n 1 $sample | cut -f -3,5-17,30-33,35,37,39- >> {metrics_merged}
 done && \\
+sample_name=`tail -n 1 $sample | cut -f 1`
+input_name=`tail -n 1 $sample | cut -f 4`
+input_chip_type="NA"
+genome_assembly=`tail -n 1 $sample | cut -f 5`
+input_core=`tail -n 1 $sample | cut -f 18-29`
+input_nsc=`tail -n 1 $sample | cut -f 34`
+input_rsc=`tail -n 1 $sample | cut -f 36`
+input_quality=`tail -n 1 $sample | cut -f 38`
+echo -e "${{sample_name}}\\t${{input_name}}\\t${{input_chip_type}}\\t${{genome_assembly}}\\t${{input_core}}\\t\\t\\t\\t${{input_nsc}}\\t${{input_rsc}}\\t${{input_quality}}\\t\\t" >> {metrics_merged} && \\
 sed -i -e "1 i\\\$header" {metrics_merged}""".format(
     samples=" ".join(metrics_to_merge),
     metrics_merged=metrics_merged_out
