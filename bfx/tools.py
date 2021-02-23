@@ -600,6 +600,8 @@ IHEC_rnaseq_metrics.sh \\
 def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_name, chip_type, chip_bed, output_dir, assembly, crosscor_input):
     output_dedup_input_bam = None
     output_dedup_input_bai = None
+    output_fingerprints = None
+    output_fingerprints_png = None
     # crosscor_input = None
     if input_bam:
         output_dedup_input_bam = os.path.join(output_dir, input_name, sample_name + "." + "Input.dedup.bam")
