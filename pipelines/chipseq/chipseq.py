@@ -954,7 +954,7 @@ pandoc --to=markdown \\
 
         trim_metrics_file = os.path.join(metrics_output_directory, "trimSampleTable.tsv")
         metrics_file = os.path.join(metrics_output_directory, "SampleMetrics.tsv")
-        report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "trimMemSampleTable.tsv")
+        report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "SampleMetrics.tsv")
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.metrics.md")
         jobs.append(
             Job(
@@ -1007,17 +1007,11 @@ do
 done && \\
 sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tTrimmed Remaining Reads #\\tTrimed Remaining Reads %\\tAligned Reads #\\tAligned Reads %\\tFiltered Remaining Reads #\\tFiltered Remaining Reads %\\tAligned Filtered Reads #\\tAligned Filtered Reads %\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads\\tMitochondrial Reads #\\tMitochondrial Reads %" {metrics_file} && \\
 mkdir -p {report_dir} && \\
-if [[ -f {trim_metrics_file} ]]
-then
-  awk -F "\\t" 'FNR==NR{{trim_line[$1]=$0; surviving[$1]=$3; next}}{{OFS="\\t"; if ($1=="Sample") {{print trim_line[$1], $2, "Aligned Filtered %", $3, $4, $5, $6}} else {{print trim_line[$1], $2, $2 / surviving[$1] * 100, $3, $4, $5, $6}}}}' {trim_metrics_file} {metrics_file} \\
-  > {report_metrics_file}
-else
-  cp {metrics_file} {report_metrics_file}
-fi && \\
-trim_mem_sample_table=`if [[ -f {trim_metrics_file} ]] ; then LC_NUMERIC=en_CA awk -F "\\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6), sprintf("%\\47d", $7), sprintf("%.1f", $8), sprintf("%\\47d", $9), sprintf("%.1f", $10)}}}}' {report_metrics_file} ; else LC_NUMERIC=en_CA awk -F "\\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, sprintf("%\\47d", $2), sprintf("%\\47d", $3), sprintf("%.1f", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6)}}}}' {report_metrics_file} ; fi` && \\
+cp {metrics_file} {report_metrics_file} && \\
+sample_table=`LC_NUMERIC=en_CA awk -F "\t" '{OFS="|"; if (NR == 1) {$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:"} else {$1 = $1; print $0}}' {report_metrics_file}` && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
-  --variable trim_mem_sample_table="$trim_mem_sample_table" \\
+  --variable sample_table="$sample_table" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}
 """.format(
@@ -1930,7 +1924,7 @@ input_core=`tail -n 1 $sample | cut -f 18-29`
 input_nsc=`tail -n 1 $sample | cut -f 34`
 input_rsc=`tail -n 1 $sample | cut -f 36`
 input_quality=`tail -n 1 $sample | cut -f 38`
-echo -e "${{sample_name}}\\t${{input_name}}\\t${{input_chip_type}}\\t${{genome_assembly}}\\t${{input_core}}\\t\\t\\t\\t${{input_nsc}}\\t${{input_rsc}}\\t${{input_quality}}\\t\\t" >> {metrics_merged} && \\
+echo -e "${{sample_name}}\\t${{input_name}}\\t${{input_chip_type}}\\t${{genome_assembly}}\\t${{input_core}}\\tNA\\tNA\\tNA\\t${{input_nsc}}\\t${{input_rsc}}\\t${{input_quality}}\\tNA\\tNA" >> {metrics_merged} && \\
 sed -i -e "1 i\\\$header" {metrics_merged}""".format(
     samples=" ".join(metrics_to_merge),
     metrics_merged=metrics_merged_out
