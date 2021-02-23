@@ -1008,7 +1008,7 @@ done && \\
 sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tTrimmed Remaining Reads #\\tTrimed Remaining Reads %\\tAligned Reads #\\tAligned Reads %\\tFiltered Remaining Reads #\\tFiltered Remaining Reads %\\tAligned Filtered Reads #\\tAligned Filtered Reads %\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads\\tMitochondrial Reads #\\tMitochondrial Reads %" {metrics_file} && \\
 mkdir -p {report_dir} && \\
 cp {metrics_file} {report_metrics_file} && \\
-sample_table=`LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:"} else {{$1 = $1; print $0}}' {report_metrics_file}` && \\
+sample_table=`LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{$1 = $1; print $0}}}}' {report_metrics_file}` && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable sample_table="$sample_table" \\
