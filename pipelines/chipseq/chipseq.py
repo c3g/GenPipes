@@ -605,7 +605,8 @@ pandoc \\
                             ),
                             sambamba.merge(
                                 readset_bams,
-                                sample_bam
+                                sample_bam,
+                                ini_section="sambamba_merge_bam_files"
                             )
                         ],
                         name="sambamba_merge_bam_files." + sample.name + "." + mark_name,
