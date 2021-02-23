@@ -608,7 +608,7 @@ pandoc \\
                                 sample_bam
                             )
                         ],
-                        name="sambamba_merge_sam_files." + sample.name + "." + mark_name,
+                        name="sambamba_merge_bam_files." + sample.name + "." + mark_name,
                         samples=[sample]
                         )
                     )
