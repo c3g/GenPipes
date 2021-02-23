@@ -958,7 +958,7 @@ pandoc --to=markdown \\
         jobs.append(
             Job(
                 # [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for sample in self.samples for mark_name in sample.marks],
-                inputs_report
+                inputs_report,
                 [report_metrics_file],
                 [['metrics', 'module_pandoc']],
                 # Retrieve number of aligned and duplicate reads from sample flagstat files
