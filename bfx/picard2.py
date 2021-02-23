@@ -655,7 +655,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-
 def bed2interval_list(dictionary, bed, output):
     if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
         return picard.bed2interval_list(
@@ -681,5 +680,31 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             dictionary=dictionary if dictionary else config.param('picard_bed2interval_list', 'genome_dictionary', type='filepath'),
             bed=bed,
             output=output,
+        )
+    )
+
+def ScatterIntervalsByNs(reference,
+                  output,
+                  exclude_intervals=None):
+
+    return Job(
+        [reference],
+        [output],
+        [
+            ['picard_ScatterIntervalsByNs', 'module_java'],
+            ['picard_ScatterIntervalsByNs', 'module_picard']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar " \\
+  ScatterIntervalsByNs {options} \\
+  --reference {reference} \\
+  --OUTPUT {output}{exclude_intervals}""".format(
+            tmp_dir=config.param('picard_ScatterIntervalsByNs', 'tmp_dir'),
+            options=config.param('picard_ScatterIntervalsByNs', 'options'),
+            java_other_options=config.param('picard_ScatterIntervalsByNs', 'java_other_options'),
+            ram=config.param('picard_ScatterIntervalsByNs', 'ram'),
+            reference=reference if reference else config.param('picard_ScatterIntervalsByNs', 'genome_fasta', type='filepath'),
+            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
+            output=output
         )
     )

@@ -614,27 +614,47 @@ END`""".format(
             pair_directory = os.path.join(self.output_dir,"pairedVariants", tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
+            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', type='posint')
             bedfile = config.param('rawmpileup_panel', 'panel')
 
-            for sequence in self.sequence_dictionary_variant():
-                if sequence['type'] is 'primary':
-                    pair_output = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".mpileup")
-
-                    jobs.append(concat_jobs([
-                        bash.mkdir(
-                            varscan_directory,
-                            remove=True
-                        ),
-                        samtools.mpileup(
-                            [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam"),
-                             os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                            pair_output,
-                            config.param('rawmpileup_panel', 'mpileup_other_options'),
-                            region=sequence['name'],
-                            regionFile=bedfile
-                        ),
-                        ], name="rawmpileup_panel." + tumor_pair.name + "." + sequence['name']))
-
+            if nb_jobs == 1:
+                input_pair = os.path.join(varscan_directory, tumor_pair.name + ".mpileup")
+    
+                jobs.append(concat_jobs([
+                    bash.mkdir(
+                        varscan_directory,
+                        remove=True
+                    ),
+                    samtools.mpileup(
+                        [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam"),
+                         os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                        input_pair,
+                        config.param('rawmpileup_panel', 'mpileup_other_options'),
+                        regionFile=bedfile
+                    ),
+                    ], name="rawmpileup_panel." + tumor_pair.name + ".all")
+                )
+                
+            else:
+                for sequence in self.sequence_dictionary_variant():
+                    if sequence['type'] is 'primary':
+                        pair_output = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".mpileup")
+    
+                        jobs.append(concat_jobs([
+                            bash.mkdir(
+                                varscan_directory,
+                                remove=True
+                            ),
+                            samtools.mpileup(
+                                [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam"),
+                                 os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                                pair_output,
+                                config.param('rawmpileup_panel', 'mpileup_other_options'),
+                                region=sequence['name'],
+                                regionFile=bedfile
+                            ),
+                            ], name="rawmpileup_panel." + tumor_pair.name + "." + sequence['name'])
+                        )
         return jobs
 
     def paired_varscan2_panel(self):
@@ -648,53 +668,107 @@ END`""".format(
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
-            for sequence in self.sequence_dictionary_variant():
-                if sequence['type'] is 'primary':
-                    input_pair = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".mpileup")
+            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', type='posint')
 
-                    output = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'])
-                    output_snp = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".snp.vcf")
-                    output_indel = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".indel.vcf")
-                    output_vcf_gz = os.path.join(varscan_directory, tumor_pair.name + ".varscan2." + sequence['name'] + ".vcf.gz")
+            if nb_jobs == 1:
+                input_pair = os.path.join(varscan_directory, tumor_pair.name + ".mpileup")
 
-                    jobs.append(concat_jobs([
-                        bash.mkdir(
-                            varscan_directory,
-                            remove=True
+                output = os.path.join(varscan_directory, tumor_pair.name)
+                output_snp = os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf")
+                output_indel = os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf")
+                output_vcf_gz = os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")
+
+                jobs.append(concat_jobs([
+                    bash.mkdir(
+                        varscan_directory,
+                        remove=True
+                    ),
+                    varscan.somatic(
+                        input_pair,
+                        output,
+                        config.param('varscan2_somatic_panel', 'other_options'),
+                        output_vcf_dep=output_vcf_gz,
+                        output_snp_dep=output_snp,
+                        output_indel_dep=output_indel
+                    ),
+                    htslib.bgzip_tabix(
+                        output_snp,
+                        os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf.gz")
+                    ),
+                    htslib.bgzip_tabix(
+                        output_indel,
+                        os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf.gz")
+                    ),
+                    pipe_jobs([
+                        bcftools.concat(
+                            [os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf.gz"),
+                             os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf.gz")],
+                            None
                         ),
-                        varscan.somatic(
-                            input_pair,
-                            output,
-                            config.param('varscan2_somatic_panel', 'other_options'),
-                            output_vcf_dep=output_vcf_gz,
-                            output_snp_dep=output_snp,
-                            output_indel_dep=output_indel
+                        Job(
+                            [None],
+                            [None],
+                            command="sed 's/TUMOR/"
+                                    + tumor_pair.tumor.name
+                                    + "/g' | sed 's/NORMAL/"
+                                    + tumor_pair.normal.name + "/g' "
                         ),
                         htslib.bgzip_tabix(
-                            output_snp,
-                            os.path.join(varscan_directory, tumor_pair.name + ".snp." + sequence['name'] + ".vcf.gz")
+                            None,
+                            output_vcf_gz
                         ),
-                        htslib.bgzip_tabix(
-                            output_indel,
-                            os.path.join(varscan_directory, tumor_pair.name + ".indel." + sequence['name'] + ".vcf.gz")
-                        ),
-                        pipe_jobs([
-                            bcftools.concat(
-                                [os.path.join(varscan_directory, tumor_pair.name + ".snp." + sequence['name'] + ".vcf.gz"),
-                                 os.path.join(varscan_directory, tumor_pair.name + ".indel." + sequence['name'] + ".vcf.gz")],
-                                None
+                    ]),
+                ], name="varscan2_somatic_panel." + tumor_pair.name + ".all"))
+                
+            else:
+                
+                for sequence in self.sequence_dictionary_variant():
+                    if sequence['type'] is 'primary':
+                        input_pair = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".mpileup")
+    
+                        output = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'])
+                        output_snp = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".snp.vcf")
+                        output_indel = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".indel.vcf")
+                        output_vcf_gz = os.path.join(varscan_directory, tumor_pair.name + ".varscan2." + sequence['name'] + ".vcf.gz")
+    
+                        jobs.append(concat_jobs([
+                            bash.mkdir(
+                                varscan_directory,
+                                remove=True
                             ),
-                            Job(
-                                [None],
-                                [None],
-                                command="sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' "
+                            varscan.somatic(
+                                input_pair,
+                                output,
+                                config.param('varscan2_somatic_panel', 'other_options'),
+                                output_vcf_dep=output_vcf_gz,
+                                output_snp_dep=output_snp,
+                                output_indel_dep=output_indel
                             ),
                             htslib.bgzip_tabix(
-                                None,
-                                output_vcf_gz
+                                output_snp,
+                                os.path.join(varscan_directory, tumor_pair.name + ".snp." + sequence['name'] + ".vcf.gz")
                             ),
-                        ]),
-                    ], name="varscan2_somatic_panel." + tumor_pair.name + "." + sequence['name']))
+                            htslib.bgzip_tabix(
+                                output_indel,
+                                os.path.join(varscan_directory, tumor_pair.name + ".indel." + sequence['name'] + ".vcf.gz")
+                            ),
+                            pipe_jobs([
+                                bcftools.concat(
+                                    [os.path.join(varscan_directory, tumor_pair.name + ".snp." + sequence['name'] + ".vcf.gz"),
+                                     os.path.join(varscan_directory, tumor_pair.name + ".indel." + sequence['name'] + ".vcf.gz")],
+                                    None
+                                ),
+                                Job(
+                                    [None],
+                                    [None],
+                                    command="sed 's/TUMOR/"+ tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"+ tumor_pair.normal.name + "/g' "
+                                ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    output_vcf_gz
+                                ),
+                            ]),
+                        ], name="varscan2_somatic_panel." + tumor_pair.name + "." + sequence['name']))
 
         return jobs
 
@@ -708,65 +782,110 @@ END`""".format(
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
-            all_inputs = [os.path.join(varscan_directory, tumor_pair.name + ".varscan2." + sequence['name'] + ".vcf.gz")
-                          for sequence in self.sequence_dictionary_variant() if sequence['type'] is 'primary']
+            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', type='posint')
 
-            all_output = os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz")
-            somatic_output = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz")
-            germline_output = os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz")
-
-            for input_vcf in all_inputs:
-                if not self.is_gz_file(input_vcf):
-                    stderr.write("Incomplete panel varscan2 vcf: %s\n" % input_vcf)
-
-            jobs.append(concat_jobs([
-                Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
-                pipe_jobs([
-                    bcftools.concat(
-                        all_inputs,
-                        None),
-                    tools.fix_varscan_output(
-                        None,
-                        None
-                    ),
-                    Job(
-                        [None],
-                        [None],
-                        command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"
-                    ),
-                    Job([None],
-                        [None],
-                        command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"
+            if nb_jobs == 1:
+                jobs.append(concat_jobs([
+                    pipe_jobs([
+                        tools.fix_varscan_output(
+                            os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz"),
+                            None
                         ),
-                    Job(
-                        [None],
-                        [None],
-                        command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"
+                        Job(
+                            [None],
+                            [None],
+                            command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"
+                        ),
+                        Job([None],
+                            [None],
+                            command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"
+                            ),
+                        Job(
+                            [None],
+                            [None],
+                            command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"
+                        ),
+                        htslib.bgzip_tabix(
+                            None,
+                            os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
+                        ),
+                    ]),
+                    bcftools.view(
+                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
+                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
+                        config.param('merge_varscan2', 'somatic_filter_options')
                     ),
-                    htslib.bgzip_tabix(
-                        None,
-                        all_output
+                    htslib.tabix(
+                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
+                        config.param('merge_varscan2', 'tabix_options', required=False)
                     ),
-                ]),
-                bcftools.view(
-                    all_output,
-                    somatic_output,
-                    config.param('merge_varscan2', 'somatic_filter_options')
-                ),
-                htslib.tabix(
-                    somatic_output,
-                    config.param('merge_varscan2', 'tabix_options', required=False)
-                ),
-                bcftools.view(
-                    all_output,
-                    germline_output,
-                    config.param('merge_varscan2', 'germline_filter_options')
-                ),
-                htslib.tabix(
-                    germline_output,
-                    config.param('merge_varscan2', 'tabix_options', required=False)
-                ),
-            ], name="merge_varscan2." + tumor_pair.name))
+                    bcftools.view(
+                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
+                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
+                        config.param('merge_varscan2', 'germline_filter_options')
+                    ),
+                    htslib.tabix(
+                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
+                        config.param('merge_varscan2', 'tabix_options', required=False)
+                    ),
+                ], name = "merge_varscan2." + tumor_pair.name))
+                
+            else:
+                all_inputs = [os.path.join(varscan_directory, tumor_pair.name + ".varscan2." + sequence['name'] + ".vcf.gz")
+                              for sequence in self.sequence_dictionary_variant() if sequence['type'] is 'primary']
+    
+                for input_vcf in all_inputs:
+                    if not self.is_gz_file(input_vcf):
+                        stderr.write("Incomplete panel varscan2 vcf: %s\n" % input_vcf)
+    
+                jobs.append(concat_jobs([
+                    Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
+                    pipe_jobs([
+                        bcftools.concat(
+                            all_inputs,
+                            None),
+                        tools.fix_varscan_output(
+                            None,
+                            None
+                        ),
+                        Job(
+                            [None],
+                            [None],
+                            command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}'"
+                        ),
+                        Job([None],
+                            [None],
+                            command="awk -F$'\\t' -v OFS='\\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $5) } {print}'"
+                            ),
+                        Job(
+                            [None],
+                            [None],
+                            command="awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"
+                        ),
+                        htslib.bgzip_tabix(
+                            None,
+                            os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
+                        ),
+                    ]),
+                    bcftools.view(
+                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
+                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
+                        config.param('merge_varscan2', 'somatic_filter_options')
+                    ),
+                    htslib.tabix(
+                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
+                        config.param('merge_varscan2', 'tabix_options', required=False)
+                    ),
+                    bcftools.view(
+                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
+                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
+                        config.param('merge_varscan2', 'germline_filter_options')
+                    ),
+                    htslib.tabix(
+                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
+                        config.param('merge_varscan2', 'tabix_options', required=False)
+                    ),
+                ], name="merge_varscan2." + tumor_pair.name))
 
         return jobs
 

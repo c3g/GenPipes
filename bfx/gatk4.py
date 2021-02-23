@@ -521,6 +521,38 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                     " \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
         ))
 
+def GenomicsDBImport(
+    inputs,
+    output,
+    intervals=[],
+    exclude_intervals=[]
+    ):
+
+    if not isinstance(inputs, list):
+        inputs = [inputs]
+
+    else:
+        return Job(
+            inputs,
+            [output],
+            [
+                ['gatk_GenomicsDBImport', 'module_java'],
+                ['gatk_GenomicsDBImport', 'module_gatk']
+            ],
+            command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  GenomicsDBImport {other_options} \\
+  {input} \\
+  --output {output}{intervals}""".format(
+                tmp_dir=config.param('gatk_GenomicsDBImport', 'tmp_dir'),
+                java_other_options=config.param('gatk_GenomicsDBImport', 'java_other_options'),
+                ram=config.param('gatk_GenomicsDBImport', 'ram'),
+                other_options=config.param('gatk_GenomicsDBImport', 'other_options', required=False),
+                input="".join(" \\\n  --variant " + input for input in inputs),
+                output=output,
+                intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+        ))
+
 def genotype_gvcf(
     variants,
     output,
@@ -1710,3 +1742,31 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             output=output
             )
         )
+
+def splitInterval(intervals,
+                  output,
+                  exclude_intervals=None):
+
+    return Job(
+        [intervals],
+        [output],
+        [
+            ['gatk_splitInterval', 'module_java'],
+            ['gatk_splitInterval', 'module_gatk4']
+        ],
+        command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  SplitIntervals {options} \\
+  --reference {reference} \\
+  --intervals {intervals} \\
+  --OUTPUT {output}{exclude_intervals}""".format(
+            tmp_dir=config.param('gatk_splitInterval', 'tmp_dir'),
+            options=config.param('gatk_splitInterval', 'options'),
+            java_other_options=config.param('gatk_splitInterval', 'java_other_options'),
+            ram=config.param('gatk_splitInterval', 'ram'),
+            reference=config.param('gatk_splitInterval', 'genome_fasta', type='filepath'),
+            intervals=intervals,
+            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
+            output=output
+        )
+    )
