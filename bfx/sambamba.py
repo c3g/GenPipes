@@ -65,20 +65,20 @@ sambamba index {options} \\
         )
     )
 
-def merge(input_bams, output_bam):
+def merge(input_bams, output_bam, ini_section='sambamba_merge_sam_files'):
 
     return Job(
         input_bams,
         [output_bam],
         [
-            ['sambamba_merge_sam_files', 'module_samtools'],
-            ['sambamba_merge_sam_files', 'module_sambamba']
+            [ini_section, 'module_samtools'],
+            [ini_section, 'module_sambamba']
         ],
         command="""\
 sambamba merge {options} \\
   {output} \\
   {input}""".format(
-        options=config.param('sambamba_merge_sam_files', 'options'),
+        options=config.param(ini_section, 'options'),
         input="".join([" \\\n  " + input_bam for input_bam in input_bams]),
         output=output_bam
         )
