@@ -787,9 +787,14 @@ END`""".format(
             if nb_jobs == 1:
                 jobs.append(concat_jobs([
                     pipe_jobs([
+                        Job(
+                            [os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")],
+                            [None],
+                            command="zcat " + os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")
+                        ),
                         tools.fix_varscan_output(
-                            os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz"),
-                            None
+                            None,
+                            None,
                         ),
                         Job(
                             [None],
