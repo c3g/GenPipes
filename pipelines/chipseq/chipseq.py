@@ -903,6 +903,8 @@ pandoc --to=markdown \\
 
         metrics_output_directory = self.output_dirs['metrics_output_directory']
 
+        inputs_report = []
+
         for sample in self.samples:
             samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
             for mark_name in sample.marks:
@@ -947,6 +949,7 @@ pandoc --to=markdown \\
                         name="metrics.flagstat." + sample.name + "." + mark_name
                         )
                     )
+                inputs_report.extend((os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(raw_bam_file))), os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(bam_file))), os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")))
 
         trim_metrics_file = os.path.join(metrics_output_directory, "trimSampleTable.tsv")
         metrics_file = os.path.join(metrics_output_directory, "SampleMetrics.tsv")
@@ -954,7 +957,8 @@ pandoc --to=markdown \\
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.metrics.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for sample in self.samples for mark_name in sample.marks],
+                # [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for sample in self.samples for mark_name in sample.marks],
+                inputs_report
                 [report_metrics_file],
                 [['metrics', 'module_pandoc']],
                 # Retrieve number of aligned and duplicate reads from sample flagstat files
