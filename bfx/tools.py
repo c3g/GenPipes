@@ -226,7 +226,7 @@ python $PYTHON_TOOLS/preprocess.py \\
         )
     )
 
-def fix_varscan_output(input, output, options=None):
+def fix_varscan_output(input, output=None, options=None):
     return Job(
         [input],
         [output],
