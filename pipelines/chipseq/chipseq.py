@@ -987,18 +987,20 @@ do
         raw_trimmed_reads=`bc <<< $(grep "in total" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* in total .*//')-$raw_supplementarysecondary_reads`
         mapped_reads_rate=`echo "scale=4; 100*$mapped_reads/$raw_trimmed_reads" | bc -l`
         raw_trimmed_rate=`echo "scale=4; 100*$raw_trimmed_reads/$raw_reads" | bc -l`
+        filtered_rate=`echo "scale=4; 100*$filtered_reads/$raw_trimmed_reads" | bc -l`
       else
         raw_reads=`bc <<< $(grep "in total" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* in total .*//')-$raw_supplementarysecondary_reads`
         raw_trimmed_reads="NULL"
         mapped_reads_rate=`echo "scale=4; 100*$mapped_reads/$raw_reads" | bc -l`
         raw_trimmed_rate="NULL"
+        filtered_rate=`echo "scale=4; 100*$filtered_reads/$raw_reads" | bc -l`
     fi
     filtered_mito_reads=$(sambamba view -F "not duplicate" -c $bam_file chrM)
     filtered_mito_rate=$(echo "scale=4; 100*$filtered_mito_reads/$filtered_mapped_reads" | bc -l)
-    echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$mapped_reads\\t$mapped_reads_rate\\t$filtered_mapped_reads\\t$filtered_mapped_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate" >> {metrics_file}
+    echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$mapped_reads\\t$mapped_reads_rate\\t$filtered_reads\\t$filtered_rate\\t$filtered_mapped_reads\\t$filtered_mapped_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate" >> {metrics_file}
   done
 done && \\
-sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tSurving Reads #\\tSurving Reads %\\tAligned Reads #\\tAligned Reads %\\tAligned Filtered Reads #\\tAligned Filtered Reads %\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads\\tMitochondrial Reads #\\tMitochondrial Reads %" {metrics_file} && \\
+sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tTrimmed Remaining Reads #\\tTrimed Remaining Reads %\\tAligned Reads #\\tAligned Reads %\\tFiltered Remaining Reads #\\tFiltered Remaining Reads %\\tAligned Filtered Reads #\\tAligned Filtered Reads %\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads\\tMitochondrial Reads #\\tMitochondrial Reads %" {metrics_file} && \\
 mkdir -p {report_dir} && \\
 if [[ -f {trim_metrics_file} ]]
 then
