@@ -1894,7 +1894,7 @@ done""".format(
                                 crosscor_input=crosscor_input
                                 )
                             ],
-                            name="IHEC_metrics_chipseq_." + sample.name + "." + mark_name,
+                            name="IHEC_metrics_chipseq_" + sample.name + "." + mark_name,
                             removable_files=[output_dir]
                             )
                         )
