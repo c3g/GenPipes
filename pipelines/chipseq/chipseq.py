@@ -988,7 +988,7 @@ do
     filtered_dedup_reads=`echo "$filtered_mapped_reads-$filtered_dup_reads" | bc -l`
     if [[ -s {trim_metrics_file} ]]
       then
-        raw_reads=$(grep "$mark_name" {trim_metrics_file} | cut -f 3)
+        raw_reads=$(grep -P "${{sample}}\\t${{mark_name}}" {trim_metrics_file} | cut -f 3)
         raw_trimmed_reads=`bc <<< $(grep "in total" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* in total .*//')-$raw_supplementarysecondary_reads`
         mapped_reads_rate=`echo "scale=4; 100*$mapped_reads/$raw_trimmed_reads" | bc -l`
         raw_trimmed_rate=`echo "scale=4; 100*$raw_trimmed_reads/$raw_reads" | bc -l`
