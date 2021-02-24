@@ -502,24 +502,41 @@ END`""".format(
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
-            inputs["Normal"] = [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal")]
-            inputs["Tumor"] =  [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal")]
 
-            for key, input in inputs.iteritems():
+            inputs["Normal"] = [self.select_input_files([
+                [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam")]
+            ])][0]
+
+            inputs["Normal"].append(self.select_input_files([
+                [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bai")],
+                [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam.bai")],
+                [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bai")],
+                [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam.bai")]
+            ])[0])
+
+            inputs["Tumor"] = [self.select_input_files([
+                [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")]
+            ])][0]
+            
+            inputs["Tumor"].append(self.select_input_files([
+                [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bai")],
+                [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam.bai")],
+                [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bai")],
+                [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam.bai")]
+            ])[0])
+
+            for key,input in inputs.iteritems():
                 for sample_bam in input:
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample_bam + ".bam",
-                            sample_bam + ".bam.md5",
-                            self.output_dir
-                        ),
-                        deliverables.md5sum(
-                            sample_bam + ".bam.bai",
-                            sample_bam + ".bam.bai.md5",
+                            sample_bam,
+                            sample_bam + ".md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample_bam + ".bam",
+                            sample_bam,
                             tumor_pair,
                             self.output_dir,
                             type="alignment",
@@ -527,23 +544,7 @@ END`""".format(
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample_bam + ".bam.bai",
-                            tumor_pair,
-                            self.output_dir,
-                            type="alignment",
-                            sample=key,
-                            profyle=self.args.profyle
-                        ),
-                        deliverables.sym_link_pair(
-                            sample_bam + ".bam.md5",
-                            tumor_pair,
-                            self.output_dir,
-                            type="alignment",
-                            sample=key,
-                            profyle=self.args.profyle
-                        ),
-                        deliverables.sym_link_pair(
-                            sample_bam + ".bam.bai.md5",
+                            sample_bam + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="alignment",
