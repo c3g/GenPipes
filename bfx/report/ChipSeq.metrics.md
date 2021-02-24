@@ -2,7 +2,7 @@
 
 General summary statistics are provided per sample. Sample readsets are merged for clarity.
 
-Table: Sequencing and Alignment Statistics per Sample ([download table](trimMemSampleTable.tsv))
+Table: Sequencing and Alignment Statistics per Sample ([download table](SampleMetrics.tsv))
 
 $sample_table$
 
