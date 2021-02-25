@@ -1374,8 +1374,13 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.year,
             self.date + "_" + self.instrument + "_" + self.run_counter + "_" + self.flowcell_position + self.flowcell_id + "_" + self.sequencer_run_id + "-" + self.seqtype
         )
+
         jobs_to_concat.append(
             bash.mkdir(full_destination_folder)
+        )
+
+        jobs_to_concat.append(
+            bash.cp(self.readset_file, full_destination_folder)
         )
 
         for lane in self.lanes:
