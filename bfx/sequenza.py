@@ -30,7 +30,7 @@ def genome_gz(output):
         [None],
         [output],
         [
-            ['sequenza', 'module_python'],
+            ['sequenza', 'module_sequenza_utils'],
             ['sequenza', 'module_R'],
         ],
         command="""\\
@@ -74,6 +74,7 @@ def bam2seqz(normal, tumor, genome, output, chr=None):
         [output],
         [
             ['sequenza', 'module_python'],
+            ['sequenza', 'module_sequenza_utils'],
             ['sequenza', 'module_samtools'],
             ['sequenza', 'module_htslib'],
         ],
