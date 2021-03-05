@@ -609,7 +609,7 @@ def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_name
         output_fingerprints = os.path.join(output_dir, chip_name, sample_name + "." + chip_name + ".fingerprint.tsv")
         output_fingerprints_png = os.path.join(output_dir, chip_name, sample_name + "." + chip_name + ".fingerprint.png")
         # crosscor_input = os.path.join(output_dir, sample_name + "." + chip_name + ".crosscor")
-    output_metrics = os.path.join(output_dir, chip_name, "IHEC_metrics_chipseq_" + sample_name + "." + chip_name + ".tsv")
+    output_metrics = os.path.join(output_dir, chip_name, "IHEC_metrics_" + sample_name + "." + chip_name + ".tsv")
     # output_fingerprints = os.path.join(output_dir, chip_name, sample_name + "." + chip_name + ".fingerprint.tsv")
     # output_fingerprints_png = os.path.join(output_dir, chip_name, sample_name + "." + chip_name + ".fingerprint.png")
     output_dedup_chip_bam = os.path.join(output_dir, chip_name, sample_name + "." + chip_name + ".dedup.bam")
