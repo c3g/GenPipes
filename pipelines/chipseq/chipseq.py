@@ -1865,7 +1865,7 @@ done""".format(
                     chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
                     output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
                     crosscor_input = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, sample.name + ".crosscor")
-                    genome = config.param('IHEC_chipseq_metrics', 'assembly')
+                    genome = config.param('IHEC_metrics', 'assembly')
                     # if mark_type == "N":
                     #     chip_type = "narrow"
                     # elif mark_type == "B":
@@ -1894,11 +1894,11 @@ done""".format(
                                 crosscor_input=crosscor_input
                                 )
                             ],
-                            name="IHEC_metrics_chipseq_" + sample.name + "." + mark_name,
+                            name="IHEC_metrics_" + sample.name + "." + mark_name,
                             removable_files=[output_dir]
                             )
                         )
-                    metrics_to_merge.append(os.path.join(output_dir, mark_name, "IHEC_metrics_chipseq_" + sample.name + "." + mark_name + ".tsv"))
+                    metrics_to_merge.append(os.path.join(output_dir, mark_name, "IHEC_metrics_" + sample.name + "." + mark_name + ".tsv"))
 
         metrics_merged = "IHEC_metrics_AllSamples.tsv"
         metrics_merged_out = os.path.join(self.output_dirs['ihecM_output_directory'], metrics_merged)
