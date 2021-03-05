@@ -1894,11 +1894,11 @@ done""".format(
                                 crosscor_input=crosscor_input
                                 )
                             ],
-                            name="IHEC_chipseq_metrics_" + sample.name + "." + mark_name,
+                            name="IHEC_chipseq_metrics." + sample.name + "." + mark_name,
                             removable_files=[output_dir]
                             )
                         )
-                    metrics_to_merge.append(os.path.join(output_dir, mark_name, "IHEC_chipseq_metrics_" + sample.name + "." + mark_name + ".tsv"))
+                    metrics_to_merge.append(os.path.join(output_dir, mark_name, "IHEC_chipseq_metrics." + sample.name + "." + mark_name + ".tsv"))
 
         metrics_merged = "IHEC_chipseq_metrics_AllSamples.tsv"
         metrics_merged_out = os.path.join(self.output_dirs['ihecM_output_directory'], metrics_merged)
