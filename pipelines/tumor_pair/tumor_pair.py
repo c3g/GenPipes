@@ -3294,49 +3294,49 @@ END`""".format(
                                 inputNormal[0],
                                 inputTumor[0],
                                 config.param('sequenza', 'gc_file'),
-                                rawOutput + ".seqz." + sequence['name'] + ".gz",
+                                rawOutput + "seqz." + sequence['name'] + ".gz",
                                 sequence['name']
                             ),
                             sequenza.bin(
-                                rawOutput + ".seqz." + sequence['name'] + ".gz",
-                                rawOutput + ".binned.seqz." + sequence['name'] + ".gz",
+                                rawOutput + "seqz." + sequence['name'] + ".gz",
+                                rawOutput + "binned.seqz." + sequence['name'] + ".gz",
                             ),
                         ], name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name))
 
-                        seqz_outputs = [rawOutput + ".binned.seqz." + sequence['name'] + ".gz"
-                                        for sequence in self.sequence_dictionary_variant() if
-                                        sequence['type'] is 'primary']
+                seqz_outputs = [rawOutput + "binned.seqz." + sequence['name'] + ".gz"
+                               for sequence in self.sequence_dictionary_variant() if
+                               sequence['type'] is 'primary']
 
-                        jobs.append(concat_jobs([
-                            bash.mkdir(
-                                rawSequenza_directory,
-                                remove=True
-                            ),
-                            Job(
-                                seqz_outputs,
-                                [output + ".binned.merged.seqz.gz"],
-                                command = "zcat "
-                                        + " \\\n".join(seqz_outputs)
-                                        + " \\\n | gawk 'FNR==1 && NR==1{print;}{ if($1!=\"chromosome\" && $1!=\"MT\" && $1!=\"chrMT\" && $1!=\"chrM\") {print $0} }' | "
-                                        + " \\\n gzip -cf > "
-                                        + output + ".binned.merged.seqz.gz"
-                                ),
+                jobs.append(concat_jobs([
+                    bash.mkdir(
+                        rawSequenza_directory,
+                        remove=True
+                    ),
+                    Job(
+                        seqz_outputs,
+                        [output + "binned.merged.seqz.gz"],
+                        command = "zcat "
+                                + " \\\n".join(seqz_outputs)
+                                + " \\\n | gawk 'FNR==1 && NR==1{print;}{ if($1!=\"chromosome\" && $1!=\"MT\" && $1!=\"chrMT\" && $1!=\"chrM\") {print $0} }' | "
+                                + " \\\n gzip -cf > "
+                                + output + "binned.merged.seqz.gz"
+                        ),
                         ], name="sequenza.merge_binned_seqz." + tumor_pair.name))
     
-                        jobs.append(concat_jobs([
-                            bash.mkdir(
-                                rawSequenza_directory,
-                                remove=True
-                            ),
-                            sequenza.main(
-                                output + ".binned.merged.seqz.gz",
-                                sequenza_directory,
-                                tumor_pair.name
-                            ),
-                            # sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
-                            # sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
-                            #                  os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
-                        ], name="sequenza." + tumor_pair.name))
+                jobs.append(concat_jobs([
+                    bash.mkdir(
+                        rawSequenza_directory,
+                        remove=True
+                    ),
+                    sequenza.main(
+                        output + "binned.merged.seqz.gz",
+                        sequenza_directory,
+                        tumor_pair.name
+                    ),
+                    # sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
+                    # sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
+                    #                  os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
+                    ], name="sequenza." + tumor_pair.name))
 
         return jobs
 
@@ -3438,7 +3438,7 @@ END`""".format(
         for tumor_pair in self.tumor_pairs.itervalues():
 
             pair_directory = os.path.join("SVariants", tumor_pair.name)
-            final_directory = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
+            final_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name, tumor_pair.name)
             delly_directory = os.path.join(pair_directory, "rawDelly")
             output_vcf = os.path.join(delly_directory, tumor_pair.name + ".delly.merge.sort.vcf.gz")
             output_flt_vcf = os.path.join(pair_directory, tumor_pair.name + ".delly.merge.sort.flt.vcf.gz")
@@ -3486,6 +3486,10 @@ END`""".format(
                     tumor_pair.tumor.name,
                     final_directory + ".delly.somatic.vcf"
                 ),
+                htslib.bgzip(
+                    final_directory + ".delly.somatic.vcf",
+                    final_directory + ".delly.somatic.vcf.gz"
+                ),
                 snpeff.compute_effects(
                     final_directory + ".delly.somatic.vcf",
                     final_directory + ".delly.somatic.snpeff.vcf"
@@ -3509,6 +3513,10 @@ END`""".format(
                     tumor_pair.normal.name,
                     tumor_pair.tumor.name,
                     final_directory + ".delly.germline.vcf"
+                ),
+                htslib.bgzip(
+                    final_directory + ".delly.germline.vcf",
+                    final_directory + ".delly.germline.vcf.gz"
                 ),
                 snpeff.compute_effects(
                     final_directory + ".delly.germline.vcf",
@@ -3812,7 +3820,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.join("SVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name)
             lumpy_directory = os.path.join(pair_directory, "rawLumpy")
             inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
             inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
@@ -3974,7 +3982,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.join("SVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name)
             prefix = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
             
             genotype_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.genotyped.vcf")
@@ -4126,7 +4134,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.join("SVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name)
             wham_directory = os.path.join(pair_directory, "rawWham")
             inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
             inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
@@ -4207,8 +4215,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
-            prefix = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
+            pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name)
             genotyped_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.merged.genotyped.vcf.gz")
 
             jobs.append(concat_jobs([
@@ -4475,7 +4482,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
+            pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name, tumor_pair.name)
 
             jobs.append(concat_jobs([
                 snpeff.compute_effects(
@@ -4495,7 +4502,7 @@ END`""".format(
     
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
-            pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
+            pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name, tumor_pair.name)
             inputs["Tumor"] = [pair_directory + ".cnvkit.snpeff.annot.vcf"]
         
             for key, input in inputs.iteritems():
