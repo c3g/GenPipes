@@ -621,10 +621,10 @@ def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_name
         [chip_bam, input_bam, chip_bed, crosscor_input],
         [output_metrics, output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bai, output_flagstats, output_dedup_input_bam, output_dedup_input_bai],
         [
-            ['IHEC_chipseq_metrics', 'module_mugqic_tools'],
-            ['IHEC_chipseq_metrics', 'module_samtools'],
-            ['IHEC_chipseq_metrics', 'module_sambamba'],
-            ['IHEC_chipseq_metrics', 'module_deeptools']
+            ['IHEC_metrics', 'module_mugqic_tools'],
+            ['IHEC_metrics', 'module_samtools'],
+            ['IHEC_metrics', 'module_sambamba'],
+            ['IHEC_metrics', 'module_deeptools']
         ],
         command="""\
 IHEC_chipseq_metrics_max.sh \\
