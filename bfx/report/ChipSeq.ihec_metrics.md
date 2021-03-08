@@ -5,7 +5,7 @@ Those metrics are calculated according to IHEC standards, following the IHEC [do
 The alignment file per sample is filtered using [SAMtools]\ [@samtools]. All alignments with MAPQ smaller than **5** and all unmapped and duplicates reads are excluded from the resulting file in BAM format.
 General summary statistics are provided per sample. Sample readsets are merged for clarity.
 
-Table: IHEC metrics per Sample ([download table](IHEC_metrics_AllSamples.tsv))
+Table: IHEC metrics per Sample ([download table](IHEC_chipseq_metrics_AllSamples.tsv))
 
 * Sample_Name: Name of sample
 * Mark_Name: Name of Histone mark
