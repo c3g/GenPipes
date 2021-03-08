@@ -2512,6 +2512,7 @@ END`""".format(
                             input_tumor,
                             input_somatic_variants,
                             output_somatic_variants,
+                            config.param('gatk_variant_annotator_somatic', 'other_options'),
                             intervals=sequences
                         ),
                     ], name="gatk_variant_annotator_somatic." + str(idx) + "." + tumor_pair.name))
