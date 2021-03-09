@@ -1617,6 +1617,7 @@ done""".format(
         output_files = []
         samples_associative_array = []
         for sample in self.samples:
+            mark_list = []
             for mark_name, mark_type in sample.marks.items():
                 if mark_type == "N":
                     annotation_prefix = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, sample.name + "." + mark_name)
@@ -1624,7 +1625,8 @@ done""".format(
                     input_files.append(annotation_prefix + ".exon.stats.csv")
                     input_files.append(annotation_prefix + ".intron.stats.csv")
                     input_files.append(annotation_prefix + ".tss.distance.csv")
-                    samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
+                    mark_list.append(mark_name)
+            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
 
         # for contrast in self.contrasts:
         #     annotation_prefix = os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name)
