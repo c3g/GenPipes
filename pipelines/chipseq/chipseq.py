@@ -1615,14 +1615,16 @@ done""".format(
 
         input_files = []
         output_files = []
+        samples_associative_array = []
         for sample in self.samples:
             for mark_name, mark_type in sample.marks.items():
-                if mark_type != "I":
+                if mark_type == "N":
                     annotation_prefix = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, sample.name + "." + mark_name)
                     input_files.append(annotation_prefix + ".tss.stats.csv")
                     input_files.append(annotation_prefix + ".exon.stats.csv")
                     input_files.append(annotation_prefix + ".intron.stats.csv")
                     input_files.append(annotation_prefix + ".tss.distance.csv")
+                    samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
 
         # for contrast in self.contrasts:
         #     annotation_prefix = os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name)
@@ -1686,7 +1688,8 @@ done""".format(
     readset_file=readset_file,
     output_dir=self.output_dir,
     # peak_stats_file=peak_stats_file,
-    samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
+    # samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
+    samples_associative_array=" ".join(samples_associative_array),
     # contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
     proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int') / -1000,
     distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int') / -1000,
