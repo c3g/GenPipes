@@ -1100,8 +1100,7 @@ do
   do
     cp --parents {graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps {report_dir}/
     convert -rotate 90 {graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps {report_dir}/graphs/${{sample}}.${{mark_name}}_QC_Metrics.png
-    echo -e "----\n\n![QC Metrics for Sample $sample ([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps))]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.png)\n" \\
-    >> {report_file}
+    echo -e "----\\n\\n![QC Metrics for Sample $sample and Mark $mark_name ([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps))]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.png)\\n" >> {report_file}
   done
 done""".format(
     samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
@@ -1504,7 +1503,7 @@ do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
     rsync -rvP annotation/$sample {report_dir}/annotation/ && \\
-    echo -e "* [Gene Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/${{sample}}.${{mark_name}}.annotated.csv)\n* [HOMER Gene Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/geneOntology.html)\n* [HOMER Genome Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/GenomeOntology.html)" >> {report_file}
+    echo -e "* [Gene Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/${{sample}}.${{mark_name}}.annotated.csv)\\n* [HOMER Gene Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/geneOntology.html)\\n* [HOMER Genome Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/GenomeOntology.html)" >> {report_file}
   done
 done""".format(
     samples_associative_array=" ".join(samples_associative_array),
@@ -1579,7 +1578,7 @@ do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
     rsync -rvP annotation/$sample {report_dir}/annotation/ && \\
-    echo -e "* [HOMER _De Novo_ Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/$mark_name/homerResults.html)\n* [HOMER Known Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/$mark_name/knownResults.html)" >> {report_file}
+    echo -e "* [HOMER _De Novo_ Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/$mark_name/homerResults.html)\\n* [HOMER Known Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/$mark_name/knownResults.html)" >> {report_file}
   done
 done""".format(
     samples_associative_array=" ".join(samples_associative_array),
@@ -1691,8 +1690,7 @@ do
   do
     cp --parents {graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps {report_dir}/
     convert -rotate 90 {graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps {report_dir}/graphs/${{sample}}.${{mark_name}}_Misc_Graphs.png
-    echo -e "----\n\n![Annotation Statistics for Sample $sample and Mark $mark_name ([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps))]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.png)\n" \\
-    >> {report_file}
+    echo -e "----\\n\\n![Annotation Statistics for Sample $sample and Mark $mark_name ([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps))]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.png)\\n" >> {report_file}
   done
 done""".format(
     readset_file=readset_file,
