@@ -1654,6 +1654,7 @@ done""".format(
                     ['annotation_graphs', 'module_pandoc']
                 ],
                 command="""\
+cp /dev/null annotation/peak_stats_AllSamples.csv && \\
 mkdir -p {graphs_dir} && \\
 Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
   {readset_file} \\
@@ -1661,11 +1662,18 @@ Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
 declare -A samples_associative_array=({samples_associative_array}) && \\
 for sample in ${{!samples_associative_array[@]}}
 do
+    header=$(head -n 1 annotation/$sample/peak_stats.csv)
+    tail -n 1 annotation/$sample/peak_stats.csv >> annotation/peak_stats_AllSamples.csv
+done && \\
+sed -i -e "1 i\\\$header" annotation/peak_stats_AllSamples.csv && \\
+for sample in ${{!samples_associative_array[@]}}
+do
   mkdir -p {report_dir}/annotation/$sample && \\
   if [[ -f annotation/$sample/peak_stats.csv ]]
   then
-    cp annotation/$sample/peak_stats.csv {report_dir}/annotation/$sample
-  peak_stats_table=`LC_NUMERIC=en_CA awk -F "," '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, $2,  sprintf("%\\47d", $3), $4, sprintf("%\\47.1f", $5), sprintf("%\\47.1f", $6), sprintf("%\\47.1f", $7), sprintf("%\\47.1f", $8)}}}}' annotation/$sample/peak_stats.csv`
+    cp annotation/$sample/peak_stats.csv {report_dir}/annotation/$sample/peak_stats.csv && \\
+    cp annotation/annotation/peak_stats_AllSamples.csv {report_dir}/annotation/peak_stats_AllSamples.csv && \\
+  peak_stats_table=`LC_NUMERIC=en_CA awk -F "," '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, $2,  sprintf("%\\47d", $3), $4, sprintf("%\\47.1f", $5), sprintf("%\\47.1f", $6), sprintf("%\\47.1f", $7), sprintf("%\\47.1f", $8)}}}}' annotation/annotation/peak_stats_AllSamples.csv`
   else
     peak_stats_table=""
   fi
@@ -1702,9 +1710,10 @@ done""".format(
     basename_report_file=os.path.basename(report_file),
     report_file=report_file,
     report_dir=self.output_dirs['report_output_directory'],
-    graphs_dir=self.output_dirs['graphs_output_directory']
+    graphs_dir=self.output_dirs['graphs_output_directory'],
+    merged_peak_stats="peak_stats_AllSamples.csv"
     ),
-                name="annotation_graphs." + ".".join([sample.name for sample in self.samples]),
+                name="annotation_graphs." + ".".join([sample.name + "_" + mark_name for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type == "N"]),
                 report_files=[report_file],
                 removable_files=output_files
                 )
