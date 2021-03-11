@@ -19,6 +19,6 @@ $sample_table$
 * Aligned Filtered Reads %: 100 x Aligned Filtered Reads / Filtered Remaining Reads
 * Duplicate Reads #: Number of Duplicates reads (aligned reads having the same 5' alignment positions for both mates in the case of paired-end reads) after filtering
 * Duplicate %: 100 x Duplicate Reads / Aligned Filtered Reads
-* Final Aligned Reads: Number of Aligned reads without duplicates count (Aligned Filtered Reads - Duplicate Reads)
+* Final Aligned Reads # without Duplicates: Number of Aligned reads without duplicates count (Aligned Filtered Reads - Duplicate Reads)
 * Mitchondrial Reads #: Number of reads aligned to chrM
 * Mitochondrial %: 100 x Mitochondrial Reads / Aligned Filtered Reads 
