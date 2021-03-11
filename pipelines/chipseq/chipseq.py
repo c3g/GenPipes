@@ -947,7 +947,7 @@ pandoc --to=markdown \\
                             # os.path.join(alignment_directory, sample.name + "." + sample.mark_name + ".sorted.dup.filtered.flagstat")
                             )
                         ],
-                        name="metrics.flagstat." + sample.name + "." + mark_name
+                        name="metrics_flagstat." + sample.name + "." + mark_name
                         )
                     )
                 inputs_report.extend((os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(raw_bam_file))), os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(bam_file))), os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")))
