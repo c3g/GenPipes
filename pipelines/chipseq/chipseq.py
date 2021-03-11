@@ -1662,7 +1662,7 @@ declare -A samples_associative_array=({samples_associative_array}) && \\
 for sample in ${{!samples_associative_array[@]}}
 do
     header=$(head -n 1 annotation/$sample/peak_stats.csv)
-    tail -n 1 annotation/$sample/peak_stats.csv >> annotation/peak_stats_AllSamples.csv
+    tail -n+2 annotation/$sample/peak_stats.csv >> annotation/peak_stats_AllSamples.csv
 done && \\
 sed -i -e "1 i\\\$header" annotation/peak_stats_AllSamples.csv && \\
 mkdir -p {report_dir}/annotation/$sample && \\
@@ -1706,7 +1706,7 @@ done""".format(
     graphs_dir=self.output_dirs['graphs_output_directory'],
     merged_peak_stats="peak_stats_AllSamples.csv"
     ),
-                name="annotation_graphs." + ".".join([sample.name + "_" + mark_name for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type == "N"]),
+                name="annotation_graphs." + ".".join([sample.name for sample in self.samples]),
                 report_files=[report_file],
                 removable_files=output_files
                 )
