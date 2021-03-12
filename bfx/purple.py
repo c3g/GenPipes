@@ -60,6 +60,28 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
         amber=amber,
         cobalt=cobalt,
         output_dir=output_dir,
-        somatic_snv=somatic_snv,
+        somatic_snv=" \\\n  -somatic_vcf " + somatic_snv if somatic_snv else "",
+        )
+    )
+
+def strelka2_convert(input, output):
+
+    return Job(
+        [input],
+        [output],
+        [
+            ['purple', 'module_java'],
+            ['purple', 'module_R'],
+            ['purple', 'module_purple'],
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $PURPLE_JAR com.hartwig.hmftools.purple.tools.AnnotateStrelkaWithAllelicDepth \\
+  -in {input} \\
+  -out {output}""".format(
+        tmp_dir=config.param('purple', 'tmp_dir'),
+        java_other_options=config.param('purple', 'java_other_options'),
+        ram=config.param('purple', 'ram'),
+        input=input,
+        output=output,
         )
     )
