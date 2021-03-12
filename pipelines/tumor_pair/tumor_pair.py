@@ -3278,9 +3278,15 @@ END`""".format(
                         sequenza_directory,
                         tumor_pair.name
                     ),
-                    sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
-                    sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
-                                      os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
+                    # sequenza.filter(
+                    #     os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"),
+                    #     tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")
+                    # ),
+                    # sequenza.annotate(
+                    #     os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"),
+                    #     os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
+                    #     os.path.join(sequenza_directory, tumor_pair.name + ".tmp")
+                    # )
                 ], name="sequenza." + tumor_pair.name))
                 
             else:
@@ -3335,9 +3341,15 @@ END`""".format(
                         sequenza_directory,
                         tumor_pair.name
                     ),
-                    sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
-                    sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
-                                      os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
+                    #sequenza.filter(
+                    #    os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"),
+                    #    tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")
+                    #),
+                    #sequenza.annotate(
+                    #    os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"),
+                    #    os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
+                    #    os.path.join(sequenza_directory, tumor_pair.name + ".tmp")
+                    #)
                     ], name="sequenza." + tumor_pair.name))
 
         return jobs
@@ -3353,8 +3365,8 @@ END`""".format(
                                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_genome_view.pdf"),
                                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_CN_bars.pdf"),
                                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_CP_contours.pdf"),
-                               os.path.join(pair_directory, "sequenza", tumor_pair.name + "_ploidy_celularity.tsv"),
-                               os.path.join(pair_directory, "sequenza", tumor_pair.name + ".annotated.TumS.filteredSV.annotate.txt")]
+                               os.path.join(pair_directory, "sequenza", tumor_pair.name + "_ploidy_celularity.tsv")]
+ #                              os.path.join(pair_directory, "sequenza", tumor_pair.name + ".annotated.TumS.filteredSV.annotate.txt")]
 
             for key, input in inputs.iteritems():
                 for sample in input:
@@ -3370,7 +3382,7 @@ END`""".format(
 
         return jobs
 
-    def sequenza(self):
+    def purple(self):
         """
         PURPLE is a purity ploidy estimator for whole genome sequenced (WGS) data.
 
@@ -3383,7 +3395,7 @@ END`""".format(
             pair_dir = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             purple_dir = os.path.join(pair_dir, "purple")
             amber_dir = os.path.join(purple_dir, "rawAmber")
-            cobalt_dir = os.path.join(pair_dir, "rawCobalt")
+            cobalt_dir = os.path.join(purple_dir, "rawCobalt")
         
             inputNormal = self.select_input_files(
                 [[os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
@@ -3395,20 +3407,36 @@ END`""".format(
                  [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
                  [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")]])
 
+            somatic_snv = None
+            if(os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.vt.vcf.gz")):
+                somatic_snv = os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.vt.vcf.gz")
+            
             jobs.append(concat_jobs([
+                bash.mkdir(
+                    amber_dir,
+                    remove=True
+                ),
                 amber.run(
-                    inputNormal,
-                    inputTumor,
+                    inputNormal[0],
+                    inputTumor[0],
                     tumor_pair.normal.name,
                     tumor_pair.tumor.name,
                     amber_dir,
                 ),
+                bash.mkdir(
+                    cobalt_dir,
+                    remove=True
+                ),
                 cobalt.run(
-                    inputNormal,
-                    inputTumor,
+                    inputNormal[0],
+                    inputTumor[0],
                     tumor_pair.normal.name,
                     tumor_pair.tumor.name,
                     cobalt_dir,
+                ),
+                purple.strelka2_convert(
+                    somatic_snv,
+                    os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.purple.vcf.gz"),
                 ),
                 purple.run(
                     amber_dir,
@@ -3416,9 +3444,12 @@ END`""".format(
                     tumor_pair.normal.name,
                     tumor_pair.tumor.name,
                     purple_dir,
+                    os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.purple.vcf.gz"),
                 ),
                 ], name="purple." + tumor_pair.name )
             )
+            
+        return jobs
 
     def delly_call_filter(self):
         """
@@ -5102,21 +5133,19 @@ END`""".format(
                 self.metrics_dna_sample_qualimap,
                 self.metrics_dna_fastqc,
                 self.sequenza,
+                self.strelka2_paired_somatic,
+                self.strelka2_paired_germline,
+                self.purple,
                 self.rawmpileup,
                 self.paired_varscan2,
                 self.merge_varscan2,
                 self.paired_mutect2,
                 self.merge_mutect2,
-                #self.samtools_paired,
-                #self.merge_filter_paired_samtools,
                 self.vardict_paired,
                 self.merge_filter_paired_vardict,
-                self.strelka2_paired_somatic,
-                self.strelka2_paired_germline,
                 self.ensemble_somatic,
                 self.gatk_variant_annotator_somatic,
                 self.merge_gatk_variant_annotator_somatic,
-                #self.somatic_signature,
                 self.compute_cancer_effects_somatic,
                 self.ensemble_somatic_dbnsfp_annotation,
                 self.sample_gemini_annotations_somatic,
