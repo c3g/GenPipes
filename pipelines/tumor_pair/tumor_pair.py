@@ -78,8 +78,9 @@ from bfx import metasv
 from bfx import cnvkit
 from bfx import scones
 from bfx import sequenza
-from bfx import shapeit
-from bfx import scnaphase
+from bfx import amber
+from bfx import cobalt
+from bfx import purple
 from bfx import svaba
 from bfx import annotations
 
@@ -3368,6 +3369,56 @@ END`""".format(
                     ], name="sym_link.sequenza." + tumor_pair.name + "." + key))
 
         return jobs
+
+    def sequenza(self):
+        """
+        PURPLE is a purity ploidy estimator for whole genome sequenced (WGS) data.
+
+        It combines B-allele frequency (BAF) from AMBER, read depth ratios from COBALT,
+        somatic variants and structural variants to estimate the purity and copy number profile of a tumor sample.
+        """
+        jobs = []
+
+        for tumor_pair in self.tumor_pairs.itervalues():
+            pair_dir = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            purple_dir = os.path.join(pair_dir, "purple")
+            amber_dir = os.path.join(purple_dir, "rawAmber")
+            cobalt_dir = os.path.join(pair_dir, "rawCobalt")
+        
+            inputNormal = self.select_input_files(
+                [[os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                 [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam")],
+                 [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.bam")]])
+        
+            inputTumor = self.select_input_files(
+                [[os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                 [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                 [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")]])
+
+            jobs.append(concat_jobs([
+                amber.run(
+                    inputNormal,
+                    inputTumor,
+                    tumor_pair.normal.name,
+                    tumor_pair.tumor.name,
+                    amber_dir,
+                ),
+                cobalt.run(
+                    inputNormal,
+                    inputTumor,
+                    tumor_pair.normal.name,
+                    tumor_pair.tumor.name,
+                    cobalt_dir,
+                ),
+                purple.run(
+                    amber_dir,
+                    cobalt_dir,
+                    tumor_pair.normal.name,
+                    tumor_pair.tumor.name,
+                    purple_dir,
+                ),
+                ], name="purple." + tumor_pair.name )
+            )
 
     def delly_call_filter(self):
         """
