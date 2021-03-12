@@ -2440,9 +2440,9 @@ END`""".format(
             output_ensemble = os.path.join(paired_ensemble_directory,
                                            tumor_pair.name + ".ensemble.germline.vt.vcf.gz")
 
-            if os.path.isdir(os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vt-work")):
+            if os.path.isdir(os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt-work")):
                 rm_job = bash.rm(
-                    os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vt-work")
+                    os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt-work")
                 )
                 jobs.append(rm_job)
 
@@ -3277,9 +3277,9 @@ END`""".format(
                         sequenza_directory,
                         tumor_pair.name
                     ),
-                    #sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
-                    #sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
-                    #                  os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
+                    sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
+                    sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
+                                      os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
                 ], name="sequenza." + tumor_pair.name))
                 
             else:
@@ -3334,9 +3334,9 @@ END`""".format(
                         sequenza_directory,
                         tumor_pair.name
                     ),
-                    # sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
-                    # sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
-                    #                  os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
+                    sequenza.filter(os.path.join(sequenza_directory, tumor_pair.name + "_segments.txt"), tumor_pair.name, os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt")),
+                    sequenza.annotate(os.path.join(sequenza_directory, tumor_pair.name + ".segments.txt"), os.path.join(sequenza_directory, tumor_pair.name + ".annotated"),
+                                      os.path.join(sequenza_directory, tumor_pair.name + ".tmp"))
                     ], name="sequenza." + tumor_pair.name))
 
         return jobs
@@ -3352,8 +3352,8 @@ END`""".format(
                                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_genome_view.pdf"),
                                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_CN_bars.pdf"),
                                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_CP_contours.pdf"),
-                               os.path.join(pair_directory, "sequenza", tumor_pair.name + "_ploidy_celularity.tsv")]
-                               #os.path.join(pair_directory, "sequenza", tumor_pair.name + ".annotated.TumS.filteredSV.annotate.txt")]
+                               os.path.join(pair_directory, "sequenza", tumor_pair.name + "_ploidy_celularity.tsv"),
+                               os.path.join(pair_directory, "sequenza", tumor_pair.name + ".annotated.TumS.filteredSV.annotate.txt")]
 
             for key, input in inputs.iteritems():
                 for sample in input:
@@ -3853,7 +3853,7 @@ END`""".format(
                         "/dev/stdin",
                         discordants_normal,
                         lumpy_directory,
-                        config.param('extract_discordant_reads', 'options')
+                        config.param('extract_discordant_reads', 'sambamba_options')
                     ),
                 ]),
                 pipe_jobs([
@@ -3866,7 +3866,7 @@ END`""".format(
                         "/dev/stdin",
                         discordants_tumor,
                         lumpy_directory,
-                        config.param('extract_discordant_reads', 'options')
+                        config.param('extract_discordant_reads', 'sambamba_options')
                     ),
                 ]),
             ], name="extract_discordant_reads." + tumor_pair.name))
@@ -3897,7 +3897,7 @@ END`""".format(
                         "/dev/stdin",
                         splitters_normal,
                         lumpy_directory,
-                        config.param('extract_split_reads', 'options')
+                        config.param('extract_split_reads', 'sambamba_options')
                     ),
                 ]),
                 pipe_jobs([

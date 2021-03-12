@@ -3505,18 +3505,45 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             jobs.append(concat_jobs([
                 bash.mkdir(lumpy_directory, remove=True),
                 pipe_jobs([
-                    samtools.view(inputNormal, None, "-b -F 1294"),
-                    sambamba.sort("/dev/stdin", discordants_normal, lumpy_directory, config.param('extract_discordant_reads', 'discordants_sort_option')),
+                    samtools.view(
+                        inputNormal,
+                        None,
+                        "-b -F 1294"
+                    ),
+                    sambamba.sort(
+                        "/dev/stdin",
+                        discordants_normal,
+                        lumpy_directory,
+                        config.param('extract_discordant_reads', 'sambamba_option')
+                    ),
                 ]),
             ], name="extract_discordant_reads." + sample.name))
 
             jobs.append(concat_jobs([
                 bash.mkdir(lumpy_directory, remove=True),
                 pipe_jobs([
-                    samtools.view(inputNormal, None, "-h"),
-                    Job([None], [None], [['lumpy_sv', 'module_lumpy']], command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"),
-                    samtools.view("-", None, " -Sb "),
-                    sambamba.sort("/dev/stdin", splitters_normal, lumpy_directory, config.param('extract_split_reads', 'split_sort_option')),
+                    samtools.view(
+                        inputNormal,
+                        None,
+                        "-h"
+                    ),
+                    Job(
+                        [None],
+                        [None],
+                        [['lumpy_sv', 'module_lumpy']],
+                        command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"
+                    ),
+                    samtools.view(
+                        "-",
+                        None,
+                        " -Sb "
+                    ),
+                    sambamba.sort(
+                        "/dev/stdin",
+                        splitters_normal,
+                        lumpy_directory,
+                        config.param('extract_split_reads', 'sambamba_option')
+                    ),
                 ]),
             ], name="extract_split_reads." + sample.name))
 

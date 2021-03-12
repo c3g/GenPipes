@@ -25,8 +25,11 @@
 from core.config import *
 from core.job import *
 
-def sort(input_bam, output_bam, tmp_dir, other_options=None):
-
+def sort(input_bam,
+         output_bam,
+         tmp_dir,
+         other_options=config.param('sambamba_sort_sam', 'options', required=False)):
+    
     return Job(
         [input_bam],
         [output_bam, output_bai],
@@ -38,7 +41,7 @@ sambamba sort {options} \\
   {input} \\
   --tmpdir {tmp} \\
   {output}""".format(
-        options=other_options if other_options else "",
+        options=other_options,
         input=input_bam,
         output="--out " + output_bam if output_bam else "",
         tmp=tmp_dir
