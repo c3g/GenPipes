@@ -62,11 +62,12 @@ def process_gvcf(intput_gvcf, output_masks, output_ambiguous, output_consensus, 
         input_files=[intput_gvcf],
         output_files=[output_masks, output_ambiguous, output_consensus],
         module_entries=[
-            [ini_section, 'module_freebayes']
+            [ini_section, 'module_freebayes'],
+            [ini_section, 'module_python']
         ],
 
         command="""\
-python process_gvcf.py -d 10 -m {output_masks} -a {output_ambiguous} -c {output_consensus} {intput_gvcf}""".format(
+process_gvcf.py -d 10 -m {output_masks} -a {output_ambiguous} -c {output_consensus} {intput_gvcf}""".format(
             output_masks=output_masks,
             output_ambiguous=output_ambiguous,
             output_consensus=output_consensus,
