@@ -46,7 +46,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $AMBER_JAR \
   -tumor {tumor} \\
   -tumor_bam {tumor_bam} \\
   -loci {loci} \\
-  {output_dir}""".format(
+  -output_dir {output_dir}""".format(
         tmp_dir=config.param('amber', 'tmp_dir'),
         java_other_options=config.param('amber', 'java_other_options'),
         ram=config.param('amber', 'ram'),

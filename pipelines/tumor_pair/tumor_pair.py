@@ -2076,24 +2076,6 @@ END`""".format(
         use_bed = config.param('vardict_paired', 'use_bed', type='boolean', required=True)
         genome_dictionary = config.param('DEFAULT', 'genome_dictionary', type='filepath')
 
-        bed_file_list = []
-        if use_bed:
-            bed = self.samples[0].readsets[0].beds[0]
-            bed_intervals, interval_size = bed_file.parse_bed_file(
-                os.path.expandvars(bed)
-            )
-            last_bed_file = 'vardict.tmp.' + str(nb_jobs - 1) + '.bed'
-            if not os.path.exists(last_bed_file):
-                bed_file_list = bed_file.split_by_size(
-                    bed_intervals,
-                    interval_size,
-                    nb_jobs,
-                    output=os.path.join(self.output_dir, "vardict.tmp")
-                )
-            else:
-                for idx in range(nb_jobs):
-                    bed_file_list.append(os.path.join(self.output_dir, "vardict.tmp." + str(idx) + ".bed"))
-
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             vardict_directory = os.path.join(pair_directory, "rawVardict")
@@ -2108,39 +2090,58 @@ END`""".format(
                  [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
                  [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")]])
 
+            jobs.append(concat_jobs([
+                bash.mkdir(
+                    vardict_directory,
+                    remove=True
+                )
+                ], name="vardict_paired.mkdir")
+            )
+
             if use_bed:
+                bed = self.samples[0].readsets[0].beds[0]
+                bed_intervals, interval_size = bed_file.parse_bed_file(
+                    os.path.expandvars(bed)
+                )
+                last_bed_file = 'vardict.tmp.' + str(nb_jobs - 1) + '.bed'
+                if not os.path.exists(last_bed_file):
+                    bed_file_list = bed_file.split_by_size(
+                        bed_intervals,
+                        interval_size,
+                        nb_jobs,
+                        output=os.path.join(vardict_directory, "vardict.tmp")
+                    )
+                else:
+                    for idx in range(nb_jobs):
+                        bed_file_list.append(os.path.join(vardict_directory, "vardict.tmp." + str(idx) + ".bed"))
+
                 idx = 0
                 for bf in bed_file_list:
                     output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz")
-                    jobs.append(concat_jobs([
-                        bash.mkdir(
-                            vardict_directory,
-                            remove=True
+                    jobs.append(pipe_jobs([
+                        vardict.paired_java(
+                            input_normal[0],
+                            input_tumor[0],
+                            tumor_pair.name,
+                            None,
+                            bf
                         ),
-                        pipe_jobs([
-                            vardict.paired_java(
-                                input_normal[0],
-                                input_tumor[0],
-                                tumor_pair.name,
-                                None,
-                                bf
-                            ),
-                            vardict.testsomatic(
-                                None,
-                                None
-                            ),
-                            vardict.var2vcf(
-                                None,
-                                tumor_pair.normal.name,
-                                tumor_pair.tumor.name,
-                                None
-                            ),
-                            htslib.bgzip_tabix(
-                                None,
-                                os.path.abspath(output)
-                            ),
-                        ]),
-                    ], name="vardict_paired." + tumor_pair.name + "." + str(idx)))
+                        vardict.testsomatic(
+                            None,
+                            None
+                        ),
+                        vardict.var2vcf(
+                            None,
+                            tumor_pair.normal.name,
+                            tumor_pair.tumor.name,
+                            None
+                        ),
+                        htslib.bgzip_tabix(
+                            None,
+                            output
+                        ),
+                        ], name="vardict_paired." + tumor_pair.name + "." + str(idx))
+                    )
                     idx += 1
             else:
                 beds = []
@@ -3409,8 +3410,16 @@ END`""".format(
 
             somatic_snv = None
             if(os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.vt.vcf.gz")):
-                somatic_snv = os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.vt.vcf.gz")
-            
+                somatic_snv = os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.purple.vcf.gz")
+                jobs.append(concat_jobs([
+                    purple.strelka2_convert(
+                        os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.vt.vcf.gz"),
+                        somatic_snv,
+                    ),
+                    ], name="purple.convert_strelka2." + tumor_pair.name )
+                )
+        
+    
             jobs.append(concat_jobs([
                 bash.mkdir(
                     amber_dir,
@@ -3423,6 +3432,10 @@ END`""".format(
                     tumor_pair.tumor.name,
                     amber_dir,
                 ),
+                ], name="purple.amber." + tumor_pair.name )
+            )
+
+            jobs.append(concat_jobs([                
                 bash.mkdir(
                     cobalt_dir,
                     remove=True
@@ -3434,19 +3447,19 @@ END`""".format(
                     tumor_pair.tumor.name,
                     cobalt_dir,
                 ),
-                purple.strelka2_convert(
-                    somatic_snv,
-                    os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.purple.vcf.gz"),
-                ),
+                ], name="purple.cobalt." + tumor_pair.name )
+            )
+
+            jobs.append(concat_jobs([
                 purple.run(
                     amber_dir,
                     cobalt_dir,
                     tumor_pair.normal.name,
                     tumor_pair.tumor.name,
                     purple_dir,
-                    os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.purple.vcf.gz"),
+                    somatic_snv,
                 ),
-                ], name="purple." + tumor_pair.name )
+                ], name="purple.purity." + tumor_pair.name )
             )
             
         return jobs
@@ -5178,6 +5191,8 @@ END`""".format(
                 self.sambamba_merge_realigned,
                 self.sambamba_mark_duplicates,
                 self.recalibration,
+                self.strelka2_paired_somatic,
+                self.strelka2_paired_germline,
                 self.metrics_dna_picard_metrics,
                 self.sequenza,
                 self.delly_call_filter,

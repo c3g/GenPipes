@@ -37,6 +37,7 @@ def run(amber, cobalt, normal_name, tumor_name, output_dir, somatic_snv=None):
             ['purple', 'module_R'],
             ['purple', 'module_perl'],
             ['purple', 'module_circos'],
+            ['purple', 'module_cobalt'],
             ['purple', 'module_purple'],
         ],
         command="""\
@@ -48,7 +49,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
   -amber {amber} \\
   -gc_profile {gc_profile} \\
   -circos circos \\
-  {output_dir}{somatic_snv}""".format(
+  -output_dir {output_dir}{somatic_snv}""".format(
         tmp_dir=config.param('purple', 'tmp_dir'),
         java_other_options=config.param('purple', 'java_other_options'),
         ram=config.param('purple', 'ram'),

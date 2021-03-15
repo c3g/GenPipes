@@ -47,7 +47,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $COBALT_JAR 
   -tumor {tumor} \\
   -tumor_bam {tumor_bam} \\
   -gc_profile {gc_profile} \\
-  {output_dir}""".format(
+  -output_dir {output_dir}""".format(
         tmp_dir=config.param('cobalt', 'tmp_dir'),
         java_other_options=config.param('cobalt', 'java_other_options'),
         ram=config.param('cobalt', 'ram'),
