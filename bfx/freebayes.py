@@ -46,12 +46,30 @@ freebayes -f {reference_genome} \\
   {options} \\
   {other_options} \\
   {input_bam} \\
-  > {output_file}""".format(
+  | sed s/QR,Number=1,Type=Integer/QR,Number=1,Type=Float/ > {output_file}""".format(
     reference_genome=config.param(ini_section, 'genome_fasta', type='filepath'),
     bed_targets="-t " + config.param(ini_section, 'bed_targets', type='filepath', required=False) if config.param(ini_section, 'bed_targets', required=False) else "",
     options=options if options else "",
     other_options=config.param(ini_section, 'other_options'),
     input_bam=input_bam,
     output_file=output_file
-    ),
+    )
+        )
+
+
+def process_gvcf(intput_gvcf, output_masks, output_ambiguous, output_consensus, ini_section='freebayes'):
+    return Job(
+        input_files=[intput_gvcf],
+        output_files=[output_masks, output_ambiguous, output_consensus],
+        module_entries=[
+            [ini_section, 'module_freebayes']
+        ],
+
+        command="""\
+python process_gvcf.py -d 10 -m {output_masks} -a {output_ambiguous} -c {output_consensus} {intput_gvcf}""".format(
+            output_masks=output_masks,
+            output_ambiguous=output_ambiguous,
+            output_consensus=output_consensus,
+            intput_gvcf=intput_gvcf
+            )
         )
