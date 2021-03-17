@@ -759,7 +759,9 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                         output_gvcf,
                         output_masks,
                         output_ambiguous,
-                        output_consensus),
+                        output_consensus,
+                        ini_section='freebayes_call_variants'
+                        ),
                     Job(
                         input_files=[output_ambiguous, output_consensus],
                         output_files=[output_ambiguous_norm, output_ambiguous_norm + ".gz", output_consensus_norm, output_consensus_norm + ".gz"],
