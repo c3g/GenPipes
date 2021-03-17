@@ -752,7 +752,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                     freebayes.freebayes(
                         input_bam,
                         output_gvcf,
-                        options="--gvcf --gvcf-dont-use-chunk",
+                        options="--gvcf --gvcf-dont-use-chunk true",
                         ini_section='freebayes_call_variants'
                         ),
                     freebayes.process_gvcf(
