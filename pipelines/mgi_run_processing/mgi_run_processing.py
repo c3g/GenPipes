@@ -1731,18 +1731,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
         else:
             _raise(SanitycheckError("Unknown protocol : " + self.args.type))
 
-    def get_sequencer_run_id(self, lane):
-        """
-        Parse the BioInfo.csv file for the ID of the run given by the sequencer
-        """
-        bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
-        for row in bioinfo_csv:
-            if row[0] == "DNB ID":
-                # dnb_id format looks like : 10074MG01B_Lane4
-                # where run_id is : 10074MG01B
-                return row[1].split("_")[0]
-        _raise(SanitycheckError("Could not find DNB ID from " + self.bioinfo_files[lane]))
-
     def get_run_counter(self, lane):
         """
         Parse the BioInfo.csv file for the ID of the run to extract the run counter
