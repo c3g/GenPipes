@@ -23,6 +23,8 @@ from core.config import *
 from core.job import *
 
 def call(input_pair, output, sv_type, genotype_file=None):
+    if not isinstance(input_pair, list):
+        input_pair=[input_pair]
     return Job(
         input_pair,
         [output],
