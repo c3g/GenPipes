@@ -1743,7 +1743,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         demuxfastqs_outputs = []
         fastq_jobs_to_append = []
         fastq_jobs_to_concat = []
-
+        convert_job_input_dependencies = []
         output_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane)
 
         for readset in self.readsets[lane]:
@@ -1839,17 +1839,24 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     )
             if readset_mv_jobs:
                 fastq_jobs_to_concat.append(concat_jobs(
-                    readset_mv_jobs,
+                    readset_mv_jobs + [
+                        bash.touch(os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".rawFastqDone"))
+                    ],
+                    output_dependency=[os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".rawFastqDone")],
                     name="fastq.mv." + readset.name + "." + self.run_id + "." + lane,
                     samples=self.samples[lane]
                 ))
 
             if readset_cat_jobs:
                 fastq_jobs_to_append.append(concat_jobs(
-                    readset_cat_jobs,
+                    readset_cat_jobs+ [
+                        bash.touch(os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".rawFastqDone"))
+                    ],
+                    output_dependency=[os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".rawFastqDone")],
                     name="fastq.cat." + readset.name + "." + self.run_id + "." + lane,
                     samples=self.samples[lane]
                 ))
+            convert_job_input_dependencies.append(os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".rawFastqDone"))
 
             # R2, I1 & I2 extraction from "raw R2" fastq
             fastq_jobs_to_append.append(
@@ -1868,12 +1875,17 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         bash.pigz(
                             None,
                             readset.fastq2
+                        ),
+                        bash.touch(
+                            os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".R2ExtractionDone")
                         )
                     ],
+                    output_dependency=[os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".R2ExtractionDone")],
                     name="fastq.extract_R2_fastq." + readset.name + "." + self.run_id + "." + lane,
                     samples=self.samples[lane]
                 )
             )
+            convert_job_input_dependencies.append(os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".R2ExtractionDone"))
             if self.is_dual_index[lane]:
                 # I1 fastq
                 fastq_jobs_to_append.append(
@@ -1897,9 +1909,14 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             bash.paste(
                                 None,
                                 readset.index_fastq1
+                            ),
+                            bash.touch(
+                                os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I1ExtractionDone")
                             )
                         ],
-                        name="fastq.extract_I1_fastq." + readset.name + "." + self.run_id + "." + lane
+                        output_dependency=[os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I1ExtractionDone")],
+                        name="fastq.extract_I1_fastq." + readset.name + "." + self.run_id + "." + lane,
+                        samples=self.samples[lane]
                     )
                 )
                 # I2 fastq
@@ -1934,11 +1951,21 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             bash.pigz(
                                 None,
                                 readset.index_fastq2
+                            ),
+                            bash.touch(
+                                os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I2ExtractionDone")
                             )
                         ],
+                        output_dependency=[os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I2ExtractionDone")],
                         name="fastq.extract_I2_fastq." + readset.name + "." + self.run_id + "." + lane,
                         samples=self.samples[lane]
                     )
+                )
+                convert_job_input_dependencies.extend(
+                    [
+                        os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I1ExtractionDone"),
+                        os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I2ExtractionDone")
+                    ]
                 )
             else:
                 # I1 fastq
@@ -1958,7 +1985,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             bash.awk(
                                 None,
                                 None,
-                                "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index1cycles(lane)+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index1cycles(lane)+") }'"
+                                "-F'\\t' '{{gsub(/\\d$/, 1, $1) \"\\n\" substr($2,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index1cycles(lane)+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index1cycles(lane)+") }'"
                             ),
                             bash.pigz(
                                 None,
@@ -1967,11 +1994,57 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             bash.gzip(
                                 None,
                                 readset.index_fastq1
+                            ),
+                            bash.touch(
+                                os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I1ExtractionDone")
                             )
                         ],
-                        name="fastq.extract_I1_fastq." + readset.name + "." + self.run_id + "." + lane
+                        output_dependency=[os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I1ExtractionDone")],
+                        name="fastq.extract_I1_fastq." + readset.name + "." + self.run_id + "." + lane,
+                        samples=self.samples[lane]
                     )
                 )
+                convert_job_input_dependencies.append(os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I1ExtractionDone"))
+
+            # Conversion of the fastq headers MGI to Illumina format
+            convert_inputs = [
+               readset.fastq1
+            ]
+            if readset.run_type == "PAIRED_END": convert_inputs.append(readset.fastq2)
+            if self.is_dual_index[lane]:
+                convert_inputs.append(readset.index_fastq1)
+                convert_inputs.append(readset.index_fastq2)
+            else:
+                convert_inputs.append(readset.index_fastq1)
+            # Input fastqs are all in fastq.gz format at this point of the pipeline
+            convert_outputs = [os.path.splitext(os.path.splitext(in_file)[0])[0] + ".converted.fastq.gz" for in_file in convert_inputs]
+
+            fastq_jobs_to_append.append(
+                concat_jobs(
+                    [
+                        tools.convert_fastq_headers(
+                            convert_inputs,
+                            convert_outputs,
+                            self.instrument,
+                            self.run_counter
+                        )
+                    ] + [
+                        bash.mv(
+                            convert,
+                            non_convert,
+                            force=True
+                        ) for non_convert, convert in zip(convert_inputs, convert_outputs)
+                    ] + [
+                        bash.touch(
+                            os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".convertionDone")
+                        )
+                    ],
+                    input_dependency=convert_job_input_dependencies,
+                    output_dependency=convert_inputs,
+                    name="fastq.convert_headers." + readset.name + "." + self.run_id + "." + lane,
+                    samples=self.samples[lane]
+                )
+            )
         return demuxfastqs_outputs, fastq_jobs_to_concat, fastq_jobs_to_append
 
     def get_smallest_index_length(self, lane):
