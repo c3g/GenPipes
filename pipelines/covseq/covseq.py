@@ -892,8 +892,8 @@ done""".format(
             input_consensus_norm = re.sub(r"\.vcf$", ".norm.vcf.gz", input_consensus)
 
             output_ambiguous_consensus = re.sub(r"\.norm\.vcf\.gz$", ".ambiguous.fasta", input_ambiguous_norm)
-            output_consensus = re.sub(r"\.norm\.vcf\.gz$", ".consensus.fasta", input_consensus_norm)
             output_prefix = os.path.join(consensus_directory, sample.name) + ".freebayes_variants"
+            output_consensus = output_prefix + ".consensus.fasta"
 
             jobs.append(
                 concat_jobs([
