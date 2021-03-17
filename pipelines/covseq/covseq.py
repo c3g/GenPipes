@@ -762,7 +762,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                         output_consensus),
                     Job(
                         input_files=[output_ambiguous, output_consensus],
-                        output_files=[output_ambiguous_norm, output_consensus_norm],
+                        output_files=[output_ambiguous_norm, output_ambiguous_norm + ".gz", output_consensus_norm, output_consensus_norm + ".gz"],
                         module_entries=[
                             [freebayes, 'module_bcftools'],
                             [freebayes, 'module_htslib']
