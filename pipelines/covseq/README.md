@@ -70,7 +70,10 @@ optional arguments:
 
 Steps:
 ------
-
+```
+![covseq workflow diagram](../../resources/workflows/GenPipes_covseq.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/src/master/resources/workflows/GenPipes_covseq.png)
+```
 1- host_reads_removal
 2- kraken_analysis
 3- cutadapt
