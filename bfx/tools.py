@@ -509,6 +509,34 @@ python $PYTHON_TOOLS/runProcessingEditIndexStatsFile.py \\
         )
     )
 
+def convert_fastq_headers(
+    inputs,
+    outputs,
+    instrument,
+    run
+    ):
+
+    convert_input_path = os.path.dirname(inputs[0])
+
+    return Job(
+        inputs,
+        outputs,
+        [
+            ['fastq', 'module_mugqic_tools'],
+            ['fastq', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/convertFastqHeaders.py \\
+  -i {input_path} \\
+  -r {run} \\
+  -s {sequencer}""".format(
+            input_path=convert_input_path,
+            run=run,
+            sequencer=instrument
+        ),
+        removable_files=outputs
+    )
+
 def run_validation_sample_report(
     readset,
     report_inputs,
