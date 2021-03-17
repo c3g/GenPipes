@@ -1892,7 +1892,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             bash.awk(
                                 None,
                                 None,
-                                "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles(lane))+int(self.get_index2cycles(lane))+1)+","+self.get_index1cycles(lane)+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles(lane))+int(self.get_index2cycles(lane))+1)+","+self.get_index1cycles(lane)+") }'"
+                                "-F'\\t' '{gsub(/\\d$/, 1, $1) \"\\n\" substr($2,"+str(int(self.get_read2cycles(lane))+int(self.get_index2cycles(lane))+1)+","+self.get_index1cycles(lane)+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles(lane))+int(self.get_index2cycles(lane))+1)+","+self.get_index1cycles(lane)+") }'"
                             ),
                             bash.paste(
                                 None,
