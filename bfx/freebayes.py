@@ -50,7 +50,7 @@ freebayes -f {reference_genome} \\
     reference_genome=config.param(ini_section, 'genome_fasta', type='filepath'),
     bed_targets="-t " + config.param(ini_section, 'bed_targets', type='filepath', required=False) if config.param(ini_section, 'bed_targets', required=False) else "",
     options=options if options else "",
-    other_options=config.param(ini_section, 'other_options'),
+    other_options=config.param(ini_section, 'freebayes_options'),
     input_bam=input_bam,
     output_file=output_file
     )
@@ -67,7 +67,8 @@ def process_gvcf(intput_gvcf, output_masks, output_ambiguous, output_consensus, 
         ],
 
         command="""\
-process_gvcf.py -d 10 -m {output_masks} -a {output_ambiguous} -c {output_consensus} {intput_gvcf}""".format(
+process_gvcf.py {other_options} -m {output_masks} -a {output_ambiguous} -c {output_consensus} {intput_gvcf}""".format(
+            other_options=config.param(ini_section, 'process_gvcf_options'),
             output_masks=output_masks,
             output_ambiguous=output_ambiguous,
             output_consensus=output_consensus,
