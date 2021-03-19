@@ -891,13 +891,13 @@ done""".format(
             variant_directory = os.path.join("variant", sample.name)
 
 
-            input_prefix = os.path.join(variant_directory, sample.name) + ".freebayes_variants"
+            input_prefix = os.path.join(variant_directory, sample.name) + ".freebayes_calling"
 
             intput_masks = input_prefix + ".mask.txt"
             input_ambiguous_norm = input_prefix + ".ambiguous.norm.vcf.gz"
             input_fixed_norm = input_prefix + ".fixed.norm.vcf.gz"
 
-            output_prefix = os.path.join(consensus_directory, sample.name) + ".freebayes_variants"
+            output_prefix = os.path.join(consensus_directory, sample.name) + ".freebayes_calling"
             output_ambiguous_fasta = output_prefix + ".ambiguous.fasta"
             output_consensus_fasta = output_prefix + ".consensus.fasta"
 
