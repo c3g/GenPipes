@@ -774,7 +774,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                         command="""\\
 for v in "variants" "consensus"
 do
-    bcftools norm -f {reference_genome} {output_prefix}.$vt.vcf > {output_prefix}.$vt.norm.vcf
+    bcftools norm -f {reference_genome} {output_prefix}.$v.vcf > {output_prefix}.$v.norm.vcf
     bgzip -f {output_prefix}.$v.norm.vcf
     tabix -f -p vcf {output_prefix}.$v.norm.vcf.gz
 done && \\
