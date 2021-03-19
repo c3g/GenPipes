@@ -67,7 +67,7 @@ def process_gvcf(intput_gvcf, output_masks, output_ambiguous, output_consensus, 
         ],
 
         command="""\
-process_gvcf.py {other_options} -m {output_masks} -a {output_ambiguous} -c {output_consensus} {intput_gvcf}""".format(
+process_gvcf.py {other_options} -m {output_masks} -v {output_ambiguous} -c {output_consensus} {intput_gvcf}""".format(
             other_options=config.param(ini_section, 'process_gvcf_options'),
             output_masks=output_masks,
             output_ambiguous=output_ambiguous,
