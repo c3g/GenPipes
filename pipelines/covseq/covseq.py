@@ -892,7 +892,6 @@ done""".format(
 
 
             input_prefix = os.path.join(variant_directory, sample.name) + ".freebayes_variants"
-            input_gvcf = input_prefix + ".gvcf"
 
             intput_masks = input_prefix + ".mask.txt"
             input_ambiguous_norm = input_prefix + ".ambiguous.norm.vcf.gz"
@@ -910,24 +909,24 @@ done""".format(
                         output_ambiguous_fasta,
                         "-f " + config.param("DEFAULT", 'genome_fasta', type='filepath') + " -I "
                         ),
-                    pipe_jobs(
+                    pipe_jobs([
                         bcftools.consensus(
                             input_fixed_norm,
                             None,
                             "-f " + output_ambiguous_fasta + " -m " + intput_masks
                             ),
                         Job(
-                        input_files=[],
-                        output_files=[output_consensus_fasta],
-                        module_entries=[],
-                        command="""\\
+                            input_files=[],
+                            output_files=[output_consensus_fasta],
+                            module_entries=[],
+                            command="""\\
 sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".format(
     reference_genome_name=config.param("DEFAULT", 'assembly_synonyms'),
     sample_name=sample.name,
     output_consensus_fasta=output_consensus_fasta
     )
-            )
-                        )
+                            )
+                        ])
                     ],
                     name="bcftools_create_consensus." + sample.name,
                     samples=[sample]
