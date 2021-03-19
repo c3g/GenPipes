@@ -780,7 +780,7 @@ do
 done && \\
 for vt in "ambiguous" "fixed"
 do
-    cat {output_prefix}.consensus.norm.vcf | awk -v vartag=ConsensusTag=$vt '$0 ~ /^#/ || $0 ~ vartag' > {output_prefix}.$vt.norm.vcf
+    zcat {output_prefix}.consensus.norm.vcf.gz | awk -v vartag=ConsensusTag=$vt '$0 ~ /^#/ || $0 ~ vartag' > {output_prefix}.$vt.norm.vcf
     bgzip -f {output_prefix}.$vt.norm.vcf
     tabix -f -p vcf {output_prefix}.$vt.norm.vcf.gz
 done""".format(
