@@ -737,14 +737,16 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
 
-            output_prefix = os.path.join(variant_directory, sample.name) + ".freebayes_variants"
+            output_prefix = os.path.join(variant_directory, sample.name) + ".freebayes_calling"
             output_gvcf = output_prefix + ".gvcf"
 
-            output_masks = re.sub(r"\.gvcf$", ".mask.txt", output_gvcf)
-            output_ambiguous = re.sub(r"\.gvcf$", ".ambiguous.vcf", output_gvcf)
-            output_ambiguous_norm = re.sub(r"\.vcf$", ".norm.vcf", output_ambiguous)
-            output_consensus = re.sub(r"\.gvcf$", ".consensus.vcf", output_gvcf)
+            output_masks = output_prefix + ".mask.txt"
+            output_variants = output_prefix + ".variants.vcf"
+            output_variants_norm = re.sub(r"\.vcf$", ".norm.vcf", output_variants)
+            output_consensus = output_prefix + ".consensus.vcf"
             output_consensus_norm = re.sub(r"\.vcf$", ".norm.vcf", output_consensus)
+            output_ambiguous_norm = output_prefix + ".ambiguous.norm.vcf"
+            output_fixed_norm = output_prefix + ".fixed.norm.vcf"
 
             jobs.append(
                 concat_jobs([
@@ -758,21 +760,27 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                     freebayes.process_gvcf(
                         output_gvcf,
                         output_masks,
-                        output_ambiguous,
+                        output_variants,
                         output_consensus,
                         ini_section='freebayes_call_variants'
                         ),
                     Job(
-                        input_files=[output_ambiguous, output_consensus],
-                        output_files=[output_ambiguous_norm, output_ambiguous_norm + ".gz", output_consensus_norm, output_consensus_norm + ".gz"],
+                        input_files=[output_variants, output_consensus],
+                        output_files=[output_variants_norm, output_variants_norm + ".gz", output_consensus_norm, output_consensus_norm + ".gz", output_ambiguous_norm, output_ambiguous_norm + ".gz", output_fixed_norm, output_fixed_norm + ".gz"],
                         module_entries=[
                             [freebayes, 'module_bcftools'],
                             [freebayes, 'module_htslib']
                         ],
                         command="""\\
-for vt in "ambiguous" "consensus"
+for v in "variants" "consensus"
 do
     bcftools norm -f {reference_genome} {output_prefix}.$vt.vcf > {output_prefix}.$vt.norm.vcf
+    bgzip -f {output_prefix}.$v.norm.vcf
+    tabix -f -p vcf {output_prefix}.$v.norm.vcf.gz
+done && \\
+for vt in "ambiguous" "fixed"
+do
+    cat {output_prefix}.consensus.norm.vcf | awk -v vartag=ConsensusTag=$vt '$0 ~ /^#/ || $0 ~ vartag' > {output_prefix}.$vt.norm.vcf
     bgzip -f {output_prefix}.$vt.norm.vcf
     tabix -f -p vcf {output_prefix}.$vt.norm.vcf.gz
 done""".format(
@@ -882,31 +890,43 @@ done""".format(
             consensus_directory = os.path.join("consensus", sample.name)
             variant_directory = os.path.join("variant", sample.name)
 
+
             input_prefix = os.path.join(variant_directory, sample.name) + ".freebayes_variants"
             input_gvcf = input_prefix + ".gvcf"
 
-            intput_masks = re.sub(r"\.gvcf$", ".mask.txt", input_gvcf)
-            input_ambiguous = re.sub(r"\.gvcf$", ".ambiguous.vcf", input_gvcf)
-            input_ambiguous_norm = re.sub(r"\.vcf$", ".norm.vcf.gz", input_ambiguous)
-            input_consensus = re.sub(r"\.gvcf$", ".consensus.vcf", input_gvcf)
-            input_consensus_norm = re.sub(r"\.vcf$", ".norm.vcf.gz", input_consensus)
+            intput_masks = input_prefix + ".mask.txt"
+            input_ambiguous_norm = input_prefix + ".ambiguous.norm.vcf.gz"
+            input_fixed_norm = input_prefix + ".fixed.norm.vcf.gz"
 
             output_prefix = os.path.join(consensus_directory, sample.name) + ".freebayes_variants"
-            output_ambiguous_consensus = output_prefix + ".ambiguous.fasta"
-            output_consensus = output_prefix + ".consensus.fasta"
+            output_ambiguous_fasta = output_prefix + ".ambiguous.fasta"
+            output_consensus_fasta = output_prefix + ".consensus.fasta"
 
             jobs.append(
                 concat_jobs([
                     bash.mkdir(os.path.dirname(output_prefix)),
                     bcftools.consensus(
                         input_ambiguous_norm,
-                        output_ambiguous_consensus,
+                        output_ambiguous_fasta,
                         "-f " + config.param("DEFAULT", 'genome_fasta', type='filepath') + " -I "
                         ),
-                    bcftools.consensus(
-                        input_consensus_norm,
-                        output_consensus,
-                        "-f " + output_ambiguous_consensus + " -m " + intput_masks
+                    pipe_jobs(
+                        bcftools.consensus(
+                            input_fixed_norm,
+                            None,
+                            "-f " + output_ambiguous_fasta + " -m " + intput_masks
+                            ),
+                        Job(
+                        input_files=[],
+                        output_files=[output_consensus_fasta],
+                        module_entries=[],
+                        command="""\\
+sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".format(
+    reference_genome_name=config.param("DEFAULT", 'assembly_synonyms'),
+    sample_name=sample.name,
+    output_consensus_fasta=output_consensus_fasta
+    )
+            )
                         )
                     ],
                     name="bcftools_create_consensus." + sample.name,

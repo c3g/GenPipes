@@ -227,9 +227,10 @@ def consensus(input, output, options, ini_section='bcftools_consensus'):
         command="""\
 bcftools \\
   consensus {options} \\
-  {input} > {output}""".format(
+  {input}\\
+  {output}""".format(
         options=options if options else "",
         input=input,
-        output=output
+        output="> " + output if output else ""
         )
     )
