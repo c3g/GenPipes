@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-#!/bin/bash
-=======
 #!/usr/bin/env bash
->>>>>>> 1f66c6c99a2d466df7259210d21d3c202295b58f
 # Exit immediately on error
 set -eu -o pipefail
 
