@@ -742,58 +742,113 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
             output_masks = output_prefix + ".mask.txt"
             output_variants = output_prefix + ".variants.vcf"
-            output_variants_norm = re.sub(r"\.vcf$", ".norm.vcf", output_variants)
+            output_variants_norm = re.sub(r"\.vcf$", ".norm.vcf.gz", output_variants)
             output_consensus = output_prefix + ".consensus.vcf"
-            output_consensus_norm = re.sub(r"\.vcf$", ".norm.vcf", output_consensus)
-            output_ambiguous_norm = output_prefix + ".ambiguous.norm.vcf"
-            output_fixed_norm = output_prefix + ".fixed.norm.vcf"
+            output_consensus_norm = re.sub(r"\.vcf$", ".norm.vcf.gz", output_consensus)
+            output_ambiguous_norm = output_prefix + ".ambiguous.norm.vcf.gz"
+            output_fixed_norm = output_prefix + ".fixed.norm.vcf.gz"
 
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(variant_directory),
-                    freebayes.freebayes(
-                        input_bam,
-                        output_gvcf,
-                        options="--gvcf --gvcf-dont-use-chunk true",
-                        ini_section='freebayes_call_variants'
-                        ),
-                    freebayes.process_gvcf(
-                        output_gvcf,
-                        output_masks,
-                        output_variants,
-                        output_consensus,
-                        ini_section='freebayes_call_variants'
-                        ),
-                    Job(
-                        input_files=[output_variants, output_consensus],
-                        output_files=[output_variants_norm, output_variants_norm + ".gz", output_consensus_norm, output_consensus_norm + ".gz", output_ambiguous_norm, output_ambiguous_norm + ".gz", output_fixed_norm, output_fixed_norm + ".gz"],
-                        module_entries=[
-                            [freebayes, 'module_bcftools'],
-                            [freebayes, 'module_htslib']
-                        ],
-                        command="""\\
-for v in "variants" "consensus"
-do
-    bcftools norm -f {reference_genome} {output_prefix}.$v.vcf > {output_prefix}.$v.norm.vcf
-    bgzip -f {output_prefix}.$v.norm.vcf
-    tabix -f -p vcf {output_prefix}.$v.norm.vcf.gz
-done && \\
-for vt in "ambiguous" "fixed"
-do
-    zcat {output_prefix}.consensus.norm.vcf.gz | awk -v vartag=ConsensusTag=$vt '$0 ~ /^#/ || $0 ~ vartag' > {output_prefix}.$vt.norm.vcf
-    bgzip -f {output_prefix}.$vt.norm.vcf
-    tabix -f -p vcf {output_prefix}.$vt.norm.vcf.gz
-done""".format(
-    reference_genome=config.param("DEFAULT", 'genome_fasta', type='filepath'),
-    output_prefix=output_prefix
-    )
-            )
-                    ],
-                    name="freebayes_call_variants." + sample.name,
-                    samples=[sample],
-                    removable_files=[output_gvcf]
+            # TODO: Create bcftools norm in bfx and pipe bcftools jobs to have vcf.gz instead of both
+
+            job = concat_jobs([
+                bash.mkdir(variant_directory),
+                freebayes.freebayes(
+                    input_bam,
+                    output_gvcf,
+                    options="--gvcf --gvcf-dont-use-chunk true",
+                    ini_section='freebayes_call_variants'
+                    ),
+                freebayes.process_gvcf(
+                    output_gvcf,
+                    output_masks,
+                    output_variants,
+                    output_consensus,
+                    ini_section='freebayes_call_variants'
                     )
-                )
+                ])
+
+            for file in [output_variants, output_consensus]:
+                output_vcf_gz = re.sub(r"\.vcf$", ".norm.vcf.gz", file)
+                job = concat_jobs([
+                    job,
+                    pipe_jobs([
+                        bcftools.norm(
+                            file,
+                            None,
+                            "-f " + config.param("DEFAULT", 'genome_fasta', type='filepath'),
+                            ini_section='freebayes_call_variants'
+                            ),
+                        htslib.bgzip_tabix(
+                            None,
+                            output_vcf_gz
+                            )
+                        ])
+                    ])
+
+            for flag in ["ambiguous", "fixed"]:
+                output_vcf_gz = re.sub(r"\.norm\.vcf\.gz$", ".%s.norm.vcf.gz" % (flag), output_consensus_norm)
+                job = concat_jobs([
+                    job,
+                    pipe_jobs([
+                        bash.zcat(output_consensus_norm),
+                        bash.awk(
+                            None,
+                            None,
+                            "-v vartag=ConsensusTag=%s '$0 ~ /^#/ || $0 ~ vartag'" % (flag)),
+                        htslib.bgzip_tabix(
+                            None,
+                            output_vcf_gz
+                            )
+                        ])
+                    ])
+
+
+#             jobs.append(
+#                 concat_jobs([
+#                     bash.mkdir(variant_directory),
+#                     freebayes.freebayes(
+#                         input_bam,
+#                         output_gvcf,
+#                         options="--gvcf --gvcf-dont-use-chunk true",
+#                         ini_section='freebayes_call_variants'
+#                         ),
+#                     freebayes.process_gvcf(
+#                         output_gvcf,
+#                         output_masks,
+#                         output_variants,
+#                         output_consensus,
+#                         ini_section='freebayes_call_variants'
+#                         ),
+#                     Job(
+#                         input_files=[output_variants, output_consensus],
+#                         output_files=[output_variants_norm, output_variants_norm + ".gz", output_consensus_norm, output_consensus_norm + ".gz", output_ambiguous_norm, output_ambiguous_norm + ".gz", output_fixed_norm, output_fixed_norm + ".gz"],
+#                         module_entries=[
+#                             [freebayes, 'module_bcftools'],
+#                             [freebayes, 'module_htslib']
+#                         ],
+#                         command="""\\
+# for v in "variants" "consensus"
+# do
+#     bcftools norm -f {reference_genome} {output_prefix}.$v.vcf > {output_prefix}.$v.norm.vcf
+#     bgzip -f {output_prefix}.$v.norm.vcf
+#     tabix -f -p vcf {output_prefix}.$v.norm.vcf.gz
+# done && \\
+# for vt in "ambiguous" "fixed"
+# do
+#     zcat {output_prefix}.consensus.norm.vcf.gz | awk -v vartag=ConsensusTag=$vt '$0 ~ /^#/ || $0 ~ vartag' > {output_prefix}.$vt.norm.vcf
+#     bgzip -f {output_prefix}.$vt.norm.vcf
+#     tabix -f -p vcf {output_prefix}.$vt.norm.vcf.gz
+# done""".format(
+#     reference_genome=config.param("DEFAULT", 'genome_fasta', type='filepath'),
+#     output_prefix=output_prefix
+#     )
+#             )
+#                     ],
+#                     name="freebayes_call_variants." + sample.name,
+#                     samples=[sample],
+#                     removable_files=[output_gvcf]
+#                     )
+#                 )
 
         return jobs
 

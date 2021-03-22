@@ -88,3 +88,27 @@ rm -rf {source}""".format(
             source=source,
         )
     )
+
+def zcat(source):
+    return Job(
+        [source],
+        [],
+        command="""\
+zcat {source}""".format(
+            source=source,
+        )
+    )
+
+def awk(input, output, instructions, append=False):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+awk {instructions} {input} {append} {output}""".format(
+            instructions=instructions,
+            input=input if input else "",
+            append=">>" if append else "",
+            output=">" + output if output else "",
+        )
+    )
