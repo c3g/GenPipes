@@ -228,7 +228,7 @@ def awk(
         [input],
         [output],
         command="""\
-awk {instructions} {input}{output}""".format(
+awk {instructions} {input}{append}{output}""".format(
             instructions=instructions,
             input=input if input else "",
             append=" >" if append else " ",
