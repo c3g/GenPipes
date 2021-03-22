@@ -765,7 +765,11 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                     output_consensus,
                     ini_section='freebayes_call_variants'
                     )
-                ])
+                ],
+                name="freebayes_call_variants." + sample.name,
+                samples=[sample],
+                removable_files=[output_gvcf]
+                )
 
             for file in [output_variants, output_consensus]:
                 output_vcf_gz = re.sub(r"\.vcf$", ".norm.vcf.gz", file)
@@ -801,7 +805,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                             )
                         ])
                     ])
-
+            jobs.append(job)
 
 #             jobs.append(
 #                 concat_jobs([
