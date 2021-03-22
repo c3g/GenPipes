@@ -48,6 +48,10 @@ def align(
         genome_index_folder = config.param('star_align', 'genome_index_folder', required=True, type='dirpath').format(
             star_version=config.param('star_align', 'module_star').split('/')(-1)
         )
+        if not os.path.exists(genome_index_folder):
+            genome_index_folder = config.param('star_align', 'genome_index_folder', required=True, type='dirpath').format(
+            star_version=''
+        )        
 
     bam_name = "Aligned.sortedByCoord.out.bam" if sort_bam else "Aligned.out.bam"
     job = Job(
