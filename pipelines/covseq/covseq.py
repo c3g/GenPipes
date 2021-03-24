@@ -742,13 +742,12 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
             output_masks = output_prefix + ".mask.txt"
             output_variants = output_prefix + ".variants.vcf"
-            output_variants_norm = re.sub(r"\.vcf$", ".norm.vcf.gz", output_variants)
+            # output_variants_norm = re.sub(r"\.vcf$", ".norm.vcf.gz", output_variants)
             output_consensus = output_prefix + ".consensus.vcf"
             output_consensus_norm = re.sub(r"\.vcf$", ".norm.vcf.gz", output_consensus)
-            output_ambiguous_norm = output_prefix + ".ambiguous.norm.vcf.gz"
-            output_fixed_norm = output_prefix + ".fixed.norm.vcf.gz"
+            # output_ambiguous_norm = output_prefix + ".ambiguous.norm.vcf.gz"
+            # output_fixed_norm = output_prefix + ".fixed.norm.vcf.gz"
 
-            # TODO: Create bcftools norm in bfx and pipe bcftools jobs to have vcf.gz instead of both
 
             job = concat_jobs([
                 bash.mkdir(variant_directory),
