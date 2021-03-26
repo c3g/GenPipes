@@ -785,7 +785,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                     ])
 
             for flag in ["ambiguous", "fixed"]:
-                output_vcf_gz = re.sub(r"\.norm\.vcf\.gz$", ".%s.norm.vcf.gz" % (flag), output_consensus_norm)
+                output_vcf_gz = re.sub(r"\.consensus\.norm\.vcf\.gz$", ".%s.norm.vcf.gz" % (flag), output_consensus_norm)
                 job = concat_jobs([
                     job,
                     pipe_jobs([
