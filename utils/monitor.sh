@@ -61,7 +61,7 @@ submit () {
     if [ ${ret_code} -eq 0 ]; then
       trap - SIGTERM
       touch ${job_list}
-      echo ${job_script} was sucssfully submitted
+      echo ${job_script} was sucessfully submitted
       break
     else
       echo error in submition
