@@ -235,16 +235,15 @@ def concat_jobs(jobs, name="", input_dependency=[], output_dependency=[], sample
     return job
 
 # Create a new job by piping a list of jobs together
-def pipe_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=[]):
+def pipe_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=[], removable_files = []):
 
     job = Job(jobs[0].input_files, jobs[-1].output_files, name=name)
 
     # Merge all report/removable files and modules
     report_files = []
     multiqc_files = []
-    removable_files = []
     modules = []
-    for job_item in jobs:
+    for job_item in [job_item for job_item in jobs if job_item]:
         report_files.extend(job_item.report_files)
         multiqc_files.extend(job_item.multiqc_files)
         removable_files.extend(job_item.removable_files)

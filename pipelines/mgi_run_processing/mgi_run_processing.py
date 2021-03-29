@@ -743,20 +743,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 input1 = os.path.join(input_fastq_dir, raw_name_prefix + "_read_1.fq.gz")
                 input2 = os.path.join(input_fastq_dir, raw_name_prefix + "_read_2.fq.gz")
 
-    
-                demuxfastqs_outputs, fastq_jobs_to_concat, fastq_jobs_to_append = self.generate_demuxfastqs_outputs(lane)
-
-                fastq_job_output_dependency = []
-                if len(fastq_jobs_to_concat) == 0:
-                    fastq_job_output_dependency.extend(demuxfastqs_outputs)
-                else:
-                    for job in fastq_jobs_to_concat:
-                        fastq_job_output_dependency.extend(job.output_files)
+                demuxfastqs_outputs, postprocessing_jobs = self.generate_demuxfastqs_outputs(lane)
 
                 tmp_output_dir = os.path.dirname(demuxfastqs_outputs[0])    
                 tmp_metrics_file = os.path.join(tmp_output_dir, self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
                 metrics_file = os.path.join(self.output_dir, "L0" + lane,  "Unaligned." + lane, self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
-                fastq_job_output_dependency.append(metrics_file)
+                demuxfastqs_outputs.append(metrics_file)
 
                 demultiplex_job = run_processing_tools.demux_fastqs(
                     os.path.join(self.output_dir, "L0" + lane, "samplesheet." + lane + ".csv"),
@@ -780,16 +772,16 @@ class MGIRunProcessing(common.MUGQICPipeline):
                                 tmp_metrics_file,
                                 metrics_file
                             )
-                        ] + fastq_jobs_to_concat,
+                        ],
                         name="fastq.demultiplex." + self.run_id + "." + lane,
                         samples=self.samples[lane],
                         input_dependency=demultiplex_job.input_files,
-                        output_dependency=fastq_job_output_dependency
+                        output_dependency=demuxfastqs_outputs
                     )
                 )
     
-                if fastq_jobs_to_append:
-                    jobs_to_throttle.extend(fastq_jobs_to_append)
+                if postprocessing_jobs:
+                    jobs_to_throttle.extend(postprocessing_jobs)
     
                 for readset in self.readsets[lane]:
                     self.report_inputs[lane]['index'][readset.name] = [metrics_file]
@@ -914,7 +906,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                                 extract=unzip,
                                 use_tmp=True
                         )],
-                        name="fastqc." + readset.name + "_" + job_suffix + self.run_id + "." + lane,
+                        name="fastqc." + readset.name + "_" + job_suffix + "." + self.run_id + "." + lane,
                         samples=[readset.sample]
                     ))
     
@@ -1322,7 +1314,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         bash.cp(
                             os.path.join(os.path.dirname(readset.fastq2), "fastqc.R2", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.fastq2))),
                             os.path.join(self.output_dir, "L0" + lane, "report", "fastqc/")
-                    )]
+                        ) if readset.run_type == "PAIRED_END" else None
+                    ]
                 )
             )
             copy_fastqc_jobs[0].output_files.append(os.path.join(self.output_dir, "L0" + lane, "report", "fastqc"))
@@ -1741,16 +1734,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
     def generate_demuxfastqs_outputs(self, lane):
         demuxfastqs_outputs = []
-        fastq_jobs_to_append = []
-        fastq_jobs_to_concat = []
-        convert_job_input_dependencies = []
+        postprocessing_jobs = []
         output_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane)
 
         for readset in self.readsets[lane]:
             readset_r1_outputs = []
             readset_r2_outputs = []
-            readset_cat_jobs = []
-            readset_mv_jobs = []
 
             for index in readset.indexes:
                 readset_r1_outputs.append(
@@ -1771,281 +1760,143 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         os.path.join(output_dir, "tmp", "unmatched_R2.fastq.gz")
                     )
 
-            # R1 fastq
+            # Processing R1 fastq outputs :
+            #   convert headers from MGI to Illumina format using zcat and awk
             demuxfastqs_outputs.extend(readset_r1_outputs)
-            # if more than one barcode used for the readset, aggregate all R1 fastq into one file for the current readset
-            if len(readset_r1_outputs) > 1:
-                readset_cat_jobs.append(
-                    bash.mkdir(os.path.dirname(readset.fastq1))
-                )
-                readset_cat_jobs.append(
-                    pipe_jobs(
-                        [
-                            bash.cat(
-                                readset_r1_outputs,
-                                None,
-                                zip=True
-                            ),
-                            bash.pigz(
-                                None,
-                                readset.fastq1
-                            )
-                        ]
-                    )
-                )
-            # if only one barcode, then just rename the file
-            else:
-                readset_mv_jobs.append(
-                    bash.mkdir(os.path.dirname(readset.fastq1))
-                )
-                readset_mv_jobs.append(
-                    bash.mv(
-                        readset_r1_outputs[0],
-                        readset.fastq1
-                    )
-                )
-
-            # "raw R2" fastq (also contains barcode sequences)
-            if readset.run_type == "PAIRED_END":
-                demuxfastqs_outputs.extend(readset_r2_outputs)
-                raw_readset_fastq2 = os.path.join(
-                    os.path.dirname(readset_r2_outputs[0]),
-                    re.sub("_001.fastq.gz", "_001.raw.fastq.gz", os.path.basename(readset.fastq2))
-                )
-                # if more than one barcode used for the readset, aggregate all R2 fastq into one file for the current readset
-                if len(readset_r2_outputs) > 1:
-                    readset_cat_jobs.append(
+            postprocessing_jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.dirname(readset.fastq1)),
                         pipe_jobs(
                             [
                                 bash.cat(
-                                    readset_r2_outputs,
+                                    readset_r1_outputs,
                                     None,
                                     zip=True
                                 ),
-                                bash.pigz(
+                                bash.awk(
                                     None,
-                                    raw_readset_fastq2
+                                    None,
+                                    self.awk_read_1_processing_command()
+                                ),
+                                bash.gzip(
+                                    None,
+                                    readset.fastq1
                                 )
                             ]
                         )
-                    )
-                # if only one barcode, then just rename the file
-                else:
-                    readset_mv_jobs.append(
-                        bash.mv(
-                            readset_r2_outputs[0],
-                            raw_readset_fastq2
-                        )
-                    )
-            if readset_mv_jobs:
-                fastq_jobs_to_concat.append(concat_jobs(
-                    readset_mv_jobs + [
-                        bash.touch(os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".rawFastqDone"))
                     ],
-                    output_dependency=[os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".rawFastqDone")],
-                    name="fastq.mv." + readset.name + "." + self.run_id + "." + lane,
-                    samples=self.samples[lane]
-                ))
-
-            if readset_cat_jobs:
-                fastq_jobs_to_append.append(concat_jobs(
-                    readset_cat_jobs+ [
-                        bash.touch(os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".rawFastqDone"))
-                    ],
-                    output_dependency=[os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".rawFastqDone")],
-                    name="fastq.cat." + readset.name + "." + self.run_id + "." + lane,
-                    samples=self.samples[lane]
-                ))
-            convert_job_input_dependencies.append(os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".rawFastqDone"))
-
-            # R2, I1 & I2 extraction from "raw R2" fastq
-            fastq_jobs_to_append.append(
-                pipe_jobs(
-                    [
-                        bash.cat(
-                            raw_readset_fastq2,
-                            None,
-                            zip=True
-                        ),
-                        bash.cut(
-                            None,
-                            None,
-                            options="-c 1-" + self.get_read2cycles(lane)
-                        ),
-                        bash.pigz(
-                            None,
-                            readset.fastq2
-                        ),
-                        bash.touch(
-                            os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".R2ExtractionDone")
-                        )
-                    ],
-                    output_dependency=[os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".R2ExtractionDone")],
-                    name="fastq.extract_R2_fastq." + readset.name + "." + self.run_id + "." + lane,
+                    name="fastq.convert_R1." + readset.name + "." + self.run_id + "." + lane,
                     samples=self.samples[lane]
                 )
             )
-            convert_job_input_dependencies.append(os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".R2ExtractionDone"))
-            if self.is_dual_index[lane]:
-                # I1 fastq
-                fastq_jobs_to_append.append(
-                    pipe_jobs(
-                        [
-                            bash.cat(
-                                raw_readset_fastq2,
-                                None,
-                                zip=True
-                            ),
-                            bash.paste(
-                                None,
-                                None,
-                                options="-d '\\t' - - - -"
-                            ),
-                            bash.awk(
-                                None,
-                                None,
-                                "-F'\\t' '{gsub(/\\d$/, 1, $1) \"\\n\" substr($2,"+str(int(self.get_read2cycles(lane))+int(self.get_index2cycles(lane))+1)+","+self.get_index1cycles(lane)+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles(lane))+int(self.get_index2cycles(lane))+1)+","+self.get_index1cycles(lane)+") }'"
-                            ),
-                            bash.paste(
-                                None,
-                                readset.index_fastq1
-                            ),
-                            bash.touch(
-                                os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I1ExtractionDone")
-                            )
-                        ],
-                        output_dependency=[os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I1ExtractionDone")],
-                        name="fastq.extract_I1_fastq." + readset.name + "." + self.run_id + "." + lane,
-                        samples=self.samples[lane]
-                    )
-                )
-                # I2 fastq
-                fastq_jobs_to_append.append(
-                    pipe_jobs(
-                        [
-                            bash.cat(
-                                raw_readset_fastq2,
-                                None,
-                                zip=True
-                            ),
-                            bash.paste(
-                                None,
-                                None,
-                                options="-d '\\t' - - - -"
-                            ),
-                            bash.awk(
-                                None,
-                                None,
-                                "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index2cycles(lane)+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index2cycles(lane)+") }'"
-                            ),
-                            bash.paste(
-                                None,
-                                None,
-                                options="-d '\\t' - - - -"
-                            ),
-                            bash.awk(
-                                None,
-                                None,
-                                "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index2cycles(lane)+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index2cycles(lane)+") }'"
-                            ),
-                            bash.pigz(
-                                None,
-                                readset.index_fastq2
-                            ),
-                            bash.touch(
-                                os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I2ExtractionDone")
-                            )
-                        ],
-                        output_dependency=[os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I2ExtractionDone")],
-                        name="fastq.extract_I2_fastq." + readset.name + "." + self.run_id + "." + lane,
-                        samples=self.samples[lane]
-                    )
-                )
-                convert_job_input_dependencies.extend(
-                    [
-                        os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I1ExtractionDone"),
-                        os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I2ExtractionDone")
-                    ]
-                )
-            else:
-                # I1 fastq
-                fastq_jobs_to_append.append(
-                    pipe_jobs(
-                        [
-                            bash.cat(
-                                raw_readset_fastq2,
-                                None,
-                                zip=True
-                            ),
-                            bash.paste(
-                                None,
-                                None,
-                                options="-d '\\t' - - - -"
-                            ),
-                            bash.awk(
-                                None,
-                                None,
-                                "-F'\\t' '{{gsub(/\\d$/, 1, $1) \"\\n\" substr($2,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index1cycles(lane)+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index1cycles(lane)+") }'"
-                            ),
-                            bash.pigz(
-                                None,
-                                "-F'\\t' '{print $1 \"\\n\" substr($2,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index1cycles(lane)+") \"\\n\" $3 \"\\n\" substr($4,"+str(int(self.get_read2cycles(lane))+1)+","+self.get_index1cycles(lane)+") }'"
-                            ),
-                            bash.gzip(
-                                None,
-                                readset.index_fastq1
-                            ),
-                            bash.touch(
-                                os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I1ExtractionDone")
-                            )
-                        ],
-                        output_dependency=[os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I1ExtractionDone")],
-                        name="fastq.extract_I1_fastq." + readset.name + "." + self.run_id + "." + lane,
-                        samples=self.samples[lane]
-                    )
-                )
-                convert_job_input_dependencies.append(os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".I1ExtractionDone"))
 
-            # Conversion of the fastq headers MGI to Illumina format
-            convert_inputs = [
-               readset.fastq1
-            ]
-            if readset.run_type == "PAIRED_END": convert_inputs.append(readset.fastq2)
-            if self.is_dual_index[lane]:
-                convert_inputs.append(readset.index_fastq1)
-                convert_inputs.append(readset.index_fastq2)
-            else:
-                convert_inputs.append(readset.index_fastq1)
-            # Input fastqs are all in fastq.gz format at this point of the pipeline
-            convert_outputs = [os.path.splitext(os.path.splitext(in_file)[0])[0] + ".converted.fastq.gz" for in_file in convert_inputs]
-
-            fastq_jobs_to_append.append(
-                concat_jobs(
-                    [
-                        tools.convert_fastq_headers(
-                            convert_inputs,
-                            convert_outputs,
-                            self.instrument,
-                            self.run_counter
-                        )
-                    ] + [
-                        bash.mv(
-                            convert,
-                            non_convert,
-                            force=True
-                        ) for non_convert, convert in zip(convert_inputs, convert_outputs)
-                    ] + [
-                        bash.touch(
-                            os.path.join(output_dir, "tmp", readset.name + "." + self.run_id + "." + lane + ".convertionDone")
-                        )
-                    ],
-                    input_dependency=convert_job_input_dependencies,
-                    output_dependency=convert_inputs,
-                    name="fastq.convert_headers." + readset.name + "." + self.run_id + "." + lane,
-                    samples=self.samples[lane]
+            # Processing "raw R2" fastq (also contains barcode sequences) :
+            #   convert headers from MGI to Illumina format 
+            #   while extracting I1 and I2 to build clean R2, I1 and R2 fastq
+            #   using zcat and awk
+            if readset.run_type == "PAIRED_END":
+                demuxfastqs_outputs.extend(readset_r2_outputs)
+                postprocessing_jobs.append(
+                    pipe_jobs(
+                        [
+                            bash.cat(
+                                readset_r2_outputs,
+                                None,
+                                zip=True
+                            ),
+                            bash.awk(
+                                None,
+                                None,
+                                self.awk_read_2_processing_command(readset, lane)
+                            )
+                        ],
+                        name="fastq.convert_R2." + readset.name + "." + self.run_id + "." + lane,
+                        samples=self.samples[lane]
+                    )
                 )
+
+        return demuxfastqs_outputs, postprocessing_jobs
+
+    def awk_read_1_processing_command(self):
+        """
+        Returns a string serving as instructions for awk.
+        This produces the command to convert the header of R1 fastq file from MGI to Illumina format
+        """
+        return """-v inst=\"{instrument}\" -v run=\"{run}\" 'match($0, /@(V[0-9]+)L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):([ACTGN]+)\/([0-9]{{1}})/, head_items) {{
+ gsub("^0*", "", head_items[3])
+ gsub("^0*", "", head_items[4])
+ gsub("^0*", "", head_items[5])
+ print "@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:" head_items[6]
+ next
+}} 1'""".format(
+            instrument=self.instrument,
+            run=self.run_counter
+        )
+
+    def awk_read_2_processing_command(self, readset, lane):
+        """
+        Returns a string serving as instructions for awk.
+        This produces the command to extract I1 (and I2 if exists) sequence from the R2 fastq,
+        creating R2 (without barcode sequences) I1 and I2 fastq files from R2 fastq file.
+        This will also convert the headers of the fastqs from MGI Illumina format
+        """
+        if self.is_dual_index[lane]:
+            return """-v inst=\"{{instrument}}\" -v run=\"{{run}}\" -v read_len=\"{{read_len}}\" -v barcode_len=\"{{barcode_len}}\" '{{
+ header=$0
+ getline seq
+ getline sep
+ getline qual
+ match(header, /@(V[0-9]+)L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):([ACTGN]+)\/([0-9]{{1}})/, head_items)
+ gsub("^0*", "", head_items[3]); gsub("^0*", "", head_items[4]); gsub("^0*", "", head_items[5])
+ header="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:" head_items[6]
+ b1_head="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:1"
+ r2_seq=substr(seq,1,read_len)
+ i1_seq=substr(seq,read_len+barcode_len+1,barcode_len)
+ i2_seq=substr(seq,read_len+1,barcode_len)
+ r2_qual=substr(qual,1,read_len)
+ i1_qual=substr(qual,read_len+barcode_len+1,barcode_len)
+ i2_qual=substr(qual,read_len+1,barcode_len)
+ print header "\n" r2_seq "\n" sep "\n" r2_qual | "gzip > {{r2_out}{
+ print b1_head "\n" i1_seq "\n" sep "\n" i1_qual | "gzip > {{i1_out}}
+ print header "\n" i2_seq "\n" sep "\n" i2_qual | "gzip > {{i2_out}}
+}}'
+""".format(
+                intrument=self.instrument,
+                run=self.run_counter,
+                read_len=self.get_read2cycles(lane),
+                barcode_len=self.get_index2cycles(lane),
+                r2_out=readset.fastq2,
+                i1_out=readset.index_fastq1,
+                i2_out=readset.index_fastq2
             )
-        return demuxfastqs_outputs, fastq_jobs_to_concat, fastq_jobs_to_append
+        else:
+            return """-v inst=\"{{instrument}}\" -v run=\"{{run}}\" -v read_len=\"{{read_len}}\" -v barcode_len=\"{{barcode_len}}\" '{{
+ header=$0
+ getline seq
+ getline sep
+ getline qual
+ match(header, /@(V[0-9]+)L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):([ACTGN]+)\/([0-9]{{1}})/, head_items)
+ gsub("^0*", "", head_items[3]); gsub("^0*", "", head_items[4]); gsub("^0*", "", head_items[5])
+ header="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:" head_items[6]
+ b1_head="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:1"
+ r2_seq=substr(seq,1,read_len)
+ i1_seq=substr(seq,read_len+1,barcode_len)
+ r2_qual=substr(qual,1,read_len)
+ i1_qual=substr(qual,read_len+1,barcode_len)
+ print header "\n" r2_seq "\n" sep "\n" r2_qual | "gzip > {{r2_out}}
+ print b1_head "\n" i1_seq "\n" sep "\n" i1_qual | "gzip > {{i1_out}}
+}}'
+""".format(
+                intrument=self.instrument,
+                run=self.run_counter,
+                read_len=self.get_read2cycles(lane),
+                barcode_len=self.get_index2cycles(lane),
+                r2_out=readset.fastq2,
+                i1_out=readset.index_fastq1
+            )
+
+
 
     def get_smallest_index_length(self, lane):
         """
@@ -2136,19 +1987,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.final_notification
         ]
 
-def parseMetricsFile(metrics_file):
-    reader = open(metrics_file, 'rb').readlines()
-    metrics_tsv = []
-    header = []
-    for row in reader:
-        if row!="\n" and not row[0].startswith('#'):
-            if not header:
-                header = row.strip().split("\t")
-            else:
-                metrics_tsv.append(dict(zip(header, row.strip().split("\t"))))
-    return metrics_tsv
-
-def distance(str1, str2):
+def distance(
+    str1,
+    str2
+    ):
     """
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
