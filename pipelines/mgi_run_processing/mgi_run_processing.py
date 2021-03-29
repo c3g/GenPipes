@@ -885,7 +885,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     ]
                 for input1, outputs in input_dict.items():
                     unzip = False
-                    if "R1" in input1:
+                    if input1 == readset.fastq1:
                         job_suffix = "R1."
                         input2 = None
                         unzip = True
@@ -893,11 +893,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             self.report_inputs[lane]['index'][readset.name] = [outputs[0]]
                         else:
                             self.report_inputs[lane]['index'][readset.name].append(outputs[0])
-                    elif "R2" in input1:
+                    elif input1 == readset.fastq2:
                         job_suffix = "R2."
                         input2 = None
                         unzip=True
-                    elif "I1" in input1:
+                    elif input1 == readset.index_fastq1:
                         job_suffix = "Barcodes."
                         input2 = readset.index_fastq2 if self.is_dual_index[lane] else None
                     lane_jobs.append(
