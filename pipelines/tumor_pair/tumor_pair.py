@@ -535,7 +535,7 @@ END`""".format(
                     normal_inputs,
                     os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.realigned.bam")
                 )
-                job.name = "sambamba_merge_realigned." + tumor_pair.normal.name
+                job.name = "sambamba_merge_realigned." + tumor_pair.name + "." + tumor_pair.normal.name
                 job.samples = [tumor_pair.normal.name]
                 jobs.append(job)
 
@@ -543,7 +543,7 @@ END`""".format(
                     tumor_inputs,
                     os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.realigned.bam")
                 )
-                job.name = "sambamba_merge_realigned." + tumor_pair.tumor.name
+                job.name = "sambamba_merge_realigned." + tumor_pair.name + "." + tumor_pair.tumor.name
                 job.samples = [tumor_pair.tumor.name]
                 jobs.append(job)
 
@@ -582,7 +582,7 @@ END`""".format(
                 normal_input,
                 normal_output
             )
-            job.name = "sambamba_mark_duplicates." + tumor_pair.normal.name
+            job.name = "sambamba_mark_duplicates." + tumor_pair.name + "." + tumor_pair.normal.name
             job.samples = [tumor_pair.normal.name]
             jobs.append(job)
 
@@ -590,7 +590,7 @@ END`""".format(
                 tumor_input,
                 tumor_output
             )
-            job.name = "sambamba_mark_duplicates." + tumor_pair.tumor.name
+            job.name = "sambamba_mark_duplicates." + tumor_pair.name + "." + tumor_pair.tumor.name
             job.samples = [tumor_pair.tumor.name]
             jobs.append(job)
 
@@ -652,7 +652,7 @@ END`""".format(
                         intervals=interval_list
                     )
                 ],
-                    name="gatk_base_recalibrator." + tumor_pair.normal.name
+                    name="gatk_base_recalibrator." + tumor_pair.name + "." + tumor_pair.normal.name
                 )
             )
         
@@ -664,7 +664,7 @@ END`""".format(
                         normal_base_recalibrator_output
                     ),
                 ],
-                    name="gatk_print_reads." + tumor_pair.normal.name
+                    name="gatk_print_reads." + tumor_pair.name + "." + tumor_pair.normal.name
                 )
             )
 
@@ -676,7 +676,7 @@ END`""".format(
                         intervals=interval_list
                     )
                 ],
-                    name="gatk_base_recalibrator." + tumor_pair.tumor.name
+                    name="gatk_base_recalibrator." + tumor_pair.name + "." + tumor_pair.tumor.name
                 )
             )
 
@@ -688,7 +688,7 @@ END`""".format(
                         tumor_base_recalibrator_output
                     ),
                 ],
-                    name="gatk_print_reads." + tumor_pair.tumor.name
+                    name="gatk_print_reads." + tumor_pair.name + "." + tumor_pair.tumor.name
                 )
             )
             
@@ -790,14 +790,14 @@ END`""".format(
                     input_normal,
                     pileup_normal
                 ),
-            ], name="conpair_concordance_contamination.pileup." + tumor_pair.normal.name))
+            ], name="conpair_concordance_contamination.pileup." + tumor_pair.name + "." + tumor_pair.normal.name))
 
             jobs.append(concat_jobs([
                 conpair.pileup(
                     input_tumor,
                     pileup_tumor
                 ),
-            ], name="conpair_concordance_contamination.pileup." + tumor_pair.tumor.name))
+            ], name="conpair_concordance_contamination.pileup." + tumor_pair.name + "." + tumor_pair.tumor.name))
 
             jobs.append(concat_jobs([
                 bash.mkdir(
@@ -1347,17 +1347,18 @@ END`""".format(
             if readset.run_type == "PAIRED_END":
                 library[readset.sample] = "PAIRED_END"
     
-        print(library)
         jobs = []
         for tumor_pair in self.tumor_pairs.itervalues():
             if (tumor_pair.multiple_normal == 1):
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
+                normal_metrics = os.path.join(tumor_pair.normal.name)
     
             tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
 
-            normal_picard_directory = os.path.join(self.output_dir, "metrics", "dna", tumor_pair.normal.name, "picard_metrics")
+            normal_picard_directory = os.path.join(self.output_dir, "metrics", "dna", normal_metrics, "picard_metrics")
             tumor_picard_directory = os.path.join(self.output_dir, "metrics", "dna", tumor_pair.tumor.name, "picard_metrics")
         
             [normal_input] = self.select_input_files([
@@ -1390,7 +1391,7 @@ END`""".format(
                         library_type=library[tumor_pair.normal]
                     )
                 ],
-                    name="picard_collect_multiple_metrics." + tumor_pair.normal.name,
+                    name="picard_collect_multiple_metrics." + tumor_pair.name + "." + tumor_pair.normal.name,
                     samples=[tumor_pair.normal.name]
                 )
             )
@@ -1403,7 +1404,7 @@ END`""".format(
                         os.path.join(normal_picard_directory, tumor_pair.normal.name + ".oxog_metrics.txt")
                     )
                 ],
-                    name="picard_collect_oxog_metrics." + tumor_pair.normal.name,
+                    name="picard_collect_oxog_metrics." + tumor_pair.name + "." + tumor_pair.normal.name,
                     samples=[tumor_pair.normal.name]
                 )
             )
@@ -1418,7 +1419,7 @@ END`""".format(
                         os.path.join(normal_picard_directory, tumor_pair.normal.name + ".qcbias_summary_metrics.txt")
                     )
                 ],
-                    name="picard_collect_gcbias_metrics." + tumor_pair.normal.name,
+                    name="picard_collect_gcbias_metrics." + tumor_pair.name + "." + tumor_pair.normal.name,
                     samples=[tumor_pair.normal.name]
                 )
             )
@@ -1437,7 +1438,7 @@ END`""".format(
                         library_type=library[tumor_pair.tumor]
                     )
                 ],
-                    name="picard_collect_multiple_metrics." + tumor_pair.tumor.name,
+                    name="picard_collect_multiple_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name,
                     samples=[tumor_pair.tumor.name]
                 )
             )
@@ -1450,7 +1451,7 @@ END`""".format(
                         os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".oxog_metrics.txt")
                     )
                 ],
-                    name="picard_collect_oxog_metrics." + tumor_pair.tumor.name,
+                    name="picard_collect_oxog_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name,
                     samples=[tumor_pair.tumor.name]
                 )
             )
@@ -1465,7 +1466,7 @@ END`""".format(
                         os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".qcbias_summary_metrics.txt")
                     )
                 ],
-                    name="picard_collect_gcbias_metrics." + tumor_pair.tumor.name,
+                    name="picard_collect_gcbias_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name,
                     samples=[tumor_pair.tumor.name]
                 )
             )
@@ -1479,12 +1480,14 @@ END`""".format(
         for tumor_pair in self.tumor_pairs.itervalues():
             if (tumor_pair.multiple_normal == 1):
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
-    
+                normal_metrics = os.path.join(tumor_pair.normal.name)
+                
             tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
 
-            normal_qualimap_directory = os.path.join(self.output_dir, "metrics", "dna", tumor_pair.normal.name,
+            normal_qualimap_directory = os.path.join(self.output_dir, "metrics", "dna", normal_metrics,
                                                      "qualimap", tumor_pair.normal.name)
             tumor_qualimap_directory = os.path.join(self.output_dir, "metrics", "dna", tumor_pair.tumor.name,
                                                      "qualimap", tumor_pair.tumor.name)
@@ -1529,7 +1532,7 @@ END`""".format(
                         options
                     )
                 ],
-                    name="dna_sample_qualimap." + tumor_pair.normal.name,
+                    name="dna_sample_qualimap." + tumor_pair.name + "." + tumor_pair.normal.name,
                     samples=[tumor_pair.normal.name]
                 )
             )
@@ -1547,7 +1550,7 @@ END`""".format(
                         options
                     )
                 ],
-                    name="dna_sample_qualimap." + tumor_pair.tumor.name,
+                    name="dna_sample_qualimap." + tumor_pair.name + "." + tumor_pair.tumor.name,
                     samples=[tumor_pair.tumor.name]
                 )
             )
@@ -1561,12 +1564,14 @@ END`""".format(
         for tumor_pair in self.tumor_pairs.itervalues():
             if (tumor_pair.multiple_normal == 1):
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
-    
+                normal_metrics = os.path.join(tumor_pair.normal.name)
+
             tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
             
-            normal_fastqc_directory = os.path.join(self.output_dir, "metrics", "dna", tumor_pair.normal.name, "fastqc")
+            normal_fastqc_directory = os.path.join(self.output_dir, "metrics", "dna", normal_metrics, "fastqc")
 
             tumor_fastqc_directory = os.path.join(self.output_dir, "metrics", "dna", tumor_pair.tumor.name, "fastqc")
   
@@ -1590,7 +1595,7 @@ END`""".format(
         
             tumor_output_dir = os.path.join(self.output_dir, tumor_fastqc_directory)
             tumor_file = re.sub(".bam", "", os.path.basename(tumor_input))
-            tumor_output = os.path.join(normal_fastqc_directory, tumor_file + "_fastqc.zip")
+            tumor_output = os.path.join(tumor_alignment_directory, tumor_file + "_fastqc.zip")
         
             adapter_file = config.param('fastqc', 'adapter_file', required=False, type='filepath')
             normal_adapter_job = None
@@ -1603,7 +1608,7 @@ END`""".format(
                     fastqc=True
                 )
                 tumor_adapter_job = adapters.create(
-                    tumor_pair.normal.readsets[0],
+                    tumor_pair.tumor.readsets[0],
                     os.path.join(tumor_output_dir, "adapter.tsv"),
                     fastqc=True
                 )
@@ -1620,10 +1625,10 @@ END`""".format(
                         None,
                         normal_output_dir,
                         normal_output,
-                        adapter_file
+                        os.path.join(normal_output_dir, "adapter.tsv")
                     )
                 ],
-                    name="fastqc." + tumor_pair.normal.name,
+                    name="fastqc." + tumor_pair.name + "." + tumor_pair.normal.name,
                     samples=[tumor_pair.normal.name]
                 )
             )
@@ -1640,10 +1645,10 @@ END`""".format(
                         None,
                         tumor_output_dir,
                         tumor_output,
-                        adapter_file
+                        os.path.join(tumor_output_dir, "adapter.tsv")
                     )
                 ],
-                    name="fastqc." + tumor_pair.tumor.name,
+                    name="fastqc." + tumor_pair.name + "." + tumor_pair.tumor.name,
                     samples=[tumor_pair.tumor.name]
                 )
             )
@@ -1657,7 +1662,15 @@ END`""".format(
         metrics_directory = os.path.join(self.output_dir, "metrics", "dna")
         input_dep = []
         for tumor_pair in self.tumor_pairs.itervalues():
-            normal_directory = os.path.join(metrics_directory, tumor_pair.normal.name)
+            input_dep = []
+            inputs = []
+            if (tumor_pair.multiple_normal == 1):
+                normal_directory = os.path.join(metrics_directory, tumor_pair.normal.name, tumor_pair.name)
+            else:
+                normal_directory = os.path.join(metrics_directory, tumor_pair.normal.name)
+    
+            tumor_directory = os.path.join(metrics_directory, tumor_pair.tumor.name)
+
             input_normal_oxog = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".oxog_metrics.txt")
             input_normal_qcbias = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name +".qcbias_metrics.txt")
             input_normal_all_picard = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".all.metrics.quality_distribution.pdf")
@@ -1668,7 +1681,6 @@ END`""".format(
                 [os.path.join(normal_directory, "fastqc", tumor_pair.normal.name + "_fastqc.zip")],
             ])
 
-            tumor_directory = os.path.join(metrics_directory, tumor_pair.tumor.name)
             input_tumor_oxog = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".oxog_metrics.txt")
             input_tumor_qcbias = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".qcbias_metrics.txt")
             input_tumor_all_picard = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all.metrics.quality_distribution.pdf")
@@ -2656,15 +2668,17 @@ END`""".format(
                  [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
                  [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]])
 
-            jobs.append(concat_jobs([
-                bash.mkdir(
-                    vardict_directory,
-                    remove=True
-                )
-                ], name="vardict_paired.mkdir")
-            )
+ #           jobs.append(concat_jobs([
+ #               bash.mkdir(
+ #                   vardict_directory,
+ #                   remove=True
+ #               )
+ #               ], name="vardict_paired.mkdir")
+ #           )
 
+            bed_file_list = []
             if use_bed:
+                os.mkdir(vardict_directory)
                 bed = self.samples[0].readsets[0].beds[0]
                 bed_intervals, interval_size = bed_file.parse_bed_file(
                     os.path.expandvars(bed)
@@ -2678,6 +2692,7 @@ END`""".format(
                         output=os.path.join(vardict_directory, "vardict.tmp")
                     )
                 else:
+                    os.mkdir(vardict_directory)
                     for idx in range(nb_jobs):
                         bed_file_list.append(os.path.join(vardict_directory, "vardict.tmp." + str(idx) + ".bed"))
 
@@ -3043,9 +3058,16 @@ END`""".format(
             log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.itervalues():
+            if (tumor_pair.multiple_normal == 1):
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+            else:
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
+    
+            tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
+            
             annot_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble", tumor_pair.name, "rawAnnotation")
-            input_normal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            input_tumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            input_tumor = os.path.join( tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
             input_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.vcf.gz")
 
             if nb_jobs == 1:
@@ -3118,9 +3140,16 @@ END`""".format(
             log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.itervalues():
+            if (tumor_pair.multiple_normal == 1):
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+            else:
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
+    
+            tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
+            
             annot_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble", tumor_pair.name, "rawAnnotation")
-            input_normal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            input_tumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            input_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
             input_germline_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.vcf.gz")
     
             if nb_jobs == 1:
@@ -3798,19 +3827,26 @@ END`""".format(
         jobs = []
         nb_jobs = config.param('sequenza', 'nb_jobs', type='posint')
         for tumor_pair in self.tumor_pairs.itervalues():
+            if (tumor_pair.multiple_normal == 1):
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+            else:
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
+    
+            tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
+            
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             sequenza_directory = os.path.join(pair_directory, "sequenza")
             rawSequenza_directory = os.path.join(sequenza_directory, "rawSequenza")
             
             inputNormal = self.select_input_files(
-                [[os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
-                 [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam")],
-                 [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.bam")]])
+                [[os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
+                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]])
 
             inputTumor = self.select_input_files(
-                [[os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
-                 [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                 [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")]])
+                [[os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]])
 
             rawOutput = os.path.join(sequenza_directory, "rawSequenza", tumor_pair.name + ".")
             output = os.path.join(sequenza_directory, tumor_pair.name + ".")
@@ -3959,20 +3995,27 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
+            if (tumor_pair.multiple_normal == 1):
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+            else:
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
+    
+            tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
+            
             pair_dir = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             purple_dir = os.path.join(pair_dir, "purple")
             amber_dir = os.path.join(purple_dir, "rawAmber")
             cobalt_dir = os.path.join(purple_dir, "rawCobalt")
         
             inputNormal = self.select_input_files(
-                [[os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
-                 [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam")],
-                 [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.bam")]])
+                [[os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
+                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]])
         
             inputTumor = self.select_input_files(
-                [[os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
-                 [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                 [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")]])
+                [[os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]])
 
             somatic_snv = None
             if(os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.vt.vcf.gz")):
@@ -4044,7 +4087,13 @@ END`""".format(
 
         jobs = []
         for tumor_pair in self.tumor_pairs.itervalues():
-
+            if (tumor_pair.multiple_normal == 1):
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+            else:
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
+    
+            tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
+            
             pair_directory = os.path.join("SVariants", tumor_pair.name)
             delly_directory = os.path.join(pair_directory, "rawDelly")
 
@@ -4056,9 +4105,9 @@ END`""".format(
             cancer_pair.write(tumor_pair.tumor.name + "\ttumor\n")
             cancer_pair.write(tumor_pair.normal.name + "\tcontrol\n")
 
-            inputNormal = os.path.join("alignment", tumor_pair.normal.name,
+            inputNormal = os.path.join(normal_alignment_directory,
                                        tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            inputTumor = os.path.join("alignment", tumor_pair.tumor.name,
+            inputTumor = os.path.join(tumor_alignment_directory,
                                       tumor_pair.tumor.name + ".sorted.dup.recal.bam")
 
             inputs = [inputTumor, inputNormal]
@@ -4098,7 +4147,6 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-
             pair_directory = os.path.join("SVariants", tumor_pair.name)
             final_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name, tumor_pair.name)
             delly_directory = os.path.join(pair_directory, "rawDelly")
@@ -4282,14 +4330,19 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
+            if (tumor_pair.multiple_normal == 1):
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+            else:
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
+    
+            tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
+            
             pair_directory = os.path.join("SVariants", tumor_pair.name)
             manta_directory = os.path.abspath(os.path.join(pair_directory, "rawManta"))
             output_prefix = os.path.abspath(os.path.join(pair_directory, tumor_pair.name))
 
-            mkdir_job = Job(command="mkdir -p " + manta_directory, removable_files=[manta_directory], samples = [tumor_pair.normal, tumor_pair.tumor])
-
-            inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            inputNormal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            inputTumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
             manta_somatic_output = os.path.join(manta_directory, "results/variants/somaticSV.vcf.gz")
             manta_germline_output = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz")
 
@@ -4482,16 +4535,23 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
+            if (tumor_pair.multiple_normal == 1):
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+            else:
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
+    
+            tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
+            
             pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name)
             lumpy_directory = os.path.join(pair_directory, "rawLumpy")
-            inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            inputNormal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            inputTumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
 
-            discordants_normal = os.path.join(lumpy_directory, tumor_pair.normal.name + ".discordants.sorted.bam")
-            discordants_tumor = os.path.join(lumpy_directory, tumor_pair.tumor.name + ".discordants.sorted.bam")
+            discordants_normal = os.path.join(lumpy_directory, normal_alignment_directory + ".discordants.sorted.bam")
+            discordants_tumor = os.path.join(lumpy_directory, tumor_alignment_directory + ".discordants.sorted.bam")
 
-            splitters_tumor = os.path.join(lumpy_directory, tumor_pair.tumor.name + ".splitters.sorted.bam")
-            splitters_normal = os.path.join(lumpy_directory, tumor_pair.normal.name + ".splitters.sorted.bam")
+            splitters_tumor = os.path.join(lumpy_directory, normal_alignment_directory + ".splitters.sorted.bam")
+            splitters_normal = os.path.join(lumpy_directory, tumor_alignment_directory + ".splitters.sorted.bam")
 
             output_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.vcf")
             gzip_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.vcf.gz")
@@ -4796,10 +4856,17 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
+            if (tumor_pair.multiple_normal == 1):
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+            else:
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
+    
+            tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
+            
             pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name)
             wham_directory = os.path.join(pair_directory, "rawWham")
-            inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            inputNormal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            inputTumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
             output_vcf = os.path.join(wham_directory, tumor_pair.name + ".wham.vcf")
             merge_vcf = os.path.join(wham_directory, tumor_pair.name + ".wham.merged.vcf")
             genotyped_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.merged.genotyped.vcf.gz")
@@ -5015,10 +5082,17 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
+            if (tumor_pair.multiple_normal == 1):
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+            else:
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
+    
+            tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
+            
             pair_directory = os.path.join(self.output_dir, "SVariants", tumor_pair.name)
             cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
-            inputNormal = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            inputTumor = os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            inputNormal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            inputTumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
             tarcov_cnn = os.path.join(cnvkit_dir, tumor_pair.tumor.name + ".sorted.dup.targetcoverage.cnn")
             antitarcov_cnn = os.path.join(cnvkit_dir, tumor_pair.tumor.name + ".sorted.dup.antitargetcoverage.cnn")
             ref_cnn = os.path.join(cnvkit_dir, tumor_pair.name + ".reference.cnn")
@@ -5401,16 +5475,23 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
+            if (tumor_pair.multiple_normal == 1):
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+            else:
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
+    
+            tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
+            
             sv_directory = os.path.join("SVariants", tumor_pair.name)
             scones_directory = os.path.join(sv_directory, "SCoNEs")
             inputNormal = self.select_input_files(
-                [[os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
-                 [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.dup.bam")],
-                 [os.path.join("alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.bam")]])[0]
+                [[os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
+                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]])[0]
             inputTumor = self.select_input_files(
-                [[os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
-                 [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                 [os.path.join("alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.bam")]])[0]
+                [[os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]])[0]
 
             bined_count_file = os.path.join(scones_directory, tumor_pair.normal.name + ".bin" + window_size + ".tsv")
             bined_count_fix_file = os.path.join(scones_directory, tumor_pair.normal.name + ".bin" + window_size + ".fix.tsv")
@@ -5485,13 +5566,18 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
+            if (tumor_pair.multiple_normal == 1):
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
+            else:
+                normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
+    
+            tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
+            
             pair_directory = os.path.join("SVariants", tumor_pair.name)
             svaba_directory = os.path.join(pair_directory, "rawSvaba")
-            abs_alignment = os.path.abspath("alignment")
-            input_normal = os.path.join(abs_alignment, tumor_pair.normal.name,
-                                        tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            input_tumor = os.path.join(abs_alignment, tumor_pair.tumor.name,
-                                       tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+
+            input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
+            input_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
 
             somatic_input = tumor_pair.name + ".svaba.somatic.sv.vcf"
             somatic_output = os.path.join(os.path.abspath(pair_directory), tumor_pair.name + ".svaba.somatic.vcf")
