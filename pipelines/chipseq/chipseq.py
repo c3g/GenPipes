@@ -2025,7 +2025,7 @@ pandoc --to=markdown \\
             output,
             ini_section='multiqc_report'
             )
-        job.name = "multiqc_report." + ".".join([sample.name for sample in self.samples])
+        job.name = "multiqc_report." + str(time.time())#".".join([sample.name for sample in self.samples])
 
         jobs.append(job)
 
