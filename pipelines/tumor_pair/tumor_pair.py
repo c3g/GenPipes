@@ -1595,7 +1595,7 @@ END`""".format(
         
             tumor_output_dir = os.path.join(self.output_dir, tumor_fastqc_directory)
             tumor_file = re.sub(".bam", "", os.path.basename(tumor_input))
-            tumor_output = os.path.join(tumor_alignment_directory, tumor_file + "_fastqc.zip")
+            tumor_output = os.path.join(tumor_fastqc_directory, tumor_file + "_fastqc.zip")
         
             adapter_file = config.param('fastqc', 'adapter_file', required=False, type='filepath')
             normal_adapter_job = None
@@ -2668,13 +2668,13 @@ END`""".format(
                  [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
                  [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]])
 
- #           jobs.append(concat_jobs([
- #               bash.mkdir(
- #                   vardict_directory,
- #                   remove=True
- #               )
- #               ], name="vardict_paired.mkdir")
- #           )
+            jobs.append(concat_jobs([
+               bash.mkdir(
+                   vardict_directory,
+                   remove=True
+               )
+            ], name="vardict_paired.mkdir")
+            )
 
             bed_file_list = []
             if use_bed:
