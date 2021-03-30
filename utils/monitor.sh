@@ -64,9 +64,9 @@ submit () {
       echo ${job_script} was sucssfully submitted
       break
     else
-      echo error in submition
+      echo error in submission
       cancel_jobs ${job_list}
-      echo restarting submition
+      echo restarting submission
     fi
   done
 }
