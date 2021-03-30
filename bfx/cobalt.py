@@ -28,12 +28,12 @@ from core.config import *
 from core.job import *
 
 def run(normal, tumor, normal_name, tumor_name, output_dir, other_options=None):
-    normal_output = normal_name + ".cobalt.ratio.pcf"
-    tumor_output = tumor_name + ".cobalt.ratio.pcf"
+    normal_output = os.path.join(output_dir, normal_name + ".cobalt.ratio.pcf")
+    tumor_output = os.path.join(output_dir, tumor_name + ".cobalt.ratio.pcf")
 
     return Job(
         [normal, tumor],
-        [output_dir, normal_output, tumor_output],
+        [normal_output, tumor_output],
         [
             ['cobalt', 'module_java'],
             ['cobalt', 'module_R'],

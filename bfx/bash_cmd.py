@@ -31,7 +31,8 @@ def mkdir(folder, remove=False):
         [folder],
         [],
         command="""\
-mkdir -p {directory}""".format(
+mkdir -p {directory} && \\
+touch {directory}""".format(
             directory=folder
         ),
         removable_files=[folder] if remove else []

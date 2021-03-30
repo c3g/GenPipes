@@ -28,11 +28,11 @@ from core.config import *
 from core.job import *
 
 def run(normal, tumor, normal_name, tumor_name, output_dir, other_options=None):
-    tumor_output = tumor_name + ".amber.baf.pcf"
+    tumor_output = os.path.join(output_dir, tumor_name + ".amber.baf.pcf")
 
     return Job(
         [normal, tumor],
-        [output_dir, tumor_output],
+        [tumor_output],
         [
             ['amber', 'module_java'],
             ['amber', 'module_R'],

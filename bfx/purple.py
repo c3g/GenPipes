@@ -28,10 +28,13 @@ from core.config import *
 from core.job import *
 
 def run(amber, cobalt, normal_name, tumor_name, output_dir, somatic_snv=None):
-
+    amber_input = os.path.join(amber, tumor_name + ".amber.baf.pcf")
+    cobalt_input = os.path.join(cobalt, tumor_name + ".cobalt.ratio.pcf")
+    purple_output = os.path.join(output_dir, tumor_name + ".purple.purity.tsv")
+    
     return Job(
-        [amber, cobalt],
-        [output_dir],
+        [amber_input, cobalt_input],
+        [purple_output],
         [
             ['purple', 'module_java'],
             ['purple', 'module_R'],
