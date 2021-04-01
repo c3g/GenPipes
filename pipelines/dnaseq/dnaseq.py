@@ -3007,7 +3007,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         remove=True
                     ),
                     delly.call(
-                        [input],
+                        input,
                         output_bcf,
                         sv_type
                     ),
