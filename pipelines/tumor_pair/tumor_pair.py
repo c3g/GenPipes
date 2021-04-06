@@ -43,6 +43,7 @@ from pipelines.dnaseq import dnaseq
 #utilizes
 from bfx import sambamba
 from bfx import bcftools
+from bfx import picard2
 from bfx import tools
 from bfx import bed_file
 from bfx import metric_tools
@@ -2647,6 +2648,70 @@ END`""".format(
         use_bed = config.param('vardict_paired', 'use_bed', type='boolean', required=True)
         genome_dictionary = config.param('DEFAULT', 'genome_dictionary', type='filepath')
 
+        interval_list = []
+        for idx in range(nb_jobs):
+            interval_list.append(os.path.join(self.output_dir, "pairedVariants", "splitjobs", "interval_list", str(idx).zfill(4) + "-scattered.interval_list"))
+        #
+        # splitjobs_dir = os.path.join(self.output_dir, "pairedVariants", "splitjobs", "vardict" )
+        # if use_bed:
+        #     jobs.append(concat_jobs([
+        #         bash.mkdir(
+        #             os.path.join(splitjobs_dir,
+        #                          "exome",
+        #                          "interval_list"
+        #                          ),
+        #             remove=True
+        #         ),
+        #         gatk4.bed2interval_list(
+        #             genome_dictionary,
+        #             self.samples[0].readsets[0].beds[0],
+        #             os.path.join(splitjobs_dir,
+        #                          "exome",
+        #                          "interval_list",
+        #                          config.param('vardict_paired', 'assembly') + ".interval_list"
+        #                          )
+        #         ),
+        #         gatk4.splitInterval(
+        #             os.path.join(splitjobs_dir,
+        #                          "exome",
+        #                          "interval_list",
+        #                          config.param('vardict_paired', 'assembly') + ".interval_list"
+        #                          ),
+        #             os.path.join(splitjobs_dir, "exome", "interval_list"),
+        #             nb_jobs,
+        #             options="--subdivision-mode BALANCING_WITHOUT_INTERVAL_SUBDIVISION"
+        #         ),
+        #         ], name="vardict_paired.create_splitjobs")
+        #     )
+        # else:
+        #     jobs.append(concat_jobs([
+        #         bash.mkdir(
+        #             os.path.join(splitjobs_dir, "wgs", "interval_list"),
+        #             remove=True
+        #         ),
+        #         picard2.scatterIntervalsByNs(
+        #             config.param('vardict_paired', 'genome_fasta', type='filepath'),
+        #             os.path.join(splitjobs_dir,
+        #                          "wgs",
+        #                          "interval_list",
+        #                          config.param('vardict_paired', 'assembly') + ".interval_list"
+        #                          ),
+        #             options="OUTPUT_TYPE=ACGT"
+        #         ),
+        #         gatk4.splitInterval(
+        #             os.path.join(splitjobs_dir,
+        #                          "wgs",
+        #                          "interval_list",
+        #                          config.param('vardict_paired', 'assembly') + ".interval_list"
+        #                          ),
+        #             os.path.join(splitjobs_dir,
+        #                          "wgs",
+        #                          "interval_list"),
+        #             nb_jobs,
+        #         ),
+        #         ], name="vardict_paired.create_splitjobs")
+        #     )
+            
         for tumor_pair in self.tumor_pairs.itervalues():
             if (tumor_pair.multiple_normal == 1):
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
@@ -2668,44 +2733,23 @@ END`""".format(
                  [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
                  [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]])
 
-            jobs.append(concat_jobs([
-               bash.mkdir(
-                   vardict_directory,
-                   remove=True
-               )
-            ], name="vardict_paired.mkdir")
-            )
-
-            bed_file_list = []
             if use_bed:
-                os.mkdir(vardict_directory)
-                bed = self.samples[0].readsets[0].beds[0]
-                bed_intervals, interval_size = bed_file.parse_bed_file(
-                    os.path.expandvars(bed)
-                )
-                last_bed_file = 'vardict.tmp.' + str(nb_jobs - 1) + '.bed'
-                if not os.path.exists(last_bed_file):
-                    bed_file_list = bed_file.split_by_size(
-                        bed_intervals,
-                        interval_size,
-                        nb_jobs,
-                        output=os.path.join(vardict_directory, "vardict.tmp")
-                    )
-                else:
-                    os.mkdir(vardict_directory)
-                    for idx in range(nb_jobs):
-                        bed_file_list.append(os.path.join(vardict_directory, "vardict.tmp." + str(idx) + ".bed"))
-
                 idx = 0
-                for bf in bed_file_list:
-                    output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz")
-                    jobs.append(pipe_jobs([
+                for interval in interval_list:
+                    bed = re.sub("interval_list$", "bed", interval)
+                    output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx).zfill(4) + ".vardict.vcf.gz")
+                    jobs.append(concat_jobs([
+                        gatk4.interval_list2bed(
+                            interval,
+                            bed
+                        ),
+                        pipe_jobs([
                         vardict.paired_java(
                             input_normal[0],
                             input_tumor[0],
                             tumor_pair.name,
                             None,
-                            bf
+                            bed
                         ),
                         vardict.testsomatic(
                             None,
@@ -2721,29 +2765,40 @@ END`""".format(
                             None,
                             output
                         ),
-                        ], name="vardict_paired." + tumor_pair.name + "." + str(idx))
+                        ]),
+                    ],name="vardict_paired." + tumor_pair.name + "." + str(idx).zfill(4))
                     )
                     idx += 1
             else:
                 beds = []
                 for idx in range(nb_jobs):
                     beds.append(os.path.join(vardict_directory, "chr." + str(idx) + ".bed"))
-                if nb_jobs == 1:
-                    bedjob = vardict.dict2beds(genome_dictionary, beds)
-                    output = os.path.join(vardict_directory, tumor_pair.name + ".0.vardict.vcf.gz")
+            
+                # jobs.append(concat_jobs([
+                #     bash.mkdir(
+                #         vardict_directory,
+                #         remove=True
+                #     ),
+                #     vardict.dict2beds(
+                #         genome_dictionary,
+                #         beds
+                #     ),
+                #     ], name="vardict.genome.beds." + tumor_pair.name)
+                # )
+                for idx in range(nb_jobs):
+                    output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz")
                     jobs.append(concat_jobs([
                         bash.mkdir(
                             vardict_directory,
                             remove=True
                         ),
-                        bedjob,
                         pipe_jobs([
                             vardict.paired_java(
                                 input_normal[0],
                                 input_tumor[0],
                                 tumor_pair.name,
                                 None,
-                                beds.pop()
+                                beds[idx]
                             ),
                             vardict.testsomatic(
                                 None,
@@ -2757,49 +2812,12 @@ END`""".format(
                             ),
                             htslib.bgzip_tabix(
                                 None,
-                                os.path.abspath(output)
+                                output
                             ),
                         ]),
-                    ], name="vardict_paired." + tumor_pair.name + ".0"))
-                    
-                else:
-                    bedjob = vardict.dict2beds(
-                        genome_dictionary,
-                        beds
+                    ], name="vardict_paired." + tumor_pair.name + "." + str(idx))
                     )
-                    jobs.append(concat_jobs([bedjob], name="vardict.genome.beds." + tumor_pair.name))
-
-                    for idx in range(nb_jobs):
-                        output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz")
-                        jobs.append(concat_jobs([
-                            bash.mkdir(
-                                vardict_directory,
-                                remove=True
-                            ),
-                            pipe_jobs([
-                                vardict.paired_java(
-                                    input_normal[0],
-                                    input_tumor[0],
-                                    tumor_pair.name,
-                                    None,
-                                    beds[idx]
-                                ),
-                                vardict.testsomatic(
-                                    None,
-                                    None
-                                ),
-                                vardict.var2vcf(
-                                    None,
-                                    tumor_pair.normal.name,
-                                    tumor_pair.tumor.name,
-                                    None
-                                ),
-                                htslib.bgzip_tabix(
-                                    None,
-                                    output
-                                ),
-                            ]),
-                        ], name="vardict_paired." + tumor_pair.name + "." + str(idx)))
+                
         return jobs
 
     def merge_filter_paired_vardict(self):
@@ -3023,11 +3041,11 @@ END`""".format(
             output_ensemble = os.path.join(paired_ensemble_directory,
                                            tumor_pair.name + ".ensemble.germline.vt.vcf.gz")
 
-            if os.path.isdir(os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt-work")):
-                rm_job = bash.rm(
-                    os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt-work")
-                )
-                jobs.append(rm_job)
+            # if os.path.isdir(os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt-work")):
+            #     rm_job = bash.rm(
+            #         os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt-work")
+            #     )
+            #     jobs.append(rm_job)
 
             jobs.append(concat_jobs([
                 # Create output directory since it is not done by default by GATK tools
