@@ -1797,6 +1797,9 @@ class MGIRunProcessing(common.MUGQICPipeline):
             #   using zcat and awk
             if readset.run_type == "PAIRED_END":
                 demuxfastqs_outputs.extend(readset_r2_outputs)
+                outputs = [readset.fastq2, readset.index_fastq1]
+                if self.is_dual_index[lane]:
+                    outputs.extend(readset.index_fastq2)
                 postprocessing_jobs.append(
                     pipe_jobs(
                         [
@@ -1811,6 +1814,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                                 self.awk_read_2_processing_command(readset, lane)
                             )
                         ],
+                        output_dependency=outputs,
                         name="fastq.convert_R2." + readset.name + "." + self.run_id + "." + lane,
                         samples=self.samples[lane]
                     )
