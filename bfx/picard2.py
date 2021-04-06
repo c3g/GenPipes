@@ -683,9 +683,30 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         )
     )
 
-def ScatterIntervalsByNs(reference,
+def interval_list2bed(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['picard_interval_list2bed', 'module_java'],
+            ['picard_interval_list2bed', 'module_picard']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar IntervalListToBed \\
+  INPUT={input} \\
+  OUTPUT={output}""".format(
+            tmp_dir=config.param('picard_interval_list2bed', 'tmp_dir'),
+            java_other_options=config.param('picard_interval_list2bed', 'java_other_options'),
+            ram=config.param('picard_interval_list2bed', 'ram'),
+            input=input,
+            output=output
+            )
+        )
+
+def scatterIntervalsByNs(reference,
                   output,
-                  exclude_intervals=None):
+                  options= None):
+#                  exclude_intervals=None):
 
     return Job(
         [reference],
@@ -695,16 +716,16 @@ def ScatterIntervalsByNs(reference,
             ['picard_ScatterIntervalsByNs', 'module_picard']
         ],
         command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar " \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar \\
   ScatterIntervalsByNs {options} \\
-  --reference {reference} \\
-  --OUTPUT {output}{exclude_intervals}""".format(
+  REFERENCE={reference} \\
+  OUTPUT={output}""".format(
             tmp_dir=config.param('picard_ScatterIntervalsByNs', 'tmp_dir'),
-            options=config.param('picard_ScatterIntervalsByNs', 'options'),
+            options=options if options else config.param('picard_ScatterIntervalsByNs', 'options'),
             java_other_options=config.param('picard_ScatterIntervalsByNs', 'java_other_options'),
             ram=config.param('picard_ScatterIntervalsByNs', 'ram'),
             reference=reference if reference else config.param('picard_ScatterIntervalsByNs', 'genome_fasta', type='filepath'),
-            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
+#            exclude_intervals=exclude_intervals if exclude_intervals else "".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
             output=output
         )
     )

@@ -1713,9 +1713,12 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             )
         )
 
-def bed2interval_list(dictionary, bed, output):
-    if config.param('picard_bed2interval_list', 'module_gatk').split("/")[2] < "4":
-        return picard2.bed2interval_list(
+def bed2interval_list(dictionary,
+                      bed,
+                      output):
+	
+    if config.param('gatk_bed2interval_list', 'module_gatk').split("/")[2] < "4":
+        return gatk.bed2interval_list(
             dictionary,
             bed,
             output
@@ -1725,8 +1728,8 @@ def bed2interval_list(dictionary, bed, output):
         [dictionary, bed],
         [output],
         [
-            ['picard_bed2interval_list', 'module_java'],
-            ['picard_bed2interval_list', 'module_picard']
+            ['gatk_bed2interval_list', 'module_java'],
+            ['gatk_bed2interval_list', 'module_gatk']
         ],
         command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
@@ -1734,39 +1737,100 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --INPUT {bed} \\
   --SEQUENCE_DICTIONARY {dictionary} \\
   --OUTPUT {output}""".format(
-            tmp_dir=config.param('picard_bed2interval_list', 'tmp_dir'),
-            java_other_options=config.param('picard_bed2interval_list', 'java_other_options'),
-            ram=config.param('picard_bed2interval_list', 'ram'),
-            dictionary=dictionary if dictionary else config.param('picard_bed2interval_list', 'genome_dictionary', type='filepath'),
+            tmp_dir=config.param('gatk_bed2interval_list', 'tmp_dir'),
+            java_other_options=config.param('gatk_bed2interval_list', 'java_other_options'),
+            ram=config.param('gatk_bed2interval_list', 'ram'),
+            dictionary=dictionary if dictionary else config.param('gatk_bed2interval_list', 'genome_dictionary', type='filepath'),
             bed=bed,
             output=output
             )
         )
 
-def splitInterval(intervals,
-                  output,
-                  exclude_intervals=None):
+def interval_list2bed(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['gatk_interval_list2bed', 'module_java'],
+            ['gatk_interval_list2bed', 'module_gatk']
+        ],
+        command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  IntervalListToBed \\
+  INPUT={input} \\
+  OUTPUT={output}""".format(
+            tmp_dir=config.param('gatk_interval_list2bed', 'tmp_dir'),
+            java_other_options=config.param('gatk_interval_list2bed', 'java_other_options'),
+            ram=config.param('gatk_interval_list2bed', 'ram'),
+            input=input,
+            output=output
+            )
+        )
+
+def preProcessInterval(reference,
+                       intervals,
+                       output,
+                       options = None):
+#                  exclude_intervals=None):
 
     return Job(
         [intervals],
         [output],
         [
+            ['gatk_preProcessInterval', 'module_java'],
+            ['gatk_preProcessInterval', 'module_gatk']
+        ],
+        command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  PreprocessIntervals {options} \\
+  --reference {reference} \\
+  --intervals {intervals} \\
+  --output {output}""".format(
+            tmp_dir=config.param('gatk_preProcessInterval', 'tmp_dir'),
+            options=options if options else config.param('gatk_preProcessInterval', 'options'),
+            java_other_options=config.param('gatk_preProcessInterval', 'java_other_options'),
+            ram=config.param('gatk_preProcessInterval', 'ram'),
+            reference=reference if reference else config.param('gatk_preProcessInterval', 'genome_fasta', type='filepath'),
+            intervals=intervals,
+#            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
+            output=output
+        )
+    )
+
+def splitInterval(intervals,
+                  output,
+                  jobs,
+                  options = None):
+#                  exclude_intervals=None):
+
+    interval_list = []
+    for idx in range(jobs):
+     interval_list.append(
+         os.path.join(output, str(idx).zfill(4) + "-scattered.interval_list")
+         )
+
+    return Job(
+        [intervals],
+        interval_list,
+        [
             ['gatk_splitInterval', 'module_java'],
-            ['gatk_splitInterval', 'module_gatk4']
+            ['gatk_splitInterval', 'module_gatk']
         ],
         command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   SplitIntervals {options} \\
+  --scatter-count {jobs} \\
   --reference {reference} \\
   --intervals {intervals} \\
-  --OUTPUT {output}{exclude_intervals}""".format(
+  --output {output}""".format(
             tmp_dir=config.param('gatk_splitInterval', 'tmp_dir'),
-            options=config.param('gatk_splitInterval', 'options'),
+            options=options if options else config.param('gatk_splitInterval', 'options'),
+            jobs=jobs,
             java_other_options=config.param('gatk_splitInterval', 'java_other_options'),
             ram=config.param('gatk_splitInterval', 'ram'),
             reference=config.param('gatk_splitInterval', 'genome_fasta', type='filepath'),
             intervals=intervals,
-            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
+#            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
             output=output
         )
     )
