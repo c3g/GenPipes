@@ -56,7 +56,7 @@ submit () {
   while true; do
     # clean cancel if there is an interruption
     trap "echo cleanup; cancel_trap ${job_list}" EXIT
-    bash ${job_script}
+    bash ${job_script} 2> ${job_script%.sh}.err
     ret_code=$?
     if [ ${ret_code} -eq 0 ]; then
       trap - SIGTERM
