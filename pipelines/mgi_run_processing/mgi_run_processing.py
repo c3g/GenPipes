@@ -1861,9 +1861,9 @@ class MGIRunProcessing(common.MUGQICPipeline):
  r2_qual=substr(qual,1,read_len)
  i1_qual=substr(qual,read_len+barcode_len+1,barcode_len)
  i2_qual=substr(qual,read_len+1,barcode_len)
- print header "\n" r2_seq "\n" sep "\n" r2_qual | "gzip > {{r2_out}{
- print b1_head "\n" i1_seq "\n" sep "\n" i1_qual | "gzip > {{i1_out}}
- print header "\n" i2_seq "\n" sep "\n" i2_qual | "gzip > {{i2_out}}
+ print header "\\n" r2_seq "\\n" sep "\\n" r2_qual | "gzip > {r2_out}"
+ print b1_head "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
+ print header "\\n" i2_seq "\\n" sep "\\n" i2_qual | "gzip > {i2_out}"
 }}'
 """.format(
                 intrument=self.instrument,
@@ -1888,8 +1888,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
  i1_seq=substr(seq,read_len+1,barcode_len)
  r2_qual=substr(qual,1,read_len)
  i1_qual=substr(qual,read_len+1,barcode_len)
- print header "\n" r2_seq "\n" sep "\n" r2_qual | "gzip > {{r2_out}}
- print b1_head "\n" i1_seq "\n" sep "\n" i1_qual | "gzip > {{i1_out}}
+ print header "\\n" r2_seq "\\n" sep "\\n" r2_qual | "gzip > {r2_out}"
+ print b1_head "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
 }}'
 """.format(
                 intrument=self.instrument,
