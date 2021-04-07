@@ -3419,7 +3419,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         jobs = []
 
-        for sample in self.samples.itervalues():
+        for sample in self.samples:
             pair_directory = os.path.join("SVariants", sample.name, sample.name)
 
             jobs.append(concat_jobs([
