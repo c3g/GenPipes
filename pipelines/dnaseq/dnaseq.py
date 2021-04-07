@@ -2473,7 +2473,7 @@ pandoc \\
             ], name="merge_filter_bcf.index"))
             
         else:
-            inputs = ["variants/rawBCF/allSamples." + region + ".vcf.gz" for region in self.generate_approximate_windows(nb_jobs)]
+            inputs = ["variants/rawBCF/allSamples." + region + ".bcf" for region in self.generate_approximate_windows(nb_jobs)]
 
             jobs.append(
                 concat_jobs([
