@@ -43,9 +43,7 @@ from pipelines.dnaseq import dnaseq
 #utilizes
 from bfx import sambamba
 from bfx import bcftools
-from bfx import picard2
 from bfx import tools
-from bfx import bed_file
 from bfx import metric_tools
 from bfx import bvatools
 from bfx import vt
@@ -165,24 +163,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
             except:
                 return False
 
-    def build_ped_file(self, directory, tumor_pair):
-        ped_file = os.path.join(directory, tumor_pair.name + ".ped")
-        ped_job = Job(
-            command="""\
-`cat > {ped_file}
- END
-#Family_ID\tIndividual_ID\tPaternal_ID\tMaternal_ID\tSex\tPhenotype\tEthnicity
-1\t{normal}\t-9\t-9\t0\t1\t-9
-1\t{tumor}\t-9\t-9\t0\t2\t-9
-END`""".format(
-            ped_file=ped_file,
-            normal=tumor_pair.normal.name,
-            tumor=tumor_pair.tumor.name,
-            )
-        )
-
-        return ped_job
-
     def sym_link_fastq_pair(self):
         jobs = []
 
@@ -202,8 +182,8 @@ END`""".format(
                 [readset.fastq2], [os.path.join("raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")]])
                                 for readset in tumor_pair.readsets[tumor_pair.tumor.name]][0][0])
             
-            for key,input in inputs.iteritems():
-                for readset in input:
+            for key, inputFile in inputs.iteritems():
+                for readset in inputFile:
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
                             readset,
@@ -249,7 +229,7 @@ END`""".format(
             log.warning("Number of realign jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            if(tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -487,7 +467,7 @@ END`""".format(
         nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', type='posint')
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -560,7 +540,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -610,7 +590,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -704,7 +684,7 @@ END`""".format(
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -769,7 +749,7 @@ END`""".format(
 
         jobs = []
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -827,7 +807,7 @@ END`""".format(
 
         jobs = []
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -1350,7 +1330,7 @@ END`""".format(
     
         jobs = []
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -1479,7 +1459,7 @@ END`""".format(
     
         jobs = []
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -1563,7 +1543,7 @@ END`""".format(
     
         jobs = []
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -1665,7 +1645,7 @@ END`""".format(
         for tumor_pair in self.tumor_pairs.itervalues():
             input_dep = []
             inputs = []
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_directory = os.path.join(metrics_directory, tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_directory = os.path.join(metrics_directory, tumor_pair.normal.name)
@@ -1746,7 +1726,7 @@ END`""".format(
 
         jobs = []
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -2122,7 +2102,7 @@ END`""".format(
             log.warning("Number of mutect jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -2651,38 +2631,38 @@ END`""".format(
         interval_list = []
         for idx in range(nb_jobs):
             interval_list.append(os.path.join(self.output_dir, "pairedVariants", "splitjobs", "interval_list", str(idx).zfill(4) + "-scattered.interval_list"))
-        #
-        # splitjobs_dir = os.path.join(self.output_dir, "pairedVariants", "splitjobs", "vardict" )
-        # if use_bed:
-        #     jobs.append(concat_jobs([
-        #         bash.mkdir(
-        #             os.path.join(splitjobs_dir,
-        #                          "exome",
-        #                          "interval_list"
-        #                          ),
-        #             remove=True
-        #         ),
-        #         gatk4.bed2interval_list(
-        #             genome_dictionary,
-        #             self.samples[0].readsets[0].beds[0],
-        #             os.path.join(splitjobs_dir,
-        #                          "exome",
-        #                          "interval_list",
-        #                          config.param('vardict_paired', 'assembly') + ".interval_list"
-        #                          )
-        #         ),
-        #         gatk4.splitInterval(
-        #             os.path.join(splitjobs_dir,
-        #                          "exome",
-        #                          "interval_list",
-        #                          config.param('vardict_paired', 'assembly') + ".interval_list"
-        #                          ),
-        #             os.path.join(splitjobs_dir, "exome", "interval_list"),
-        #             nb_jobs,
-        #             options="--subdivision-mode BALANCING_WITHOUT_INTERVAL_SUBDIVISION"
-        #         ),
-        #         ], name="vardict_paired.create_splitjobs")
-        #     )
+
+        splitjobs_dir = os.path.join(self.output_dir, "pairedVariants", "splitjobs", "vardict" )
+        if use_bed:
+            jobs.append(concat_jobs([
+                bash.mkdir(
+                    os.path.join(splitjobs_dir,
+                                 "exome",
+                                 "interval_list"
+                                 ),
+                    remove=True
+                ),
+                gatk4.bed2interval_list(
+                    genome_dictionary,
+                    self.samples[0].readsets[0].beds[0],
+                    os.path.join(splitjobs_dir,
+                                 "exome",
+                                 "interval_list",
+                                 config.param('vardict_paired', 'assembly') + ".interval_list"
+                                 )
+                ),
+                gatk4.splitInterval(
+                    os.path.join(splitjobs_dir,
+                                 "exome",
+                                 "interval_list",
+                                 config.param('vardict_paired', 'assembly') + ".interval_list"
+                                 ),
+                    os.path.join(splitjobs_dir, "exome", "interval_list"),
+                    nb_jobs,
+                    options="--subdivision-mode BALANCING_WITHOUT_INTERVAL_SUBDIVISION"
+                ),
+                ], name="vardict_paired.create_splitjobs")
+            )
         # else:
         #     jobs.append(concat_jobs([
         #         bash.mkdir(
@@ -2774,17 +2754,17 @@ END`""".format(
                 for idx in range(nb_jobs):
                     beds.append(os.path.join(vardict_directory, "chr." + str(idx) + ".bed"))
             
-                # jobs.append(concat_jobs([
-                #     bash.mkdir(
-                #         vardict_directory,
-                #         remove=True
-                #     ),
-                #     vardict.dict2beds(
-                #         genome_dictionary,
-                #         beds
-                #     ),
-                #     ], name="vardict.genome.beds." + tumor_pair.name)
-                # )
+                jobs.append(concat_jobs([
+                    bash.mkdir(
+                        vardict_directory,
+                        remove=True
+                    ),
+                    vardict.dict2beds(
+                        genome_dictionary,
+                        beds
+                    ),
+                    ], name="vardict.genome.beds." + tumor_pair.name)
+                )
                 for idx in range(nb_jobs):
                     output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz")
                     jobs.append(concat_jobs([
@@ -3845,7 +3825,7 @@ END`""".format(
         jobs = []
         nb_jobs = config.param('sequenza', 'nb_jobs', type='posint')
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -4013,7 +3993,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -4036,7 +4016,7 @@ END`""".format(
                  [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]])
 
             somatic_snv = None
-            if(os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.vt.vcf.gz")):
+            if os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.vt.vcf.gz"):
                 somatic_snv = os.path.join(pair_dir, tumor_pair.name + ".strelka2.somatic.purple.vcf.gz")
                 jobs.append(concat_jobs([
                     purple.strelka2_convert(
@@ -4105,7 +4085,7 @@ END`""".format(
 
         jobs = []
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -4348,7 +4328,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -4553,7 +4533,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -4874,7 +4854,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -5100,7 +5080,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -5493,7 +5473,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -5584,7 +5564,7 @@ END`""".format(
         jobs = []
 
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
