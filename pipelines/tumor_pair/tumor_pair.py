@@ -2823,6 +2823,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
         nb_jobs = config.param('vardict_paired', 'nb_jobs', type='posint')
+        use_bed = config.param('vardict_paired', 'use_bed', type='boolean', required=True)
 
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
@@ -2833,7 +2834,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             output_somatic = os.path.join(pair_directory, tumor_pair.name + ".vardict.somatic.vt.vcf.gz")
             output_germline_loh = os.path.join(pair_directory, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
 
-            if nb_jobs == 1:
+            if nb_jobs == 1 and use_bed:
                 inputs = os.path.join(vardict_directory, tumor_pair.name + "." + str(0).zfill(4) + ".vardict.vcf.gz")
                 jobs.append(concat_jobs([
                     Job(
