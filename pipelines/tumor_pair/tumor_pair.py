@@ -517,7 +517,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.realigned.bam")
                 )
                 job.name = "sambamba_merge_realigned." + tumor_pair.name + "." + tumor_pair.normal.name
-                job.samples = [tumor_pair.normal.name]
+                job.samples = [tumor_pair.normal]
                 jobs.append(job)
 
                 job = sambamba.merge(
@@ -525,7 +525,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.realigned.bam")
                 )
                 job.name = "sambamba_merge_realigned." + tumor_pair.name + "." + tumor_pair.tumor.name
-                job.samples = [tumor_pair.tumor.name]
+                job.samples = [tumor_pair.tumor]
                 jobs.append(job)
 
         return jobs
@@ -564,7 +564,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 normal_output
             )
             job.name = "sambamba_mark_duplicates." + tumor_pair.name + "." + tumor_pair.normal.name
-            job.samples = [tumor_pair.normal.name]
+            #job.samples = [tumor_pair.normal]
             jobs.append(job)
 
             job = sambamba.markdup(
@@ -572,7 +572,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 tumor_output
             )
             job.name = "sambamba_mark_duplicates." + tumor_pair.name + "." + tumor_pair.tumor.name
-            job.samples = [tumor_pair.tumor.name]
+            #job.samples = [tumor_pair.tumor]
             jobs.append(job)
 
         return jobs
@@ -1373,7 +1373,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     )
                 ],
                     name="picard_collect_multiple_metrics." + tumor_pair.name + "." + tumor_pair.normal.name,
-                    samples=[tumor_pair.normal.name]
+                    samples=[tumor_pair.normal]
                 )
             )
         
@@ -1386,7 +1386,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     )
                 ],
                     name="picard_collect_oxog_metrics." + tumor_pair.name + "." + tumor_pair.normal.name,
-                    samples=[tumor_pair.normal.name]
+                    samples=[tumor_pair.normal]
                 )
             )
         
@@ -1401,7 +1401,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     )
                 ],
                     name="picard_collect_gcbias_metrics." + tumor_pair.name + "." + tumor_pair.normal.name,
-                    samples=[tumor_pair.normal.name]
+                    samples=[tumor_pair.normal]
                 )
             )
             # log.info(input)
@@ -1420,7 +1420,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     )
                 ],
                     name="picard_collect_multiple_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name,
-                    samples=[tumor_pair.tumor.name]
+                    samples=[tumor_pair.tumor]
                 )
             )
 
@@ -1433,7 +1433,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     )
                 ],
                     name="picard_collect_oxog_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name,
-                    samples=[tumor_pair.tumor.name]
+                    samples=[tumor_pair.tumor]
                 )
             )
 
@@ -1448,7 +1448,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     )
                 ],
                     name="picard_collect_gcbias_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name,
-                    samples=[tumor_pair.tumor.name]
+                    samples=[tumor_pair.tumor]
                 )
             )
     
@@ -1514,7 +1514,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     )
                 ],
                     name="dna_sample_qualimap." + tumor_pair.name + "." + tumor_pair.normal.name,
-                    samples=[tumor_pair.normal.name]
+                    samples=[tumor_pair.normal]
                 )
             )
             
@@ -1532,7 +1532,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     )
                 ],
                     name="dna_sample_qualimap." + tumor_pair.name + "." + tumor_pair.tumor.name,
-                    samples=[tumor_pair.tumor.name]
+                    samples=[tumor_pair.tumor]
                 )
             )
     
@@ -1610,7 +1610,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     )
                 ],
                     name="fastqc." + tumor_pair.name + "." + tumor_pair.normal.name,
-                    samples=[tumor_pair.normal.name]
+                    samples=[tumor_pair.normal]
                 )
             )
             
@@ -1630,7 +1630,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     )
                 ],
                     name="fastqc." + tumor_pair.name + "." + tumor_pair.tumor.name,
-                    samples=[tumor_pair.tumor.name]
+                    samples=[tumor_pair.tumor]
                 )
             )
     
@@ -2629,11 +2629,17 @@ class TumorPair(dnaseq.DnaSeqRaw):
         genome_dictionary = config.param('DEFAULT', 'genome_dictionary', type='filepath')
 
         interval_list = []
-        for idx in range(nb_jobs):
-            interval_list.append(os.path.join(self.output_dir, "pairedVariants", "splitjobs", "interval_list", str(idx).zfill(4) + "-scattered.interval_list"))
 
         splitjobs_dir = os.path.join(self.output_dir, "pairedVariants", "splitjobs", "vardict" )
         if use_bed:
+            for idx in range(nb_jobs):
+                interval_list.append(os.path.join(splitjobs_dir,
+                                                  "exome",
+                                                  "interval_list",
+                                                  str(idx).zfill(4) + "-scattered.interval_list"
+                                                  )
+                                     )
+
             jobs.append(concat_jobs([
                 bash.mkdir(
                     os.path.join(splitjobs_dir,
@@ -2664,6 +2670,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 ], name="vardict_paired.create_splitjobs")
             )
         # else:
+        #     for idx in range(nb_jobs):
+        #         interval_list.append(os.path.join(splitjobs_dir,
+        #                                           "wgs",
+        #                                           "interval_list",
+        #                                           str(idx).zfill(4) + "-scattered.interval_list"
+        #                                           )
+        #                              )
         #     jobs.append(concat_jobs([
         #         bash.mkdir(
         #             os.path.join(splitjobs_dir, "wgs", "interval_list"),
@@ -2693,7 +2706,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         #     )
             
         for tumor_pair in self.tumor_pairs.itervalues():
-            if (tumor_pair.multiple_normal == 1):
+            if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
@@ -2716,6 +2729,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             if use_bed:
                 idx = 0
                 for interval in interval_list:
+                    print interval
                     bed = re.sub("interval_list$", "bed", interval)
                     output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx).zfill(4) + ".vardict.vcf.gz")
                     jobs.append(concat_jobs([
@@ -2820,7 +2834,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             output_germline_loh = os.path.join(pair_directory, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
 
             if nb_jobs == 1:
-                inputs = os.path.join(vardict_directory, tumor_pair.name + ".0.vardict.vcf.gz")
+                inputs = os.path.join(vardict_directory, tumor_pair.name + "." + str(0).zfill(4) + ".vardict.vcf.gz")
                 jobs.append(concat_jobs([
                     Job(
                         [os.path.abspath(inputs)],
