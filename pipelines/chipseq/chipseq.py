@@ -1443,12 +1443,13 @@ done""".format(
                     mark_list.append(mark_name)
 
                     peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
-                    output_prefix = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, sample.name + "." + mark_name)
+                    output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
+                    output_prefix = os.path.join(output_dir, sample.name + "." + mark_name)
                     annotation_file = output_prefix + ".annotated.csv"
 
                     jobs.append(
                         concat_jobs([
-                            bash.mkdir(output_prefix),
+                            bash.mkdir(output_dir),
                             homer.annotatePeaks(
                                 peak_file,
                                 self.ucsc_genome,
@@ -1542,7 +1543,7 @@ done""".format(
                     mark_list.append(mark_name)
 
                     peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
-                    output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name)
+                    output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
 
                     jobs.append(
                         concat_jobs([
@@ -1569,8 +1570,8 @@ done""".format(
             report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_find_motifs_genome.md")
             jobs.append(
                 Job(
-                    [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name, "homerResults.html") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type == "N"] +
-                    [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, mark_name, "knownResults.html") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type == "N"],
+                    [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, "homerResults.html") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type == "N"] +
+                    [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name, "knownResults.html") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type == "N"],
                     [report_file],
                     command="""\
 mkdir -p {report_dir}/annotation/ && \\
@@ -1581,7 +1582,7 @@ do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
     rsync -rvP annotation/$sample {report_dir}/annotation/ && \\
-    echo -e "* [HOMER _De Novo_ Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/$mark_name/homerResults.html)\\n* [HOMER Known Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/$mark_name/knownResults.html)" >> {report_file}
+    echo -e "* [HOMER _De Novo_ Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/homerResults.html)\\n* [HOMER Known Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/knownResults.html)" >> {report_file}
   done
 done""".format(
     samples_associative_array=" ".join(samples_associative_array),
