@@ -1757,8 +1757,8 @@ def interval_list2bed(input, output):
         command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   IntervalListToBed \\
-  INPUT={input} \\
-  OUTPUT={output}""".format(
+  --INPUT {input} \\
+  --OUTPUT {output}""".format(
             tmp_dir=config.param('gatk_interval_list2bed', 'tmp_dir'),
             java_other_options=config.param('gatk_interval_list2bed', 'java_other_options'),
             ram=config.param('gatk_interval_list2bed', 'ram'),
