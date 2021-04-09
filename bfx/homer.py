@@ -226,25 +226,25 @@ def makeUCSCfile(tag_dir, bedgraph_file):
             )
 
 
-def annotatePeaks(peak_file, genome, output_prefix, annotation_file):
+def annotatePeaks(peak_file, genome, output_dir, annotation_file):
     cmd = """annotatePeaks.pl \\
     {peak_file} \\
     {genome} \\
     -gsize {genome} \\
     -cons -CpG \\
-    -go {output_prefix} \\
-    -genomeOntology {output_prefix} \\
+    -go {output_dir} \\
+    -genomeOntology {output_dir} \\
     > {annotation_file}""".format(
                             peak_file=peak_file,
                             genome=genome,
-                            output_prefix=output_prefix,
+                            output_dir=output_dir,
                             annotation_file=annotation_file)
 
     return Job(input_files=[peak_file],
             output_files=[
                 annotation_file,
-                os.path.join(output_prefix, "geneOntology.html"),
-                os.path.join(output_prefix, "GenomeOntology.html")
+                os.path.join(output_dir, "geneOntology.html"),
+                os.path.join(output_dir, "GenomeOntology.html")
                 ],
             module_entries=[
                 ["homer_annotate_peaks", "module_perl"],
