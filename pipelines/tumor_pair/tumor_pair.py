@@ -2729,10 +2729,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
             if use_bed:
                 idx = 0
                 for interval in interval_list:
-                    print interval
                     bed = re.sub("interval_list$", "bed", interval)
                     output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx).zfill(4) + ".vardict.vcf.gz")
                     jobs.append(concat_jobs([
+                        bash.mkdir(
+                            vardict_directory,
+                            remove=True
+                        ),
                         gatk4.interval_list2bed(
                             interval,
                             bed
