@@ -1042,8 +1042,12 @@ END`""".format(
 
             output = os.path.join(metrics_directory, tumor_pair.name + ".multiqc")
 
-            jobs.append(concat_jobs([
-                multiqc.run(input, output, input_dep=input_dep),
+            jobs.append(
+                concat_jobs([
+                    multiqc.run(
+                        input_dep,
+                        output
+                        )
             ], name="multiqc." + tumor_pair.name))
 
         return jobs
