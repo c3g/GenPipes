@@ -124,14 +124,19 @@ class ChipSeq(common.Illumina):
 
     @property
     def readsets(self):
+        flag = False
         if not hasattr(self, "_readsets"):
             if self.args.readsets:
                 self._readsets = parse_illumina_readset_file(self.args.readsets.name)
                 for readset in self.readsets:
                     if not readset.mark_name:
                         _raise(SanitycheckError("Error: missing readset MarkName for " + readset.name))
+                        flag = True
                     elif not readset.mark_type:
                         _raise(SanitycheckError("Error: missing readset MarkType for " + readset.name))
+                        flag = True
+                if flag:
+                    exit()
             else:
                 self.argparser.error("argument -r/--readsets is required!")
         
