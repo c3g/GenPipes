@@ -42,7 +42,7 @@ import utils.utils
 
 from pipelines import common
 
-from bfx import bash
+# from bfx import bash
 from bfx import bwa
 from bfx import gq_seq_utils
 from bfx import homer
