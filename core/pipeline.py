@@ -367,7 +367,7 @@ class Pipeline(object):
 
                 log.debug("Job name: " + job.name)
                 log.debug("Job input files:\n  " + "\n  ".join(job.input_files))
-                log.debug("Job output files:\n  " + "\n  ".join(job.output_files) + "\n")
+                log.debug("Job output files:\n  " + "\n  ".join(job.output_files))
 
                 # Job .done file name contains the command checksum.
                 # Thus, if the command is modified, the job is not up-to-date anymore.
@@ -376,7 +376,7 @@ class Pipeline(object):
                 job.dependency_jobs = self.dependency_jobs(job)
 
                 if not self.force_jobs and job.is_up2date():
-                    log.info("Job " + job.name + " up to date... skipping")
+                    log.info("Job " + job.name + " up to date... skipping\n")
                 else:
                     step.add_job(job)
                     if job.samples:
