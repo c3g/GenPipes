@@ -199,12 +199,13 @@ def parse_illumina_readset_file(illumina_readset_file):
         readset._beds = line['BED'].split(";") if line.get('BED', None) else []
 
         # For ChIP-Seq only
-        readset._mark_name = line.get('MarkName', None)
-        if line.get('MarkType', None) and re.search("^[NBI]$", line.get('MarkType', None)):
-            readset._mark_type = line.get('MarkType', None)
-        else:
-            raise Exception("Mark Error: MarkType \"" + line.get('MarkName', None) +
-                "\" is invalid (should be either N, B or I)!")
+        if line.get('MarkType', None):
+            readset._mark_name = line.get('MarkName', None)
+            if re.search("^[NBI]$", line.get('MarkType', None)):
+                readset._mark_type = line.get('MarkType', None)
+            else:
+                raise Exception("Mark Error: MarkType \"" + line.get('MarkName', None) +
+                    "\" is invalid (should be either N, B or I)!")
         # readset._input_sample = line.get('InputSample', None)
 
         readsets.append(readset)
