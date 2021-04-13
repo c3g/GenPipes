@@ -57,6 +57,8 @@ from bfx import ucsc
 
 from bfx import bash_cmd as bash
 
+from bfx.readset import parse_illumina_readset_file
+
 log = logging.getLogger(__name__)
 
 class ChipSeq(common.Illumina):
