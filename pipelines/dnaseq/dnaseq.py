@@ -1335,9 +1335,9 @@ END
         output = os.path.join(metrics_directory, "multiqc_report")
 
         job = multiqc.run(
-            inputs,
-            output,
-            input_dep
+            input_dep,
+            output
+            # input_dep
             )
         job.name = "multiqc_all_samples"
         job.samples = self.samples

@@ -1198,9 +1198,8 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
         output = os.path.join(metrics_directory, "multiqc_report")
 
         job = multiqc.run(
-            inputs,
-            output,
-            input_dep
+            input_dep,
+            output
             )
         job.name = "multiqc_all_samples"
         job.samples = self.samples
