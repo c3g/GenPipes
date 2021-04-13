@@ -84,12 +84,12 @@ class ChipSeq(common.Illumina):
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file, required=False)
         self.argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)", choices=["chipseq", "atacseq"], default="chipseq")
+        super(ChipSeq, self).__init__(protocol)
         for readset in self.readsets:
             if not readset.mark_name:
                 _raise(SanitycheckError("Error: missing readset MarkName for " + readset.name))
             if not readset.mark_type:
                 _raise(SanitycheckError("Error: missing readset MarkType for " + readset.name))
-        super(ChipSeq, self).__init__(protocol)
 
 
     @property
