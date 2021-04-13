@@ -1035,15 +1035,15 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         config.param('merge_varscan2', 'tabix_options', required=False)
                     ),
                 ], name = "merge_varscan2." + tumor_pair.name))
-                
+
             else:
                 all_inputs = [os.path.join(varscan_directory, tumor_pair.name + ".varscan2." + sequence['name'] + ".vcf.gz")
                               for sequence in self.sequence_dictionary_variant() if sequence['type'] is 'primary']
-    
+
                 for input_vcf in all_inputs:
                     if not self.is_gz_file(input_vcf):
                         stderr.write("Incomplete panel varscan2 vcf: %s\n" % input_vcf)
-    
+
                 jobs.append(concat_jobs([
                     Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                     pipe_jobs([
@@ -1319,7 +1319,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
         return jobs
 
     def metrics_dna_picard_metrics(self):
-    
+        ffpe = config.param('picard_collect_sequencing_artifacts_metrics', 'FFPE', type='boolean')
+
         ##check the library status
         library = {}
         for readset in self.readsets:
@@ -1327,7 +1328,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 library[readset.sample] = "SINGLE_END"
             if readset.run_type == "PAIRED_END":
                 library[readset.sample] = "PAIRED_END"
-    
+
         jobs = []
         for tumor_pair in self.tumor_pairs.itervalues():
             if tumor_pair.multiple_normal == 1:
@@ -1336,12 +1337,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name)
-    
+
             tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
 
             normal_picard_directory = os.path.join(self.output_dir, "metrics", "dna", normal_metrics, "picard_metrics")
             tumor_picard_directory = os.path.join(self.output_dir, "metrics", "dna", tumor_pair.tumor.name, "picard_metrics")
-        
+
             [normal_input] = self.select_input_files([
                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
@@ -1349,7 +1350,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")],
 
             ])
-            
+
             [tumor_input] = self.select_input_files([
                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
@@ -1362,7 +1363,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 normal_picard_directory,
                 remove=True
             )
-        
+
             jobs.append(
                 concat_jobs([
                     mkdir_job,
@@ -1376,7 +1377,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     samples=[tumor_pair.normal]
                 )
             )
-        
+
             jobs.append(
                 concat_jobs([
                     mkdir_job,
@@ -1451,12 +1452,33 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     samples=[tumor_pair.tumor]
                 )
             )
-    
-    
+
+            if ffpe == True:
+                jobs.append(concat_jobs([
+                    gatk4.collect_sequencing_artifacts_metrics(
+                        normal_input,
+                        os.path.join(normal_picard_directory, tumor_pair.normal.name)
+                    )
+                ],
+                    name="picard_collect_sequencing_artifacts_metrics." + tumor_pair.name + "." + tumor_pair.normal.name,
+                    samples=[tumor_pair.normal]
+                )
+                )
+                jobs.append(concat_jobs([
+                    gatk4.collect_sequencing_artifacts_metrics(
+                        tumor_input,
+                        os.path.join(tumor_picard_directory, tumor_pair.tumor.name)
+                    )
+                ],
+                    name="picard_collect_sequencing_artifacts_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name,
+                    samples=[tumor_pair.tumor]
+                )
+                )
+
         return jobs
 
     def metrics_dna_sample_qualimap(self):
-    
+
         jobs = []
         for tumor_pair in self.tumor_pairs.itervalues():
             if tumor_pair.multiple_normal == 1:
@@ -1465,7 +1487,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name)
-                
+
             tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
 
             normal_qualimap_directory = os.path.join(self.output_dir, "metrics", "dna", normal_metrics,
@@ -1936,7 +1958,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             all_inputs = []
             if nb_jobs == 1:
                 all_inputs = os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")
-                
+
             else:
                 all_inputs = [os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".varscan2.vcf.gz")
                               for sequence in self.sequence_dictionary_variant() if sequence['type'] is 'primary']
@@ -2106,12 +2128,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
-    
+
             tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
-            
+
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             mutect_directory = os.path.join(pair_directory, "rawMuTect2")
-            
+
             input_normal = self.select_input_files(
                 [[os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
                  [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
@@ -2127,7 +2149,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
             if coverage_bed:
                 interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
-    
+
                 if not interval_list in created_interval_lists:
                     job = tools.bed2interval_list(
                         coverage_bed,
@@ -2138,6 +2160,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     created_interval_lists.append(interval_list)
 
             if nb_jobs == 1:
+
                 jobs.append(concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
                     bash.mkdir(
@@ -2150,7 +2173,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         input_tumor[0],
                         tumor_pair.tumor.name,
                         os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz"),
-                        interval_list=interval_list
+                        os.path.join(mutect_directory, tumor_pair.name + ".f1r2.tar.gz"),
+                        interval_list=interval_list,
                     )
                 ], name="gatk_mutect2." + tumor_pair.name))
 
@@ -2159,6 +2183,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
                 # Create one separate job for each of the first sequences
                 for idx, sequences in enumerate(unique_sequences_per_job):
+
                     outprefix = tumor_pair.name + "." + str(idx) + ".mutect2"
                     jobs.append(concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
@@ -2172,8 +2197,9 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             input_tumor[0],
                             tumor_pair.tumor.name,
                             os.path.join(mutect_directory, outprefix + ".vcf.gz"),
+                            os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".f1r2.tar.gz"),
                             intervals=sequences,
-                            interval_list=interval_list
+                            interval_list=interval_list,
                         )
                     ], name="gatk_mutect2." + tumor_pair.name + "." + str(idx)))
 
@@ -2190,10 +2216,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         input_tumor[0],
                         tumor_pair.tumor.name,
                         os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"),
+                        os.path.join(mutect_directory, tumor_pair.name + ".others.f1r2.tar.gz"),
                         exclude_intervals=unique_sequences_per_job_others,
                         interval_list=interval_list,
-                        )
-                    ], name="gatk_mutect2." + tumor_pair.name + ".others"))
+                    )
+                ], name="gatk_mutect2." + tumor_pair.name + ".others"))
 
         return jobs
 
@@ -2263,6 +2290,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         stderr.write("Incomplete mutect2 vcf: %s\n" % input_vcf)
 
                 if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
+
                     output_stats = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz.stats")
                     stats = []
                     for idx, sequences in enumerate(unique_sequences_per_job):
@@ -2270,8 +2298,19 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".mutect2.vcf.gz.stats"))
                     stats.append(os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz.stats"))
 
+                    output_models = os.path.join(pair_directory, tumor_pair.name + ".read-orientation-model.tar.gz")
+                    models = []
+                    for idx, sequences in enumerate(unique_sequences_per_job):
+                        models.append(
+                            os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".f1r2.tar.gz"))
+                    models.append(os.path.join(mutect_directory, tumor_pair.name + ".others.f1r2.tar.gz"))
+
                     jobs.append(concat_jobs([
                         Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
+                        gatk4.learn_read_orientation_model(
+                            models,
+                            output_models
+                        ),
                         gatk4.cat_variants(
                             inputs,
                             output_gz
@@ -2282,7 +2321,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         ),
                         gatk4.filter_mutect_calls(
                             output_gz,
-                            output_flt
+                            output_flt,
+                            read_orientation=output_models
                         ),
                         pipe_jobs([
                             vt.decompose_and_normalize_mnps(
@@ -2312,7 +2352,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             ),
                         ]),
                     ], name="merge_filter_mutect2." + tumor_pair.name))
-                    
+
                 else:
                     jobs.append(concat_jobs([
                         Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
@@ -2328,7 +2368,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 command="sed 's/TUMOR/" + tumor_pair.tumor.name + "/g' | sed 's/NORMAL/"
                                         + tumor_pair.normal.name + "/g' | sed 's/Number=R/Number=./g' | grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
                             ),
-    
+
                             htslib.bgzip_tabix(
                                 None,
                                 output_gz
@@ -2371,9 +2411,9 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
-    
+
             tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
-            
+
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             somatic_dir = os.path.abspath(os.path.join(pair_directory, "rawStrelka2_somatic"))
             output_prefix = os.path.abspath(os.path.join(pair_directory, tumor_pair.name))
@@ -2397,12 +2437,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 tumor_pair.normal.readsets[0]
             )
 
-            if os.path.isdir(somatic_dir):
-                jobs.append(concat_jobs([
-                    bash.rm(
-                        somatic_dir
-                    )
-                ], name="rm_strelka2_directory." + tumor_pair.name))
+            # if os.path.isdir(somatic_dir):
+            #     jobs.append(concat_jobs([
+            #         bash.rm(
+            #             somatic_dir
+            #         )
+            #     ], name="rm_strelka2_directory." + tumor_pair.name))
 
             if os.path.isdir(strelka2_directory):
                 jobs.append(concat_jobs([
@@ -2437,7 +2477,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         "-p bed"
                     ),
                  ],name="bed_index." + tumor_pair.name))
-            
+
             else:
                 bed_file=config.param('strelka2_paired_somatic', 'bed_file')
 
@@ -2457,7 +2497,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     output_dep=output_dep
                 ),
             ], name="strelka2_paired_somatic.call." + tumor_pair.name))
-            
+
             jobs.append(concat_jobs([
                 pipe_jobs([
                     bcftools.concat(
@@ -2505,24 +2545,24 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         """
         jobs = []
-    
+
         for tumor_pair in self.tumor_pairs.itervalues():
             if (tumor_pair.multiple_normal == 1):
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name)
-    
+
             tumor_alignment_directory = os.path.join("alignment", tumor_pair.tumor.name)
-            
+
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             germline_dir = os.path.abspath(os.path.join(pair_directory, "rawStrelka2_germline"))
             output_prefix = os.path.abspath(os.path.join(pair_directory, tumor_pair.name))
-        
+
             input_normal = self.select_input_files(
                 [[os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
                  [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
                  [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]])
-        
+
             input_tumor = self.select_input_files(
                 [[os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
                  [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
@@ -2534,12 +2574,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 tumor_pair.normal.readsets[0]
             )
         
-            if os.path.isdir(germline_dir):
-                jobs.append(concat_jobs([
-                    bash.rm(
-                        germline_dir
-                    )
-                ], name="rm_strelka2_directory." + tumor_pair.name))
+            # if os.path.isdir(germline_dir):
+            #     jobs.append(concat_jobs([
+            #         bash.rm(
+            #             germline_dir
+            #         )
+            #     ], name="rm_strelka2_directory." + tumor_pair.name))
         
             if coverage_bed:
                 bed_file = coverage_bed + ".gz"
