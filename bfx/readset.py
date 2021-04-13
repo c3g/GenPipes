@@ -200,7 +200,7 @@ def parse_illumina_readset_file(illumina_readset_file):
 
         # For ChIP-Seq only
         readset._mark_name = line.get('MarkName', None)
-        if re.search("^[NBI]$", line.get('MarkType', None)):
+        if line.get('MarkType', None) and re.search("^[NBI]$", line.get('MarkType', None)):
             readset._mark_type = line.get('MarkType', None)
         else:
             raise Exception("Mark Error: MarkType \"" + line.get('MarkName', None) +
