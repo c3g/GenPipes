@@ -163,91 +163,92 @@ class ChipSeq(common.Illumina):
         for readset in self.readsets:
             if not readset.mark_name:
                 _raise(SanitycheckError("Error: missing readset MarkName for " + readset.name))
-            if not readset.mark_type:
+            elif not readset.mark_type:
                 _raise(SanitycheckError("Error: missing readset MarkType for " + readset.name))
-            # log.info(readset.mark_name)
-            trim_directory = os.path.join("trim", readset.sample.name, readset.mark_name)
-            trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
-            trim_log = trim_file_prefix + "log"
-
-            # Use adapter FASTA in config file if any, else create it from readset file
-            adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, type='filepath')
-            adapter_job = None
-            if not adapter_fasta:
-                adapter_fasta = trim_file_prefix + "adapters.fa"
-                if readset.run_type == "PAIRED_END":
-                    if readset.adapter1 and readset.adapter2:
-                        # WARNING: Reverse-complement and swap readset adapters for Trimmomatic Palindrome strategy
-                        adapter_job = Job(command="""\
-`cat > {adapter_fasta} << END
->Prefix/1
-{sequence1}
->Prefix/2
-{sequence2}
-END
-`""".format(adapter_fasta=adapter_fasta, sequence1=readset.adapter2.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1], sequence2=readset.adapter1.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1]))
-                    else:
-                        _raise(SanitycheckError("Error: missing adapter1 and/or adapter2 for PAIRED_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
-                elif readset.run_type == "SINGLE_END":
-                    if readset.adapter1:
-                        adapter_job = Job(command="""\
-`cat > {adapter_fasta} << END
->Single
-{sequence}
-END
-`""".format(adapter_fasta=adapter_fasta, sequence=readset.adapter1))
-                    else:
-                        _raise(SanitycheckError("Error: missing adapter1 for SINGLE_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
-
-            trim_stats = trim_file_prefix + "stats.csv"
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[readset.fastq1, readset.fastq2]]
-                if readset.bam:
-                    candidate_fastq1 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")
-                    candidate_fastq2 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")
-                    candidate_input_files.append([candidate_fastq1, candidate_fastq2])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-                job = trimmomatic.trimmomatic(
-                    fastq1,
-                    fastq2,
-                    trim_file_prefix + "pair1.fastq.gz",
-                    trim_file_prefix + "single1.fastq.gz",
-                    trim_file_prefix + "pair2.fastq.gz",
-                    trim_file_prefix + "single2.fastq.gz",
-                    None,
-                    readset.quality_offset,
-                    adapter_fasta,
-                    trim_log
-                )
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[readset.fastq1]]
-                if readset.bam:
-                    candidate_input_files.append([os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".single.fastq.gz")])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                job = trimmomatic.trimmomatic(
-                    fastq1,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    trim_file_prefix + "single.fastq.gz",
-                    readset.quality_offset,
-                    adapter_fasta,
-                    trim_log
-                )
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                # log.info(readset.mark_name)
+                trim_directory = os.path.join("trim", readset.sample.name, readset.mark_name)
+                trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
+                trim_log = trim_file_prefix + "log"
 
-            if adapter_job:
-                job = concat_jobs([adapter_job, job])
+                # Use adapter FASTA in config file if any, else create it from readset file
+                adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, type='filepath')
+                adapter_job = None
+                if not adapter_fasta:
+                    adapter_fasta = trim_file_prefix + "adapters.fa"
+                    if readset.run_type == "PAIRED_END":
+                        if readset.adapter1 and readset.adapter2:
+                            # WARNING: Reverse-complement and swap readset adapters for Trimmomatic Palindrome strategy
+                            adapter_job = Job(command="""\
+    `cat > {adapter_fasta} << END
+    >Prefix/1
+    {sequence1}
+    >Prefix/2
+    {sequence2}
+    END
+    `""".format(adapter_fasta=adapter_fasta, sequence1=readset.adapter2.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1], sequence2=readset.adapter1.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1]))
+                        else:
+                            _raise(SanitycheckError("Error: missing adapter1 and/or adapter2 for PAIRED_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
+                    elif readset.run_type == "SINGLE_END":
+                        if readset.adapter1:
+                            adapter_job = Job(command="""\
+    `cat > {adapter_fasta} << END
+    >Single
+    {sequence}
+    END
+    `""".format(adapter_fasta=adapter_fasta, sequence=readset.adapter1))
+                        else:
+                            _raise(SanitycheckError("Error: missing adapter1 for SINGLE_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
 
-            jobs.append(concat_jobs([
-                # Trimmomatic does not create output directory by default
-                bash.mkdir(trim_directory),
-                job
-            ], name="trimmomatic." + readset.name, samples=[readset.sample]))
+                trim_stats = trim_file_prefix + "stats.csv"
+                if readset.run_type == "PAIRED_END":
+                    candidate_input_files = [[readset.fastq1, readset.fastq2]]
+                    if readset.bam:
+                        candidate_fastq1 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")
+                        candidate_fastq2 = os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")
+                        candidate_input_files.append([candidate_fastq1, candidate_fastq2])
+                    [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                    job = trimmomatic.trimmomatic(
+                        fastq1,
+                        fastq2,
+                        trim_file_prefix + "pair1.fastq.gz",
+                        trim_file_prefix + "single1.fastq.gz",
+                        trim_file_prefix + "pair2.fastq.gz",
+                        trim_file_prefix + "single2.fastq.gz",
+                        None,
+                        readset.quality_offset,
+                        adapter_fasta,
+                        trim_log
+                    )
+                elif readset.run_type == "SINGLE_END":
+                    candidate_input_files = [[readset.fastq1]]
+                    if readset.bam:
+                        candidate_input_files.append([os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".single.fastq.gz")])
+                    [fastq1] = self.select_input_files(candidate_input_files)
+                    job = trimmomatic.trimmomatic(
+                        fastq1,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        trim_file_prefix + "single.fastq.gz",
+                        readset.quality_offset,
+                        adapter_fasta,
+                        trim_log
+                    )
+                else:
+                    _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+                if adapter_job:
+                    job = concat_jobs([adapter_job, job])
+
+                jobs.append(concat_jobs([
+                    # Trimmomatic does not create output directory by default
+                    bash.mkdir(trim_directory),
+                    job
+                ], name="trimmomatic." + readset.name, samples=[readset.sample]))
         return jobs
 
 
