@@ -1300,7 +1300,7 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
                         )
                 # Else if mark type is Input
                 else:
-                    log.warning("Mark " + mark_name + " for Sample " + sample.name + "is an Input ... skipping")
+                    log.warning("Mark " + mark_name + " for Sample " + sample.name + " is an Input ... skipping")
             samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
@@ -1415,7 +1415,7 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
                         )
                 # Else if mark type is Input
                 else:
-                    log.warning("Mark " + mark_name + " for Sample " + sample.name + "is an Input ... skipping")
+                    log.warning("Mark " + mark_name + " for Sample " + sample.name + " is an Input ... skipping")
             samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
@@ -1513,7 +1513,7 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
                         )
 
                 else:
-                    log.warning("Mark " + mark_name + " for Sample " + sample.name + "is an Input ... skipping")
+                    log.warning("Mark " + mark_name + " for Sample " + sample.name + " is an Input ... skipping")
             samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_annotate_peaks.md")
@@ -1586,7 +1586,7 @@ done""".format(
                 else:
                     #log.warning("No treatment found for contrast " + contrast.name + "... skipping")
                     # log.warning("Contrast " + contrast.name + " is broad; homer_find_motifs_genome is run on narrow peaks ... skipping")
-                    log.warning("Mark " + mark_name + " for Sample " + sample.name + "is not Narrow; homer_find_motifs_genome is run on narrow peaks ... skipping")
+                    log.warning("Mark " + mark_name + " for Sample " + sample.name + " is not Narrow; homer_find_motifs_genome is run on narrow peaks ... skipping")
             samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
 
         if counter > 0:
