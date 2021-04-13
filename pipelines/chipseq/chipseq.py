@@ -85,11 +85,6 @@ class ChipSeq(common.Illumina):
         self.argparser.add_argument("-d", "--design", help="design file", type=file, required=False)
         self.argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)", choices=["chipseq", "atacseq"], default="chipseq")
         super(ChipSeq, self).__init__(protocol)
-        for readset in self.readsets:
-            if not readset.mark_name:
-                _raise(SanitycheckError("Error: missing readset MarkName for " + readset.name))
-            if not readset.mark_type:
-                _raise(SanitycheckError("Error: missing readset MarkType for " + readset.name))
 
 
     @property
@@ -166,7 +161,11 @@ class ChipSeq(common.Illumina):
         """
         jobs = []
         for readset in self.readsets:
-            log.info(readset.mark_name)
+            if not readset.mark_name:
+                _raise(SanitycheckError("Error: missing readset MarkName for " + readset.name))
+            if not readset.mark_type:
+                _raise(SanitycheckError("Error: missing readset MarkType for " + readset.name))
+            # log.info(readset.mark_name)
             trim_directory = os.path.join("trim", readset.sample.name, readset.mark_name)
             trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
             trim_log = trim_file_prefix + "log"
