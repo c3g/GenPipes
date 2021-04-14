@@ -3,13 +3,11 @@
 set -eu -o pipefail
 
 SOFTWARE=anaconda
-VERSION=2-4.0.0
+VERSION=2-2019.10
 ARCHIVE=${SOFTWARE^}${VERSION}-Linux-x86_64.sh
 ARCHIVE_URL=https://repo.continuum.io/archive/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE^}${VERSION%-[0-9]*.[0-9]*.[0-9]*}
 
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   bash $ARCHIVE -b -f -p $INSTALL_DIR/$SOFTWARE_DIR
