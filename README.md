@@ -331,7 +331,7 @@ Readset File
 The Readset File is a TAB-separated values plain text file with one line per readset and the following columns in any order:
 
 
-### DNA-Seq, DNA-Seq high Coverage, RNA-Seq, RNA-Seq De Novo Assembly, ChIP-Seq, Amplicon-Seq, Tumor Pair, Methyl-Seq
+### DNA-Seq, DNA-Seq high Coverage, RNA-Seq, RNA-Seq De Novo Assembly, Amplicon-Seq, Tumor Pair, Methyl-Seq
 
 * Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
@@ -355,6 +355,31 @@ Example:
     sampleB	readset3	lib0002	PAIRED_END	run200	5	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset3.paired1.fastq.gz	path/to/readset3.paired2.fastq.gz	path/to/readset3.bam
     sampleB	readset4	lib0002	PAIRED_END	run200	6	AGATCGGAAGAGCACACGTCTGAACTCCAGTCA	AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT	33	path/to/file.bed	path/to/readset4.paired1.fastq.gz	path/to/readset4.paired2.fastq.gz	path/to/readset4.bam
 
+### ChIP-Seq
+
+* Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
+* Readset: a unique readset name with the same allowed characters as above; mandatory;
+* MarkName: name of the histone mark; mandatory
+* MarkType: type of mark for MACS2 calling must be either B (Broad), N (Narrow) or I (Input); mandatory
+* Library: optional;
+* RunType: `PAIRED_END` or `SINGLE_END`; mandatory;
+* Run: optional;
+* Lane: optional;
+* Adapter1 : sequence of the forward trimming adapter
+* Adapter2 : sequence of the reverse trimming adapter
+* QualityOffset: quality score offset integer used for trimming; optional;
+* BED: relative or absolute path to BED file; optional;
+* FASTQ1: relative or absolute path to first FASTQ file for paired-end readset or single FASTQ file for single-end readset; mandatory if BAM value is missing;
+* FASTQ2: relative or absolute path to second FASTQ file for paired-end readset; mandatory if RunType value is "`PAIRED_END`";
+* BAM: relative or absolute path to BAM file which will be converted into FASTQ files if they are not available; mandatory if FASTQ1 value is missing, ignored otherwise.
+
+Example:
+
+    Sample  Readset  MarkName MarkType Library RunType Run Lane    Adapter1    Adapter2    QualityOffset   BED FASTQ1  FASTQ2  BAM
+    sampleA readset1 H3K27ac  N        lib0001 PAIRED_END  run100  1   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset1.paired1.fastq.gz   path/to/readset1.paired2.fastq.gz   path/to/readset1.bam
+    sampleA readset2 H3K27ac  N        lib0001 PAIRED_END  run100  2   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset2.paired1.fastq.gz   path/to/readset2.paired2.fastq.gz   path/to/readset2.bam
+    sampleB readset3 Input    I        lib0002 PAIRED_END  run200  5   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset3.paired1.fastq.gz   path/to/readset3.paired2.fastq.gz   path/to/readset3.bam
+    sampleB readset4 Input    I        lib0002 PAIRED_END  run200  6   AGATCGGAAGAGCACACGTCTGAACTCCAGTCA   AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT   33  path/to/file.bed    path/to/readset4.paired1.fastq.gz   path/to/readset4.paired2.fastq.gz   path/to/readset4.bam
 
 ### PacBio Assembly
 
@@ -465,18 +490,6 @@ Example:
     sampleB	2	0	1
     sampleC	0	2	0
     sampleD	0	0	2
-
-### For ChIP-Seq pipeline users
-Peak calling type must be specified by adding to the contrast name either `,N` for *Narrow* peak calling, or `,B` for *Broad* peak calling.
-
-Example:
-
-    Sample	Contrast1,N	Contrast2,B
-    sampleA	1	1
-    sampleB	2	0
-    sampleC	0	2
-
-**Warning for ChIP-Seq pipeline users:** the values '__1__' for control and '__2__' for treatment are reversed compared to the old Perl version.
 
 
 HTML Analysis Report
