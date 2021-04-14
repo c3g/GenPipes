@@ -3,11 +3,11 @@
 set -eu -o pipefail
 
 SOFTWARE=MultiQC
-VERSION=1.7
+VERSION=1.9
 ARCHIVE=${SOFTWARE}-${VERSION}.zip
 ARCHIVE_URL=https://github.com/ewels/$SOFTWARE/archive/v${VERSION}.zip
 SOFTWARE_DIR=${SOFTWARE}-$VERSION
-PYTHON_MODULE=mugqic/python/2.7.14
+PYTHON_MODULE=mugqic/python/3.7.3
 
 # Specific commands to extract and build the software
 # $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
@@ -20,10 +20,11 @@ build() {
 
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 
+  source /etc/profile.d/modules.sh
   module load $PYTHON_MODULE
 
-  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR/lib/python2.7/site-packages
-  export PYTHONPATH=${PYTHONPATH}:$INSTALL_DIR/$SOFTWARE_DIR/lib/python2.7/site-packages
+  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR/lib/python3.7/site-packages
+  export PYTHONPATH=${PYTHONPATH}:$INSTALL_DIR/$SOFTWARE_DIR/lib/python3.7/site-packages
   cd $INSTALL_DIR/$SOFTWARE_DIR
   python setup.py install --prefix $INSTALL_DIR/$SOFTWARE_DIR
 
@@ -48,7 +49,7 @@ module-whatis \"MultiQC for for generating interactive analysis reports for pipe
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin
-prepend-path    PYTHONPATH          \$root/lib/python2.7/site-packages
+prepend-path    PYTHONPATH          \$root/lib/python3.7/site-packages
 "
 }
 

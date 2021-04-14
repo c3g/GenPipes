@@ -2,22 +2,22 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-module_bismark=#mugqic/bismark/0.21.0
-module_bowtie=mugqic/bowtie/1.1.2
-module_bowtie2=mugqic/bowtie2/2.2.9
+module_bismark=mugqic/bismark/0.21.0
+module_bowtie=mugqic/bowtie/1.2.2
+module_bowtie2=mugqic/bowtie2/2.3.5
 module_bwa=mugqic/bwa/0.7.17
 module_java=mugqic/java/openjdk-jdk1.8.0_72
-module_mugqic_tools=mugqic/mugqic_tools/2.2.2
-module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.5
+module_mugqic_tools=mugqic/mugqic_tools/2.4.0
+module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.6
 module_perl=mugqic/perl/5.22.1
 module_picard=mugqic/picard/2.0.1
 module_python=mugqic/python/2.7.14
-module_R=mugqic/R_Bioconductor/3.6.0_3.9
-module_samtools=mugqic/samtools/1.3.1
-module_star=mugqic/star/2.7.2b
+module_R=mugqic/R_Bioconductor/3.6.3_3.11
+module_samtools=mugqic/samtools/1.11
+module_star=mugqic/star/2.7.8a
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
-module_ucsc=mugqic/ucsc/v359
+module_ucsc=mugqic/ucsc/v387
 module_hicup=mugqic/HiCUP/v0.7.2
 module_kallisto=mugqic/kallisto/0.44.0
 
@@ -109,7 +109,13 @@ set_urls() {
     VCF_TBI_URL=$VCF_URL.tbi
     BIOMART_MART=ENSEMBL_MART_ENSEMBL
     # Retrieve species short name e.g. "mmusculus" for "Mus_musculus"
-    SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
+    if [[ $(echo "${SPECIES}" | awk -F"_" '{print NF-1}') == 2 ]]
+    then
+        SPECIES_2ND_NAME=`echo ${SPECIES#*_}`
+        SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES_2ND_NAME:0:1}${SPECIES##*_} | tr [:upper:] [:lower:]`
+    else
+        SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
+    fi
     BIOMART_DATASET=${SPECIES_SHORT_NAME}_gene_ensembl
     BIOMART_GENE_ID=ensembl_gene_id
     BIOMART_GO_ID=go_id
@@ -264,7 +270,7 @@ download_urls() {
 
 # Test genome size to decide whether indexing requires more cores or memory
 is_genome_big() {
-  GENOME_SIZE_LIMIT=200000000
+  GENOME_SIZE_LIMIT=2000000
 
   if [ `stat --printf="%s" $GENOME_DIR/$GENOME_FASTA` -gt $GENOME_SIZE_LIMIT ]
   then
@@ -326,6 +332,8 @@ create_picard_index() {
     echo
     echo "Creating genome Picard sequence dictionary..."
     echo
+    echo "module load $module_picard $module_java"
+    echo "java -jar \$PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$GENOME_DIR/$GENOME_FASTA OUTPUT=$GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1"
     module load $module_picard $module_java
     java -jar $PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$GENOME_DIR/$GENOME_FASTA OUTPUT=$GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1
   else
@@ -359,7 +367,7 @@ create_bismark_genome_reference() {
     echo "Appending sequences of lambda phage and pUC19 vector to genome reference FASTA file..."
     echo
     mkdir -p $BISMARK_INDEX_DIR
-    cat $GENOME_DIR/$GENOME_FASTA ${!INSTALL_HOME}/genomes/lamba_phage.fa ${!INSTALL_HOME}/genomes/pUC19.fa > $BISMARK_INDEX_DIR/$GENOME_FASTA
+    cat $GENOME_DIR/$GENOME_FASTA ${!INSTALL_HOME}/genomes/lambda_phage.fa ${!INSTALL_HOME}/genomes/pUC19.fa > $BISMARK_INDEX_DIR/$GENOME_FASTA
   else
     echo
     echo "Custom Genome Reference for Bismark is up to date... skipping"
@@ -369,9 +377,11 @@ create_bismark_genome_reference() {
   then
     echo
     echo "Creating SAMtools FASTA index for the custom Genome Reference for Bismark..."
-    echo
+    echo "loading $module_samtools"
     module load $module_samtools
+    echo "launching samtools faidx $BISMARK_INDEX_DIR/$GENOME_FASTA > $LOG_DIR/samtools_for_bismark_$TIMESTAMP.log 2>&1"
     samtools faidx $BISMARK_INDEX_DIR/$GENOME_FASTA > $LOG_DIR/samtools_for_bismark_$TIMESTAMP.log 2>&1 
+    echo "done"
   else
     echo
     echo "Genome SAMtools FASTA index for the custom Genome Reference for Bismark is up to date... skipping"
@@ -382,8 +392,10 @@ create_bismark_genome_reference() {
     echo
     echo "Creating genome Picard sequence dictionary for the custom Genome Reference for Bismark..."
     echo
-    module load $module_picard $module_java
-    java -jar $PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$BISMARK_INDEX_DIR/$GENOME_FASTA OUTPUT=$BISMARK_INDEX_DIR/${GENOME_FASTA/.fa/.dict} GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_for_bismark_$TIMESTAMP.log 2>&1
+    INDEX_CMD="\
+module load $module_picard $module_java && \
+java -jar \$PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$BISMARK_INDEX_DIR/$GENOME_FASTA OUTPUT=$BISMARK_INDEX_DIR/${GENOME_FASTA/.fa/.dict} GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_for_bismark_$TIMESTAMP.log 2>&1"
+    cmd_or_job INDEX_CMD 8
   else
     echo
     echo "Genome Picard sequence dictionary for the custom Genome Reference for Bismark is up to date... skipping"
@@ -398,8 +410,8 @@ create_bismark_genome_reference() {
 module load $module_bismark $module_bowtie2 && \
 LOG=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.log && \
 ERR=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.err &&\
-bismark_genome_preparation $BISMARK_INDEX_DIR > \$LOG 2> \$ERR && \
-chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
+bismark_genome_preparation $BISMARK_INDEX_DIR > \$LOG 2> \$ERR" # && \
+#chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
     cmd_or_job BISMARK_CMD 8
   else
     echo
@@ -414,8 +426,8 @@ chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
   BINGC_CMD="\
 module load $module_python $module_mugqic_tools && \
 LOG=$LOG_DIR/wgbs_bin100bp_GC_$TIMESTAMP.log && \
-\$PYTHON_TOOLS/getFastaBinedGC.py -s 100 -r $BISMARK_INDEX_DIR/$GENOME_FASTA -o $ANNOTATIONS_DIR/${ASSEMBLY}_wgbs_bin100bp_GC.bed > \$LOG 2>&1 && \
-chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
+\$PYTHON_TOOLS/getFastaBinedGC.py -s 100 -r $BISMARK_INDEX_DIR/$GENOME_FASTA -o $ANNOTATIONS_DIR/${ASSEMBLY}_wgbs_bin100bp_GC.bed > \$LOG 2>&1" # && \
+#chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
     cmd_or_job BINGC_CMD 8
   else
     echo
@@ -461,8 +473,8 @@ ln -s -f -t $BOWTIE_INDEX_DIR ../$GENOME_FASTA && \
 module load $module_bowtie && \
 LOG=$LOG_DIR/bowtie_$TIMESTAMP.log && \
 ERR=$LOG_DIR/bowtie_$TIMESTAMP.err && \
-bowtie-build $BOWTIE_INDEX_DIR/$GENOME_FASTA $BOWTIE_INDEX_PREFIX > \$LOG 2> \$ERR && \
-chmod -R ug+rwX,o+rX $BOWTIE_INDEX_DIR \$LOG \$ERR"
+bowtie-build $BOWTIE_INDEX_DIR/$GENOME_FASTA $BOWTIE_INDEX_PREFIX > \$LOG 2> \$ERR" # && \
+#chmod -R ug+rwX,o+rX $BOWTIE_INDEX_DIR \$LOG \$ERR"
   cmd_or_job BOWTIE_CMD 4
   else
     echo
@@ -477,12 +489,14 @@ create_bowtie2_tophat_index() {
   TOPHAT_INDEX_DIR=$ANNOTATIONS_DIR/gtf_tophat_index
   TOPHAT_INDEX_PREFIX=$TOPHAT_INDEX_DIR/${GTF/.gtf}
 
-  if ! is_up2date $BOWTIE2_INDEX_PREFIX.[1-4].bt2 $BOWTIE2_INDEX_PREFIX.rev.[12].bt2 $TOPHAT_INDEX_PREFIX.[1-4].bt2 $TOPHAT_INDEX_PREFIX.rev.[12].bt2
+  if is_up2date $ANNOTATIONS_DIR/$GTF
   then
-    echo
-    echo "Creating genome Bowtie 2 index and gtf TopHat index..."
-    echo
-    BOWTIE2_TOPHAT_CMD="\
+    if ! is_up2date $BOWTIE2_INDEX_PREFIX.[1-4].bt2 $BOWTIE2_INDEX_PREFIX.rev.[12].bt2 $TOPHAT_INDEX_PREFIX.[1-4].bt2 $TOPHAT_INDEX_PREFIX.rev.[12].bt2
+    then
+      echo
+      echo "Creating genome Bowtie 2 index and gtf TopHat index..."
+      echo
+      BOWTIE2_TOPHAT_CMD="\
 mkdir -p $BOWTIE2_INDEX_DIR && \
 ln -s -f -t $BOWTIE2_INDEX_DIR ../$GENOME_FASTA && \
 module load $module_bowtie2 && \
@@ -497,11 +511,32 @@ LOG=$LOG_DIR/gtf_tophat_$TIMESTAMP.log && \
 ERR=$LOG_DIR/gtf_tophat_$TIMESTAMP.err && \
 tophat --output-dir $TOPHAT_INDEX_DIR/tophat_out --GTF $TOPHAT_INDEX_DIR/$GTF --transcriptome-index=$TOPHAT_INDEX_PREFIX $BOWTIE2_INDEX_PREFIX > \$LOG 2> \$ERR && \
 chmod -R ug+rwX,o+rX \$TOPHAT_INDEX_DIR \$LOG \$ERR"
-  cmd_or_job BOWTIE2_TOPHAT_CMD 4
+      cmd_or_job BOWTIE2_TOPHAT_CMD 4
+    else
+      echo
+      echo "Genome Bowtie 2 index and gtf TopHat index up to date... skipping"
+      echo
+    fi
   else
-    echo
-    echo "Genome Bowtie 2 index and gtf TopHat index up to date... skipping"
-    echo
+    if ! is_up2date $BOWTIE2_INDEX_PREFIX.[1-4].bt2 $BOWTIE2_INDEX_PREFIX.rev.[12].bt2
+    then
+      echo
+      echo "Creating genome Bowtie 2 index..."
+      echo
+      BOWTIE2_CMD="\
+mkdir -p $BOWTIE2_INDEX_DIR && \
+ln -s -f -t $BOWTIE2_INDEX_DIR ../$GENOME_FASTA && \
+module load $module_bowtie2 && \
+LOG=$LOG_DIR/bowtie2_$TIMESTAMP.log && \
+ERR=$LOG_DIR/bowtie2_$TIMESTAMP.err && \
+bowtie2-build $BOWTIE2_INDEX_DIR/$GENOME_FASTA $BOWTIE2_INDEX_PREFIX > \$LOG 2> \$ERR && \
+chmod -R ug+rwX,o+rX $BOWTIE2_INDEX_DIR \$LOG \$ERR"
+      cmd_or_job BOWTIE2_CMD 4
+    else
+      echo
+      echo "Genome Bowtie 2 index up to date... skipping"
+      echo
+    fi
   fi
 }
 
@@ -512,10 +547,10 @@ create_star_index() {
   else
     runThreadN=1
   fi
-
   for sjdbOverhang in 49 74 99 124 149
   do
-    INDEX_DIR=$INSTALL_DIR/genome/star_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang
+    STAR_VERSION=$(echo $module_star | cut -f3 -d/)
+    INDEX_DIR=$INSTALL_DIR/genome/star${STAR_VERSION}_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang
     if ! is_up2date $INDEX_DIR/SAindex
     then
       echo
@@ -634,7 +669,7 @@ EOF
 }
 
 create_gene_annotations() {
- ANNOTATION_PREFIX=$ANNOTATIONS_DIR/${GTF/.gtf}
+  ANNOTATION_PREFIX=$ANNOTATIONS_DIR/${GTF/.gtf}
 
   if ! is_up2date $ANNOTATION_PREFIX.genes.length.tsv $ANNOTATION_PREFIX.geneid2Symbol.tsv $ANNOTATION_PREFIX.genes.tsv
   then
@@ -644,6 +679,7 @@ create_gene_annotations() {
     cd $ANNOTATIONS_DIR
     module load $module_R
     module load $module_mugqic_R_packages
+    module load $module_perl
     R --no-restore --no-save<<EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
 gtf.fn     = "$GTF"
@@ -670,6 +706,7 @@ EOF
 
 create_gene_annotations_flat() {
   ANNOTATION_PREFIX=$ANNOTATIONS_DIR/${GTF/.gtf}
+
   if ! is_up2date $ANNOTATION_PREFIX.ref_flat.tsv
   then
     echo
@@ -702,8 +739,10 @@ create_go_annotations() {
       echo
       module load $module_R
       module load $module_mugqic_R_packages
+      module load $module_perl
       R --no-restore --no-save<<EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
+httr::set_config(httr::config(cainfo = '/etc/ssl/certs/ca-bundle.crt'))
 res = getBMsimple("$BIOMART_HOST","$BIOMART_MART","$BIOMART_DATASET",c("$BIOMART_GENE_ID", "$BIOMART_GO_ID", "$BIOMART_GO_NAME", "$BIOMART_GO_DEFINITION"))
 res = res[ res[["$BIOMART_GENE_ID"]] != '' & res[["$BIOMART_GO_ID"]] != '', ]
 write.table(res, file="$ANNOTATIONS_DIR/$GO", quote=FALSE,sep='\t',col.names=FALSE,row.names=FALSE)
@@ -851,8 +890,8 @@ LOG=$LOG_DIR/${enzyme}_digest_$TIMESTAMP.log && \
 ERR=$LOG_DIR/${enzyme}_digest_$TIMESTAMP.err && \
 ASSEMBLY_FOR_CMD=$(echo $ASSEMBLY | sed -e 's/[-.]/_/g')
 hicup_digester --genome \$ASSEMBLY_FOR_CMD --re1 ${enzymes[$enzyme]},${enzyme} $GENOME_DIGEST/$GENOME_FASTA > \$LOG 2> \$ERR && \
-mv Digest_\$ASSEMBLY_FOR_CMD_*${enzyme}_None_*.txt $GENOME_DIGEST_FILE && \
-chmod -R ug+rwX,o+rX $GENOME_DIGEST \$LOG \$ERR"
+mv Digest_\$ASSEMBLY_FOR_CMD_*${enzyme}_None_*.txt $GENOME_DIGEST_FILE" # && \
+#chmod -R ug+rwX,o+rX $GENOME_DIGEST \$LOG \$ERR"
       cmd_or_job Digest_CMD 2
     else
       echo
@@ -869,6 +908,8 @@ build_files() {
   create_bwa_index
   create_genome_digest
   create_bismark_genome_reference
+  create_bowtie_index
+  create_bowtie2_tophat_index
 
   if is_up2date $ANNOTATIONS_DIR/$NCRNA
   then
@@ -894,15 +935,12 @@ build_files() {
 
   if is_up2date $ANNOTATIONS_DIR/$GTF
   then
-    create_bowtie_index
-    create_bowtie2_tophat_index
     create_star_index
     create_gene_annotations
     create_gene_annotations_flat
   else
     echo "Could not find $ANNOTATIONS_DIR/$GTF..."
-    echo "No bowtie tophat index will be created... this step is skipped..."
-    echo "No bowtie2 tophat index will be created... this step is skipped..."
+    echo "No tophat index will be created... this step is skipped..."
     echo "No gene annotations will be performed... this step is skipped..."
     echo "You might consider to manually download a gtf file from UCSC table browser (http://genome.ucsc.edu/cgi-bin/hgTables)"
   fi

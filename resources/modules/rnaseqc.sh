@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=rnaseqc
-VERSION=1.1.8
+VERSION=2.4.0
 ARCHIVE=RNA-SeQC_v$VERSION.jar
 ARCHIVE_URL=http://www.broadinstitute.org/cancer/cga/tools/rnaseqc/$ARCHIVE
 SOFTWARE_DIR=${ARCHIVE/.jar/}

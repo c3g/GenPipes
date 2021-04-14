@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=ABySS
-VERSION=2.0.2
+VERSION=2.1.5
 ARCHIVE=${SOFTWARE,,}-$VERSION.tar.gz
 ARCHIVE_URL=http://www.bcgsc.ca/platform/bioinfo/software/${SOFTWARE,,}/releases/$VERSION/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE,,}-$VERSION

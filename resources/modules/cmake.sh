@@ -3,15 +3,14 @@
 set -eu -o pipefail
 
 SOFTWARE=CMake
-VERSION=3.14.0
+VERSION=3.16.0
 ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
-ARCHIVE_URL=https://github.com/Kitware/${SOFTWARE}/releases/download/v${VERSION}-rc2/${SOFTWARE,,}-${VERSION}-rc2.tar.gz
+ARCHIVE_URL=https://github.com/Kitware/${SOFTWARE}/releases/download/v${VERSION}/${SOFTWARE,,}-${VERSION}.tar.gz
 SOFTWARE_DIR=${SOFTWARE,,}-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
-  mv ${SOFTWARE,,}-${VERSION}-rc2 $SOFTWARE_DIR
 
   cd $SOFTWARE_DIR
   ./bootstrap --prefix=$INSTALL_DIR/$SOFTWARE_DIR
@@ -32,8 +31,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          DELLY_PATH          \$root
-prepend-path    PATH                \$root/src
+prepend-path    PATH                \$root/bin
 "
 }
 

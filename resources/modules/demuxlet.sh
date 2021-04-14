@@ -3,22 +3,29 @@
 set -eu -o pipefail
 
 SOFTWARE=demuxlet
-VERSION=master_20190913
+VERSION=master_20210204
 ARCHIVE=${SOFTWARE}-$VERSION.zip
 ARCHIVE_URL=https://github.com/statgen/demuxlet/archive/master.zip
 SOFTWARE_DIR=${SOFTWARE}-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
+  cd $INSTALL_DOWNLOAD
+
+#  # Before installing demuxlet, you need to install htslib in the same directory you want to install demuxlet (i.e. demuxlet and htslib should be siblings).
+  git clone --recursive https://github.com/samtools/htslib.git
+  cd htslib
+  autoheader
+  autoconf 
+  make -j12
+  make -j12 prefix=$INSTALL_DIR/$SOFTWARE_DIR install
+
   cd $INSTALL_DOWNLOAD
   git clone --recursive https://github.com/statgen/demuxlet.git
   cd demuxlet
   autoreconf -vfi
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
-  make
-  make install
+  make -j12
+  make -j12 install
 }
 
 module_file() {
@@ -30,7 +37,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/source
+prepend-path    PATH                \$root/bin
 "
 }
 

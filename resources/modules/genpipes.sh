@@ -5,14 +5,11 @@ set -eu -o pipefail
 #SOFTWARE=mugqic_pipelines
 #SOFTWARE=GenAP_Pipes
 SOFTWARE=genpipes
-VERSION=3.1.4
+VERSION=3.3.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://bitbucket.org/mugqic/genpipes/downloads/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
@@ -33,6 +30,7 @@ set             root                   $INSTALL_DIR/$SOFTWARE_DIR
 setenv          MUGQIC_PIPELINES_HOME \$root
 prepend-path    PATH                  \$root/utils
 prepend-path    PATH                  \$root/pipelines/ampliconseq
+prepend-path    PATH                  \$root/pipelines/covseq
 prepend-path    PATH                  \$root/pipelines/chipseq
 prepend-path    PATH                  \$root/pipelines/dnaseq
 prepend-path    PATH                  \$root/pipelines/dnaseq_high_coverage

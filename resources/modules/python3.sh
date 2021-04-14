@@ -3,8 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=python
-VERSION=3.7.3
-SETUPTOOLS_VERSION=28.8.0
+VERSION=3.8.5
+SETUPTOOLS_VERSION=49.3.1
 # Remove the version last number
 LIBVERSION=${VERSION%.[0-9]*}
 # Uppercase first P in python
@@ -23,6 +23,8 @@ build() {
   make install
 
   echo "General Python installation done.... processing setuptools"
+  export PYTHONHOME=$INSTALL_DIR/$SOFTWARE_DIR
+  export PYTHONPATH=$PYTHONHOME/lib/python$LIBVERSION/site-packages:$PYTHONHOME/lib/python$LIBVERSION
 
   # Install setuptools => easy_install
   cd $INSTALL_DOWNLOAD
@@ -33,6 +35,8 @@ build() {
   $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 bootstrap.py
   $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 setup.py build
   $INSTALL_DIR/$SOFTWARE_DIR/bin/python3 setup.py install
+
+#  for i in `find $INSTALL_DIR/$SOFTWARE_DIR/bin -type f`; do sed -i 's/^\#!.*/#!\/usr\/bin\/env python/' $i; done
 
   cd $INSTALL_DIR/$SOFTWARE_DIR/bin
   ln -s python3 python
@@ -48,7 +52,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          PYTHON_HOME         \$root
+setenv          PYTHONHOME          \$root
 prepend-path    PATH                \$root/bin
 prepend-path    MANPATH             \$root/share/man
 prepend-path    LIBRARY_PATH        \$root/lib/
