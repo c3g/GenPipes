@@ -109,7 +109,7 @@ class MUGQICPipeline(Pipeline):
 # Call home with pipeline statistics
 {separator_line}
 LOG_MD5=$(echo $USER-'{uniqueIdentifier}' | md5sum | awk '{{ print $1 }}')
-wget "{server}?{request}&md5=$LOG_MD5" --quiet --output-document=/dev/null
+echo `wget "{server}?{request}&md5=$LOG_MD5" --quiet --output-document=/dev/null`
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, uniqueIdentifier=uniqueIdentifier))
 
     def submit_jobs(self):

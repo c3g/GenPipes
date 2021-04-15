@@ -21,11 +21,14 @@
 
 # Python Standard Modules
 import os
-
+import logging
+import sys 
 # MUGQIC Modules
 from core.config import config
 from core.job import Job
 from utils import utils 
+
+log = logging.getLogger(__name__)
 
 def align(
     reads1,
@@ -43,6 +46,7 @@ def align(
     search_chimeres=False,
     cuff_follow=False
     ):
+
 
     if not genome_index_folder:
         genome_index_folder = config.param('star_align', 'genome_index_folder', required=True).format(
