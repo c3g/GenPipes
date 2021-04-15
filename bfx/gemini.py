@@ -22,7 +22,6 @@
 # Python Standard Modules
 
 # MUGQIC Modules
-from core.config import *
 from core.job import *
 
 def gemini_annotations(variants, gemini_output, tmp_dir):
@@ -43,5 +42,48 @@ gemini load -v {variants} \\
         variants=variants,
         output=gemini_output,
         temp=tmp_dir
+        )
+    )
+
+
+def set_somatic(ped, database, output):
+
+    return Job(
+        [database],
+        [output],
+        [
+            ['gemini_annotations', 'module_gemini'],
+            ['gemini_annotations', 'module_htslib']
+        ],
+        command="""\
+gemini amend \\
+  --sample {ped} \\
+  {database} && \\
+gemini set_somatic \\
+  {options} \\
+  {database} > \\
+  {output}""".format(
+            options=config.param('set_somatic_and_actionable_mutations', 'set_somatic'),
+            ped=ped,
+            database=database,
+            output=output,
+        )
+    )
+
+def actionable_mutations(database, output):
+
+    return Job(
+        [database],
+        [output],
+        [
+            ['gemini_annotations', 'module_gemini'],
+            ['gemini_annotations', 'module_htslib']
+        ],
+        command="""\
+gemini actionable_mutations \\
+  {database} \\
+  > {output}""".format(
+            database=database,
+            output=output,
         )
     )

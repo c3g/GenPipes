@@ -32,12 +32,14 @@ Usage
 #!text
 
 usage: hicseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f] [--json]
-                 [--report] [--clean] [-l {debug,info,warning,error,critical}]
+                 [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
+                 [--no-json] [--report] [--clean]
+                 [-l {debug,info,warning,error,critical}] [--sanity-check]
+                 [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
                  -e {DpnII,HindIII,NcoI,MboI,Arima} [-t {hic,capture}]
                  [-r READSETS] [-v]
 
-Version: 3.1.4
+Version: 3.1.5
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 
@@ -55,8 +57,9 @@ optional arguments:
                         job scheduler type (default: slurm)
   -f, --force           force creation of jobs even if up to date (default:
                         false)
-  --json                create a JSON file per analysed sample to track the
-                        analysis status (default: false)
+  --no-json             do not create JSON file per analysed sample to track
+                        the analysis status (default: false i.e. JSON file
+                        will be created)
   --report              create 'pandoc' command to merge all job markdown
                         report files in the given step range into HTML, if
                         they exist; if --report is set, --job-scheduler,
@@ -68,6 +71,12 @@ optional arguments:
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
+  --sanity-check        run the pipeline in `sanity check mode` to verify that
+                        all the input files needed for the pipeline to run are
+                        available on the system (default: false)
+  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
+                        run pipeline inside a container providing a container
+                        image path or accessible docker/singularity hub path
   -e {DpnII,HindIII,NcoI,MboI,Arima}, --enzyme {DpnII,HindIII,NcoI,MboI,Arima}
                         Restriction Enzyme used to generate Hi-C library
                         (default DpnII)
@@ -101,7 +110,10 @@ hic:
 13- identify_TADs_RobusTAD
 14- identify_peaks
 15- create_hic_file
-16- multiqc_report
+16- Cram output
+17- Reproducibility_Score
+18- Quality_Score
+19- multiqc_report
 ----
 ```
 ![hicseq capture workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_hicseq_capture.resized.png)
@@ -125,6 +137,7 @@ capture:
 15- capture_intersect
 16- create_hic_file
 17- multiqc_report
+18- cram_output
 
 ```
 samtools_bam_sort
@@ -217,11 +230,6 @@ create_hic_file
 A .hic file is created per sample in order to visualize in JuiceBox, WashU epigenome browser or as input for other tools.
 For more detailed information about the JuiceBox visit: [JuiceBox] (http://www.aidenlab.org/software.html)
 
-multiqc_report
---------------
-A quality control report for all samples is generated.
-For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
-
 create_rmap_file
 ----------------
 rmap file for Chicago capture analysis is created using the hicup digestion file.
@@ -258,4 +266,34 @@ capture_intersect
 provided with a bed file, for example a bed of GWAS snps or features of interest, this method returns the lines in the bed file that intersect with the captured ends ("Other Ends") that have significant interactions.
 Input bed must have 4 columns (<chr> <start> <end> <annotation>) and must be tab separated.
 
+cram _output
+-----------------
+Generate long term storage version of the final alignment files in CRAM format.
+Using this function will include the orginal final bam file into the  removable file list 
 
+reproducibility_scores
+-----------------
+
+hic-rep is a R package for calculating the inter-chromosmal reproducibility score. 
+Pairwise reproducibility scores for each chromosome pair in each sample pair are calculated using
+hic-rep at resolutions (bin size) defined in interaction_matrices_Chr step
+and other parameters defined in reproducibility_scores step of ini config file. All the scores are finally merged
+together and output a csv file with parameters used in analysis with chromosome number, reproducibility scores,
+standard deviation and smoothing value used for the analysis (in order to compare samples smoothing value
+and the sequencing depth should be similar across samples.
+Down-sampling of samples can be performed using the down_sampling parameter in the ini config file.
+Correlation matrices and weight matrices can be saved using  corr=TRUE and weights=TRUE in ini config file
+for more information visit: [https://bioconductor.org/packages/release/bioc/html/hicrep.html]      
+
+quality_scores
+-----------------
+
+Quality score per chromosome for each sample is calculated using QUSAR-QC at all resolutions
+and sequencing depths (coverages) and down_sampling value (coverage) defined in quality_scores step of ini config file
+QUSAR-QC is a part of the hifive hic-seq analysis suit
+for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_scoring.html]
+
+multiqc_report
+--------------
+A quality control report for all samples is generated.
+For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)

@@ -11,15 +11,17 @@ SOFTWARE_DIR=${SOFTWARE}-$VERSION
 build() {
   cd $INSTALL_DOWNLOAD
 
-#  # Before installing demuxlet, you need to install htslib in the same directory you want to install demuxlet (i.e. demuxlet and htslib should be siblings).
-  git clone --recursive https://github.com/samtools/htslib.git
+  # first install htslib in the same parent folder as demuxlet
+  git clone https://github.com/samtools/htslib.git
   cd htslib
-  autoheader
-  autoconf 
-  make -j12
-  make -j12 prefix=$INSTALL_DIR/$SOFTWARE_DIR install
+  autoheader     # If using configure, generate the header template...
+  autoconf       # ...and configure script (or use autoreconf to do both)
+  ./configure    # Optional but recommended, for choosing extra functionality
+  make
+  make install
 
-  cd $INSTALL_DOWNLOAD
+  # Now install demuxlet
+  cd ..  
   git clone --recursive https://github.com/statgen/demuxlet.git
   cd demuxlet
   autoreconf -vfi

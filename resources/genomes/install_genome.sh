@@ -360,6 +360,7 @@ create_samtools_index() {
 
 create_bismark_genome_reference() {
   BISMARK_INDEX_DIR=$GENOME_DIR/bismark_index
+  BISMARK_GENOME_DICT=$BISMARK_INDEX_DIR/${GENOME_FASTA/.fa/.dict}
   if ! is_up2date $BISMARK_INDEX_DIR/$GENOME_FASTA
   then
     echo
@@ -411,7 +412,7 @@ module load $module_bismark $module_bowtie2 && \
 LOG=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.log && \
 ERR=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.err &&\
 bismark_genome_preparation $BISMARK_INDEX_DIR > \$LOG 2> \$ERR" # && \
-#chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
+chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
     cmd_or_job BISMARK_CMD 8
   else
     echo
@@ -478,7 +479,7 @@ bowtie-build $BOWTIE_INDEX_DIR/$GENOME_FASTA $BOWTIE_INDEX_PREFIX > \$LOG 2> \$E
   cmd_or_job BOWTIE_CMD 4
   else
     echo
-    echo "Genome Bowtie index and gtf TopHat index up to date... skipping"
+    echo "Genome Bowtie index up to date... skipping"
     echo
   fi
 }
@@ -543,7 +544,7 @@ chmod -R ug+rwX,o+rX $BOWTIE2_INDEX_DIR \$LOG \$ERR"
 create_star_index() {
   if is_genome_big
   then
-    runThreadN=6
+    runThreadN=20
   else
     runThreadN=1
   fi
@@ -563,7 +564,7 @@ LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
 ERR=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.err && \
 STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --genomeSAindexNbases 4 --limitGenomeGenerateRAM 92798303616 --sjdbGTFfile $ANNOTATIONS_DIR/$GTF --outFileNamePrefix $INDEX_DIR/ > \$LOG 2> \$ERR && \
 chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG \$ERR"
-      cmd_or_job STAR_CMD $runThreadN STAR_${SPECIES}_${ASSEMBLY}_${sjdbOverhang}_CMD 120G
+      cmd_or_job STAR_CMD $runThreadN STAR_${SPECIES}_${ASSEMBLY}_${sjdbOverhang}_CMD 360G 
     else
       echo
       echo "STAR index with sjdbOverhang $sjdbOverhang up to date... skipping"

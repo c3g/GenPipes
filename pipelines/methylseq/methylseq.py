@@ -33,6 +33,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
+import utils.utils
 from bfx.readset import parse_illumina_readset_file
 
 from bfx import bvatools
@@ -111,6 +112,7 @@ class MethylSeq(dnaseq.DnaSeq):
             alignment_directory = os.path.join("alignment", readset.sample.name)
             no_readgroup_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")
             output_bam = re.sub("_noRG.bam", ".bam", no_readgroup_bam)
+            index_bam = re.sub("_noRG.bam", ".bam.bai", no_readgroup_bam)
             report_suffix = "_bismark_bt2_report.txt"
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
@@ -170,11 +172,21 @@ class MethylSeq(dnaseq.DnaSeq):
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p " + alignment_directory),
-                    samtools.flagstat(
+                    sambamba.index(
+                        output_bam,
+                        index_bam
+                    )
+                ], name="sambamba_index." + readset.name, samples=[readset.sample])
+            )
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + alignment_directory),
+                    sambamba.flagstat(
                         output_bam,
                         re.sub(".bam", "_flagstat.txt", output_bam),
+                        config.param('sambamba_flagstat', 'flagstat_options')
                     )
-                ], name="samtools_flagstat." + readset.name, samples=[readset.sample])
+                ], name="sambamba_flagstat." + readset.name, samples=[readset.sample])
             )
 
         report_file = os.path.join("report", "MethylSeq.bismark_align.md")
@@ -928,7 +940,7 @@ pandoc \\
             self.merge_trimmomatic_stats,
             self.bismark_align,
             self.add_bam_umi,               # step 5
-            self.picard_merge_sam_files,
+            self.sambamba_merge_sam_files,
             self.picard_remove_duplicates,
             self.metrics,
             self.methylation_call,
@@ -941,5 +953,9 @@ pandoc \\
             self.cram_output,
         ]
 
-if __name__ == '__main__': 
-    MethylSeq()
+if __name__ == '__main__':
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        MethylSeq()

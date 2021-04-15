@@ -19,7 +19,7 @@ source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
 
 # Download dbSNP directly from NCBI since it is more up to date
 get_vcf_dbsnp() {
-  DBSNP_VERSION=150
+  DBSNP_VERSION=151
 #  DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/archive/human_9606_b${DBSNP_VERSION}_GRCh38p7/VCF/All.vcf.gz
   DBSNP_URL=ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b${DBSNP_VERSION}_GRCh38p7/VCF/00-All.vcf.gz
   DBSNP=$ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP$DBSNP_VERSION.vcf.gz
@@ -72,7 +72,7 @@ get_dbNSFP() {
         done
     fi
     # set the default allele frequency for a population (hapmap CEU)
-    population_AF=1000Gp1_EUR_AF
+    population_AF=1000Gp3_EUR_AF
 }
 
 # Overwrite install_genome since NCBI genome is used instead of Ensembl

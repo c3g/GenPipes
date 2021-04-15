@@ -139,3 +139,52 @@ bedtools coverage {other_options} \\
             output_file=output_file
         )
     )
+
+
+def genomecov(input_file, output_file):
+
+    return Job(
+        [input_file],
+        [output_file],
+        [
+            ['bedtools', 'module_bedtools']
+        ],
+        command="""\
+bedtools genomecov {other_options} \\
+  {input} \\
+  {genome} \\
+  > {output_file}""".format(
+            input="-ibam " + input_file if re.search("\.bam$", os.path.basename(input_file)) else "-i " + input_file,
+            genome="-g " + config.param('bedtools_genomecov', 'genome_fasta') if not re.search("\.bam$", os.path.basename(input_file)) else "",
+            other_options=config.param('bedtools_genomecov', 'other_options', required=False),
+            output_file=output_file
+        )
+    )
+
+def bamtofastq(input_bam, output_pair1, output_pair2, other_options=config.param('bedtools_bamtofastq', 'other_options', required=False), pigz_threads=config.param('bedtools_bamtofastq', 'pigz_threads', required=False)):
+    if output_pair2:  # Paired end reads
+        outputs = [output_pair1, output_pair2]
+    else:   # Single end reads
+        outputs = [output_pair1]
+
+    return Job(
+        [input_bam],
+        [outf + ".gz" for outf in outputs],
+        [
+            ['bedtools', 'module_bedtools'],
+            ['pigz', 'module_pigz']
+        ],
+        command="""\
+bedtools bamtofastq {other_options} \\
+  -i {input_bam} \\
+  {output_pair1} \\
+  {output_pair2} && \\
+pigz -f -p {pigz_threads} {input_fq}""".format(
+    input_bam=input_bam,
+    other_options=other_options,
+    output_pair1="-fq " + output_pair1,
+    output_pair2="-fq2 " + output_pair2 if output_pair2 else "",
+    pigz_threads=pigz_threads,
+    input_fq=" ".join(outputs)
+    )
+        )

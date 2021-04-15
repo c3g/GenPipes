@@ -20,11 +20,13 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
 import re
 import sys
+import subprocess
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -32,6 +34,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
+import utils.utils
 
 from bfx import gq_seq_utils
 from bfx import picard
@@ -106,6 +109,9 @@ class RnaSeqLight(rnaseq.RnaSeq):
         return jobs
 
     def kallisto_count_matrix(self):
+        """
+        Use the output from Kallisto to create a transcript count matrix. 
+        """
 
         jobs=[]
         kallisto_directory="kallisto"
@@ -195,8 +201,6 @@ cp \\
             """
             Performs differential gene expression analysis using [Sleuth](http://pachterlab.github.io/sleuth/). 
             Analysis are performed both at a transcript and gene level, using two different tests: LRT and WT. 
-
-            Still in development, use with caution. 
             """
 
             # If --design <design file> option is missing, self.contrasts call will raise an Exception
@@ -231,5 +235,9 @@ cp \\
             ]
 
 if __name__ == '__main__':
-    RnaSeqLight()
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        RnaSeqLight()
 

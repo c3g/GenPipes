@@ -17,7 +17,7 @@ Software requirement
 GenPipes have been tested with Python 2.7.
 
 
-Quick setup for abacus, guillimin and mammouth users
+Quick setup for abacus, Beluga, graham, cedar and mammouth users
 ----------------------------------------------------
 Genomes and modules used by the pipelines are already installed on a CVMFS partition mounted on all those clusters in `/cvmfs/soft.mugqic/CentOS6`.
 To access them, add the following lines to your *$HOME/.bash_profile*:
@@ -26,7 +26,7 @@ To access them, add the following lines to your *$HOME/.bash_profile*:
 #!bash
 umask 0002
 
-## MUGQIC genomes and modules 
+## MUGQIC genomes and modules
 
 export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6
 
@@ -38,15 +38,15 @@ For MUGQIC analysts, add the following lines to your *$HOME/.bash_profile*:
 ```
 #!bash
 umask 0002
-     
+
 ## MUGQIC genomes and modules for MUGQIC analysts
-    
+
 HOST=`hostname`;
-    
+
 DNSDOMAIN=`dnsdomainname`;
 
 export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6
-    
+
 if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/lb/project/mugqic/analyste_dev
@@ -59,13 +59,13 @@ elif [[ $HOST == cedar* || $DNSDOMAIN == cedar.computecanada.ca ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
 
-  
+
 elif [[ $HOST == beluga* || $DNSDOMAIN == beluga.computecanada.ca ]]; then
 
   export MUGQIC_INSTALL_HOME_DEV=/project/6007512/C3G/analyste_dev
 
 fi
-    
+
 module use $MUGQIC_INSTALL_HOME/modulefiles $MUGQIC_INSTALL_HOME_DEV/modulefiles
 export RAP_ID=<my-rap-id>
 ```    
@@ -110,8 +110,26 @@ git clone git@bitbucket.org:mugqic/genpipes.git
 
 #### GenPipes' Container:
 
-To download and use the GenPipes' Docker container, please visit [genpipes_in_a_container](https://bitbucket.org/mugqic/genpipes_in_a_container/src/master).
+A new installation with a better taste:
 
+Make sure that you have fuse installed on your system,  if `ls /dev/fuse` returns no error, you are all set.
+
+Once the genpipes repo has been cloned, run the following command to install the container and wrapper code for the fuse libraries.
+
+```
+#!bash
+./genpipes/resources/container/get_wrapper.sh
+```
+
+You can access the the Genpipes container  by typing  
+
+```
+#!bash
+./genpipes/resources/container/bin/container_wrapper.sh`
+
+```
+
+You can get more information to run [Genpipes with containers here](https://github.com/c3g/genpipes_in_a_container)
 
 ### Setup
 
@@ -126,9 +144,9 @@ First, set `MUGQIC_INSTALL_HOME` to the directory where you want to install thos
 ```
 #!bash
 ## MUGQIC genomes and modules
-    
+
 export MUGQIC_INSTALL_HOME=/path/to/your/local/mugqic_resources
-    
+
 module use $MUGQIC_INSTALL_HOME/modulefiles
 ```
 
@@ -305,7 +323,7 @@ For more information about a specific pipeline, visit:
 ### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/)
 ### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/)
 ### [Illumina Run Processing Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/illumina_run_processing/)
-
+### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore/)
 
 Readset File
 ------------
@@ -355,6 +373,25 @@ Example:
     sampleA	readset2	F_01_2	105503472	150000	path/to/readset2.bas.h5	path/to/readset2.1.bax.h5,path/to/readset2.2.bax.h5,path/to/readset2.3.bax.h5
     sampleB	readset3	G_01_1	118603200	150000	path/to/readset3.bas.h5	path/to/readset3.1.bax.h5,path/to/readset3.2.bax.h5,path/to/readset3.3.bax.h5
     sampleB	readset4	G_01_2	104239488	150000	path/to/readset4.bas.h5	path/to/readset4.1.bax.h5,path/to/readset4.2.bax.h5,path/to/readset4.3.bax.h5
+
+### Nanopore
+
+* Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; mandatory; 
+* Readset: a unique readset name with the same allowed characters as above; mandatory;
+* Run: a unique ONT run name, usually has a structure similar to `PAE0000_a1b2c3d`; 
+* Flowcell: code of the type of flowcell used, for example: the code for PromethION Flow Cell (R9.4) is `FLO-PRO002`;
+* Library: code of the type of library preparation kit used, for example: the code for the Ligation Sequencing Kit is `SQK-LSK109`;
+* Summary: path to the `sequencing_summary.txt` file outputted by the ONT basecaller; mandatory;
+* FASTQ: path to the `fastq_pass` **directory**, that is usually created by the basecaller; mandatory;
+* FAST5: path to the **directory** containing the raw fast5 files, before basecalling; 
+
+Example: 
+
+    Sample  Readset Run Flowcell    Library Summary FASTQ   FAST5
+    sampleA readset1    PAE00001_abcd123    FLO-PRO002  SQK-LSK109 path/to/readset1_sequencing_summary.txt path/to/readset1/fastq_pass   path/to/readset1/fast5_pass 
+    sampleA readset2    PAE00002_abcd456    FLO-PRO002  SQK-LSK109 path/to/readset2_sequencing_summary.txt path/to/readset2/fastq_pass   path/to/readset2/fast5_pass 
+    sampleA readset3    PAE00003_abcd789    FLO-PRO002  SQK-LSK109 path/to/readset3_sequencing_summary.txt path/to/readset3/fastq_pass   path/to/readset3/fast5_pass 
+    sampleA readset4    PAE00004_abcd246    FLO-PRO002  SQK-LSK109 path/to/readset4_sequencing_summary.txt path/to/readset4/fastq_pass   path/to/readset4/fast5_pass 
 
 
 ### For abacus users with Nanuq readsets
@@ -537,5 +574,5 @@ You can also report bugs at [pipelines@computationalgenomics.ca](mailto:pipeline
 * Messages should not be sent directly to our team members. The generic e-mail addresses above are viewable by all of us and facilitate the follow-up of your request.
 * Choose a meaningful subject for your message.
 * Include the pipeline version number in your message (and the commit number if applicable).
-* Provide the following information relevant to the problem encountered: the python command, the bash submission script, the output (job_outputs/*/*.o) file, 
+* Provide the following information relevant to the problem encountered: the python command, the bash submission script, the output (job_outputs/*/*.o) file,
 * An error message or code snippet illustrating your request is normally very useful.

@@ -52,16 +52,16 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $FGBIO_JAR A
   --fastq {input_umi} \\
   --output {output_bam} \\
   {other_options}""".format(
-        tmp_dir=config.param('fgbio_addumi', 'tmp_dir'),
-        java_other_options=config.param('fgbio_addumi', 'java_other_options'),
-        ram=config.param('fgbio_addumi', 'ram'),
-        input_bam=input_bam,
-        input_umi=input_umi,
-        output_bam=output_bam,
-	other_options=config.param('fgbio_addumi', 'other_options') if config.param('fgbio_addumi', 'other_options',required=False) else ""
-        ),
+            tmp_dir=config.param('fgbio_addumi', 'tmp_dir'),
+            java_other_options=config.param('fgbio_addumi', 'java_other_options'),
+            ram=config.param('fgbio_addumi', 'ram'),
+            input_bam=input_bam,
+            input_umi=input_umi,
+            output_bam=output_bam,
+            other_options=config.param('fgbio_addumi', 'other_options') if config.param('fgbio_addumi', 'other_options',required=False) else ""
+            ),
         removable_files=[output_bam]
-    )
+        )
 
 
 def correct_readname(
@@ -72,7 +72,7 @@ def correct_readname(
     inputs = [input_umi]
     outputs = [output_umi_corrected]
     
-    if input_umi.lower().endswith('.gz') :
+    if input_umi.lower().endswith('.gz'):
         input_opener="zcat "
     else:
         input_opener="cat "
@@ -88,3 +88,33 @@ def correct_readname(
         ),
         removable_files=[output_umi_corrected]
     )
+
+
+def trim_primers(input_bam, output_bam, hard_clip=False):
+    inputs = [input_bam]
+    outputs = [output_bam]
+
+    return Job(
+        inputs,
+        outputs,
+        [
+            ['fgbio_trim_primers', 'module_java'],
+            ['fgbio_trim_primers', 'module_fgbio']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $FGBIO_JAR TrimPrimers \\
+  --input {input_bam} \\
+  --primers {primers} \\
+  --output {output_bam} \\
+  {hard_clip} \\
+  {other_options}""".format(
+            tmp_dir=config.param('fgbio_trim_primers', 'tmp_dir'),
+            java_other_options=config.param('fgbio_trim_primers', 'java_other_options'),
+            ram=config.param('fgbio_trim_primers', 'ram'),
+            input_bam=input_bam,
+            primers=config.param('fgbio_trim_primers', 'primers'),
+            output_bam=output_bam,
+            hard_clip="-H" if hard_clip else "",
+            other_options=config.param('fgbio_trim_primers', 'other_options')
+            )
+        )

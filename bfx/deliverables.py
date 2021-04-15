@@ -26,7 +26,7 @@ import os
 from core.config import *
 from core.job import *
 
-def sym_link(input, readset, type=None):
+def sym_link(input, readset, out_dir, type=None):
     sample = ""
     if type == "raw_reads":
         sample = readset.sample.name
@@ -35,47 +35,9 @@ def sym_link(input, readset, type=None):
         sample = readset.name
 
 
-    prefix = os.path.join("deliverables", sample, config.param('DEFAULT','experiment_type_abrev'), type)
+    prefix = os.path.join(out_dir, "deliverables", sample, config.param('DEFAULT', 'experiment_type_abrev'), type)
     input_postfix = input.split("/")[-1]
 
-    output = os.path.join(prefix, input_postfix)
-
-    return Job(
-    [input],
-    [output],
-    command="""\
-mkdir -p {prefix} && \\       
-ln -sf \\
-  {input} \\
-  {output}""".format(
-        prefix=os.path.abspath(prefix),
-        input=os.path.abspath(input),
-        output=os.path.abspath(output)
-        )
-    )
-
-def sym_link_pair(input, tumor_pair, type=None, sample=None, profyle=False):
-    
-    if profyle == True:
-        pair = ""
-        if not (type == "raw_reads" or type == "alignment"):
-            pair = tumor_pair.pair_profyle + "/"
-
-        if sample == "Normal":
-            prefix = os.path.join("analyses", tumor_pair.name, tumor_pair.normal_profyle, config.param('DEFAULT','experiment_type_abrev'), pair + type)
-
-        else:
-            prefix = os.path.join("analyses", tumor_pair.name, tumor_pair.tumor_profyle, config.param('DEFAULT','experiment_type_abrev'), pair + type)
-
-    else:
-        if sample == "Normal":
-            prefix = os.path.join("deliverables", tumor_pair.name, tumor_pair.normal.name, config.param('DEFAULT','experiment_type_abrev'), type)
-
-        else:
-            prefix = os.path.join("deliverables", tumor_pair.name, tumor_pair.tumor.name, config.param('DEFAULT','experiment_type_abrev'), type)
-
-    
-    input_postfix = input.split("/")[-1]
     output = os.path.join(prefix, input_postfix)
 
     return Job(
@@ -86,20 +48,56 @@ mkdir -p {prefix} && \\
 ln -sf \\
   {input} \\
   {output}""".format(
-        prefix=os.path.abspath(prefix),
-        input=os.path.abspath(input),
-        output=os.path.abspath(output)
+        prefix=prefix,
+        input=os.path.join(out_dir,input),
+        output=output
         )
     )
 
+def sym_link_pair(input, tumor_pair, out_dir, type=None, sample=None, profyle=False):
+    if profyle:
+        pair = ""
+        if not (type == "raw_reads" or type == "alignment"):
+            pair = tumor_pair.pair_profyle + "/"
 
-def md5sum(input, output):
+        if sample == "Normal":
+            prefix = os.path.join(out_dir, "analyses", tumor_pair.name, tumor_pair.normal_profyle, config.param('DEFAULT', 'experiment_type_abrev'), pair + type)
+
+        else:
+            prefix = os.path.join(out_dir, "analyses", tumor_pair.name, tumor_pair.tumor_profyle, config.param('DEFAULT', 'experiment_type_abrev'), pair + type)
+
+    else:
+        if sample == "Normal":
+            prefix = os.path.join(out_dir, "deliverables", tumor_pair.name, tumor_pair.normal.name, config.param('DEFAULT', 'experiment_type_abrev'), type)
+
+        else:
+            prefix = os.path.join(out_dir, "deliverables", tumor_pair.name, tumor_pair.tumor.name, config.param('DEFAULT', 'experiment_type_abrev'), type)
+
+    input_postfix = input.split("/")[-1]
+    output = os.path.join(prefix, input_postfix)
+
     return Job(
-    [input],
-    [output],
+        [input],
+        [output],
+        command="""\
+mkdir -p {prefix} && \\
+ln -s -f \\
+  {input} \\
+  {output}""".format(
+        prefix=prefix,
+        input=os.path.join(out_dir, input),
+        output=output
+        )
+    )
+
+def md5sum(input, output, out_dir):
+    return Job(
+        [input],
+        [output],
     command="""\
-md5sum {input} > {output}""".format(
-        input=os.path.abspath(input),
-        output=os.path.abspath(output)
+md5sum {input} \\
+        > {output}""".format(
+        input=os.path.join(out_dir, input),
+        output=os.path.join(out_dir, output),
         )
     )

@@ -42,7 +42,8 @@ class JobStat(object):
     RESTARTS = 'Restarts'
     RUNTIME = 'RunTime'
     REMOTE = {'beluga': 'beluga.calculcanada.ca',
-              'cedar': 'cedar.calculcanada.ca'}
+              'cedar': 'cedar.calculcanada.ca',
+              'graham': 'graham.calculcanada.ca'}
 
     # Fields extracted from sacct
     SJOBID = 'JobID'

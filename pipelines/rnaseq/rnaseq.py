@@ -26,6 +26,7 @@ import logging
 import os
 import re
 import sys
+import subprocess
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -33,6 +34,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
+import utils.utils
 
 from bfx import bedtools
 from bfx import bwa
@@ -1048,7 +1050,7 @@ cp \\
         edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
         edger_job.samples = self.samples
 
-        deseq_job = differential_expression.deseq(design_file, count_matrix, output_directory)
+        deseq_job = differential_expression.deseq2(design_file, count_matrix, output_directory)
         deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
         deseq_job.samples = self.samples
 
@@ -1201,4 +1203,8 @@ done""".format(
         ]
 
 if __name__ == '__main__':
-    RnaSeq(protocol=['cufflinks','stringtie'])
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        RnaSeq(protocol=['cufflinks','stringtie'])

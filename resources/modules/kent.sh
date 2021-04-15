@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=kent
-VERSION=308
+VERSION=391
 ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
 ARCHIVE_URL=https://github.com/ucscGenomeBrowser/${SOFTWARE}/archive/v${VERSION}_base.tar.gz
 
@@ -18,9 +18,7 @@ build() {
 
   mv ${SOFTWARE_DIR}_base $SOFTWARE_DIR
   cd $SOFTWARE_DIR/src/
-  make clean
-  make libs
-  cd hg
+  make
   make compile
   make install DESTDIR=$INSTALL_DIR/$SOFTWARE_DIR
 

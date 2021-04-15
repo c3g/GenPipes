@@ -20,10 +20,12 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
 import re
+import subprocess
 import sys
 import csv
 
@@ -33,6 +35,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
+import utils.utils
 
 from pipelines import common
 
@@ -701,7 +704,7 @@ mkdir -p {report_dir}/annotation/ && \\
 cp {report_template_dir}/{basename_report_file} {report_dir} && \\
 for contrast in {contrasts}
 do
-  rsync -avP annotation/$contrast {report_dir}/annotation/ && \\
+  rsync -rvP annotation/$contrast {report_dir}/annotation/ && \\
   echo -e "* [Gene Annotations for Design $contrast](annotation/$contrast/${{contrast}}.annotated.csv)\n* [HOMER Gene Ontology Annotations for Design $contrast](annotation/$contrast/$contrast/geneOntology.html)\n* [HOMER Genome Ontology Annotations for Design $contrast](annotation/$contrast/$contrast/GenomeOntology.html)" \\
   >> {report_file}
 done""".format(
@@ -1178,5 +1181,11 @@ pandoc --to=markdown \\
                 self.cram_output]
         ]
 
-if __name__ == '__main__':
-    ChipSeq(protocol=['chipseq', 'atacseq'])
+if __name__ == '__main__': 
+
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        ChipSeq(protocol=['chipseq', 'atacseq'])
+

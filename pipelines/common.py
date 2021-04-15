@@ -36,9 +36,12 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 from core.pipeline import Pipeline
 from bfx.design import parse_design_file
-from bfx.readset import parse_illumina_readset_file 
+from bfx.readset import parse_illumina_readset_file
+from bfx.sample_tumor_pairs import *
 
 from bfx import metrics
+from bfx import bvatools
+from bfx import verify_bam_id
 from bfx import picard
 from bfx import trimmomatic
 from bfx import samtools
@@ -55,8 +58,8 @@ class MUGQICPipeline(Pipeline):
         self.version = open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r').read().split('\n')[0]
         self._protocol=protocol
         # Add pipeline specific arguments
-        self.argparser.description = "Version: " + self.version + "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/"
-        self.argparser.add_argument("-v", "--version", action="version", version="mugqic_pipelines " + self.version, help="show the version information and exit")
+        self.argparser.description = "Version: " + self.version + "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/"
+        self.argparser.add_argument("-v", "--version", action="version", version="genpipes " + self.version, help="show the version information and exit")
 
         super(MUGQICPipeline, self).__init__()
 
@@ -106,7 +109,7 @@ class MUGQICPipeline(Pipeline):
 # Call home with pipeline statistics
 {separator_line}
 LOG_MD5=$(echo $USER-'{uniqueIdentifier}' | md5sum | awk '{{ print $1 }}')
-wget "{server}?{request}&md5=$LOG_MD5" --quiet --output-document=/dev/null
+echo `wget "{server}?{request}&md5=$LOG_MD5" --quiet --output-document=/dev/null`
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, uniqueIdentifier=uniqueIdentifier))
 
     def submit_jobs(self):
@@ -204,8 +207,11 @@ class Illumina(MUGQICPipeline):
         if FASTQ files are not already specified in the readset file. Do nothing otherwise.
         """
         jobs = []
+        analyses_dir = os.path.join("analyses")
+
         for readset in self.readsets:
             # If readset FASTQ files are available, skip this step
+            sym_link_job = []
             if not readset.fastq1:
                 if readset.bam:
                     ## check if bam file has been sorted:
@@ -247,7 +253,6 @@ class Illumina(MUGQICPipeline):
                             )
                         ], name="picard_sam_to_fastq."+readset.name, samples=[readset.sample])
                     )
-
                 else:
                     _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
         return jobs
@@ -347,7 +352,7 @@ END
 
             jobs.append(concat_jobs([
                 # Trimmomatic does not create output directory by default
-                Job(command="mkdir -p " + trim_directory),
+                Job(command="mkdir -p " + trim_directory, samples=[readset.sample]),
                 job
             ], name="trimmomatic." + readset.name, samples=[readset.sample]))
         return jobs
@@ -373,6 +378,7 @@ END
                 Job(
                     [trim_log],
                     [readset_merge_trim_stats],
+                    module_entries=[['merge_trimmomatic_stats', 'module_perl']],
                     # Create readset trimming stats TSV file with paired or single read count using ugly awk
                     command="""\
 grep ^Input {trim_log} | \\
@@ -544,5 +550,4 @@ pandoc \\
 
             jobs.append(job)
             
-        return jobs    
- 
+        return jobs

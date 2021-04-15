@@ -25,6 +25,24 @@
 from core.config import *
 from core.job import *
 
+def run(inputs, output, input_dep=False):
+    output = output + ".html"
+    return Job(
+        input_dep,
+        [output],
+        [
+            ['multiqc', 'module_python'],
+            ['multiqc', 'module_multiqc'],
+        ],
+        command="""\
+multiqc -f {options} \\
+{input} \\
+-n {output}""".format(
+            options=config.param('multiqc', 'options'),
+            input=" ".join([" \\\n  " + input for input in inputs]),
+            output=output,
+            )
+        )
 
 def mutliqc_run(yamlFile, input_files):
 
@@ -40,20 +58,3 @@ def mutliqc_run(yamlFile, input_files):
             name = "multiqc_report",
             command = command
             )
-
-def run(inputs, output, input_dep=False):
-    return Job(
-        input_dep,
-        [output],
-        [
-            ['multiqc', 'module_multiqc'],
-        ],
-        command="""\
-multiqc -f {options} \\
-{input} \\
--n {output}""".format(
-            options=config.param('multiqc', 'options'),
-            input=" ".join([" \\\n  " + input for input in inputs]),
-            output=output,
-            )
-        )

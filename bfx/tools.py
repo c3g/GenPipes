@@ -243,6 +243,42 @@ python $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
         )
     )
 
+def fix_genotypes_strelka(input, output, normal, tumor):
+        return Job(
+            [input],
+            [output],
+            [
+                ['DEFAULT', 'module_mugqic_tools'],
+                ['DEFAULT', 'module_python']
+            ],
+            command="""\
+	python $PYTHON_TOOLS/update_genotypes_strelka.py \\
+	    -i {input} \\
+	    -o {output} \\
+	    -n {normal} \\
+	    -t {tumor}""".format(
+                input=input if input else "",
+                output=output if input else "",
+                normal=normal,
+                tumor=tumor,
+            )
+        )
+def cpg_cov_stats(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/CpG_coverageStats.py \\
+ -i {input} \\
+ -o {output}""".format(
+            input=input,
+            output=output
+         )
+    )
 
 ## functions for perl tools ##
 
@@ -604,7 +640,11 @@ IHEC_chipseq_metrics_max.sh \\
         removable_files=[output_fingerprints,output_fingerprints_png,output_dedup_chip_bam,output_dedup_chip_bam,output_dedup_chip_bai,output_dedup_input_bam,output_dedup_input_bai,output_flagstats]
     )
 
-def sh_fastq_readname_edit(fastq, job_name):
+def sh_fastq_readname_edit(
+    fastq,
+    working_dir,
+    job_name
+    ):
     return Job(
         [fastq],
         [fastq + ".edited.gz"],
@@ -616,9 +656,9 @@ bash FastqReadNameEdit.sh \\
   -i {input_fastq} \\
   -o {output_fastq} \\
   -p {fastq_abs_path}""".format(
-            input_fastq=fastq,
-            output_fastq=fastq + ".edited.gz",
-            fastq_abs_path=os.path.abspath(fastq)
+            input_fastq=fastq if os.path.isabs(fastq) else os.path.join(working_dir, fastq),
+            output_fastq=fastq + ".edited.gz" if os.path.isabs(fastq) else os.path.join(working_dir, fastq + ".edited.gz"),
+            fastq_abs_path=fastq if os.path.isabs(fastq) else os.path.join(working_dir, fastq)
         ),
         name=job_name,
         removable_files = [fastq + ".edited.gz"]
@@ -706,6 +746,33 @@ bash extractCaptureBed.sh \\
         ),
         name="extract_capture_bed." + sample_name,
         removable_files=[ibed_file + ".capture"]
+    )
+
+
+def sh_blastQC_ONT(output_directory, reads_fastq_dir, readset_name):
+    return Job(
+        [reads_fastq_dir],
+        [os.path.join(output_directory, readset_name + "blastHit_20MF_species.txt")],
+        [
+            ["blastqc", "module_mugqic_tools"],
+            ["blastqc", "module_blast"],
+            ["blastqc", "module_python"]
+        ],
+        command="""
+bash runBlastQC_ONT.sh \\
+  {output_directory} \\
+  {reads_fastq_dir} \\
+  {readset_name}""".format(
+            output_directory=output_directory,
+            reads_fastq_dir=reads_fastq_dir,
+            readset_name=readset_name
+        ),
+        name="blastQC." + readset_name,
+        removable_files=[os.path.join(output_directory, "subsample_input.trim.blastres"),
+                         os.path.join(output_directory, "subsample_input.trim.fasta"),
+                         os.path.join(output_directory, "subsample_input.trim.fastq"),
+                         os.path.join(output_directory, "subsample_input.trim.qual"),
+                         os.path.join(output_directory, "subsample_input.fastq")]
     )
 
 def clean_otu(otu_table):
@@ -869,4 +936,21 @@ bash IHEC_methylseq_metrics.sh \\
             counter=count,
             targeted_flag=1 if target_bed else 0
         )
+    )
+
+def r_somatic_signature(input, output, remove_file=None):
+    return Job(
+        [input],
+        [os.path.join(output,"Alexandrov_weigth.tsv")],
+        [
+            ['somatic_signature', 'module_mugqic_tools'],
+            ['somatic_signature', 'module_R']
+        ],
+        command="""\
+Rscript $R_TOOLS/somaticSignatureAlexandrov.R \\
+  {input} \\
+  {output} """.format(
+        input=input,
+        output=output
+        ),removable_files=remove_file
     )
