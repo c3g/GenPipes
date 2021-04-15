@@ -21,11 +21,14 @@
 
 # Python Standard Modules
 import os
-
+import logging
+import sys 
 # MUGQIC Modules
 from core.config import config
 from core.job import Job
 from utils import utils 
+
+log = logging.getLogger(__name__)
 
 def align(
     reads1,
@@ -44,14 +47,15 @@ def align(
     cuff_follow=False
     ):
 
+
     if not genome_index_folder:
-        genome_index_folder = config.param('star_align', 'genome_index_folder', required=True, type='dirpath').format(
+        genome_index_folder = config.param('star_align', 'genome_index_folder', required=True).format(
             star_version=config.param('star_align', 'module_star').split('/')[-1]
         )
-        if not os.path.exists(genome_index_folder):
-            genome_index_folder = config.param('star_align', 'genome_index_folder', required=True, type='dirpath').format(
+        if not os.path.exists(os.path.expandvars(genome_index_folder)):
+            genome_index_folder = config.param('star_align', 'genome_index_folder', required=True).format(
             star_version=''
-        )        
+        )
 
     bam_name = "Aligned.sortedByCoord.out.bam" if sort_bam else "Aligned.out.bam"
     job = Job(
