@@ -3,23 +3,26 @@
 set -eu -o pipefail
 
 SOFTWARE=freebayes
-VERSION=1.2.0
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/ekg/${SOFTWARE}/archive/v${VERSION}.tar.gz
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+VERSION=1.3.4
+#ARCHIVE=${SOFTWARE}-${VERSION}.gz
+ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
+#ARCHIVE_URL=https://github.com/$SOFTWARE/$SOFTWARE/releases/download/v$VERSION/${SOFTWARE}-${VERSION}-linux-static-AMD64.gz
+ARCHIVE_URL=https://github.com/$SOFTWARE/$SOFTWARE/releases/download/v$VERSION/${SOFTWARE}-${VERSION}-src.tar.gz
+SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  git clone --recursive git://github.com/ekg/freebayes.git -b v1.2.0
+#  gunzip -c $ARCHIVE > $SOFTWARE
+  git clone --recursive https://github.com/$SOFTWARE/$SOFTWARE.git -b v$VERSION
 
   cd $SOFTWARE
-  make
+#  module load mugqic/python/3.7.3 mugqic/htslib/1.11 mugqic/tabix/0.2.6 mugqic/vcflib/1.0.1
+  meson build/
+  ninja -C build/
 
   # Install software
   cd $INSTALL_DOWNLOAD
+#  mkdir -p $INSTALL_DIR/${SOFTWARE_DIR}
   mv -i $SOFTWARE $INSTALL_DIR/${SOFTWARE_DIR}
 }
 
@@ -32,7 +35,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/bin/
+prepend-path    PATH                \$root
+prepend-path    PATH                \$root/build
 "
 }
 

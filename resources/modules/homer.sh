@@ -14,7 +14,7 @@ set -eu -o pipefail
 # perl configureHomer.pl –install hg19r    (to download the hg19 repeat masked version of the human genome)
 
 SOFTWARE=homer
-VERSION=4.10
+VERSION=4.11
 ARCHIVE_URL=http://homer.salk.edu/$SOFTWARE/configureHomer.pl
 ARCHIVE=configureHomer.pl
 SOFTWARE_DIR=$SOFTWARE-$VERSION

@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=python
-VERSION=2.7.15
+VERSION=2.7.18
 SETUPTOOLS_VERSION=36.4.0
 # Remove the version last number
 LIBVERSION=${VERSION%.[0-9]*}
@@ -126,8 +126,8 @@ build() {
   cd ..
   rm -r $EMPEROR_ARCHIVE emperor-${EMPEROR_VERSION}
   # And now, proceed to the QIIME installation itself
-  $PIP_PATH install --upgrade qiime
-  $INSTALL_DIR/$SOFTWARE_DIR/bin/python -c 'import qiime; print qiime.__version__, qiime.__file__'
+#  $PIP_PATH install --upgrade qiime
+#  $INSTALL_DIR/$SOFTWARE_DIR/bin/python -c 'import qiime; print qiime.__version__, qiime.__file__'
 
   # TEToolKit
   $PIP_PATH install --upgrade TEToolkit

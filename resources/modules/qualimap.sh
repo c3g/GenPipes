@@ -5,22 +5,26 @@ set -eu -o pipefail
 echo "Be sure to load java & R modules before using Qualimap"
 
 SOFTWARE="qualimap"
-VERSION="2.2.1"
+VERSION="2.2.2dev"
 ARCHIVE=$SOFTWARE-$VERSION.zip
-ARCHIVE_URL=https://bitbucket.org/kokonech/$SOFTWARE/downloads/${SOFTWARE}_v${VERSION}.zip
+#ARCHIVE_URL=https://bitbucket.org/kokonech/$SOFTWARE/downloads/${SOFTWARE}_v${VERSION}.zip
+ARCHIVE_URL=https://bitbucket.org/kokonech/$SOFTWARE/downloads/${SOFTWARE}-build-11-11-19.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-R_MODULE=mugqic/R_Bioconductor/3.2.3_3.2
+R_MODULE=mugqic/R_Bioconductor/3.5.3_3.8
 
 build() {
   cd $INSTALL_DOWNLOAD
-  unzip $ARCHIVE
-  mv ${SOFTWARE}_v${VERSION} $SOFTWARE_DIR
+#  unzip $ARCHIVE
+  tar zxvf $ARCHIVE
+#  mv ${SOFTWARE}_v${VERSION} $SOFTWARE_DIR
+  mv ${SOFTWARE}-build-11-11-19 $SOFTWARE_DIR
 
   # Install software
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
 
   # install required R-packages
+  source /etc/profile.d/modules.sh
   module load $R_MODULE
   Rscript $INSTALL_DIR/$SOFTWARE_DIR/scripts/installDependencies.r
 }
