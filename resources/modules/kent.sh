@@ -14,13 +14,10 @@ SOFTWARE_DIR=$SOFTWARE-$VERSION
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-#  tar zxvf $ARCHIVE
+  tar zxvf $ARCHIVE
 
-#  mv ${SOFTWARE_DIR}_base $SOFTWARE_DIR
+  mv ${SOFTWARE_DIR}_base $SOFTWARE_DIR
   cd $SOFTWARE_DIR/src/
-#  make clean
-#  make libs
-#  cd hg
   make
   make compile
   make install DESTDIR=$INSTALL_DIR/$SOFTWARE_DIR

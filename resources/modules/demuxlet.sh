@@ -1,20 +1,13 @@
-<<<<<<< HEAD
-#!/bin/bash
-=======
 #!/usr/bin/env bash
->>>>>>> 1f66c6c99a2d466df7259210d21d3c202295b58f
 # Exit immediately on error
 set -eu -o pipefail
 
 SOFTWARE=demuxlet
-VERSION=master_20190913
+VERSION=master_20210204
 ARCHIVE=${SOFTWARE}-$VERSION.zip
 ARCHIVE_URL=https://github.com/statgen/demuxlet/archive/master.zip
 SOFTWARE_DIR=${SOFTWARE}-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
 
@@ -33,8 +26,8 @@ build() {
   cd demuxlet
   autoreconf -vfi
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
-  make
-  make install
+  make -j12
+  make -j12 install
 }
 
 module_file() {

@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=bamtools
-VERSION=2.4.1
+VERSION=2.5.1
 ARCHIVE=$SOFTWARE-${VERSION}.tar.gz
 ARCHIVE_URL=https://github.com/pezmaster31/$SOFTWARE/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -16,14 +16,11 @@ build() {
   tar -xzvf $ARCHIVE
 
   cd $SOFTWARE_DIR
-  mkdir build
+  mkdir -p build
   cd build
-  cmake ..
+  cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/$SOFTWARE_DIR ..
   make -j12
-
-  cd $INSTALL_DOWNLOAD
-  mv $SOFTWARE_DIR $INSTALL_DIR/
-
+  make install
 }
 
 module_file() {

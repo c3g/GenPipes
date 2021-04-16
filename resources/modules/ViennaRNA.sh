@@ -3,11 +3,10 @@
 set -eu -o pipefail
 
 SOFTWARE=ViennaRNA
-VERSION=1.8.4
+VERSION=2.4.14
 VERSION_FAMILY=${VERSION:0:4}x
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=http://www.tbi.univie.ac.at/RNA/download/sourcecode/${VERSION_FAMILY//./_}/$ARCHIVE
-
+ARCHIVE_URL=https://www.tbi.univie.ac.at/RNA/download/sourcecode/${VERSION_FAMILY//./_}/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 build() {
@@ -15,7 +14,7 @@ build() {
   tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
-  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --datadir=$INSTALL_DIR/$SOFTWARE_DIR 
+  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
   make -j12 
   make install
 }

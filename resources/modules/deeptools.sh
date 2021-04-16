@@ -2,22 +2,26 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-# WebLogo requires a recent version of ghostscript to create PNG and PDF output, and pdf2svg to generate SVG output.
-# WebLogo version 3 is written in python. It is necessary to have python 2.5, 2.6 or 2.7 and the extension package numpy installed before WebLogo will run.
-
 SOFTWARE=deepTools
-VERSION=2.5.3
+VERSION=3.5.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://github.com/${SOFTWARE,,}/${SOFTWARE}/archive/${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
-PYTHON_VERSION=2.7.14
+PYTHON_VERSION=3.6.5
+PYTHON_SHORT_VERSION=${PYTHON_VERSION:0:3}
+NOWRAP=1
+NOPATCH=1
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE
-  cd $SOFTWARE_DIR
+#  tar zxvf $ARCHIVE
+#  cd $SOFTWARE_DIR
   module load mugqic/python/$PYTHON_VERSION
-  python setup.py install --prefix $INSTALL_DIR/$SOFTWARE_DIR
+#  python setup.py install --prefix $INSTALL_DIR/$SOFTWARE_DIR
+  pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed git+https://github.com/${SOFTWARE,,}/${SOFTWARE}.git@${VERSION}
+  pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed git+https://github.com/${SOFTWARE,,}/deeptools_intervals.git
+  pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed git+https://github.com/${SOFTWARE,,}/pyBigWig.git
+  pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed git+https://github.com/${SOFTWARE,,}/py2bit.git
 }
 
 module_file() {
@@ -30,6 +34,9 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin
+prepend-path    PYTHONPATH          $PYTHONPATH
+prepend-path    PYTHONPATH          \$root/lib/python${PYTHON_SHORT_VERSION}
+prepend-path    PYTHONPATH          \$root/lib/python${PYTHON_SHORT_VERSION}/site-packages
 "
 }
 
