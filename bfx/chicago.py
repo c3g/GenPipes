@@ -41,7 +41,7 @@ def makeDesignFiles (rmapfile, baitmapfile, file_prefix, design_dir = ".", other
             output_files = [file_prefix + ".npb",
             file_prefix + ".poe",
             file_prefix + ".nbpb"],
-            module_entries = [['create_design_files', 'module_chicago']],
+            module_entries = [['create_design_files', 'module_chicago'], ['create_input_files', 'module_python']],
             name = "create_design_files." + os.path.basename(file_prefix),
             command = command,
             )
