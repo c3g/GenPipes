@@ -961,7 +961,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 inputs = [readset.fastq1, readset.fastq2]
                 command = "runBlast.sh " + str(nb_blast_to_do) + " " + output_prefix + " " + readset.fastq1 + " "
                 if readset.fastq2:
-                    command += readset.fastq2
+                    # Because runBlast.sh end up creating a symlink, here
+                    #   we make sure remove the link before it's created.
+                    # We also add the R2.fastq as a parameter to runBlast.sh
+                    command = "rm -f " + output + " && " + command + readset.fastq2
                     fasta_file = output_prefix + ".R1R2.subSampled_{nb_blast_to_do}.fasta".format(
                         nb_blast_to_do=nb_blast_to_do
                     )
@@ -1801,17 +1804,22 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 if self.is_dual_index[lane]:
                     outputs.extend(readset.index_fastq2)
                 postprocessing_jobs.append(
-                    pipe_jobs(
+                    concat_jobs(
                         [
-                            bash.cat(
-                                readset_r2_outputs,
-                                None,
-                                zip=True
-                            ),
-                            bash.awk(
-                                None,
-                                None,
-                                self.awk_read_2_processing_command(readset, lane)
+                            bash.mkdir(os.path.dirname(readset.fastq2)),
+                            pipe_jobs(
+                                [
+                                    bash.cat(
+                                        readset_r2_outputs,
+                                        None,
+                                        zip=True
+                                    ),
+                                    bash.awk(
+                                        None,
+                                        None,
+                                        self.awk_read_2_processing_command(readset, lane)
+                                    )
+                                ]
                             )
                         ],
                         output_dependency=outputs,
@@ -1846,7 +1854,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         This will also convert the headers of the fastqs from MGI Illumina format
         """
         if self.is_dual_index[lane]:
-            return """-v inst=\"{{instrument}}\" -v run=\"{{run}}\" -v read_len=\"{{read_len}}\" -v barcode_len=\"{{barcode_len}}\" '{{
+            return """-v inst=\"{instrument}\" -v run=\"{run}\" -v read_len=\"{read_len}\" -v barcode_len=\"{barcode_len}\" '{{
  header=$0
  getline seq
  getline sep
@@ -1866,7 +1874,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
  print header "\\n" i2_seq "\\n" sep "\\n" i2_qual | "gzip > {i2_out}"
 }}'
 """.format(
-                intrument=self.instrument,
+                instrument=self.instrument,
                 run=self.run_counter,
                 read_len=self.get_read2cycles(lane),
                 barcode_len=self.get_index2cycles(lane),
@@ -1875,7 +1883,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 i2_out=readset.index_fastq2
             )
         else:
-            return """-v inst=\"{{instrument}}\" -v run=\"{{run}}\" -v read_len=\"{{read_len}}\" -v barcode_len=\"{{barcode_len}}\" '{{
+            return """-v inst=\"{instrument}\" -v run=\"{run}\" -v read_len=\"{read_len}\" -v barcode_len=\"{barcode_len}\" '{{
  header=$0
  getline seq
  getline sep
@@ -1892,10 +1900,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
  print b1_head "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
 }}'
 """.format(
-                intrument=self.instrument,
+                instrument=self.instrument,
                 run=self.run_counter,
                 read_len=self.get_read2cycles(lane),
-                barcode_len=self.get_index2cycles(lane),
+                barcode_len=self.get_index1cycles(lane),
                 r2_out=readset.fastq2,
                 i1_out=readset.index_fastq1
             )
