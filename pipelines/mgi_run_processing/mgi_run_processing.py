@@ -1827,6 +1827,61 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         samples=self.samples[lane]
                     )
                 )
+        # Process undetermined reads fastq files
+        unmatched_R1_fastq = os.path.join(output_dir, "tmp", "unmatched_R1.fastq.gz")
+        if unmatched_R1_fastq not in demuxfastqs_outputs:
+            demuxfastqs_outputs.append(unmatched_R1_fastq)
+        postprocessing_jobs.append(
+            pipe_jobs(
+                [
+                    bash.cat(
+                        unmatched_R1_fastq,
+                        None,
+                        zip=True
+                    ),
+                    bash.awk(
+                        None,
+                        None,
+                        self.awk_read_1_processing_command()
+                    ),
+                    bash.gzip(
+                        None,
+                        os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz")
+                    )
+                ],
+                name="fastq.convert_R1.unmatched." + self.run_id + "." + lane,
+                samples=self.samples[lane]
+            )
+        )
+        if self.is_paired_end[lane]:
+            unmatched_R2_fastq = os.path.join(output_dir, "tmp", "unmatched_R2.fastq.gz")
+            if unmatched_R2_fastq not in demuxfastqs_outputs:
+                demuxfastqs_outputs.append(unmatched_R2_fastq)
+            outputs = [
+                os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
+                os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
+            ]
+            if self.is_dual_index[lane]:
+                outputs.extend(os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz"))
+            postprocessing_jobs.append(
+                pipe_jobs(
+                    [
+                        bash.cat(
+                            unmatched_R2_fastq,
+                            None,
+                            zip=True
+                        ),
+                        bash.awk(
+                            None,
+                            None,
+                            self.awk_read_2_processing_command(None, lane)
+                        )
+                    ],
+                    output_dependency=outputs,
+                    name="fastq.convert_R2.unmatched." + self.run_id + "." + lane,
+                    samples=self.samples[lane]
+                )
+            )
 
         return demuxfastqs_outputs, postprocessing_jobs
 
@@ -1878,9 +1933,9 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 run=self.run_counter,
                 read_len=self.get_read2cycles(lane),
                 barcode_len=self.get_index2cycles(lane),
-                r2_out=readset.fastq2,
-                i1_out=readset.index_fastq1,
-                i2_out=readset.index_fastq2
+                r2_out=readset.fastq2 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
+                i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz"),
+                i2_out=readset.index_fastq2 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
             )
         else:
             return """-v inst=\"{instrument}\" -v run=\"{run}\" -v read_len=\"{read_len}\" -v barcode_len=\"{barcode_len}\" '{{
@@ -1904,8 +1959,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 run=self.run_counter,
                 read_len=self.get_read2cycles(lane),
                 barcode_len=self.get_index1cycles(lane),
-                r2_out=readset.fastq2,
-                i1_out=readset.index_fastq1
+                r2_out=readset.fastq2 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
+                i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
             )
 
 
