@@ -961,8 +961,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 inputs = [readset.fastq1, readset.fastq2]
                 command = "runBlast.sh " + str(nb_blast_to_do) + " " + output_prefix + " " + readset.fastq1 + " "
                 if readset.fastq2:
-                    # Because runBlast.sh end up creating a symlink, here
-                    #   we make sure remove the link before it's created.
+                    # Because runBlast.sh ends up creating a symlink, here
+                    #  we make sure to remove the link before it's created.
                     # We also add the R2.fastq as a parameter to runBlast.sh
                     command = "rm -f " + output + " && " + command + readset.fastq2
                     fasta_file = output_prefix + ".R1R2.subSampled_{nb_blast_to_do}.fasta".format(
