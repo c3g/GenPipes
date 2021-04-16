@@ -25,6 +25,7 @@ All analysis parameters are described in this [configuration file](config.ini).
 [PacBio]: http://www.pacificbiosciences.com/news_and_events/publications/
 [Picard]: http://broadinstitute.github.io/picard/
 [RSEM]: http://deweylab.biostat.wisc.edu/rsem/
+[Sambamba]: https://lomereiter.github.io/sambamba/
 [SAMtools]: http://www.htslib.org/
 [SnpEff]: http://snpeff.sourceforge.net/
 [SnpSift]: http://snpeff.sourceforge.net/SnpSift.html
@@ -431,6 +432,29 @@ references:
   type: article-journal
   issued:
     year: 2011
+
+- id: sambamba
+  title: 'Sambamba: fast processing of NGS alignment formats'
+  author:
+    - family: Tarasov
+      given: Artem
+    - family: Vilella
+      given: Albert J.
+    - family: Cuppen
+      given: Edwin
+    - family: Nijman
+      given: Isaac J.
+    - family: Prins
+      given: Pjotr
+  container-title: Bioinformatics
+  volume: 31
+  URL: 'http://dx.doi.org/10.1093/bioinformatics/btv098'
+  DOI: 10.1093/bioinformatics/btv098
+  issue: 12
+  page: 2032-2034
+  type: article-journal
+  issued:
+    year: 2015
 
 - id: samtools
   title: 'The Sequence Alignment/Map format and SAMtools'

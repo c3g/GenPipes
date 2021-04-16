@@ -37,12 +37,12 @@ def sort(input_bam, output_bam, tmp_dir, other_options=None):
         command="""\
 sambamba sort {options} \\
   {input} \\
-  --tmpdir {temp} \\
+  --tmpdir {tmp} \\
   {output}""".format(
         options=other_options if other_options else "",
         input=input_bam,
         output="--out " + output_bam if output_bam else "",
-        temp=tmp_dir
+        tmp=tmp_dir
         )
     )
 
@@ -65,26 +65,26 @@ sambamba index {options} \\
         )
     )
 
-def merge(input_bams, output_bam):
+def merge(input_bams, output_bam, ini_section='sambamba_merge_sam_files'):
 
     return Job(
         input_bams,
         [output_bam],
         [
-            ['sambamba_merge_sam_files', 'module_samtools'],
-            ['sambamba_merge_sam_files', 'module_sambamba']
+            [ini_section, 'module_samtools'],
+            [ini_section, 'module_sambamba']
         ],
         command="""\
 sambamba merge {options} \\
   {output} \\
   {input}""".format(
-        options=config.param('sambamba_merge_sam_files', 'options'),
+        options=config.param(ini_section, 'options'),
         input="".join([" \\\n  " + input_bam for input_bam in input_bams]),
         output=output_bam
         )
     )
 
-def markdup(input_bam, output_bam, temp_dir):
+def markdup(input_bam, output_bam, tmp_dir, other_options=None):
     if not isinstance(input_bam, list):
         input_bam=[input_bam]
 
@@ -96,12 +96,12 @@ def markdup(input_bam, output_bam, temp_dir):
             ['sambamba_mark_duplicates', 'module_sambamba']
         ],
         command="""\
-sambamba markdup {options} \\
+sambamba markdup {other_options} \\
   {input} \\
-  --tmpdir {temp} \\
+  --tmpdir {tmp} \\
   {output}""".format(
-        options=config.param('sambamba_mark_duplicates', 'options', required=False),
-        temp=temp_dir,
+        other_options=other_options,
+        tmp=tmp_dir,
         input=" \\\n  ".join(input for input in input_bam),
         output=output_bam,
         )
@@ -126,7 +126,7 @@ sambamba view {options} \\
         )
     )
 
-def flagstat(input, output, options):
+def flagstat(input, output, options=""):
 
     return Job(
         [input],
