@@ -187,7 +187,7 @@ STAR --runMode genomeGenerate \\
         gtf=" \\\n  --sjdbGTFfile " + gtf if gtf else "",
         io_limit_size=" \\\n  --limitIObufferSize " + str(io_max) if io_max else "",
         sjdbOverhang=" \\\n  --sjdbOverhang " + str(read_size) if read_size else "",
-        tmp_dir=config.param('star_align', 'tmp_dir', required=True),
+        tmp_dir=config.param('star_index', 'tmp_dir', required=True),
         other_options=" \\\n  " + other_options if other_options else ""
     )
 
