@@ -119,6 +119,7 @@ STAR --runMode alignReads \\
   --outSAMtype BAM {sort_value} \\
   --outFileNamePrefix {output_directory}/ \\
   --outSAMattrRGline {rg_id}\t{rg_platform}\t{rg_platform_unit}\t{rg_library}\t{rg_sample}\t{rg_center} \\
+  --outTmpDir {tmp_dir}/$(mktemp -u star_XXXXXXXX) \\
   --limitGenomeGenerateRAM {ram}{sort_ram}{io_limit_size}{wig_param}{chim_param}{cuff_cmd}{other_options}""".format(
         output_directory=output_directory,
         genome_index_folder=genome_index_folder,
@@ -138,6 +139,7 @@ STAR --runMode alignReads \\
         wig_param=" \\\n  " + wig_cmd if wig_cmd else "",
         chim_param=" \\\n  " + chim_cmd if chim_cmd else "",
         cuff_cmd=" \\\n  " + cuff_cmd if cuff_cmd else "",
+        tmp_dir=config.param('star_align', 'tmp_dir', required=True),
         other_options=" \\\n  " + other_options if other_options else ""
     )
 
@@ -175,6 +177,7 @@ STAR --runMode genomeGenerate \\
   --genomeFastaFiles {reference_fasta} \\
   --runThreadN {num_threads} \\
   --limitGenomeGenerateRAM {ram} \\
+  --outTmpDir {tmp_dir}/$(mktemp -u star_XXXXXXXX) \\
   --sjdbFileChrStartEnd {junction_file}{gtf}{io_limit_size}{sjdbOverhang}{other_options}""".format(
         genome_index_folder=genome_index_folder,
         reference_fasta=reference_fasta,
@@ -184,6 +187,7 @@ STAR --runMode genomeGenerate \\
         gtf=" \\\n  --sjdbGTFfile " + gtf if gtf else "",
         io_limit_size=" \\\n  --limitIObufferSize " + str(io_max) if io_max else "",
         sjdbOverhang=" \\\n  --sjdbOverhang " + str(read_size) if read_size else "",
+        tmp_dir=config.param('star_index', 'tmp_dir', required=True),
         other_options=" \\\n  " + other_options if other_options else ""
     )
 
