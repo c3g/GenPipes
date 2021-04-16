@@ -1041,6 +1041,8 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
                 [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
                 [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
             ])
+            freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.fasta"
+            freebayes_consensus_renamed = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.renamed.fasta"
             quast_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics")
             quast_html = os.path.join(quast_directory, "report.html")
             quast_tsv = os.path.join(quast_directory, "report.tsv")
@@ -1137,22 +1139,25 @@ export STATUS""".format(
     )
                         ),
                     Job(
-                        input_files=[input_fa],
-                        output_files=[output_fa],
+                        input_files=[input_fa, freebayes_consensus],
+                        output_files=[output_fa, freebayes_consensus_renamed],
                         command="""\\
-awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:{assemb_method}|snv_call_method:{snv_call_method}"; next}}{{print}}' < {input_fa} > {output_status_fa} && \\
-ln -sf {output_status_fa_basename} {output_fa}""".format(
+awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:ivar|snv_call_method:ivar"; next}}{{print}}' < {input_fa} > {output_status_fa} && \\
+ln -sf {output_status_fa_basename} {output_fa} && \\
+awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:bcftools|snv_call_method:freebayes"; next}}{{print}}' < {freebayes_consensus} > {freebayes_consensus_renamed}""".format(
     country=config.param('rename_consensus_header', 'country', required=False),
     province=config.param('rename_consensus_header', 'province', required=False),
     year=config.param('rename_consensus_header', 'year', required=False),
     seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
-    assemb_method=config.param('rename_consensus_header', 'assemb_method', required=False),
-    snv_call_method=config.param('rename_consensus_header', 'snv_call_method', required=False),
+    # assemb_method=config.param('rename_consensus_header', 'assemb_method', required=False),
+    # snv_call_method=config.param('rename_consensus_header', 'snv_call_method', required=False),
     sample=sample.name,
     input_fa=input_fa,
     output_status_fa_basename=os.path.basename(output_status_fa),
     output_status_fa=output_status_fa,
-    output_fa=output_fa
+    output_fa=output_fa,
+    freebayes_consensus=freebayes_consensus,
+    freebayes_consensus_renamed=freebayes_consensus_renamed
     )
                         )
                 ],
@@ -1205,6 +1210,41 @@ ln -sf {output_status_fa_basename} {output_fa}""".format(
         return jobs
 
 
+    def ncovtools_quickalign(self):
+
+        jobs = []
+
+        for sample in self.samples:
+            ncovtools_quickalign_directory = os.path.join("metrics", "dna", sample.name, "ncovtools_quickalign")
+            output = os.path.join(ncovtools_quickalign_directory, sample.name + "_ivar_vs_freebayes.vcf")
+            consensus_directory = os.path.join("consensus", sample.name)
+            ivar_consensus = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
+            freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.renamed.fasta"
+            jobs.append(
+                    concat_jobs([
+                        bash.mkdir(ncovtools_quickalign_directory),
+                        Job(
+                            input_files=[ivar_consensus, freebayes_consensus],
+                            output_files=[output],
+                            module_entries=[
+                            ['ncovtools_quickalign', 'module_python'],
+                            ['ncovtools_quickalign', 'module_ncov_random_scripts'],
+                            ],
+                            command="""\\
+quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}""".format(
+        ivar_consensus=ivar_consensus,
+        freebayes_consensus=freebayes_consensus,
+        output=output
+        )
+                            )
+                    ],
+                    name="ncovtools_quickalign." + sample.name,
+                    samples=[sample]
+                    )
+                )
+
+        return jobs
+
     @property
     def steps(self):
         return [
@@ -1223,7 +1263,8 @@ ln -sf {output_status_fa_basename} {output_fa}""".format(
             self.ivar_create_consensus,
             self.bcftools_create_consensus,
             self.quast_consensus_metrics,
-            self.rename_consensus_header
+            self.rename_consensus_header,
+            self.ncovtools_quickalign
             # self.run_multiqc
         ]
 
