@@ -157,7 +157,7 @@ class Illumina(MUGQICPipeline):
             if self.args.design:
                 self._contrasts = parse_design_file(self.args.design.name, self.samples)
             else:
-                self.argparser.error("argument -d/--design is required!")
+                self.argparser.error("argument -d/--design is required for contrast")
         return self._contrasts
 
     def samtools_bam_sort(self):
