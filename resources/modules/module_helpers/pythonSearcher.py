@@ -98,21 +98,30 @@ class SearchBioconda:
 
     """
     def __init__(self):
-        self.keys_to_ignore = ['Links',
-                               'Recipe',
-                               'DEPENDENCIES',
-                               'VERSIONS_AVAILABLE',
-                               'Documentation',
-                               'Developer docs',
-                               'Homepage']
+        self.keys_to_ignore = [
+            'Links',
+            'Recipe',
+            'DEPENDENCIES',
+            'VERSIONS_AVAILABLE',
+            'Documentation',
+            'Developer docs'
+        ]
         root_source = 'https://bioconda.github.io/conda-package_index.html'
         page_source = requests.get(root_source)
         page_soup = BeautifulSoup(page_source.text, features='lxml')
-        self.xpath_dict = {'INFO': '/html/body/div[1]/div[2]/div/div/div/dl[1]/dd/p',
-             'VERSIONS_AVAILABLE': '/html/body/div[1]/div[2]/div/div/div/dl[2]/dd/dl/dd[1]',
-             'DEPENDENCIES': '/html/body/div[1]/div[2]/div/div/div/dl[2]/dd/dl/dd[2]'}
-        self.all_keys = ['CHANNEL_LINK', 'NAME', 'INFO', 'VERSIONS_AVAILABLE', 
-                               'Homepage', 'Documentation', 'Developer docs', 'License']
+        self.xpath_dict = {
+             'INFO': '/html/body/div[1]/div[2]/div/div/section/dl[1]/dd/p',
+             'HOMEPAGE': '/html/body/div[1]/div[2]/div/div/section/dl[1]/dd/dl/dd[1]/p/a',
+             'LICENCE': '/html/body/div[1]/div[2]/div/div/section/dl[1]/dd/dl/dd[2]/p'
+        }
+        self.all_keys = [
+            'CHANNEL_LINK',
+            'NAME',
+            'INFO',
+            'VERSIONS_AVAILABLE',
+            'HOMEPAGE',
+            'LICENCE'
+        ]
         self.check_if_exist = list(set(self.all_keys) - set(self.keys_to_ignore))
         sws_ = page_soup.find('table', class_='indextable modindextable').findAll('a')    
         sws_dict = {}
@@ -170,11 +179,11 @@ class SearchBioconda:
                     template_dict[key] = lxml_source.xpath(self.xpath_dict[key])[0].text_content().strip().replace('\n', ',')
                 except Exception as e:
                     self.logger.append_log({
-                        'type': 'Exception @ {}'.format(name),
+                        'type': 'Exception @ {} for {}'.format(name, key),
                         'message': e
                     })
-                    print("Exception encountered! {}, exception - {}".format(key, e))
-            keys = lxml_source.xpath('/html/body/div[1]/div[2]/div/div/div/dl[1]/dd/dl/dt')
+                    print("Exception encountered ! {}, exception - {}".format(key, e))
+            keys = lxml_source.xpath('//html/body/div[1]/div[2]/div/div/div/dl[1]/dd/dl/dt')
             values = lxml_source.xpath('/html/body/div[1]/div[2]/div/div/div/dl[1]/dd/dl/dd')
             for index, key in enumerate(keys):
                 template_dict[key.text_content()] = values[index].text_content().strip().replace('\n', ',')
@@ -241,13 +250,18 @@ class SearchPyPi:
 
     """
     def __init__(self):
-        self.keys_to_ignore = ['AUTHOR', 'MAINTAINER', 'HOMEPAGE']
+        self.keys_to_ignore = [
+            'AUTHOR',
+            'MAINTAINER'
+        ]
         self.search_source = 'https://pypi.org/search/?q={}'
-        self.field_paths = {'INFO': '/html/body/main/div[2]/div/div',
-                           'MAINTAINER': '/html/body/main/div[3]/div/div/div[1]/div[5]/span/a/span[2]',
-                           'AUTHOR': '/html/body/main/div[3]/div/div/div[1]/div[4]/p/a',
-                           'HOMEPAGE': '/html/body/main/div[3]/div/div/div[1]/div[2]/ul/li/a', 
-                           'LICENSE': '/html/body/main/div[3]/div/div/div[1]/div[4]/p[1]'}
+        self.field_paths = {
+            'INFO': '/html/body/main/div[2]/div/div',
+            'MAINTAINER': '/html/body/main/div[3]/div/div/div[1]/div[5]/span/a/span[2]',
+            'AUTHOR': '/html/body/main/div[3]/div/div/div[1]/div[4]/p/a',
+            'HOMEPAGE': '/html/body/main/div[3]/div/div/div[1]/div[2]/ul/li/a', 
+            'LICENSE': '/html/body/main/div[3]/div/div/div[1]/div[4]/p[1]'
+        }
         self.search_xpath = '/html/body/main/div/div/div[2]/form/div[3]/ul/li/a'
     
     def search_package(self, name):
@@ -291,7 +305,7 @@ class SearchPyPi:
         URL of the PyPi page.
 
         Returns 
-        -------
+        ------
         data: dict
         Returns a dict containing the software metadata.
 
