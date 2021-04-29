@@ -123,8 +123,11 @@ def readsetHeaderCheck(h):
     '''
     Checks that the readset file header is correct
     '''
-    header = ['Sample', 'Readset', 'Library', 'RunType', 'Run', 'Lane', 'Adapter1', 'Adapter2', 'QualityOffset', 'BED', 'FASTQ1', 'FASTQ2', 'BAM\n']
-    if header == h:
+    header = [
+        ['Sample', 'Readset', 'Library', 'RunType', 'Run', 'Lane', 'Adapter1', 'Adapter2', 'QualityOffset', 'BED', 'FASTQ1', 'FASTQ2', 'BAM\n'],
+        ['Sample', 'Readset', 'MarkName', 'MarkType', 'Library', 'RunType', 'Run', 'Lane', 'Adapter1', 'Adapter2', 'QualityOffset', 'BED', 'FASTQ1', 'FASTQ2', 'BAM\n']
+    ]
+    if h in header:
         return True
     else:
         error()

@@ -4,7 +4,7 @@
 
 The table below contains different peak statistics such as: number of peaks called by [MACS], percentage of peaks near the transcription start sites ([-1000;1000], bp), peak height metrics and average peak width.
 
-Table: Peak Statistics for Narrow Peaks ([download table](annotation/peak_stats.csv))
+Table: Peak Statistics for Narrow Peaks ([download table](annotation/peak_stats_AllSamples.csv))
 
 $peak_stats_table$
 

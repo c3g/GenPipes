@@ -109,7 +109,7 @@ class MUGQICPipeline(Pipeline):
 # Call home with pipeline statistics
 {separator_line}
 LOG_MD5=$(echo $USER-'{uniqueIdentifier}' | md5sum | awk '{{ print $1 }}')
-wget "{server}?{request}&md5=$LOG_MD5" --quiet --output-document=/dev/null
+echo `wget "{server}?{request}&md5=$LOG_MD5" --quiet --output-document=/dev/null`
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, uniqueIdentifier=uniqueIdentifier))
 
     def submit_jobs(self):
@@ -157,7 +157,7 @@ class Illumina(MUGQICPipeline):
             if self.args.design:
                 self._contrasts = parse_design_file(self.args.design.name, self.samples)
             else:
-                self.argparser.error("argument -d/--design is required!")
+                self.argparser.error("argument -d/--design is required for contrast")
         return self._contrasts
 
     def samtools_bam_sort(self):
@@ -508,11 +508,11 @@ pandoc \\
         )
 
         return jobs
-    
+
     def cram_output(self):
         """
         Generate long term storage version of the final alignment files in CRAM format
-        Using this function will include the orginal final bam file into the  removable file list 
+        Using this function will include the orginal final bam file into the  removable file list
         """
 
 
@@ -536,7 +536,7 @@ pandoc \\
             input_bam = self.select_input_files(candidate_input_files)[0]
 
             output_cram = re.sub("\.bam$", ".cram", input_bam)
-            
+
             # Run samtools
             job = samtools.view(
                 input_bam,
@@ -549,5 +549,5 @@ pandoc \\
             job.removable_files = input_bam
 
             jobs.append(job)
-            
+
         return jobs

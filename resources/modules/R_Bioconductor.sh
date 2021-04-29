@@ -117,23 +117,30 @@ MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
 
 if [[ $INSTALL_PREFIX_ENV_VARNAME != "MUGQIC_INSTALL_HOME_DEV" ]]
 then
-  if [ `lsb_release -i | cut -f 2` == "Ubuntu" ]
+  if [[ `cat /etc/*-release` == *"Ubuntu"* ]]
   then
     echo "Ubuntu" > /dev/null
     C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
     LIB=lib
     INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
     LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB:$INSTALL_DIR/$LIB/R/lib
-  elif [ `lsb_release -i | cut -f 2` == "CentOS" ]
+  elif [[ `cat /etc/*-release` == *"CentOS"*"7."* ]]
   then
     echo "CentOS" > /dev/null
     C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
     LIB=lib64
     INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
     LIBDIR=$INSTALL_DIR/$LIB/R/lib:$INSTALL_DIR/$LIB/R/library:$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/lib64:$C3G_SYSTEM_LIBRARY/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/lib:$C3G_SYSTEM_LIBRARY/usr/lib64/mysql:$C3G_SYSTEM_LIBRARY/$LIB/mysql
+  elif [[ `cat /etc/*-release` == *"CentOS"*"8."* ]]
+  then
+    echo "CentOS" > /dev/null
+    C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos8/1.0
+    LIB=lib64
+    INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
+    LIBDIR=$INSTALL_DIR/$LIB/R/lib:$INSTALL_DIR/$LIB/R/library:$C3G_SYSTEM_LIBRARY/usr/local/lib64:$C3G_SYSTEM_LIBRARY/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/lib:$C3G_SYSTEM_LIBRARY/usr/lib64/mysql:$C3G_SYSTEM_LIBRARY/$LIB/mysql
   else
     echo "*** ERROR ***"
-    echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
+    echo "'"`cat /etc/*-release`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
     exit 1
   fi
 else
@@ -164,7 +171,7 @@ then
         # hack to force umask 0002: in a large group, want pkgs installed with write perm.
         sed -i 's/Sys.umask("022")/Sys\.umask("002")/g' src/library/tools/R/build.R
 
-        ./configure --enable-R-shlib --prefix=$INSTALL_DIR  # --enable-R-shlib  is for Rpy
+        ./configure --enable-R-shlib --enable-memory-profiling --prefix=$INSTALL_DIR  # --enable-R-shlib  is for Rpy
         make -j12
         make install
         cd $TEMPDIR
@@ -255,7 +262,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "allgown", "annotate", "AnnotationDbi", "AnnotationForge", "annotatr", "ape", "ash", "ASCAT",
     "ballgown", "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "biomformat", "Biostrings", "biovizBase", "bit",
     "biovizBase", "bit", "bit64", "bitops", "boot", "brew", "BSgenome", "BSgenome.Hsapiens.1000genomes.hs37d5", "BSgenome.Hsapiens.UCSC.hg19", "bumphunter",
-    "Cairo", "caTools", "charm", "charmData", "ChIPseeker", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "cn.mops", "codetools", "colorspace", "ConsensusClusterPlus",
+    "Cairo", "caTools", "celda", "charm", "charmData", "ChIPseeker", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "cn.mops", "codetools", "colorspace",
     "ConsensusClusterPlus", "corpcor", "crlmm", "ctc", "cummeRbund",
     "dada2", "datasets", "data.table", "DBI", "deconstructSigs", "DESeq", "devtools", "dendextend", "dichromat", "diffHic", "digest", "dmrseq", "DNAcopy", "dplyr", "DSS",
     "edgeR", "ellipse", "evaluate",
@@ -318,7 +325,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     ## DoubltFinder
     devtools::install_github("chris-mcginnis-ucsf/DoubletFinder")
     ## binless
-    devtools::install_github("3DGenomes/binless",subdir="binless")
+    #devtools::install_github("3DGenomes/binless",subdir="binless")
 
     ## Print the list of the installed packages along with their version into a file
     library(data.table)

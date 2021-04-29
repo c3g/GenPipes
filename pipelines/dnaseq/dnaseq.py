@@ -1335,9 +1335,9 @@ END
         output = os.path.join(metrics_directory, "multiqc_report")
 
         job = multiqc.run(
-            inputs,
-            output,
-            input_dep
+            input_dep,
+            output
+            # input_dep
             )
         job.name = "multiqc_all_samples"
         job.samples = self.samples
@@ -2473,7 +2473,7 @@ pandoc \\
             ], name="merge_filter_bcf.index"))
             
         else:
-            inputs = ["variants/rawBCF/allSamples." + region + ".vcf.gz" for region in self.generate_approximate_windows(nb_jobs)]
+            inputs = ["variants/rawBCF/allSamples." + region + ".bcf" for region in self.generate_approximate_windows(nb_jobs)]
 
             jobs.append(
                 concat_jobs([
@@ -3007,7 +3007,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         remove=True
                     ),
                     delly.call(
-                        [input],
+                        input,
                         output_bcf,
                         sv_type
                     ),
@@ -3419,7 +3419,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         jobs = []
 
-        for sample in self.samples.itervalues():
+        for sample in self.samples:
             pair_directory = os.path.join("SVariants", sample.name, sample.name)
 
             jobs.append(concat_jobs([
@@ -3682,36 +3682,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sym_link_fastq,
                 self.sym_link_final_bam
             ],
-            [
-                self.picard_sam_to_fastq,
-                self.skewer_trimming,
-                self.bwa_mem_sambamba_sort_sam,
-                self.sambamba_merge_sam_files,
-                self.gatk_indel_realigner,
-                self.sambamba_merge_realigned,
-                self.sambamba_mark_duplicates,
-                self.metrics_dna_picard_metrics,
-                self.metrics_dna_sample_qualimap,
-                self.metrics_dna_sambamba_flagstat,
-                self.metrics_dna_fastqc,
-                self.picard_calculate_hs_metrics,
-                self.gatk_callable_loci,
-                self.extract_common_snp_freq,
-                self.baf_plot,
-                self.gatk_haplotype_caller,
-                self.merge_and_call_individual_gvcf,
-                self.combine_gvcf,
-                self.merge_and_call_combined_gvcf,
-                self.variant_recalibrator,
-                self.haplotype_caller_decompose_and_normalize,
-                self.haplotype_caller_flag_mappability,
-                self.haplotype_caller_snp_id_annotation,
-                self.haplotype_caller_snp_effect,
-                self.haplotype_caller_dbnsfp_annotation,
-                self.haplotype_caller_gemini_annotations,
-                self.run_multiqc,
-                self.cram_output
-             ],
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,

@@ -3,8 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=SMRTLink
-VERSION=7.0.0
-SUBVERSION=63985
+VERSION=9.0.0
+SUBVERSION=92188
 ARCHIVE=${SOFTWARE,,}-${VERSION}.${SUBVERSION}.zip
 ARCHIVE_URL=https://downloads.pacbcloud.com/public/software/installers/${ARCHIVE/-/_}
 SOFTWARE_DIR=$SOFTWARE-${VERSION}

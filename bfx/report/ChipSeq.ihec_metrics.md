@@ -5,43 +5,29 @@ Those metrics are calculated according to IHEC standards, following the IHEC [do
 The alignment file per sample is filtered using [SAMtools]\ [@samtools]. All alignments with MAPQ smaller than **5** and all unmapped and duplicates reads are excluded from the resulting file in BAM format.
 General summary statistics are provided per sample. Sample readsets are merged for clarity.
 
-Table: IHEC metrics per Sample ([download table](IHEC_metrics_AllSamples.tsv))
+Table: IHEC metrics per Sample ([download table](IHEC_chipseq_metrics_AllSamples.tsv))
 
-* genome_assembly: name of genome assembly used for analysis
-* ChIP_type: type of peak called
-* treat_name: name of treatment sample
-* ctl_name: name of Input sample
-* treat_raw_reads: total number of reads obtained from the sequencer for treatment sample(s)
-* treat_trimmed_reads: number of remaining reads after the trimming step for treatment sample(s)
-* treat_trimmed_frac: 100 x treat_trimmed_reads / treat_raw_reads
-* treat_mapped_reads: number of aligned reads to the reference for treatment sample(s)
-* treat_mapped_frac: 100 x treat_mapped_reads / treat_trimmed_reads
-* treat_dup_reads: number of aligned reads having the same 5' alignment positions (for both mates in the case of paired-end reads) for treatment sample(s)
-* treat_dup_frac: 100 x treat_duplicated_reads / treat_mapped_reads
-* treat_filtered_reads: number of aligned reads to the reference after filtering for treatment sample(s)
-* treat_filtered_frac: 100 x treat_final_reads / treat_trimmed_reads
-* treat_MT_reads: number of reads aligned to either chromosome chrM or chromosome MT for treatment sample(s)
-* treat_Mt_frac: 100 x treat_MTreads / treat_final_reads
-* ctl_raw_reads: total number of reads obtained from the sequencer for Input
-* ctl_trimmed_reads: number of remaining reads after the trimming step for Input
-* ctl_trimmed_frac: 100 x treat_trimmed_reads / treat_raw_reads
-* clt_mapped_reads: number of aligned reads to the reference for Input
-* ctl_mapped_frac: 100 x treat_mapped_reads / treat_trimmed_reads
-* ctl_dup_reads: number of aligned reads having the same 5' alignment positions (for both mates in the case of paired-end reads) for Input
-* ctl_dup_frac: 100 x treat_duplicated_reads / treat_mapped_reads
-* ctl_filtered_reads: number of aligned reads to the reference after filtering for Input
-* ctl_filtered_frac: 100 x treat_final_reads / treat_trimmed_reads
-* ctl_MT_reads: number of reads aligned to either chromosome chrM or chromosome MT for Input
-* ctl_Mt_frac: 100 x treat_MTreads / treat_final_reads
-* nmb_peaks: number of peaks called
-* reads_in_peaks: number of reads in peaks
-* frip: Fraction of Reads In Peaks reads_under_peaks / treat_final_reads
-* treat_nsc: Normalized Strand cross-correlation coefficient for treatment sample(s)
-* ctl_nsc: Normalized Strand cross-correlation coefficient for Input
-* treat_rsc: Relative Strand Cross correlation Coefficient for treatment sample(s)
-* ctl_rsc: Relative Strand Cross correlation Coefficient for Input
-* treat_Quality: quality tag based on thresholded Relative Strand Cross correlation Coefficient for treatment sample
-* ctl_Quality: quality tag based on thresholded Relative Strand Cross correlation Coefficient for Input
-* singletons: number of singletons for paired-end data sets
-* js_dist: Jensen-Shannon distance (only if Input provided)
-* chance_div: CHip-seq ANalytics and Confidence Estimation (only if Input provided)
+* Sample_Name: Name of sample
+* Mark_Name: Name of Histone mark
+* ChIP_type: Type of peak called
+* Genome_Assembly: Genome Assembly used for analysis
+* Raw_Reads: Total Number of reads obtained from the sequencer
+* Trimmed_Reads: Number of remaining reads after Trimming
+* Trimmed_Reads_Fraction: 100 x Trimmed_Reads / Raw_Reads
+* Mapped_Reads: Number of Aligned reads to the reference after Trimming
+* Mapped_Reads_Fraction: 100 x Mapped_Reads / Trimmed_Reads
+* Duplicates_Reads: Number of Duplicates reads ( aligned reads to the reference having the same 5' alignment positions for both mates in the case of paired-end reads)
+* Duplicates_Reads_Fraction: 100 x Duplicates_Reads / Mapped_Reads
+* Filtered_Reads: Number of Aligned reads to the reference after filtering
+* Filtered_Reads_Fraction: 100 x Filtered_Reads / Trimmed_Reads
+* Mitochondrial_Reads: Number of reads Aligned to either chromosome chrM or chromosome MT
+* Mitochondrial_Reads_Fraction: 100 x Mitochondrial_Reads / Filtered_Reads
+* Singletons_Reads: Number of Singletons for Paired-End data sets
+* Nbr_Peaks: Number of peaks called
+* Reads_in_Peaks: Number of reads in peaks
+* frip: Fraction of Reads In Peaks Reads_in_Peaks / Filtered_Reads
+* Mark_NSC: Normalized Strand Cross-Correlation coefficient
+* Mark_RSC: Relative Strand Cross-Correlation coefficient
+* Mark_Quality: Quality Tag based on thresholded RSC coefficient
+* JS_Distance: Jensen-Shannon distance (only if Input provided)
+* Chance_Divergence: ChIP-Seq Analytics and Confidence Estimation (only if Input provided)
