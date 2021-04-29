@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=StringTie
-VERSION=1.3.5
+VERSION=2.1.4
 ARCHIVE=${SOFTWARE,,}-$VERSION.tar.gz
 ARCHIVE_URL=http://ccb.jhu.edu/software/${SOFTWARE,,}/dl/${ARCHIVE}
 SOFTWARE_DIR=${SOFTWARE,,}-$VERSION

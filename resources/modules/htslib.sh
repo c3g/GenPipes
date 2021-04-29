@@ -3,14 +3,11 @@
 set -eu -o pipefail
 
 SOFTWARE=htslib
-VERSION=1.9
+VERSION=1.11
 ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
 ARCHIVE_URL=https://github.com/samtools/htslib/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar jxvf $ARCHIVE
@@ -31,7 +28,15 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin
-prepend-path    PATH                \$root/lib
+prepend-path    LD_LIBRARY_PATH     \$root/lib
+prepend-path    C_INCLUDE_PATH      \$root/include
+prepend-path    CPP_INCLUDE_PATH    \$root/include
+prepend-path    CPATH               \$root/include
+prepend-path --delim \" \" LDFLAGS  -L\$root/lib
+prepend-path --delim \" \" CPPFLAGS -I\$root/include
+setenv          HTSLIB_HOME         \$root
+setenv          HTSLIB_LIBRARY_DIR  \$root/lib
+setenv          HTSLIB_INCLUDE_DIR  \$root/include
 "
 }
 

@@ -597,19 +597,29 @@ IHEC_rnaseq_metrics.sh \\
         )
     )
 
-def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_type, chip_bed, output_dir, assembly):
-    output_metrics=os.path.join(output_dir, "IHEC_metrics_chipseq_"+ sample_name + ".txt")
-    output_fingerprints=os.path.join(output_dir, sample_name+".fingerprint.txt")
-    output_fingerprints_png=os.path.join(output_dir, sample_name+".fingerprint.png")
-    output_dedup_chip_bam=os.path.join(output_dir, sample_name+".dedup.bam")
-    output_dedup_chip_bai=os.path.join(output_dir, sample_name+".dedup.bam.bai")
-    output_dedup_input_bam=os.path.join(output_dir, sample_name+"_IMPUT.dedup.bam")
-    output_dedup_input_bai=os.path.join(output_dir, sample_name+"_IMPUT.dedup.bam.bai")
-    output_flagstats=os.path.join(output_dir, sample_name+".markDup_flagstat.txt")
-    crosscor_input =os.path.join(output_dir, sample_name + ".crosscor")
+def sh_ihec_chip_metrics(chip_bam, input_bam, sample_name, input_name, chip_name, chip_type, chip_bed, output_dir, assembly, crosscor_input):
+    output_dedup_input_bam = None
+    output_dedup_input_bai = None
+    output_fingerprints = None
+    output_fingerprints_png = None
+    # crosscor_input = None
+    if input_bam:
+        output_dedup_input_bam = os.path.join(output_dir, input_name, sample_name + "." + "Input.dedup.bam")
+        output_dedup_input_bai = os.path.join(output_dir, input_name, sample_name + "." + "Input.dedup.bam.bai")
+        output_fingerprints = os.path.join(output_dir, chip_name, sample_name + "." + chip_name + ".fingerprint.tsv")
+        output_fingerprints_png = os.path.join(output_dir, chip_name, sample_name + "." + chip_name + ".fingerprint.png")
+        # crosscor_input = os.path.join(output_dir, sample_name + "." + chip_name + ".crosscor")
+    output_metrics = os.path.join(output_dir, chip_name, "IHEC_chipseq_metrics." + sample_name + "." + chip_name + ".tsv")
+    # output_fingerprints = os.path.join(output_dir, chip_name, sample_name + "." + chip_name + ".fingerprint.tsv")
+    # output_fingerprints_png = os.path.join(output_dir, chip_name, sample_name + "." + chip_name + ".fingerprint.png")
+    output_dedup_chip_bam = os.path.join(output_dir, chip_name, sample_name + "." + chip_name + ".dedup.bam")
+    output_dedup_chip_bai = os.path.join(output_dir, chip_name, sample_name + "." + chip_name + ".dedup.bam.bai")
+    output_flagstats = os.path.join(output_dir, chip_name, sample_name + "." + chip_name + ".markDup_flagstat.txt")
+    # crosscor = os.path.join(output_dir, sample_name + ".crosscor")
+
     return Job(
-        [input_bam, chip_bam, chip_bed, crosscor_input],
-        [output_metrics, output_dedup_chip_bam, output_dedup_chip_bai, output_flagstats],
+        [chip_bam, input_bam, chip_bed, crosscor_input],
+        [output_metrics, output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bai, output_flagstats, output_dedup_input_bam, output_dedup_input_bai],
         [
             ['IHEC_chipseq_metrics', 'module_mugqic_tools'],
             ['IHEC_chipseq_metrics', 'module_samtools'],
@@ -623,6 +633,7 @@ IHEC_chipseq_metrics_max.sh \\
     -s {sample_name} \\
     -j {input_name} \\
     -t {chip_type} \\
+    -c {chip_name} \\
     -n {threads} \\
     -p {chip_bed} \\
     -o {output_dir} \\
@@ -632,12 +643,13 @@ IHEC_chipseq_metrics_max.sh \\
             sample_name=sample_name,
             chip_bam=chip_bam,
             chip_type=chip_type,
+            chip_name=chip_name,
             threads=config.param('IHEC_chipseq_metrics', 'thread', type='int') if config.param('IHEC_chipseq_metrics', 'thread', type='int', required=False) else 1,
             chip_bed=chip_bed,
             output_dir=output_dir,
             assembly=assembly
         ),
-        removable_files=[output_fingerprints,output_fingerprints_png,output_dedup_chip_bam,output_dedup_chip_bam,output_dedup_chip_bai,output_dedup_input_bam,output_dedup_input_bai,output_flagstats]
+        removable_files=[output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bam, output_dedup_chip_bai, output_dedup_input_bam, output_dedup_input_bai, output_flagstats]
     )
 
 def sh_fastq_readname_edit(

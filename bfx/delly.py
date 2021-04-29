@@ -50,8 +50,10 @@ delly call {options} \\
     )
 
 def filter(input_bcf, output_bcf, sv_type, type, options, sample_file):
+    if not isinstance(input_bcf, list):
+        input_bcf=[input_bcf]
     return Job(
-        [input_bcf],
+        input_bcf,
         [output_bcf],
         [
             ['delly_call_filter', 'module_delly']
@@ -72,7 +74,8 @@ delly filter {options} \\
     )
 
 def merge(input_bcfs, output, sv_type):
-
+    if not isinstance(input_bcfs, list):
+        input_bcfs=[input_bcfs]
     return Job(
         input_bcfs,
         [output],

@@ -3,8 +3,8 @@
 set -eu -o pipefail
 
 SOFTWARE=samtools
-VERSION=1.9
-#VERSION=0.1.19
+VERSION=1.11
+
 if [[ ${VERSION:0:1} == 1 ]]; then
   ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
   ARCHIVE_URL=https://github.com/$SOFTWARE/$SOFTWARE/releases/download/$VERSION/$ARCHIVE
@@ -14,9 +14,6 @@ else
 fi
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   if [[ ${VERSION:0:1} == 1 ]]; then 
@@ -29,10 +26,12 @@ build() {
 
   # Install software
   if [[ ${VERSION:0:1} == 1 ]]; then
+    autoheader
+    autoconf -Wno-syntax
     ./configure --enable-plugins --enable-libcurl prefix=$INSTALL_DIR/$SOFTWARE_DIR
     make -j12 all all-htslib
     make install install-htslib
-    mv libbam.a $INSTALL_DIR/${SOFTWARE_DIR}/lib/
+#    mv libbam.a $INSTALL_DIR/${SOFTWARE_DIR}/lib/
   else
     make -j12
     make -j12 razip

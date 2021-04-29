@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=sratoolkit
-VERSION=2.8.2-1
+VERSION=2.10.5
 ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
 ARCHIVE_URL=http://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/$VERSION/${SOFTWARE}.${VERSION}-centos_linux64.tar.gz
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}

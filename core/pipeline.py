@@ -166,7 +166,7 @@ class Pipeline(object):
                 log.error("""
 ***The pipeline encounterered an error :
     {error}
-***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag to check for more petential issues...""".format(
+***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag to check for more potential issues...""".format(
                    error=e
                    ))
                 exit(1)
@@ -376,7 +376,7 @@ class Pipeline(object):
                 job.dependency_jobs = self.dependency_jobs(job)
 
                 if not self.force_jobs and job.is_up2date():
-                    log.info("Job " + job.name + " up to date... skipping")
+                    log.info("Job " + job.name + " up to date... skipping\n")
                 else:
                     step.add_job(job)
                     if job.samples:
