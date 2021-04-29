@@ -31,7 +31,7 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [--container {wrapper, singularity} <IMAGE PATH>]
                   [-d DESIGN] [-t {chipseq,atacseq}] [-r READSETS] [-v]
 
-Version: 4.0.0                                                                     
+Version: 3.4.0                                                                     
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
