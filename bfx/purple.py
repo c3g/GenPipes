@@ -27,13 +27,13 @@ import os
 from core.config import *
 from core.job import *
 
-def run(amber, cobalt, normal_name, tumor_name, output_dir, somatic_snv=None):
+def run(amber, cobalt, normal_name, tumor_name, output_dir, somatic_snv):
     amber_input = os.path.join(amber, tumor_name + ".amber.baf.pcf")
     cobalt_input = os.path.join(cobalt, tumor_name + ".cobalt.ratio.pcf")
     purple_output = os.path.join(output_dir, tumor_name + ".purple.purity.tsv")
     
     return Job(
-        [amber_input, cobalt_input],
+        [amber_input, cobalt_input, somatic_snv],
         [purple_output],
         [
             ['purple', 'module_java'],
@@ -52,7 +52,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
   -amber {amber} \\
   -gc_profile {gc_profile} \\
   -circos circos \\
-  -output_dir {output_dir}{somatic_snv}""".format(
+  -somatic_vcf {somatic_snv} \\
+  -output_dir {output_dir}""".format(
         tmp_dir=config.param('purple', 'tmp_dir'),
         java_other_options=config.param('purple', 'java_other_options'),
         ram=config.param('purple', 'ram'),
@@ -63,8 +64,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
         tumor=tumor_name,
         amber=amber,
         cobalt=cobalt,
-        output_dir=output_dir,
-        somatic_snv=" \\\n  -somatic_vcf " + somatic_snv if somatic_snv else "",
+        somatic_snv=somatic_snv,
+        output_dir=output_dir
         )
     )
 
