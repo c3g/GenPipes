@@ -1,6 +1,1504 @@
-23 tags, 5856 commits
+25 tags, 7281 commits
 
-HEAD        Mon Jan 25 10:42:55 2021 -0500        0 commits
+HEAD        Thu Apr 29 19:19:27 2021 +0000        0 commits
+
+3.4.0        Thu Apr 29 19:24:01 2021 +0000        784 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      1 commits
+
+       ff50d95 GenPipes - RNASeq : corrected genome_index_folder refencing in star_align
+
+  Édouard Henrion <henrione@beluga2.int.ets1.calculquebec.ca>      10 commits
+
+       2b72afb GenPipes - Release : removing Tumor pair prior release 3.4
+       9de7a77 Merge remote-tracking branch 'origin/dev' into release_3.4
+       ed27f33 GenPipes - Resources : adding software installation scripts
+       8c9f613 GenPipes - Resources : adding software installation scipts
+       c2d2418 GenPipes - Resources : adding reference genome installation scripts
+       3bc6a80 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       67cc499 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       823f626 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       e42f490 GenPipes - Resources : adding Sus_scrofa genome and ivar & kent installation scripts
+       d76314e GenPipes - Resources : updates of solftware and genome installation scripts
+
+  ehenrion <edouard.henrion@mcgill.ca>      79 commits
+
+       ccc89c1 Merged in release_3.4 (pull request #219)
+       9667e55 Resolve Issue #31
+       41c771b Merged dev into eh_cit_correction
+       5fd600c GenPipes - BFX : corrected ini section for star_index --outTmpDir
+       982a305 GenPipes - BFX : update STAR calls to use --outTmpDir
+       7a6549d Merged dev into chipseq_design_change
+       0ca1695 Merged dev into chipseq_design_change
+       23f6e6d Merged in eh_cit_correction (pull request #207)
+       daf9eb8 GenPipes - HiCSeq : corrected typo in CHICAGO makeDesignFiles call
+       2e1b75e GenPipes - HiCSeq : updated base.ini with explicit loading of mugqic/python/2.7.14 in chicago create_design_files step
+       0db8b44 GenPipes - HiCSeq : corrected CHICAGO makeDesigFiles call with explicit load of python2 module
+       9d5c8af Merged dev into chipseq_design_change
+       09b50e3 Merged dev into eh_cit_correction
+       af89867 GenPipes - RNASeq : corrected genome_index_folder referencing in  star_align
+       024b251 Merged eh_RNAseq_star_correct into dev
+       81e394b GenPipes - RNASeq : corrected genome path in star_align
+       0dbd895 Merged eh_fix_callhome_fail_exit_code into dev
+       a8bfffd GenPipes - Call Home : fixed wget command in common.py to always exit 0 in order to avoid crash of GenPipes execution - Issue #63
+       b652f60 Merged eh_RNAseq_star_correct into dev
+       14f5ca5 VERSION edited online with Bitbucket
+       4a2a45d GenPipes - Config : fixed samtools_cram_output in rnaseq.graham.ini
+       ef26b52 GenPipes - Config : fixed samtools_cram_output in rnaseq.cedar.ini
+       01d0090 GenPipes - Config : fixed samtools_cram_output in methylseq.graham.ini
+       73f22e3 GenPipes - Config : fixed samtools_cram_output in methylseq.cedar.ini
+       6ae1139 GenPipes - Config : fixed samtools_cram_output in methylseq.beluga.ini
+       a3781df GenPipes - Config : fixed samtools_cram_output in hicseq.graham.ini
+       fde1dbc GenPipes - Config : fixed samtools_cram_output in hicseq.cedar.ini
+       533b3fa GenPipes - Config : fixed samtools_cram_output in hicseq.beluga.ini
+       4333752 GenPipes - Config : fixed samtools_cram_output in dnaseq_high_coverage.graham.ini
+       9cda20c GenPipes - Config : fixed samtools_cram_output in dnaseq_high_coverage.cedar.ini
+       ceb9594 GenPipes - Config : fixed samtools_cram_output in dnaseq_high_coverage.beluga.ini
+       ed1a35b GenPipes - Config : fixed samtools_cram_output in chipseq.graham.ini
+       6c61ca5 GenPipes - Config : fixed samtools_cram_output in chipseq.cedar.ini
+       d250236 GenPipes - Config : fixed samtools_cram_output in dnaseq.graham.ini
+       a5dc00c GenPipes - Config : fixed samtools_cram_output in dnaseq.cedar.ini
+       1551157 GenPipes - Config : fixed samtools_cram_output in dnaseq.beluga.ini
+       404c931 GenPipes - DNASeq : corrected iteration on samples in cnvkit_sv_annotation
+       ba277e4 GernPipes - DNASeq : corrected merge_filter_bcf outputs
+       1028ccc VERSION edited online with Bitbucket
+       82e6690 Merged in ehenrion/version-edited-online-with-bitbucket-1617908341194 (pull request #205)
+       e2249aa VERSION edited online with Bitbucket
+       0f75fb6 Merged eh_samtools_cram_output_ini_fix into dev
+       74d7c56 GenPipes - Config : fixed samtools_cram_output in rnaseq.graham.ini
+       a45ed72 GenPipes - Config : fixed samtools_cram_output in rnaseq.cedar.ini
+       0da38f2 GenPipes - Config : fixed samtools_cram_output in methylseq.graham.ini
+       5ded776 GenPipes - Config : fixed samtools_cram_output in methylseq.cedar.ini
+       b643725 GenPipes - Config : fixed samtools_cram_output in methylseq.beluga.ini
+       33a4b96 GenPipes - Config : fixed samtools_cram_output in hicseq.graham.ini
+       053b208 GenPipes - Config : fixed samtools_cram_output in hicseq.cedar.ini
+       da787e9 GenPipes - Config : fixed samtools_cram_output in hicseq.beluga.ini
+       713bd64 GenPipes - Config : fixed samtools_cram_output in dnaseq_high_coverage.graham.ini
+       716110d GenPipes - Config : fixed samtools_cram_output in dnaseq_high_coverage.cedar.ini
+       68c1294 GenPipes - Config : fixed samtools_cram_output in dnaseq_high_coverage.beluga.ini
+       26ca812 GenPipes - Config : fixed samtools_cram_output in chipseq.graham.ini
+       065df8d GenPipes - Config : fixed samtools_cram_output in chipseq.cedar.ini
+       98f5391 GenPipes - Config : fixed samtools_cram_output in dnaseq.graham.ini
+       2d7892d GenPipes - Config : fixed samtools_cram_output in dnaseq.cedar.ini
+       cbe399c GenPipes - Config : fixed samtools_cram_output in dnaseq.beluga.ini
+       b74a476 GenPipes - Config : fixed samtools_cram_output in chipseq.beluga.ini
+       938318a Merged eh_cit_correction into dev
+       4d07678 GenPipes - DNASeq : corrected iteration on samples in cnvkit_sv_annotation
+       c095c6c GernPipes - DNASeq : corrected merge_filter_bcf outputs
+       c5d36c9 GenPipes - RNASeq : corrected samtools_cram_output in beluga.ini - Issue #62
+       0d9ab3e GenPipes - DNASeq SV : fixing delly call in dnaseq.py
+       138081b GenPipes - DNASeq SV : fixing delly input error
+       79f6e94 Merged in ehenrion/genpipes-rnaseq-updated-starpy-to-test-1616421770004 (pull request #202)
+       ce2014c Merged eh_RNAseq_star_correct into ehenrion/genpipes-rnaseq-updated-starpy-to-test-1616421770004
+       f1a6ffd GenPipes - RNAseq : updated star.py to test if the version of STAR is included in the genome_index_folder. If not, use the old format of path (i.e. without the version of STAR)
+       f53266b GenPipes - RNAseq : updated star.py to test if the version of STAR is included in the genome_index_folder. If not, use the old format of path (i.e. without the version of STAR)
+       8a51f4b Merged in ehenrion/genpipes-ranseq-updated-starpy-to-add--1616420528543 (pull request #200)
+       e0cf3d8 Merged eh_RNAseq_star_correct into ehenrion/genpipes-ranseq-updated-starpy-to-add--1616420528543
+       66c603f GenPipes - RANSeq : updated star.py to add the version of STAR in the genome index folder path
+       77ced18 GenPipes - RNASeq : star.align updated base.ini with the version of star in the path of index
+       176669b Merged in eh_fix_delly_issue52 (pull request #199)
+       2fde5cb GenPipes - BFX : corrected delly.py 'call' input handling [Issue 52](https://bitbucket.org/mugqic/genpipes/issues/52/version-330-dnaseq-t-sv)
+       277904f dnaseq.py edited online with Bitbucket : corrected protocol assgignation
+       fdbef3a GenPipes - Bug fix : corrected dnaseq.cedar.ini
+       5824422 GenPipes - Bug fix : correcting indentation in illumina_run_processing.py
+       9cfee2e dnaseq.py edited online with Bitbucket : corrected protocol assgignation
+
+  José Héctor Gálvez López <jose.hector.galvez@computationalgenomics.ca>      3 commits
+
+       a0a8e94 rnaseq.base.ini updated to a newer version of STAR
+       22f3dfa Merged in rnaseq_star_update (pull request #195)
+       06a8d47 rnaseq.base.ini updated to a newer version of STAR
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      219 commits
+
+       d0835ca Merged in chipseq_design_change (pull request #210)
+       f7655cb Merged dev into chipseq_design_change
+       ce5c007 Fixing atacseq
+       2e0ee42 Merged in chipseq_design_change (pull request #206)
+       ef03626 Update READMEs
+       376858b Merged dev into chipseq_design_change
+       182612e Updating inis and fixing homer output folder location
+       f27a211 Merged dev into chipseq_design_change
+       0ce5991 Debug
+       4c0b11f Debug
+       3f6fcc6 Debug
+       9cbe87c Debug
+       586708f Merge branch 'dev' into chipseq_design_change
+       5cb6a40 Debug
+       1980df2 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       318284c started to edit the hicseq.py added new file for hicrep
+       03e1ebc Fixing minor bug and typo
+       4829007 Fixing multiqc dependencies
+       9acc4eb Debug
+       9b72ff0 Debug
+       03c9cb6 Debug
+       a159e49 Debug
+       2c9cf56 Debug
+       76664e8 Debug
+       7e90a86 Debug
+       4a4ae35 Debug
+       5718604 Debug
+       4c01435 Debug
+       bb6ee3f Debug
+       aaf4809 Merged dev into chipseq_design_change
+       ae98ed2 Debug
+       d105f71 Debug
+       9c42079 Changing name of header for a report table
+       786ac81 Debug
+       d98c7ba Typo
+       8b1b565 Addinx x permission to job2json.py
+       2de4ae6 Fixing report naming too long
+       d53e173 Fixing report naming too long
+       a3d412e Merged dev into chipseq_design_change
+       40bcb0f Fixing report naming too long
+       a399b3d Fixing mugqicValidator.py for new readset format (chipseq only)
+       2249d6a Switching to latest mugqic_tools release
+       3b77185 Changing Ressources
+       34524b8 Changing Ressources
+       af360e3 Changing Ressources
+       4738bda Changing module versions
+       6d5e26a Debug
+       860b44d Fix
+       ef12823 Merged dev into chipseq_design_change
+       6512f2f Changing qualimap bamqc section naming to a parameter in bfx
+       9b4d61c Increasing picard collect multiple metrics RAM
+       b264e7d Debug
+       030fb31 Debug
+       8de52dd Fix ressources
+       dacaec8 Fixing annotation peaks
+       12e5d86 Fixing annotation peaks
+       9d9a50f Fixing annotation peaks
+       351f5c3 Adding annotation peaks merge for Narrow peaks only
+       0a2e098 Iterating only on Narrow peaks for annotation
+       fd3bd74 Iterating only on Narrow peaks for annotation
+       58da5b0 Debug report
+       687969c Debug
+       955fe4b Debug
+       d7560d9 Debug
+       e9e09de Debug
+       4b8ab24 Renaming IHEC metrics section
+       8f9ee56 Debug
+       b73ce49 Debug
+       43bebdf Debug Report
+       cbf2b31 Debug Report
+       d894324 Debug
+       5dc81e8 Debug
+       98d61cf Fixing report
+       3b179a4 Debug
+       74cd55d Debug
+       d3e03b2 Debug
+       6545cbd Debug
+       9f90aac Debug
+       b94c8a1 Debug
+       03279f6 Debug
+       830e456 Debug
+       79cb654 Debug
+       19a0024 Debug
+       cf9d252 Debug
+       505b1ca Debug
+       bbf2852 Changing Output metrics
+       e654a97 Debug
+       43105ff Debug
+       2092de5 Debug
+       3c6c7b4 Debug
+       0ab7349 Debug
+       2ee5418 Debug
+       a30cf4a Debug
+       ec6d257 Debug
+       610181d Debug
+       a85c974 Debug
+       bfd2e2f Debug
+       f21e83e Debug
+       3fb5418 Debug
+       d77307e Debug
+       ee397ef Changing macs2 atacseq param & add macs2 param
+       8c4274b Debug
+       a28d275 Debug
+       a64ce53 Debug
+       a689539 Debug
+       9587ca8 Debug
+       e370f82 Debug
+       0d3741d Debug
+       db78c58 Debug
+       f5d866d Debug
+       7965625 Debug
+       fdf3d9b Debug
+       7847ac0 Debug
+       47da9ef Debug
+       6a8b1ba Debug
+       dddcf88 Debug
+       161353f Debug
+       73790f9 Debug
+       188496e Debug
+       361b175 Debug
+       f5940ed Debug
+       e502b6f Changing R version for mugqic_tools R scripts
+       45ef768 homer_annotate_peaks
+       6a70faf qc_metrics report
+       49e8bfe Fix ihec_metrics outputs
+       cc35a5d Fix ihec_metrics outputs
+       29c1362 Fix ihec_metrics outputs
+       7c68071 Fixing MultiQC report
+       12212bd Fixing MultiQC report
+       c46e42d Fixing MultiQC report
+       73ced5d Fixing MultiQC report
+       08c1f43 Fixing MultiQC report
+       b403bfb Fixing MultiQC report
+       bdc3e46 Improving MultiQC report
+       cde658a Debug
+       528f047 Debug
+       cccc2e9 Debug
+       a545b4a Debug
+       2b79de3 Debug
+       acd95d2 Debug
+       c0d1a39 Debug
+       92d584e Debug
+       0c54b4e Debug
+       c919c90 Debug
+       e9c5955 Debug
+       64657e3 Debug
+       69857a4 Debug
+       2683f88 Debug
+       e8a45bf Debug
+       2570791 Debug
+       6bf3d10 Debug
+       524a5c0 Debug
+       985fa27 Debug
+       3b6ce4a Debug
+       ee40fde Debug
+       6eedc38 Debug
+       34383e7 Major changes IHEC metrics test
+       2385c51 Major changes IHEC metrics test
+       72f30ff Major changes test
+       9dfe33e Macs2 report changes
+       705e66a Major change test
+       e23426a Major change test
+       7d787c1 Major change test
+       58b992c debug
+       b972151 debug
+       9f4c020 debug
+       4a14c42 debug
+       e69cf40 debug
+       20a8959 debug
+       d800207 debug
+       d0cebc1 debug
+       38616a4 debug
+       3f0fea1 debug
+       fcca285 debug
+       61ff7d3 debug
+       d147d39 debug
+       10e3030 debug
+       70c0c5d debug
+       acc9d2c debug
+       68ea5f4 debug
+       a19d64f debug
+       76f5155 debug
+       8a92259 debug
+       9e6c534 debug
+       3b9bf7a debug
+       1e35666 debug
+       b2f165b debug
+       bf55791 debug
+       4677380 debug
+       5cc5350 debug
+       f0d9f38 debug
+       b306bbd debug
+       1d7d871 debug
+       8912342 Fix test
+       166b57b Major readset change test
+       8db202b Fix
+       abfcb3d Fix
+       ae7964a Fix
+       c9bc750 Filtering after merging and changing naming to fit with other pipelines
+       aae4609 Increasing default resources and adding options for markdup
+       9f540c4 Fixing beluga ini
+       dd795e6 Switching to sambamba markdup for IHEC
+       27e1a08 Fix
+       ecc127d Fix
+       e01ccf2 Fix
+       b299062 Fix
+       f8cf122 Fix
+       264059c Fix
+       df2604b Options becomes optional
+       1748eb6 Fix
+       c09bf2f Fixing typo
+       adf2e7f Fix
+       6c4cbd3 Fixing sambamba merge
+       9cf5988 Typo
+       fc6f4cb Adding mkdir
+       f060825 Fixing temp typo to tmp
+       aca35ab Fixing job
+       95e5661 Fixing bash import
+       f550811 Fixing minor bug and typo
+
+  pnawarathna <pubudu.nawarathna@mail.mcgill.ca>      385 commits
+
+       03dbf55 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       2bd9808 hicseq completed adding basic features of the hicrep analysis.
+       7c19ba7 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       c3b8a19 hicseq pipeline [removed user comments, delete guillimin and mammouth ini files]
+       32ffa56 hicseq [hicrep.py] - Corrected typo
+       5321e34 hicseq [hicrep.py] - corrected R_TOOLS path
+       7d56a21 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       fe8103a started to edit the hicseq.py added new file for hicrep
+       9f24b59 hicseq [hicrep.py] - Corrected typo
+       78d9e59 hicseq [hicrep.py] - corrected R_TOOLS path
+       ac8395d [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       56f9aa3 hicseq [hicrep.py] - Corrected typo
+       f2f843b hicseq [hicrep.py] - corrected R_TOOLS path
+       2e3a2e8 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       b242698 hicseq [hicseq.py] - corrected file after rebase
+       b9c2899 hicseq [hicrep.py] - Corrected typo
+       56fb9eb hicseq [hicrep.py] - corrected R_TOOLS path
+       bd160f6 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       3726aea Completed developing hicrep and quasar analysis
+       ef6f77b [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       9b2e342 Completed hicrep analysis except the creation of the graph
+       e28dd55 started to edit the hicseq.py added new file for hicrep
+       5d82058 hicseq [hicseq.py] - corrected file after rebase
+       9f494ca hicseq [hicrep.py] - Corrected typo
+       a5f7a90 hicseq [hicrep.py] - corrected R_TOOLS path
+       e098a61 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       3defd1e hicseq [hicrep.py] - Corrected typo
+       3acb37d hicseq [hicrep.py] - corrected R_TOOLS path
+       f18061a [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       1ec44a6 hicseq [hicrep.py] - Corrected typo
+       ac36fca hicseq [hicrep.py] - corrected R_TOOLS path
+       911d669 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       8b851f3 hicseq [hicrep.py] - Corrected typo
+       aee4c68 hicseq [hicrep.py] - corrected R_TOOLS path
+       a4ac85c [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       766f8db hicseq [hicrep.py] - Corrected typo
+       8f9a52d hicseq [hicrep.py] - corrected R_TOOLS path
+       e2a85e8 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       eca4b35 hicseq [hicrep.py] - Corrected typo
+       cae9d46 hicseq [hicrep.py] - corrected R_TOOLS path
+       c742e6c [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       9bd1c6e hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       ea5095f hicseq [hicrep.py] - Corrected typo
+       0d7d6c0 hicseq [hicrep.py] - corrected R_TOOLS path
+       99e1052 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       5deb559 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       31d1b1b hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       dc822e8 hicseq [hicseq.py, readme.md] - modified readmefile
+       b828c72 hicseq [hicseq.py] - corrected file after rebase
+       142dfc3 hicseq [hicrep.py] - Corrected typo
+       1fd8238 hicseq [hicrep.py] - corrected R_TOOLS path
+       b0d0045 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       ffaba4c hicseq [hicrep.py] - Corrected typo
+       16866fb hicseq [hicrep.py] - corrected R_TOOLS path
+       5c52f5a [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       1ca8542 hicseq [hicrep.py] - Corrected typo
+       07ce5ba hicseq [hicrep.py] - corrected R_TOOLS path
+       9886c9e [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       83e1314 hicseq [hicrep.py] - Corrected typo
+       4ee15eb hicseq [hicrep.py] - corrected R_TOOLS path
+       8ae9494 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       7de7736 hicseq [hicrep.py] - Corrected typo
+       cc6564d hicseq [hicrep.py] - corrected R_TOOLS path
+       ebcc1a1 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       c1eafa4 hicseq [hicrep.py] - Corrected typo
+       380dfd4 hicseq [hicrep.py] - corrected R_TOOLS path
+       4d9f853 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       c2f186d hicseq [hicrep.py] - Corrected typo
+       654198f hicseq [hicrep.py] - corrected R_TOOLS path
+       c96c475 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       bf2449c hicseq [hicrep.py] - Corrected typo
+       342b6f5 hicseq [hicrep.py] - corrected R_TOOLS path
+       5831718 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       6f6e3c5 hicseq [hicseq.py] - corrected file after rebase
+       bac4d8d hicseq [hicrep.py] - Corrected typo
+       8168840 hicseq [hicrep.py] - corrected R_TOOLS path
+       e4fdcd0 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       7250a4f hicseq [hicrep.py] - Corrected typo
+       3942f56 hicseq [hicrep.py] - corrected R_TOOLS path
+       10b31a8 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       b6805e6 hicseq [hicrep.py] - Corrected typo
+       03ed962 hicseq [hicrep.py] - corrected R_TOOLS path
+       fa3d60b [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       9c4734f hicseq [hicrep.py] - Corrected typo
+       dccfad0 hicseq [hicrep.py] - corrected R_TOOLS path
+       907e932 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       b3e8d9a hicseq [hicrep.py] - Corrected typo
+       cbc0e99 hicseq [hicrep.py] - corrected R_TOOLS path
+       a15ba0c [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       3a6a135 hicseq [hicrep.py] - Corrected typo
+       7d17401 hicseq [hicrep.py] - corrected R_TOOLS path
+       3c495bf [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       e833365 hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       5dd2d25 hicseq [hicrep.py] - Corrected typo
+       62b3943 hicseq [hicrep.py] - corrected R_TOOLS path
+       9a8f22a [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       d95fe9f hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       ff71f6f hicseq completed adding basic features of the hicrep analysis.
+       35c3269 Added pairwise combination for samples
+       85571a9 started to edit the hicseq.py added new file for hicrep
+       72be006 hicseq pipeline [changed the step order]
+       0800b92 hicseq pipeline [removed user comments, delete guillimin and mammouth ini files]
+       3363d07 hicseq [hicseq.py] - corrected output -o issue fastq_readset
+       e5b3070 hicseq [hicseq.py, readme.md] - modified readmefile
+       d4dbe19 hicseq [hicseq.py] - corrected file after rebase
+       adf7ceb hicseq [hicrep.py] - Corrected typo
+       9f9e071 hicseq [hicrep.py] - corrected R_TOOLS path
+       8481504 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       d286d5d hicseq [hicrep.py] - Corrected typo
+       8f8c612 hicseq [hicrep.py] - corrected R_TOOLS path
+       85a1cf9 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       8eca7d4 hicseq [hicrep.py] - Corrected typo
+       9229a93 hicseq [hicrep.py] - corrected R_TOOLS path
+       5a60eff [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       ef77769 hicseq [hicrep.py] - Corrected typo
+       467b8e9 hicseq [hicrep.py] - corrected R_TOOLS path
+       c0559eb [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       c8ff004 hicseq [hicrep.py] - Corrected typo
+       6e1367f hicseq [hicrep.py] - corrected R_TOOLS path
+       2266dd9 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       999455d hicseq [hicrep.py] - Corrected typo
+       240eaf3 hicseq [hicrep.py] - corrected R_TOOLS path
+       f2ab622 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       d075535 hicseq [hicrep.py] - Corrected typo
+       28e544c hicseq [hicrep.py] - corrected R_TOOLS path
+       5312b56 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       4161b94 hicseq [hicrep.py] - Corrected typo
+       7ddd445 hicseq [hicrep.py] - corrected R_TOOLS path
+       5a24278 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       1dd26f4 hicseq [hicseq.py] - corrected file after rebase
+       3d526b7 hicseq [hicrep.py] - Corrected typo
+       10196c8 hicseq [hicrep.py] - corrected R_TOOLS path
+       66cf3f7 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       2b72cc9 hicseq [hicrep.py] - Corrected typo
+       0a1ae4b hicseq [hicrep.py] - corrected R_TOOLS path
+       ec8ec06 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       52ceb83 hicseq [hicrep.py] - Corrected typo
+       5691c94 hicseq [hicrep.py] - corrected R_TOOLS path
+       3390762 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       071ed29 hicseq [hicrep.py] - Corrected typo
+       6f23e5f hicseq [hicrep.py] - corrected R_TOOLS path
+       29dd059 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       bdd9b87 hicseq [hicrep.py] - Corrected typo
+       ee032b0 hicseq [hicrep.py] - corrected R_TOOLS path
+       0325e11 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       f9cb9ba hicseq [hicrep.py] - Corrected typo
+       e2f2d6b hicseq [hicrep.py] - corrected R_TOOLS path
+       5c92379 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       0f4de0b hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       f1361d6 hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       fe82858 hicseq [quasar_qc - corrected module loading in matrix restructuring
+       589286e hicseq [hicrep.py] - Corrected typo
+       9dcbc83 hicseq [hicrep.py] - corrected R_TOOLS path
+       85b4bbd [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       4cc5884 hicseq [hicrep.py] - Corrected typo
+       26d8fde hicseq [hicrep.py] - corrected R_TOOLS path
+       689a76b [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       5529f4d hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       2d0af16 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       c60cd15 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       a5cfa02 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       c34a220 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       89a55c1 Completed developing hicrep and quasar analysis
+       0b74a0a [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       54c0ea8 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       45c545a created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       3ea3286 Completed hicrep analysis except the creation of the graph
+       f6f2a51 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       034732a hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       777005f hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       36ab2e9 hicseq completed adding basic features of the hicrep analysis.
+       f9a4ef6 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       7fff19e Added pairwise combination for samples
+       5ae1358 started to edit the hicseq.py added new file for hicrep
+       875a2af hicseq [hicseq.py, readme.md] - modified readmefile
+       afb029f hicseq [hicseq.py] - corrected file after rebase
+       ae2799d hicseq [hicrep.py] - Corrected typo
+       22c4aea hicseq [hicrep.py] - corrected R_TOOLS path
+       a8b525d [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       5a84543 hicseq [hicrep.py] - Corrected typo
+       29ef577 hicseq [hicrep.py] - corrected R_TOOLS path
+       8e99a72 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       a0af5ff hicseq [hicrep.py] - Corrected typo
+       2c514bf hicseq [hicrep.py] - corrected R_TOOLS path
+       9c984a0 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       65e4495 hicseq [hicrep.py] - Corrected typo
+       d6b6bda hicseq [hicrep.py] - corrected R_TOOLS path
+       15c7831 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       a98b326 hicseq [hicrep.py] - Corrected typo
+       bfc0ee4 hicseq [hicrep.py] - corrected R_TOOLS path
+       2dd0caa [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       6070378 hicseq [hicrep.py] - Corrected typo
+       b7f35ae hicseq [hicrep.py] - corrected R_TOOLS path
+       c739410 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       473304e hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       b536a37 hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       2e9b266 hicseq [quasar_qc - corrected module loading in matrix restructuring
+       e40bf89 hicseq [hicrep.py] - Corrected typo
+       ec4b642 hicseq [hicrep.py] - corrected R_TOOLS path
+       6ebce20 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       8a7e4f1 hicseq [hicrep.py] - Corrected typo
+       4ec40e0 hicseq [hicrep.py] - corrected R_TOOLS path
+       d7e39f9 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       1cc96d3 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       5e52fc3 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       59c65ac [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       2fdfbe1 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       e5eb097 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       e95cd4d Completed developing hicrep and quasar analysis
+       c5c7908 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       08ff8a7 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       d6abcd4 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       a6156a1 Completed hicrep analysis except the creation of the graph
+       4eea55c hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       43501ba hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       25c34b4 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       a164d8b hicseq completed adding basic features of the hicrep analysis.
+       e8aa04c hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       491fa1c Added pairwise combination for samples
+       b42241a started to edit the hicseq.py added new file for hicrep
+       20627d6 hicseq [hicseq.py] - corrected file after rebase
+       884d4e4 hicseq [hicrep.py] - Corrected typo
+       622d5f3 hicseq [hicrep.py] - corrected R_TOOLS path
+       c4a9c60 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       fb0ec53 hicseq [hicrep.py] - Corrected typo
+       7082fd6 hicseq [hicrep.py] - corrected R_TOOLS path
+       f90b5be [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       02600a9 hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       456e649 hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       d96bfb1 hicseq [quasar_qc - corrected module loading in matrix restructuring
+       86c1235 hicseq [hicrep.py] - Corrected typo
+       79fca77 hicseq [hicrep.py] - corrected R_TOOLS path
+       c28c3f8 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       ef796f9 hicseq [hicrep.py] - Corrected typo
+       3037557 hicseq [hicrep.py] - corrected R_TOOLS path
+       b5b40fe [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       e538fb0 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       28dee2f [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       d7e7c27 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       82aa89a [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       0032036 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       db02527 Completed developing hicrep and quasar analysis
+       edf03c1 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       7b1b760 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       2520bb9 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       314a505 Completed hicrep analysis except the creation of the graph
+       71f75b6 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       723cecf hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       38ec796 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       fb02b11 hicseq completed adding basic features of the hicrep analysis.
+       5664879 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       696a52b Added pairwise combination for samples
+       886ea4e started to edit the hicseq.py added new file for hicrep
+       10d4d24 hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       9d7b865 hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       2c3b54d hicseq [quasar_qc - corrected module loading in matrix restructuring
+       dbdf0ca hicseq [hicrep.py] - Corrected typo
+       e70f0ee hicseq [hicrep.py] - corrected R_TOOLS path
+       92a5667 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       c05b038 hicseq [hicrep.py] - Corrected typo
+       1d57da7 hicseq [hicrep.py] - corrected R_TOOLS path
+       09b27e0 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       565b4f4 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       f9f5282 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       79da62c [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       4518e45 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       11e583d [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       f7d773d Completed developing hicrep and quasar analysis
+       b7f60de [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       b3af696 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       0034cea created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       2a5492d Completed hicrep analysis except the creation of the graph
+       d6e8b9b hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       f1f7d98 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       ba1d617 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       76e10ba hicseq completed adding basic features of the hicrep analysis.
+       72a3137 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       c2af6c6 Added pairwise combination for samples
+       6f0965b started to edit the hicseq.py added new file for hicrep
+       e9f3fe4 hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       2c206ac hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       3e2a53e hicseq [quasar_qc - corrected module loading in matrix restructuring
+       f880a49 hicseq [hicrep.py] - Corrected typo
+       809f95e hicseq [hicrep.py] - corrected R_TOOLS path
+       aaddec5 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       251c0c6 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       68889f9 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       68003e0 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       2fef220 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       8782a74 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       e2caf44 Completed developing hicrep and quasar analysis
+       30008d6 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       7a64058 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       02e39e7 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       ea8610d Completed hicrep analysis except the creation of the graph
+       48173c5 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       419d60e hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       b26f623 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       2f2eba5 hicseq completed adding basic features of the hicrep analysis.
+       92b291a hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       c3dcb3e Added pairwise combination for samples
+       67488a0 started to edit the hicseq.py added new file for hicrep
+       a22ca56 hicseq [hicrep.py] - Corrected typo
+       e28aede hicseq [quasar_qc.py] - Corrected deletion by mistake
+       5a1f502 hicseq [hicrep.py, hicseq.py, quasar_qc.py] - Added further comments to making easy to understand the code
+       5b6fff8 hicseq [hicrep.py] - corrected R_TOOLS path
+       b02d228 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       4ed3b59 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       c361bc6 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       5622389 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       e4758a1 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       c564149 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       760bfd6 Completed developing hicrep and quasar analysis
+       275a224 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       627a501 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       33ffee0 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       df084a8 Completed hicrep analysis except the creation of the graph
+       f3bebd7 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       b7fe382 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       805c4a9 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       dbfde76 hicseq completed adding basic features of the hicrep analysis.
+       10e2dfa hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       7c2e89b Added pairwise combination for samples
+       07099a0 started to edit the hicseq.py added new file for hicrep
+       300ba1b hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       688a495 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       9aa6c61 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       0f393c6 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       b64480f [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       353a55d Completed developing hicrep and quasar analysis
+       7aa1f48 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       008904a [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       b27275b created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       66c49d4 Completed hicrep analysis except the creation of the graph
+       a09f038 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       5c370b5 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       de693ae hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       a504b17 hicseq completed adding basic features of the hicrep analysis.
+       fe551f3 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       5220816 Added pairwise combination for samples
+       17e1b5c started to edit the hicseq.py added new file for hicrep
+       8d592db [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       c37d365 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       8c15244 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       7f55aeb [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       f371fb9 Completed developing hicrep and quasar analysis
+       14b332d [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       66ded90 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       c8cabe6 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       f066550 Completed hicrep analysis except the creation of the graph
+       0a733f0 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       445a468 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       ebcf685 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       8e3602c hicseq completed adding basic features of the hicrep analysis.
+       21b08c3 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       59771c3 Added pairwise combination for samples
+       9819482 started to edit the hicseq.py added new file for hicrep
+       8fc473c [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       673bad3 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       979085b [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       5392e00 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       96b5c41 Completed developing hicrep and quasar analysis
+       8d38fc1 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       9b2e517 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       dade053 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       14247d2 Completed hicrep analysis except the creation of the graph
+       79e675e hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       5912593 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       c19d1be hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       cc2f34c hicseq completed adding basic features of the hicrep analysis.
+       e7e729a hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       8495df6 Added pairwise combination for samples
+       d789632 started to edit the hicseq.py added new file for hicrep
+       d8a1537 Completed developing hicrep and quasar analysis
+       c13cb74 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       316db2c [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       1a382fb created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       68fc66e Completed hicrep analysis except the creation of the graph
+       f2cb6a0 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       702fadb hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       4fefe1e hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       294e3aa hicseq completed adding basic features of the hicrep analysis.
+       5edc80e hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       fc95853 Added pairwise combination for samples
+       1592510 started to edit the hicseq.py added new file for hicrep
+
+  P-O Quirion <pierre-olivier.quirion@computationalgenomics.ca>      10 commits
+
+       4b08c93 force loading mugqic python 2.7 on cuffmerge
+       ac7cd86 force loading mugqic python 2.7 on multiqc 1.7
+       b0875ae more verbose went -d/--design is needed for contrast
+       0dc71a9 revert on indel aligner
+       37af570 cleanup ini for beluga
+       3c0fad0 revert on indel aligner
+       5463567 cleanup ini for beluga
+       2080dfd remove dbSNP for oxog ini block fix gatk 4 module name
+       3a1ab22 fix picard_collect_oxog_metrics dbSNP vcf
+       1c5e2ed remove HOME_DEV paths
+
+  pubudumanoj <pnawarat@abacus3.ferrier.genome.mcgill.ca>      7 commits
+
+       7bbe4fa Corrected hicseq.py file deletions
+       0ca8a12 Corrected hicseq.py file deletions
+       e2e57af Corrected hicseq.py file deletions
+       9d90aef Corrected hicseq.py file deletions
+       312d3db Corrected hicseq.py file deletions
+       a95d8b8 Corrected hicseq.py file deletions
+       52c9240 Corrected hicseq.py file deletions
+
+  pubudumanoj <pubudu@gra-login1.graham.sharcnet>      11 commits
+
+       39db7bb hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       4943274 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       452015d hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       61a86ec hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       e798549 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       185c81b hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       21929bf hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       fe03ec6 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       cdca1f9 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       a146b25 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       4025c71 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+
+  Pubudu Nawarathna Mudiyanselage <pubudu@beluga3.int.ets1.calculquebec.ca>      11 commits
+
+       c646e67 refer previous commit
+       30b0838 refer previous commit
+       0e4a6cb refer previous commit
+       138fafc refer previous commit
+       0fd5742 refer previous commit
+       962cc3e refer previous commit
+       bb6b1b7 refer previous commit
+       a1f0ba2 refer previous commit
+       2b79a1b refer previous commit
+       ae7e5c8 refer previous commit
+       3b6c393 refer previous commit
+
+  Pubudu Nawarathna Mudiyanselage <pubudu.nawarathna@mail.mcgill.ca>      1 commits
+
+       30b2d60 corrected md file
+
+  Shaloo Shalini <shaloo.shalini@gmail.com>      17 commits
+
+       f0d1045 Merged in ss_issu_69_rnaseq_strintie_wf (pull request #214)
+       6935d81 Merged in ss_issu_67_wf_dnaseq_light (pull request #216)
+       2b8fe8c Merged in ss_issu_66_dnaseq_sv_schema (pull request #215)
+       17c8fcc Merged dev into ss_issu_69_rnaseq_strintie_wf
+       0b1fe1e Merged dev into ss_issu_66_dnaseq_sv_schema
+       0f9def7 Merged dev into ss_issu_67_wf_dnaseq_light
+       37504fc Merged in ss_issu_67_wf_dnaseq_light (pull request #212)
+       b217c76 Merged in ss_issu_65_chipseq_workflow (pull request #211)
+       890dc40 Merged in ss_issu_68_nano_wf (pull request #213)
+       1c7a288 Merged dev into ss_issu_67_wf_dnaseq_light
+       0a6fd27 Merged dev into ss_issu_69_rnaseq_strintie_wf
+       c7272d5 Merged dev into ss_issu_68_nano_wf
+       0a1ffe3 Merged dev into ss_issu_65_chipseq_workflow
+       3f9add6 Merged in ss_issu_66_dnaseq_sv_schema (pull request #209)
+       2bddc59 Merged in ss_issu_60_wf_ampllconseq (pull request #203)
+       7146106 Merged in ss_covseq_wflow (pull request #197)
+       192f7a3 Merged in covseq_readme (pull request #196)
+
+  shaloo <shalz@hotmail.com>      30 commits
+
+       14cb58c Refs #69 Hector and Ed's feedback incorporated
+       ea4ea09 Refs #66 Feedback from Ed and Rob wrt step dependency has been addressed
+       de861a5 Refs #66 cleanup after color update
+       1b68619 Refs #67 cleanup after color update
+       26733d9 Merge branch 'ss_issu_66_dnaseq_sv_schema' of bitbucket.org:mugqic/genpipes into ss_issu_66_dnaseq_sv_schema
+       75101db Refs #66 color updated as suggested for dnaseq light same for dnaseq sv option
+       47c8705 Refs #66 color updated as suggested for dnaseq light same for dnaseq sv option
+       dc52d26 Refs #67 dnaseq -t light option color feedback addressed
+       0c95d46 Refs #68 color updated as per feedback
+       796cf88 Refs #68 color added as per feedback
+       1ad517e Refs #65 chipseq workflow color updated, report links added as per feedback
+       179955f Fixes #69 Refs #54 rnaseq -t stringtie workflow schema added
+       c1a8861 Merge branch 'ss_issu_65_chipseq_workflow' of bitbucket.org:mugqic/genpipes into ss_issu_65_chipseq_workflow
+       ce49d39 Fixes #65 Refs #54 chipseq pipeline updated
+       8beba66 Fixes #68 Refs #54 nanopore pipeline workflow schema added
+       cc91732 Fixes #67 Refs #54 dnaseq -t light workflow schema added
+       9f4b8ce Update chipseq pipeline schema for -t chipseq and -t atacseq options to reflect latest dev branch pipeline code
+       6f88456 Merge branch 'ss_issu_66_dnaseq_sv_schema' of bitbucket.org:mugqic/genpipes into ss_issu_66_dnaseq_sv_schema
+       53cc1d3 Fixes #66 Dnaseq pipeline -t sv option workflow schema created
+       e4fd2a2 Merge branch 'ss_issu_66_dnaseq_sv_schema' of bitbucket.org:mugqic/genpipes into ss_issu_66_dnaseq_sv_schema
+       647d39a Fixes #66 Dnaseq pipeline -t sv option workflow schema created
+       7b041d9 cleanup DS_Store file
+       44db707 Fixes #66 Dnaseq pipeline -t sv option workflow schema created
+       48626df Fixes #60 ampliconseq -t dada2 workflow schema diagram created
+       52a2286 Refs #53 covseq workflow arrow step 6 -> 9 removed
+       faf9449 Refs #53 Paul's review inputs incorporated
+       5187035 Fixes #53 covseq.py workflow diagram added
+       bacd6ed Refs #53 added covseq pipeline schema workflow draft under review by Paul
+       0f7b09a Fixes #51 update covseq pipeline readme to v3.3.0
+       2fed25b Fixes #51 update covseq pipeline readme to v3.3.0
+
+3.3.0        Fri Feb 19 16:37:40 2021 -0500        641 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      3 commits
+
+       a4d9a14 GenPipes - removing tumor_apir before release
+       1a28942 Version bump to 3.2.1-beta
+       63d211d Version bump to 3.2.0
+
+  ehenrion <edouard.henrion@mcgill.ca>      4 commits
+
+       0756af3 Merged in release_3.3 (pull request #194)
+       7b17e70 GenPipes - Bug fix : corrected dnaseq.cedar.ini
+       d62b0c0 GenPipes - Bug fix : removed buggy line in dnaseq.cedar.ini
+       30bdd0a GenPipes - Bug fix : correcting indentation in illumina_run_processing.py
+
+  Pierre-Olivier Quirion <pierre-olivier.quirion@computationalgenomics.ca>      1 commits
+
+       ebef4a2 Release 3.2
+
+  pnawarathna <pubudu.nawarathna@mail.mcgill.ca>      572 commits
+
+       e6d1d8a hicseq pipeline [changed the step order]
+       165e060 hicseq pipeline [removed user comments, delete guillimin and mammouth ini files]
+       498209b hicseq [hicseq.py] - corrected output -o issue fastq_readset
+       8d382dc hicseq [hicseq.py, readme.md] - modified readmefile
+       638e16e hicseq [hicseq.py] - corrected file after rebase
+       7fe877f hicseq [hicrep.py] - Corrected typo
+       2c26336 hicseq [hicrep.py] - corrected R_TOOLS path
+       91dd29c [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       f44f83d hicseq [hicrep.py] - Corrected typo
+       124ce0e hicseq [hicrep.py] - corrected R_TOOLS path
+       678b9cf [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       bb10a4e hicseq [hicrep.py] - Corrected typo
+       3e2b550 hicseq [hicrep.py] - corrected R_TOOLS path
+       8772abd [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       77cbfb9 hicseq [hicrep.py] - Corrected typo
+       6f820f1 hicseq [hicrep.py] - corrected R_TOOLS path
+       2528718 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       65191ab hicseq [hicrep.py] - Corrected typo
+       28b4377 hicseq [hicrep.py] - corrected R_TOOLS path
+       c82045f [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       6b1b9d6 hicseq [hicrep.py] - Corrected typo
+       be461ea hicseq [hicrep.py] - corrected R_TOOLS path
+       26cf925 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       b06d2ea hicseq [hicrep.py] - Corrected typo
+       eff718e hicseq [hicrep.py] - corrected R_TOOLS path
+       8c7b0eb [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       d1f43e7 hicseq [hicrep.py] - Corrected typo
+       97174e2 hicseq [hicrep.py] - corrected R_TOOLS path
+       d82f677 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       aa9e921 hicseq [hicseq.py] - corrected file after rebase
+       96a9420 hicseq [hicrep.py] - Corrected typo
+       68f348b hicseq [hicrep.py] - corrected R_TOOLS path
+       284f0e1 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       cac094d hicseq [hicrep.py] - Corrected typo
+       ec553bd hicseq [hicrep.py] - corrected R_TOOLS path
+       e32d3bb [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       c1f326e hicseq [hicrep.py] - Corrected typo
+       4b99cbb hicseq [hicrep.py] - corrected R_TOOLS path
+       da58a44 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       8985879 hicseq [hicrep.py] - Corrected typo
+       0d1f31b hicseq [hicrep.py] - corrected R_TOOLS path
+       d5aab52 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       1d3a959 hicseq [hicrep.py] - Corrected typo
+       2ec58eb hicseq [hicrep.py] - corrected R_TOOLS path
+       aaf3aee [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       2dd3de8 hicseq [hicrep.py] - Corrected typo
+       0eb1956 hicseq [hicrep.py] - corrected R_TOOLS path
+       c262754 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       944ba8e hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       4021b7d hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       e856761 hicseq [quasar_qc - corrected module loading in matrix restructuring
+       fc92143 hicseq [hicrep.py] - Corrected typo
+       a13ed40 hicseq [hicrep.py] - corrected R_TOOLS path
+       ee6bc35 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       3b82c00 hicseq [hicrep.py] - Corrected typo
+       9a509dc hicseq [hicrep.py] - corrected R_TOOLS path
+       edb308a [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       ca9fa5d hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       d9b7dc4 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       aa8821b [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       9419efd [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       8d61964 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       2e7870d Completed developing hicrep and quasar analysis
+       d54c390 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       3ca0a12 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       845d473 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       42f947a Completed hicrep analysis except the creation of the graph
+       0274f32 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       1c1f819 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       e27ded7 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       5340844 hicseq completed adding basic features of the hicrep analysis.
+       5b078cf hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       94230e0 Added pairwise combination for samples
+       39b34b0 started to edit the hicseq.py added new file for hicrep
+       9e2040f hicseq [hicseq.py, readme.md] - modified readmefile
+       4465952 hicseq [hicseq.py] - corrected file after rebase
+       ccb344f hicseq [hicrep.py] - Corrected typo
+       35df970 hicseq [hicrep.py] - corrected R_TOOLS path
+       240f9c5 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       eecc3b2 hicseq [hicrep.py] - Corrected typo
+       78e6c8a hicseq [hicrep.py] - corrected R_TOOLS path
+       616e8d3 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       84e8ec9 hicseq [hicrep.py] - Corrected typo
+       b142de6 hicseq [hicrep.py] - corrected R_TOOLS path
+       dd6cb48 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       5bad885 hicseq [hicrep.py] - Corrected typo
+       030d558 hicseq [hicrep.py] - corrected R_TOOLS path
+       e29ae96 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       97622c6 hicseq [hicrep.py] - Corrected typo
+       a477d71 hicseq [hicrep.py] - corrected R_TOOLS path
+       d05a6b6 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       12a4e2f hicseq [hicrep.py] - Corrected typo
+       45695cb hicseq [hicrep.py] - corrected R_TOOLS path
+       e7041d3 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       302c4e9 hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       154f9b2 hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       8e55fb5 hicseq [quasar_qc - corrected module loading in matrix restructuring
+       f1534e3 hicseq [hicrep.py] - Corrected typo
+       4557237 hicseq [hicrep.py] - corrected R_TOOLS path
+       c2063ea [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       e41bb32 hicseq [hicrep.py] - Corrected typo
+       ebbbf87 hicseq [hicrep.py] - corrected R_TOOLS path
+       4406314 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       bd36df0 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       4076547 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       6f40129 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       789fb24 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       83ea31b [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       0eafabd Completed developing hicrep and quasar analysis
+       dc1cf6a [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       c0974eb [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       82c023b created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       0ea49fd Completed hicrep analysis except the creation of the graph
+       55f2b85 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       bb22368 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       19aec50 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       7cd0785 hicseq completed adding basic features of the hicrep analysis.
+       7bdf5b4 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       ae313c6 Added pairwise combination for samples
+       08dae47 started to edit the hicseq.py added new file for hicrep
+       eff7114 hicseq [hicseq.py] - corrected file after rebase
+       b693105 hicseq [hicrep.py] - Corrected typo
+       386ca83 hicseq [hicrep.py] - corrected R_TOOLS path
+       5a412f7 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       0b7fe2a hicseq [hicrep.py] - Corrected typo
+       1765bef hicseq [hicrep.py] - corrected R_TOOLS path
+       5851499 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       1555fed hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       d3199ec hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       01d239a hicseq [quasar_qc - corrected module loading in matrix restructuring
+       46e7d3a hicseq [hicrep.py] - Corrected typo
+       5e92f8e hicseq [hicrep.py] - corrected R_TOOLS path
+       f2dbfd7 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       4fa81e9 hicseq [hicrep.py] - Corrected typo
+       b284455 hicseq [hicrep.py] - corrected R_TOOLS path
+       b12fdbe [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       a78a623 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       125a6e3 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       67272ac [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       19f3edc [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       a8b8d85 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       9d37f63 Completed developing hicrep and quasar analysis
+       acce383 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       92bfb41 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       1a3bcdf created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       812ba6d Completed hicrep analysis except the creation of the graph
+       27467f3 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       3cc9f39 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       2684371 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       92744be hicseq completed adding basic features of the hicrep analysis.
+       06d8e53 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       31b0157 Added pairwise combination for samples
+       6775791 started to edit the hicseq.py added new file for hicrep
+       38a937e hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       4e9dea9 hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       6efe674 hicseq [quasar_qc - corrected module loading in matrix restructuring
+       b918766 hicseq [hicrep.py] - Corrected typo
+       0219397 hicseq [hicrep.py] - corrected R_TOOLS path
+       187cba3 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       cac69b2 hicseq [hicrep.py] - Corrected typo
+       a80a6bc hicseq [hicrep.py] - corrected R_TOOLS path
+       06e2631 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       f903c4b hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       ebc75da [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       c9acbc7 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       dcbe50b [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       bd63e8e [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       4f9a308 Completed developing hicrep and quasar analysis
+       6f0d1a8 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       1052c8d [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       704d7f1 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       a7f8b2a Completed hicrep analysis except the creation of the graph
+       f1fd9af hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       712cb46 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       979429b hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       3930cd3 hicseq completed adding basic features of the hicrep analysis.
+       b3c1160 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       f493eae Added pairwise combination for samples
+       6f98cb3 started to edit the hicseq.py added new file for hicrep
+       f58f27f hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       b576afd hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       0eb37c3 hicseq [quasar_qc - corrected module loading in matrix restructuring
+       b718a5b hicseq [hicrep.py] - Corrected typo
+       5f8cf47 hicseq [hicrep.py] - corrected R_TOOLS path
+       1fde108 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       6478d07 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       b262df5 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       b340c0d [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       3b6b357 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       d740ed8 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       c1b8eef Completed developing hicrep and quasar analysis
+       6bc89a8 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       95c477e [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       53fc03c created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       cf6a3af Completed hicrep analysis except the creation of the graph
+       d854224 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       3b96177 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       8438ff6 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       b18b191 hicseq completed adding basic features of the hicrep analysis.
+       c4ba094 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       bd650a8 Added pairwise combination for samples
+       6f4136c started to edit the hicseq.py added new file for hicrep
+       9364f1e hicseq [hicrep.py] - Corrected typo
+       301afce hicseq [quasar_qc.py] - Corrected deletion by mistake
+       bd2a8e1 hicseq [hicrep.py, hicseq.py, quasar_qc.py] - Added further comments to making easy to understand the code
+       9676178 hicseq [hicrep.py] - corrected R_TOOLS path
+       a5ca0ba [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       432f586 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       3e68e18 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       5c841f7 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       ab730be [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       3bce823 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       e1cee2e Completed developing hicrep and quasar analysis
+       45b526c [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       6cf8450 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       21e2e6c created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       3441689 Completed hicrep analysis except the creation of the graph
+       6570bc9 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       46a28b4 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       645c2f8 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       0189b80 hicseq completed adding basic features of the hicrep analysis.
+       2606951 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       6fd22e8 Added pairwise combination for samples
+       d664e0e started to edit the hicseq.py added new file for hicrep
+       1e51cf6 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       4cca061 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       2f8c42d [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       1c49e45 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       cfa04f3 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       c0bd365 Completed developing hicrep and quasar analysis
+       70d8bdf [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       6711a68 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       e8effea created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       5fe98a0 Completed hicrep analysis except the creation of the graph
+       0bc9a5d hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       bea29b6 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       eb89bc0 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       d7bb65d hicseq completed adding basic features of the hicrep analysis.
+       ccc376e hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       93f957d Added pairwise combination for samples
+       1c14ddf started to edit the hicseq.py added new file for hicrep
+       0da3f4c [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       9ae9d5e [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       30a4e55 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       8a5ac66 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       4fb194f Completed developing hicrep and quasar analysis
+       7f2917d [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       2492118 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       9a8cfcd created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       54c7c37 Completed hicrep analysis except the creation of the graph
+       c35566c hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       fe1171a hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       e9db27d hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       8584e29 hicseq completed adding basic features of the hicrep analysis.
+       dccac15 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       5689051 Added pairwise combination for samples
+       f609b2f started to edit the hicseq.py added new file for hicrep
+       31ba309 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       55f7758 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       f794061 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       84e93b1 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       915d9ac Completed developing hicrep and quasar analysis
+       769c97b [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       01ed537 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       b8a79f4 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       6163240 Completed hicrep analysis except the creation of the graph
+       7efc2ba hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       bf7412f hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       14256a1 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       042082e hicseq completed adding basic features of the hicrep analysis.
+       fa1e7d0 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       eba9e46 Added pairwise combination for samples
+       9bd17ff started to edit the hicseq.py added new file for hicrep
+       99d6222 Completed developing hicrep and quasar analysis
+       719115c [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       7c3222a [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       966e814 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       ece06e3 Completed hicrep analysis except the creation of the graph
+       4ceda72 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       5a65032 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       91f3b4b hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       15e34d0 hicseq completed adding basic features of the hicrep analysis.
+       92baadc hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       d9d98a5 Added pairwise combination for samples
+       c4853c3 started to edit the hicseq.py added new file for hicrep
+       78ab010 hicseq pipeline [changed the step order]
+       c2ac146 hicseq pipeline [removed user comments, delete guillimin and mammouth ini files]
+       8bf6a4d hicseq [hicseq.py] - corrected output -o issue fastq_readset
+       a016c1e hicseq [hicseq.py, readme.md] - modified readmefile
+       7fbb757 hicseq [hicseq.py] - corrected file after rebase
+       f8fc53c hicseq [hicrep.py] - Corrected typo
+       46c6016 hicseq [hicrep.py] - corrected R_TOOLS path
+       fb83a92 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       00a5b87 hicseq [hicrep.py] - Corrected typo
+       3e840af hicseq [hicrep.py] - corrected R_TOOLS path
+       c61122b [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       d3659cb hicseq [hicrep.py] - Corrected typo
+       230b7b6 hicseq [hicrep.py] - corrected R_TOOLS path
+       9a454ab [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       857f8c9 hicseq [hicrep.py] - Corrected typo
+       5c40245 hicseq [hicrep.py] - corrected R_TOOLS path
+       ba545bd [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       3ff1e50 hicseq [hicrep.py] - Corrected typo
+       a0098d0 hicseq [hicrep.py] - corrected R_TOOLS path
+       2c820d8 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       d23933c hicseq [hicrep.py] - Corrected typo
+       b064564 hicseq [hicrep.py] - corrected R_TOOLS path
+       54bb894 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       b81d755 hicseq [hicrep.py] - Corrected typo
+       74e48a2 hicseq [hicrep.py] - corrected R_TOOLS path
+       40fe0cc [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       a3680d6 hicseq [hicrep.py] - Corrected typo
+       798c19f hicseq [hicrep.py] - corrected R_TOOLS path
+       06ec788 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       2fd36b1 hicseq [hicseq.py] - corrected file after rebase
+       be817b4 hicseq [hicrep.py] - Corrected typo
+       5248d32 hicseq [hicrep.py] - corrected R_TOOLS path
+       39617b2 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       ec97960 hicseq [hicrep.py] - Corrected typo
+       24e7c7c hicseq [hicrep.py] - corrected R_TOOLS path
+       4d6d3f8 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       c17d5f1 hicseq [hicrep.py] - Corrected typo
+       aeae41c hicseq [hicrep.py] - corrected R_TOOLS path
+       77dabaf [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       032cfe9 hicseq [hicrep.py] - Corrected typo
+       07a72bd hicseq [hicrep.py] - corrected R_TOOLS path
+       1039f67 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       590a600 hicseq [hicrep.py] - Corrected typo
+       8f9b546 hicseq [hicrep.py] - corrected R_TOOLS path
+       574336c [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       6c20f49 hicseq [hicrep.py] - Corrected typo
+       ff45f2d hicseq [hicrep.py] - corrected R_TOOLS path
+       85d661e [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       ec67234 hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       463da45 hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       7701580 hicseq [quasar_qc - corrected module loading in matrix restructuring
+       0c5ee2f hicseq [hicrep.py] - Corrected typo
+       1a221b4 hicseq [hicrep.py] - corrected R_TOOLS path
+       8966cfb [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       b02d1a7 hicseq [hicrep.py] - Corrected typo
+       4d37159 hicseq [hicrep.py] - corrected R_TOOLS path
+       22fbd60 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       5541fbc hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       fdeb31d [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       d58d40f [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       fa1f4b4 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       cdcc790 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       7b9f646 Completed developing hicrep and quasar analysis
+       31c4df5 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       c1cc394 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       80dc0ab created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       72cbd00 Completed hicrep analysis except the creation of the graph
+       0a93826 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       85cc99e hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       2e45578 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       46f2fa3 hicseq completed adding basic features of the hicrep analysis.
+       8c3e8d9 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       8e5c654 Added pairwise combination for samples
+       55862cd started to edit the hicseq.py added new file for hicrep
+       e79b132 hicseq [hicseq.py, readme.md] - modified readmefile
+       ffea320 hicseq [hicseq.py] - corrected file after rebase
+       fed6253 hicseq [hicrep.py] - Corrected typo
+       d285ff0 hicseq [hicrep.py] - corrected R_TOOLS path
+       e04cb39 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       de2d8e1 hicseq [hicrep.py] - Corrected typo
+       9c6f2d2 hicseq [hicrep.py] - corrected R_TOOLS path
+       a8ae3ab [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       866b11d hicseq [hicrep.py] - Corrected typo
+       82db122 hicseq [hicrep.py] - corrected R_TOOLS path
+       4b9e5e6 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       dda5352 hicseq [hicrep.py] - Corrected typo
+       452f1db hicseq [hicrep.py] - corrected R_TOOLS path
+       db683cc [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       f2e3612 hicseq [hicrep.py] - Corrected typo
+       2accb63 hicseq [hicrep.py] - corrected R_TOOLS path
+       f8413f0 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       7938420 hicseq [hicrep.py] - Corrected typo
+       e78e318 hicseq [hicrep.py] - corrected R_TOOLS path
+       80eff20 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       a0b0062 hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       1160fe2 hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       3ba1174 hicseq [quasar_qc - corrected module loading in matrix restructuring
+       b27f402 hicseq [hicrep.py] - Corrected typo
+       01ac15d hicseq [hicrep.py] - corrected R_TOOLS path
+       80ad708 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       ef6d034 hicseq [hicrep.py] - Corrected typo
+       045b540 hicseq [hicrep.py] - corrected R_TOOLS path
+       f6422cd [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       8808f05 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       65f84c4 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       7adcfa1 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       14c0a78 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       935862a [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       fd6eef8 Completed developing hicrep and quasar analysis
+       8c8248e [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       85f0d9e [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       dc225b2 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       dfe7725 Completed hicrep analysis except the creation of the graph
+       db50a5d hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       10222fe hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       5dcda07 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       062551b hicseq completed adding basic features of the hicrep analysis.
+       766c1b4 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       e979eee Added pairwise combination for samples
+       cfff916 started to edit the hicseq.py added new file for hicrep
+       4443e3d hicseq [hicseq.py] - corrected file after rebase
+       ca8b09d hicseq [hicrep.py] - Corrected typo
+       584dd18 hicseq [hicrep.py] - corrected R_TOOLS path
+       afa77dc [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       5c2535f hicseq [hicrep.py] - Corrected typo
+       8db0da7 hicseq [hicrep.py] - corrected R_TOOLS path
+       6f264bd [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       5960be4 hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       537be82 hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       1313e2b hicseq [quasar_qc - corrected module loading in matrix restructuring
+       9bcc430 hicseq [hicrep.py] - Corrected typo
+       8cacfa8 hicseq [hicrep.py] - corrected R_TOOLS path
+       c8c3cef [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       71b02a3 hicseq [hicrep.py] - Corrected typo
+       b98db26 hicseq [hicrep.py] - corrected R_TOOLS path
+       3698d95 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       d461e1e hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       5c728c6 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       7a9cfa6 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       2b66572 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       312c08e [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       7e6f9aa Completed developing hicrep and quasar analysis
+       334abaf [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       87973bb [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       03aab02 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       8359e46 Completed hicrep analysis except the creation of the graph
+       8a845b7 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       eee8a21 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       9a55b5c hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       2755cba hicseq completed adding basic features of the hicrep analysis.
+       3c517c4 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       8852df1 Added pairwise combination for samples
+       54e5f9f started to edit the hicseq.py added new file for hicrep
+       9d54100 hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       95e4b22 hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       d63f7b4 hicseq [quasar_qc - corrected module loading in matrix restructuring
+       56c0d8c hicseq [hicrep.py] - Corrected typo
+       80acf52 hicseq [hicrep.py] - corrected R_TOOLS path
+       7cf9e94 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       65bafda hicseq [hicrep.py] - Corrected typo
+       990b8fa hicseq [hicrep.py] - corrected R_TOOLS path
+       b86b171 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       e5fdc3a hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       ff49511 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       5da9af4 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       8113e90 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       845ec62 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       09a2750 Completed developing hicrep and quasar analysis
+       1e1ab4c [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       4f0cba1 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       6ba3f9d created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       be91a40 Completed hicrep analysis except the creation of the graph
+       e2189f7 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       fc54a3a hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       09ec984 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       c58406d hicseq completed adding basic features of the hicrep analysis.
+       36dd6fa hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       1861910 Added pairwise combination for samples
+       ef297a3 started to edit the hicseq.py added new file for hicrep
+       5d7c80f hicseq [base.ini] - updated mugqic tools version to 2.3.1
+       868a711 hicseq [base.ini] - updated mugqic tools version, [other inis] - updated walltime for mergeing quasr stats
+       9685043 hicseq [quasar_qc - corrected module loading in matrix restructuring
+       f5f88d6 Merge branch 'hicseq_hicrep_pubudu' of https://bitbucket.org/mugqic/genpipes into hicseq_hicrep_pubudu Corrected conflicts Conflicts: 	bfx/quasar_qc.py 	pipelines/hicseq/hicseq.base.ini 	pipelines/hicseq/hicseq.py
+       5a83860 hicseq [hicrep.py] - Corrected typo
+       b9e6c3b hicseq [hicrep.py] - corrected R_TOOLS path
+       6d4ce4f [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       b89f8e7 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       8beb590 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       b78f92c [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       18523b8 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       0ff0ff7 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       c6f98d6 Completed developing hicrep and quasar analysis
+       0b10bc0 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       8b60a2b [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       6f50b29 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       8faa8eb Completed hicrep analysis except the creation of the graph
+       0bd1d0a hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       3b6ab90 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       4a7bbca hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       74e0bcb hicseq completed adding basic features of the hicrep analysis.
+       9cce006 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       183d5a9 Added pairwise combination for samples
+       7f7301f started to edit the hicseq.py added new file for hicrep
+       0f33a58 hicseq [hicrep.py] - Corrected typo
+       c47a6ee hicseq [quasar_qc.py] - Corrected deletion by mistake
+       8b33c6f hicseq [hicrep.py, hicseq.py, quasar_qc.py] - Added further comments to making easy to understand the code
+       61be1c4 hicseq [hicrep.py] - corrected R_TOOLS path
+       20c3b4a Merge branch 'hicseq_hicrep_pubudu' of https://bitbucket.org/mugqic/genpipes into hicseq_hicrep_pubudu
+       edda3a1 [hicseq.py, quasar_qc.py,hicrep.py] - modified to put all temporary files saved in to temp folder and defined them as removable files Added a new merging step to merge all quasar_qc report files in to one file Corrected a typo in hicrep output files
+       18506b4 hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       75cbaaa [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       2a0e1a8 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       15bbbb3 [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       44735d2 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       eccd7c7 Completed developing hicrep and quasar analysis
+       e9078d8 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       2ac9239 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       542bad0 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       418c515 Completed hicrep analysis except the creation of the graph
+       f587c74 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       5a9980d hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       2d87020 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       8df5abc hicseq completed adding basic features of the hicrep analysis.
+       f55e196 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       534d63f Added pairwise combination for samples
+       756599e started to edit the hicseq.py added new file for hicrep
+       b45e44d hicseq pipeline - Added parameters for reproducibility and quality scores steps of all ini files
+       cf5a2f4 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       56985bb [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       b48157c [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       bdbc7de [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       d1c1ae9 Completed developing hicrep and quasar analysis
+       e68d307 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       c832c49 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       1b63533 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       2c192d1 Completed hicrep analysis except the creation of the graph
+       e081f17 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       6f3560e hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       35efcde hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       5d6fcc1 hicseq completed adding basic features of the hicrep analysis.
+       ca0d163 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       7216531 Added pairwise combination for samples
+       396a06d started to edit the hicseq.py added new file for hicrep
+       35412d6 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       97ce474 [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       38b339b [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       53603e1 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       db3da4b Completed developing hicrep and quasar analysis
+       ba7bbb8 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       e6625b9 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       a797856 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       720a626 Completed hicrep analysis except the creation of the graph
+       b5cbb3f hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       bfbb896 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       1099ed0 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       5f5f168 hicseq completed adding basic features of the hicrep analysis.
+       f303163 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       bbbcf3e Added pairwise combination for samples
+       a5c29b5 started to edit the hicseq.py added new file for hicrep
+       292a0b2 [hicseq.py] - changed the output directory name for reproducibilty score [hicrep.py] - changed the path for hicrep.R
+       cd9d16a [btx/quasar_qc.py]-removed sed 's/ *//g' and added additional awk to print values since there was a text passing issue. Need to be optimized further.
+       83f719b [btx/quasar_qc.py]-added trunc() to remove other decimals than the first one
+       4c23bf1 [btx/quasar_qc.py]-replaced awk with Rscript and improved code. now data frames only with decimal values are multiplied. missing values were removed and replaced with 0
+       5f42b4c Completed developing hicrep and quasar analysis
+       849b382 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       d9ed648 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       1767a32 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       068daa9 Completed hicrep analysis except the creation of the graph
+       210ad29 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       411d8e1 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       0f31f81 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       79aff17 hicseq completed adding basic features of the hicrep analysis.
+       b5075cb hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       57e8bae Added pairwise combination for samples
+       4a57c1a started to edit the hicseq.py added new file for hicrep
+       89006b6 Completed developing hicrep and quasar analysis
+       87eb470 [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       477281a [hicseq.py, quasar_qc.py] completed the job for creating a fend object for the project
+       10c5eb1 created new file for QUASAR-QC in directory btx and defined methods in hicseq.py for qusarqc analysis. obtained path for chromosome lengths file
+       335f4c5 Completed hicrep analysis except the creation of the graph
+       10daca1 hicseq [hicseq.py] - changed 23 parallel jobs for each chromosome to one job for all 23 chromosomes.
+       4aeab54 hicseq [hicseq.py, hicrep.py] - modified to handle multiple paramters for hicrep and create combined csv file for each sample comparison as a new output
+       509fef1 hicseq [hicseq.py, hicrep.py] - modified for additional user parameters, optimal h finding, down-sampling, save weight and corr matrices
+       1f096d1 hicseq completed adding basic features of the hicrep analysis.
+       b623db5 hic-seq [hic] hicseq.py Added pairwise comparison and added jobs to hicrep.py - include testing lines
+       c605742 Added pairwise combination for samples
+       9ad63fd started to edit the hicseq.py added new file for hicrep
+
+  pubudumanoj <pnawarat@abacus3.ferrier.genome.mcgill.ca>      16 commits
+
+       a1ddafb Corrected hicseq.py file deletions
+       e011fbe Corrected hicseq.py file deletions
+       9c40c03 Corrected hicseq.py file deletions
+       d8ded44 Corrected hicseq.py file deletions
+       0a0903c Merge branch 'hicseq_hicrep_pubudu' of https://bitbucket.org/mugqic/genpipes into hicseq_hicrep_pubudu
+       1fdc640 Corrected hicseq.py file deletions
+       cbf6c69 Corrected hicseq.py file deletions
+       96e5d3b Merge branch 'hicseq_hicrep_pubudu' of https://bitbucket.org/mugqic/genpipes into hicseq_hicrep_pubudu
+       41a5bc2 Corrected hicseq.py file deletions
+       3ee012f Corrected hicseq.py file deletions
+       228a9e4 Merge branch 'hicseq_hicrep_pubudu' of https://bitbucket.org/mugqic/genpipes into hicseq_hicrep_pubudu
+       9211f3c Merge branch 'hicseq_hicrep_pubudu' of https://bitbucket.org/mugqic/genpipes into hicseq_hicrep_pubudu
+       3f91825 Merge branch 'hicseq_hicrep_pubudu' of https://bitbucket.org/mugqic/genpipes into hicseq_hicrep_pubudu corrected merge conflict after rebase Conflicts: 	pipelines/hicseq/hicseq.py
+       6291f89 Merge branch 'hicseq_hicrep_pubudu' of https://bitbucket.org/mugqic/genpipes into hicseq_hicrep_pubudu corrected module loading
+       296b86b Merge branch 'hicseq_hicrep_pubudu' of https://bitbucket.org/mugqic/genpipes into hicseq_hicrep_pubudu
+       a757b8d Merge branch 'hicseq_hicrep_pubudu' of https://bitbucket.org/mugqic/genpipes into hicseq_hicrep_pubudu
+
+  pubudumanoj <pubudu@gra-login1.graham.sharcnet>      20 commits
+
+       925b082 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       3d8131d hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       ae8f296 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       21e7665 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       938c27c hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       38516f3 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       08b1381 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       4f835f9 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       402a4d1 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       6b60d12 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       dd98639 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       2d3a556 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       cd42f4e hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       2631348 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       996ba98 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       d384dc9 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       5ce6c34 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       bfd60bc hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       c743b44 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+       2305332 hicseq hicseq.py hicrep.py hicseq.base.ini competed the hicrep basic running steps. now it calls the R script added new wall time on hicseq.base.ini changed bioconductor version on hicseq.base.ini changed python version on hicseq.base.ini
+
+  pubudu.nawarathna@mail.mcgill.ca <pnawarat@abacus3.ferrier.genome.mcgill.ca>      1 commits
+
+       e5fa345 Merge branch 'hicseq_hicrep_pubudu' of https://bitbucket.org/mugqic/genpipes into hicseq_hicrep_pubudu
+
+  Pubudu Nawarathna Mudiyanselage <pubudu@beluga3.int.ets1.calculquebec.ca>      20 commits
+
+       1608e2b refer previous commit
+       a749a35 refer previous commit
+       ce31a37 refer previous commit
+       4e8a71e refer previous commit
+       2ba4345 refer previous commit
+       5c06e43 refer previous commit
+       bcac098 refer previous commit
+       1f85535 refer previous commit
+       0496744 refer previous commit
+       f0eb790 refer previous commit
+       afce945 refer previous commit
+       fb33ca9 refer previous commit
+       4598445 refer previous commit
+       ba1f6b0 refer previous commit
+       9227c2a refer previous commit
+       3b5869f refer previous commit
+       daccd07 refer previous commit
+       34642e8 refer previous commit
+       4bd83ce refer previous commit
+       4ccc106 refer previous commit
+
+  Pubudu Nawarathna Mudiyanselage <pubudu.nawarathna@mail.mcgill.ca>      3 commits
+
+       3c7dbdd Merge branch 'hicseq_hicrep_pubudu' of https://bitbucket.org/mugqic/genpipes into hicseq_hicrep_pubudu
+       a9fe3dd corrected md file
+       fc8ac1a corrected md file
+
+  Pubudu Nawarathna <pubudu.nawarathna@mail.mcgill.ca>      1 commits
+
+       1114ea8 Merged in hicseq_hicrep_pubudu (pull request #170)
 
 3.2.0        Mon Jan 25 12:47:42 2021 -0500        371 commits
 
@@ -4517,7 +6015,7 @@ covid_1.0        Mon Aug 3 19:56:47 2020 -0400        781 commits
 
        e84abf3 picard version 1.125 module
 
-  François Lefebvre <lefebvrf@gmail.com>      3 commits
+  François Lefebvre <lefebvrf@gmail.com>      3 commits
 
        4ae7aff tophat and bowtie2 according to template install script
        35e4743 Minor changes to deploy script
@@ -4617,7 +6115,7 @@ covid_1.0        Mon Aug 3 19:56:47 2020 -0400        781 commits
        ae0a63f Merge branch 'python' of bitbucket.org:mugqic/mugqic_pipeline into python
        6cca375 Fixed BED Files split bug in nanuq2mugqic_pipelines.py
        5edef09 Merge branch 'python' of bitbucket.org:mugqic/mugqic_pipeline into python
-       98f2dd8 Updated dnaseq dbNSFP2.0.txt to dbNSFP2.4.txt.gz
+       98f2dd85 Updated dnaseq dbNSFP2.0.txt to dbNSFP2.4.txt.gz
        a5926c5 Replaced dnaseq dbsnp and known_sites parameters by known_variants + updated genome config .ini files with dbsnp_version + minor fixes
        11f6245 Added vcf.gz.tbi in genome install
        4cf7e43 Added log_report.pl and nanuq2mugqic_pipelines.py
