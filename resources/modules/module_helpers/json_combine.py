@@ -111,7 +111,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Script to combine all .metadata jsons in the C3G software stack.')
     parser.add_argument('-p', '--path', type=str, help='Path to the software stack', required=True)
     parser.add_argument('-o', '--output_file', type=str, help='Path of the output JSON file', required=True)
-    parser.add_argument('-u', '--url', type=str, help='URL where send the JSON files to', required=True)
+    parser.add_argument('-u', '--url', type=str, help='URL where to send the JSON files', required=True)
     parser.add_argument('-l', '--loglevel', help="Standard Python log level", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
 
     args = parser.parse_args()
