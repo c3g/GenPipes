@@ -72,15 +72,10 @@ class SearchBioconda:
 
     Attributes
     ----------
-    keys_to_ignore : list
-        A list consisting of data that is to be ignored
-        when scraping.
     xpath_dict : dict
         Name of the element as keys, and their xpaths as values
     all_keys : list
         All the available keys for a certain metadata
-    check_if_exist : list
-        Contains the keys that are to be checked for a software
     db : dict
         Software name as the key, and the software page link as
         values.
@@ -98,31 +93,23 @@ class SearchBioconda:
 
     """
     def __init__(self):
-        self.keys_to_ignore = [
-            'Links',
-            'Recipe',
-            'DEPENDENCIES',
-            'VERSIONS_AVAILABLE',
-            'Documentation',
-            'Developer docs'
-        ]
         root_source = 'https://bioconda.github.io/conda-package_index.html'
         page_source = requests.get(root_source)
         page_soup = BeautifulSoup(page_source.text, features='lxml')
         self.xpath_dict = {
-             'INFO': '/html/body/div[1]/div[2]/div/div/section/dl[1]/dd/p',
-             'HOMEPAGE': '/html/body/div[1]/div[2]/div/div/section/dl[1]/dd/dl/dd[1]/p/a',
-             'LICENCE': '/html/body/div[1]/div[2]/div/div/section/dl[1]/dd/dl/dd[2]/p'
+             'summary': '/html/body/div[1]/div[2]/div/div/section/dl[1]/dd/p',
+             'url': '/html/body/div[1]/div[2]/div/div/section/dl[1]/dd/dl/dd[1]/p/a',
+             'license': '/html/body/div[1]/div[2]/div/div/section/dl[1]/dd/dl/dd[2]/p'
         }
         self.all_keys = [
-            'CHANNEL_LINK',
-            'NAME',
-            'INFO',
-            'VERSIONS_AVAILABLE',
-            'HOMEPAGE',
-            'LICENCE'
+            'channel_link',
+            'module',
+            'name',
+            'summary',
+            'versions',
+            'url',
+            'license'
         ]
-        self.check_if_exist = list(set(self.all_keys) - set(self.keys_to_ignore))
         sws_ = page_soup.find('table', class_='indextable modindextable').findAll('a')    
         sws_dict = {}
         for elem in sws_:
@@ -164,12 +151,12 @@ class SearchBioconda:
         links.
 
         """
+        template_dict = {'name': name}
         name = name.lower()
-        template_dict = {}
         if name in list(self.db.keys()):
             sw_link = self.db[name]
-            template_dict['CHANNEL_LINK'] = sw_link
-            template_dict['NAME'] = name
+            template_dict['url'] = sw_link
+            template_dict['module'] = name
             source = requests.get(sw_link)
             bs4_source = BeautifulSoup(source.text, features='lxml')
             lxml_source = lxml.html.fromstring(source.content)
@@ -183,17 +170,15 @@ class SearchBioconda:
                         'message': e
                     })
                     print("Exception encountered ! {}, exception - {}".format(key, e))
-            keys = lxml_source.xpath('//html/body/div[1]/div[2]/div/div/div/dl[1]/dd/dl/dt')
+            keys = lxml_source.xpath('/html/body/div[1]/div[2]/div/div/div/dl[1]/dd/dl/dt')
             values = lxml_source.xpath('/html/body/div[1]/div[2]/div/div/div/dl[1]/dd/dl/dd')
             for index, key in enumerate(keys):
                 template_dict[key.text_content()] = values[index].text_content().strip().replace('\n', ',')
-            for key in self.keys_to_ignore:
-                template_dict.pop(key, None)
             self.logger.append_log({
                 'type': 'Message @ {}'.format(name),
                 'message': 'Extracted the following {}'.format(list(template_dict.keys()))
             })
-            keys_not_found = list(set(self.check_if_exist) - set(template_dict.keys()))
+            keys_not_found = list(set(self.all_keys) - set(template_dict.keys()))
             if keys_not_found:
                 self.logger.append_log({
                     'type': 'Not Found @ {}'.format(name),
@@ -230,9 +215,6 @@ class SearchPyPi:
 
     Attributes
     ----------
-    keys_to_ignore : list
-        A list consisting of data that is to be ignored
-        when scraping.
     search_source : str
         Contains the URL as formattable string that can be queried to
         get search results.
@@ -250,17 +232,11 @@ class SearchPyPi:
 
     """
     def __init__(self):
-        self.keys_to_ignore = [
-            'AUTHOR',
-            'MAINTAINER'
-        ]
         self.search_source = 'https://pypi.org/search/?q={}'
         self.field_paths = {
-            'INFO': '/html/body/main/div[2]/div/div',
-            'MAINTAINER': '/html/body/main/div[3]/div/div/div[1]/div[5]/span/a/span[2]',
-            'AUTHOR': '/html/body/main/div[3]/div/div/div[1]/div[4]/p/a',
-            'HOMEPAGE': '/html/body/main/div[3]/div/div/div[1]/div[2]/ul/li/a', 
-            'LICENSE': '/html/body/main/div[3]/div/div/div[1]/div[4]/p[1]'
+            'summary': '/html/body/main/div[2]/div/div',
+            'url': '/html/body/main/div[3]/div/div/div[1]/div[2]/ul/li/a', 
+            'license': '/html/body/main/div[3]/div/div/div[1]/div[4]/p[1]'
         }
         self.search_xpath = '/html/body/main/div/div/div[2]/form/div[3]/ul/li/a'
     
@@ -312,14 +288,15 @@ class SearchPyPi:
         """
         queried_page = requests.get(link)
         lxml_html = lxml.html.fromstring(queried_page.content)
-        sw_dict = {'NAME': name,
-                  'CHANNEL_LINK': link}
+        sw_dict = {
+            'module': name.lower(),
+            'name': name,
+            'url': link
+        }
         for field in list(self.field_paths.keys()):
             try:
-                if field in self.keys_to_ignore:
-                    continue
                 sw_dict[field] = lxml_html.xpath(self.field_paths[field])[0].text_content().strip()                
-                if field is 'HOMEPAGE':
+                if field is 'url':
                     sw_dict[field] = lxml_html.xpath(self.field_paths[field])[0].get('href')
             except Exception as e:
                 print("Exception encountered! {}, exception - {}".format(field, e))

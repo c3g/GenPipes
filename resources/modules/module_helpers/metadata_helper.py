@@ -51,10 +51,11 @@ def run_mdh(sw_name, path=False, overwrite=False):
 		})
 
 	template_dict = {
-			"CHANNEL_LINK": None,
-			"NAME": sw_name,
-			"INFO": None,
-			"License": None
+			"url": None,
+			"name": sw_name,
+                        "module": sw_name.lower(),
+			"summary": None,
+			"license": None
 	}
 
 	bioconda_search = pySrch.SearchBioconda()
