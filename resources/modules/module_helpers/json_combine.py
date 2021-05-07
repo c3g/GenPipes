@@ -101,7 +101,7 @@ def send_file(
         return
 
     if response.status_code == 200 and result.get('ok') is True:
-        logger.info('Sent %s (deleting %i files)' % (filepath, len(details)))
+        logger.info('File %s sent successfully to %s' % (filepath, url))
     else:
         logger.error(red('Request failed %d ' % response.status_code) + ('[%s] %s: %s : %s' % (bold(url), filepath, response.reason, response.text)))
         return
