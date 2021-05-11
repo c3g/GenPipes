@@ -1310,7 +1310,8 @@ fi""".format(
     output_bam=output_bam,
     output_consensus=output_consensus,
     output_variants=output_variants,
-    sample_name=sample.name
+    sample_name=sample.name,
+    metadata=metadata
     )
                             )
                     ],
