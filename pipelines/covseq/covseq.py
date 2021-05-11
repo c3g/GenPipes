@@ -1226,15 +1226,15 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
                             input_files=[ivar_consensus, freebayes_consensus],
                             output_files=[output],
                             module_entries=[
-                            ['ncovtools_quickalign', 'module_python'],
-                            ['ncovtools_quickalign', 'module_ncov_random_scripts'],
+                                ['ncovtools_quickalign', 'module_python'],
+                                ['ncovtools_quickalign', 'module_ncov_random_scripts'],
                             ],
                             command="""\\
 quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}""".format(
-        ivar_consensus=ivar_consensus,
-        freebayes_consensus=freebayes_consensus,
-        output=output
-        )
+    ivar_consensus=ivar_consensus,
+    freebayes_consensus=freebayes_consensus,
+    output=output
+    )
                             )
                     ],
                     name="ncovtools_quickalign." + sample.name,
@@ -1243,6 +1243,114 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
                 )
 
         return jobs
+
+    def prepare_report(self):
+
+        jobs = []
+
+        readset_file=os.path.relpath(self.args.readsets.name, self.output_dir)
+        readset_file_report="report.readset.tsv"
+        metadata=os.path.join("report", "ncov_tools", "metadata.tsv")
+
+        ncovtools_directory = os.path.join("report", "ncov_tools", "data")
+        job = concat_jobs([
+            bash.mkdir(ncovtools_directory),
+            Job(
+                    input_files=[],
+                    output_files=[readset_file_report, metadata],
+                    command="""\\
+head -n 1 {readset_file} > {readset_file_report} && \\
+echo -e "sample\\tct\\tdate" > {metadata}""".format(
+    readset_file=readset_file,
+    readset_file_report=readset_file_report,
+    metadata=metadata
+    )
+                )
+            ])
+
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            [input_bam] = self.select_input_files([
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+            ])
+            consensus_directory = os.path.join("consensus", sample.name)
+            ivar_consensus = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
+            freebayes_consensus = os.path.join(consensus_directory, sample.name + ".freebayes_calling.consensus.renamed.fasta")
+            variant_directory = os.path.join("variant", sample.name)
+            ivar_variants = os.path.join(variant_directory, sample.name + ".variants.tsv")
+            freebayes_variants = os.path.join(variant_directory, sample.name + ".freebayes_calling.consensus.vcf")
+
+            output_bam = os.path.join(ncovtools_directory, re.sub("\.sorted.*$", ".mapped.primertrimmed.sorted.bam", os.path.basename(input_bam)))
+            output_consensus = os.path.join(ncovtools_directory, os.path.basename(ivar_consensus))
+            output_variants = os.path.join(ncovtools_directory, os.path.basename(ivar_variants))
+
+            job = concat_jobs([
+                        job,
+                        Job(
+                            input_files=[input_bam, ivar_consensus, ivar_variants],
+                            output_files=[output_bam],
+                            command="""\\
+echo "Linking files for ncov_tools for sample {sample_name}..." && \\
+echo -e "{sample_name}\\tNA\\tNA" >> {metadata}
+if [ "$(find alignment/ -name {input_bam} -type f)" != "" ] && [ "$(find consensus/ -name {ivar_consensus} -type f)" != "" ] && [ "$(find variant/ -name {ivar_variants} -type f)" != "" ];
+  then
+    ln -fs $(pwd -P )/$(find alignment/ -name {input_bam} -type f) {output_bam} && \\
+    ln -fs $(pwd -P )/$(find consensus/ -name {ivar_consensus} -type f) {output_consensus} && \\
+    ln -fs $(pwd -P )/$(find variant/ -name {ivar_variants} -type f) {output_variants} && \\
+    grep {sample_name} {readset_file} >> {readset_file_report}
+
+fi""".format(
+    readset_file=readset_file,
+    readset_file_report=readset_file_report,
+    input_bam=input_bam,
+    ivar_consensus=ivar_consensus,
+    ivar_variants=ivar_variants,
+    output_bam=output_bam,
+    output_consensus=output_consensus,
+    output_variants=output_variants,
+    sample_name=sample.name
+    )
+                            )
+                    ],
+                    samples=[sample]
+                    )
+
+        jobs.append(
+            concat_jobs([
+                job,
+                Job(
+                    input_files=[input_bam, ivar_consensus, ivar_variants],
+                    output_files=[output_bam],
+                    module_entries=[
+                        ['prepare_report', 'module_R']
+                    ],
+                    command="""\\
+echo "Collecting metrics..." && \\
+bash covid_collect_metrics.sh {readset_file}""".format(
+    readset_file=readset_file
+    )
+                    ),
+                Job(
+                    input_files=[input_bam, ivar_consensus, ivar_variants],
+                    output_files=[output_bam],
+                    module_entries=[
+                        ['prepare_report', 'module_R']
+                    ],
+                    command="""\\
+echo "Preparing to run ncov_tools..." && \\
+grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{pwet=pwet",""\""$1"\""} END {print substr(pwet,2)}' > {neg_ctrl}
+bash covid_collect_metrics.sh {readset_file}""".format(
+    readset_file=readset_file,
+    neg_ctrl=os.path.join("report", "neg_controls.txt")
+    )
+                    )
+                ])
+            )
+
+        return jobs
+
 
     @property
     def steps(self):
@@ -1263,7 +1371,8 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
             self.bcftools_create_consensus,
             self.quast_consensus_metrics,
             self.rename_consensus_header,
-            self.ncovtools_quickalign
+            self.ncovtools_quickalign,
+            self.prepare_report
             # self.run_multiqc
         ]
 
