@@ -1265,7 +1265,7 @@ echo -e "sample\\tct\\tdate" > {metadata}""".format(
     readset_file_report=readset_file_report,
     metadata=metadata
     )
-                )
+                ),
             ])
 
         for sample in self.samples:
@@ -1347,7 +1347,8 @@ bash covid_collect_metrics.sh {readset_file}""".format(
     neg_ctrl=os.path.join("report", "neg_controls.txt")
     )
                     )
-                ])
+                ],
+                name="prepare_report")
             )
 
         return jobs
