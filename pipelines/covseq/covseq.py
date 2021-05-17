@@ -1294,11 +1294,11 @@ echo -e "sample\\tct\\tdate" > {metadata}""".format(
                             command="""\\
 echo "Linking files for ncov_tools for sample {sample_name}..." && \\
 echo -e "{sample_name}\\tNA\\tNA" >> {metadata}
-if [ "$(find alignment/ -name {input_bam} -type f)" != "" ] && [ "$(find consensus/ -name {ivar_consensus} -type f)" != "" ] && [ "$(find variant/ -name {ivar_variants} -type f)" != "" ];
+if [ "$(ls -1 {input_bam})" != "" ] && [ "$(ls -1 {ivar_consensus})" != "" ] && [ "$(ls -1 {ivar_variants})" != "" ];
   then
-    ln -fs $(pwd -P )/$(find alignment/ -name {input_bam} -type f) {output_bam} && \\
-    ln -fs $(pwd -P )/$(find consensus/ -name {ivar_consensus} -type f) {output_consensus} && \\
-    ln -fs $(pwd -P )/$(find variant/ -name {ivar_variants} -type f) {output_variants} && \\
+    ln -fs $(pwd -P )/$(ls -1 {input_bam}) {output_bam} && \\
+    ln -fs $(pwd -P )/$(ls -1 {ivar_consensus}) {output_consensus} && \\
+    ln -fs $(pwd -P )/$(ls -1 {ivar_variants}) {output_variants} && \\
     grep {sample_name} {readset_file} >> {readset_file_report}
 
 fi""".format(
