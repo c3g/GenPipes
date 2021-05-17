@@ -1341,8 +1341,7 @@ bash covid_collect_metrics.sh {readset_file}""".format(
                     ],
                     command="""\\
 echo "Preparing to run ncov_tools..." && \\
-grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet",""\\""$1"\\""}} END {{print substr(pwet,2)}}' > {neg_ctrl}
-bash covid_collect_metrics.sh {readset_file}""".format(
+grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet",""\\""$1"\\""}} END {{print substr(pwet,2)}}' > {neg_ctrl}""".format(
     readset_file=readset_file,
     neg_ctrl=os.path.join("report", "neg_controls.txt")
     )
