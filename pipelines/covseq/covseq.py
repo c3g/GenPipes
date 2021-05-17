@@ -1250,11 +1250,13 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
 
         readset_file=os.path.relpath(self.args.readsets.name, self.output_dir)
         readset_file_report="report.readset.tsv"
-        metadata=os.path.join("report", "ncov_tools", "metadata.tsv")
 
-        ncovtools_directory = os.path.join("report", "ncov_tools", "data")
+        ncovtools_directory = os.path.join("report", "ncov_tools")
+        metadata = os.path.join(ncovtools_directory, "metadata.tsv")
+        ncovtools_data_directory = os.path.join(ncovtools_directory, "data")
+
         job = concat_jobs([
-            bash.mkdir(ncovtools_directory),
+            bash.mkdir(ncovtools_data_directory),
             Job(
                     input_files=[],
                     output_files=[readset_file_report, metadata],
@@ -1282,15 +1284,15 @@ echo -e "sample\\tct\\tdate" > {metadata}""".format(
             ivar_variants = os.path.join(variant_directory, sample.name + ".variants.tsv")
             freebayes_variants = os.path.join(variant_directory, sample.name + ".freebayes_calling.consensus.vcf")
 
-            output_bam = os.path.join(ncovtools_directory, re.sub("\.sorted.*$", ".mapped.primertrimmed.sorted.bam", os.path.basename(input_bam)))
-            output_consensus = os.path.join(ncovtools_directory, os.path.basename(ivar_consensus))
-            output_variants = os.path.join(ncovtools_directory, os.path.basename(ivar_variants))
+            output_bam = os.path.join(ncovtools_data_directory, os.path.basename(input_bam))
+            output_consensus = os.path.join(ncovtools_data_directory, os.path.basename(ivar_consensus))
+            output_variants = os.path.join(ncovtools_data_directory, os.path.basename(ivar_variants))
 
             job = concat_jobs([
                         job,
                         Job(
                             input_files=[input_bam, ivar_consensus, ivar_variants],
-                            output_files=[output_bam],
+                            output_files=[output_bam, output_consensus, output_variants],
                             command="""\\
 echo "Linking files for ncov_tools for sample {sample_name}..." && \\
 echo -e "{sample_name}\\tNA\\tNA" >> {metadata}
@@ -1322,8 +1324,8 @@ fi""".format(
             concat_jobs([
                 job,
                 Job(
-                    input_files=[input_bam, ivar_consensus, ivar_variants],
-                    output_files=[output_bam],
+                    input_files=[],
+                    output_files=[os.path.join("metrics", "metrics.csv"), os.path.join("metrics", "host_contamination_metrics.tsv"), os.path.join("metrics", "host_removed_metrics.tsv"), os.path.join("metrics", "kraken2_metrics.tsv")],
                     module_entries=[
                         ['prepare_report', 'module_R']
                     ],
@@ -1334,16 +1336,40 @@ bash covid_collect_metrics.sh {readset_file}""".format(
     )
                     ),
                 Job(
-                    input_files=[input_bam, ivar_consensus, ivar_variants],
-                    output_files=[output_bam],
+                    input_files=[output_bam, output_consensus, output_variants, ],
+                    output_files=[],
                     module_entries=[
                         ['prepare_report', 'module_R']
                     ],
                     command="""\\
 echo "Preparing to run ncov_tools..." && \\
-grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet",""\\""$1"\\""}} END {{print substr(pwet,2)}}' > {neg_ctrl}""".format(
+NEG_CTRL=${grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet",""\\""$1"\\""}} END {{print substr(pwet,2)}}'} && \\
+echo "data_root: data
+platform: "{platform}"
+run_name: "{run_name}"
+reference_genome: {reference_genome}
+amplicon_bed: {amplicon_bed}
+primer_bed: {primer_bed}
+offset: 0
+completeness_threshold: 0.9
+bam_pattern: "\{data_root}/\{sample}{bam_pattern_extension}"
+consensus_pattern: "\{data_root}/\{sample}{consensus_pattern_extension}"
+variants_pattern: "\{data_root}/\{sample}{variants_pattern_extension}"
+metadata: "metadata.tsv"
+negative_control_samples: $NEG_CTRL
+assign_lineages: true" > {ncovtools_config}
+""".format(
     readset_file=readset_file,
-    neg_ctrl=os.path.join("report", "neg_controls.txt")
+    # neg_ctrl=os.path.join("report", "neg_controls.txt"),
+    platform=config.param('prepare_report', 'platform', required=True),
+    run_name=config.param('prepare_report', 'run_name', required=True),
+    reference_genome=config.param('prepare_report', 'reference_genome', required=True),
+    amplicon_bed=config.param('prepare_report', 'amplicon_bed', required=True),
+    primer_bed=config.param('prepare_report', 'primer_bed', required=True),
+    bam_pattern_extension=re.sub(r"^*\.", "", output_bam),
+    consensus_pattern_extension=re.sub(r"^*\.", "", output_consensus),
+    variants_pattern_extension=re.sub(r"^*\.", "", output_variants),
+    ncovtools_config=os.path.join(ncovtools_directory, "config.yaml")
     )
                     )
                 ],
