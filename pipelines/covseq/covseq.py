@@ -1369,9 +1369,9 @@ snakemake --configfile {ncovtools_config} --cores {nb_threads} -s /cvmfs/soft.mu
     reference_genome=config.param('prepare_report', 'reference_genome', required=True),
     amplicon_bed=config.param('prepare_report', 'amplicon_bed', required=True),
     primer_bed=config.param('prepare_report', 'primer_bed', required=True),
-    bam_pattern_extension=re.sub("^*\.", "", output_bam),
-    consensus_pattern_extension=re.sub("^*\.", "", output_consensus),
-    variants_pattern_extension=re.sub("^*\.", "", output_variants),
+    bam_pattern_extension=re.sub(r"^.*?\.", "", output_bam),
+    consensus_pattern_extension=re.sub(r"^.*?\.", "", output_consensus),
+    variants_pattern_extension=re.sub(r"^.*?\.", "", output_variants),
     metadata=metadata,
     ncovtools_config=os.path.join(ncovtools_directory, "config.yaml"),
     nb_threads=config.param('prepare_report', 'nb_threads')
