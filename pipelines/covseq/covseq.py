@@ -1339,7 +1339,7 @@ bash covid_collect_metrics.sh {readset_file}""".format(
                     input_files=[output_bam, output_consensus, output_variants, ],
                     output_files=[],
                     module_entries=[
-                        ['prepare_report', 'module_R']
+                        ['prepare_report', 'module_ncovtools']
                     ],
                     command="""\\
 echo "Preparing to run ncov_tools..." && \\
@@ -1355,10 +1355,13 @@ completeness_threshold: 0.9
 bam_pattern: "\{data_root}/\{sample}{bam_pattern_extension}"
 consensus_pattern: "\{data_root}/\{sample}{consensus_pattern_extension}"
 variants_pattern: "\{data_root}/\{sample}{variants_pattern_extension}"
-metadata: "metadata.tsv"
+metadata: "{metadata}"
 negative_control_samples: $NEG_CTRL
-assign_lineages: true" > {ncovtools_config}
-""".format(
+assign_lineages: true" > {ncovtools_config} && \\
+echo "Running ncov_tools..." && \\
+snakemake --configfile {ncovtools_config} --cores {nb_threads} -s /cvmfs/soft.mugqic/CentOS6/software/ncov-tools/ncov-tools-1.6/ncov-tools/workflow/Snakefile all && \\
+snakemake --configfile {ncovtools_config} --cores {nb_threads} -s /cvmfs/soft.mugqic/CentOS6/software/ncov-tools/ncov-tools-1.6/ncov-tools/workflow/Snakefile all_qc_summary && \\
+snakemake --configfile {ncovtools_config} --cores {nb_threads} -s /cvmfs/soft.mugqic/CentOS6/software/ncov-tools/ncov-tools-1.6/ncov-tools/workflow/Snakefile all_qc_analysis""".format(
     readset_file=readset_file,
     # neg_ctrl=os.path.join("report", "neg_controls.txt"),
     platform=config.param('prepare_report', 'platform', required=True),
@@ -1366,10 +1369,12 @@ assign_lineages: true" > {ncovtools_config}
     reference_genome=config.param('prepare_report', 'reference_genome', required=True),
     amplicon_bed=config.param('prepare_report', 'amplicon_bed', required=True),
     primer_bed=config.param('prepare_report', 'primer_bed', required=True),
-    bam_pattern_extension=re.sub(r"^*\.", "", output_bam),
-    consensus_pattern_extension=re.sub(r"^*\.", "", output_consensus),
-    variants_pattern_extension=re.sub(r"^*\.", "", output_variants),
-    ncovtools_config=os.path.join(ncovtools_directory, "config.yaml")
+    bam_pattern_extension=re.sub("^*\.", "", output_bam),
+    consensus_pattern_extension=re.sub("^*\.", "", output_consensus),
+    variants_pattern_extension=re.sub("^*\.", "", output_variants),
+    metadata=metadata,
+    ncovtools_config=os.path.join(ncovtools_directory, "config.yaml"),
+    nb_threads=config.param('prepare_report', 'nb_threads')
     )
                     )
                 ],
