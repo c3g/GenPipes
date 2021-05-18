@@ -1343,7 +1343,7 @@ bash covid_collect_metrics.sh {readset_file}""".format(
                     ],
                     command="""\\
 echo "Preparing to run ncov_tools..." && \\
-NEG_CTRL=${grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet",""\\""$1"\\""}} END {{print substr(pwet,2)}}'} && \\
+NEG_CTRL=${{grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet",""\\""$1"\\""}} END {{print substr(pwet,2)}}'}} && \\
 echo "data_root: data
 platform: "{platform}"
 run_name: "{run_name}"
