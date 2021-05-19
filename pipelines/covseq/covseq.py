@@ -1251,6 +1251,8 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         readset_file=os.path.relpath(self.args.readsets.name, self.output_dir)
         readset_file_report="report.readset.tsv"
 
+        run_metadata = os.path.join("report", "run_metadata.csv")
+
         ncovtools_directory = os.path.join("report", "ncov_tools")
         metadata = os.path.join(ncovtools_directory, "metadata.tsv")
         ncovtools_data_directory = os.path.join(ncovtools_directory, "data")
@@ -1325,10 +1327,11 @@ fi""".format(
             concat_jobs([
                 job,
                 Job(
-                    input_files=[],
+                    input_files=[input_bam],
                     output_files=[os.path.join("metrics", "metrics.csv"), os.path.join("metrics", "host_contamination_metrics.tsv"), os.path.join("metrics", "host_removed_metrics.tsv"), os.path.join("metrics", "kraken2_metrics.tsv")],
                     module_entries=[
-                        ['prepare_report', 'module_R']
+                        ['prepare_report', 'module_R'],
+                        ['prepare_report', 'module_CoVSeQ_tools']
                     ],
                     command="""\\
 echo "Collecting metrics..." && \\
@@ -1340,7 +1343,8 @@ bash covid_collect_metrics.sh {readset_file}""".format(
                     input_files=[output_bam, output_consensus, output_variants, ],
                     output_files=[],
                     module_entries=[
-                        ['prepare_report', 'module_ncovtools']
+                        ['prepare_report', 'module_ncovtools'],
+                        ['prepare_report', 'module_CoVSeQ_tools']
                     ],
                     command="""\\
 echo "Preparing to run ncov_tools..." && \\
@@ -1363,7 +1367,18 @@ echo "Running ncov_tools..." && \\
 cd {ncovtools_directory} && \\
 snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all && \\
 snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary && \\
-snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
+snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis && \\
+echo "Preparing to run metadata..." && \\
+echo "run_name,{run_name}
+genpipes_version,
+cluster_server,{cluster_server}
+assembly_synonyms,{assembly_synonyms}
+sequencing_technology,{sequencing_technology}" > {run_metadata} && \\
+echo "Software Versions" > software_versions.csv && \\
+echo "Generating report tables..." && \\
+Rscript generate_report_tables.R --readset={readset_file_report} --metrics={metrics} --host_contamination_metrics={host_contamination_metrics} && \\
+echo "Rendering report..." && \\
+Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.format(
     readset_file=readset_file,
     # neg_ctrl=os.path.join("report", "neg_controls.txt"),
     platform=config.param('prepare_report', 'platform', required=True),
@@ -1378,7 +1393,14 @@ snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOO
     ncovtools_directory=ncovtools_directory,
     ncovtools_config=ncovtools_config,
     ncovtools_config_local=os.path.basename(ncovtools_config),
-    nb_threads=config.param('prepare_report', 'nb_threads')
+    nb_threads=config.param('prepare_report', 'nb_threads'),
+    cluster_server=config.param('prepare_report', 'cluster_server'),
+    assembly_synonyms=config.param('prepare_report', 'assembly_synonyms'),
+    sequencing_technology=config.param('prepare_report', 'sequencing_technology'),
+    run_metadata=run_metadata,
+    readset_file_report=readset_file_report,
+    metrics=os.path.join("metrics", "metrics.csv"),
+    host_contamination_metrics=os.path.join("metrics", "host_contamination_metrics.tsv")
     )
                     )
                 ],
