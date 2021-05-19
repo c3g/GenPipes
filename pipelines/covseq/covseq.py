@@ -85,7 +85,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
         """
 
-        log.error("PWET: " + os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "VERSION"))
+        log.error("PWET: " + subprocess.check_output(["cat ", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "VERSION")]))
 
         jobs = []
         for readset in self.readsets:
