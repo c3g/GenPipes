@@ -1377,19 +1377,7 @@ echo "Running ncov_tools..." && \\
 cd {ncovtools_directory} && \\
 snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all && \\
 snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary && \\
-snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis && \\
-echo "Preparing to run metadata..." && \\
-echo "run_name,{run_name}
-genpipes_version,
-cluster_server,{cluster_server}
-assembly_synonyms,{assembly_synonyms}
-sequencing_technology,{sequencing_technology}" > {run_metadata} && \\
-echo "Software Versions
-{modules_all}" > software_versions.csv && \\
-echo "Generating report tables..." && \\
-Rscript generate_report_tables.R --readset={readset_file_report} --metrics={metrics} --host_contamination_metrics={host_contamination_metrics} && \\
-echo "Rendering report..." && \\
-Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.format(
+snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
     readset_file=readset_file,
     # neg_ctrl=os.path.join("report", "neg_controls.txt"),
     platform=config.param('prepare_report', 'platform', required=True),
@@ -1405,6 +1393,29 @@ Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.form
     ncovtools_config=ncovtools_config,
     ncovtools_config_local=os.path.basename(ncovtools_config),
     nb_threads=config.param('prepare_report', 'nb_threads'),
+    )
+                    ),
+                Job(
+                    input_files=[],
+                    output_files=[],
+                    module_entries=[
+                        ['prepare_report', 'module_R'],
+                        ['prepare_report', 'module_CoVSeQ_tools']
+                    ],
+                    command="""\\
+echo "Preparing to run metadata..." && \\
+echo "run_name,{run_name}
+genpipes_version,
+cluster_server,{cluster_server}
+assembly_synonyms,{assembly_synonyms}
+sequencing_technology,{sequencing_technology}" > {run_metadata} && \\
+echo "Software Versions
+{modules_all}" > software_versions.csv && \\
+echo "Generating report tables..." && \\
+Rscript generate_report_tables.R --readset={readset_file_report} --metrics={metrics} --host_contamination_metrics={host_contamination_metrics} && \\
+echo "Rendering report..." && \\
+Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.format(
+    run_name=config.param('prepare_report', 'run_name', required=True),
     cluster_server=config.param('prepare_report', 'cluster_server'),
     assembly_synonyms=config.param('prepare_report', 'assembly_synonyms'),
     sequencing_technology=config.param('prepare_report', 'sequencing_technology'),
