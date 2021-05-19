@@ -186,7 +186,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         kraken
         """
 
-        log.error("PWET: " + subprocess.check_output(["cat ", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "VERSION")], shell=True))
+        log.error("PWET: " + subprocess.check_output("cat " + os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "VERSION"), shell=True))
 
         # TODO: include kraken analysis and output in metrics
         jobs = []
