@@ -1048,7 +1048,7 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
             quast_tsv = os.path.join(quast_directory, "report.tsv")
 
             output_fa = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
-            output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'seq_technology', required=False), status="${STATUS}"))
+            output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'sequencing_technology', required=False), status="${STATUS}"))
 
             variant_directory = os.path.join("variant", sample.name)
             [input_vcf] = self.select_input_files([
@@ -1258,6 +1258,15 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         ncovtools_data_directory = os.path.join(ncovtools_directory, "data")
         ncovtools_config = os.path.join(ncovtools_directory, "config.yaml")
 
+        modules = []
+        # Retrieve all unique module version values in config files
+        # assuming that all module key names start with "module_"
+        for section in self.sections():
+            for name, value in self.items(section):
+                if re.search("^module_", name) and value not in modules:
+                    modules.append(value)
+        log.info(modules)
+
         job = concat_jobs([
             bash.mkdir(ncovtools_data_directory),
             Job(
@@ -1396,7 +1405,7 @@ Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.form
     nb_threads=config.param('prepare_report', 'nb_threads'),
     cluster_server=config.param('prepare_report', 'cluster_server'),
     assembly_synonyms=config.param('prepare_report', 'assembly_synonyms'),
-    sequencing_technology=config.param('prepare_report', 'seq_technology'),
+    sequencing_technology=config.param('prepare_report', 'sequencing_technology'),
     run_metadata=run_metadata,
     readset_file_report=readset_file_report,
     metrics=os.path.join("metrics", "metrics.csv"),
