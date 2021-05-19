@@ -56,6 +56,7 @@ from core.config import config
 
 log = logging.getLogger(__name__)
 
+log.error(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))))
 
 class CoVSeQ(dnaseq.DnaSeqRaw):
     """
