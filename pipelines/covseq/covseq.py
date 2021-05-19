@@ -56,7 +56,6 @@ from core.config import config
 
 log = logging.getLogger(__name__)
 
-log.error(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))))
 
 class CoVSeQ(dnaseq.DnaSeqRaw):
     """
@@ -84,6 +83,8 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         2. Else, FASTQ files from the readset file if available
         3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
         """
+
+        log.error("PWET: " + os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))))
 
         jobs = []
         for readset in self.readsets:
