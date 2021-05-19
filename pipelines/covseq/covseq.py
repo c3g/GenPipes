@@ -85,8 +85,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
         """
 
-        log.error("PWET: " + subprocess.check_output(["cat ", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "VERSION")], shell=True))
-
         jobs = []
         for readset in self.readsets:
             # trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
@@ -187,6 +185,8 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         """
         kraken
         """
+
+        log.error("PWET: " + subprocess.check_output(["cat ", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "VERSION")], shell=True))
 
         # TODO: include kraken analysis and output in metrics
         jobs = []
@@ -1405,6 +1405,7 @@ snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOO
                         ['prepare_report', 'module_CoVSeQ_tools']
                     ],
                     command="""\\
+cd {output_dir} && \\
 echo "Preparing to run metadata..." && \\
 echo "run_name,{run_name}
 genpipes_version,{genpipes_version}
@@ -1417,6 +1418,7 @@ echo "Generating report tables..." && \\
 Rscript generate_report_tables.R --readset={readset_file_report} --metrics={metrics} --host_contamination_metrics={host_contamination_metrics} && \\
 echo "Rendering report..." && \\
 Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.format(
+    output_dir=self.output_dir(),
     run_name=config.param('prepare_report', 'run_name', required=True),
     genpipes_version=self.genpipes_version(),
     cluster_server=config.param('prepare_report', 'cluster_server'),
