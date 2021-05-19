@@ -1262,7 +1262,7 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         modules = []
         # Retrieve all unique module version values in config files
         # assuming that all module key names start with "module_"
-        for section in self.sections():
+        for section in config.sections():
             for name, value in self.items(section):
                 if re.search("^module_", name) and value not in modules:
                     modules.append(value)
