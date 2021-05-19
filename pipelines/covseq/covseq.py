@@ -1416,7 +1416,7 @@ echo "Generating report tables..." && \\
 Rscript generate_report_tables.R --readset={readset_file_report} --metrics={metrics} --host_contamination_metrics={host_contamination_metrics} && \\
 echo "Rendering report..." && \\
 Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.format(
-    output_dir=self.output_dir(),
+    output_dir=self.output_dir,
     run_name=config.param('prepare_report', 'run_name', required=True),
     genpipes_version=self.genpipes_version(),
     cluster_server=config.param('prepare_report', 'cluster_server'),
