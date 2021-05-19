@@ -1254,6 +1254,7 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         ncovtools_directory = os.path.join("report", "ncov_tools")
         metadata = os.path.join(ncovtools_directory, "metadata.tsv")
         ncovtools_data_directory = os.path.join(ncovtools_directory, "data")
+        ncovtools_config = os.path.join(ncovtools_directory, "config.yaml")
 
         job = concat_jobs([
             bash.mkdir(ncovtools_data_directory),
@@ -1343,7 +1344,7 @@ bash covid_collect_metrics.sh {readset_file}""".format(
                     ],
                     command="""\\
 echo "Preparing to run ncov_tools..." && \\
-NEG_CTRL=${{grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet",""\\""$1"\\""}} END {{print substr(pwet,2)}}'}} && \\
+NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet",""\\""$1"\\""}} END {{print substr(pwet,2)}}') && \\
 echo "data_root: data
 platform: "{platform}"
 run_name: "{run_name}"
@@ -1356,12 +1357,13 @@ bam_pattern: "{{data_root}}/{{sample}}{bam_pattern_extension}"
 consensus_pattern: "{{data_root}}/{{sample}}{consensus_pattern_extension}"
 variants_pattern: "{{data_root}}/{{sample}}{variants_pattern_extension}"
 metadata: "{metadata}"
-negative_control_samples: $NEG_CTRL
+negative_control_samples: [$NEG_CTRL]
 assign_lineages: true" > {ncovtools_config} && \\
 echo "Running ncov_tools..." && \\
-snakemake --configfile {ncovtools_config} --cores {nb_threads} -s /cvmfs/soft.mugqic/CentOS6/software/ncov-tools/ncov-tools-1.6/ncov-tools/workflow/Snakefile all && \\
-snakemake --configfile {ncovtools_config} --cores {nb_threads} -s /cvmfs/soft.mugqic/CentOS6/software/ncov-tools/ncov-tools-1.6/ncov-tools/workflow/Snakefile all_qc_summary && \\
-snakemake --configfile {ncovtools_config} --cores {nb_threads} -s /cvmfs/soft.mugqic/CentOS6/software/ncov-tools/ncov-tools-1.6/ncov-tools/workflow/Snakefile all_qc_analysis""".format(
+cd {ncovtools_directory} && \\
+snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all && \\
+snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary && \\
+snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
     readset_file=readset_file,
     # neg_ctrl=os.path.join("report", "neg_controls.txt"),
     platform=config.param('prepare_report', 'platform', required=True),
@@ -1369,11 +1371,13 @@ snakemake --configfile {ncovtools_config} --cores {nb_threads} -s /cvmfs/soft.mu
     reference_genome=config.param('prepare_report', 'reference_genome', required=True),
     amplicon_bed=config.param('prepare_report', 'amplicon_bed', required=True),
     primer_bed=config.param('prepare_report', 'primer_bed', required=True),
-    bam_pattern_extension=re.sub(r"^.*?\.", "", output_bam),
-    consensus_pattern_extension=re.sub(r"^.*?\.", "", output_consensus),
-    variants_pattern_extension=re.sub(r"^.*?\.", "", output_variants),
-    metadata=metadata,
-    ncovtools_config=os.path.join(ncovtools_directory, "config.yaml"),
+    bam_pattern_extension=re.sub(r"^.*?\.", ".", output_bam),
+    consensus_pattern_extension=re.sub(r"^.*?\.", ".", output_consensus),
+    variants_pattern_extension=re.sub(r"^.*?\.", ".", output_variants),
+    metadata=os.path.basename(metadata),
+    ncovtools_directory=ncovtools_directory,
+    ncovtools_config=ncovtools_config,
+    ncovtools_config_local=os.path.basename(ncovtools_config),
     nb_threads=config.param('prepare_report', 'nb_threads')
     )
                     )
