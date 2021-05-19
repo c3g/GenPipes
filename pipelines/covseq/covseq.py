@@ -1266,7 +1266,6 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
             for name, value in config.items(section):
                 if re.search("^module_", name) and value not in modules:
                     modules.append(value)
-        log.info(modules)
 
         job = concat_jobs([
             bash.mkdir(ncovtools_data_directory),
@@ -1350,7 +1349,7 @@ bash covid_collect_metrics.sh {readset_file}""".format(
     )
                     ),
                 Job(
-                    input_files=[output_bam, output_consensus, output_variants, ],
+                    input_files=[output_bam, output_consensus, output_variants],
                     output_files=[],
                     module_entries=[
                         ['prepare_report', 'module_ncovtools'],
@@ -1405,7 +1404,7 @@ snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOO
                     command="""\\
 echo "Preparing to run metadata..." && \\
 echo "run_name,{run_name}
-genpipes_version,
+genpipes_version,{genpipes_version}
 cluster_server,{cluster_server}
 assembly_synonyms,{assembly_synonyms}
 sequencing_technology,{sequencing_technology}" > {run_metadata} && \\
@@ -1416,6 +1415,7 @@ Rscript generate_report_tables.R --readset={readset_file_report} --metrics={metr
 echo "Rendering report..." && \\
 Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.format(
     run_name=config.param('prepare_report', 'run_name', required=True),
+    genpipes_version=self.genpipes_version(),
     cluster_server=config.param('prepare_report', 'cluster_server'),
     assembly_synonyms=config.param('prepare_report', 'assembly_synonyms'),
     sequencing_technology=config.param('prepare_report', 'sequencing_technology'),
