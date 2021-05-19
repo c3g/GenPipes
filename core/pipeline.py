@@ -50,7 +50,7 @@ class Pipeline(object):
     def __init__(self):
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self._args = self.argparser.parse_args()
-        # self._genpipes_version = subprocess.check_output("cat " + os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "VERSION"))
+        self._genpipes_version = subprocess.check_output("cat " + os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "VERSION"), shell=True)
             
         if self.protocol is None:
             step_list = self.steps
@@ -296,9 +296,9 @@ class Pipeline(object):
     def json(self):
         return self._json
 
-    # @property
-    # def genpipes_version(self):
-    #     return self._genpipes_version
+    @property
+    def genpipes_version(self):
+        return self._genpipes_version
 
     # Given a list of lists of input files, return the first valid list of input files which can be found either in previous jobs output files or on file system.
     # Thus, a job with several candidate lists of input files can find out the first valid one.
