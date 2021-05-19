@@ -1384,7 +1384,8 @@ genpipes_version,
 cluster_server,{cluster_server}
 assembly_synonyms,{assembly_synonyms}
 sequencing_technology,{sequencing_technology}" > {run_metadata} && \\
-echo "Software Versions" > software_versions.csv && \\
+echo "Software Versions
+{modules_all}" > software_versions.csv && \\
 echo "Generating report tables..." && \\
 Rscript generate_report_tables.R --readset={readset_file_report} --metrics={metrics} --host_contamination_metrics={host_contamination_metrics} && \\
 echo "Rendering report..." && \\
@@ -1408,6 +1409,7 @@ Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.form
     assembly_synonyms=config.param('prepare_report', 'assembly_synonyms'),
     sequencing_technology=config.param('prepare_report', 'sequencing_technology'),
     run_metadata=run_metadata,
+    modules_all="\n".join(modules),
     readset_file_report=readset_file_report,
     metrics=os.path.join("metrics", "metrics.csv"),
     host_contamination_metrics=os.path.join("metrics", "host_contamination_metrics.tsv")
