@@ -52,6 +52,7 @@ from bfx import samtools
 from bfx import snpeff
 
 from bfx import bash_cmd as bash
+from core.config import config
 
 log = logging.getLogger(__name__)
 
