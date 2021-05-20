@@ -1341,7 +1341,8 @@ fi""".format(
                     output_files=[os.path.join("metrics", "metrics.csv"), os.path.join("metrics", "host_contamination_metrics.tsv"), os.path.join("metrics", "host_removed_metrics.tsv"), os.path.join("metrics", "kraken2_metrics.tsv")],
                     module_entries=[
                         ['prepare_report', 'module_R'],
-                        ['prepare_report', 'module_CoVSeQ_tools']
+                        ['prepare_report', 'module_CoVSeQ_tools'],
+                        ['prepare_report', 'module_samtools']
                     ],
                     command="""\\
 echo "Collecting metrics..." && \\
@@ -1353,10 +1354,11 @@ bash covid_collect_metrics.sh {readset_file}""".format(
                     input_files=[output_bam, output_consensus, output_variants],
                     output_files=[],
                     module_entries=[
-                        ['prepare_report', 'module_ncovtools'],
-                        ['prepare_report', 'module_CoVSeQ_tools']
+                        ['prepare_report', 'module_ncovtools']
                     ],
                     command="""\\
+module purge && \\
+module load {ncovtools} && \\
 echo "Preparing to run ncov_tools..." && \\
 NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet",""\\""$1"\\""}} END {{print substr(pwet,2)}}') && \\
 echo "data_root: data
@@ -1378,6 +1380,7 @@ cd {ncovtools_directory} && \\
 snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all && \\
 snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary && \\
 snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
+    ncovtools=config.param('prepare_report', 'module_ncovtools'),
     readset_file=readset_file,
     # neg_ctrl=os.path.join("report", "neg_controls.txt"),
     platform=config.param('prepare_report', 'platform', required=True),
@@ -1403,6 +1406,8 @@ snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOO
                         ['prepare_report', 'module_CoVSeQ_tools']
                     ],
                     command="""\\
+module purge && \\
+module load {R_covseqtools} && \\
 cd {output_dir} && \\
 echo "Preparing to run metadata..." && \\
 echo "run_name,{run_name}
@@ -1416,6 +1421,7 @@ echo "Generating report tables..." && \\
 Rscript generate_report_tables.R --readset={readset_file_report} --metrics={metrics} --host_contamination_metrics={host_contamination_metrics} && \\
 echo "Rendering report..." && \\
 Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.format(
+    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
     output_dir=self.output_dir,
     run_name=config.param('prepare_report', 'run_name', required=True),
     genpipes_version=self.genpipes_version,
