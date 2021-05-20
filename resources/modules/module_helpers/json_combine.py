@@ -79,7 +79,7 @@ if __name__=='__main__':
 
     parser = argparse.ArgumentParser(description='Script to combine all .metadata jsons in the C3G software stack.')
     parser.add_argument('-p', '--path', type=str, help='Path to the software stack', required=True)
-    parser.add_argument('-o', '--output_file', type=str, help='Path of the output JSON file', required=True)
+    parser.add_argument('-o', '--output_file', type=str, help='Path of the output JSON file. Default: None i.e. prints in stdout')
     parser.add_argument('-l', '--loglevel', help="Standard Python log level", choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"], default='ERROR')
 
     args = parser.parse_args()
@@ -91,7 +91,10 @@ if __name__=='__main__':
     json_output = args.output_file
 
     # Setting of a temporary/writable stack folder
-    tmp_stack = os.path.join(os.path.dirname(json_output), '.tmp')
+    if json_output:
+        tmp_stack = os.path.join(os.path.dirname(json_output), '.tmp')
+    else:
+        tmp_stack = os.path.join('/tmp', '.tmp')
 
     list_of_software = [soft for soft in os.listdir(soft_stack) if os.path.isdir(os.path.join(soft_stack, soft))]
     software_paths = [os.path.join(soft_stack, soft) for soft in list_of_software]
@@ -112,7 +115,8 @@ if __name__=='__main__':
             with open(json_p, 'r') as f:
                 arr_.append(json.load(f))
 
-    with open(json_output, 'w') as f:
-        json.dump(arr_, f, indent=6)
-
-    print(json.dumps(arr_))
+    if json_output:
+        with open(json_output, 'w') as f:
+            json.dump(arr_, f, indent=6)
+    else:
+        print(json.dumps(arr_))
