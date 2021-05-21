@@ -1455,9 +1455,9 @@ negative_control_samples: [$NEG_CTRL]
 assign_lineages: true" > {ncovtools_config} && \\
 echo "Running ncov_tools..." && \\
 cd {ncovtools_directory} && \\
-snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all && \\
-snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary && \\
-snakemake --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
+snakemake --forceall --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all && \\
+snakemake --forceall --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary && \\
+snakemake --forceall --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
     ncovtools=config.param('prepare_report', 'module_ncovtools'),
     readset_file=readset_file,
     # neg_ctrl=os.path.join("report", "neg_controls.txt"),
