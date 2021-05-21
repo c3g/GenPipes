@@ -1297,6 +1297,7 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
 
         job = concat_jobs([
             bash.mkdir(ncovtools_data_directory),
+            bash.mkdir(os.path.join("report", "sample_reports")),
             Job(
                     input_files=[],
                     output_files=[readset_file_report, metadata],
