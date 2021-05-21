@@ -1344,7 +1344,7 @@ echo -e "sample\\tct\\tdate" > {metadata}""".format(
 
             # Picard collect multiple metrics outputs
             picard_directory = os.path.join("metrics", "dna", sample.name, "picard_metrics")
-            picard_out = os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input)) + ".all.metrics")
+            picard_out = os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input_bam)) + ".all.metrics")
 
             if library[sample] == "PAIRED_END":
                 picard_outputs.extend([
