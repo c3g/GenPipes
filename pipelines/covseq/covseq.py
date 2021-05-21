@@ -1268,6 +1268,33 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
                 if re.search("^module_", name) and value not in modules:
                     modules.append(value)
 
+        # Finding all kraken outputs
+        kraken_outputs = []
+        library = {}
+        for readset in self.readsets:
+            ##check the library status
+            if not library.has_key(readset.sample):
+                library[readset.sample] = "SINGLE_END"
+            if readset.run_type == "PAIRED_END":
+                library[readset.sample] = "PAIRED_END"
+
+            kraken_directory = os.path.join("metrics", "dna", readset.sample.name, "kraken_metrics")
+            kraken_out_prefix = os.path.join(kraken_directory, readset.name)
+            kraken_output = kraken_out_prefix + ".kraken2_output"
+            kraken_report = kraken_out_prefix + ".kraken2_report"
+            kraken_outputs.extend((kraken_output, kraken_report))
+            if readset.run_type == "PAIRED_END":
+                unclassified_output_1 = kraken_out_prefix + ".unclassified_sequences_1.fastq"
+                unclassified_output_2 = kraken_out_prefix + ".unclassified_sequences_2.fastq"
+                classified_output_1 = kraken_out_prefix + ".classified_sequences_1.fastq"
+                classified_output_2 = kraken_out_prefix + ".classified_sequences_2.fastq"
+                kraken_outputs.extend((unclassified_output_1, unclassified_output_2, classified_output_1, classified_output_2))
+
+            elif readset.run_type == "SINGLE_END":
+                unclassified_output = kraken_out_prefix + ".unclassified_sequences.fastq"
+                classified_output = kraken_out_prefix + ".classified_sequences.fastq"
+                kraken_outputs.extend((unclassified_output, classified_output))
+
         job = concat_jobs([
             bash.mkdir(ncovtools_data_directory),
             Job(
@@ -1283,8 +1310,51 @@ echo -e "sample\\tct\\tdate" > {metadata}""".format(
                 ),
             ])
 
+        quast_outputs = []
+        flagstat_outputs = []
+        bedgraph_outputs = []
+        picard_outputs = []
         for sample in self.samples:
+            # Finding quast outputs
+            quast_output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics")
+            quast_outputs.extend([
+                os.path.join(quast_output_dir, "report.html"),
+                os.path.join(quast_output_dir, "report.pdf"),
+                os.path.join(quast_output_dir, "report.tex"),
+                os.path.join(quast_output_dir, "report.tsv"),
+                os.path.join(quast_output_dir, "report.txt")
+                ])
+            # Finding flagstat outputs
+            flagstat_directory = os.path.join("metrics", "dna", sample.name, "flagstat")
             alignment_directory = os.path.join("alignment", sample.name)
+            input_bams = [
+                os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam"),
+                os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam"),
+                os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            ]
+            for input_bam in input_bams:
+                flagstat_outputs.append(os.path.join(flagstat_directory, re.sub("\.bam$", ".flagstat", os.path.basename(input_bam))))
+            # Finding BedGraph file
+            [input_bam] = self.select_input_files([
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+            ])
+            bedgraph_outputs.append(os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(input_bam))))
+
+            # Picard collect multiple metrics outputs
+            picard_directory = os.path.join("metrics", "dna", sample.name, "picard_metrics")
+            picard_out = os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input)) + ".all.metrics")
+
+            if library[sample] == "PAIRED_END":
+                picard_outputs.extend([
+                    picard_out + ".alignment_summary_metrics",
+                    picard_out + ".insert_size_metrics"
+                ])
+            else:
+                picard_outputs.extend([
+                    picard_out + ".alignment_summary_metrics",
+                ])
+
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
@@ -1333,11 +1403,18 @@ fi""".format(
                     samples=[sample]
                     )
 
+        covid_collect_metrics_inputs = []
+        covid_collect_metrics_inputs.extend(kraken_outputs)
+        covid_collect_metrics_inputs.append(input_bam)
+        covid_collect_metrics_inputs.extend(quast_outputs)
+        covid_collect_metrics_inputs.extend(flagstat_outputs)
+        covid_collect_metrics_inputs.extend(bedgraph_outputs)
+        covid_collect_metrics_inputs.extend(picard_outputs)
         jobs.append(
             concat_jobs([
                 job,
                 Job(
-                    input_files=[input_bam],
+                    input_files=covid_collect_metrics_inputs,
                     output_files=[os.path.join("metrics", "metrics.csv"), os.path.join("metrics", "host_contamination_metrics.tsv"), os.path.join("metrics", "host_removed_metrics.tsv"), os.path.join("metrics", "kraken2_metrics.tsv")],
                     module_entries=[
                         ['prepare_report', 'module_R'],
@@ -1346,7 +1423,7 @@ fi""".format(
                     ],
                     command="""\\
 echo "Collecting metrics..." && \\
-bash covid_collect_metrics.sh {readset_file}""".format(
+covid_collect_metrics.sh {readset_file}""".format(
     readset_file=readset_file
     )
                     ),
@@ -1424,7 +1501,7 @@ Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.form
     R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
     output_dir=self.output_dir,
     run_name=config.param('prepare_report', 'run_name', required=True),
-    genpipes_version=self.genpipes_version,
+    genpipes_version=self.genpipes_version.strip(),
     cluster_server=config.param('prepare_report', 'cluster_server'),
     assembly_synonyms=config.param('prepare_report', 'assembly_synonyms'),
     sequencing_technology=config.param('prepare_report', 'sequencing_technology'),
