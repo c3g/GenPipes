@@ -1438,7 +1438,7 @@ covid_collect_metrics.sh {readset_file}""".format(
 module purge && \\
 module load {ncovtools} && \\
 echo "Preparing to run ncov_tools..." && \\
-NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet",""\\""$1"\\""}} END {{print substr(pwet,2)}}') && \\
+NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet", ""\\""$1"\\""}} END {{print substr(pwet,2)}}') && \\
 echo "data_root: data
 platform: \\"{platform}\\"
 run_name: \\"{run_name}\\"
@@ -1448,6 +1448,7 @@ primer_bed: {primer_bed}
 offset: 0
 completeness_threshold: 0.9
 bam_pattern: \\"{{data_root}}/{{sample}}{bam_pattern_extension}\\"
+primer_trimmed_bam_pattern: \\"{{data_root}}/{{sample}}{bam_pattern_extension}\\"
 consensus_pattern: \\"{{data_root}}/{{sample}}{consensus_pattern_extension}\\"
 variants_pattern: \\"{{data_root}}/{{sample}}{variants_pattern_extension}\\"
 metadata: \\"{metadata}\\"
