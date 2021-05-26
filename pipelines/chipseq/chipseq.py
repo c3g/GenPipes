@@ -1571,7 +1571,8 @@ pandoc --to=markdown \\
         """
         jobs = []
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
-
+        output_directory = "differential_binding"
+        readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
         if self.contrasts:
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
         # design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
@@ -1581,102 +1582,76 @@ pandoc --to=markdown \\
         mark_list = []
 
         for contrast in self.contrasts:
-            log.info(contrast.name)
-            log.info(contrast.controls)
+          #  log.info(contrast.name)
+          #  log.info(contrast.controls)
             bam_list = []
-            for designrows in contrast.controls:
+            for control in contrast.controls:
+                control_sample_name, control_mark_name = control.split("-.-")
 
-                controls_sample_mark = str(designrows).split('-')
                 for sample in self.samples:
                     input_file = []
+
                     input_file_list = [
                         os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                     sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                        mark_name, mark_type in sample.marks.items() if
-                        mark_type == "I" and sample.name == controls_sample_mark[0]]
+                                     sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items() if
+                        mark_type == "I" and sample.name == control_sample_name]
                     bam_list.append(input_file_list)
 
                     input_file_list = [
                         os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
                                      sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
                         mark_name, mark_type in sample.marks.items() if
-                        mark_type != "I" and sample.name == controls_sample_mark[0] and mark_name ==
-                        controls_sample_mark[1]]
+                        mark_type != "I" and sample.name == control_sample_name and mark_name ==
+                        control_mark_name]
                     bam_list.append(input_file_list)
 
                     input_file_list = [
+                       # os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
+                        #             mark_name + "_peaks.xls") for
                         os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                     mark_name + "_peaks.xls") for
+                                     mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for
                         mark_name, mark_type in sample.marks.items() if
-                        mark_type != "I" and sample.name == controls_sample_mark[0] and mark_name ==
-                        controls_sample_mark[1]]
+                        mark_type != "I" and sample.name == control_sample_name and mark_name ==
+                        control_mark_name]
 
                     bam_list.append(input_file_list)
 
-            for designrows in contrast.treatments:
-
-                treatments_sample_mark = str(designrows).split('-')
+            for control in contrast.treatments:
+                control_sample_name, control_mark_name = control.split("-.-")
                 for sample in self.samples:
                     input_file_list = [
                         os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
                                      sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
                         mark_name, mark_type in sample.marks.items() if
-                        mark_type == "I" and sample.name == treatments_sample_mark[0]]
+                        mark_type == "I" and sample.name == control_sample_name]
                     bam_list.append(input_file_list)
 
                     input_file_list = [
                         os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
                                      sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
                         mark_name, mark_type in sample.marks.items() if
-                        mark_type != "I" and sample.name == treatments_sample_mark[0] and mark_name ==
-                        treatments_sample_mark[1]]
+                        mark_type != "I" and sample.name == control_sample_name and mark_name ==
+                        control_mark_name]
                     bam_list.append(input_file_list)
 
                     input_file_list = [
+                        #os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
+                                      #mark_name + "_peaks.xls") for
                         os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                      mark_name + "_peaks.xls") for
+                                     mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for
                         mark_name, mark_type in sample.marks.items() if
-                        mark_type != "I" and sample.name == treatments_sample_mark[0] and mark_name ==
-                        treatments_sample_mark[1]]
+                        mark_type != "I" and sample.name == control_sample_name and mark_name ==
+                        control_mark_name]
 
                     bam_list.append(input_file_list)
             bam_list = filter(None, bam_list)
-            print(bam_list)
-            print("end comparison")
+            bam_list = [item for sublist in bam_list for item in sublist]
+            diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file, output_directory)
+            diffbind_job.samples = self.samples
+            diffbind_job.name = "_".join(("differential_binding.diff_bind.contrat", contrast.name))
+            jobs.append(diffbind_job)
 
-            log.info(contrast.treatments)
-
-            # log.info(" ".join([sample.name + "." + mark_name for sample in contrast.controls for mark_name in sample.marks]))
-        # log.info(" ".join([sample.name + "." + mark_name for sample in contrast.treatments for mark_name in sample.marks]))
-
-        # design_cols = [design for design in design_csv.fieldnames[2:]]
-        # print(designfile)
-        # for condition in design_cols:
-        #     print(condition)
-        #
-        # print(design_cols)
-        output_directory = "DBA"
-        readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
-        # count_matrix = os.path.join(output_directory, "rawCountMatrix.csv")
-        #
-        input_file = []
-        #  input_bam_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-        #                                 sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-        #                   mark_name, mark_type in sample.marks.items() if mark_type == "I"]
-
-        diffbind_job = differential_binding.diffbind(design_file, readset_file, output_directory)
-        # diffbind_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
-        diffbind_job.samples = self.samples
-        #
-        # deseq_job = differential_expression.deseq2(design_file, count_matrix, output_directory)
-        # deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
-        # deseq_job.samples = self.samples
-        #
-        return [concat_jobs([
-            Job(command="mkdir -p " + output_directory),
-            diffbind_job,
-            # deseq_job
-        ], name="differential_binding")]
+        return jobs
 
     def homer_annotate_peaks(self):
             """
