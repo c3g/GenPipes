@@ -1457,8 +1457,8 @@ negative_control_samples: [$NEG_CTRL]
 assign_lineages: true" > {ncovtools_config} && \\
 echo "Running ncov_tools..." && \\
 cd {ncovtools_directory} && \\
-snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all && \\
-snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary && \\
+snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all
+snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary
 snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
     ncovtools=config.param('prepare_report', 'module_ncovtools'),
     readset_file=readset_file,
@@ -1517,7 +1517,7 @@ Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.form
     )
                     )
                 ],
-                name="prepare_report")
+                name="prepare_report_" + config.param('prepare_report', 'run_name', required=True))
             )
 
         return jobs
