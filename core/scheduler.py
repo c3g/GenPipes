@@ -21,6 +21,7 @@
 import json
 import logging
 import os
+import stat
 import sys
 import tempfile
 import textwrap
@@ -59,6 +60,11 @@ class Scheduler(object):
             self.output_file = sys.stdout
         else:
             self.output_file = output_file
+            if output_file is not sys.stdout:
+                # make sure it is user and group executable
+                st = os.stat(output_file.name)
+                os.chmod(output_file.name, st.st_mode | stat.S_IEXEC | stat.S_IXGRP)
+
 
     def submit(self, pipeline):
         # Needs to be defined in scheduler child class
