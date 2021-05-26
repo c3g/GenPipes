@@ -1356,11 +1356,8 @@ echo -e "sample\\tct\\tdate" > {metadata}""".format(
                     picard_out + ".alignment_summary_metrics",
                 ])
 
-            [input_bam] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
-            ])
+            filtered_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
+            primer_trimmed_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")
             consensus_directory = os.path.join("consensus", sample.name)
             ivar_consensus = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
             freebayes_consensus = os.path.join(consensus_directory, sample.name + ".freebayes_calling.consensus.renamed.fasta")
@@ -1368,21 +1365,23 @@ echo -e "sample\\tct\\tdate" > {metadata}""".format(
             ivar_variants = os.path.join(variant_directory, sample.name + ".variants.tsv")
             freebayes_variants = os.path.join(variant_directory, sample.name + ".freebayes_calling.consensus.vcf")
 
-            output_bam = os.path.join(ncovtools_data_directory, os.path.basename(input_bam))
+            output_filtered_bam = os.path.join(ncovtools_data_directory, os.path.basename(filtered_bam))
+            output_primer_trimmed_bam = os.path.join(ncovtools_data_directory, os.path.basename(primer_trimmed_bam))
             output_consensus = os.path.join(ncovtools_data_directory, os.path.basename(ivar_consensus))
             output_variants = os.path.join(ncovtools_data_directory, os.path.basename(ivar_variants))
 
             job = concat_jobs([
                         job,
                         Job(
-                            input_files=[input_bam, ivar_consensus, ivar_variants],
-                            output_files=[output_bam, output_consensus, output_variants],
+                            input_files=[filtered_bam, primer_trimmed_bam, ivar_consensus, ivar_variants],
+                            output_files=[output_filtered_bam, output_primer_trimmed_bam, output_consensus, output_variants],
                             command="""\\
 echo "Linking files for ncov_tools for sample {sample_name}..." && \\
 echo -e "{sample_name}\\tNA\\tNA" >> {metadata}
-if [ "$(ls -1 {input_bam})" != "" ] && [ "$(ls -1 {ivar_consensus})" != "" ] && [ "$(ls -1 {ivar_variants})" != "" ];
+if [ "$(ls -1 {filtered_bam})" != "" ] && [ "$(ls -1 {primer_trimmed_bam})" != "" ] && [ "$(ls -1 {ivar_consensus})" != "" ] && [ "$(ls -1 {ivar_variants})" != "" ];
   then
-    ln -fs $(pwd -P )/$(ls -1 {input_bam}) {output_bam} && \\
+    ln -fs $(pwd -P )/$(ls -1 {filtered_bam}) {output_filtered_bam} && \\
+    ln -fs $(pwd -P )/$(ls -1 {primer_trimmed_bam}) {output_primer_trimmed_bam} && \\
     ln -fs $(pwd -P )/$(ls -1 {ivar_consensus}) {output_consensus} && \\
     ln -fs $(pwd -P )/$(ls -1 {ivar_variants}) {output_variants} && \\
     grep {sample_name} {readset_file} >> {readset_file_report}
@@ -1390,10 +1389,12 @@ if [ "$(ls -1 {input_bam})" != "" ] && [ "$(ls -1 {ivar_consensus})" != "" ] && 
 fi""".format(
     readset_file=readset_file,
     readset_file_report=readset_file_report,
-    input_bam=input_bam,
+    filtered_bam=filtered_bam,
+    primer_trimmed_bam=primer_trimmed_bam,
     ivar_consensus=ivar_consensus,
     ivar_variants=ivar_variants,
-    output_bam=output_bam,
+    output_filtered_bam=output_filtered_bam,
+    output_primer_trimmed_bam=output_primer_trimmed_bam,
     output_consensus=output_consensus,
     output_variants=output_variants,
     sample_name=sample.name,
@@ -1429,7 +1430,7 @@ covid_collect_metrics.sh {readset_file}""".format(
     )
                     ),
                 Job(
-                    input_files=[output_bam, output_consensus, output_variants],
+                    input_files=[output_filtered_bam, output_primer_trimmed_bam, output_consensus, output_variants],
                     output_files=[],
                     module_entries=[
                         ['prepare_report', 'module_ncovtools']
@@ -1448,7 +1449,7 @@ primer_bed: {primer_bed}
 offset: 0
 completeness_threshold: 0.9
 bam_pattern: \\"{{data_root}}/{{sample}}{bam_pattern_extension}\\"
-primer_trimmed_bam_pattern: \\"{{data_root}}/{{sample}}{bam_pattern_extension}\\"
+primer_trimmed_bam_pattern: \\"{{data_root}}/{{sample}}{primer_trimmed_bam_pattern_extension}\\"
 consensus_pattern: \\"{{data_root}}/{{sample}}{consensus_pattern_extension}\\"
 variants_pattern: \\"{{data_root}}/{{sample}}{variants_pattern_extension}\\"
 metadata: \\"{metadata}\\"
@@ -1467,7 +1468,8 @@ snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_t
     reference_genome=config.param('prepare_report', 'reference_genome', required=True),
     amplicon_bed=config.param('prepare_report', 'amplicon_bed', required=True),
     primer_bed=config.param('prepare_report', 'primer_bed', required=True),
-    bam_pattern_extension=re.sub(r"^.*?\.", ".", output_bam),
+    bam_pattern_extension=re.sub(r"^.*?\.", ".", output_filtered_bam),
+    primer_trimmed_bam_pattern_extension=re.sub(r"^.*?\.", ".", output_primer_trimmed_bam),
     consensus_pattern_extension=re.sub(r"^.*?\.", ".", output_consensus),
     variants_pattern_extension=re.sub(r"^.*?\.", ".", output_variants),
     metadata=os.path.basename(metadata),
