@@ -109,11 +109,12 @@ def parse_chipseq_design_file(design_file, samples):
     design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
     # Skip first column which is Sample
     contrasts = [Contrast(name) for name in design_csv.fieldnames[2:]]
+
     for line in design_csv:
         sample_name = line['Sample']
         markname = line['MarkName']
        # log.info(mark_name)
-        matching_samples = [sample.name + "-" + mark_name for sample in samples for mark_name in sample.marks
+        matching_samples = [sample.name + "-.-" + mark_name for sample in samples for mark_name in sample.marks
                             if (sample.name == sample_name and mark_name == markname)]
        # matching_samples = [sample for sample in samples for mark_name in sample.marks if
         #                    (sample.name == sample_name and mark_name == markname)]
