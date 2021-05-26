@@ -46,6 +46,7 @@ def diffbind2(input_files, comparison, design, output_file):
 def diffbind( input_files, comparison, design, readset, output_dir):
 
     output_file =  "".join((output_dir, "_".join(("/diffbind",comparison,"dba.txt"))))
+    print(output_file)
     return Job(
         input_files,
         [output_file],
