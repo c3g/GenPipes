@@ -1377,14 +1377,14 @@ echo -e "sample\\tct\\tdate" > {metadata}""".format(
                             output_files=[output_filtered_bam, output_primer_trimmed_bam, output_consensus, output_variants],
                             command="""\\
 echo "Linking files for ncov_tools for sample {sample_name}..." && \\
-echo -e "{sample_name}\\tNA\\tNA" >> {metadata}
 if [ "$(ls -1 {filtered_bam})" != "" ] && [ "$(ls -1 {primer_trimmed_bam})" != "" ] && [ "$(ls -1 {ivar_consensus})" != "" ] && [ "$(ls -1 {ivar_variants})" != "" ];
   then
     ln -fs $(pwd -P )/$(ls -1 {filtered_bam}) {output_filtered_bam} && \\
     ln -fs $(pwd -P )/$(ls -1 {primer_trimmed_bam}) {output_primer_trimmed_bam} && \\
     ln -fs $(pwd -P )/$(ls -1 {ivar_consensus}) {output_consensus} && \\
     ln -fs $(pwd -P )/$(ls -1 {ivar_variants}) {output_variants} && \\
-    grep {sample_name} {readset_file} >> {readset_file_report}
+    grep {sample_name} {readset_file} >> {readset_file_report} && \\
+    echo -e "{sample_name}\\tNA\\tNA" >> {metadata}
 
 fi""".format(
     readset_file=readset_file,
