@@ -233,7 +233,7 @@ class Pipeline(object):
                                          "singularity image path", action=ValidateContainer,
                                           metavar=("{wrapper, singularity}",
                                                    "<IMAGE PATH>"))
-            self._argparser.add_argument("--output", '-o', default=sys.stdout, type=argparse.FileType('w'),
+            self._argparser.add_argument("--output", default=sys.stdout, type=argparse.FileType('w'),
                                          help="output file, default to stdout if not provided")
 
 
