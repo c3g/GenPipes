@@ -117,7 +117,8 @@ class Pipeline(object):
             config.filepath = os.path.abspath(config_trace.name)
 
         self._output_dir = os.path.abspath(self.args.output_dir)
-        self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config, container=self.args.container)
+        self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config,
+                                           container=self.args.container, output_file=self.args.output)
 
         self._json = True
         if self.args.no_json:
@@ -232,6 +233,9 @@ class Pipeline(object):
                                          "singularity image path", action=ValidateContainer,
                                           metavar=("{wrapper, singularity}",
                                                    "<IMAGE PATH>"))
+            self._argparser.add_argument("--output", '-o', default=sys.stdout, type=argparse.FileType('w'),
+                                         help="output file, default to stdout if not provided")
+
 
         return self._argparser
 
