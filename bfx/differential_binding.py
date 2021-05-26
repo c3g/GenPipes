@@ -26,16 +26,16 @@ import os
 from core.config import *
 from core.job import *
 
-def diffbind(design, readset, output_file):
+def diffbind2(input_files, comparison, design, output_file):
 
     #merge all the tsvs and create final .csv file
-    print(design)
-    if not isinstance(design, list):
-        input_files = [design]
+
+    if not isinstance(input_files, list):
+       input_files = [input_files]
 
     return Job(
         input_files,
-        [readset],
+        [output_file],
         [
             ['macs2_callpeak', 'module_macs2']
         ],
@@ -43,3 +43,27 @@ def diffbind(design, readset, output_file):
                     mkdir -p {output_dir}/""".format(
             output_dir=output_file
         ))
+def diffbind( input_files, comparison, design, readset, output_dir):
+
+    output_file =  "".join((output_dir, "_".join(("/diffbind",comparison,"dba.txt"))))
+    return Job(
+        input_files,
+        [output_file],
+        [
+            ['differential_binding', 'module_mugqic_tools'],
+            ['differential_binding', 'module_R']
+        ],
+        command="""\
+        mkdir -p {output_dir} &&
+#Rscript $R_TOOLS/diffbind.R \\
+Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/diffbind.R \\
+  -d {design} \\
+  -r {readset} \\  
+  -c {comparison} \\
+  -o {output_file}""".format(
+        design=design,
+        comparison=comparison,
+        output_file=output_file,
+        output_dir=output_dir,
+        readset=readset
+    ))
