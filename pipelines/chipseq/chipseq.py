@@ -102,7 +102,8 @@ class ChipSeq(common.Illumina):
                 'macs_output_directory': 'peak_call',
                 'anno_output_directory': 'annotation',
                 'ihecA_output_directory': 'ihec_alignment',
-                'ihecM_output_directory': 'ihec_metrics'
+                'ihecM_output_directory': 'ihec_metrics',
+                'dba_output_directory': 'differential_binding'
                 }
         return dirs
 
@@ -1571,7 +1572,7 @@ pandoc --to=markdown \\
         """
         jobs = []
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
-        output_directory = "differential_binding"
+        #output_directory = "differential_binding"
         readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
         if self.contrasts:
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
@@ -1646,7 +1647,7 @@ pandoc --to=markdown \\
                     bam_list.append(input_file_list)
             bam_list = filter(None, bam_list)
             bam_list = [item for sublist in bam_list for item in sublist]
-            diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file, output_directory)
+            diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file, self.output_dirs['dba_output_directory'])
             diffbind_job.samples = self.samples
             diffbind_job.name = "_".join(("differential_binding.diff_bind.contrat", contrast.name))
             jobs.append(diffbind_job)
