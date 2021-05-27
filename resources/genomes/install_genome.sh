@@ -332,10 +332,10 @@ create_picard_index() {
     echo
     echo "Creating genome Picard sequence dictionary..."
     echo
-    echo "module load $module_picard $module_java"
-    echo "java -jar \$PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$GENOME_DIR/$GENOME_FASTA OUTPUT=$GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1"
-    module load $module_picard $module_java
-    java -jar $PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$GENOME_DIR/$GENOME_FASTA OUTPUT=$GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1
+    PICARD_CMD="\
+module load $module_picard $module_java && \
+java -jar \$PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$GENOME_DIR/$GENOME_FASTA OUTPUT=$GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1"
+    cmd_or_job PICARD_CMD 8
   else
     echo
     echo "Genome Picard sequence dictionary up to date... skipping"
