@@ -40,6 +40,7 @@ cancel_jobs () {
   elif [[ ${SCHEDULER} ==  'pbs' ]]; then
     qdel $(cat ${job_list} | awk -F'=' '{print $2}')
   fi
+  rm ${job_list}
   echo canceled all jobs from ${job_list}
 }
 
@@ -130,8 +131,8 @@ ret_code=$?
 if [[ $ret_code -ne 0 ]] ; then
   echo it seems that another $0 process is runnning
   echo If you are sure that no other process in running, run "'rm -r ${chunk_folder}/.lockdir'"
-  echo and restart $0 
-  exit 1 
+  echo and restart $0
+  exit 1
 else
   trap "rm -rf $chunk_folder/.lockdir" EXIT
 fi
@@ -160,3 +161,6 @@ for sh_script in "${all_sh[@]}"; do
   fi
 
 done
+
+echo All done, uploading usage statistics
+bash ${chunk_folder}/wget_call.sh
