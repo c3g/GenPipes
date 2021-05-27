@@ -548,7 +548,8 @@ create_star_index() {
   else
     runThreadN=1
   fi
-  # Since version 102 or so, Ensembl gtf files have an additional column inserted at column 3, this makes STAR geenome generation crash and needs to be removed... 
+  # Since version 102 or so, Ensembl gtf files have an additional column inserted at column 3, this makes STAR genome generation crash and needs to be removed...
+  # For Human only !
   #if ! is_up2date $ANNOTATIONS_DIR/${GTF/.gtf/.star_index.gtf}
   if ! is_up2date $ANNOTATIONS_DIR/$GTF
   then
