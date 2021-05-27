@@ -12,7 +12,7 @@ module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.6
 module_perl=mugqic/perl/5.22.1
 module_picard=mugqic/picard/2.0.1
 module_python=mugqic/python/2.7.14
-module_R=mugqic/R_Bioconductor/3.6.3_3.11
+module_R=mugqic/R_Bioconductor/3.6.1_3.10
 module_samtools=mugqic/samtools/1.11
 module_star=mugqic/star/2.7.8a
 module_tabix=mugqic/tabix/0.2.6
@@ -411,7 +411,7 @@ java -jar \$PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$BISMARK_I
 module load $module_bismark $module_bowtie2 && \
 LOG=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.log && \
 ERR=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.err &&\
-bismark_genome_preparation $BISMARK_INDEX_DIR > \$LOG 2> \$ERR" # && \
+bismark_genome_preparation $BISMARK_INDEX_DIR > \$LOG 2> \$ERR && \
 chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
     cmd_or_job BISMARK_CMD 8
   else
@@ -548,6 +548,13 @@ create_star_index() {
   else
     runThreadN=1
   fi
+  # Since version 102 or so, Ensembl gtf files have an additional column inserted at column 3, this makes STAR geenome generation crash and needs to be removed... 
+  #if ! is_up2date $ANNOTATIONS_DIR/${GTF/.gtf/.star_index.gtf}
+  if ! is_up2date $ANNOTATIONS_DIR/$GTF
+  then
+    #cut -f -2,4- $ANNOTATIONS_DIR/$GTF > $ANNOTATIONS_DIR/${GTF/.gtf/.star_index.gtf}
+    cut -f -2,4- $ANNOTATIONS_DIR/$GTF > $ANNOTATIONS_DIR/$GTF
+  fi
   for sjdbOverhang in 49 74 99 124 149
   do
     STAR_VERSION=$(echo $module_star | cut -f3 -d/)
@@ -557,6 +564,13 @@ create_star_index() {
       echo
       echo "Creating STAR index with sjdbOverhang $sjdbOverhang..."
       echo
+#      STAR_CMD="\
+#mkdir -p $INDEX_DIR && \
+#module load $module_star && \
+#LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
+#ERR=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.err && \
+#STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --genomeSAindexNbases 4 --limitGenomeGenerateRAM 92798303616 --sjdbGTFfile $ANNOTATIONS_DIR/${GTF/.gtf/.star_index.gtf} --outFileNamePrefix $INDEX_DIR/ > \$LOG 2> \$ERR && \
+#chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG \$ERR"
       STAR_CMD="\
 mkdir -p $INDEX_DIR && \
 module load $module_star && \
@@ -635,6 +649,7 @@ create_kallisto_index() {
 }
 
 create_transcripts2genes_file() {
+  #ANNOTATION_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.star_index.gtf}
   ANNOTATION_GTF=$ANNOTATIONS_DIR/$GTF
   if is_up2date $ANNOTATION_GTF
   then
@@ -683,6 +698,7 @@ create_gene_annotations() {
     module load $module_perl
     R --no-restore --no-save<<EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
+#gtf.fn     = "${GTF/.gtf/.star_index.gtf}"
 gtf.fn     = "$GTF"
 annotation = "$ANNOTATION_PREFIX"
 
@@ -715,8 +731,8 @@ create_gene_annotations_flat() {
     echo
     cd $ANNOTATIONS_DIR
     module load $module_ucsc
-#    gtfToGenePred -genePredExt -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
-    gtfToGenePred -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
+    gtfToGenePred -genePredExt -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
+#    gtfToGenePred -geneNameAsName2 ${ANNOTATION_PREFIX}.star_index.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
     cut -f 12 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt
     cut -f 1-10 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt
     paste ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt > ${ANNOTATION_PREFIX}.ref_flat.tsv
@@ -962,7 +978,8 @@ common_name=$COMMON_NAME
 assembly=$ASSEMBLY
 assembly_synonyms=$ASSEMBLY_SYNONYMS
 source=$SOURCE
-version=$VERSION" > $INI
+version=$VERSION
+module_star=$module_star" > $INI
 
   if [ ! -z "${DBSNP_VERSION:-}" ]
   then
