@@ -1517,7 +1517,7 @@ Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.form
     )
                     )
                 ],
-                name="prepare_report_"# + config.param('prepare_report', 'run_name', required=True)
+                name="prepare_report." + config.param('prepare_report', 'run_name', required=True)
                 )
             )
 
