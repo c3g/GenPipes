@@ -1497,11 +1497,11 @@ cluster_server,{cluster_server}
 assembly_synonyms,{assembly_synonyms}
 sequencing_technology,{sequencing_technology}" > {run_metadata} && \\
 echo "Software Versions
-{modules_all}" > software_versions.csv && \\
+{modules_all}" > {software_version} && \\
 echo "Generating report tables..." && \\
-Rscript generate_report_tables.R --readset={readset_file_report} --metrics={metrics} --host_contamination_metrics={host_contamination_metrics} && \\
+generate_report_tables.R --report_readset={readset_file_report} --metrics={metrics} --host_contamination_metrics={host_contamination_metrics} && \\
 echo "Rendering report..." && \\
-Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.format(
+Rscript -e "rmarkdown::render('$RUN_REPORT', output_format = 'all', output_dir='$(pwd)/report', knit_root_dir='$(pwd)')" """.format(
     R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
     output_dir=self.output_dir,
     run_name=config.param('prepare_report', 'run_name', required=True),
@@ -1511,6 +1511,7 @@ Rscript -e "rmarkdown::render('run_report.Rmd', output_format = 'all')" """.form
     sequencing_technology=config.param('prepare_report', 'sequencing_technology'),
     run_metadata=run_metadata,
     modules_all="\n".join(modules),
+    software_version=os.path.join("report", "software_versions.csv"),
     readset_file_report=readset_file_report,
     metrics=os.path.join("metrics", "metrics.csv"),
     host_contamination_metrics=os.path.join("metrics", "host_contamination_metrics.tsv")
