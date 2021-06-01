@@ -359,7 +359,8 @@ pandoc \\
                 report_files=[report_file]
                 )
             ],
-            name="merge_trimmomatic_stats." + str(time.time()))
+            name="merge_trimmomatic_stats."
+            )
         ]
         # TODO: replace ".".join([sample.name for sample in self.samples])) by timestamp to avoid too long naming issue
 
@@ -750,7 +751,7 @@ cp \\
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="sambamba_mark_duplicates_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="sambamba_mark_duplicates_report"#".".join([sample.name for sample in self.samples])
                 )
         )
 
@@ -813,7 +814,7 @@ pandoc --to=markdown \\
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="sambamba_view_filter_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="sambamba_view_filter_report"#".".join([sample.name for sample in self.samples])
                 )
         )
 
@@ -1053,7 +1054,7 @@ pandoc --to=markdown \\
     basename_report_file=os.path.basename(report_file),
     report_file=report_file
     ),
-                name="metrics_report." + str(time.time()),#".".join([sample.name for sample in self.samples]),
+                name="metrics_report",#".".join([sample.name for sample in self.samples]),
                 samples=self.samples,
                 removable_files=[report_metrics_file],
                 report_files=[report_file]
@@ -1139,7 +1140,7 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory'],
     graphs_dir=self.output_dirs['graphs_output_directory']
         ),
-                name="qc_plots_R." + str(time.time()),#".".join([sample.name for sample in self.samples]),
+                name="qc_plots_R",#".".join([sample.name for sample in self.samples]),
                 samples=self.samples,
                 removable_files=output_files,
                 report_files=[report_file]
@@ -1204,7 +1205,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="homer_make_ucsc_file_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="homer_make_ucsc_file_report"#".".join([sample.name for sample in self.samples])
                 )
         )
 
@@ -1327,7 +1328,7 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="macs2_callpeak_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="macs2_callpeak_report"#".".join([sample.name for sample in self.samples])
                 )
             )
 
@@ -1442,7 +1443,7 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="macs2_callpeak_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="macs2_callpeak_report"#".".join([sample.name for sample in self.samples])
                 )
             )
         return jobs
@@ -1540,7 +1541,7 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="homer_annotate_peaks_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="homer_annotate_peaks_report"#".".join([sample.name for sample in self.samples])
                 )
             )
 
@@ -1615,7 +1616,7 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                     report_files=[report_file],
-                    name="homer_find_motifs_genome_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                    name="homer_find_motifs_genome_report"#".".join([sample.name for sample in self.samples])
                     )
                 )
 
@@ -1733,7 +1734,7 @@ done""".format(
     graphs_dir=self.output_dirs['graphs_output_directory'],
     merged_peak_stats="peak_stats_AllSamples.csv"
     ),
-                name="annotation_graphs." + str(time.time()),#".".join([sample.name for sample in self.samples]),
+                name="annotation_graphs",#".".join([sample.name for sample in self.samples]),
                 report_files=[report_file],
                 removable_files=output_files
                 )
@@ -1863,7 +1864,7 @@ do
 done""".format(
     samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples])
     ),
-                name="run_spp_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="run_spp_report"#".".join([sample.name for sample in self.samples])
                 )
             )
 
@@ -1942,7 +1943,7 @@ done""".format(
             Job(
                 input_files=metrics_to_merge,
                 output_files=[metrics_merged_out],
-                name="merge_ihec_metrics." + str(time.time()),#".".join([sample.name for sample in self.samples]),
+                name="merge_ihec_metrics",#".".join([sample.name for sample in self.samples]),
                 command="""\
 cp /dev/null {metrics_merged} && \\
 for sample in {samples}
@@ -1974,7 +1975,7 @@ sed -i -e "1 i\\\$header" {metrics_merged}""".format(
                 input_files=[metrics_merged_out],
                 output_files=[report_file],
                 # name="merge_ihec_metrics_report." + ".".join([sample.name for sample in self.samples]),
-                name="merge_ihec_metrics_report." + str(time.time()),
+                name="merge_ihec_metrics_report",
                 module_entries=[['merge_ihec_metrics_report', 'module_pandoc']],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -2049,7 +2050,7 @@ pandoc --to=markdown \\
             output,
             ini_section='multiqc_report'
             )
-        job.name = "multiqc_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+        job.name = "multiqc_report"#".".join([sample.name for sample in self.samples])
 
         jobs.append(job)
 
