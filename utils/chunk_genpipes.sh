@@ -129,7 +129,7 @@ done < ${genpipes_in}
 # exclude the wget call from chunks
 echo removing wget call from $out_file
 split_on="Call home with pipeline statistics"
-csplit -sf /${out_dir}/wget_call -n 1 $out_file /"${split_on}"/-1
+csplit -sf ${out_dir}/wget_call -n 1 $out_file /"${split_on}"/-1
 mv ${out_dir}/wget_call0 ${out_file}
 mv ${out_dir}/wget_call1 ${out_dir}/wget_call.sh
 
