@@ -2,10 +2,8 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-#SOFTWARE=mugqic_pipelines
-#SOFTWARE=GenAP_Pipes
 SOFTWARE=genpipes
-VERSION=3.3.0
+VERSION=3.4.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://bitbucket.org/mugqic/genpipes/downloads/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
