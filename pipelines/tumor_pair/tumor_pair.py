@@ -2245,35 +2245,77 @@ class TumorPair(dnaseq.DnaSeqRaw):
             output_somatic_vt = os.path.join(pair_directory, tumor_pair.name + ".mutect2.somatic.vt.vcf.gz")
 
             if nb_jobs == 1:
-                input_vcf = os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz")
-                jobs.append(concat_jobs([
-                    Job(
-                        [input_vcf],
-                        [output_gz],
-                        command="ln -s -f " + os.path.abspath(input_vcf) + " "
-                                + os.path.abspath(output_gz), samples=[tumor_pair.normal, tumor_pair.tumor]
-                    ),
-		            #gatk4.filter_mutect_calls(output_gz, output_flt),
-                    pipe_jobs([
-                        vt.decompose_and_normalize_mnps(
-                            output_gz,
-                            None
+                if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
+                    jobs.append(concat_jobs([
+                        Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
+                        gatk4.learn_read_orientation_model(
+                            [os.path.join(mutect_directory, tumor_pair.name + ".f1r2.tar.gz")],
+                            os.path.join(pair_directory, tumor_pair.name + ".f1r2.tar.gz")
                         ),
+                        gatk4.filter_mutect_calls(
+                            os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz"),
+                            output_flt,
+                            read_orientation=os.path.join(pair_directory, tumor_pair.name + ".f1r2.tar.gz")
+                        ),
+                        pipe_jobs([
+                            vt.decompose_and_normalize_mnps(
+                                output_flt,
+                                None
+                            ),
+                            Job(
+                                [None],
+                                [None],
+                                command=" grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -vE 'EBV|hs37d5'"
+                                        + " | sed -e 's#/\.##g'"
+                            ),
+                            htslib.bgzip_tabix(
+                                None,
+                                output_vt_gz
+                            ),
+                        ]),
+                        pipe_jobs([
+                            bcftools.view(
+                                output_vt_gz,
+                                None,
+                                config.param('merge_filter_mutect2', 'filter_options')
+                            ),
+                            htslib.bgzip_tabix(
+                                None,
+                                output_somatic_vt
+                            ),
+                        ]),
+                    ], name="merge_filter_mutect2." + tumor_pair.name))
+                
+                else:
+                    input_vcf = os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz")
+                    jobs.append(concat_jobs([
                         Job(
-                            [None],
-                            [None],
-                            command="sed 's/TUMOR/" + tumor_pair.tumor.name
-                                    + "/g' | sed 's/NORMAL/"
-                                    + tumor_pair.normal.name
-                                    + "/g' | sed 's/Number=R/Number=./g' | grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -vE 'EBV|hs37d5'"
-                                    + " | sed -e 's#/\.##g'"
+                            [input_vcf],
+                            [output_gz],
+                            command="ln -s -f " + os.path.abspath(input_vcf) + " "
+                                    + os.path.abspath(output_gz), samples=[tumor_pair.normal, tumor_pair.tumor]
                         ),
-                        htslib.bgzip_tabix(
-                            None,
-                            output_somatic_vt
-                        ),
-                    ]),
-                ], name="symlink_mutect_vcf." + tumor_pair.name))
+                        #gatk4.filter_mutect_calls(output_gz, output_flt),
+                        pipe_jobs([
+                            vt.decompose_and_normalize_mnps(
+                                output_gz,
+                                None
+                            ),
+                            Job(
+                                [None],
+                                [None],
+                                command="sed 's/TUMOR/" + tumor_pair.tumor.name
+                                        + "/g' | sed 's/NORMAL/"
+                                        + tumor_pair.normal.name
+                                        + "/g' | sed 's/Number=R/Number=./g' | grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -vE 'EBV|hs37d5'"
+                                        + " | sed -e 's#/\.##g'"
+                            ),
+                            htslib.bgzip_tabix(
+                                None,
+                                output_somatic_vt
+                            ),
+                        ]),
+                    ], name="symlink_mutect_vcf." + tumor_pair.name))
 
             elif nb_jobs > 1:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(
