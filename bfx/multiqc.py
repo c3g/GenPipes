@@ -38,7 +38,7 @@ def run(inputs, output):
 multiqc -f {options} \\
 {input} \\
 -n {output}""".format(
-            options=config.param(ini_section, 'options', required=False) if config.param(ini_section, 'options', required=False) else "",
+            options=config.param('multiqc', 'options', required=False),
             input=" ".join([" \\\n  " + input for input in inputs]),
             output=output,
             )
