@@ -1282,7 +1282,7 @@ pandoc --to=markdown \\
 
             return jobs
 
-        def macs2_callpeak(self):
+    def macs2_callpeak(self):
             """
             Peaks are called using the MACS2 software. Different calling strategies are used for narrow and broad peaks.
             The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
@@ -1428,7 +1428,7 @@ pandoc --to=markdown \\
 
             return jobs
 
-        def macs2_atacseq_callpeak(self):
+    def macs2_atacseq_callpeak(self):
             """
             Peaks are called using the MACS2 software. Different calling strategies are used for narrow and broad peaks.
             The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
@@ -1647,7 +1647,10 @@ pandoc --to=markdown \\
                     bam_list.append(input_file_list)
             bam_list = filter(None, bam_list)
             bam_list = [item for sublist in bam_list for item in sublist]
-            diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file, self.output_dirs['dba_output_directory'])
+            diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file,
+                                                         self.output_dirs['dba_output_directory'],
+                                                         self.output_dirs['alignment_output_directory'],
+                                                         self.output_dirs['macs_output_directory'])
             diffbind_job.samples = self.samples
             diffbind_job.name = "_".join(("differential_binding.diff_bind.contrat", contrast.name))
             jobs.append(diffbind_job)
