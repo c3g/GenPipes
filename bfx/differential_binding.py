@@ -43,10 +43,10 @@ def diffbind2(input_files, comparison, design, output_file):
                     mkdir -p {output_dir}/""".format(
             output_dir=output_file
         ))
-def diffbind( input_files, comparison, design, readset, output_dir):
+def diffbind( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir):
 
     output_file =  "".join((output_dir, "_".join(("/diffbind",comparison,"dba.txt"))))
-    print(output_file)
+
     return Job(
         input_files,
         [output_file],
@@ -57,14 +57,19 @@ def diffbind( input_files, comparison, design, readset, output_dir):
         command="""\
         mkdir -p {output_dir} &&
 #Rscript $R_TOOLS/diffbind.R \\
-Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/diffbind.R \\
+Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/diff_bind.R \\
   -d {design} \\
-  -r {readset} \\  
+  -r {readset} \\
   -c {comparison} \\
-  -o {output_file}""".format(
+  -o {output_file} \\
+  -b {alignment_dir} \\
+  -p {peak_dir} \\
+  -dir {output_dir}""".format(
         design=design,
         comparison=comparison,
         output_file=output_file,
         output_dir=output_dir,
-        readset=readset
+        readset=readset,
+        alignment_dir=alignment_dir,
+        peak_dir=peak_dir
     ))
