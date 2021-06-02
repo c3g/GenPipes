@@ -1293,6 +1293,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
         jobs = []
 
         samples_associative_array = []
+        minOverlap = config.param('differential_binding', 'minOverlap')
 
         for sample in self.samples:
             # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
@@ -1634,7 +1635,10 @@ done""".format(
                     bam_list.append(input_file_list)
             bam_list = filter(None, bam_list)
             bam_list = [item for sublist in bam_list for item in sublist]
-            diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file, self.output_dirs['dba_output_directory'])
+            diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file,
+                                                         self.output_dirs['dba_output_directory'],
+                                                         self.output_dirs['alignment_output_directory'],
+                                                         self.output_dirs['macs_output_directory'])
             diffbind_job.samples = self.samples
             diffbind_job.name = "_".join(("differential_binding.diff_bind.contrat", contrast.name))
             jobs.append(diffbind_job)
