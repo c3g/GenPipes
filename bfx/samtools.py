@@ -152,7 +152,7 @@ def sort(input_bam, output_prefix, sort_by_name=False):
         ],
         command="""\
 samtools sort \\
-  {other_options} {sort_by_name}\\
+  {other_options} {sort_by_name} \\
   {input_bam} \\
   {output_prefix}""".format(
             other_options=config.param('samtools_sort', 'other_options', required=False),
