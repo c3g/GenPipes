@@ -10,8 +10,8 @@ set -eu -o pipefail
 # configureHomer.pl will attempt to check for required utilities and alert you to missing programs.
 # To install packages (Genomes), simply use the –install option and the name(s) of the package(s).
 # perl configureHomer.pl –install mouse (to download the mouse promoter set)
-# perl configureHomer.pl –install mm8    (to download the mm8 version of the mouse genome)
-# perl configureHomer.pl –install hg19r    (to download the hg19 repeat masked version of the human genome)
+# perl configureHomer.pl –install mm8   (to download the mm8 version of the mouse genome)
+# perl configureHomer.pl –install hg19r (to download the hg19 repeat masked version of the human genome)
 
 SOFTWARE=homer
 VERSION=4.11
@@ -27,7 +27,7 @@ build() {
 
   module load mugqic/perl/5.22.1
   #module load mugqic/weblogo/3.3
-  module load mugqic/ucsc/v346
+  module load mugqic/ucsc/v387
   perl configureHomer.pl -install
   perl configureHomer.pl -install hg19
   perl configureHomer.pl -install hg38
@@ -36,6 +36,7 @@ build() {
   perl configureHomer.pl -install rn5
   perl configureHomer.pl -install rn6
   perl configureHomer.pl -install dm3
+  perl configureHomer.pl -install dm6
 
   # Update Perl scripts shebang
   find . -name "*.pl" | while read f ; do sed -i s,"#\!/usr/bin/perl -w,#\!/usr/bin/env perl\nuse warnings;,g" $f ; done

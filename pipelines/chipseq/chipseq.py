@@ -359,7 +359,8 @@ pandoc \\
                 report_files=[report_file]
                 )
             ],
-            name="merge_trimmomatic_stats." + str(time.time()))
+            name="merge_trimmomatic_stats."
+            )
         ]
         # TODO: replace ".".join([sample.name for sample in self.samples])) by timestamp to avoid too long naming issue
 
@@ -750,7 +751,7 @@ cp \\
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="sambamba_mark_duplicates_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="sambamba_mark_duplicates_report"#".".join([sample.name for sample in self.samples])
                 )
         )
 
@@ -813,7 +814,7 @@ pandoc --to=markdown \\
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="sambamba_view_filter_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="sambamba_view_filter_report"#".".join([sample.name for sample in self.samples])
                 )
         )
 
@@ -1053,7 +1054,7 @@ pandoc --to=markdown \\
     basename_report_file=os.path.basename(report_file),
     report_file=report_file
     ),
-                name="metrics_report." + str(time.time()),#".".join([sample.name for sample in self.samples]),
+                name="metrics_report",#".".join([sample.name for sample in self.samples]),
                 samples=self.samples,
                 removable_files=[report_metrics_file],
                 report_files=[report_file]
@@ -1139,7 +1140,7 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory'],
     graphs_dir=self.output_dirs['graphs_output_directory']
         ),
-                name="qc_plots_R." + str(time.time()),#".".join([sample.name for sample in self.samples]),
+                name="qc_plots_R",#".".join([sample.name for sample in self.samples]),
                 samples=self.samples,
                 removable_files=output_files,
                 report_files=[report_file]
@@ -1204,7 +1205,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="homer_make_ucsc_file_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="homer_make_ucsc_file_report"#".".join([sample.name for sample in self.samples])
                 )
         )
 
@@ -1244,7 +1245,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
 
                     options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
                     genome_size = self.mappable_genome_size()
-                    output_prefix_name = os.path.join(output_dir, mark_name)
+                    output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
 
                     if mark_type == "B": # Broad region
                         other_options = "--broad --nomodel"
@@ -1258,7 +1259,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                     other_options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param('macs2_callpeak', 'extsize') else ""
                     other_options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param('macs2_callpeak', 'pvalue') else ""
 
-                    output = os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
+                    output = os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
 
                     jobs.append(
                         concat_jobs([
@@ -1281,17 +1282,17 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                   ## For ihec: exchange peak score by log10 q-value and generate bigBed
                     jobs.append(
                         concat_jobs([
-                            Job([os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")],
-                                [os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")],
+                            Job([os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")],
+                                [os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")],
                                 command="""\
 awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
-    peak_file=os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak"),
-    peak_bed_file=os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
+    peak_file=os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak"),
+    peak_bed_file=os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
     )
                                 ),
                             ucsc.bedToBigBed(
-                                os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed"),
-                                os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bb")
+                                os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed"),
+                                os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bb")
                                 )
                             ],
                             name="macs2_callpeak_bigBed." + sample.name + "." + mark_name
@@ -1305,7 +1306,7 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
+                [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -1316,7 +1317,7 @@ do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
     cp -a --parents {macs_dir}/$sample/$mark_name/ {report_dir}/ && \\
-    echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{mark_name}}_peaks.xls)" >> {report_file}
+    echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}_peaks.xls)" >> {report_file}
   done
 done""".format(
     samples_associative_array=" ".join(samples_associative_array),
@@ -1327,7 +1328,7 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="macs2_callpeak_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="macs2_callpeak_report"#".".join([sample.name for sample in self.samples])
                 )
             )
 
@@ -1367,8 +1368,8 @@ done""".format(
 
                     options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
                     genome_size = self.mappable_genome_size()
-                    output_prefix_name = os.path.join(output_dir, mark_name)
-                    output = os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
+                    output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
+                    output = os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
                     # other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
                     other_options = "--nomodel --call-summits"
                     other_options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param('macs2_callpeak', 'shift') else " --shift -75 "
@@ -1396,17 +1397,17 @@ done""".format(
                   ## For ihec: exchange peak score by log10 q-value and generate bigBed
                     jobs.append(
                         concat_jobs([
-                            Job([os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")],
-                                [os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")],
+                            Job([os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")],
+                                [os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")],
                                 command="""\
 awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
-    peak_file=os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak"),
-    peak_bed_file=os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
+    peak_file=os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak"),
+    peak_bed_file=os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
     )
                                 ),
                             ucsc.bedToBigBed(
-                                os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed"),
-                                os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bb")
+                                os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed"),
+                                os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bb")
                                 )
                             ],
                             name="macs2_callpeak_bigBed." + sample.name + "." + mark_name
@@ -1420,7 +1421,7 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
+                [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for sample in self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -1431,7 +1432,7 @@ do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
     cp -a --parents {macs_dir}/$sample/$mark_name/ {report_dir}/ && \\
-    echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{mark_name}}_peaks.xls)" >> {report_file}
+    echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}_peaks.xls)" >> {report_file}
   done
 done""".format(
     samples_associative_array=" ".join(samples_associative_array),
@@ -1442,7 +1443,7 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="macs2_callpeak_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="macs2_callpeak_report"#".".join([sample.name for sample in self.samples])
                 )
             )
         return jobs
@@ -1465,7 +1466,7 @@ done""".format(
                 if mark_type != "I":
                     mark_list.append(mark_name)
 
-                    peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
+                    peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
                     output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
                     output_prefix = os.path.join(output_dir, sample.name + "." + mark_name)
                     annotation_file = output_prefix + ".annotated.csv"
@@ -1540,7 +1541,7 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                 report_files=[report_file],
-                name="homer_annotate_peaks_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="homer_annotate_peaks_report"#".".join([sample.name for sample in self.samples])
                 )
             )
 
@@ -1565,7 +1566,7 @@ done""".format(
                 if mark_type == "N":
                     mark_list.append(mark_name)
 
-                    peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
+                    peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
                     output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
 
                     jobs.append(
@@ -1615,7 +1616,7 @@ done""".format(
     report_dir=self.output_dirs['report_output_directory']
     ),
                     report_files=[report_file],
-                    name="homer_find_motifs_genome_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                    name="homer_find_motifs_genome_report"#".".join([sample.name for sample in self.samples])
                     )
                 )
 
@@ -1733,7 +1734,7 @@ done""".format(
     graphs_dir=self.output_dirs['graphs_output_directory'],
     merged_peak_stats="peak_stats_AllSamples.csv"
     ),
-                name="annotation_graphs." + str(time.time()),#".".join([sample.name for sample in self.samples]),
+                name="annotation_graphs",#".".join([sample.name for sample in self.samples]),
                 report_files=[report_file],
                 removable_files=output_files
                 )
@@ -1863,7 +1864,7 @@ do
 done""".format(
     samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples])
     ),
-                name="run_spp_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+                name="run_spp_report"#".".join([sample.name for sample in self.samples])
                 )
             )
 
@@ -1896,7 +1897,7 @@ done""".format(
                     mark_list.append(mark_name)
 
                     chip_bam = os.path.join(alignment_dir, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.bam")
-                    chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
+                    chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
                     output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
                     crosscor_input = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, sample.name + ".crosscor")
                     genome = config.param('IHEC_chipseq_metrics', 'assembly')
@@ -1942,7 +1943,7 @@ done""".format(
             Job(
                 input_files=metrics_to_merge,
                 output_files=[metrics_merged_out],
-                name="merge_ihec_metrics." + str(time.time()),#".".join([sample.name for sample in self.samples]),
+                name="merge_ihec_metrics",#".".join([sample.name for sample in self.samples]),
                 command="""\
 cp /dev/null {metrics_merged} && \\
 for sample in {samples}
@@ -1974,7 +1975,7 @@ sed -i -e "1 i\\\$header" {metrics_merged}""".format(
                 input_files=[metrics_merged_out],
                 output_files=[report_file],
                 # name="merge_ihec_metrics_report." + ".".join([sample.name for sample in self.samples]),
-                name="merge_ihec_metrics_report." + str(time.time()),
+                name="merge_ihec_metrics_report",
                 module_entries=[['merge_ihec_metrics_report', 'module_pandoc']],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -2049,7 +2050,7 @@ pandoc --to=markdown \\
             output,
             ini_section='multiqc_report'
             )
-        job.name = "multiqc_report." + str(time.time())#".".join([sample.name for sample in self.samples])
+        job.name = "multiqc_report"#".".join([sample.name for sample in self.samples])
 
         jobs.append(job)
 
