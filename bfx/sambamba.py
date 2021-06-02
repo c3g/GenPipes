@@ -30,6 +30,8 @@ def sort(input_bam,
          tmp_dir,
          other_options=config.param('sambamba_sort_sam', 'options', required=False)):
     
+    output_bai = output_bam + ".bai"
+    
     return Job(
         [input_bam],
         [output_bam, output_bai],
@@ -85,7 +87,7 @@ sambamba merge {options} \\
         )
     )
 
-def markdup(input_bam, output_bam, tmp_dir, other_options=None):
+def markdup(input_bam, output_bam):
     if not isinstance(input_bam, list):
         input_bam=[input_bam]
 
@@ -96,12 +98,12 @@ def markdup(input_bam, output_bam, tmp_dir, other_options=None):
             ['sambamba_mark_duplicates', 'module_sambamba']
         ],
         command="""\
-sambamba markdup {other_options} \\
+sambamba markdup {options} \\
   {input} \\
-  --tmpdir {tmp} \\
+  --tmpdir {temp} \\
   {output}""".format(
-        other_options=other_options,
-        tmp=tmp_dir,
+        options=config.param('sambamba_mark_duplicates', 'options', required=False),
+        temp=config.param('sambamba_mark_duplicate', 'tmp_dir'),
         input=" \\\n  ".join(input for input in input_bam),
         output=output_bam,
         )
