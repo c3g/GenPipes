@@ -27,10 +27,10 @@ from core.job import *
 
 def makeDesignFiles (rmapfile, baitmapfile, file_prefix, design_dir = ".", other_options=""):
 
-    command = """makeDesignFiles.py {other_options}\\
-    --rmapfile {rmapfile}\\
-    --baitmapfile {baitmapfile}\\
-    --designDir {design_dir}\\
+    command = """makeDesignFiles.py {other_options} \\
+    --rmapfile {rmapfile} \\
+    --baitmapfile {baitmapfile} \\
+    --designDir {design_dir} \\
     --outfilePrefix {file_prefix}""" .format(other_options = other_options,
         rmapfile = rmapfile,
         baitmapfile = baitmapfile,
@@ -49,10 +49,10 @@ def makeDesignFiles (rmapfile, baitmapfile, file_prefix, design_dir = ".", other
 
 def bam2chicago (bam, baitmap, rmap, sample, other_options=""):
 
-    command = """bam2chicago.sh {other_options}\\
-    {bam}\\
-    {baitmap}\\
-    {rmap}\\
+    command = """bam2chicago.sh {other_options} \\
+    {bam} \\
+    {baitmap} \\
+    {rmap} \\
     {sample}""" .format(other_options = other_options,
         bam = bam,
         baitmap = baitmap,
@@ -70,11 +70,11 @@ def bam2chicago (bam, baitmap, rmap, sample, other_options=""):
 
 def runChicago(design_dir, sample, output_dir, design_file_prefix, other_options=""):
 
-    command = """runChicago.R {other_options}\\
+    command = """runChicago.R {other_options} \\
     -e seqMonk,interBed,washU_text,washU_track \\
-    --export-order score  \\
-    --design-dir {design_dir}\\
-    -o {output}\\
+    --export-order score \\
+    --design-dir {design_dir} \\
+    -o {output} \\
     {input} \\
     {output_prefix}""" .format(
         other_options=other_options,
@@ -102,12 +102,12 @@ def runChicago(design_dir, sample, output_dir, design_file_prefix, other_options
 
 def runChicago_featureOverlap(featuresBed, sample, output_dir, design_file_prefix, other_options=""):
 
-    command = """runChicago.R {other_options}\\
-    --features-only\\
-    --en-feat-list {featuresBed}\\
-    --en-full-cis-range\\
-    --en-trans\\
-    -o {output_dir}\\
+    command = """runChicago.R {other_options} \\
+    --features-only \\
+    --en-feat-list {featuresBed} \\
+    --en-full-cis-range \\
+    --en-trans \\
+    -o {output_dir} \\
     {input} \\
     {output_prefix}""" .format(
         other_options = other_options,

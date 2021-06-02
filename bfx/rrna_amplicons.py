@@ -116,8 +116,8 @@ def duk(log, ncontam, contam, db, infile):
     job.command="""\
 memtime gunzip -c {infile} | duk \\
   -o log {log} \\
-  -n ncontam {ncontam}\\
-  -m contam {contam}\\
+  -n ncontam {ncontam} \\
+  -m contam {contam} \\
   -k {k} \\
   -s {d} \\
   -c {c} \\
