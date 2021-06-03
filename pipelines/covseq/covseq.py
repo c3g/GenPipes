@@ -808,53 +808,6 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             job.removable_files = [output_gvcf]
             jobs.append(job)
 
-#             jobs.append(
-#                 concat_jobs([
-#                     bash.mkdir(variant_directory),
-#                     freebayes.freebayes(
-#                         input_bam,
-#                         output_gvcf,
-#                         options="--gvcf --gvcf-dont-use-chunk true",
-#                         ini_section='freebayes_call_variants'
-#                         ),
-#                     freebayes.process_gvcf(
-#                         output_gvcf,
-#                         output_masks,
-#                         output_variants,
-#                         output_consensus,
-#                         ini_section='freebayes_call_variants'
-#                         ),
-#                     Job(
-#                         input_files=[output_variants, output_consensus],
-#                         output_files=[output_variants_norm, output_variants_norm + ".gz", output_consensus_norm, output_consensus_norm + ".gz", output_ambiguous_norm, output_ambiguous_norm + ".gz", output_fixed_norm, output_fixed_norm + ".gz"],
-#                         module_entries=[
-#                             [freebayes, 'module_bcftools'],
-#                             [freebayes, 'module_htslib']
-#                         ],
-#                         command="""\\
-# for v in "variants" "consensus"
-# do
-#     bcftools norm -f {reference_genome} {output_prefix}.$v.vcf > {output_prefix}.$v.norm.vcf
-#     bgzip -f {output_prefix}.$v.norm.vcf
-#     tabix -f -p vcf {output_prefix}.$v.norm.vcf.gz
-# done && \\
-# for vt in "ambiguous" "fixed"
-# do
-#     zcat {output_prefix}.consensus.norm.vcf.gz | awk -v vartag=ConsensusTag=$vt '$0 ~ /^#/ || $0 ~ vartag' > {output_prefix}.$vt.norm.vcf
-#     bgzip -f {output_prefix}.$vt.norm.vcf
-#     tabix -f -p vcf {output_prefix}.$vt.norm.vcf.gz
-# done""".format(
-#     reference_genome=config.param("DEFAULT", 'genome_fasta', type='filepath'),
-#     output_prefix=output_prefix
-#     )
-#             )
-#                     ],
-#                     name="freebayes_call_variants." + sample.name,
-#                     samples=[sample],
-#                     removable_files=[output_gvcf]
-#                     )
-#                 )
-
         return jobs
 
 
@@ -1067,55 +1020,6 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
             ])
 
             bedgraph_file = os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(input_bam)))
-
-#             job = concat_jobs([
-#                 job,
-#                 bash.mkdir(os.path.dirname(output_fa)),
-#                 Job(
-#                     input_files=[quast_tsv, quast_html],
-#                     output_files=[],
-#                     command="""\\
-# cons_len=`grep -oP "Total length \(>= 0 bp\)\\t\K.*?(?=$)" {quast_tsv}`
-# N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\[\K.*?(?=])" {quast_html}`
-# cons_perc_N=`echo "scale=2; 100*$N_count/$cons_len" | bc -l`
-# frameshift=`if grep -q "frameshift_variant" {annotated_vcf}; then echo "FLAG"; fi`
-# genome_size=`awk '{{print $2}}' {genome_file}`
-# bam_cov50X=`awk '{{if ($4 > 50) {{count = count + $3-$2}}}} END {{if (count) {{print count}} else {{print 0}}}}' {bedgraph_file}`
-# bam_cov50X=`echo "scale=2; 100*$bam_cov50X/$genome_size" | bc -l`
-# STATUS=`awk -v bam_cov50X=$bam_cov50X -v frameshift=$frameshift -v cons_perc_N=$cons_perc_N 'BEGIN {{ if (cons_perc_N < 1 && frameshift != "FLAG" && bam_cov50X >= 90) {{print "pass"}}  else if (cons_perc_N > 5) {{print "rej"}} else if ((cons_perc_N >= 1 && cons_perc_N <= 5) || frameshift == "FLAG" || bam_cov50X < 90) {{print "flag"}} }}'`
-# export STATUS""".format(
-#     quast_html=quast_html,
-#     quast_tsv=quast_tsv,
-#     genome_file=config.param('DEFAULT', 'igv_genome', required=False),
-#     annotated_vcf=annotated_vcf,
-#     bedgraph_file=bedgraph_file
-#     )
-#                     ),
-#                 Job(
-#                     input_files=[input_fa],
-#                     output_files=[output_fa],
-#                     command="""\\
-# awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:{assemb_method}|snv_call_method:{snv_call_method}"; next}}{{print}}' < {input_fa} > {output_status_fa} && \\
-# ln -sf {output_status_fa_basename} {output_fa}""".format(
-#     country=config.param('rename_consensus_header', 'country', required=False),
-#     province=config.param('rename_consensus_header', 'province', required=False),
-#     year=config.param('rename_consensus_header', 'year', required=False),
-#     seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
-#     assemb_method=config.param('rename_consensus_header', 'assemb_method', required=False),
-#     snv_call_method=config.param('rename_consensus_header', 'snv_call_method', required=False),
-#     sample=sample.name,
-#     input_fa=input_fa,
-#     output_status_fa_basename=os.path.basename(output_status_fa),
-#     output_status_fa=output_status_fa,
-#     output_fa=output_fa
-#     )
-#                     )
-#             ],
-#             name="rename_consensus_header",
-#             samples=[sample]
-#             )
-
-#         jobs.append(job)
 
             jobs.append(
                 concat_jobs([
