@@ -25,11 +25,14 @@ import os
 # MUGQIC Modules
 from core.job import Job
 
-def mkdir(folder, remove=False):
+def mkdir(
+    folder,
+    remove=False
+    ):
+
     return Job(
         [],
         [folder],
-        [],
         command="""\
 mkdir -p {directory}""".format(
             directory=folder
@@ -41,19 +44,22 @@ def chgdir(folder):
     return Job(
         [],
         [folder],
-        [],
         command="""\
 cd {directory}""".format(
             directory=folder
         ),
     )
 
-def ln(target_file, link, out_dir=None):
+def ln(
+    target_file,
+    link,
+    out_dir=None
+    ):
+    
     folder = os.path.dirname(link)
     return Job(
         [target_file],
         [link],
-        [],
         command="""\
 ln -s -f \\
   {target_file} \\
@@ -66,49 +72,182 @@ ln -s -f \\
         removable_files=[link]
     )
 
-def mv(source, target):
+def mv(
+    source,
+    target,
+    force=False
+    ):
+
     return Job(
         [source],
         [target],
-        [],
         command="""\
-mv {source} \\
+mv {force}{source} \\
    {dest}""".format(
+            force="-f " if force else "",
             source=source,
             dest=target
         )
     )
 
-def rm(source):
-    return Job(
+def cp(
+    source,
+    target,
+    recursive=False,
+    update=False
+    ):
+
+return Job(
         [source],
-        [],
+        [target],
         command="""\
-rm -rf {source}""".format(
+cp {rec}{upd}'{source}' {dest}""".format(
             source=source,
+            dest=target,
+            rec="-r " if recursive else "",
+            upd="-u " if update else ""
         )
     )
 
-def zcat(source):
-    return Job(
+def rm(
+    source,
+    recursive=True,
+    force=True
+    ):
+
+return Job(
         [source],
         [],
         command="""\
-zcat {source}""".format(
-            source=source,
+rm -rf {rec}{force}{source}""".format(
+            rec="-r " if recursive else "",
+            force="-f " if force else "",
+            source=source
         )
     )
 
-def awk(input, output, instructions, append=False):
+def touch(target):
+    return Job(
+        [],
+        [],
+        command="""\
+touch {target}""".format(
+            target=target
+        )
+    )
+
+def md5sum(
+    inputs,
+    output,
+    check=False
+    ):
+
+    if not isinstance(inputs, list):
+        inputs = [inputs]
+
+    return Job(
+        inputs,
+        [output],
+        command="""\
+md5sum {check}{input}{output}""".format(
+            check="-c " if check else "",
+            input=" ".join(["'"+os.path.abspath(input)+"'" for input in inputs]),
+            output=" > " + os.path.abspath(output) if output else ""
+        )
+    )
+
+def cat(
+    input,
+    output,
+    zip=False,
+    append=False
+    ):
+
+    if not isinstance(input, list):
+        inputs=[input]
+    else:
+        inputs=input
+
+    cat_call = "cat"    
+    if zip:
+        cat_call = "zcat"
+
+    return Job(
+        inputs,
+        [output],
+        command="""\
+{cat} {input} {append}{output}""".format(
+            cat=cat_call,
+            input=" ".join(inputs) if input else "",
+            append=">" if append else "",
+            output="> " + output if output else ""
+        )
+    )
+
+def cut(
+    input,
+    output,
+    options
+    ):
 
     return Job(
         [input],
         [output],
         command="""\
-awk {instructions} {input} {append} {output}""".format(
+cut {options} {input}{output}""".format(
+            options=options,
+            input=input if input else "",
+            output=" > " + output if output else "",
+        )
+    )
+
+def paste(
+    input,
+    output,
+    options
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+paste {options} {input}{output}""".format(
+            options=options,
+            input=input if input else "",
+            output=" > " + output if output else "",
+        )
+    )
+
+def awk(
+    input,
+    output,
+    instructions,
+    append=False
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+awk {instructions} {input}{append}{output}""".format(
             instructions=instructions,
             input=input if input else "",
-            append=">>" if append else "",
-            output=">" + output if output else "",
+            append=" >" if append else " ",
+            output="> " + output if output else "",
+        )
+    )
+
+def gzip(
+    input,
+    output,
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+gzip {input}{output}""".format(
+            input=input if input else "",
+            output=" > " + output if output else "",
         )
     )

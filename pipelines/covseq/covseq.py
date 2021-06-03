@@ -791,7 +791,11 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                 job = concat_jobs([
                     job,
                     pipe_jobs([
-                        bash.zcat(output_consensus_norm),
+                        bash.cat(
+                            output_consensus_norm,
+                            None,
+                            zip=True
+                        ),
                         bash.awk(
                             None,
                             None,
