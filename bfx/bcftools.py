@@ -213,3 +213,45 @@ bcftools \\
         output=" \\\n -o " + output if output else ""
         )
     )
+
+def consensus(input, output, options, ini_section='bcftools_consensus'):
+    """
+    Consensus creation
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  consensus {options} \\
+  {input}\\
+  {output}""".format(
+        options=options if options else "",
+        input=input,
+        output="> " + output if output else ""
+        )
+    )
+
+def norm(input, output, options, ini_section='bcftools_norm'):
+    """
+    VCF normalisation
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  norm {options} \\
+  {input}\\
+  {output}""".format(
+        options=options if options else "",
+        input=input,
+        output="> " + output if output else ""
+        )
+    )
