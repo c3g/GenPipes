@@ -412,7 +412,7 @@ class HicSeq(common.Illumina):
                            "_".join((sample[0].name, "vs",  sample[1].name))
                            )
 
-                        output_file = os.path.join(out_dir, "_".join(("hicrep", sample[0].name, "vs", sample[1].name, chromosome, res, "res", smooth, bound_width,down_sampling)), ".tmp")
+                        output_file = os.path.join(out_dir, "hicrep_" + sample[0].name + "_vs_" + sample[1].name + "_" + chromosome + "_" + res + "_res_" + smooth + "_" + bound_width + "_" + down_sampling + ".tmp")
 
                         job_chr = hicrep.calculate_reproducible_score(
                             out_dir,
