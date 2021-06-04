@@ -97,7 +97,7 @@ def cp(
     update=False
     ):
 
-return Job(
+    return Job(
         [source],
         [target],
         command="""\
@@ -115,7 +115,7 @@ def rm(
     force=True
     ):
 
-return Job(
+    return Job(
         [source],
         [],
         command="""\
