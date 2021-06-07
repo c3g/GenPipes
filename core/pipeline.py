@@ -233,9 +233,10 @@ class Pipeline(object):
                                          "singularity image path", action=ValidateContainer,
                                           metavar=("{wrapper, singularity}",
                                                    "<IMAGE PATH>"))
-            self._argparser.add_argument("--output", default=sys.stdout, type=argparse.FileType('w'),
-                                         help="output file, default to stdout if not provided")
-
+            self._argparser.add_argument("--command_file", default=sys.stdout, type=argparse.FileType('w'),
+                                         help="Command file output path. This is the command used to process "
+                                              "the data, or said otherwise, this command will \"run the pipeline\""
+                                              "It will be redirected to stdout if the option is not provided.")
 
         return self._argparser
 
