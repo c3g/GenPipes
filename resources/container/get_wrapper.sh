@@ -6,7 +6,7 @@ wget -c http://github.com/c3g/genpipes_in_a_container/releases/download/${GIAC_V
 echo Installing singulaity image and configuration file
 if test -f "${SCRIPT_DIR}/etc/wrapper.conf"; then
   rel=$(realpath --relative-to=$PWD ${SCRIPT_DIR}/etc/wrapper.conf)
-  echo "./$rel exist,
+  echo "./$rel exist,"
   read -r -p  "  do you want to overwrite it y[n]:?" response
 
    case "$response" in
