@@ -35,20 +35,20 @@ separator_line = "#" + "-" * 79
 
 logger = logging.getLogger(__name__)
 
-def create_scheduler(s_type, config_files, container=None, output_file=None):
+def create_scheduler(s_type, config_files, container=None, genpipes_file=None):
     if s_type == "pbs":
-        return PBSScheduler(config_files, container=container, output_file=output_file)
+        return PBSScheduler(config_files, container=container, genpipes_file=genpipes_file)
     elif s_type == "batch":
-        return BatchScheduler(config_files, container=container, output_file=output_file)
+        return BatchScheduler(config_files, container=container, genpipes_file=genpipes_file)
     elif s_type == "daemon":
-        return DaemonScheduler(config_files, output_file=output_file)
+        return DaemonScheduler(config_files, genpipes_file=genpipes_file)
     elif s_type == "slurm":
-        return SlurmScheduler(config_files, container=container, output_file=output_file)
+        return SlurmScheduler(config_files, container=container, genpipes_file=genpipes_file)
     else:
         raise Exception("Error: scheduler type \"" + s_type + "\" is invalid!")
 
 class Scheduler(object):
-    def __init__(self, config_files, container=None, output_file=None, **kwargs):
+    def __init__(self, config_files, container=None, genpipes_file=None, **kwargs):
 
         self.name = 'generic'
         self._config_files = config_files
@@ -56,14 +56,14 @@ class Scheduler(object):
         self._host_cvmfs_cache = None
         self._cvmfs_cache = None
         self._bind = None
-        if output_file == None:
-            self.output_file = sys.stdout
+        if genpipes_file is None:
+            self.genpipes_file = sys.stdout
         else:
-            self.output_file = output_file
-            if output_file is not sys.stdout:
+            self.genpipes_file = genpipes_file
+            if genpipes_file is not sys.stdout:
                 # make sure it is user and group executable
-                st = os.stat(output_file.name)
-                os.chmod(output_file.name, st.st_mode | stat.S_IEXEC | stat.S_IXGRP)
+                st = os.stat(genpipes_file.name)
+                os.chmod(genpipes_file.name, st.st_mode | stat.S_IEXEC | stat.S_IXGRP)
 
 
     def submit(self, pipeline):
@@ -153,7 +153,7 @@ class Scheduler(object):
 
     def print_header(self, pipeline,shebang='/bin/bash'):
 
-        self.output_file.write("""\
+        self.genpipes_file.write("""\
 #!{shebang}
 # Exit immediately on error
 {scheduler.disable_modulercfile}
@@ -177,7 +177,7 @@ set -eu -o pipefail
         )
 
         if pipeline.jobs:
-            self.output_file.write(
+            self.genpipes_file.write(
 """
 OUTPUT_DIR={pipeline.output_dir}
 JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
@@ -201,7 +201,7 @@ cd $OUTPUT_DIR
                         json_files.append(os.path.join(pipeline.output_dir, "json", sample.json_file))
             json_files = list(set(json_files))
             for j_file in json_files:
-                self.output_file.write(
+                self.genpipes_file.write(
 """sed -i "s/\\"submission_date\\": \\"\\",/\\"submission_date\\": \\"$TIMESTAMP\\",/" {file}"""
                     .format(
                         file=j_file
@@ -221,7 +221,7 @@ cd $OUTPUT_DIR
                     input_file=input_file, output_file=output_file))
                 #test_copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
                     #input_file=input_file, output_file=test_output_file))
-            self.output_file.write(textwrap.dedent("""
+            self.genpipes_file.write(textwrap.dedent("""
                 #------------------------------------------------------------------------------
                 # Print a copy of sample JSONs for the genpipes dashboard
                 #------------------------------------------------------------------------------
@@ -229,14 +229,14 @@ cd $OUTPUT_DIR
             """).format(copy_commands='\n'.join(copy_commands)))
 
     def print_step(self, step):
-        self.output_file.write("""
+        self.genpipes_file.write("""
 {separator_line}
 # STEP: {step.name}
 {separator_line}
 STEP={step.name}
 mkdir -p $JOB_OUTPUT_DIR/$STEP
 """.format(separator_line=separator_line, step=step)
-        )
+                                 )
 
     def job2json(self, pipeline, step, job, job_status):
         if not pipeline.json:
@@ -268,7 +268,7 @@ module unload {module_python} {command_separator}""".format(
 class PBSScheduler(Scheduler):
 
     def __init__(self, *args, **kwargs):
-        super(PBSScheduler, self).__init__(*args, **kwargs)
+        super(PBSScheduler, self).__init__(**kwargs)
         self.name = 'PBS/TORQUE'
 
     def submit(self, pipeline):
@@ -288,7 +288,7 @@ class PBSScheduler(Scheduler):
                         job_dependencies = "JOB_DEPENDENCIES="
 
                     #sleepTime = random.randint(10, 100)
-                    self.output_file.write("""
+                    self.genpipes_file.write("""
 {separator_line}
 # JOB: {job.id}: {job.name}
 {separator_line}
@@ -358,7 +358,7 @@ exit \$MUGQIC_STATE" | \\
                     # Write job parameters in job list file
                     cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST\n"
 
-                    self.output_file.write(cmd)
+                    self.genpipes_file.write(cmd)
 
         # Check cluster maximum job submission
         cluster_max_jobs = config.param('DEFAULT', 'cluster_max_jobs', type='posint', required=False)
@@ -370,7 +370,7 @@ exit \$MUGQIC_STATE" | \\
 class BatchScheduler(Scheduler):
 
     def __init__(self, *args, **kwargs):
-        super(BatchScheduler, self ).__init__(*args, **kwargs)
+        super(BatchScheduler, self).__init__(**kwargs)
         self.name = 'Batch'
 
     def submit(self, pipeline):
@@ -378,12 +378,12 @@ class BatchScheduler(Scheduler):
             self.container_line))
         self.print_header(pipeline)
         if pipeline.jobs:
-            self.output_file.write("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`")
+            self.genpipes_file.write("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`")
         for step in pipeline.step_range:
             if step.jobs:
                 self.print_step(step)
                 for job in step.jobs:
-                    self.output_file.write("""
+                    self.genpipes_file.write("""
 {separator_line}
 # JOB: {job.name}
 {separator_line}
@@ -418,7 +418,7 @@ if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
 class SlurmScheduler(Scheduler):
 
     def __init__(self, *args, **kwargs):
-        super(SlurmScheduler, self).__init__(*args, **kwargs)
+        super(SlurmScheduler, self).__init__(**kwargs)
         self.name = 'SLURM'
 
     def submit(self, pipeline):
@@ -437,7 +437,7 @@ class SlurmScheduler(Scheduler):
                     else:
                         job_dependencies = "JOB_DEPENDENCIES="
 
-                    self.output_file.write("""
+                    self.genpipes_file.write("""
 {separator_line}
 # JOB: {job.id}: {job.name}
 {separator_line}
@@ -514,7 +514,7 @@ exit \$MUGQIC_STATE" | \\
                     #add 0.2s sleep to let slurm submiting the job correctly
                     cmd += "\nsleep 0.1\n"
 
-                    self.output_file.write(cmd)
+                    self.genpipes_file.write(cmd)
         logger.info("\nAll submitted\"")
         # Check cluster maximum job submission
         cluster_max_jobs = config.param('DEFAULT', 'cluster_max_jobs', type='posint', required=False)
@@ -526,11 +526,11 @@ exit \$MUGQIC_STATE" | \\
 class DaemonScheduler(Scheduler):
 
     def __init__(self, *args, **kwargs):
-        super(DaemonScheduler, self).__init__(*args, **kwargs)
+        super(DaemonScheduler, self).__init__(**kwargs)
         self.name = 'DAEMON'
 
     def submit(self, pipeline):
-        self.output_file.write(self.json(pipeline))
+        self.genpipes_file.write(self.json(pipeline))
 
     def json(self, pipeline):
         #with open('sample.json', 'w') as json_file:

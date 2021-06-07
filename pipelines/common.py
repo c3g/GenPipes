@@ -54,7 +54,7 @@ log = logging.getLogger(__name__)
 # Abstract pipeline gathering common features of all MUGQIC pipelines (readsets, samples, remote log, etc.)
 class MUGQICPipeline(Pipeline):
 
-    def __init__(self, protocol, output_file=None):
+    def __init__(self, protocol):
         self.version = open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r').read().split('\n')[0]
         self._protocol = protocol
         # Add pipeline specific arguments
@@ -104,7 +104,7 @@ class MUGQICPipeline(Pipeline):
             "samples=" + str(len(self.samples))
         ])
         # that is crazy, to have to rely on the bash interface/arguments that deep in the code.
-        self.args.output.write("""
+        self.args.genpipes_file.write("""
 {separator_line}
 # Call home with pipeline statistics
 {separator_line}
