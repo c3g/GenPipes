@@ -109,7 +109,7 @@ if __name__=='__main__':
     add_to_jsons(soft_list)
 
     arr_ = []
-    for path in tmp_software_paths:
+    for path in sorted(tmp_software_paths):
         json_p = os.path.join(path, '.metadata.json')
         if os.path.isfile(json_p):
             with open(json_p, 'r') as f:
