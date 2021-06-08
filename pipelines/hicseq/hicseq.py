@@ -36,6 +36,7 @@ import pysam
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
+from bfx import bash_cmd as bash
 from core.config import config, SanitycheckError, _raise
 from core.job import Job, concat_jobs, pipe_jobs
 from pipelines import common
@@ -225,7 +226,7 @@ class HicSeq(common.Illumina):
             sample_output = os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam")
             readset_bams = [os.path.join(self.output_dirs['hicup_output_directory'], readset.sample.name, readset.name, readset.name + ".trim.pair1_2.fastq.gz.edited.hicup.bam") for readset in sample.readsets]
 
-            mkdir_job = Job(command="mkdir -p " + self.output_dirs['bams_output_directory'])
+            mkdir_job = bash.mkdir(self.output_dirs['bams_output_directory'])
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM.
             if len(sample.readsets) == 1:
@@ -414,21 +415,23 @@ class HicSeq(common.Illumina):
 
                         output_file = os.path.join(out_dir, "hicrep_" + sample[0].name + "_vs_" + sample[1].name + "_" + chromosome + "_" + res + "_res_" + smooth + "_" + bound_width + "_" + down_sampling + ".tmp")
 
-                        job_chr = hicrep.calculate_reproducible_score(
-                            out_dir,
-                            output_file,
-                            sample[0].name,
-                            sample[1].name,
-                            input_sample1_file_path,
-                            input_sample2_file_path,
-                            chromosome,
-                            res,
-                            bound_width,
-                            weights,
-                            corr,
-                            down_sampling,
-                            smooth
-                            )
+                        job_chr = concat_jobs([
+                            bash.mkdir(out_dir),
+                            hicrep.calculate_reproducible_score(
+                                output_file,
+                                sample[0].name,
+                                sample[1].name,
+                                input_sample1_file_path,
+                                input_sample2_file_path,
+                                chromosome,
+                                res,
+                                bound_width,
+                                weights,
+                                corr,
+                                down_sampling,
+                                smooth
+                                )
+                            ])
 
                         job_chr.samples = sample
 
@@ -667,7 +670,7 @@ class HicSeq(common.Illumina):
 
                     job_inputFile = concat_jobs(
                         [
-                            Job(command="mkdir -p " + sample_output_dir),
+                            bash.mkdir(sample_output_dir),
                             topdom.create_input(input_matrix, tmp_matrix, output_matrix, output_script, res)
                         ],
                         name="identify_TADs.TopDom_create_input." + sample.name + "_" + chr + "_res" + res,
@@ -714,7 +717,7 @@ class HicSeq(common.Illumina):
                 output_calls = os.path.join(sample_output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)/1000) ,"_minW250_maxW500_minRatio1.5_threshold0.2.txt")))
 
                 job = concat_jobs([
-                    Job(command="mkdir -p " + sample_output_dir),
+                    bash.mkdir(sample_output_dir),
                     robustad.call_TADs(input_matrix, sample_output_dir, res)
                 ])
                 job.name = "identify_TADs.RobusTAD." + sample.name + "_" + chr
@@ -763,7 +766,7 @@ class HicSeq(common.Illumina):
             hic_output = os.path.join(self.output_dirs['hicfiles_output_directory'], sample.name + ".hic")
 
             job = concat_jobs([
-                Job(command="mkdir -p " + self.output_dirs['hicfiles_output_directory']),
+                bash.mkdir(self.output_dirs['hicfiles_output_directory']),
                 samtools.sort(sample_input, sortedBamPrefix, sort_by_name=True),
                 hic.create_input(sortedBam, sample.name),
                 hic.create_hic(sample.name + ".juicebox.input.sorted", hic_output, self.genome)
@@ -806,7 +809,7 @@ class HicSeq(common.Illumina):
         input_file = self.genome_digest
 
         job = concat_jobs([
-            Job(command="mkdir -p " + self.output_dirs['chicago_input_files']),
+            bash.mkdir(self.output_dirs['chicago_input_files']),
             tools.sh_create_rmap(input_file, output, "create_rmap_file." + self.enzyme),
             bedops.sort_bed(output, sorted_output)
         ])
@@ -933,11 +936,10 @@ class HicSeq(common.Illumina):
 
         if features_file != "None":
 
-            job_create_dir = Job(command = "mkdir -p {output_dir}".format(output_dir = output_dir))
             job_sort_features_file = bedops.sort_bed(features_file, sorted_features_file)
 
             job = concat_jobs([
-                job_create_dir,
+                bash.mkdir(output_dir),
                 job_sort_features_file
             ])
             job.name = "bait_intersect.sort_feature." + os.path.basename(sorted_features_file)
@@ -988,10 +990,9 @@ class HicSeq(common.Illumina):
         output_dir = os.path.join(chicago_output_dir, intersect_output_dir)
 
         if features_file != "None":
-            job_create_dir = Job(command = "mkdir -p {output_dir}".format(output_dir = output_dir))
             job_sort_features_file = bedops.sort_bed(features_file, sorted_features_file)
 
-            job = concat_jobs([job_create_dir, job_sort_features_file])
+            job = concat_jobs([bash.mkdir(output_dir), job_sort_features_file])
             job.name = "capture_intersect.sort_feature." + os.path.basename(sorted_features_file)
             job.removable_files = [sorted_features_file]
             job.samples = self.samples
