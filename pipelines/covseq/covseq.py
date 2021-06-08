@@ -1409,7 +1409,7 @@ echo "Software Versions
 echo "Generating report tables..." && \\
 generate_report_tables.R --report_readset={readset_file_report} --metrics={metrics} --host_contamination_metrics={host_contamination_metrics} && \\
 echo "Rendering report..." && \\
-Rscript -e "rmarkdown::render('$RUN_REPORT', output_format = 'all', output_dir='$(pwd)/report', knit_root_dir='$(pwd)')" """.format(
+Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT', report_path, overwrite = TRUE); rmarkdown::render(report_path, output_file='run_report.pdf', output_format = 'all', output_dir='$(pwd)/report', knit_root_dir='$(pwd)')" """.format(
     R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
     output_dir=self.output_dir,
     run_name=config.param('prepare_report', 'run_name', required=True),
