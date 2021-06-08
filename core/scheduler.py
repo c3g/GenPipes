@@ -418,7 +418,7 @@ if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
 class SlurmScheduler(Scheduler):
 
     def __init__(self, *args, **kwargs):
-        super(SlurmScheduler, self).__init__(**kwargs)
+        super(SlurmScheduler, self).__init__(*args, **kwargs)
         self.name = 'SLURM'
 
     def submit(self, pipeline):
