@@ -1571,6 +1571,7 @@ pandoc --to=markdown \\
         Merge the results of the analysis in a single csv file.
         """
         jobs = []
+        minOverlap = config.param('differential_binding', 'minOverlap')
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         #output_directory = "differential_binding"
         readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
@@ -1591,7 +1592,11 @@ pandoc --to=markdown \\
 
                 for sample in self.samples:
                     input_file = []
+                   # alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name,
+                    #                                   mark_name)
 
+                    #output_bam = os.path.join(alignment_directory,
+                     #                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
                     input_file_list = [
                         os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
                                      sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items() if
@@ -1609,8 +1614,8 @@ pandoc --to=markdown \\
                     input_file_list = [
                        # os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
                         #             mark_name + "_peaks.xls") for
-                        os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                     mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for
+                        os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." +
+                                                 self.mark_type_conversion[mark_type] + "Peak") for
                         mark_name, mark_type in sample.marks.items() if
                         mark_type != "I" and sample.name == control_sample_name and mark_name ==
                         control_mark_name]
@@ -1638,8 +1643,8 @@ pandoc --to=markdown \\
                     input_file_list = [
                         #os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
                                       #mark_name + "_peaks.xls") for
-                        os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                     mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for
+                        os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." +
+                                                 self.mark_type_conversion[mark_type] + "Peak") for
                         mark_name, mark_type in sample.marks.items() if
                         mark_type != "I" and sample.name == control_sample_name and mark_name ==
                         control_mark_name]
@@ -1650,7 +1655,7 @@ pandoc --to=markdown \\
             diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file,
                                                          self.output_dirs['dba_output_directory'],
                                                          self.output_dirs['alignment_output_directory'],
-                                                         self.output_dirs['macs_output_directory'])
+                                                         self.output_dirs['macs_output_directory'], minOverlap)
             diffbind_job.samples = self.samples
             diffbind_job.name = "_".join(("differential_binding.diff_bind.contrat", contrast.name))
             jobs.append(diffbind_job)
