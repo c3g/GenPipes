@@ -43,7 +43,38 @@ def diffbind2(input_files, comparison, design, output_file):
                     mkdir -p {output_dir}/""".format(
             output_dir=output_file
         ))
-def diffbind( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir):
+
+#This function is used to render R file and create a html output using Rmarkdown
+#This is a new feature introduced to Genpipes in 2021
+def diffbind( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap):
+
+    output_file =  "".join((output_dir, "_".join(("/diffbind",comparison,"dba.txt"))))
+    html_output = "".join((output_dir, "_".join(("/diffbind", comparison, "dba.html"))))
+
+    return Job(
+        input_files,
+        [output_file],
+        [
+            ['differential_binding', 'module_mugqic_tools'],
+            ['differential_binding', 'module_R']
+        ],
+        command="""\
+        mkdir -p {output_dir} &&
+#Rscript $R_TOOLS/diffbind.R \\
+Rscript -e 'library(knitr);rmarkdown::render("/home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R",params=list(d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap="{minOverlap}"),output_file="{html_output}");'""".format(
+        design=design,
+        comparison=comparison,
+        output_file=output_file,
+        output_dir=output_dir,
+        readset=readset,
+        alignment_dir=alignment_dir,
+        peak_dir=peak_dir,
+        minOverlap=minOverlap,
+        html_output=html_output
+    ))
+
+#The function is not currently used. But if you want to use the old way to call Rscript passing paramters use and modify this method.
+def diffbind_R( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap):
 
     output_file =  "".join((output_dir, "_".join(("/diffbind",comparison,"dba.txt"))))
 
@@ -64,12 +95,14 @@ Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/diff_bind.R \\
   -o {output_file} \\
   -b {alignment_dir} \\
   -p {peak_dir} \\
-  -dir {output_dir}""".format(
+  -dir {output_dir} \\
+  -minOverlap {minOverlap}""".format(
         design=design,
         comparison=comparison,
         output_file=output_file,
         output_dir=output_dir,
         readset=readset,
         alignment_dir=alignment_dir,
-        peak_dir=peak_dir
+        peak_dir=peak_dir,
+        minOverlap=minOverlap
     ))
