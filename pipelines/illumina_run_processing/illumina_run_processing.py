@@ -392,9 +392,9 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                         mask=self.mask
                     ),
                     bash.cp(
-                        os.path.join(self.output_dir, "index", "bcl2fastq", "Reports", "html", flowcell, "all/all/all/lane.html")
+                        os.path.join(self.output_dir, "index", "bcl2fastq", "Reports", "html", self.flowcell_id, "all/all/all/lane.html"),
                         os.path.join(self.output_dir, "index", "index_stats.html")
-                    )
+                    ),
                     tools.edit_index_stats(
                         os.path.join(self.output_dir, "index", "index_per_readset.json"),
                         os.path.join(self.output_dir, "index", "bcl2fastq", "Stats", "Stats.json"),
@@ -404,7 +404,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                 name="bcl2fastq_index." + self.run_id + "." + str(self.lane_number),
                 samples=self.samples,
                 removable_files=[os.path.join(self.output_dir, "index", "bcl2fastq")]
-            )
+            ))
 
         # Index Validation
         idx_val_job = tools.index_validation(
@@ -419,7 +419,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         jobs.append(idx_val_job)
 
         self.add_to_report_hash("index", jobs)
-        for readset in self.reasdets:
+        for readset in self.readsets:
             self.report_inputs['index'][readset.name] = [
                 os.path.join(self.output_dir, "index", "index_stats.json"),
                 os.path.join(self.output_dir, "index", "index_per_readset.json")
