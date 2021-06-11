@@ -1496,7 +1496,8 @@ snakemake --rerun-incomplete --configfile {freebayes_ncovtools_config_local} --c
     freebayes_ncovtools_directory=freebayes_ncovtools_directory,
     freebayes_ncovtools_config=freebayes_ncovtools_config,
     freebayes_ncovtools_config_local=os.path.basename(freebayes_ncovtools_config),
-    nb_threads=config.param('prepare_report', 'nb_threads'),
+    nb_threads=config.param('prepare_report', 'nb_threads'),,
+    output_dir=self.output_dir
     )
                     ),
                 Job(
