@@ -1537,6 +1537,7 @@ Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT_FR
     software_version=os.path.join("report", "software_versions.csv"),
     ivar_readset_file_report=ivar_readset_file_report,
     ivar_metrics=os.path.join("metrics", "metrics.csv"),
+    freebayes_readset_file_report=freebayes_readset_file_report,
     freebayes_metrics=os.path.join("metrics", "metrics_freebayes.csv"),
     host_contamination_metrics=os.path.join("metrics", "host_contamination_metrics.tsv")
     )
