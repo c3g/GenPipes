@@ -29,7 +29,6 @@ from core.job import *
 def diffbind2(input_files, comparison, design, output_file):
 
     #merge all the tsvs and create final .csv file
-
     if not isinstance(input_files, list):
        input_files = [input_files]
 
@@ -61,7 +60,7 @@ def diffbind( input_files, comparison, design, readset, output_dir, alignment_di
         command="""\
         mkdir -p {output_dir} &&
 #Rscript $R_TOOLS/diffbind.R \\
-Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("/home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap="{minOverlap}",minMembers="{minMembers}"),output_file="{html_output}");'""".format(
+Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("/home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap="{minOverlap}",minMembers="{minMembers}"),output_file=file.path(cur_dir,"{html_output}"));'""".format(
         design=design,
         comparison=comparison,
         output_file=output_file,
