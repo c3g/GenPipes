@@ -46,7 +46,7 @@ def diffbind2(input_files, comparison, design, output_file):
 
 #This function is used to render R file and create a html output using Rmarkdown
 #This is a new feature introduced to Genpipes in 2021
-def diffbind( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap):
+def diffbind( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap, minMembers):
 
     output_file =  "".join((output_dir, "_".join(("/diffbind",comparison,"dba.txt"))))
     html_output = "".join((output_dir, "_".join(("/diffbind", comparison, "dba.html"))))
@@ -61,7 +61,7 @@ def diffbind( input_files, comparison, design, readset, output_dir, alignment_di
         command="""\
         mkdir -p {output_dir} &&
 #Rscript $R_TOOLS/diffbind.R \\
-Rscript -e 'library(knitr);rmarkdown::render("/home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R",params=list(d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap="{minOverlap}"),output_file="{html_output}");'""".format(
+Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("/home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap="{minOverlap}",minMembers="{minMembers}"),output_file="{html_output}");'""".format(
         design=design,
         comparison=comparison,
         output_file=output_file,
@@ -70,11 +70,17 @@ Rscript -e 'library(knitr);rmarkdown::render("/home/pubudu/projects/rrg-bourqueg
         alignment_dir=alignment_dir,
         peak_dir=peak_dir,
         minOverlap=minOverlap,
+        minMembers=minMembers,
         html_output=html_output
     ))
 
-#The function is not currently used. But if you want to use the old way to call Rscript passing paramters use and modify this method.
-def diffbind_R( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap):
+# Rscript -e 'library(knitr);cur_dir=getwd();design=paste0(cur_dir,"/","{design}");
+# readset=paste0(cur_dir,"/","{readset}");output_file=paste0(cur_dir,"/","{output_file}");
+# alignment_dir=paste0(cur_dir,"/","{alignment_dir}");peak_dir=paste0(cur_dir,"/","{peak_dir}");
+# output_dir=paste0(cur_dir,"/","{output_dir}");html_output=paste0(cur_dir,"/","{html_output}");
+# rmarkdown::render("/home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R",params=list(d=design,r=readset,c="{comparison}",o=output_file,b=alignment_dir,p=peak_dir,dir=output_dir,minOverlap="{minOverlap}",minMembers="{minMembers}"),output_file=html_output);'""".format(
+###The function is not currently used. But if you want to use the old way to call Rscript passing paramters use and modify this method.
+def diffbind_R( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap, minMembers):
 
     output_file =  "".join((output_dir, "_".join(("/diffbind",comparison,"dba.txt"))))
 
@@ -88,7 +94,7 @@ def diffbind_R( input_files, comparison, design, readset, output_dir, alignment_
         command="""\
         mkdir -p {output_dir} &&
 #Rscript $R_TOOLS/diffbind.R \\
-Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/diff_bind.R \\
+Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R \\
   -d {design} \\
   -r {readset} \\
   -c {comparison} \\
@@ -96,7 +102,8 @@ Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/diff_bind.R \\
   -b {alignment_dir} \\
   -p {peak_dir} \\
   -dir {output_dir} \\
-  -minOverlap {minOverlap}""".format(
+  -minOverlap {minOverlap} \\
+  -minMembers {minMembers}""".format(
         design=design,
         comparison=comparison,
         output_file=output_file,
@@ -104,5 +111,6 @@ Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/diff_bind.R \\
         readset=readset,
         alignment_dir=alignment_dir,
         peak_dir=peak_dir,
-        minOverlap=minOverlap
+        minOverlap=minOverlap,
+        minMembers=minMembers
     ))
