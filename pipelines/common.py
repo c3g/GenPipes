@@ -56,7 +56,7 @@ class MUGQICPipeline(Pipeline):
 
     def __init__(self, protocol):
         self.version = open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r').read().split('\n')[0]
-        self._protocol=protocol
+        self._protocol = protocol
         # Add pipeline specific arguments
         self.argparser.description = "Version: " + self.version + "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/"
         self.argparser.add_argument("-v", "--version", action="version", version="genpipes " + self.version, help="show the version information and exit")
@@ -103,8 +103,8 @@ class MUGQICPipeline(Pipeline):
             "steps=" + ",".join([step.name for step in self.step_range]),
             "samples=" + str(len(self.samples))
         ])
-
-        print("""
+        # that is crazy, to have to rely on the bash interface/arguments that deep in the code.
+        self.args.genpipes_file.write("""
 {separator_line}
 # Call home with pipeline statistics
 {separator_line}
