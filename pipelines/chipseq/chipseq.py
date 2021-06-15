@@ -1588,6 +1588,9 @@ done""".format(
         jobs = []
         minOverlap = config.param('differential_binding', 'minOverlap')
         minMembers = config.param('differential_binding', 'minMembers')
+        # print("meka"+self.args.output_dir)
+        # if hasattr(self, "output_dir"):
+        #     print("hi")
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
         if self.contrasts:
