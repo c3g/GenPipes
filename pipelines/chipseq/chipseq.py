@@ -1588,9 +1588,6 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
         jobs = []
         minOverlap = config.param('differential_binding', 'minOverlap')
         minMembers = config.param('differential_binding', 'minMembers')
-        # print("meka"+self.args.output_dir)
-        # if hasattr(self, "output_dir"):
-        #     print("hi")
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
         if self.contrasts:
@@ -1600,17 +1597,19 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
         mark_list = []
 
         #if control samples and treatment samples are less than one diff analysis will not be executed
-        controls_count = [len(contrast.controls) for contrast in self.contrasts]
-        treatments_count = [len(contrast.treatments) for contrast in self.contrasts]
-
-        if controls_count[0] < 1 or treatments_count[0] < 1:
-            log.info("At leaset one treatment and one control should be defined. Skipping differential analysis...")
-        else:
-            for contrast in self.contrasts:
-                bam_list = []
+        for contrast in self.contrasts:
+            bam_list = []
+            controls_count = len(contrast.controls)
+            treatments_count = len(contrast.treatments)
+            if controls_count < 2 or treatments_count < 2:
+                log.info(
+                    "At leaset two treatments and  controls should be defined. Skipping differential binding analysis for "+contrast.name +" ...")
+            else:
+                # if controls_count == 1 or treatments_count == 1:
+                #     minOverlap = 1
+                #     minMembers = 1
                 for control in contrast.controls:
                     control_sample_name, control_mark_name = control.split("-.-")
-
                     for sample in self.samples:
                         input_file_list = [
                             os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
