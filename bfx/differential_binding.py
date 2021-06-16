@@ -43,12 +43,13 @@ def diffbind2(input_files, comparison, design, output_file):
             output_dir=output_file
         ))
 
-#This function is used to render R file and create a html output using Rmarkdown
+#This function is used to render R file and create a html output using knitr and spin
 #This is a new feature introduced to Genpipes in 2021
 def diffbind( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap, minMembers):
 
     output_file =  "".join((output_dir, "_".join(("/diffbind",comparison,"dba.txt"))))
     html_output = "".join((output_dir, "_".join(("/diffbind", comparison, "dba.html"))))
+    R_filename = "".join((output_dir, "_".join(("/diffbind", comparison, "dba.R"))))
 
     return Job(
         input_files,
@@ -59,8 +60,10 @@ def diffbind( input_files, comparison, design, readset, output_dir, alignment_di
         ],
         command="""\
         mkdir -p {output_dir} &&
+        cp /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R {R_filename} &&
 #Rscript $R_TOOLS/diffbind.R \\
-Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("/home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap="{minOverlap}",minMembers="{minMembers}"),output_file=file.path(cur_dir,"{html_output}"));'""".format(
+Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("{R_filename}",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap="{minOverlap}",minMembers="{minMembers}"),output_file=file.path(cur_dir,"{html_output}"));' &&
+rm {R_filename}""".format(
         design=design,
         comparison=comparison,
         output_file=output_file,
@@ -70,7 +73,8 @@ Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("/home/pubudu/proje
         peak_dir=peak_dir,
         minOverlap=minOverlap,
         minMembers=minMembers,
-        html_output=html_output
+        html_output=html_output,
+        R_filename=R_filename
     ))
 
 # Rscript -e 'library(knitr);cur_dir=getwd();design=paste0(cur_dir,"/","{design}");
