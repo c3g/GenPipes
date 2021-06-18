@@ -45,7 +45,7 @@ def diffbind2(input_files, comparison, design, output_file):
 
 #This function is used to render R file and create a html output using knitr and spin
 #This is a new feature introduced to Genpipes in 2021
-def diffbind( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap, minMembers):
+def diffbind( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap, minMembers, method):
 
     output_file =  "".join((output_dir, "_".join(("/diffbind",comparison,"dba.txt"))))
     html_output = "".join((output_dir, "_".join(("/diffbind", comparison, "dba.html"))))
@@ -60,9 +60,9 @@ def diffbind( input_files, comparison, design, readset, output_dir, alignment_di
         ],
         command="""\
         mkdir -p {output_dir} &&
-        cp /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R {R_filename} &&
-#Rscript $R_TOOLS/diffbind.R \\
-Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("{R_filename}",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap="{minOverlap}",minMembers="{minMembers}"),output_file=file.path(cur_dir,"{html_output}"));' &&
+       # cp /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/DiffBind.R {R_filename} &&
+cp $R_TOOLS/DiffBind.R {R_filename} &&
+Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("{R_filename}",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap="{minOverlap}",minMembers="{minMembers}",method="{method}"),output_file=file.path(cur_dir,"{html_output}"));' &&
 rm {R_filename}""".format(
         design=design,
         comparison=comparison,
@@ -74,7 +74,8 @@ rm {R_filename}""".format(
         minOverlap=minOverlap,
         minMembers=minMembers,
         html_output=html_output,
-        R_filename=R_filename
+        R_filename=R_filename,
+        method=method
     ))
 
 # Rscript -e 'library(knitr);cur_dir=getwd();design=paste0(cur_dir,"/","{design}");
@@ -83,7 +84,7 @@ rm {R_filename}""".format(
 # output_dir=paste0(cur_dir,"/","{output_dir}");html_output=paste0(cur_dir,"/","{html_output}");
 # rmarkdown::render("/home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R",params=list(d=design,r=readset,c="{comparison}",o=output_file,b=alignment_dir,p=peak_dir,dir=output_dir,minOverlap="{minOverlap}",minMembers="{minMembers}"),output_file=html_output);'""".format(
 ###The function is not currently used. But if you want to use the old way to call Rscript passing paramters use and modify this method.
-def diffbind_R( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap, minMembers):
+def diffbind_R( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap, minMembers, method):
 
     output_file =  "".join((output_dir, "_".join(("/diffbind",comparison,"dba.txt"))))
 
@@ -96,8 +97,8 @@ def diffbind_R( input_files, comparison, design, readset, output_dir, alignment_
         ],
         command="""\
         mkdir -p {output_dir} &&
-#Rscript $R_TOOLS/diffbind.R \\
-Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R \\
+Rscript $R_TOOLS/DiffBind.R \\
+#Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R \\
   -d {design} \\
   -r {readset} \\
   -c {comparison} \\
@@ -106,7 +107,8 @@ Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R \\
   -p {peak_dir} \\
   -dir {output_dir} \\
   -minOverlap {minOverlap} \\
-  -minMembers {minMembers}""".format(
+  -minMembers {minMembers} \\
+  -method {method}""".format(
         design=design,
         comparison=comparison,
         output_file=output_file,
@@ -115,5 +117,6 @@ Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R \\
         alignment_dir=alignment_dir,
         peak_dir=peak_dir,
         minOverlap=minOverlap,
-        minMembers=minMembers
+        minMembers=minMembers,
+        method=method
     ))
