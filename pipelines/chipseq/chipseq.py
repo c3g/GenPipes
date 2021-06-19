@@ -1282,303 +1282,303 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
 
         return jobs
 
-        def macs2_callpeak(self):
-            """
-            Peaks are called using the MACS2 software. Different calling strategies are used for narrow and broad peaks.
-            The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
-            The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
-            The default mfold parameter of MACS2 is [10,30].
-            """
+    def macs2_callpeak(self):
+        """
+        Peaks are called using the MACS2 software. Different calling strategies are used for narrow and broad peaks.
+        The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
+        The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
+        The default mfold parameter of MACS2 is [10,30].
+        """
 
-            jobs = []
+        jobs = []
 
-            samples_associative_array = []
+        samples_associative_array = []
 
-            for sample in self.samples:
-                # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
-                mark_list = []
-                # if no Input file
-                input_file = []
-                input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                                sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                                   mark_name, mark_type in sample.marks.items() if mark_type == "I"]
-                if len(input_file_list) > 0:
-                    if len(input_file_list) > 1:
-                        raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
-                    input_file = [input_file_list[0]]
-                for mark_name, mark_type in sample.marks.items():
-                    if mark_type != "I":
-                        mark_list.append(mark_name)
+        for sample in self.samples:
+            # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
+            mark_list = []
+            # if no Input file
+            input_file = []
+            input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                            sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
+                               mark_name, mark_type in sample.marks.items() if mark_type == "I"]
+            if len(input_file_list) > 0:
+                if len(input_file_list) > 1:
+                    raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
+                input_file = [input_file_list[0]]
+            for mark_name, mark_type in sample.marks.items():
+                if mark_type != "I":
+                    mark_list.append(mark_name)
 
-                        mark_file = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam")]
-                        # control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.filtered.bam") for sample in contrast.controls]
-                        output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
+                    mark_file = [
+                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                     sample.name + "." + mark_name + ".sorted.dup.filtered.bam")]
+                    # control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.filtered.bam") for sample in contrast.controls]
+                    output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
 
-                        ## set macs2 variables:
+                    ## set macs2 variables:
 
-                        options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
-                        genome_size = self.mappable_genome_size()
-                        output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
+                    options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
+                    genome_size = self.mappable_genome_size()
+                    output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
 
-                        if mark_type == "B":  # Broad region
-                            other_options = "--broad --nomodel"
-                        else:  # Narrow region
-                            if input_file:
-                                other_options = "--nomodel"
-                            else:
-                                other_options = "--fix-bimodal"
+                    if mark_type == "B":  # Broad region
+                        other_options = "--broad --nomodel"
+                    else:  # Narrow region
+                        if input_file:
+                            other_options = "--nomodel"
+                        else:
+                            other_options = "--fix-bimodal"
 
-                        other_options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param(
-                            'macs2_callpeak', 'shift') else ""
-                        other_options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param(
-                            'macs2_callpeak', 'extsize') else ""
-                        other_options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param(
-                            'macs2_callpeak', 'pvalue') else ""
-                        output = []
-                        output.append(os.path.join(output_dir,
-                                                   sample.name + "." + mark_name + "_peaks." +
-                                                   self.mark_type_conversion[
-                                                       mark_type] + "Peak"))
-                        output.append(os.path.join(output_dir,
-                                                   sample.name + "." + mark_name + "_peaks.xls"))
+                    other_options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param(
+                        'macs2_callpeak', 'shift') else ""
+                    other_options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param(
+                        'macs2_callpeak', 'extsize') else ""
+                    other_options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param(
+                        'macs2_callpeak', 'pvalue') else ""
+                    output = []
+                    output.append(os.path.join(output_dir,
+                                          sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                              mark_type] + "Peak"))
+                    output.append(os.path.join(output_dir,
+                                 sample.name + "." + mark_name + "_peaks.xls"))
 
-                        # output = os.path.join(output_dir,
-                        #                        sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
-                        #                            mark_type] + "Peak")
 
-                        jobs.append(
-                            concat_jobs([
-                                bash.mkdir(output_dir),
-                                macs2.callpeak(
-                                    options,
-                                    genome_size,
-                                    mark_file,
-                                    input_file,
-                                    output_prefix_name,
-                                    output,
-                                    other_options
-                                )
-                            ],
-                                name="macs2_callpeak." + sample.name + "." + mark_name,
-                                removable_files=[output_dir]
+                    # output = os.path.join(output_dir,
+                    #                        sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                    #                            mark_type] + "Peak")
+
+
+                    jobs.append(
+                        concat_jobs([
+                            bash.mkdir(output_dir),
+                            macs2.callpeak(
+                                options,
+                                genome_size,
+                                mark_file,
+                                input_file,
+                                output_prefix_name,
+                                output,
+                                other_options
                             )
+                        ],
+                            name="macs2_callpeak." + sample.name + "." + mark_name,
+                            removable_files=[output_dir]
                         )
+                    )
 
-                        ## For ihec: exchange peak score by log10 q-value and generate bigBed
-                        jobs.append(
-                            concat_jobs([
-                                Job([os.path.join(output_dir,
-                                                  sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
-                                                      mark_type] + "Peak")],
-                                    [os.path.join(output_dir,
-                                                  sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
-                                                      mark_type] + "Peak.bed")],
-                                    command="""\
-    awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
-                                        peak_file=os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." +
-                                                               self.mark_type_conversion[mark_type] + "Peak"),
-                                        peak_bed_file=os.path.join(output_dir,
-                                                                   sample.name + "." + mark_name + "_peaks." +
-                                                                   self.mark_type_conversion[mark_type] + "Peak.bed")
-                                    )
-                                    ),
-                                ucsc.bedToBigBed(
-                                    os.path.join(output_dir,
-                                                 sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
-                                                     mark_type] + "Peak.bed"),
-                                    os.path.join(output_dir,
-                                                 sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
-                                                     mark_type] + "Peak.bb")
+                    ## For ihec: exchange peak score by log10 q-value and generate bigBed
+                    jobs.append(
+                        concat_jobs([
+                            Job([os.path.join(output_dir,
+                                              sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                  mark_type] + "Peak")],
+                                [os.path.join(output_dir,
+                                              sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                  mark_type] + "Peak.bed")],
+                                command="""\
+awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
+                                    peak_file=os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." +
+                                                           self.mark_type_conversion[mark_type] + "Peak"),
+                                    peak_bed_file=os.path.join(output_dir,
+                                                               sample.name + "." + mark_name + "_peaks." +
+                                                               self.mark_type_conversion[mark_type] + "Peak.bed")
                                 )
-                            ],
-                                name="macs2_callpeak_bigBed." + sample.name + "." + mark_name
+                                ),
+                            ucsc.bedToBigBed(
+                                os.path.join(output_dir,
+                                             sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                 mark_type] + "Peak.bed"),
+                                os.path.join(output_dir,
+                                             sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                 mark_type] + "Peak.bb")
                             )
+                        ],
+                            name="macs2_callpeak_bigBed." + sample.name + "." + mark_name
                         )
-                    # Else if mark type is Input
-                    else:
-                        log.warning("Mark " + mark_name + " for Sample " + sample.name + " is an Input ... skipping")
-                samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
+                    )
+                # Else if mark type is Input
+                else:
+                    log.warning("Mark " + mark_name + " for Sample " + sample.name + " is an Input ... skipping")
+            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
 
-            report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
-            jobs.append(
-                Job(
-                    [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                  sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
-                                      mark_type] + "Peak") for sample in self.samples for mark_name, mark_type in
-                     sample.marks.items() if mark_type != "I"],
-                    [report_file],
-                    command="""\
-    mkdir -p {report_dir} && \\
-    cp {report_template_dir}/{basename_report_file} {report_dir}/ && \\
-    declare -A samples_associative_array=({samples_associative_array}) && \\
-    for sample in ${{!samples_associative_array[@]}}
-    do
-      for mark_name in ${{samples_associative_array[$sample]}}
-      do
-        cp -a --parents {macs_dir}/$sample/$mark_name/ {report_dir}/ && \\
-        echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}_peaks.xls)" >> {report_file}
-      done
-    done""".format(
-                        samples_associative_array=" ".join(samples_associative_array),
-                        report_template_dir=self.report_template_dir,
-                        basename_report_file=os.path.basename(report_file),
-                        report_file=report_file,
-                        macs_dir=self.output_dirs['macs_output_directory'],
-                        report_dir=self.output_dirs['report_output_directory']
-                    ),
-                    report_files=[report_file],
-                    name="macs2_callpeak_report"  # ".".join([sample.name for sample in self.samples])
-                )
+        report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
+        jobs.append(
+            Job(
+                [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
+                              sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                  mark_type] + "Peak") for sample in self.samples for mark_name, mark_type in
+                 sample.marks.items() if mark_type != "I"],
+                [report_file],
+                command="""\
+mkdir -p {report_dir} && \\
+cp {report_template_dir}/{basename_report_file} {report_dir}/ && \\
+declare -A samples_associative_array=({samples_associative_array}) && \\
+for sample in ${{!samples_associative_array[@]}}
+do
+  for mark_name in ${{samples_associative_array[$sample]}}
+  do
+    cp -a --parents {macs_dir}/$sample/$mark_name/ {report_dir}/ && \\
+    echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}_peaks.xls)" >> {report_file}
+  done
+done""".format(
+                    samples_associative_array=" ".join(samples_associative_array),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file,
+                    macs_dir=self.output_dirs['macs_output_directory'],
+                    report_dir=self.output_dirs['report_output_directory']
+                ),
+                report_files=[report_file],
+                name="macs2_callpeak_report"  # ".".join([sample.name for sample in self.samples])
             )
+        )
 
-            return jobs
+        return jobs
 
-        def macs2_atacseq_callpeak(self):
-            """
-            Peaks are called using the MACS2 software. Different calling strategies are used for narrow and broad peaks.
-            The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
-            The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
-            The default mfold parameter of MACS2 is [10,30].
-            """
+    def macs2_atacseq_callpeak(self):
+        """
+        Peaks are called using the MACS2 software. Different calling strategies are used for narrow and broad peaks.
+        The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
+        The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
+        The default mfold parameter of MACS2 is [10,30].
+        """
 
-            jobs = []
+        jobs = []
 
-            samples_associative_array = []
+        samples_associative_array = []
 
-            for sample in self.samples:
-                # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
-                mark_list = []
-                # if no Input file
-                input_file = []
-                input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                                sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                                   mark_name, mark_type in sample.marks.items() if mark_type == "I"]
-                if len(input_file_list) > 0:
-                    if len(input_file_list) > 1:
-                        raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
-                    input_file = [input_file_list[0]]
-                for mark_name, mark_type in sample.marks.items():
-                    if mark_type != "I":
-                        mark_list.append(mark_name)
+        for sample in self.samples:
+            # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
+            mark_list = []
+            # if no Input file
+            input_file = []
+            input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                            sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
+                               mark_name, mark_type in sample.marks.items() if mark_type == "I"]
+            if len(input_file_list) > 0:
+                if len(input_file_list) > 1:
+                    raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
+                input_file = [input_file_list[0]]
+            for mark_name, mark_type in sample.marks.items():
+                if mark_type != "I":
+                    mark_list.append(mark_name)
 
-                        mark_file = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam")]
-                        # control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.filtered.bam") for sample in contrast.controls]
-                        output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
+                    mark_file = [
+                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                     sample.name + "." + mark_name + ".sorted.dup.filtered.bam")]
+                    # control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.filtered.bam") for sample in contrast.controls]
+                    output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
 
-                        ## set macs2 variables:
+                    ## set macs2 variables:
 
-                        options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
-                        genome_size = self.mappable_genome_size()
-                        output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
-                        # output = os.path.join(output_dir,
-                        #                       sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
-                        #                           mark_type] + "Peak")
+                    options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
+                    genome_size = self.mappable_genome_size()
+                    output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
+                    # output = os.path.join(output_dir,
+                    #                       sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                    #                           mark_type] + "Peak")
 
-                        output = []
-                        output.append(os.path.join(output_dir,
-                                                   sample.name + "." + mark_name + "_peaks." +
-                                                   self.mark_type_conversion[
-                                                       mark_type] + "Peak"))
-                        output.append(os.path.join(output_dir,
-                                                   sample.name + "." + mark_name + "_peaks.xls"))
-                        # other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
-                        other_options = "--nomodel --call-summits"
-                        other_options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param(
-                            'macs2_callpeak', 'shift') else " --shift -75 "
-                        other_options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param(
-                            'macs2_callpeak', 'extsize') else " --extsize 150 "
-                        other_options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param(
-                            'macs2_callpeak', 'pvalue') else " -p 0.01 "
+                    output = []
+                    output.append(os.path.join(output_dir,
+                                          sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                              mark_type] + "Peak"))
+                    output.append(os.path.join(output_dir,
+                                 sample.name + "." + mark_name + "_peaks.xls"))
+                    # other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
+                    other_options = "--nomodel --call-summits"
+                    other_options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param(
+                        'macs2_callpeak', 'shift') else " --shift -75 "
+                    other_options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param(
+                        'macs2_callpeak', 'extsize') else " --extsize 150 "
+                    other_options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param(
+                        'macs2_callpeak', 'pvalue') else " -p 0.01 "
 
-                        jobs.append(
-                            concat_jobs([
-                                bash.mkdir(output_dir),
-                                macs2.callpeak(
-                                    options,
-                                    genome_size,
-                                    mark_file,
-                                    input_file,
-                                    output_prefix_name,
-                                    output,
-                                    other_options
-                                )
-                            ],
-                                name="macs2_callpeak." + sample.name + "." + mark_name,
-                                removable_files=[output_dir]
+                    jobs.append(
+                        concat_jobs([
+                            bash.mkdir(output_dir),
+                            macs2.callpeak(
+                                options,
+                                genome_size,
+                                mark_file,
+                                input_file,
+                                output_prefix_name,
+                                output,
+                                other_options
                             )
+                        ],
+                            name="macs2_callpeak." + sample.name + "." + mark_name,
+                            removable_files=[output_dir]
                         )
+                    )
 
-                        ## For ihec: exchange peak score by log10 q-value and generate bigBed
-                        jobs.append(
-                            concat_jobs([
-                                Job([os.path.join(output_dir,
-                                                  sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
-                                                      mark_type] + "Peak")],
-                                    [os.path.join(output_dir,
-                                                  sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
-                                                      mark_type] + "Peak.bed")],
-                                    command="""\
-    awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
-                                        peak_file=os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." +
-                                                               self.mark_type_conversion[mark_type] + "Peak"),
-                                        peak_bed_file=os.path.join(output_dir,
-                                                                   sample.name + "." + mark_name + "_peaks." +
-                                                                   self.mark_type_conversion[mark_type] + "Peak.bed")
-                                    )
-                                    ),
-                                ucsc.bedToBigBed(
-                                    os.path.join(output_dir,
-                                                 sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
-                                                     mark_type] + "Peak.bed"),
-                                    os.path.join(output_dir,
-                                                 sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
-                                                     mark_type] + "Peak.bb")
+                    ## For ihec: exchange peak score by log10 q-value and generate bigBed
+                    jobs.append(
+                        concat_jobs([
+                            Job([os.path.join(output_dir,
+                                              sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                  mark_type] + "Peak")],
+                                [os.path.join(output_dir,
+                                              sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                  mark_type] + "Peak.bed")],
+                                command="""\
+awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
+                                    peak_file=os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." +
+                                                           self.mark_type_conversion[mark_type] + "Peak"),
+                                    peak_bed_file=os.path.join(output_dir,
+                                                               sample.name + "." + mark_name + "_peaks." +
+                                                               self.mark_type_conversion[mark_type] + "Peak.bed")
                                 )
-                            ],
-                                name="macs2_callpeak_bigBed." + sample.name + "." + mark_name
+                                ),
+                            ucsc.bedToBigBed(
+                                os.path.join(output_dir,
+                                             sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                 mark_type] + "Peak.bed"),
+                                os.path.join(output_dir,
+                                             sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                 mark_type] + "Peak.bb")
                             )
+                        ],
+                            name="macs2_callpeak_bigBed." + sample.name + "." + mark_name
                         )
-                    # Else if mark type is Input
-                    else:
-                        log.warning("Mark " + mark_name + " for Sample " + sample.name + " is an Input ... skipping")
-                samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
+                    )
+                # Else if mark type is Input
+                else:
+                    log.warning("Mark " + mark_name + " for Sample " + sample.name + " is an Input ... skipping")
+            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
 
-            report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
-            jobs.append(
-                Job(
-                    [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                  sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
-                                      mark_type] + "Peak") for sample in self.samples for mark_name, mark_type in
-                     sample.marks.items() if mark_type != "I"],
-                    [report_file],
-                    command="""\
-    mkdir -p {report_dir} && \\
-    cp {report_template_dir}/{basename_report_file} {report_dir}/ && \\
-    declare -A samples_associative_array=({samples_associative_array}) && \\
-    for sample in ${{!samples_associative_array[@]}}
-    do
-      for mark_name in ${{samples_associative_array[$sample]}}
-      do
-        cp -a --parents {macs_dir}/$sample/$mark_name/ {report_dir}/ && \\
-        echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}_peaks.xls)" >> {report_file}
-      done
-    done""".format(
-                        samples_associative_array=" ".join(samples_associative_array),
-                        report_template_dir=self.report_template_dir,
-                        basename_report_file=os.path.basename(report_file),
-                        report_file=report_file,
-                        macs_dir=self.output_dirs['macs_output_directory'],
-                        report_dir=self.output_dirs['report_output_directory']
-                    ),
-                    report_files=[report_file],
-                    name="macs2_callpeak_report"  # ".".join([sample.name for sample in self.samples])
-                )
+        report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.macs2_callpeak.md")
+        jobs.append(
+            Job(
+                [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
+                              sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                  mark_type] + "Peak") for sample in self.samples for mark_name, mark_type in
+                 sample.marks.items() if mark_type != "I"],
+                [report_file],
+                command="""\
+mkdir -p {report_dir} && \\
+cp {report_template_dir}/{basename_report_file} {report_dir}/ && \\
+declare -A samples_associative_array=({samples_associative_array}) && \\
+for sample in ${{!samples_associative_array[@]}}
+do
+  for mark_name in ${{samples_associative_array[$sample]}}
+  do
+    cp -a --parents {macs_dir}/$sample/$mark_name/ {report_dir}/ && \\
+    echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}_peaks.xls)" >> {report_file}
+  done
+done""".format(
+                    samples_associative_array=" ".join(samples_associative_array),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_file=report_file,
+                    macs_dir=self.output_dirs['macs_output_directory'],
+                    report_dir=self.output_dirs['report_output_directory']
+                ),
+                report_files=[report_file],
+                name="macs2_callpeak_report"  # ".".join([sample.name for sample in self.samples])
             )
-            return jobs
+        )
+        return jobs
 
     def differential_binding(self):
         """
