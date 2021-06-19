@@ -129,8 +129,10 @@ def parse_chipseq_design_file(design_file, samples):
         for contrast in contrasts:
             sample_contrast_type = line[contrast.name]
             # Empty or '0' types are ignored
-            if not sample_contrast_type or sample_contrast_type == "0":
-                pass
+            # if not sample_contrast_type or sample_contrast_type == "0":
+            #      pass
+            if sample_contrast_type == "0":
+                  pass
             elif sample_contrast_type == "1":
                 contrast.controls.append(sample)
             elif sample_contrast_type == "2":
