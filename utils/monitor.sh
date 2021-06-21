@@ -1,10 +1,12 @@
-
+#!/bin/bash
 # Functions
 
 SLEEP_TIME=120
 MAX_QUEUE=500
 SHEDULER_USER=$USER
 SCHEDULER=slurm
+type squeue > /dev/null 2>&1 || SCHEDULER=pbs
+
 
 usage (){
 

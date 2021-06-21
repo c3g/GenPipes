@@ -268,7 +268,7 @@ module unload {module_python} {command_separator}""".format(
 class PBSScheduler(Scheduler):
 
     def __init__(self, *args, **kwargs):
-        super(PBSScheduler, self).__init__(**kwargs)
+        super(PBSScheduler, self).__init__(*args, **kwargs)
         self.name = 'PBS/TORQUE'
 
     def submit(self, pipeline):
@@ -370,7 +370,7 @@ exit \$MUGQIC_STATE" | \\
 class BatchScheduler(Scheduler):
 
     def __init__(self, *args, **kwargs):
-        super(BatchScheduler, self).__init__(**kwargs)
+        super(BatchScheduler, self).__init__(*args, **kwargs)
         self.name = 'Batch'
 
     def submit(self, pipeline):
@@ -526,7 +526,7 @@ exit \$MUGQIC_STATE" | \\
 class DaemonScheduler(Scheduler):
 
     def __init__(self, *args, **kwargs):
-        super(DaemonScheduler, self).__init__(**kwargs)
+        super(DaemonScheduler, self).__init__(*args, **kwargs)
         self.name = 'DAEMON'
 
     def submit(self, pipeline):
