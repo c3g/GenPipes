@@ -153,8 +153,7 @@ class Scheduler(object):
 
     def print_header(self, pipeline,shebang='/bin/bash'):
 
-        self.genpipes_file.write("""\
-#!{shebang}
+        self.genpipes_file.write("""#!{shebang}
 # Exit immediately on error
 {scheduler.disable_modulercfile}
 set -eu -o pipefail
@@ -165,7 +164,8 @@ set -eu -o pipefail
 # Created on: {pipeline.timestamp}
 # Steps:
 {steps}
-{separator_line}"""
+{separator_line}
+"""
             .format(
                 shebang=shebang,
                 separator_line=separator_line,
@@ -177,8 +177,7 @@ set -eu -o pipefail
         )
 
         if pipeline.jobs:
-            self.genpipes_file.write(
-"""
+            self.genpipes_file.write("""
 OUTPUT_DIR={pipeline.output_dir}
 JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
 TIMESTAMP=`date +%FT%H.%M.%S`
@@ -201,12 +200,10 @@ cd $OUTPUT_DIR
                         json_files.append(os.path.join(pipeline.output_dir, "json", sample.json_file))
             json_files = list(set(json_files))
             for j_file in json_files:
-                self.genpipes_file.write(
-"""sed -i "s/\\"submission_date\\": \\"\\",/\\"submission_date\\": \\"$TIMESTAMP\\",/" {file}"""
-                    .format(
-                        file=j_file
-                    )
-                )
+                self.genpipes_file\
+                    .write("""
+                    sed -i "s/\\"submission_date\\": \\"\\",/\\"submission_date\\": \\"$TIMESTAMP\\",/" {file}
+""".format(file=j_file))
 
         ## Print a copy of sample JSONs for the genpipes dashboard
         if pipeline.json and pipeline.portal_output_dir != "":
@@ -254,7 +251,8 @@ module load {module_python}
   -l \\"$JOB_OUTPUT\\" \\
   -o \\"{jsonfiles}\\" \\
   -f {status}
-module unload {module_python} {command_separator}""".format(
+module unload {module_python} {command_separator}
+""".format(
             job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
             module_python=config.param('DEFAULT', 'module_python'),
             module_mugqic_tools=config.param('DEFAULT', 'module_mugqic_tools'),
