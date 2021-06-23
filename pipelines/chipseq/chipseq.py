@@ -391,9 +391,10 @@ pandoc \\
                     report_file=report_file
                 ),
                 report_files=[report_file]
+                )
+            ],
+            name="merge_trimmomatic_stats."
             )
-        ],
-            name="merge_trimmomatic_stats." + str(time.time()))
         ]
         # TODO: replace ".".join([sample.name for sample in self.samples])) by timestamp to avoid too long naming issue
 
@@ -794,9 +795,8 @@ cp \\
                     report_dir=self.output_dirs['report_output_directory']
                 ),
                 report_files=[report_file],
-                name="sambamba_mark_duplicates_report." + str(time.time())
-                # ".".join([sample.name for sample in self.samples])
-            )
+                name="sambamba_mark_duplicates_report"#".".join([sample.name for sample in self.samples])
+                )
         )
 
         return jobs
@@ -865,9 +865,8 @@ pandoc --to=markdown \\
                     report_dir=self.output_dirs['report_output_directory']
                 ),
                 report_files=[report_file],
-                name="sambamba_view_filter_report." + str(time.time())
-                # ".".join([sample.name for sample in self.samples])
-            )
+                name="sambamba_view_filter_report"#".".join([sample.name for sample in self.samples])
+                )
         )
 
         return jobs
@@ -989,7 +988,8 @@ pandoc --to=markdown \\
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name,
                                                    mark_name)
                 raw_bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.bam")
-                bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                bam_file = os.path.join(alignment_directory,
+                                        sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
 
                 # candidate_input_files = [[file_prefix + "bam"]]
                 # if bam[sample]:
@@ -1115,7 +1115,7 @@ pandoc --to=markdown \\
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
                 ),
-                name="metrics_report." + str(time.time()),  # ".".join([sample.name for sample in self.samples]),
+                name="metrics_report",  # ".".join([sample.name for sample in self.samples]),
                 samples=self.samples,
                 removable_files=[report_metrics_file],
                 report_files=[report_file]
@@ -1164,15 +1164,16 @@ pandoc --to=markdown \\
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.qc_metrics.md")
         output_files = [os.path.join(self.output_dirs['graphs_output_directory'],
-                                     sample.name + "." + mark_name + "_QC_Metrics.ps") for sample in self.samples for
-                        mark_name in sample.marks] + [report_file]
+                                     sample.name + "." + mark_name + "_QC_Metrics.ps") for sample in self.samples
+                        for mark_name in sample.marks] + [report_file]
 
         jobs = []
 
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name,
-                              "tagInfo.txt") for sample in self.samples for mark_name in sample.marks],
+                [os.path.join(self.output_dirs['homer_output_directory'], sample.name,
+                              sample.name + "." + mark_name, "tagInfo.txt") for sample in self.samples for mark_name
+                 in sample.marks],
                 output_files,
                 [
                     ['qc_plots_R', 'module_mugqic_tools'],
@@ -1207,7 +1208,7 @@ done""".format(
                     report_dir=self.output_dirs['report_output_directory'],
                     graphs_dir=self.output_dirs['graphs_output_directory']
                 ),
-                name="qc_plots_R." + str(time.time()),  # ".".join([sample.name for sample in self.samples]),
+                name="qc_plots_R",  # ".".join([sample.name for sample in self.samples]),
                 samples=self.samples,
                 removable_files=output_files,
                 report_files=[report_file]
@@ -1275,8 +1276,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                     report_dir=self.output_dirs['report_output_directory']
                 ),
                 report_files=[report_file],
-                name="homer_make_ucsc_file_report." + str(time.time())
-                # ".".join([sample.name for sample in self.samples])
+                name="homer_make_ucsc_file_report"  # ".".join([sample.name for sample in self.samples])
             )
         )
 
@@ -1293,7 +1293,6 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
         jobs = []
 
         samples_associative_array = []
-        minOverlap = config.param('differential_binding', 'minOverlap')
 
         for sample in self.samples:
             # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
@@ -1311,8 +1310,9 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                 if mark_type != "I":
                     mark_list.append(mark_name)
 
-                    mark_file = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                              sample.name + "." + mark_name + ".sorted.dup.filtered.bam")]
+                    mark_file = [
+                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                     sample.name + "." + mark_name + ".sorted.dup.filtered.bam")]
                     # control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.filtered.bam") for sample in contrast.controls]
                     output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
 
@@ -1320,7 +1320,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
 
                     options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
                     genome_size = self.mappable_genome_size()
-                    output_prefix_name = os.path.join(output_dir, mark_name)
+                    output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
 
                     if mark_type == "B":  # Broad region
                         other_options = "--broad --nomodel"
@@ -1334,11 +1334,20 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                         'macs2_callpeak', 'shift') else ""
                     other_options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param(
                         'macs2_callpeak', 'extsize') else ""
-                    other_options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param('macs2_callpeak',
-                                                                                                       'pvalue') else ""
+                    other_options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param(
+                        'macs2_callpeak', 'pvalue') else ""
+                    output = []
+                    output.append(os.path.join(output_dir,
+                                          sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                              mark_type] + "Peak"))
+                    output.append(os.path.join(output_dir,
+                                 sample.name + "." + mark_name + "_peaks.xls"))
 
-                    output = os.path.join(output_dir,
-                                          mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
+
+                    # output = os.path.join(output_dir,
+                    #                        sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                    #                            mark_type] + "Peak")
+
 
                     jobs.append(
                         concat_jobs([
@@ -1362,24 +1371,27 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                     jobs.append(
                         concat_jobs([
                             Job([os.path.join(output_dir,
-                                              mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")],
-                                [os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[
-                                    mark_type] + "Peak.bed")],
+                                              sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                  mark_type] + "Peak")],
+                                [os.path.join(output_dir,
+                                              sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                  mark_type] + "Peak.bed")],
                                 command="""\
 awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
-                                    peak_file=os.path.join(output_dir,
-                                                           mark_name + "_peaks." + self.mark_type_conversion[
-                                                               mark_type] + "Peak"),
+                                    peak_file=os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." +
+                                                           self.mark_type_conversion[mark_type] + "Peak"),
                                     peak_bed_file=os.path.join(output_dir,
-                                                               mark_name + "_peaks." + self.mark_type_conversion[
-                                                                   mark_type] + "Peak.bed")
+                                                               sample.name + "." + mark_name + "_peaks." +
+                                                               self.mark_type_conversion[mark_type] + "Peak.bed")
                                 )
                                 ),
                             ucsc.bedToBigBed(
                                 os.path.join(output_dir,
-                                             mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed"),
+                                             sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                 mark_type] + "Peak.bed"),
                                 os.path.join(output_dir,
-                                             mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bb")
+                                             sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                 mark_type] + "Peak.bb")
                             )
                         ],
                             name="macs2_callpeak_bigBed." + sample.name + "." + mark_name
@@ -1394,8 +1406,9 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
         jobs.append(
             Job(
                 [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                              mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for sample in
-                 self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
+                              sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                  mark_type] + "Peak") for sample in self.samples for mark_name, mark_type in
+                 sample.marks.items() if mark_type != "I"],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -1406,7 +1419,7 @@ do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
     cp -a --parents {macs_dir}/$sample/$mark_name/ {report_dir}/ && \\
-    echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{mark_name}}_peaks.xls)" >> {report_file}
+    echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}_peaks.xls)" >> {report_file}
   done
 done""".format(
                     samples_associative_array=" ".join(samples_associative_array),
@@ -1417,7 +1430,7 @@ done""".format(
                     report_dir=self.output_dirs['report_output_directory']
                 ),
                 report_files=[report_file],
-                name="macs2_callpeak_report." + str(time.time())  # ".".join([sample.name for sample in self.samples])
+                name="macs2_callpeak_report"  # ".".join([sample.name for sample in self.samples])
             )
         )
 
@@ -1430,6 +1443,7 @@ done""".format(
         The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
         The default mfold parameter of MACS2 is [10,30].
         """
+
         jobs = []
 
         samples_associative_array = []
@@ -1450,8 +1464,9 @@ done""".format(
                 if mark_type != "I":
                     mark_list.append(mark_name)
 
-                    mark_file = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                              sample.name + "." + mark_name + ".sorted.dup.filtered.bam")]
+                    mark_file = [
+                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                     sample.name + "." + mark_name + ".sorted.dup.filtered.bam")]
                     # control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.filtered.bam") for sample in contrast.controls]
                     output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
 
@@ -1459,17 +1474,25 @@ done""".format(
 
                     options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
                     genome_size = self.mappable_genome_size()
-                    output_prefix_name = os.path.join(output_dir, mark_name)
-                    output = os.path.join(output_dir,
-                                          mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
+                    output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
+                    # output = os.path.join(output_dir,
+                    #                       sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                    #                           mark_type] + "Peak")
+
+                    output = []
+                    output.append(os.path.join(output_dir,
+                                          sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                              mark_type] + "Peak"))
+                    output.append(os.path.join(output_dir,
+                                 sample.name + "." + mark_name + "_peaks.xls"))
                     # other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
                     other_options = "--nomodel --call-summits"
                     other_options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param(
                         'macs2_callpeak', 'shift') else " --shift -75 "
                     other_options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param(
                         'macs2_callpeak', 'extsize') else " --extsize 150 "
-                    other_options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param('macs2_callpeak',
-                                                                                                       'pvalue') else " -p 0.01 "
+                    other_options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param(
+                        'macs2_callpeak', 'pvalue') else " -p 0.01 "
 
                     jobs.append(
                         concat_jobs([
@@ -1493,24 +1516,27 @@ done""".format(
                     jobs.append(
                         concat_jobs([
                             Job([os.path.join(output_dir,
-                                              mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")],
-                                [os.path.join(output_dir, mark_name + "_peaks." + self.mark_type_conversion[
-                                    mark_type] + "Peak.bed")],
+                                              sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                  mark_type] + "Peak")],
+                                [os.path.join(output_dir,
+                                              sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                  mark_type] + "Peak.bed")],
                                 command="""\
 awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1,$2,$3,$4,$9)}}' {peak_file} > {peak_bed_file}""".format(
-                                    peak_file=os.path.join(output_dir,
-                                                           mark_name + "_peaks." + self.mark_type_conversion[
-                                                               mark_type] + "Peak"),
+                                    peak_file=os.path.join(output_dir, sample.name + "." + mark_name + "_peaks." +
+                                                           self.mark_type_conversion[mark_type] + "Peak"),
                                     peak_bed_file=os.path.join(output_dir,
-                                                               mark_name + "_peaks." + self.mark_type_conversion[
-                                                                   mark_type] + "Peak.bed")
+                                                               sample.name + "." + mark_name + "_peaks." +
+                                                               self.mark_type_conversion[mark_type] + "Peak.bed")
                                 )
                                 ),
                             ucsc.bedToBigBed(
                                 os.path.join(output_dir,
-                                             mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed"),
+                                             sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                 mark_type] + "Peak.bed"),
                                 os.path.join(output_dir,
-                                             mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bb")
+                                             sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                 mark_type] + "Peak.bb")
                             )
                         ],
                             name="macs2_callpeak_bigBed." + sample.name + "." + mark_name
@@ -1525,8 +1551,9 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
         jobs.append(
             Job(
                 [os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                              mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for sample in
-                 self.samples for mark_name, mark_type in sample.marks.items() if mark_type != "I"],
+                              sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                  mark_type] + "Peak") for sample in self.samples for mark_name, mark_type in
+                 sample.marks.items() if mark_type != "I"],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -1537,7 +1564,7 @@ do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
     cp -a --parents {macs_dir}/$sample/$mark_name/ {report_dir}/ && \\
-    echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{mark_name}}_peaks.xls)" >> {report_file}
+    echo -e "* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}_peaks.xls)" >> {report_file}
   done
 done""".format(
                     samples_associative_array=" ".join(samples_associative_array),
@@ -1548,7 +1575,7 @@ done""".format(
                     report_dir=self.output_dirs['report_output_directory']
                 ),
                 report_files=[report_file],
-                name="macs2_callpeak_report." + str(time.time())  # ".".join([sample.name for sample in self.samples])
+                name="macs2_callpeak_report"  # ".".join([sample.name for sample in self.samples])
             )
         )
         return jobs
@@ -1559,270 +1586,195 @@ done""".format(
         Merge the results of the analysis in a single csv file.
         """
         jobs = []
+        minOverlap = config.param('differential_binding', 'minOverlap')
+        minMembers = config.param('differential_binding', 'minMembers')
+        # print("meka"+self.args.output_dir)
+        # if hasattr(self, "output_dir"):
+        #     print("hi")
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
-        #output_directory = "differential_binding"
         readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
         if self.contrasts:
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
-        # design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
-        # designfile = pd.read_csv(design_file, sep="\t")
-        # del designfile['Sample']
-        # del designfile['MarkName']
+        else:
+            log.info("Comparison column is not defined. Skipping differential binding analysis...")
         mark_list = []
 
-        for contrast in self.contrasts:
-          #  log.info(contrast.name)
-          #  log.info(contrast.controls)
-            bam_list = []
-            for control in contrast.controls:
-                control_sample_name, control_mark_name = control.split("-.-")
+        #if control samples and treatment samples are less than one diff analysis will not be executed
+        controls_count = [len(contrast.controls) for contrast in self.contrasts]
+        treatments_count = [len(contrast.treatments) for contrast in self.contrasts]
 
-                for sample in self.samples:
-                    input_file = []
+        if controls_count[0] < 1 or treatments_count[0] < 1:
+            log.info("At leaset one treatment and one control should be defined. Skipping differential analysis...")
+        else:
+            for contrast in self.contrasts:
+                bam_list = []
+                for control in contrast.controls:
+                    control_sample_name, control_mark_name = control.split("-.-")
 
-                    input_file_list = [
-                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                     sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items() if
-                        mark_type == "I" and sample.name == control_sample_name]
-                    bam_list.append(input_file_list)
+                    for sample in self.samples:
+                        input_file_list = [
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items() if
+                            mark_type == "I" and sample.name == control_sample_name]
+                        bam_list.append(input_file_list)
 
-                    input_file_list = [
-                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                     sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                        mark_name, mark_type in sample.marks.items() if
-                        mark_type != "I" and sample.name == control_sample_name and mark_name ==
-                        control_mark_name]
-                    bam_list.append(input_file_list)
+                        input_file_list = [
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
+                            mark_name, mark_type in sample.marks.items() if
+                            mark_type != "I" and sample.name == control_sample_name and mark_name ==
+                            control_mark_name]
+                        bam_list.append(input_file_list)
 
-                    input_file_list = [
-                       # os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                        #             mark_name + "_peaks.xls") for
-                        os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                     mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for
-                        mark_name, mark_type in sample.marks.items() if
-                        mark_type != "I" and sample.name == control_sample_name and mark_name ==
-                        control_mark_name]
+                        input_file_list = [
+                            os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
+                                        sample.name + "." + mark_name + "_peaks.xls") for
+                            # os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." +
+                            #                          self.mark_type_conversion[mark_type] + "Peak") for
+                            mark_name, mark_type in sample.marks.items() if
+                            mark_type != "I" and sample.name == control_sample_name and mark_name ==
+                            control_mark_name]
 
-                    bam_list.append(input_file_list)
+                        bam_list.append(input_file_list)
 
-            for control in contrast.treatments:
-                control_sample_name, control_mark_name = control.split("-.-")
-                for sample in self.samples:
-                    input_file_list = [
-                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                     sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                        mark_name, mark_type in sample.marks.items() if
-                        mark_type == "I" and sample.name == control_sample_name]
-                    bam_list.append(input_file_list)
+                for control in contrast.treatments:
+                    control_sample_name, control_mark_name = control.split("-.-")
+                    for sample in self.samples:
+                        input_file_list = [
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
+                            mark_name, mark_type in sample.marks.items() if
+                            mark_type == "I" and sample.name == control_sample_name]
+                        bam_list.append(input_file_list)
 
-                    input_file_list = [
-                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                     sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                        mark_name, mark_type in sample.marks.items() if
-                        mark_type != "I" and sample.name == control_sample_name and mark_name ==
-                        control_mark_name]
-                    bam_list.append(input_file_list)
+                        input_file_list = [
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
+                            mark_name, mark_type in sample.marks.items() if
+                            mark_type != "I" and sample.name == control_sample_name and mark_name ==
+                            control_mark_name]
+                        bam_list.append(input_file_list)
 
-                    input_file_list = [
-                        #os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                      #mark_name + "_peaks.xls") for
-                        os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                     mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak") for
-                        mark_name, mark_type in sample.marks.items() if
-                        mark_type != "I" and sample.name == control_sample_name and mark_name ==
-                        control_mark_name]
+                        input_file_list = [
+                            os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
+                                        sample.name + "." + mark_name + "_peaks.xls") for
+                            #os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." +
+                            #                         self.mark_type_conversion[mark_type] + "Peak") for
+                            mark_name, mark_type in sample.marks.items() if
+                            mark_type != "I" and sample.name == control_sample_name and mark_name ==
+                            control_mark_name]
 
-                    bam_list.append(input_file_list)
-            bam_list = filter(None, bam_list)
-            bam_list = [item for sublist in bam_list for item in sublist]
-            diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file,
-                                                         self.output_dirs['dba_output_directory'],
-                                                         self.output_dirs['alignment_output_directory'],
-                                                         self.output_dirs['macs_output_directory'])
-            diffbind_job.samples = self.samples
-            diffbind_job.name = "_".join(("differential_binding.diff_bind.contrat", contrast.name))
-            jobs.append(diffbind_job)
+                        bam_list.append(input_file_list)
+                bam_list = filter(None, bam_list)
+                bam_list = [item for sublist in bam_list for item in sublist]
+                diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file,
+                                                             self.output_dirs['dba_output_directory'],
+                                                             self.output_dirs['alignment_output_directory'],
+                                                             self.output_dirs['macs_output_directory'], minOverlap,
+                                                             minMembers)
+                diffbind_job.samples = self.samples
+                diffbind_job.name = "_".join(("differential_binding.diff_bind.contrat", contrast.name))
+                jobs.append(diffbind_job)
 
         return jobs
 
     def homer_annotate_peaks(self):
-        """
-        The peaks called previously are annotated with HOMER using RefSeq annotations for the reference genome.
-        Gene ontology and genome ontology analysis are also performed at this stage.
-        """
+            """
+            The peaks called previously are annotated with HOMER using RefSeq annotations for the reference genome.
+            Gene ontology and genome ontology analysis are also performed at this stage.
+            """
 
-        jobs = []
+            jobs = []
 
-        samples_associative_array = []
+            samples_associative_array = []
 
-        for sample in self.samples:
-            # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
-            mark_list = []
-            for mark_name, mark_type in sample.marks.items():
-                if mark_type != "I":
-                    mark_list.append(mark_name)
+            for sample in self.samples:
+                # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
+                mark_list = []
+                for mark_name, mark_type in sample.marks.items():
+                    if mark_type != "I":
+                        mark_list.append(mark_name)
 
-                    peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                             mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
-                    output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
-                    output_prefix = os.path.join(output_dir, sample.name + "." + mark_name)
-                    annotation_file = output_prefix + ".annotated.csv"
+                        peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
+                                                 sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                     mark_type] + "Peak")
+                        output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
+                        output_prefix = os.path.join(output_dir, sample.name + "." + mark_name)
+                        annotation_file = output_prefix + ".annotated.csv"
 
-                    jobs.append(
-                        concat_jobs([
-                            bash.mkdir(output_dir),
-                            homer.annotatePeaks(
-                                peak_file,
-                                self.ucsc_genome,
-                                output_dir,
-                                annotation_file
-                            ),
-                            Job(
-                                [annotation_file],
-                                [
-                                    output_prefix + ".tss.stats.csv",
-                                    output_prefix + ".exon.stats.csv",
-                                    output_prefix + ".intron.stats.csv",
-                                    output_prefix + ".tss.distance.csv"
-                                ],
-                                [['homer_annotate_peaks', 'module_perl'],
-                                 ['homer_annotate_peaks', 'module_mugqic_tools']],
-                                command="""\
-perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
-  "{annotation_file}",
-  "{output_prefix}",
-  {proximal_distance},
-  {distal_distance},
-  {distance5d_lower},
-  {distance5d_upper},
-  {gene_desert_size}
-)'""".format(
-                                    annotation_file=annotation_file,
-                                    output_prefix=output_prefix,
-                                    proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance',
-                                                                   type='int'),
-                                    distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int'),
-                                    distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower',
-                                                                  type='int'),
-                                    distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper',
-                                                                  type='int'),
-                                    gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size',
-                                                                  type='int')
+                        jobs.append(
+                            concat_jobs([
+                                bash.mkdir(output_dir),
+                                homer.annotatePeaks(
+                                    peak_file,
+                                    self.ucsc_genome,
+                                    output_dir,
+                                    annotation_file
                                 ),
-                                removable_files=[
-                                    os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)],
-                            )
-                        ],
-                            name="homer_annotate_peaks." + sample.name + "." + mark_name)
-                    )
-
-                else:
-                    log.warning("Mark " + mark_name + " for Sample " + sample.name + " is an Input ... skipping")
-            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
-
-        report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_annotate_peaks.md")
-        jobs.append(
-            Job(
-                [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name,
-                              sample.name + "." + mark_name + ".annotated.csv") for sample in self.samples for
-                 mark_name, mark_type in sample.marks.items() if mark_type != "I"],
-                [report_file],
-                command="""\
-mkdir -p {report_dir}/annotation/ && \\
-cp {report_template_dir}/{basename_report_file} {report_dir} && \\
-declare -A samples_associative_array=({samples_associative_array}) && \\
-for sample in ${{!samples_associative_array[@]}}
-do
-  for mark_name in ${{samples_associative_array[$sample]}}
-  do
-    rsync -rvP annotation/$sample {report_dir}/annotation/ && \\
-    echo -e "* [Gene Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/${{sample}}.${{mark_name}}.annotated.csv)\\n* [HOMER Gene Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/geneOntology.html)\\n* [HOMER Genome Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/GenomeOntology.html)" >> {report_file}
-  done
-done""".format(
-                    samples_associative_array=" ".join(samples_associative_array),
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file,
-                    report_dir=self.output_dirs['report_output_directory']
-                ),
-                report_files=[report_file],
-                name="homer_annotate_peaks_report." + str(time.time())
-                # ".".join([sample.name for sample in self.samples])
-            )
-        )
-
-        return jobs
-
-    def homer_find_motifs_genome(self):
-        """
-        De novo and known motif analysis per design are performed using HOMER.
-        """
-
-        jobs = []
-
-        counter = 0
-
-        samples_associative_array = []
-
-        for sample in self.samples:
-            mark_list = []
-            # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
-            for mark_name, mark_type in sample.marks.items():
-                # Don't find motifs for broad peaks
-                if mark_type == "N":
-                    mark_list.append(mark_name)
-
-                    peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                             mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak")
-                    output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
-
-                    jobs.append(
-                        concat_jobs([
-                            bash.mkdir(output_dir),
-                            homer.findMotifsGenome(
-                                peak_file,
-                                self.ucsc_genome,
-                                output_dir,
-                                config.param('homer_find_motifs_genome', 'threads', type='posint')
-                            )
-                        ],
-                            name="homer_find_motifs_genome." + sample.name + "." + mark_name,
-                            removable_files=[
-                                os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)]
+                                Job(
+                                    [annotation_file],
+                                    [
+                                        output_prefix + ".tss.stats.csv",
+                                        output_prefix + ".exon.stats.csv",
+                                        output_prefix + ".intron.stats.csv",
+                                        output_prefix + ".tss.distance.csv"
+                                    ],
+                                    [['homer_annotate_peaks', 'module_perl'],
+                                     ['homer_annotate_peaks', 'module_mugqic_tools']],
+                                    command="""\
+    perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
+      "{annotation_file}",
+      "{output_prefix}",
+      {proximal_distance},
+      {distal_distance},
+      {distance5d_lower},
+      {distance5d_upper},
+      {gene_desert_size}
+    )'""".format(
+                                        annotation_file=annotation_file,
+                                        output_prefix=output_prefix,
+                                        proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance',
+                                                                       type='int'),
+                                        distal_distance=config.param('homer_annotate_peaks', 'distal_distance',
+                                                                     type='int'),
+                                        distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower',
+                                                                      type='int'),
+                                        distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper',
+                                                                      type='int'),
+                                        gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size',
+                                                                      type='int')
+                                    ),
+                                    removable_files=[
+                                        os.path.join(self.output_dirs['anno_output_directory'], sample.name,
+                                                     mark_name)],
+                                )
+                            ],
+                                name="homer_annotate_peaks." + sample.name + "." + mark_name)
                         )
-                    )
-                    counter = counter + 1
-                else:
-                    # log.warning("No treatment found for contrast " + contrast.name + "... skipping")
-                    # log.warning("Contrast " + contrast.name + " is broad; homer_find_motifs_genome is run on narrow peaks ... skipping")
-                    log.warning(
-                        "Mark " + mark_name + " for Sample " + sample.name + " is not Narrow; homer_find_motifs_genome is run on narrow peaks ... skipping")
-            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
 
-        if counter > 0:
-            report_file = os.path.join(self.output_dirs['report_output_directory'],
-                                       "ChipSeq.homer_find_motifs_genome.md")
+                    else:
+                        log.warning("Mark " + mark_name + " for Sample " + sample.name + " is an Input ... skipping")
+                samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
+
+            report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_annotate_peaks.md")
             jobs.append(
                 Job(
                     [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name,
-                                  "homerResults.html") for sample in self.samples for mark_name, mark_type in
-                     sample.marks.items() if mark_type == "N"] +
-                    [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name,
-                                  "knownResults.html") for sample in self.samples for mark_name, mark_type in
-                     sample.marks.items() if mark_type == "N"],
+                                  sample.name + "." + mark_name + ".annotated.csv") for sample in self.samples for
+                     mark_name, mark_type in sample.marks.items() if mark_type != "I"],
                     [report_file],
                     command="""\
-mkdir -p {report_dir}/annotation/ && \\
-cp {report_template_dir}/{basename_report_file} {report_dir}/ && \\
-declare -A samples_associative_array=({samples_associative_array}) && \\
-for sample in ${{!samples_associative_array[@]}}
-do
-  for mark_name in ${{samples_associative_array[$sample]}}
-  do
-    rsync -rvP annotation/$sample {report_dir}/annotation/ && \\
-    echo -e "* [HOMER _De Novo_ Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/homerResults.html)\\n* [HOMER Known Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/knownResults.html)" >> {report_file}
-  done
-done""".format(
+    mkdir -p {report_dir}/annotation/ && \\
+    cp {report_template_dir}/{basename_report_file} {report_dir} && \\
+    declare -A samples_associative_array=({samples_associative_array}) && \\
+    for sample in ${{!samples_associative_array[@]}}
+    do
+      for mark_name in ${{samples_associative_array[$sample]}}
+      do
+        rsync -rvP annotation/$sample {report_dir}/annotation/ && \\
+        echo -e "* [Gene Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/${{sample}}.${{mark_name}}.annotated.csv)\\n* [HOMER Gene Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/geneOntology.html)\\n* [HOMER Genome Ontology Annotations for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/GenomeOntology.html)" >> {report_file}
+      done
+    done""".format(
                         samples_associative_array=" ".join(samples_associative_array),
                         report_template_dir=self.report_template_dir,
                         basename_report_file=os.path.basename(report_file),
@@ -1830,487 +1782,571 @@ done""".format(
                         report_dir=self.output_dirs['report_output_directory']
                     ),
                     report_files=[report_file],
-                    name="homer_find_motifs_genome_report." + str(time.time())
-                    # ".".join([sample.name for sample in self.samples])
+                    name="homer_annotate_peaks_report"  # ".".join([sample.name for sample in self.samples])
                 )
             )
 
-        return jobs
+            return jobs
 
-    def annotation_graphs(self):
-        """
-        The peak location statistics. The following peak location statistics are generated per design:
-        proportions of the genomic locations of the peaks. The locations are: Gene (exon or intron),
-        Proximal ([0;2] kb upstream of a transcription start site), Distal ([2;10] kb upstream
-        of a transcription start site), 5d ([10;100] kb upstream of a transcription start site),
-        Gene desert (>= 100 kb upstream or downstream of a transcription start site), Other (anything
-        not included in the above categories); The distribution of peaks found within exons and introns;
-        The distribution of peak distance relative to the transcription start sites (TSS);
-        the Location of peaks per design.
-        """
+    def homer_find_motifs_genome(self):
+            """
+            De novo and known motif analysis per design are performed using HOMER.
+            """
 
-        # If --design <design_file> option is missing, self.contrasts call will raise an Exception
-        # if self.contrasts:
-        #     design_file = os.path.relpath(self.args.design.name, self.output_dir)
+            jobs = []
 
-        readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
+            counter = 0
 
-        input_files = []
-        output_files = []
-        samples_associative_array = []
-        for sample in self.samples:
-            mark_list = []
-            for mark_name, mark_type in sample.marks.items():
-                if mark_type == "N":
-                    annotation_prefix = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name,
-                                                     sample.name + "." + mark_name)
-                    input_files.append(annotation_prefix + ".tss.stats.csv")
-                    input_files.append(annotation_prefix + ".exon.stats.csv")
-                    input_files.append(annotation_prefix + ".intron.stats.csv")
-                    input_files.append(annotation_prefix + ".tss.distance.csv")
-                    mark_list.append(mark_name)
-            samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
+            samples_associative_array = []
 
-            # for contrast in self.contrasts:
-            #     annotation_prefix = os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name)
-            #     input_files.append(annotation_prefix + ".tss.stats.csv")
-            #     input_files.append(annotation_prefix + ".exon.stats.csv")
-            #     input_files.append(annotation_prefix + ".intron.stats.csv")
-            #     input_files.append(annotation_prefix + ".tss.distance.csv")
+            for sample in self.samples:
+                mark_list = []
+                # samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
+                for mark_name, mark_type in sample.marks.items():
+                    # Don't find motifs for broad peaks
+                    if mark_type == "N":
+                        mark_list.append(mark_name)
 
-            # output_files.append(os.path.join(self.output_dirs['graphs_output_directory'], contrast.real_name + "_Misc_Graphs.ps"))
+                        peak_file = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
+                                                 sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                     mark_type] + "Peak")
+                        output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
 
-            peak_stats_file = os.path.join(self.output_dirs['anno_output_directory'], sample.name, "peak_stats.csv")
-            output_files.append(peak_stats_file)
-        report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.annotation_graphs.md")
-        output_files.append(report_file)
-
-        jobs = []
-
-        jobs.append(
-            Job(
-                input_files,
-                output_files,
-                [
-                    ['annotation_graphs', 'module_mugqic_tools'],
-                    ['annotation_graphs', 'module_R'],
-                    ['annotation_graphs', 'module_pandoc']
-                ],
-                command="""\
-cp /dev/null annotation/peak_stats_AllSamples.csv && \\
-mkdir -p {graphs_dir} && \\
-Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
-  {readset_file} \\
-  {output_dir} && \\
-declare -A samples_associative_array=({samples_associative_array}) && \\
-for sample in ${{!samples_associative_array[@]}}
-do
-    header=$(head -n 1 annotation/$sample/peak_stats.csv)
-    tail -n+2 annotation/$sample/peak_stats.csv >> annotation/peak_stats_AllSamples.csv
-done && \\
-sed -i -e "1 i\\\$header" annotation/peak_stats_AllSamples.csv && \\
-mkdir -p {report_dir}/annotation/$sample && \\
-cp annotation/peak_stats_AllSamples.csv {report_dir}/annotation/peak_stats_AllSamples.csv && \\
-peak_stats_table=`LC_NUMERIC=en_CA awk -F "," '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, $2,  sprintf("%\\47d", $3), $4, sprintf("%\\47.1f", $5), sprintf("%\\47.1f", $6), sprintf("%\\47.1f", $7), sprintf("%\\47.1f", $8)}}}}' annotation/peak_stats_AllSamples.csv`
-pandoc --to=markdown \\
-    --template {report_template_dir}/{basename_report_file} \\
-    --variable peak_stats_table="$peak_stats_table" \\
-    --variable proximal_distance="{proximal_distance}" \\
-    --variable distal_distance="{distal_distance}" \\
-    --variable distance5d_lower="{distance5d_lower}" \\
-    --variable distance5d_upper="{distance5d_upper}" \\
-    --variable gene_desert_size="{gene_desert_size}" \\
-    {report_template_dir}/{basename_report_file} \\
-    > {report_file} && \\
-for sample in ${{!samples_associative_array[@]}}
-do
-  cp annotation/$sample/peak_stats.csv {report_dir}/annotation/$sample/peak_stats.csv && \\
-  for mark_name in ${{samples_associative_array[$sample]}}
-  do
-    cp --parents {graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps {report_dir}/
-    convert -rotate 90 {graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps {report_dir}/graphs/${{sample}}.${{mark_name}}_Misc_Graphs.png
-    echo -e "----\\n\\n![Annotation Statistics for Sample $sample and Mark $mark_name ([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps))]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.png)\\n" >> {report_file}
-  done
-done""".format(
-                    readset_file=readset_file,
-                    output_dir=self.output_dir,
-                    # peak_stats_file=peak_stats_file,
-                    # samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
-                    samples_associative_array=" ".join(samples_associative_array),
-                    # contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
-                    proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int') / -1000,
-                    distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int') / -1000,
-                    distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', type='int') / -1000,
-                    distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', type='int') / -1000,
-                    gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', type='int') / 1000,
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file,
-                    report_dir=self.output_dirs['report_output_directory'],
-                    graphs_dir=self.output_dirs['graphs_output_directory'],
-                    merged_peak_stats="peak_stats_AllSamples.csv"
-                ),
-                name="annotation_graphs." + str(time.time()),  # ".".join([sample.name for sample in self.samples]),
-                report_files=[report_file],
-                removable_files=output_files
-            )
-        )
-
-        return jobs
-
-    # def ihec_preprocess_files(self):
-    #     """
-    #     Generate IHEC's files.
-    #     """
-    #     output_dir = self.output_dirs['ihecA_output_directory']
-    #     jobs = []
-
-    #     for sample in self.samples:
-    #         for mark_name in sample.marks:
-    #             pass
-
-    #     for sample in self.samples:
-    #         alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
-    #         # alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name)
-    #         # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
-    #         readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
-    #         sample_merge_bam = os.path.join(output_dir, sample.name + ".merged.bam")
-    #         sample_merge_mdup_bam = os.path.join(output_dir, sample.name + ".merged.mdup.bam")
-    #         # sample_merge_mdup_metrics_file = os.path.join(output_dir, sample.name + ".merged.mdup.metrics")
-
-    #         mkdir_job = bash.mkdir(output_dir)
-
-    #         # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-    #         if len(sample.readsets) == 1:
-    #             readset_bam = readset_bams[0]
-    #             if os.path.isabs(readset_bam):
-    #                 target_readset_bam = readset_bam
-    #             else:
-    #                 target_readset_bam = os.path.relpath(readset_bam, output_dir)
-
-    #             job = concat_jobs([
-    #                 mkdir_job,
-    #                 Job([readset_bam], [sample_merge_bam], command="ln -s -f " + target_readset_bam + " " + sample_merge_bam, removable_files=[sample_merge_bam]),
-    #             ], name="ihec_preprocess_symlink." + sample.name)
-
-    #         elif len(sample.readsets) > 1:
-    #             job = concat_jobs([
-    #                 mkdir_job,
-    #                 picard.merge_sam_files(readset_bams, sample_merge_bam)
-    #             ], name="ihec_preprocess_merge." + sample.name)
-
-    #         jobs.append(job)
-
-    #         jobs.append(
-    #             concat_jobs([
-    #                 Job(
-    #                     command="export TMPDIR={tmp_dir}".format(tmp_dir=config.param('ihec_preprocess_files', 'tmp_dir'))
-    #                     ),
-    #                 sambamba.markdup(
-    #                     sample_merge_bam,
-    #                     sample_merge_mdup_bam,
-    #                     tmp_dir=config.param('sambamba_mark_duplicates', 'tmp_dir', required=True)
-    #                     )
-    #                 # picard.mark_duplicates(
-    #                 #     [sample_merge_bam],
-    #                 #     sample_merge_mdup_bam,
-    #                 #     sample_merge_mdup_metrics_file
-    #                 #     )
-    #                 ],
-    #                 name="ihec_preprocess_mark_duplicates." + sample.name
-    #                 )
-    #             )
-
-    #     return jobs
-
-    def run_spp(self):
-        """
-        runs spp to estimate NSC and RSC ENCODE metrics. For more information: https://github.com/kundajelab/phantompeakqualtools
-        """
-        jobs = []
-        # alignment_dir = self.output_dirs['ihecA_output_directory']
-        # alignment_dir = self.output_dirs['alignment_output_directory']
-
-        for sample in self.samples:
-            for mark_name in sample.marks:
-                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name,
-                                                   mark_name)
-                sample_merge_mdup_bam = os.path.join(alignment_directory,
-                                                     sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
-                output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, mark_name)
-                output = os.path.join(output_dir, sample.name + "." + mark_name + ".crosscor")
-
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(output_dir),
-                        Job(
-                            [sample_merge_mdup_bam],
-                            [output],
-                            [
-                                ['run_spp', 'module_samtools'],
-                                ['run_spp', 'module_mugqic_tools'],
-                                ['run_spp', 'module_R']
+                        jobs.append(
+                            concat_jobs([
+                                bash.mkdir(output_dir),
+                                homer.findMotifsGenome(
+                                    peak_file,
+                                    self.ucsc_genome,
+                                    output_dir,
+                                    config.param('homer_find_motifs_genome', 'threads', type='posint')
+                                )
                             ],
-                            command="""\
-cat /dev/null > {output} && \\
-Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir}""".format(
-                                sample_merge_mdup_bam=sample_merge_mdup_bam,
-                                output=output,
-                                tmp_dir=config.param('run_spp', 'tmp_dir')
+                                name="homer_find_motifs_genome." + sample.name + "." + mark_name,
+                                removable_files=[
+                                    os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)]
                             )
                         )
-                    ],
-                        name="run_spp." + sample.name + "." + mark_name)
+                        counter = counter + 1
+                    else:
+                        # log.warning("No treatment found for contrast " + contrast.name + "... skipping")
+                        # log.warning("Contrast " + contrast.name + " is broad; homer_find_motifs_genome is run on narrow peaks ... skipping")
+                        log.warning(
+                            "Mark " + mark_name + " for Sample " + sample.name + " is not Narrow; homer_find_motifs_genome is run on narrow peaks ... skipping")
+                samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
+
+            if counter > 0:
+                report_file = os.path.join(self.output_dirs['report_output_directory'],
+                                           "ChipSeq.homer_find_motifs_genome.md")
+                jobs.append(
+                    Job(
+                        [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name,
+                                      "homerResults.html") for sample in self.samples for mark_name, mark_type in
+                         sample.marks.items() if mark_type == "N"] +
+                        [os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name,
+                                      "knownResults.html") for sample in self.samples for mark_name, mark_type in
+                         sample.marks.items() if mark_type == "N"],
+                        [report_file],
+                        command="""\
+    mkdir -p {report_dir}/annotation/ && \\
+    cp {report_template_dir}/{basename_report_file} {report_dir}/ && \\
+    declare -A samples_associative_array=({samples_associative_array}) && \\
+    for sample in ${{!samples_associative_array[@]}}
+    do
+      for mark_name in ${{samples_associative_array[$sample]}}
+      do
+        rsync -rvP annotation/$sample {report_dir}/annotation/ && \\
+        echo -e "* [HOMER _De Novo_ Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/homerResults.html)\\n* [HOMER Known Motif Results for Sample $sample and Mark $mark_name](annotation/$sample/$mark_name/knownResults.html)" >> {report_file}
+      done
+    done""".format(
+                            samples_associative_array=" ".join(samples_associative_array),
+                            report_template_dir=self.report_template_dir,
+                            basename_report_file=os.path.basename(report_file),
+                            report_file=report_file,
+                            report_dir=self.output_dirs['report_output_directory']
+                        ),
+                        report_files=[report_file],
+                        name="homer_find_motifs_genome_report"  # ".".join([sample.name for sample in self.samples])
+                    )
                 )
 
-        jobs.append(
-            Job(
-                [os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, mark_name,
-                              sample.name + "." + mark_name + ".crosscor") for sample in self.samples for
-                 mark_name, mark_type in sample.marks.items()],
-                [os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, sample.name + ".crosscor") for
-                 sample in self.samples],
-                [],
-                command="""\
-declare -A samples_associative_array=({samples_associative_array}) && \\
-for sample in ${{!samples_associative_array[@]}}
-do
-  echo -e "Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag)" > ihec_metrics/${{sample}}/${{sample}}.crosscor
-  for mark_name in ${{samples_associative_array[$sample]}}
-  do
-    cat ihec_metrics/${{sample}}/${{mark_name}}/${{sample}}.${{mark_name}}.crosscor >> ihec_metrics/${{sample}}/${{sample}}.crosscor
-  done
-done""".format(
-                    samples_associative_array=" ".join(
-                        ["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in
-                         self.samples])
-                ),
-                name="run_spp_report." + str(time.time())  # ".".join([sample.name for sample in self.samples])
+            return jobs
+
+    def annotation_graphs(self):
+            """
+            The peak location statistics. The following peak location statistics are generated per design:
+            proportions of the genomic locations of the peaks. The locations are: Gene (exon or intron),
+            Proximal ([0;2] kb upstream of a transcription start site), Distal ([2;10] kb upstream
+            of a transcription start site), 5d ([10;100] kb upstream of a transcription start site),
+            Gene desert (>= 100 kb upstream or downstream of a transcription start site), Other (anything
+            not included in the above categories); The distribution of peaks found within exons and introns;
+            The distribution of peak distance relative to the transcription start sites (TSS);
+            the Location of peaks per design.
+            """
+
+            # If --design <design_file> option is missing, self.contrasts call will raise an Exception
+            # if self.contrasts:
+            #     design_file = os.path.relpath(self.args.design.name, self.output_dir)
+
+            readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
+
+            input_files = []
+            output_files = []
+            samples_associative_array = []
+            for sample in self.samples:
+                mark_list = []
+                for mark_name, mark_type in sample.marks.items():
+                    if mark_type == "N":
+                        annotation_prefix = os.path.join(self.output_dirs['anno_output_directory'], sample.name,
+                                                         mark_name, sample.name + "." + mark_name)
+                        input_files.append(annotation_prefix + ".tss.stats.csv")
+                        input_files.append(annotation_prefix + ".exon.stats.csv")
+                        input_files.append(annotation_prefix + ".intron.stats.csv")
+                        input_files.append(annotation_prefix + ".tss.distance.csv")
+                        mark_list.append(mark_name)
+                samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(mark_list) + "\"")
+
+                # for contrast in self.contrasts:
+                #     annotation_prefix = os.path.join(self.output_dirs['anno_output_directory'], contrast.real_name, contrast.real_name)
+                #     input_files.append(annotation_prefix + ".tss.stats.csv")
+                #     input_files.append(annotation_prefix + ".exon.stats.csv")
+                #     input_files.append(annotation_prefix + ".intron.stats.csv")
+                #     input_files.append(annotation_prefix + ".tss.distance.csv")
+
+                # output_files.append(os.path.join(self.output_dirs['graphs_output_directory'], contrast.real_name + "_Misc_Graphs.ps"))
+
+                peak_stats_file = os.path.join(self.output_dirs['anno_output_directory'], sample.name, "peak_stats.csv")
+                output_files.append(peak_stats_file)
+            report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.annotation_graphs.md")
+            output_files.append(report_file)
+
+            jobs = []
+
+            jobs.append(
+                Job(
+                    input_files,
+                    output_files,
+                    [
+                        ['annotation_graphs', 'module_mugqic_tools'],
+                        ['annotation_graphs', 'module_R'],
+                        ['annotation_graphs', 'module_pandoc']
+                    ],
+                    command="""\
+    cp /dev/null annotation/peak_stats_AllSamples.csv && \\
+    mkdir -p {graphs_dir} && \\
+    Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R \\
+      {readset_file} \\
+      {output_dir} && \\
+    declare -A samples_associative_array=({samples_associative_array}) && \\
+    for sample in ${{!samples_associative_array[@]}}
+    do
+        header=$(head -n 1 annotation/$sample/peak_stats.csv)
+        tail -n+2 annotation/$sample/peak_stats.csv >> annotation/peak_stats_AllSamples.csv
+    done && \\
+    sed -i -e "1 i\\\$header" annotation/peak_stats_AllSamples.csv && \\
+    mkdir -p {report_dir}/annotation/$sample && \\
+    cp annotation/peak_stats_AllSamples.csv {report_dir}/annotation/peak_stats_AllSamples.csv && \\
+    peak_stats_table=`LC_NUMERIC=en_CA awk -F "," '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:|-----:|-----:|-----:"}} else {{print $1, $2,  sprintf("%\\47d", $3), $4, sprintf("%\\47.1f", $5), sprintf("%\\47.1f", $6), sprintf("%\\47.1f", $7), sprintf("%\\47.1f", $8)}}}}' annotation/peak_stats_AllSamples.csv`
+    pandoc --to=markdown \\
+        --template {report_template_dir}/{basename_report_file} \\
+        --variable peak_stats_table="$peak_stats_table" \\
+        --variable proximal_distance="{proximal_distance}" \\
+        --variable distal_distance="{distal_distance}" \\
+        --variable distance5d_lower="{distance5d_lower}" \\
+        --variable distance5d_upper="{distance5d_upper}" \\
+        --variable gene_desert_size="{gene_desert_size}" \\
+        {report_template_dir}/{basename_report_file} \\
+        > {report_file} && \\
+    for sample in ${{!samples_associative_array[@]}}
+    do
+      cp annotation/$sample/peak_stats.csv {report_dir}/annotation/$sample/peak_stats.csv && \\
+      for mark_name in ${{samples_associative_array[$sample]}}
+      do
+        cp --parents {graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps {report_dir}/
+        convert -rotate 90 {graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps {report_dir}/graphs/${{sample}}.${{mark_name}}_Misc_Graphs.png
+        echo -e "----\\n\\n![Annotation Statistics for Sample $sample and Mark $mark_name ([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps))]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.png)\\n" >> {report_file}
+      done
+    done""".format(
+                        readset_file=readset_file,
+                        output_dir=self.output_dir,
+                        # peak_stats_file=peak_stats_file,
+                        # samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
+                        samples_associative_array=" ".join(samples_associative_array),
+                        # contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
+                        proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int') / -1000,
+                        distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int') / -1000,
+                        distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', type='int') / -1000,
+                        distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', type='int') / -1000,
+                        gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', type='int') / 1000,
+                        report_template_dir=self.report_template_dir,
+                        basename_report_file=os.path.basename(report_file),
+                        report_file=report_file,
+                        report_dir=self.output_dirs['report_output_directory'],
+                        graphs_dir=self.output_dirs['graphs_output_directory'],
+                        merged_peak_stats="peak_stats_AllSamples.csv"
+                    ),
+                    name="annotation_graphs",  # ".".join([sample.name for sample in self.samples]),
+                    report_files=[report_file],
+                    removable_files=output_files
+                )
             )
-        )
 
-        return jobs
+            return jobs
 
-    def ihec_metrics(self):
-        """
-        Generate IHEC's standard metrics.
-        """
-        jobs = []
+        # def ihec_preprocess_files(self):
+        #     """
+        #     Generate IHEC's files.
+        #     """
+        #     output_dir = self.output_dirs['ihecA_output_directory']
+        #     jobs = []
 
-        alignment_dir = self.output_dirs['alignment_output_directory']
-        # output_dir = self.output_dirs['ihecM_output_directory']
+        #     for sample in self.samples:
+        #         for mark_name in sample.marks:
+        #             pass
 
-        # samples_associative_array = []
-        metrics_to_merge = []
+        #     for sample in self.samples:
+        #         alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
+        #         # alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name)
+        #         # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
+        #         readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
+        #         sample_merge_bam = os.path.join(output_dir, sample.name + ".merged.bam")
+        #         sample_merge_mdup_bam = os.path.join(output_dir, sample.name + ".merged.mdup.bam")
+        #         # sample_merge_mdup_metrics_file = os.path.join(output_dir, sample.name + ".merged.mdup.metrics")
 
-        for sample in self.samples:
-            mark_list = []
-            # if no Input file
-            input_file = {}
-            input_file_list = [mark_name for mark_name, mark_type in sample.marks.items() if mark_type == "I"]
-            if len(input_file_list) > 0:
-                if len(input_file_list) > 1:
-                    raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
-                input_file[sample.name] = input_file_list[0]
-            for mark_name, mark_type in sample.marks.items():
-                if mark_type != "I":
-                    mark_list.append(mark_name)
+        #         mkdir_job = bash.mkdir(output_dir)
 
-                    chip_bam = os.path.join(alignment_dir, sample.name, mark_name,
-                                            sample.name + "." + mark_name + ".sorted.dup.bam")
-                    chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                            mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
-                    output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
-                    crosscor_input = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name,
-                                                  sample.name + ".crosscor")
-                    genome = config.param('IHEC_chipseq_metrics', 'assembly')
-                    # if mark_type == "N":
-                    #     chip_type = "narrow"
-                    # elif mark_type == "B":
-                    #     chip_type = "broad"
+        #         # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
+        #         if len(sample.readsets) == 1:
+        #             readset_bam = readset_bams[0]
+        #             if os.path.isabs(readset_bam):
+        #                 target_readset_bam = readset_bam
+        #             else:
+        #                 target_readset_bam = os.path.relpath(readset_bam, output_dir)
 
-                    if not input_file:
-                        input_name = "no_input"
-                        input_bam = None
-                    else:
-                        input_name = input_file[sample.name]  # "".join(input_file.keys())
-                        input_bam = os.path.join(alignment_dir, sample.name, input_name,
-                                                 sample.name + "." + input_name + ".sorted.dup.bam")  # input_file[sample.name]
+        #             job = concat_jobs([
+        #                 mkdir_job,
+        #                 Job([readset_bam], [sample_merge_bam], command="ln -s -f " + target_readset_bam + " " + sample_merge_bam, removable_files=[sample_merge_bam]),
+        #             ], name="ihec_preprocess_symlink." + sample.name)
+
+        #         elif len(sample.readsets) > 1:
+        #             job = concat_jobs([
+        #                 mkdir_job,
+        #                 picard.merge_sam_files(readset_bams, sample_merge_bam)
+        #             ], name="ihec_preprocess_merge." + sample.name)
+
+        #         jobs.append(job)
+
+        #         jobs.append(
+        #             concat_jobs([
+        #                 Job(
+        #                     command="export TMPDIR={tmp_dir}".format(tmp_dir=config.param('ihec_preprocess_files', 'tmp_dir'))
+        #                     ),
+        #                 sambamba.markdup(
+        #                     sample_merge_bam,
+        #                     sample_merge_mdup_bam,
+        #                     tmp_dir=config.param('sambamba_mark_duplicates', 'tmp_dir', required=True)
+        #                     )
+        #                 # picard.mark_duplicates(
+        #                 #     [sample_merge_bam],
+        #                 #     sample_merge_mdup_bam,
+        #                 #     sample_merge_mdup_metrics_file
+        #                 #     )
+        #                 ],
+        #                 name="ihec_preprocess_mark_duplicates." + sample.name
+        #                 )
+        #             )
+
+        #     return jobs
+
+    def run_spp(self):
+            """
+            runs spp to estimate NSC and RSC ENCODE metrics. For more information: https://github.com/kundajelab/phantompeakqualtools
+            """
+            jobs = []
+            # alignment_dir = self.output_dirs['ihecA_output_directory']
+            # alignment_dir = self.output_dirs['alignment_output_directory']
+
+            for sample in self.samples:
+                for mark_name in sample.marks:
+                    alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name,
+                                                       mark_name)
+                    sample_merge_mdup_bam = os.path.join(alignment_directory,
+                                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                    output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, mark_name)
+                    output = os.path.join(output_dir, sample.name + "." + mark_name + ".crosscor")
 
                     jobs.append(
                         concat_jobs([
                             bash.mkdir(output_dir),
-                            tools.sh_ihec_chip_metrics(
-                                chip_bam=chip_bam,
-                                input_bam=input_bam,
-                                sample_name=sample.name,
-                                input_name=input_name,
-                                chip_name=mark_name,
-                                chip_type=self.mark_type_conversion[mark_type],
-                                chip_bed=chip_bed,
-                                output_dir=output_dir,
-                                assembly=genome,
-                                crosscor_input=crosscor_input
+                            Job(
+                                [sample_merge_mdup_bam],
+                                [output],
+                                [
+                                    ['run_spp', 'module_samtools'],
+                                    ['run_spp', 'module_mugqic_tools'],
+                                    ['run_spp', 'module_R']
+                                ],
+                                command="""\
+    cat /dev/null > {output} && \\
+    Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir}""".format(
+                                    sample_merge_mdup_bam=sample_merge_mdup_bam,
+                                    output=output,
+                                    tmp_dir=config.param('run_spp', 'tmp_dir')
+                                )
                             )
                         ],
-                            name="IHEC_chipseq_metrics." + sample.name + "." + mark_name,
-                            removable_files=[output_dir]
-                        )
+                            name="run_spp." + sample.name + "." + mark_name)
                     )
-                    metrics_to_merge.append(os.path.join(output_dir, mark_name,
-                                                         "IHEC_chipseq_metrics." + sample.name + "." + mark_name + ".tsv"))
 
-        metrics_merged = "IHEC_chipseq_metrics_AllSamples.tsv"
-        metrics_merged_out = os.path.join(self.output_dirs['ihecM_output_directory'], metrics_merged)
-        report_file = os.path.join("report", "ChipSeq.ihec_metrics.md")
-
-        jobs.append(
-            Job(
-                input_files=metrics_to_merge,
-                output_files=[metrics_merged_out],
-                name="merge_ihec_metrics." + str(time.time()),  # ".".join([sample.name for sample in self.samples]),
-                command="""\
-cp /dev/null {metrics_merged} && \\
-for sample in {samples}
-do
-    header=$(head -n 1 $sample | cut -f -3,5-17,30-33,35,37,39-)
-    tail -n 1 $sample | cut -f -3,5-17,30-33,35,37,39- >> {metrics_merged}
-done && \\
-sample_name=`tail -n 1 $sample | cut -f 1` && \\
-input_name=`tail -n 1 $sample | cut -f 4` && \\
-input_chip_type="NA" && \\
-genome_assembly=`tail -n 1 $sample | cut -f 5` && \\
-input_core=`tail -n 1 $sample | cut -f 18-29` && \\
-input_nsc=`tail -n 1 $sample | cut -f 34` && \\
-input_rsc=`tail -n 1 $sample | cut -f 36` && \\
-input_quality=`tail -n 1 $sample | cut -f 38` && \\
-if [[ $input_name != "no_input" ]]
-  then
-    echo -e "${{sample_name}}\\t${{input_name}}\\t${{input_chip_type}}\\t${{genome_assembly}}\\t${{input_core}}\\tNA\\tNA\\tNA\\t${{input_nsc}}\\t${{input_rsc}}\\t${{input_quality}}\\tNA\\tNA" >> {metrics_merged}
-fi && \\
-sed -i -e "1 i\\\$header" {metrics_merged}""".format(
-                    samples=" ".join(metrics_to_merge),
-                    metrics_merged=metrics_merged_out
-                ),
+            jobs.append(
+                Job(
+                    [os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, mark_name,
+                                  sample.name + "." + mark_name + ".crosscor") for sample in self.samples for
+                     mark_name, mark_type in sample.marks.items()],
+                    [os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, sample.name + ".crosscor")
+                     for sample in self.samples],
+                    [],
+                    command="""\
+    declare -A samples_associative_array=({samples_associative_array}) && \\
+    for sample in ${{!samples_associative_array[@]}}
+    do
+      echo -e "Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag)" > ihec_metrics/${{sample}}/${{sample}}.crosscor
+      for mark_name in ${{samples_associative_array[$sample]}}
+      do
+        cat ihec_metrics/${{sample}}/${{mark_name}}/${{sample}}.${{mark_name}}.crosscor >> ihec_metrics/${{sample}}/${{sample}}.crosscor
+      done
+    done""".format(
+                        samples_associative_array=" ".join(
+                            ["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in
+                             self.samples])
+                    ),
+                    name="run_spp_report"  # ".".join([sample.name for sample in self.samples])
+                )
             )
-        )
 
-        jobs.append(
-            Job(
-                input_files=[metrics_merged_out],
-                output_files=[report_file],
-                # name="merge_ihec_metrics_report." + ".".join([sample.name for sample in self.samples]),
-                name="merge_ihec_metrics_report." + str(time.time()),
-                module_entries=[['merge_ihec_metrics_report', 'module_pandoc']],
-                command="""\
-mkdir -p {report_dir} && \\
-cp {metrics_merged_out} {report_dir}/{ihec_metrics_merged_table} && \\
-pandoc --to=markdown \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable ihec_metrics_merged_table="{ihec_metrics_merged_table}" \\
-  {report_template_dir}/{basename_report_file} \\
-  > {report_file}""".format(
-                    metrics_merged_out=metrics_merged_out,
-                    ihec_metrics_merged_table=metrics_merged,
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file,
-                    report_dir=self.output_dirs['report_output_directory']
-                ),
-                report_files=[report_file]
+            return jobs
+
+    def ihec_metrics(self):
+            """
+            Generate IHEC's standard metrics.
+            """
+            jobs = []
+
+            alignment_dir = self.output_dirs['alignment_output_directory']
+            # output_dir = self.output_dirs['ihecM_output_directory']
+
+            # samples_associative_array = []
+            metrics_to_merge = []
+
+            for sample in self.samples:
+                mark_list = []
+                # if no Input file
+                input_file = {}
+                input_file_list = [mark_name for mark_name, mark_type in sample.marks.items() if mark_type == "I"]
+                if len(input_file_list) > 0:
+                    if len(input_file_list) > 1:
+                        raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
+                    input_file[sample.name] = input_file_list[0]
+                for mark_name, mark_type in sample.marks.items():
+                    if mark_type != "I":
+                        mark_list.append(mark_name)
+
+                        chip_bam = os.path.join(alignment_dir, sample.name, mark_name,
+                                                sample.name + "." + mark_name + ".sorted.dup.bam")
+                        chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
+                                                sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
+                                                    mark_type] + "Peak.bed")
+                        output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
+                        crosscor_input = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name,
+                                                      sample.name + ".crosscor")
+                        genome = config.param('IHEC_chipseq_metrics', 'assembly')
+                        # if mark_type == "N":
+                        #     chip_type = "narrow"
+                        # elif mark_type == "B":
+                        #     chip_type = "broad"
+
+                        if not input_file:
+                            input_name = "no_input"
+                            input_bam = None
+                        else:
+                            input_name = input_file[sample.name]  # "".join(input_file.keys())
+                            input_bam = os.path.join(alignment_dir, sample.name, input_name,
+                                                     sample.name + "." + input_name + ".sorted.dup.bam")  # input_file[sample.name]
+
+                        jobs.append(
+                            concat_jobs([
+                                bash.mkdir(output_dir),
+                                tools.sh_ihec_chip_metrics(
+                                    chip_bam=chip_bam,
+                                    input_bam=input_bam,
+                                    sample_name=sample.name,
+                                    input_name=input_name,
+                                    chip_name=mark_name,
+                                    chip_type=self.mark_type_conversion[mark_type],
+                                    chip_bed=chip_bed,
+                                    output_dir=output_dir,
+                                    assembly=genome,
+                                    crosscor_input=crosscor_input
+                                )
+                            ],
+                                name="IHEC_chipseq_metrics." + sample.name + "." + mark_name,
+                                removable_files=[output_dir]
+                            )
+                        )
+                        metrics_to_merge.append(os.path.join(output_dir, mark_name,
+                                                             "IHEC_chipseq_metrics." + sample.name + "." + mark_name + ".tsv"))
+
+            metrics_merged = "IHEC_chipseq_metrics_AllSamples.tsv"
+            metrics_merged_out = os.path.join(self.output_dirs['ihecM_output_directory'], metrics_merged)
+            report_file = os.path.join("report", "ChipSeq.ihec_metrics.md")
+
+            jobs.append(
+                Job(
+                    input_files=metrics_to_merge,
+                    output_files=[metrics_merged_out],
+                    name="merge_ihec_metrics",  # ".".join([sample.name for sample in self.samples]),
+                    command="""\
+    cp /dev/null {metrics_merged} && \\
+    for sample in {samples}
+    do
+        header=$(head -n 1 $sample | cut -f -3,5-17,30-33,35,37,39-)
+        tail -n 1 $sample | cut -f -3,5-17,30-33,35,37,39- >> {metrics_merged}
+    done && \\
+    sample_name=`tail -n 1 $sample | cut -f 1` && \\
+    input_name=`tail -n 1 $sample | cut -f 4` && \\
+    input_chip_type="NA" && \\
+    genome_assembly=`tail -n 1 $sample | cut -f 5` && \\
+    input_core=`tail -n 1 $sample | cut -f 18-29` && \\
+    input_nsc=`tail -n 1 $sample | cut -f 34` && \\
+    input_rsc=`tail -n 1 $sample | cut -f 36` && \\
+    input_quality=`tail -n 1 $sample | cut -f 38` && \\
+    if [[ $input_name != "no_input" ]]
+      then
+        echo -e "${{sample_name}}\\t${{input_name}}\\t${{input_chip_type}}\\t${{genome_assembly}}\\t${{input_core}}\\tNA\\tNA\\tNA\\t${{input_nsc}}\\t${{input_rsc}}\\t${{input_quality}}\\tNA\\tNA" >> {metrics_merged}
+    fi && \\
+    sed -i -e "1 i\\\$header" {metrics_merged}""".format(
+                        samples=" ".join(metrics_to_merge),
+                        metrics_merged=metrics_merged_out
+                    ),
+                )
             )
-        )
 
-        return jobs
+            jobs.append(
+                Job(
+                    input_files=[metrics_merged_out],
+                    output_files=[report_file],
+                    # name="merge_ihec_metrics_report." + ".".join([sample.name for sample in self.samples]),
+                    name="merge_ihec_metrics_report",
+                    module_entries=[['merge_ihec_metrics_report', 'module_pandoc']],
+                    command="""\
+    mkdir -p {report_dir} && \\
+    cp {metrics_merged_out} {report_dir}/{ihec_metrics_merged_table} && \\
+    pandoc --to=markdown \\
+      --template {report_template_dir}/{basename_report_file} \\
+      --variable ihec_metrics_merged_table="{ihec_metrics_merged_table}" \\
+      {report_template_dir}/{basename_report_file} \\
+      > {report_file}""".format(
+                        metrics_merged_out=metrics_merged_out,
+                        ihec_metrics_merged_table=metrics_merged,
+                        report_template_dir=self.report_template_dir,
+                        basename_report_file=os.path.basename(report_file),
+                        report_file=report_file,
+                        report_dir=self.output_dirs['report_output_directory']
+                    ),
+                    report_files=[report_file]
+                )
+            )
+
+            return jobs
 
     def multiqc_report(self):
-        """
-        A quality control report for all samples is generated.
-        For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
-        """
-        ## set multiQc config file so we can customize one for every pipeline:
-        jobs = []
-        # yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
-        input_files = []
-        metrics_output_directory = self.output_dirs['metrics_output_directory']
-        for sample in self.samples:
-            for mark_name in sample.marks:
-                picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name,
-                                             sample.name + "." + mark_name + ".sorted.dup.filtered.all.metrics.")
-                if self.run_type == 'SINGLE_END':
-                    picard_files = [
-                        picard_prefix + "quality_by_cycle.pdf",
-                        picard_prefix + "alignment_summary_metrics",
-                        picard_prefix + "quality_by_cycle_metrics",
-                        picard_prefix + "quality_distribution_metrics",
-                        picard_prefix + "quality_distribution.pdf"
+            """
+            A quality control report for all samples is generated.
+            For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
+            """
+            ## set multiQc config file so we can customize one for every pipeline:
+            jobs = []
+            # yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
+            input_files = []
+            metrics_output_directory = self.output_dirs['metrics_output_directory']
+            for sample in self.samples:
+                for mark_name in sample.marks:
+                    picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name,
+                                                 sample.name + "." + mark_name + ".sorted.dup.filtered.all.metrics.")
+                    if self.run_type == 'SINGLE_END':
+                        picard_files = [
+                            picard_prefix + "quality_by_cycle.pdf",
+                            picard_prefix + "alignment_summary_metrics",
+                            picard_prefix + "quality_by_cycle_metrics",
+                            picard_prefix + "quality_distribution_metrics",
+                            picard_prefix + "quality_distribution.pdf"
+                        ]
+                    elif self.run_type == 'PAIRED_END':
+                        picard_files = [
+                            picard_prefix + "base_distribution_by_cycle.pdf",
+                            picard_prefix + "alignment_summary_metrics",
+                            picard_prefix + "insert_size_histogram.pdf",
+                            picard_prefix + "insert_size_metrics",
+                            picard_prefix + "quality_by_cycle_metrics",
+                            picard_prefix + "quality_by_cycle.pdf",
+                            picard_prefix + "quality_distribution_metrics",
+                            picard_prefix + "quality_distribution.pdf"
+
+                        ]
+                    input_files.extend(picard_files)
+                    input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name,
+                                                    sample.name + "." + mark_name + ".sorted.dup.filtered.flagstat"))
+                    homer_prefix = os.path.join(self.output_dirs['homer_output_directory'], sample.name,
+                                                sample.name + "." + mark_name)
+                    homer_files = [
+                        os.path.join(homer_prefix, "tagGCcontent.txt"),
+                        os.path.join(homer_prefix, "genomeGCcontent.txt"),
+                        os.path.join(homer_prefix, "tagLengthDistribution.txt"),
+                        os.path.join(homer_prefix, "tagInfo.txt")
                     ]
-                elif self.run_type == 'PAIRED_END':
-                    picard_files = [
-                        picard_prefix + "base_distribution_by_cycle.pdf",
-                        picard_prefix + "alignment_summary_metrics",
-                        picard_prefix + "insert_size_histogram.pdf",
-                        picard_prefix + "insert_size_metrics",
-                        picard_prefix + "quality_by_cycle_metrics",
-                        picard_prefix + "quality_by_cycle.pdf",
-                        picard_prefix + "quality_distribution_metrics",
-                        picard_prefix + "quality_distribution.pdf"
+                    input_files.extend(homer_files)
+            # input_files = [os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt") for sample in self.samples]
+            output = os.path.join(self.output_dirs['report_output_directory'], "multiqc_report")
+            log.info(output)
 
-                    ]
-                input_files.extend(picard_files)
-                input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name,
-                                                sample.name + "." + mark_name + ".sorted.dup.filtered.flagstat"))
-                homer_prefix = os.path.join(self.output_dirs['homer_output_directory'], sample.name,
-                                            sample.name + "." + mark_name)
-                homer_files = [
-                    os.path.join(homer_prefix, "tagGCcontent.txt"),
-                    os.path.join(homer_prefix, "genomeGCcontent.txt"),
-                    os.path.join(homer_prefix, "tagLengthDistribution.txt"),
-                    os.path.join(homer_prefix, "tagInfo.txt")
-                ]
-                input_files.extend(homer_files)
-        # input_files = [os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt") for sample in self.samples]
-        output = os.path.join(self.output_dirs['report_output_directory'], "multiqc_report")
-        log.info(output)
+            job = multiqc.run(
+                input_files,
+                output,
+                ini_section='multiqc_report'
+            )
+            job.name = "multiqc_report"  # ".".join([sample.name for sample in self.samples])
 
-        job = multiqc.run(
-            input_files,
-            output,
-            ini_section='multiqc_report'
-        )
-        job.name = "multiqc_report." + str(time.time())  # ".".join([sample.name for sample in self.samples])
+            jobs.append(job)
 
-        jobs.append(job)
-
-        return jobs
+            return jobs
 
     def cram_output(self):
-        """
-        Generate long term storage version of the final alignment files in CRAM format
-        Using this function will include the orginal final bam file into the  removable file list
-        """
+            """
+            Generate long term storage version of the final alignment files in CRAM format
+            Using this function will include the orginal final bam file into the  removable file list
+            """
 
-        jobs = []
+            jobs = []
 
-        for sample in self.samples:
-            for mark_name in sample.marks:
-                input_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
-                output_cram = re.sub("\.bam$", ".cram", input_bam)
+            for sample in self.samples:
+                for mark_name in sample.marks:
+                    input_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                             sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                    output_cram = re.sub("\.bam$", ".cram", input_bam)
 
-                # Run samtools
-                job = samtools.view(
-                    input_bam,
-                    output_cram,
-                    options=config.param('samtools_cram_output', 'options'),
-                    removable=False
-                )
-                job.name = "cram_output." + sample.name + "." + mark_name
-                job.removable_files = input_bam
+                    # Run samtools
+                    job = samtools.view(
+                        input_bam,
+                        output_cram,
+                        options=config.param('samtools_cram_output', 'options'),
+                        removable=False
+                    )
+                    job.name = "cram_output." + sample.name + "." + mark_name
+                    job.removable_files = input_bam
 
-                jobs.append(job)
+                    jobs.append(job)
 
-        return jobs
+            return jobs
 
     @property
     def steps(self):
