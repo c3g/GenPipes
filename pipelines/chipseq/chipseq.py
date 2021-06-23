@@ -1582,8 +1582,9 @@ done""".format(
 
     def differential_binding(self):
         """
-        Performs differential binding analysis using [DiffBind](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
+        Performs differential binding analysis using [DiffBind](http://bioconductor.org/packages/release/bioc/html/DESeq.html)
         Merge the results of the analysis in a single csv file.
+        html report will be generated to QC samples and check how well differential binding analysis was performed.
         """
         jobs = []
         minOverlap = config.param('differential_binding', 'minOverlap')
