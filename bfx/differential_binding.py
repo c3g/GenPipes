@@ -26,15 +26,16 @@ import os
 from core.config import *
 from core.job import *
 
-def diffbind2(input_files, comparison, design, output_file):
+def diffbind(design, readset, output_file):
 
     #merge all the tsvs and create final .csv file
-    if not isinstance(input_files, list):
-       input_files = [input_files]
+    print(design)
+    if not isinstance(design, list):
+        input_files = [design]
 
     return Job(
         input_files,
-        [output_file],
+        [readset],
         [
             ['macs2_callpeak', 'module_macs2']
         ],
@@ -42,81 +43,3 @@ def diffbind2(input_files, comparison, design, output_file):
                     mkdir -p {output_dir}/""".format(
             output_dir=output_file
         ))
-
-#This function is used to render R file and create a html output using knitr and spin
-#This is a new feature introduced to Genpipes in 2021
-def diffbind( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap, minMembers, method):
-
-    output_file =  "".join((output_dir, "_".join(("/diffbind",comparison,"dba.txt"))))
-    html_output = "".join((output_dir, "_".join(("/diffbind", comparison, "dba.html"))))
-    R_filename = "".join((output_dir, "_".join(("/diffbind", comparison, "dba.R"))))
-
-    return Job(
-        input_files,
-        [output_file],
-        [
-            ['differential_binding', 'module_mugqic_tools'],
-            ['differential_binding', 'module_R']
-        ],
-        command="""\
-        mkdir -p {output_dir} &&
-       # cp /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/DiffBind.R {R_filename} &&
-cp $R_TOOLS/DiffBind.R {R_filename} &&
-Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("{R_filename}",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap="{minOverlap}",minMembers="{minMembers}",method="{method}"),output_file=file.path(cur_dir,"{html_output}"));' &&
-rm {R_filename}""".format(
-        design=design,
-        comparison=comparison,
-        output_file=output_file,
-        output_dir=output_dir,
-        readset=readset,
-        alignment_dir=alignment_dir,
-        peak_dir=peak_dir,
-        minOverlap=minOverlap,
-        minMembers=minMembers,
-        html_output=html_output,
-        R_filename=R_filename,
-        method=method
-    ))
-
-# Rscript -e 'library(knitr);cur_dir=getwd();design=paste0(cur_dir,"/","{design}");
-# readset=paste0(cur_dir,"/","{readset}");output_file=paste0(cur_dir,"/","{output_file}");
-# alignment_dir=paste0(cur_dir,"/","{alignment_dir}");peak_dir=paste0(cur_dir,"/","{peak_dir}");
-# output_dir=paste0(cur_dir,"/","{output_dir}");html_output=paste0(cur_dir,"/","{html_output}");
-# rmarkdown::render("/home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R",params=list(d=design,r=readset,c="{comparison}",o=output_file,b=alignment_dir,p=peak_dir,dir=output_dir,minOverlap="{minOverlap}",minMembers="{minMembers}"),output_file=html_output);'""".format(
-###The function is not currently used. But if you want to use the old way to call Rscript passing paramters use and modify this method.
-def diffbind_R( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap, minMembers, method):
-
-    output_file =  "".join((output_dir, "_".join(("/diffbind",comparison,"dba.txt"))))
-
-    return Job(
-        input_files,
-        [output_file],
-        [
-            ['differential_binding', 'module_mugqic_tools'],
-            ['differential_binding', 'module_R']
-        ],
-        command="""\
-        mkdir -p {output_dir} &&
-Rscript $R_TOOLS/DiffBind.R \\
-#Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R \\
-  -d {design} \\
-  -r {readset} \\
-  -c {comparison} \\
-  -o {output_file} \\
-  -b {alignment_dir} \\
-  -p {peak_dir} \\
-  -dir {output_dir} \\
-  -minOverlap {minOverlap} \\
-  -minMembers {minMembers} \\
-  -method {method}""".format(
-        design=design,
-        comparison=comparison,
-        output_file=output_file,
-        output_dir=output_dir,
-        readset=readset,
-        alignment_dir=alignment_dir,
-        peak_dir=peak_dir,
-        minOverlap=minOverlap,
-        minMembers=minMembers,
-        method=method
-    ))

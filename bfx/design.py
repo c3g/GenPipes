@@ -103,13 +103,10 @@ def parse_chipseq_design_file2(design_file, samples):
 
     return contrasts
 
-
-
 def parse_chipseq_design_file(design_file, samples):
     design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
     # Skip first column which is Sample
     contrasts = [Contrast(name) for name in design_csv.fieldnames[2:]]
-
     for line in design_csv:
         sample_name = line['Sample']
         markname = line['MarkName']
