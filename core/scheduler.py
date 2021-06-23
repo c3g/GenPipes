@@ -200,8 +200,7 @@ cd $OUTPUT_DIR
                         json_files.append(os.path.join(pipeline.output_dir, "json", sample.json_file))
             json_files = list(set(json_files))
             for j_file in json_files:
-                self.genpipes_file\
-                    .write("""
+                self.genpipes_file.write("""
                     sed -i "s/\\"submission_date\\": \\"\\",/\\"submission_date\\": \\"$TIMESTAMP\\",/" {file}
 """.format(file=j_file))
 
@@ -376,7 +375,7 @@ class BatchScheduler(Scheduler):
             self.container_line))
         self.print_header(pipeline)
         if pipeline.jobs:
-            self.genpipes_file.write("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`")
+            self.genpipes_file.write("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`\n")
         for step in pipeline.step_range:
             if step.jobs:
                 self.print_step(step)
