@@ -103,6 +103,8 @@ def parse_chipseq_design_file2(design_file, samples):
 
     return contrasts
 
+
+
 def parse_chipseq_design_file(design_file, samples):
     design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
     # Skip first column which is Sample
