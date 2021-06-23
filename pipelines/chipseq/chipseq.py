@@ -1588,6 +1588,7 @@ done""".format(
         jobs = []
         minOverlap = config.param('differential_binding', 'minOverlap')
         minMembers = config.param('differential_binding', 'minMembers')
+        method = config.param('differential_binding', 'method')
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
         if self.contrasts:
@@ -1605,9 +1606,6 @@ done""".format(
                 log.info(
                     "At leaset two treatments and  controls should be defined. Skipping differential binding analysis for "+contrast.name +" ...")
             else:
-                # if controls_count == 1 or treatments_count == 1:
-                #     minOverlap = 1
-                #     minMembers = 1
                 for control in contrast.controls:
                     control_sample_name, control_mark_name = control.split("-.-")
                     for sample in self.samples:
@@ -1670,9 +1668,9 @@ done""".format(
                                                              self.output_dirs['dba_output_directory'],
                                                              self.output_dirs['alignment_output_directory'],
                                                              self.output_dirs['macs_output_directory'], minOverlap,
-                                                             minMembers)
+                                                             minMembers, method)
                 diffbind_job.samples = self.samples
-                diffbind_job.name = "_".join(("differential_binding.diff_bind.contrat", contrast.name))
+                diffbind_job.name = "_".join(("differential_binding.diffbind.contrast", contrast.name))
                 jobs.append(diffbind_job)
 
         return jobs
@@ -2368,12 +2366,12 @@ done""".format(
                 self.qc_metrics,
                 self.homer_make_ucsc_file,
                 self.macs2_callpeak,
-                self.differential_binding,
                 self.homer_annotate_peaks,
                 self.homer_find_motifs_genome,
                 self.annotation_graphs,
                 # self.ihec_preprocess_files,
                 self.run_spp,
+                self.differential_binding,
                 self.ihec_metrics,
                 self.multiqc_report,
                 self.cram_output],
