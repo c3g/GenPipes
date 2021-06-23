@@ -98,9 +98,10 @@ chipseq:
 14- homer_find_motifs_genome                                                               
 15- annotation_graphs                                                                      
 16- run_spp                                                                                
-17- ihec_metrics                                                                           
-18- multiqc_report                                                                         
-19- cram_output
+17- differential_binding
+18- ihec_metrics                                                                           
+19- multiqc_report                                                                         
+20- cram_output
 ```
 ```
 atacseq:                                                                                   
@@ -240,4 +241,15 @@ cram_output
 Generate long term storage version of the final alignment files in CRAM format
 Using this function will include the orginal final bam file into the  removable file list 
 
+differential_binding
+-----------
 
+Performs differential binding analysis using [DiffBind](http://bioconductor.org/packages/release/bioc/html/DESeq.html)
+Differential binding is performed based on the provided treatments and controls per 
+particular comparison in the design file.
+The differential analysis results will be separately generated for each specified 
+comparison with correctly specified treatments (2) and controls (1) samples. Samples 
+with 0 will be ignored for the comparison. At least two samples for each group are 
+required and otherwise the step will be skipped. 
+Final results with differentially bound peaks are saved as a TSV and also a 
+html report will be generated to QC diffrential analysis for each comparison.
