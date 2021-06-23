@@ -1289,7 +1289,6 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
         The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
         The default mfold parameter of MACS2 is [10,30].
         """
-
         jobs = []
 
         samples_associative_array = []
@@ -1425,7 +1424,6 @@ done""".format(
                 name="macs2_callpeak_report"  # ".".join([sample.name for sample in self.samples])
             )
         )
-
         return jobs
 
     def macs2_atacseq_callpeak(self):
@@ -1647,7 +1645,10 @@ done""".format(
                     bam_list.append(input_file_list)
             bam_list = filter(None, bam_list)
             bam_list = [item for sublist in bam_list for item in sublist]
-            diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file, self.output_dirs['dba_output_directory'])
+            diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file,
+                                                         self.output_dirs['dba_output_directory'],
+                                                         self.output_dirs['alignment_output_directory'],
+                                                         self.output_dirs['macs_output_directory'])
             diffbind_job.samples = self.samples
             diffbind_job.name = "_".join(("differential_binding.diff_bind.contrat", contrast.name))
             jobs.append(diffbind_job)
