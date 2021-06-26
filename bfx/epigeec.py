@@ -25,7 +25,7 @@ from core.config import *
 from core.job import *
 
 def tohdf5(input_dir, output_dir, signal_file):
-    signal_file_basename = os.path.basename(signal_file) + ".hdf5"
+    signal_file_basename = os.path.basename(signal_file)+".hdf5"
     output_path = os.path.join(output_dir, signal_file_basename)
 
     return Job(

@@ -170,7 +170,7 @@ awk -v OFS="\\t" '{{if(NR==1){{sample=$1;rowindex=NR-1; print $0,rowindex}} else
 
 def apply(input_dir, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample, mark):
     return Job(
-        [input_dir],
+        ['chromimpute_metrics_dir', converteddir, distancedir, predictordir],
         [output_dir],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name = "chromimpute_apply_"+sample+"_"+mark,

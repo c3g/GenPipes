@@ -165,7 +165,6 @@ class EpiQC(chipseq.ChipSeq):
 
         return samplesMarksFiles
 
-
     def test(self):
         jobs = []
         S1 ={}
@@ -559,7 +558,6 @@ mkdir -p \\
     def chromimpute(self):
         self.bigwig_to_bedgraph()
         self.chromimpute_preprocess()
-
 
     def chromimpute_convert(self):
         """
@@ -1382,7 +1380,6 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                     signal_noise_file = os.path.join(self.output_dirs['signal_to_noise_output_directory'], sample.name+".bw.bedgraph.wig.gz.tsv")
                     mark = config.param('DEFAULT', 'chip_type')
 
-
                 report_file = os.path.join(self.output_dirs['report_dir'], "report_"+sample.name+"_"+mark+".txt")
 
 
@@ -1466,6 +1463,7 @@ python ../genpipes/bfx/wigSignalNoise.py \\
     def steps(self):
         # TODO : - Create steps table
         return [
+
 
 
             self.test,
