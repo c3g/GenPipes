@@ -1207,6 +1207,7 @@ python ../genpipes/bfx/wigSignalNoise.py \\
   -p1 {percent1} \\
   -p2 {percent2} \\
   -o {output_dir}""".format(
+
                     input_file=converted_bedgraph_file,
                     percent1=config.param('signal_noise', 'percent1'),
                     percent2=config.param('signal_noise', 'percent2'),
