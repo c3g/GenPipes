@@ -62,38 +62,40 @@ def sortSignals(filename):
     lines.sort(reverse = True)
     return lines
 
-def computeMetrics(sorted_signals):
+def computeMetrics(sorted_signals, percent1, percent2):
     """
         Calculates the sum of the signals and the sum of the top 10 and 5% signals
     """
     
     signalSum = 0
-    sumTopBins_10 = 0
-    sumTopBins_05 = 0
+    sumTopBins_1 = 0
+    sumTopBins_2 = 0
 
     #Creates all the values needed to calculate metrics                                                                                                                                   
     nbBins = len(sorted_signals)
-    nbTopBins_10 = int(round(nbBins * 0.1))
-    nbTopBins_05 = int(round(nbBins * 0.05))
+    nbTopBins_1 = int(round(nbBins * percent1))
+    nbTopBins_2 = int(round(nbBins * percent2))
 
     for i in range(nbBins):
         signalSum += float(sorted_signals[i])
 
-    for i in range(nbTopBins_10):
-        if(i == nbTopBins_05):
-                sumTopBins_05 = sumTopBins_10
-        sumTopBins_10 += float(sorted_signals[i])
+    for i in range(nbTopBins_1):
+        if(i == nbTopBins_2):
+                sumTopBins_2 = sumTopBins_1
+        sumTopBins_1 += float(sorted_signals[i])
 
-    return [signalSum, sumTopBins_10, sumTopBins_05]
+    return [signalSum, sumTopBins_1, sumTopBins_2]
 
-def outputFile(signalSum, sumTopBins_10, sumTopBins_05, output_path):
+def outputFile(signalSum, sumTopBins_1, sumTopBins_2, percent1, percent2, output_path):
     """
         Stores the ratio between the signal sum and the top 10 and 5% in an output file
     """
-    
-    columns = "Signal sum\tTop 10% bins sum\tTop 5% bins sum\tRatio top 10% bins\tRatio top 5% bins"
+    percent1 = percent1*100
+    percent2 = percent2*100
+
+    columns = "Signal sum\tTop " + str(percent1) + "% bins sum\tTop " + str(percent2) + "% bins sum\tRatio top " + str(percent1) + "% bins\tRatio top " + str(percent2) + "% bins"
     if signalSum != 0:
-        values = str(signalSum)+"\t"+str(sumTopBins_10)+"\t"+str(sumTopBins_05)+"\t"+str(sumTopBins_10/signalSum)+"\t"+str(sumTopBins_05/signalSum)
+        values = str(signalSum)+"\t"+str(sumTopBins_1)+"\t"+str(sumTopBins_2)+"\t"+str(sumTopBins_1/signalSum)+"\t"+str(sumTopBins_2/signalSum)
     else:
         values = "0\t0\t0\t0\t0"
 
@@ -107,13 +109,17 @@ def outputFile(signalSum, sumTopBins_10, sumTopBins_05, output_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description="Calculates the amount of noise in a signal track")
     parser.add_argument("-i", "--input_file", help="Path to input file to analyse", type=str, required=True)
+    parser.add_argument("-p1", "--percent1", help="Percent 1 for ratio1", type=float, required=True)
+    parser.add_argument("-p2", "--percent2", help="Percent 2 for ratio2", type=float, required=True)
     parser.add_argument("-o", "--output", help="Output directory", type=str, required=False, default=".")
     args = parser.parse_args()
                                                                                                                                                                        
     filename = args.input_file #converted file                                                                                                                                            
     output_path = args.output
+    percent1 = args.percent1
+    percent2 = args.percent2
 
     sorted_signals = sortSignals(filename)
-    metrics = computeMetrics(sorted_signals)
-    outputFile(metrics[0], metrics[1], metrics[2], output_path)
+    metrics = computeMetrics(sorted_signals, percent1, percent2)
+    outputFile(metrics[0], metrics[1], metrics[2], percent1, percent2, output_path)
 

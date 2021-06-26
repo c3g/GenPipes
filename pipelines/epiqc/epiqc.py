@@ -1222,7 +1222,6 @@ mkdir -p \\
                     command="""\
 python ../genpipes/bfx/wigSignalNoise.py \\
   -i {input_file} \\
-
   -p1 {percent1} \\
   -p2 {percent2} \\
   -o {output_dir}""".format(
@@ -1403,16 +1402,16 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                 jobs.append(Job(
                     ['epiqc_report', bigwiginfo_file],
                     [],
-
                     [],
-                    name="report_bigwiginfo_" + os.path.basename(bigwiginfo_file),
-                    command=
+                    name = "report_bigwiginfo_" + os.path.basename(bigwiginfo_file),
+                    command = 
 "python ../genpipes/bfx/epiqc_report.py \
   -b {bigwiginfo_file} \
   -cb {chromCount} \
   -bc1 {low_alert_bases_covered} \
   -bc2 {medium_alert_bases_covered} \
   -o {output_file}".format(
+
                     bigwiginfo_file=bigwiginfo_file,
                     chromCount=config.param('epiqc_report', 'chromcount_threshold'),
                     low_alert_bases_covered=config.param('epiqc_report', 'low_alert_bases_covered'),
@@ -1426,7 +1425,9 @@ python ../genpipes/bfx/wigSignalNoise.py \\
 #                     [],
 #                     [],
 #                     name = "report_eval_"+os.path.basename(eval_file),
+
 #                     command =
+
 # "python ../genpipes/bfx/epiqc_report.py \
 #   -c {eval_file} \
 #   -p1 {percent1} \
@@ -1446,7 +1447,9 @@ python ../genpipes/bfx/wigSignalNoise.py \\
 #                     [],
 #                     [],
 #                     name = "report_signal_noise_" + os.path.basename(signal_noise_file),
+
 #                     command =
+
 # "python ../genpipes/bfx/epiqc_report.py \
 #   -s {signal_noise_file} \
 #   -s1 {percent1} \
@@ -1460,14 +1463,16 @@ python ../genpipes/bfx/wigSignalNoise.py \\
 #                     signal_noise_threshold_M = config.param('epiqc_report', 'signal_noise_threshold_M'),
 #                     signal_noise_threshold_L = config.param('epiqc_report', 'signal_noise_threshold_L'),
 #                     output_file = report_file)))
+
         input_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_output'])
         jobs.append(Job(
                 ['epiqc_report', input_dir],
                 [],
-                ['python', 'module_python'],
+                [],
                 name = "report_heatmap",
+
                 command =
-"python epiqc_report.py \
+"python ../genpipes/bfx/epiqc_report.py \
   -e {correlation_matrix} \
   -o {output_dir}".format(
                 correlation_matrix=input_dir+"/correlation_matrix.tsv",
