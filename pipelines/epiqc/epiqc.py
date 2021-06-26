@@ -95,6 +95,7 @@ class EpiQC(chipseq.ChipSeq):
 
         return dirs
 
+
     @property
     def contrasts(self):
         contrasts = super(EpiQC, self).contrasts
@@ -153,6 +154,7 @@ class EpiQC(chipseq.ChipSeq):
 
         # inputinfofile.close()
 
+
     def parseInputInfoFile(self, inputinfofile):
         """
             Parses a chromimpute input info file.
@@ -164,6 +166,7 @@ class EpiQC(chipseq.ChipSeq):
             samplesMarksFiles.append(sampleMarkFile)
 
         return samplesMarksFiles
+
 
     def test(self):
         jobs = []
@@ -182,6 +185,7 @@ class EpiQC(chipseq.ChipSeq):
                 print(key, '->', value)
 
         return jobs
+
 
 
     def bigwiginfo(self):
@@ -246,6 +250,7 @@ class EpiQC(chipseq.ChipSeq):
         """
         jobs = []
 
+
         #select histone mark sample names removing input chip-seq samples from desgin file
         sample_name_list = [sample.name for contrast in self.contrasts if contrast.treatments for sample in contrast.treatments]
         # print(sample_name_list)
@@ -267,6 +272,7 @@ class EpiQC(chipseq.ChipSeq):
 #     dataset_dir=self.output_dirs['bedgraph_converted_directory'],
 #     dataset_error=self.output_dirs['bedgraph_converted_directory']+"_error"),
 #             name='mkdirs_bedgraph_converted_directory'))
+
 
         for sample in self.samples:
             for readset in sample.readsets:
@@ -292,6 +298,7 @@ class EpiQC(chipseq.ChipSeq):
 
         return jobs
 
+
     def chromimpute_preprocess(self):
         """
             Runs the training steps (Convert, ComputeGlobalDist, GenerateTrainData, Train) of the ChromImpute tool on the bigwig files given to the pipeline.
@@ -308,9 +315,6 @@ class EpiQC(chipseq.ChipSeq):
         #files there
         #there should be a way to define it in the readset file. or use a specific readset file for epiqc
         #for now pipeline does not support that
-
-
-
 
         jobs = []
 
@@ -329,6 +333,7 @@ class EpiQC(chipseq.ChipSeq):
             for sample in contrast.treatments:
                 inputinfo = open(inputinfofile, "a")
                 inputinfo.write("%s\t%s\t%s.bedgraph.gz\n" %(sample.name , contrast.real_name , sample.name  ))
+
 
         chr_sizes =os.path.join(os.environ[config.param('DEFAULT', 'chromosome_size').split("/")[0].replace("$", "")],
                         config.param('DEFAULT', 'chromosome_size').replace(config.param('DEFAULT', 'chromosome_size').split("/")[0]+"/", ""))
@@ -553,6 +558,7 @@ mkdir -p \\
        # jobs.extend([job_folder_create, job_inputinfo])
         return jobs
 
+
     # def create_bedgraph_for_chr(self, chr):
 
     def chromimpute(self):
@@ -563,6 +569,7 @@ mkdir -p \\
         """
             Creates a job for chromimpute Convert for each unique mark/ sample combination in the dataset
         """
+
 
         jobs = []
         
@@ -630,9 +637,11 @@ mkdir -p \\
 
         return jobs
 
+
     def chromimpute_compute_global_dist(self):
         """
             Creates a job for chromimpute ComputeGlobalDist for each unique mark in the inputinfo file
+
         """
         jobs = []
         chr_sizes_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
@@ -746,6 +755,7 @@ mkdir -p \\
         #
         #         job = chromimpute.compute_global_dist(input_files, output_dir, output_files, converteddir, inputinfofile, contrast.real_name)
         #         jobs.append(job)
+
 
         return jobs
 
@@ -950,6 +960,7 @@ mkdir -p \\
 
                 jobs.append(chromimpute.train(input_files, output_dir, output_files, traindatadir, inputinfofile, sample.name, contrast.real_name))
 
+
         return jobs
 
     def chromimpute_train_step(self):
@@ -967,6 +978,7 @@ mkdir -p \\
         # TODO idea: Delete predictordir to save space after run
 
         jobs = []
+
 
         # inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], "inputinfofile.ChromImpute.txt")
         # path_dataset = os.path.join(os.getcwd(), config.param('chromimpute', 'dataset'))
@@ -1117,6 +1129,7 @@ mkdir -p \\
                         jobs.append(chromimpute.apply(input_files, imputed_file, converted_file, output_file, converteddir, imputeddir, percent1, percent2, chr_sizes_file, sample.name, contrast.real_name))
 
 
+
         return jobs
 
     def chromimpute_compute_metrics(self):
@@ -1132,6 +1145,7 @@ mkdir -p \\
             If a readset file is given to the pipeline, we search for the BIGWIG column to get the files
             If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT OF THE CHIPSEQ PIPELINE)
         """
+
 
         jobs = []
 
@@ -1151,6 +1165,7 @@ mkdir -p \\
 
 #         path_inputinfofile = os.path.join(os.getcwd(), config.param('chromimpute', 'inputinfofile'))
 #         path_dataset = os.path.join(os.getcwd(), config.param('chromimpute', 'dataset'))
+
 
 
         log.debug("chromimpute_apply")
@@ -1277,12 +1292,8 @@ python ../genpipes/bfx/wigSignalNoise.py \\
             Bigwig files are first converted to the hdf5 format, then the correlation matrix is computed
 
             If a readset file is given to the pipeline, we search for the BIGWIG column to get the files
-<<<<<<< HEAD
             If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT OF THE CHIPSEQ PIPELINE)
-=======
-            If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT 
-            OF THE CHIPSEQ PIPELINE)
->>>>>>> c800a679 (EpiQC - Added epiqc_report in bfx and in main file. Modified chromimpute and bigwiginfo)
+
         """
         jobs = []
 
@@ -1460,7 +1471,6 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                 correlation_matrix=input_dir+"/correlation_matrix.tsv",
                 output_dir=self.output_dirs['report_dir'])))
         return jobs
-
 
     @property
     def steps(self):

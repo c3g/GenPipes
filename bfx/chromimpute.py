@@ -105,6 +105,7 @@ def compute_global_dist(input_files, output_dir, output_files, converteddir, inp
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name="chromimpute_compute_global_dist." + histone_mark,
         command="""\
+
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   ComputeGlobalDist \\
   -m {histone_mark} \\
@@ -131,6 +132,7 @@ def generate_train_data(input_files, output_dir, output_files, converteddir, dis
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name="chromimpute_generate_train_data." + chr + "_" + histone_mark,
         command="""\
+
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   GenerateTrainData \\
   -r {resolution} \\
@@ -156,6 +158,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
 
 def temp_inputinfo(input_file, output_file):
     return Job(
+
         [input_file],
         [output_file],
         [],
@@ -168,12 +171,12 @@ awk -v OFS="\\t" '{{if(NR==1){{sample=$1;rowindex=NR-1; print $0,rowindex}} else
       )
     )
 
-def apply(input_dir, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample, mark):
+def apply(input_dir, output, converteddir, distancedir, predictordir, inputinfofile, output_dir, sample, mark):
     return Job(
         ['chromimpute_metrics_dir', converteddir, distancedir, predictordir],
-        [output_dir],
+        [output],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name = "chromimpute_apply_"+sample+"_"+mark,
+        name = "chromimpute_apply."+sample+"_"+mark,
         command = """\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
     Apply \\
@@ -201,6 +204,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
         mark = mark
         )
     )
+
 
 def train(input_files, output_dir, output_files, traindatadir, inputinfofile, sample, histone_mark):
     return Job(
