@@ -91,7 +91,6 @@ class EpiQC(chipseq.ChipSeq):
                 'epigeec_filtered' : 'filtered',
                 'epigeec_output' : 'output',
                 'report_dir' : 'report'
-
                 }
 
         return dirs
@@ -232,6 +231,7 @@ class EpiQC(chipseq.ChipSeq):
                 job.name = "bigwiginfo." + readset.name
                 job.samples = self.samples
                 jobs.append(job)
+
 
         return jobs
 
@@ -870,8 +870,6 @@ mkdir -p \\
 
 
 
-
-
         # chroms = []
         # with open(os.path.join(os.environ[config.param('chromimpute', 'chromosome_size').split("/")[0].replace("$", "")], config.param('chromimpute', 'chromosome_size').replace(config.param('chromimpute', 'chromosome_size').split("/")[0]+"/", "")), "r") as chrominfofile:#with open(config.param('chromimpute', 'chrominfofile')) as chrominfofile:             os.environ[config.param('chromimpute', 'chromosome_size').split("/")[0].replace("$", "")]
         #     for line in chrominfofile:
@@ -1053,6 +1051,7 @@ mkdir -p \\
 
                             jobs.append(chromimpute.apply(input_files, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample.name, contrast.real_name, chr_name, chr_sizes_file))
 
+
         return jobs
 
     # def chromimpute_eval(self, samplesMarksFile):
@@ -1207,7 +1206,6 @@ python ../genpipes/bfx/wigSignalNoise.py \\
   -p1 {percent1} \\
   -p2 {percent2} \\
   -o {output_dir}""".format(
-
                     input_file=converted_bedgraph_file,
                     percent1=config.param('signal_noise', 'percent1'),
                     percent2=config.param('signal_noise', 'percent2'),
@@ -1228,6 +1226,7 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                     bigwig_file = readset.bigwig
                 else:                      # If not, we search for the path from a chipseq pipeline
                     prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
+
                     bigwig_file = os.path.join(prefix_path, "tracks", sample.name, "bigWig", sample.name + ".bw") # Create path to bigwig file
 
                 file_ext = bigwig_file.split(".")[-1]
@@ -1277,7 +1276,12 @@ python ../genpipes/bfx/wigSignalNoise.py \\
             Bigwig files are first converted to the hdf5 format, then the correlation matrix is computed
 
             If a readset file is given to the pipeline, we search for the BIGWIG column to get the files
+<<<<<<< HEAD
             If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT OF THE CHIPSEQ PIPELINE)
+=======
+            If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT 
+            OF THE CHIPSEQ PIPELINE)
+>>>>>>> c800a679 (EpiQC - Added epiqc_report in bfx and in main file. Modified chromimpute and bigwiginfo)
         """
         jobs = []
 
@@ -1310,8 +1314,8 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                     bigwig_file = readset.bigwig
                 else:                      # If not, we search for the path from a chipseq pipeline
                     prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
-                    bigwig_file = os.path.join(prefix_path, "tracks", sample.name, "bigWig", sample.name + ".bw") # Create path to bigwig file
 
+                    bigwig_file = os.path.join(prefix_path, "tracks", sample.name, "bigWig", sample.name + ".bw") # Create path to bigwig file
                 hdf5_files.append(os.path.basename(bigwig_file) + ".hdf5")
 
         log.debug("epigeec_tohdf5")
@@ -1358,6 +1362,7 @@ python ../genpipes/bfx/wigSignalNoise.py \\
         chromimpute_output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_eval'])
 
         read_inputinfofile = csv.reader(open(config.param('chromimpute', 'inputinfofile'), 'rb'), delimiter='\t')
+
         samplesMarksFiles = self.parseInputInfoFile(read_inputinfofile)
 
         marks = config.param('chromimpute', 'marks')
@@ -1370,13 +1375,16 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                     bigwiginfo_file = os.path.join(self.output_dirs['bigwiginfo_output_directory'], "bigwiginfo_"+os.path.basename(readset.bigwig)+".txt")
                     signal_noise_file = os.path.join(self.output_dirs['signal_to_noise_output_directory'], os.path.basename(readset.bigwig)+".bedgraph.wig.gz.tsv")
                     mark = marks[cpt] # Corresponds to the marks specified in the epiqc.base.ini
+
                     cpt += 1
                 else:
                     bigwiginfo_file = os.path.join(self.output_dirs['bigwiginfo_output_directory'], "bigwiginfo_"+sample.name+".bw.txt")
                     signal_noise_file = os.path.join(self.output_dirs['signal_to_noise_output_directory'], sample.name+".bw.bedgraph.wig.gz.tsv")
                     mark = config.param('DEFAULT', 'chip_type')
 
+
                 report_file = os.path.join(self.output_dirs['report_dir'], "report_"+sample.name+"_"+mark+".txt")
+
 
                 jobs.append(Job(
                     ['epiqc_report', bigwiginfo_file],
@@ -1453,10 +1461,12 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                 output_dir=self.output_dirs['report_dir'])))
         return jobs
 
+
     @property
     def steps(self):
         # TODO : - Create steps table
         return [
+
 
             self.test,
             self.bigwiginfo,

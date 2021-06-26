@@ -27,7 +27,9 @@ import os
 from core.job import *
 from core.config import *
 
+
 def modify_inputinfofile(input_file, sample, histone,  output_inputinfo_file):
+
     return Job(
         [input_file, output_inputinfo_file],
         [output_inputinfo_file],
@@ -166,7 +168,7 @@ awk -v OFS="\\t" '{{if(NR==1){{sample=$1;rowindex=NR-1; print $0,rowindex}} else
       )
     )
 
-def apply(input_dir, output_dir, converteddir, distancedir, predictordir, sample, mark):
+def apply(input_dir, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample, mark):
     return Job(
         [input_dir],
         [output_dir],
@@ -192,7 +194,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
         converteddir = converteddir,
         distancedir = distancedir,
         predictordir = predictordir,
-        inputinfofile = config.param('chromimpute', 'inputinfofile'),
+        inputinfofile = inputinfofile,
         chrom_sizes = config.param('chromimpute', 'chromsizes'),
         output_dir = output_dir,
         sample = sample,

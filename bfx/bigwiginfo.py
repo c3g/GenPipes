@@ -41,10 +41,7 @@ def bigWigToBedGraph(input_bigWigFile, output_bedgraph):
             bigwig=input_bigWigFile,
             output_file=output_bedgraph
             )
-
-
         )
-
 
 def bigWigInfo(input_bigwig, output_dir):
     output = os.path.join(output_dir, "bigwiginfo_"+ os.path.basename(input_bigwig) + ".txt")
