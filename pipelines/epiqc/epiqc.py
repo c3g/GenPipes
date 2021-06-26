@@ -91,6 +91,7 @@ class EpiQC(chipseq.ChipSeq):
                 'epigeec_filtered' : 'filtered',
                 'epigeec_output' : 'output',
                 'report_dir' : 'report'
+
                 }
 
         return dirs
@@ -178,8 +179,6 @@ class EpiQC(chipseq.ChipSeq):
 
         print ("dict")
 
-
-
         for key, values in S1.iteritems():
             for value in values:
                 print(key, '->', value)
@@ -211,9 +210,9 @@ class EpiQC(chipseq.ChipSeq):
                             contrast.treatments]
 
 
+        log.debug("bigwiginfo_creating_jobs")
         for sample in self.samples:
             for readset in sample.readsets:
-
                 if readset.bigwig: # Check if the readset has a BIGWIG column != None
                     bigwig_file = readset.bigwig
                 else:                      # If not, we search for the path from a chipseq pipeline
@@ -572,7 +571,7 @@ mkdir -p \\
         jobs.append(Job(command = "mkdir {output_dir}".format(output_dir=self.output_dirs['chromimpute_output_directory']), name="mkdir_chromimpute"))
 
 
-        input_dir = self.output_dirs["chromimpute_output_directory"]
+        input_dir = self.output_dirs['chromimpute_output_directory']
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
@@ -1122,7 +1121,6 @@ mkdir -p \\
 
         return jobs
 
-
     def chromimpute_compute_metrics(self):
         """
             Imputes the tracks en runs the Eval step on the bigwig files given to the pipeline.
@@ -1196,7 +1194,6 @@ mkdir -p \\
                             chr_name = line.strip().split("\t")[0]
                                          # If not, we search for the path from a chipseq pipeline
                             converted_bedgraph_file = os.path.join(converteddir, "%s_%s.bedgraph.gz.wig.gz" % ( chr_name, sample.name ))
-
                             output_file = os.path.join(output_dir, "%s_%s_%s.tsv" % ( chr_name, sample.name , contrast.real_name) )
 
                             jobs.append(Job(
@@ -1453,13 +1450,13 @@ python ../genpipes/bfx/wigSignalNoise.py \\
   -o {output_dir}".format(
                 correlation_matrix=input_dir+"/correlation_matrix.tsv",
                 output_dir=self.output_dirs['report_dir'])))
-
         return jobs
 
     @property
     def steps(self):
         # TODO : - Create steps table
         return [
+
             self.test,
             self.bigwiginfo,
             self.bigwig_to_bedgraph,

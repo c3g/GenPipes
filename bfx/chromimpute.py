@@ -84,7 +84,6 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
-
       java_other_options=config.param('chromimpute_convert', 'other_options'),
       ram=config.param('chromimpute', 'ram'),
       histone_mark=histone_mark,
@@ -171,13 +170,13 @@ def apply(input_dir, output_dir, converteddir, distancedir, predictordir, sample
     return Job(
         [input_dir],
         [output_dir],
-        [['java', 'module_java']],
-        name = "chromimpute_apply_"+"sample"+"_"+mark,
+        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
+        name = "chromimpute_apply_"+sample+"_"+mark,
         command = """\
-java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
     Apply \\
-    -c {chrom} \\
-    -r {resolution} \\
+    {chrom} \\
+    {resolution} \\
     {converteddir} \\
     {distancedir} \\
     {predictordir} \\
@@ -186,7 +185,8 @@ java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute
     {output_dir} \\
     {sample} \\
     {mark}""".format(
-        java_options = config.param('DEFAULT', 'java_options'),
+        java_other_options = config.param('DEFAULT', 'java_other_options'),
+        ram = config.param('chromimpute', 'ram'),
         chrom = config.param('chromimpute','chrom'),
         resolution = config.param('chromimpute', 'resolution'),
         converteddir = converteddir,
