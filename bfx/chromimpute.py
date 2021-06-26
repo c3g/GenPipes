@@ -84,6 +84,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
+
       java_other_options=config.param('chromimpute_convert', 'other_options'),
       ram=config.param('chromimpute', 'ram'),
       histone_mark=histone_mark,
@@ -166,12 +167,12 @@ awk -v OFS="\\t" '{{if(NR==1){{sample=$1;rowindex=NR-1; print $0,rowindex}} else
       )
     )
 
-def apply(input_dir, converteddir, distancedir, predictordir, output_dir, sample, mark):
+def apply(input_dir, output_dir, converteddir, distancedir, predictordir, sample, mark):
     return Job(
         [input_dir],
         [output_dir],
         [['java', 'module_java']],
-        name = "chromimpute_apply",
+        name = "chromimpute_apply_"+"sample"+"_"+mark,
         command = """\
 java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
     Apply \\

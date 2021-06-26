@@ -294,7 +294,6 @@ class EpiQC(chipseq.ChipSeq):
 
         return jobs
 
-
     def chromimpute_preprocess(self):
         """
             Runs the training steps (Convert, ComputeGlobalDist, GenerateTrainData, Train) of the ChromImpute tool on the bigwig files given to the pipeline.
@@ -573,7 +572,7 @@ mkdir -p \\
         jobs.append(Job(command = "mkdir {output_dir}".format(output_dir=self.output_dirs['chromimpute_output_directory']), name="mkdir_chromimpute"))
 
 
-        input_dir = self.output_dirs['chromimpute_output_directory']
+        input_dir = self.output_dirs["chromimpute_output_directory"]
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
@@ -1216,7 +1215,6 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                     percent2=config.param('signal_noise', 'percent2'),
                     output_dir=output_file
                     )))
-
         return jobs
 
 
