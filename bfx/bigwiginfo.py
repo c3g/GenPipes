@@ -42,6 +42,7 @@ def bigWigToBedGraph(input_bigWigFile, output_bedgraph):
             output_file=output_bedgraph
             )
 
+
         )
 
 
@@ -50,7 +51,9 @@ def bigWigInfo(input_bigwig, output_dir):
 
 
     return Job(
+
         [input_bigwig],
+
         [output],
         [['ucsc', 'module_ucsc']],
         name="bigwiginfo",

@@ -22,8 +22,6 @@
 
 # Python Standard Modules
 import os
-
-
 # MUGQIC Modules
 
 from core.job import *
@@ -67,7 +65,6 @@ def convert_chr_bedgraph(input_file, output_file, chr, outputdir):
         )
 
     )
-
 
 def convert(input_dir, input_file, output_dir, output_files, inputinfofile, histone_mark, sample, chr_sizes_file):
     # input = input_files.extend(inputinfofile)
@@ -169,6 +166,38 @@ awk -v OFS="\\t" '{{if(NR==1){{sample=$1;rowindex=NR-1; print $0,rowindex}} else
       )
     )
 
+def apply(input_dir, converteddir, distancedir, predictordir, output_dir, sample, mark):
+    return Job(
+        [input_dir],
+        [output_dir],
+        [['java', 'module_java']],
+        name = "chromimpute_apply",
+        command = """\
+java {java_options} -jar /lb/project/mugqic/projects/rami_test/Tools/chromimpute/ChromImpute.jar \\
+    Apply \\
+    -c {chrom} \\
+    -r {resolution} \\
+    {converteddir} \\
+    {distancedir} \\
+    {predictordir} \\
+    {inputinfofile} \\
+    {chrom_sizes} \\
+    {output_dir} \\
+    {sample} \\
+    {mark}""".format(
+        java_options = config.param('DEFAULT', 'java_options'),
+        chrom = config.param('chromimpute','chrom'),
+        resolution = config.param('chromimpute', 'resolution'),
+        converteddir = converteddir,
+        distancedir = distancedir,
+        predictordir = predictordir,
+        inputinfofile = config.param('chromimpute', 'inputinfofile'),
+        chrom_sizes = config.param('chromimpute', 'chromsizes'),
+        output_dir = output_dir,
+        sample = sample,
+        mark = mark
+        )
+    )
 
 def train(input_files, output_dir, output_files, traindatadir, inputinfofile, sample, histone_mark):
     return Job(

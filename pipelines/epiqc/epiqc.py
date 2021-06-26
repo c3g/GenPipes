@@ -27,6 +27,7 @@ import os
 import sys
 import csv
 from operator import attrgetter
+
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
@@ -51,7 +52,7 @@ from pipelines.chipseq import chipseq
 
 log = logging.getLogger(__name__)
 
-class EpiQC(common.Illumina):
+class EpiQC(chipseq.ChipSeq):
     """
         EpiQC Pipeline
         ==============
@@ -69,7 +70,6 @@ class EpiQC(common.Illumina):
         self._protocol = protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
-
         super(EpiQC, self).__init__(protocol)
 
 
@@ -197,6 +197,7 @@ class EpiQC(common.Illumina):
         """
         jobs = []
 
+
         output_dir = self.output_dirs['bigwiginfo_output_directory']
 
         log.debug("bigwiginfo_creating_jobs")
@@ -208,6 +209,7 @@ class EpiQC(common.Illumina):
         sample_name_list = []
         sample_name_list = [sample.name for contrast in self.contrasts if contrast.treatments for sample in
                             contrast.treatments]
+
 
         for sample in self.samples:
             for readset in sample.readsets:
@@ -291,6 +293,7 @@ class EpiQC(common.Illumina):
 
 
         return jobs
+
 
     def chromimpute_preprocess(self):
         """
@@ -569,7 +572,9 @@ mkdir -p \\
         
         jobs.append(Job(command = "mkdir {output_dir}".format(output_dir=self.output_dirs['chromimpute_output_directory']), name="mkdir_chromimpute"))
 
-        chromimpute.createInputInfo(self.samples, ".")
+
+        input_dir = self.output_dirs['chromimpute_output_directory']
+        output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
 
@@ -1122,7 +1127,6 @@ mkdir -p \\
     def chromimpute_compute_metrics(self):
         """
             Imputes the tracks en runs the Eval step on the bigwig files given to the pipeline.
-
             All the output are stored in the imputation directory.
             The imputed files can be found in : imputation/output
             The eval files can be found in : imputation/eval
