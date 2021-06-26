@@ -38,7 +38,7 @@ get_vcf_dbsnp() {
 
 # Download dbNSFP and generate vcfs required to run VerifyBamId
 get_dbNSFP() {
-    DBNSFP_VERSION=dbNSFP4.2c 
+    DBNSFP_VERSION=dbNSFP4.2c
     DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/${DBNSFP_VERSION}.zip
     DBNSFP=$ANNOTATIONS_DIR/$DBNSFP_VERSION/$DBNSFP_VERSION
     if ! is_up2date $DBNSFP.txt.gz
