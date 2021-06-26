@@ -21,6 +21,7 @@
 
 # Python Standard Modules
 
+
 import logging
 import os
 import sys
@@ -32,6 +33,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import *
 from core.job import *
+
 
 
 from pipelines import common
@@ -562,7 +564,12 @@ mkdir -p \\
         """
             Creates a job for chromimpute Convert for each unique mark/ sample combination in the dataset
         """
+
         jobs = []
+        
+        jobs.append(Job(command = "mkdir {output_dir}".format(output_dir=self.output_dirs['chromimpute_output_directory']), name="mkdir_chromimpute"))
+
+        chromimpute.createInputInfo(self.samples, ".")
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
 

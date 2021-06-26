@@ -19,11 +19,13 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-<<<<<<< HEAD
+
 # Python Standard Modules
 import os
 
+
 # MUGQIC Modules
+
 from core.job import *
 from core.config import *
 
@@ -62,7 +64,6 @@ def convert_chr_bedgraph(input_file, output_file, chr, outputdir):
             input_file=input_file,
             output_file=output_file,
             chr=chr
-
         )
 
     )
@@ -226,6 +227,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
         mark=mark
         )
     )
+
 
 def eval(nput_files, imputed_file, converted_file, output_file, converteddir, imputeddir, percent1, percent2, chr_sizes_file, sample, histone_mark):
     return Job(

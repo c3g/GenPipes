@@ -146,7 +146,6 @@ class Pipeline(object):
 #            self.argparser.error("argument -s/--steps is required!")
             log.warning("No step provided by the user => launching the entire pipeline\n")
             self._step_range = self.step_list
-
         self._sample_list = []
         self._sample_paths = []
 
@@ -393,7 +392,7 @@ class Pipeline(object):
                     job.command_with_modules).hexdigest() + ".mugqic.done")
                 job.output_dir = self.output_dir
                 job.dependency_jobs = self.dependency_jobs(job)
-
+                
                 if not self.force_jobs and job.is_up2date():
                     log.info("Job " + job.name + " up to date... skipping\n")
                 else:

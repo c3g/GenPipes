@@ -19,6 +19,7 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+
 # Python Standard Modules
 import os
 import re
@@ -30,6 +31,7 @@ def bigWigToBedGraph(input_bigWigFile, output_bedgraph):
     # bigWigFile_name = os.path.basename(bigWigFile)
     # output_bedgraph = os.path.join(output_dir, "chr1_"+bigWigFile_name+".bedgraph")
 
+
     return Job(
         [input_bigWigFile],
         [],
@@ -39,19 +41,19 @@ def bigWigToBedGraph(input_bigWigFile, output_bedgraph):
             bigwig=input_bigWigFile,
             output_file=output_bedgraph
             )
+
         )
+
 
 def bigWigInfo(input_bigwig, output_dir):
     output = os.path.join(output_dir, "bigwiginfo_"+ os.path.basename(input_bigwig) + ".txt")
+
 
     return Job(
         [input_bigwig],
         [output],
         [['ucsc', 'module_ucsc']],
         name="bigwiginfo",
-        command="""bigWigInfo {input_bigwig} > {output}""".format(
-            input_bigwig=input_bigwig,
-            output=output
-            )
+
         )
 
