@@ -18,13 +18,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
+import matplotlib
+matplotlib.use('Agg')
 
 import argparse
 import csv
 import os
-import pandas as pd
-import seaborn as sns
+import numpy as np
 import matplotlib.pyplot as plt
+
+
 
 def report_bigwiginfo(bigwiginfo_file, report_file_name):
     report_file = open(report_file_name, "a")
@@ -81,13 +84,48 @@ def report_signal_noise(signal_noise_file, report_file_name):
     if ratio_5 < 0.2:
         report_file.write("Signal to noise : Low Level Alert : signal in top 5% bins < 20% (" + str(ratio_5) +")\n")
     else:
-        report_file.write("Signal to noise : Signal to noise ratio passed ! (" + str(ratio_10) + " > 0.3 & " + str(ratio_5) + " > 0.2\n")
+        report_file.write("Signal to noise : Signal to noise ratio passed ! (" + str(ratio_10) + " > 0.3 & " + str(ratio_5) + " > 0.2)\n")
 
     report_file.close()
 
-def report_epigeec(correlation_matrix):
-    matrix = pd.read_csv(correlation_matrix, delimiter = "\t")
-    sns.heatmap(matrix, cmap="YlGnBu")
+def report_epigeec(correlation_matrix, output_dir):
+    file = csv.reader(open(correlation_matrix), delimiter="\t")
+
+    matrix = []
+    samples = []
+    cpt = 0
+
+    for line in file:
+        if cpt == 0:
+            samples = line[1:]
+            cpt += 1
+        else:
+            matrix.append(line[1:])
+
+    #Convert matrix to float
+    matrix = np.array(matrix)
+    matrix = matrix.astype(np.float)
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(matrix)
+
+    ax.set_xticks(np.arange(len(samples)))
+    ax.set_yticks(np.arange(len(samples)))
+
+    ax.set_xticklabels(samples)
+    ax.set_yticklabels(samples)
+
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+         rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(samples)):
+        for j in range(len(samples)):
+            text = ax.text(j, i, matrix[i, j],
+                           ha="center", va="center", color="w")
+    ax.set_title("Samples correlation matrix")
+    fig.tight_layout()
+    plt.savefig(output_dir+"/correlation_matrix.png")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description="Analyses the output of EpiQC")
@@ -121,8 +159,10 @@ if __name__ == "__main__":
         else:
             print("Specify output file with -o !")
     if args.epigeec != "":
-        report_epigeec(args.epigeec)
-
+        if args.output != "":
+            report_epigeec(args.epigeec, report_file)
+        else:
+            print("Specify output file with -o !")
 
 
 

@@ -1093,9 +1093,9 @@ mkdir -p \\
 
         for contrast in self.contrasts:
             if contrast.treatments:
-
                 input_files =[]
                 for sample in contrast.treatments:
+
 
                         input_files.append(os.path.join(imputeddir, "impute_%s_%s.wig.gz" % (
                                                 sample.name, contrast.real_name)))
@@ -1108,6 +1108,7 @@ mkdir -p \\
 
                         converted_file = os.path.join("%s.bedgraph.gz.wig.gz" % (
                                                 sample.name))
+
 
                         output_file = os.path.join(output_dir, "eval_%s_%s.tsv" % ( sample.name,
                                 contrast.real_name))
@@ -1131,6 +1132,7 @@ mkdir -p \\
             If a readset file is given to the pipeline, we search for the BIGWIG column to get the files
             If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT OF THE CHIPSEQ PIPELINE)
         """
+
         jobs = []
 
 #         jobs.append(Job(
@@ -1145,6 +1147,7 @@ mkdir -p \\
 #       apply=self.output_dirs['chromimpute_output'],
 #       eval=self.output_dirs['chromimpute_eval']),
 #             name='mkdirs_chromimpute_metrics'))
+
 
 #         path_inputinfofile = os.path.join(os.getcwd(), config.param('chromimpute', 'inputinfofile'))
 #         path_dataset = os.path.join(os.getcwd(), config.param('chromimpute', 'dataset'))
