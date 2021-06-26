@@ -20,18 +20,19 @@
 ################################################################################
 
 # Python Standard Modules
+
 import logging
 import os
 import sys
 import csv
 from operator import attrgetter
-
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
+
 
 from pipelines import common
 
@@ -68,6 +69,7 @@ class EpiQC(common.Illumina):
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
 
         super(EpiQC, self).__init__(protocol)
+
 
     @property
     def output_dirs(self):

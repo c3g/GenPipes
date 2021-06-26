@@ -54,3 +54,4 @@ def bigWigInfo(input_bigwig, output_dir):
             output=output
             )
         )
+
