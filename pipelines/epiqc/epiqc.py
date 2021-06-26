@@ -56,9 +56,9 @@ class EpiQC(chipseq.ChipSeq):
     """
         EpiQC Pipeline
         ==============
-
         EpiQC is a quality control pipeline for signal files (bigwig) generated from ChIP-Seq. The pipeline does a series of calculations on
         these files to determine whether or not they can be considered good. Four metrics are computed from a single bigwig file.
+
         With BigWigInfo it is determined if there are missing chromosomes, if the chromosome count is lower than 23 it raises a high level alert.
         ChromImpute imputes signal tracks for the first chromosome and using these imputed files EpiQC computes 2 other metrics.
         And finally the pipeline creates a heatmap from the correlation matrix obtained with EpiGeEC.
@@ -153,6 +153,7 @@ class EpiQC(chipseq.ChipSeq):
         #         inputinfofile.write(sample.name+"\t"+mark+"\t"+os.path.basename(bigwig_file+".bedgraph")+"\n")
 
         # inputinfofile.close()
+
 
 
     def parseInputInfoFile(self, inputinfofile):
@@ -983,9 +984,11 @@ mkdir -p \\
         # inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], "inputinfofile.ChromImpute.txt")
         # path_dataset = os.path.join(os.getcwd(), config.param('chromimpute', 'dataset'))
 
+
         # self.createInputInfoFile()
         # read_inputinfofile = csv.reader(open(config.param('chromimpute', 'inputinfofile'), 'rb'), delimiter='\t')
         # samplesMarksFiles = self.parseInputInfoFile(read_inputinfofile)
+
 
         log.debug("chromimpute_convert")
         jobs.extend(self.chromimpute_convert())
@@ -1387,7 +1390,6 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                     bigwiginfo_file = os.path.join(self.output_dirs['bigwiginfo_output_directory'], "bigwiginfo_"+os.path.basename(readset.bigwig)+".txt")
                     signal_noise_file = os.path.join(self.output_dirs['signal_to_noise_output_directory'], os.path.basename(readset.bigwig)+".bedgraph.wig.gz.tsv")
                     mark = marks[cpt] # Corresponds to the marks specified in the epiqc.base.ini
-
                     cpt += 1
                 else:
                     bigwiginfo_file = os.path.join(self.output_dirs['bigwiginfo_output_directory'], "bigwiginfo_"+sample.name+".bw.txt")
@@ -1414,9 +1416,9 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                     low_alert_bases_covered=config.param('epiqc_report', 'low_alert_bases_covered'),
                     medium_alert_bases_covered=config.param('epiqc_report', 'medium_alert_bases_covered'),
                     output_file=report_file)))
-
                 eval_file = "eval_"+sample.name+"_"+mark+".txt"
                 eval_file = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_eval'], eval_file)
+
 
 #                 jobs.append(Job(
 #                     ['epiqc_report', eval_file],
@@ -1457,7 +1459,6 @@ python ../genpipes/bfx/wigSignalNoise.py \\
 #                     signal_noise_threshold_M = config.param('epiqc_report', 'signal_noise_threshold_M'),
 #                     signal_noise_threshold_L = config.param('epiqc_report', 'signal_noise_threshold_L'),
 #                     output_file = report_file)))
-
         input_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_output'])
         jobs.append(Job(
                 ['epiqc_report', input_dir],
