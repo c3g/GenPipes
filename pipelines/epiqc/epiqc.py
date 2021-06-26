@@ -1222,6 +1222,7 @@ mkdir -p \\
                     command="""\
 python ../genpipes/bfx/wigSignalNoise.py \\
   -i {input_file} \\
+
   -p1 {percent1} \\
   -p2 {percent2} \\
   -o {output_dir}""".format(
@@ -1402,6 +1403,7 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                 jobs.append(Job(
                     ['epiqc_report', bigwiginfo_file],
                     [],
+
                     [],
                     name="report_bigwiginfo_" + os.path.basename(bigwiginfo_file),
                     command=
@@ -1418,7 +1420,6 @@ python ../genpipes/bfx/wigSignalNoise.py \\
                     output_file=report_file)))
                 eval_file = "eval_"+sample.name+"_"+mark+".txt"
                 eval_file = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_eval'], eval_file)
-
 
 #                 jobs.append(Job(
 #                     ['epiqc_report', eval_file],
@@ -1463,10 +1464,10 @@ python ../genpipes/bfx/wigSignalNoise.py \\
         jobs.append(Job(
                 ['epiqc_report', input_dir],
                 [],
-                [],
-                name="report_heatmap",
-                command=
-"python ../genpipes/bfx/epiqc_report.py \
+                ['python', 'module_python'],
+                name = "report_heatmap",
+                command =
+"python epiqc_report.py \
   -e {correlation_matrix} \
   -o {output_dir}".format(
                 correlation_matrix=input_dir+"/correlation_matrix.tsv",
