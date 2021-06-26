@@ -21,38 +21,32 @@
 
 import os
 
-from core.config import *
 from core.job import *
 
-#chrom_sizes = os.path.join("../../ressources",config.param('chromimpute','chromsizes'))
-
-def createInputInfo(path_to_dataset, output):
-    filename = os.path.join(output, "inputinfo.txt")
-    output = open(filename, "w+")
-    for filename in os.listdir(path_to_dataset):
-        parsed_file = filename.split(".")
-        sample = parsed_file[2]
-        mark = parsed_file[-3]
-        output.write(sample+"\t"+mark+"\t"+filename+"\n")
+def createInputInfo(samples, output_path):
+    output = open(os.path.join(output_path, "inputinfo.txt"), "w+")
+    for sample in samples:
+        for readset in sample.readsets:
+            if readset.bigwig != None:
+                file = readset.bigwig
+                sample = file.split(".")[2]
+                mark = file.split(".")[-3]
+                output.write(sample+"\t"+mark+"\t"+file+"\n")
     output.close()
 
+    # filename = os.path.join(output, "inputinfo.txt")
+    # output = open(filename, "w+")
+    # for filename in os.listdir(path_to_dataset):
+    #     parsed_file = filename.split(".")
+    #     sample = parsed_file[2]
+    #     mark = parsed_file[-3]
+    #     output.write(sample+"\t"+mark+"\t"+filename+"\n")
+    # output.close()
+
+#Only run once for every IHEC freeze or if user puts their own dataset
 def convert(self, path_to_dataset):
     createInputInfo(path_to_dataset, ".")
-    #TEST command : REMOVE WHEN DONE
-    command = """\
-mkdir ChromImpute \\
-java {java_options} ChromImpute.jar \\
-  Convert \\
-  -c {chrom} \\
-  {path_to_dataset} \\
-  inputinfo.txt \\
-  {chrom_sizes} \\
-  converteddir""".format(
-        chrom = congif.param('chromimpute','chrom'),
-        path_to_dataset = path_to_dataset,
-        chrom_sizes = chrom_sizes
-        )
-    print(command)
+
     return Job(
         [path_to_dataset,"inputinfo.txt"],
         ['converteddir'],
@@ -60,6 +54,7 @@ java {java_options} ChromImpute.jar \\
             ['chromimpute','module_java']
             ['chromimpute','module_chromimpute']
         ],
+        name = "ChromImpute Convert",
         command = """\
 mkdir ChromImpute \\
 java {java_options} ChromImpute.jar \\
@@ -74,4 +69,20 @@ java {java_options} ChromImpute.jar \\
         chrom_sizes = chrom_sizes
         )
     )
+
+# def compute_global_dist(converteddir, inputinfo):
+
+
+# def generate_train_data(converteddir, distancedir, inputinfo, mark):
+
+
+# def train(traindatadir, inputinfo, sample, mark):
+
+
+# def apply(converteddir, distancedir, predictordir, inputinfo, sample, mark):
+
+
+# def eval(converteddir, convertedFile, imputedir, imputeFile):
+
+
 
