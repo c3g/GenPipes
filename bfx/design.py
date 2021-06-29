@@ -64,47 +64,6 @@ class Contrast(object):
         self._treatments = value
 
 
-def parse_chipseq_design_file2(design_file, samples):
-    print("new hi")
-    log.info("Parse design file " + design_file + " ...")
-    design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
-
-    # Skip first and second column which are Sample and MarkName
-    #Note: Sample and Marknames are mandotary and they should be in first and second column
-    contrasts = [Contrast(name) for name in design_csv.fieldnames[2:]]
-    #for contrast in contrasts:
-      #  print(contrast.name)
-   # for line in design_csv:
-
-      #  readset_name = line['Sample']
-       # print(readset_name)
-        #matching_samples = [sample for sample in samples if sample.name == readset_name]
-        #if matching_samples:
-             # There should be only one matching sample
-            #    sample = matching_samples[0]
-        #else:
-         #       _raise(SanitycheckError("Error: sample " + readset_name + " in design file " + design_file + " not found in pipeline samples!"))
-
-        # Skip first column which is Sample
-    #     for contrast in contrasts:
-    #         sample_contrast_type = line[contrast.name]
-    #         # Empty types are ignored
-    #         if sample_contrast_type:
-    #             if sample_contrast_type == "control":
-    #                 contrast.controls.append(sample)
-    #             elif sample_contrast_type == "treatment":
-    #                 contrast.treatments.append(sample)
-    #             else:
-    #                 _raise(SanitycheckError("Error: invalid value for sample " + sample_name + " and contrast " + contrast.name + " in design file " + design_file + " (should be 'control', 'treatment' or '')!"))
-    #
-    # for contrast in contrasts:
-    #     log.info("Contrast " + contrast.name + " (controls: " + str(len(contrast.controls)) + ", treatments: " + str(len(contrast.treatments)) + ") created")
-    # log.info(str(len(contrasts)) + " contrast" + ("s" if len(contrasts) > 1 else "") + " parsed\n")
-
-    return contrasts
-
-
-
 def parse_chipseq_design_file(design_file, samples):
     design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
     # Skip first column which is Sample
@@ -113,7 +72,6 @@ def parse_chipseq_design_file(design_file, samples):
     for line in design_csv:
         sample_name = line['Sample']
         markname = line['MarkName']
-       # log.info(mark_name)
         matching_samples = [sample.name + "-.-" + mark_name for sample in samples for mark_name in sample.marks
                             if (sample.name == sample_name and mark_name == markname)]
        # matching_samples = [sample for sample in samples for mark_name in sample.marks if

@@ -150,41 +150,10 @@ class ChipSeq(common.Illumina):
 
         if self.args.design:
             self._contrast = parse_chipseq_design_file(self.args.design.name, self.samples)
-
-        #  self._contrast = self.parse_design_file(self.args.design.name, self.samples)
-        #     for readset in self.readsets:
-        #         if not readset.mark_name:
-        #             _raise(SanitycheckError("Error: missing readset MarkName for " + readset.name))
-        #             flag = True
-        #         elif not readset.mark_type:
-        #             _raise(SanitycheckError("Error: missing readset MarkType for " + readset.name))
-        #             flag = True
-        #     if flag:
-        #         exit()
         else:
             self.argparser.error("argument -d/--design is required!")
 
         return self._contrast
-
-    # if self.contrasts:
-    #   design_file = os.path.relpath(self.args.design.name, self.output_dir)
-
-    # @property
-    # def contrasts(self):
-    #     contrasts = super(ChipSeq, self).contrasts
-
-    #     # Parse contrasts to retrieve name and type
-    #     for contrast in contrasts:
-    #         if re.search("^\w[\w.-]*,[BN]$", contrast.name):
-    #             contrast.real_name = contrast.name.split(",")[0]
-    #             if contrast.name.split(",")[1] == 'B':
-    #                 contrast.type = 'broad'
-    #             elif contrast.name.split(",")[1] == 'N':
-    #                 contrast.type = 'narrow'
-    #         else:
-    #             _raise(SanitycheckError("Error: contrast name \"" + contrast.name + "\" is invalid (should be <contrast>,B for broad or <contrast>,N for narrow)!"))
-
-    #     return contrasts
 
     def mappable_genome_size(self):
         genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', type='filepath') + ".fai", 'rb'),
