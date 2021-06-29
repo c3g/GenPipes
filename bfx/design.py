@@ -74,8 +74,6 @@ def parse_chipseq_design_file(design_file, samples):
         markname = line['MarkName']
         matching_samples = [sample.name + "-.-" + mark_name for sample in samples for mark_name in sample.marks
                             if (sample.name == sample_name and mark_name == markname)]
-       # matching_samples = [sample for sample in samples for mark_name in sample.marks if
-        #                    (sample.name == sample_name and mark_name == markname)]
         if matching_samples:
 
             # There should be only one matching sample and mark name
