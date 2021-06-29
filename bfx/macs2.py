@@ -29,7 +29,7 @@ def callpeak (options, genome_size, treatment_files, control_files, output_prefi
 
     return Job(
             treatment_files + control_files,
-            [output],
+            output,
             [
                 [ini_section, 'module_python'],
                 [ini_section, 'module_macs2']
