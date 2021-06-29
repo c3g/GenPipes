@@ -1415,7 +1415,7 @@ fi""".format(
                     ],
                     command="""\\
 echo "Collecting metrics..." && \\
-covid_collect_metrics.sh {readset_file}""".format(
+covid_collect_metrics.sh -r {readset_file}""".format(
     readset_file=readset_file
     )
                     ),
