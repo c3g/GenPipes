@@ -77,7 +77,6 @@ def diffbind_R( input_files, comparison, design, readset, output_dir, alignment_
         command="""\
         mkdir -p {output_dir} &&
 Rscript $R_TOOLS/DiffBind.R \\
-#Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/chipseq_diff/analysis.R \\
   -d {design} \\
   -r {readset} \\
   -c {comparison} \\
