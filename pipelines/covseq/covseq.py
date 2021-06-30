@@ -1524,7 +1524,7 @@ generate_report_tables.R --report_readset={ivar_readset_file_report} --metrics={
 generate_report_tables.R --report_readset={freebayes_readset_file_report} --metrics={freebayes_metrics} --host_contamination_metrics={host_contamination_metrics} --output_name_pattern=report/report_metrics_freebayes && \\
 echo "Rendering report..." && \\
 Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT', report_path, overwrite = TRUE); rmarkdown::render(report_path, output_file='run_report.pdf', output_format = 'all', output_dir='$(pwd)/report', knit_root_dir='$(pwd)')" &&\\
-Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT_FREEBAYES', report_path, overwrite = TRUE); rmarkdown::render(report_path, output_file='run_report.pdf', output_format = 'all', output_dir='$(pwd)/report', knit_root_dir='$(pwd)')" """.format(
+Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT_FREEBAYES', report_path, overwrite = TRUE); rmarkdown::render(report_path, output_file='run_report_freebayes.pdf', output_format = 'all', output_dir='$(pwd)/report', knit_root_dir='$(pwd)')" """.format(
     R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
     output_dir=self.output_dir,
     run_name=config.param('prepare_report', 'run_name', required=True),
