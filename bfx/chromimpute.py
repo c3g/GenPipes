@@ -35,7 +35,7 @@ def modify_inputinfofile(input_file, sample, histone,  output_inputinfo_file):
         [output_inputinfo_file],
         [],
         command="""\
-        echo -e "{sample}\\t{histone}\\t{sample}.bedgraph.gz" >> {inputinfofile}""".format(
+        echo -e "{sample}\\t{histone}\\t{sample}_{histone}.bedgraph.gz" >> {inputinfofile}""".format(
             input_files=input_file,
             sample=sample,
             histone=histone,
@@ -46,6 +46,7 @@ def modify_inputinfofile(input_file, sample, histone,  output_inputinfo_file):
 
 def generate_chr_sizes(chr_sizes_file, chr_sizes, chr):
     return Job(
+        input_files=[chr_sizes],
         command="""\
         awk -v OFS="\\t" '{{  if($1=="{chr}") {{print $1,$2}}  }}' {chr_sizes} >> {chr_sizes_file}""".format(
             chr_sizes_file=chr_sizes_file,
