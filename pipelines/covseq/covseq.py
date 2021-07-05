@@ -1297,7 +1297,7 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         jobs.append(
             concat_jobs([
                 bash.mkdir(metrics_directory),
-                bash.mkdirbash.mkdir(os.path.dirname(run_metadata)),
+                bash.mkdir(os.path.dirname(run_metadata)),
                 Job(
                     input_files=covid_collect_metrics_inputs,
                     output_files=[os.path.join("metrics", "metrics.csv"), os.path.join("metrics", "host_contamination_metrics.tsv"), os.path.join("metrics", "host_removed_metrics.tsv"), os.path.join("metrics", "kraken2_metrics.tsv")],
