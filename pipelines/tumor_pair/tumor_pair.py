@@ -5071,8 +5071,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.itervalues():
             pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name)
+            
             genotyped_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.merged.genotyped.vcf.gz")
 
+            prefix = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
+            
             jobs.append(concat_jobs([
                 pipe_jobs([
                     vawk.paired_somatic(
