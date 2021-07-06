@@ -73,8 +73,7 @@ def bam2seqz(normal, tumor, genome, output, chr=None):
         [normal, tumor],
         [output],
         [
-            #['sequenza', 'module_sequenza_utils'],
-            ['sequenza', 'module_python'],
+            ['sequenza', 'module_sequenza_utils'],
             ['sequenza', 'module_samtools'],
             ['sequenza', 'module_htslib'],
         ],
