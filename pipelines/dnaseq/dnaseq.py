@@ -4056,7 +4056,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
-                self.bwa_mem_picard_sort_sam,
+                self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
