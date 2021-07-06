@@ -1269,6 +1269,7 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         readset_file=os.path.relpath(self.args.readsets.name, self.output_dir)
 
         run_metadata = os.path.join("report", "run_metadata.csv")
+        software_version = os.path.join("report", "software_versions.csv")
 
         modules = []
         # Retrieve all unique module version values in config files
@@ -1377,7 +1378,7 @@ covid_collect_metrics.sh -r {readset_file}""".format(
                     ),
                 Job(
                     input_files=[],
-                    output_files=[],
+                    output_files=[run_metadata, software_version],
                     module_entries=[
                         ['prepare_report', 'module_R'],
                         ['prepare_report', 'module_CoVSeQ_tools']
@@ -1399,7 +1400,7 @@ echo "Software Versions
     sequencing_technology=config.param('prepare_report', 'sequencing_technology'),
     run_metadata=run_metadata,
     modules_all="\n".join(modules),
-    software_version=os.path.join("report", "software_versions.csv")
+    software_version=software_version
     )
                     )
                 ],
@@ -1528,8 +1529,7 @@ cd {ivar_ncovtools_directory} && \\
 snakemake --unlock --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE
 snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all
 snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary
-snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis
-""".format(
+snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
     ncovtools=config.param('prepare_report', 'module_ncovtools'),
     readset_file=readset_file,
     # neg_ctrl=os.path.join("report", "neg_controls.txt"),
