@@ -73,7 +73,7 @@ ivar variants -p {prefix} \\
   {gff_file} \\
   {other_options}""".format(
             prefix=prefix,
-            reference_genome=config.param('ini_section', 'genome_fasta', type='filepath'),
+            reference_genome=config.param('ivar_call_variants', 'genome_fasta', type='filepath'),
             gff_file="-g " + config.param('ivar_call_variants', 'gff_orf', type='filepath') if config.param('ivar_call_variants', 'gff_orf') else "",
             other_options=config.param('ivar_call_variants', 'other_options')
             ),

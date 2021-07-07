@@ -92,7 +92,7 @@ def intersect_beds(bed1, bed2, output_bed, other_options=""):
             ['bedtools', 'module_bedtools']
         ],
         command="""\
-bedtools intersect {other_options}\\
+bedtools intersect {other_options} \\
   -a {bed1} \\
   -b {bed2} \\
   > {output_bed}""".format(

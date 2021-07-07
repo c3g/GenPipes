@@ -270,17 +270,17 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             job = Job([input], [output], [["index", "module_java"]],
                       name="index." + self.run_id + "." + str(self.lane_number))
             job.command = """\
-java -Djava.io.tmpdir={tmp_dir}\\
- {java_other_options}\\
- -Xmx{ram}\\
- -jar {jar}\\
- MAX_MISMATCHES={mistmaches}\\
- NUM_PROCESSORS={threads}\\
- BARCODE_FILE={barcode_file}\\
- BASECALLS_DIR={basecalls_dir}\\
- LANE={lane_number}\\
- READ_STRUCTURE={read_structure}\\
- METRICS_FILE={output}\\
+java -Djava.io.tmpdir={tmp_dir} \\
+ {java_other_options} \\
+ -Xmx{ram} \\
+ -jar {jar} \\
+ MAX_MISMATCHES={mistmaches} \\
+ NUM_PROCESSORS={threads} \\
+ BARCODE_FILE={barcode_file} \\
+ BASECALLS_DIR={basecalls_dir} \\
+ LANE={lane_number} \\
+ READ_STRUCTURE={read_structure} \\
+ METRICS_FILE={output} \\
  TMP_DIR={tmp_dir}""".format(
                 tmp_dir=config.param('index', 'tmp_dir'),
                 java_other_options=config.param('index', 'java_other_options'),
@@ -330,12 +330,12 @@ java -Djava.io.tmpdir={tmp_dir}\\
         demultiplexing = False
 
         command = """\
-bcl2fastq\\
- --runfolder-dir {run_dir}\\
- --output-dir {output_dir}\\
- --tiles {tiles}\\
- --sample-sheet {sample_sheet}\\
- {other_options}\\
+bcl2fastq \\
+ --runfolder-dir {run_dir} \\
+ --output-dir {output_dir} \\
+ --tiles {tiles} \\
+ --sample-sheet {sample_sheet} \\
+ {other_options} \\
  """.format(
             run_dir=self.run_dir,
             output_dir=output_dir,

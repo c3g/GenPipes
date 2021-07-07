@@ -54,7 +54,3 @@ if { [ module-info mode load ] } {
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
-<<<<<<< HEAD
-
-=======
->>>>>>> 0dbd8958adc117d03f7623c692579e981b4e0029

@@ -32,6 +32,7 @@ import hashlib
 import logging
 import os
 import re
+import subprocess
 import textwrap
 from uuid import uuid4
 
@@ -49,6 +50,7 @@ class Pipeline(object):
     def __init__(self):
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self._args = self.argparser.parse_args()
+        self._genpipes_version = subprocess.check_output("cat " + os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "VERSION"), shell=True)
             
         if self.protocol is None:
             step_list = self.steps
@@ -115,7 +117,8 @@ class Pipeline(object):
             config.filepath = os.path.abspath(config_trace.name)
 
         self._output_dir = os.path.abspath(self.args.output_dir)
-        self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config, container=self.args.container)
+        self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config, container=self.args.container,
+                                           genpipes_file=self.args.genpipes_file)
 
         self._json = True
         if self.args.no_json:
@@ -230,6 +233,11 @@ class Pipeline(object):
                                          "singularity image path", action=ValidateContainer,
                                           metavar=("{wrapper, singularity}",
                                                    "<IMAGE PATH>"))
+            self._argparser.add_argument("--genpipes_file", '-g', default=sys.stdout, type=argparse.FileType('w'),
+                                         help="Command file output path. This is the command used to process "
+                                              "the data, or said otherwise, this command will \"run the "
+                                              "Genpipes pipeline\". Will be redirected to stdout if the "
+                                              "option is not provided.")
 
         return self._argparser
 
@@ -293,6 +301,10 @@ class Pipeline(object):
     @property
     def json(self):
         return self._json
+
+    @property
+    def genpipes_version(self):
+        return self._genpipes_version
 
     # Given a list of lists of input files, return the first valid list of input files which can be found either in previous jobs output files or on file system.
     # Thus, a job with several candidate lists of input files can find out the first valid one.
