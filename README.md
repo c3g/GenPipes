@@ -123,7 +123,7 @@ Once the genpipes repo has been cloned, run the following command to install the
 ./genpipes/resources/container/get_wrapper.sh
 ```
 
-You can access the the Genpipes container by typing:
+You can access the Genpipes container by typing:
 
 ```
 #!bash
