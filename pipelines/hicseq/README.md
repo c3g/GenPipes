@@ -75,7 +75,7 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a validsingularity
+                        Run inside a container providing a valid singularity
                         image path
   -e {DpnII,HindIII,NcoI,MboI,Arima}, --enzyme {DpnII,HindIII,NcoI,MboI,Arima}
                         Restriction Enzyme used to generate Hi-C library

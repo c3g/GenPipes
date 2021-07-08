@@ -50,7 +50,7 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a validsingularity
+                        Run inside a container providing a valid singularity
                         image path
   -t {mugqic,mpileup,light,sv}, --type {mugqic,mpileup,light,sv}
                         DNAseq analysis type
