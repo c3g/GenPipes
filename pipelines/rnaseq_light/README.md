@@ -16,7 +16,7 @@ usage: rnaseq_light.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                        [-d DESIGN] [-t {cufflinks,stringtie}] [-r READSETS]
                        [-v]
 
-Version: 3.2.0
+Version: 3.5.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
