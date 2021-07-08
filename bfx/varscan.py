@@ -36,7 +36,7 @@ def mpileupcns(input, output, sampleNamesFile, other_options=None):
             ['varscan', 'module_varscan'],
         ],
         command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JAR mpileup2cns {other_options}\\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JAR mpileup2cns {other_options} \\
   {input} \\
   --output-vcf 1 \\
   --vcf-sample-list {sampleNames}{output}""".format(

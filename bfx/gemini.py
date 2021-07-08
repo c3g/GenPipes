@@ -16,16 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-
-#!/usr/bin/env python
-
 # Python Standard Modules
 
 # MUGQIC Modules
 from core.job import *
 
-def gemini_annotations(variants, gemini_output, tmp_dir):
 
+def gemini_annotations(variants, gemini_output, tmp_dir):
     return Job(
         [variants],
         [gemini_output],
@@ -38,16 +35,15 @@ gemini load -v {variants} \\
   {options} \\
   --tempdir {temp} \\
   {output}""".format(
-        options=config.param('gemini_annotations', 'options'),
-        variants=variants,
-        output=gemini_output,
-        temp=tmp_dir
+            options=config.param('gemini_annotations', 'options'),
+            variants=variants,
+            output=gemini_output,
+            temp=tmp_dir
         )
     )
 
 
 def set_somatic(ped, database, output):
-
     return Job(
         [database],
         [output],
@@ -70,8 +66,8 @@ gemini set_somatic \\
         )
     )
 
-def actionable_mutations(database, output):
 
+def actionable_mutations(database, output):
     return Job(
         [database],
         [output],

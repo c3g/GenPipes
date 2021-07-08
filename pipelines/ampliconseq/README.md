@@ -19,7 +19,7 @@ usage: ampliconseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                       [--container {wrapper, singularity} <IMAGE PATH>]
                       [-t {qiime,dada2}] [-d DESIGN] [-r READSETS] [-v]
 
-Version: 3.2.0
+Version: 3.5.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -55,7 +55,7 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a validsingularity
+                        Run inside a container providing a valid singularity
                         image path
   -t {qiime,dada2}, --type {qiime,dada2}
                         AmpliconSeq analysis type

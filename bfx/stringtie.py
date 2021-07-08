@@ -53,17 +53,17 @@ def stringtie(input_bam, output_directory, gtf=None, abund=False):
         [["stringtie", "module_stringtie"]],
         command="""\
 mkdir -p {output_directory} && \\
-stringtie -v {other_options}{strd_cmd}{gtf}{abund_cmd} \\
+stringtie -v {other_options} {strd_cmd} {gtf} {abund_cmd} \\
   -p {num_threads} \\
   -m {min_length} \\
   -o {outgtf} \\
   {input_bam}""".format(
       output_directory=output_directory,
-      other_options=config.param('stringtie','other_options', required=False),
-      strd_cmd="\\\n  " + strd_cmd if strd_cmd else "",
-      gtf="\\\n  -G " + gtf if gtf else "", 
-      abund_cmd="\\\n  -eB -A " + os.path.join(output_directory, "abundance.tab") if abund else "",
-      num_threads=config.param('stringtie','threads', type='posint'),
+      other_options=config.param('stringtie', 'other_options', required=False),
+      strd_cmd="\\\n  " + strd_cmd if strd_cmd else " ",
+      gtf="\\\n  -G " + gtf if gtf else " ",
+      abund_cmd="\\\n  -eB -A " + os.path.join(output_directory, "abundance.tab") if abund else " ",
+      num_threads=config.param('stringtie', 'threads', type='posint'),
       min_length=config.param('stringtie', 'min_length', type='posint'),
       outgtf=os.path.join(output_directory, "transcripts.gtf"), 
       input_bam=input_bam

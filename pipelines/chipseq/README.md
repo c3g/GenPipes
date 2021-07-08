@@ -31,7 +31,7 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [--container {wrapper, singularity} <IMAGE PATH>]
                   [-d DESIGN] [-t {chipseq,atacseq}] [-r READSETS] [-v]
 
-Version: 3.4.0                                                                     
+Version: 3.5.0                                                                     
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -67,7 +67,7 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a validsingularity
+                        Run inside a container providing a valid singularity
                         image path                                                         
   -d DESIGN, --design DESIGN                                                               
                         design file                                                        
@@ -78,8 +78,8 @@ optional arguments:
   -v, --version         show the version information and exit
 
 ```
-![chipseq chipseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_chipseq.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_chipseq.png)
+![chipseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq.png)
 ```
 chipseq:                                                                                   
 1- picard_sam_to_fastq                                                                     
@@ -98,9 +98,10 @@ chipseq:
 14- homer_find_motifs_genome                                                               
 15- annotation_graphs                                                                      
 16- run_spp                                                                                
-17- ihec_metrics                                                                           
-18- multiqc_report                                                                         
-19- cram_output
+17- differential_binding
+18- ihec_metrics                                                                           
+19- multiqc_report                                                                         
+20- cram_output
 ```
 ```
 atacseq:                                                                                   
@@ -240,11 +241,15 @@ cram_output
 Generate long term storage version of the final alignment files in CRAM format
 Using this function will include the orginal final bam file into the  removable file list 
 
-macs2_atacseq_callpeak
-----------------------
-Peaks are called using the MACS2 software. Different calling strategies are used for narrow and broad peaks.
-The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
-The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
-The default mfold parameter of MACS2 is [10,30].
+differential_binding
+-----------
 
-
+Performs differential binding analysis using [DiffBind](http://bioconductor.org/packages/release/bioc/html/DESeq.html)
+Differential binding is performed based on the provided treatments and controls per 
+particular comparison in the design file.
+The differential analysis results will be separately generated for each specified 
+comparison with correctly specified treatments (2) and controls (1) samples. Samples 
+with 0 will be ignored for the comparison. At least two samples for each group are 
+required and otherwise the step will be skipped. 
+Final results with differentially bound peaks are saved as a TSV and also a 
+html report will be generated to QC diffrential analysis for each comparison.

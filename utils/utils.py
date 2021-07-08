@@ -180,6 +180,6 @@ def container_wrapper_argparse(argv):
     # call in the wrapper
     if help:
         argv.append('--help')
-    # sys.stderr.write('{} {} {}'.format([args.wrap], argv, wrap_option))
+    sys.stderr.write('{} {} {}'.format(args.wrap, ' '.join(argv), ' '.join(wrap_option)))
     return subprocess.call([args.wrap] + argv + wrap_option)
 

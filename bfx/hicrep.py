@@ -26,21 +26,19 @@ import os
 from core.config import *
 from core.job import *
 
-def calculate_reproducible_score( output_dir, sample1, sample2, file1_path, file2_path,
-                                  chromosome , resolution, bound_width, weights, corr, down_sampling, smooth):
+def calculate_reproducible_score(output_file, sample1, sample2, file1_path, file2_path, chromosome , resolution, bound_width, weights, corr, down_sampling, smooth):
 
-    output_file= "".join((output_dir, "_".join(("/hicrep", sample1,  "vs", sample2 , chromosome, resolution, "res",smooth,
-                                                bound_width, down_sampling)), ".tmp"))
+    # output_file= "".join((output_dir, "_".join(("/hicrep", sample1,  "vs", sample2 , chromosome, resolution, "res",smooth,
+                                                # bound_width, down_sampling)), ".tmp"))
 
     return Job(
-        [file1_path,file2_path],
+        [file1_path, file2_path],
         [output_file],
         [
             ['reproducibility_scores', 'module_mugqic_tools'],
             ['reproducibility_scores', 'module_R']
         ],
         command="""\
-        mkdir -p {output_dir} &&
 Rscript $R_TOOLS/hicrep.R \\
   -s1 {sample1} \\
   -s2 {sample2} \\
@@ -66,11 +64,10 @@ Rscript $R_TOOLS/hicrep.R \\
         weights=weights,
         corr=corr,
         down_sampling=down_sampling,
-        output_dir=output_dir
     ))
 
 
-def merge_tmp_files( input_files, output_files, temp_out_dir, resolution, smooth, bound_width, down_sampling, temp_dir):
+def merge_tmp_files(input_files, output_files, temp_out_dir, resolution, smooth, bound_width, down_sampling, temp_dir):
     if not isinstance(input_files, list):
         input_files = [input_files]
     if not isinstance(output_files, list):

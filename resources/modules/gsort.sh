@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=gsort
-VERSION=0.0.6
+VERSION=0.1.4
 ARCHIVE=${SOFTWARE}-${VERSION}_linux_amd64
 ARCHIVE_URL=https://github.com/brentp/${SOFTWARE}/releases/download/v${VERSION}/${SOFTWARE}_linux_amd64
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}

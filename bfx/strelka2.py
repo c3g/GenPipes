@@ -41,7 +41,7 @@ def somatic_config(input_normal,input_tumor, output_dir, callRegions=None, manta
         --normalBam {normal} \\
         --tumorBam {tumor} \\
         --referenceFasta {genome} \\
-        {experiment_type} {callRegions} {mantaIndels}\\
+        {experiment_type} {callRegions} {mantaIndels} \\
         --runDir {output}""".format(
             normal=input_normal,
             tumor=input_tumor,
