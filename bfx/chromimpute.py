@@ -145,7 +145,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
   {output_dir} \\
   {histone_mark}""".format(
       java_other_options=config.param('DEFAULT', 'java_other_options'),
-      ram=config.param('chromimpute', 'ram'),
+      ram=config.param('chromimpute_generate_train_data', 'ram'),
       resolution=config.param('chromimpute', 'resolution'),
       converteddir=converteddir,
       distancedir=distancedir,
@@ -251,7 +251,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
     {sample} \\
     {mark}""".format(
         java_other_options=config.param('DEFAULT', 'java_other_options'),
-        ram=config.param('chromimpute', 'ram'),
+        ram=config.param('chromimpute_apply', 'ram'),
         chrom=chr,
         resolution=config.param('chromimpute', 'resolution'),
         converteddir=converteddir,
@@ -266,9 +266,9 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
     )
 
 
-def eval(nput_files, imputed_file, converted_file, output_file, converteddir, imputeddir, percent1, percent2, chr_sizes_file, sample, histone_mark):
+def eval(input_files, imputed_file, converted_file, output_file, converteddir, imputeddir, percent1, percent2, chr_sizes_file, sample, histone_mark):
     return Job(
-        [nput_files],
+        input_files,
         [output_file],
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name="chromimpute_eval."+sample+"_"+histone_mark,
@@ -283,7 +283,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
     {imputed_file} \\
     {chrom_sizes}""".format(
         java_other_options=config.param('DEFAULT', 'java_other_options'),
-        ram=config.param('chromimpute', 'ram'),
+        ram=config.param('chromimpute_eval', 'ram'),
         percent1=percent1,
         percent2=percent2,
         converteddir=converteddir,
