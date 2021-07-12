@@ -1,9 +1,14 @@
-25 tags, 8347 commits
+26 tags, 8350 commits
 
-HEAD        Thu Jul 8 11:23:25 2021 -0400        1066 commits
+HEAD        Mon Jul 12 11:52:58 2021 -0400        0 commits
 
-  Edouard Henrion <edouard.henrion@mcgill.ca>      5 commits
+3.5.0        Mon Jul 12 16:41:20 2021 +0000        1071 commits
 
+  Edouard Henrion <edouard.henrion@mcgill.ca>      8 commits
+
+       fd8c1cd GenPipes - Release 3.5.0 : correcting typo in chipseq README
+       038dcb2 GenPipes - Release 3.5.0 : correcting typos in READMES
+       6e4f4de Version bump to 3.5.0
        48f97ec GenPipes - Release 3.5.0 : correcting typos in pipeline README files
        f892b2e GenPipes - Release 3.5.0 : updating VERSION and README-release files
        82b28e3 GenPipes - Release 3.5.0 : corrected typo in README
@@ -19,8 +24,10 @@ HEAD        Thu Jul 8 11:23:25 2021 -0400        1066 commits
        0659d35 GenPipes - Resources : adding software installation scripts
        53dcb83 GenPipes - Resources : updates of solftware and genome installation scripts
 
-  ehenrion <edouard.henrion@mcgill.ca>      45 commits
+  ehenrion <edouard.henrion@mcgill.ca>      47 commits
 
+       339172c Merged in release_3.5 (pull request #242)
+       525bfe1 Merged in release_3.5 (pull request #241)
        0d0f7b4 Merged in bash_cmd_for_covseq_update_eh (pull request #236)
        5a54cf9 GenPipes - CoVSeq pipeline : updated call to "zcat" in covseq.py
        2a056bd GenPipes - BFX : updated bash_cmd.py
