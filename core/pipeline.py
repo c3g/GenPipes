@@ -117,7 +117,8 @@ class Pipeline(object):
             config.filepath = os.path.abspath(config_trace.name)
 
         self._output_dir = os.path.abspath(self.args.output_dir)
-        self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config, container=self.args.container)
+        self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config, container=self.args.container,
+                                           genpipes_file=self.args.genpipes_file)
 
         self._json = True
         if self.args.no_json:
@@ -232,6 +233,11 @@ class Pipeline(object):
                                          "singularity image path", action=ValidateContainer,
                                           metavar=("{wrapper, singularity}",
                                                    "<IMAGE PATH>"))
+            self._argparser.add_argument("--genpipes_file", '-g', default=sys.stdout, type=argparse.FileType('w'),
+                                         help="Command file output path. This is the command used to process "
+                                              "the data, or said otherwise, this command will \"run the "
+                                              "Genpipes pipeline\". Will be redirected to stdout if the "
+                                              "option is not provided.")
 
         return self._argparser
 

@@ -21,6 +21,8 @@
 import json
 import logging
 import os
+import stat
+import sys
 import tempfile
 import textwrap
 from uuid import uuid4
@@ -33,20 +35,20 @@ separator_line = "#" + "-" * 79
 
 logger = logging.getLogger(__name__)
 
-def create_scheduler(s_type, config_files, container=None):
+def create_scheduler(s_type, config_files, container=None, genpipes_file=None):
     if s_type == "pbs":
-        return PBSScheduler(config_files, container=container)
+        return PBSScheduler(config_files, container=container, genpipes_file=genpipes_file)
     elif s_type == "batch":
-        return BatchScheduler(config_files, container=container)
+        return BatchScheduler(config_files, container=container, genpipes_file=genpipes_file)
     elif s_type == "daemon":
-        return DaemonScheduler(config_files)
+        return DaemonScheduler(config_files, genpipes_file=genpipes_file)
     elif s_type == "slurm":
-        return SlurmScheduler(config_files, container=container)
+        return SlurmScheduler(config_files, container=container, genpipes_file=genpipes_file)
     else:
         raise Exception("Error: scheduler type \"" + s_type + "\" is invalid!")
 
 class Scheduler(object):
-    def __init__(self, config_files, container=None, **kwargs):
+    def __init__(self, config_files, container=None, genpipes_file=None, **kwargs):
 
         self.name = 'generic'
         self._config_files = config_files
@@ -54,6 +56,15 @@ class Scheduler(object):
         self._host_cvmfs_cache = None
         self._cvmfs_cache = None
         self._bind = None
+        if genpipes_file is None:
+            self.genpipes_file = sys.stdout
+        else:
+            self.genpipes_file = genpipes_file
+            if genpipes_file is not sys.stdout:
+                # make sure it is user and group executable
+                st = os.stat(genpipes_file.name)
+                os.chmod(genpipes_file.name, st.st_mode | stat.S_IEXEC | stat.S_IXGRP)
+
 
     def submit(self, pipeline):
         # Needs to be defined in scheduler child class
@@ -141,8 +152,8 @@ class Scheduler(object):
 
 
     def print_header(self, pipeline,shebang='/bin/bash'):
-        print("""\
-#!{shebang}
+
+        self.genpipes_file.write("""#!{shebang}
 # Exit immediately on error
 {scheduler.disable_modulercfile}
 set -eu -o pipefail
@@ -153,7 +164,8 @@ set -eu -o pipefail
 # Created on: {pipeline.timestamp}
 # Steps:
 {steps}
-{separator_line}"""
+{separator_line}
+"""
             .format(
                 shebang=shebang,
                 separator_line=separator_line,
@@ -165,8 +177,7 @@ set -eu -o pipefail
         )
 
         if pipeline.jobs:
-            print(
-"""
+            self.genpipes_file.write("""
 OUTPUT_DIR={pipeline.output_dir}
 JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
 TIMESTAMP=`date +%FT%H.%M.%S`
@@ -189,12 +200,9 @@ cd $OUTPUT_DIR
                         json_files.append(os.path.join(pipeline.output_dir, "json", sample.json_file))
             json_files = list(set(json_files))
             for j_file in json_files:
-                print(
-"""sed -i "s/\\"submission_date\\": \\"\\",/\\"submission_date\\": \\"$TIMESTAMP\\",/" {file}"""
-                    .format(
-                        file=j_file
-                    )
-                )
+                self.genpipes_file.write("""
+                    sed -i "s/\\"submission_date\\": \\"\\",/\\"submission_date\\": \\"$TIMESTAMP\\",/" {file}
+""".format(file=j_file))
 
         ## Print a copy of sample JSONs for the genpipes dashboard
         if pipeline.json and pipeline.portal_output_dir != "":
@@ -209,28 +217,22 @@ cd $OUTPUT_DIR
                     input_file=input_file, output_file=output_file))
                 #test_copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
                     #input_file=input_file, output_file=test_output_file))
-            print(textwrap.dedent("""
+            self.genpipes_file.write(textwrap.dedent("""
                 #------------------------------------------------------------------------------
                 # Print a copy of sample JSONs for the genpipes dashboard
                 #------------------------------------------------------------------------------
                 {copy_commands}
             """).format(copy_commands='\n'.join(copy_commands)))
-            #print(textwrap.dedent("""
-                ##------------------------------------------------------------------------------
-                ## Print a copy of sample JSONs for testing of the dashboard
-                ##------------------------------------------------------------------------------
-                #{copy_commands}
-            #""").format(copy_commands='\n'.join(test_copy_commands)))
 
     def print_step(self, step):
-        print("""
+        self.genpipes_file.write("""
 {separator_line}
 # STEP: {step.name}
 {separator_line}
 STEP={step.name}
 mkdir -p $JOB_OUTPUT_DIR/$STEP
 """.format(separator_line=separator_line, step=step)
-        )
+                                 )
 
     def job2json(self, pipeline, step, job, job_status):
         if not pipeline.json:
@@ -248,7 +250,8 @@ module load {module_python}
   -l \\"$JOB_OUTPUT\\" \\
   -o \\"{jsonfiles}\\" \\
   -f {status}
-module unload {module_python} {command_separator}""".format(
+module unload {module_python} {command_separator}
+""".format(
             job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
             module_python=config.param('DEFAULT', 'module_python'),
             module_mugqic_tools=config.param('DEFAULT', 'module_mugqic_tools'),
@@ -282,7 +285,7 @@ class PBSScheduler(Scheduler):
                         job_dependencies = "JOB_DEPENDENCIES="
 
                     #sleepTime = random.randint(10, 100)
-                    print("""
+                    self.genpipes_file.write("""
 {separator_line}
 # JOB: {job.id}: {job.name}
 {separator_line}
@@ -352,7 +355,7 @@ exit \$MUGQIC_STATE" | \\
                     # Write job parameters in job list file
                     cmd += "\necho \"$" + job.id + "\t$JOB_NAME\t$JOB_DEPENDENCIES\t$JOB_OUTPUT_RELATIVE_PATH\" >> $JOB_LIST\n"
 
-                    print cmd
+                    self.genpipes_file.write(cmd)
 
         # Check cluster maximum job submission
         cluster_max_jobs = config.param('DEFAULT', 'cluster_max_jobs', type='posint', required=False)
@@ -364,7 +367,7 @@ exit \$MUGQIC_STATE" | \\
 class BatchScheduler(Scheduler):
 
     def __init__(self, *args, **kwargs):
-        super(BatchScheduler, self ).__init__(*args, **kwargs)
+        super(BatchScheduler, self).__init__(*args, **kwargs)
         self.name = 'Batch'
 
     def submit(self, pipeline):
@@ -372,12 +375,12 @@ class BatchScheduler(Scheduler):
             self.container_line))
         self.print_header(pipeline)
         if pipeline.jobs:
-            print("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`")
+            self.genpipes_file.write("SEPARATOR_LINE=`seq -s - 80 | sed 's/[0-9]//g'`\n")
         for step in pipeline.step_range:
             if step.jobs:
                 self.print_step(step)
                 for job in step.jobs:
-                    print("""
+                    self.genpipes_file.write("""
 {separator_line}
 # JOB: {job.name}
 {separator_line}
@@ -431,7 +434,7 @@ class SlurmScheduler(Scheduler):
                     else:
                         job_dependencies = "JOB_DEPENDENCIES="
 
-                    print("""
+                    self.genpipes_file.write("""
 {separator_line}
 # JOB: {job.id}: {job.name}
 {separator_line}
@@ -508,7 +511,7 @@ exit \$MUGQIC_STATE" | \\
                     #add 0.2s sleep to let slurm submiting the job correctly
                     cmd += "\nsleep 0.1\n"
 
-                    print cmd
+                    self.genpipes_file.write(cmd)
         logger.info("\nAll submitted\"")
         # Check cluster maximum job submission
         cluster_max_jobs = config.param('DEFAULT', 'cluster_max_jobs', type='posint', required=False)
@@ -524,7 +527,7 @@ class DaemonScheduler(Scheduler):
         self.name = 'DAEMON'
 
     def submit(self, pipeline):
-        print self.json(pipeline)
+        self.genpipes_file.write(self.json(pipeline))
 
     def json(self, pipeline):
         #with open('sample.json', 'w') as json_file:

@@ -20,17 +20,11 @@
 ################################################################################
 
 # Python Standard Modules
-import argparse
 import logging
-import math
 import os
 import re
 import sys
 import itertools
-import commands
-import gzip
-import subprocess
-import pysam
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))

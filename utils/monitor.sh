@@ -1,10 +1,12 @@
-
+#!/bin/bash
 # Functions
 
 SLEEP_TIME=120
 MAX_QUEUE=500
 SHEDULER_USER=$USER
 SCHEDULER=slurm
+type squeue > /dev/null 2>&1 || SCHEDULER=pbs
+
 
 usage (){
 
@@ -40,7 +42,7 @@ cancel_jobs () {
   elif [[ ${SCHEDULER} ==  'pbs' ]]; then
     qdel $(cat ${job_list} | awk -F'=' '{print $2}')
   fi
-  rm ${job_list}
+  rm ${job_list}  2>/dev/null
   echo canceled all jobs from ${job_list}
 }
 
@@ -51,7 +53,7 @@ cancel_trap () {
 }
 
 submit () {
-  echo submit $1
+  echo submitting $1
   job_script=${1}
   job_list=${job_script%.sh}.out
   while true; do
@@ -65,9 +67,10 @@ submit () {
       echo ${job_script} was sucessfully submitted
       break
     else
-      echo error in submission
+      echo error in submits
       cancel_jobs ${job_list}
-      echo restarting submission
+      sleep 1
+      echo resubmitting
     fi
   done
 }
