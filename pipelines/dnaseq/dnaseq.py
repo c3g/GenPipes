@@ -1779,35 +1779,6 @@ END
         
         return jobs
 
-    def metrics_gatk_cluster_fingerprint(self):
-        """
-        CheckFingerprint (Picard)
-        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
-        input: sample SAM/BAM or VCF
-        output: fingerprint file
-        """
-        jobs = []
-
-        metrics_directory = os.path.join("metrics", "dna")
-        input = os.path.join(metrics_directory, "sample.fingerprint")
-        
-        output = os.path.join("metrics", "dna", "cluster.fingerprints")
-        jobs.append(
-            concat_jobs([
-                bash.mkdir(
-                    metrics_directory,
-                    remove=False
-                ),
-                gatk4.cluster_crosscheck_metrics(
-                    input,
-                    output,
-                ),
-            ], name="gatk_cluster_crosscheck_metrics.allSamples",
-            )
-        )
-        
-        return jobs
-
     # def metrics_gatk_cluster_fingerprint_sample(self):
     #     """
     #     CheckFingerprint (Picard)
@@ -1839,104 +1810,6 @@ END
     #
     #     return job
 
-    def metrics_ngscheckmate(self):
-        """
-        NGSCheckMate is a software package for identifying next generation sequencing (NGS) data files from the same individual.
-        It analyzes various types of NGS data files including (but not limited to) whole genome sequencing (WGS), whole exome
-        sequencing (WES), RNA-seq, ChIP-seq, and targeted sequencing of various depths. Data types can be mixed (e.g. WES and
-        RNA-seq, or RNA-seq and ChIP-seq). It takes BAM (reads aligned to the genome), VCF (variants) or FASTQ (unaligned reads)
-        files as input. NGSCheckMate uses depth-dependent correlation models of allele fractions of known single-nucleotide
-        polymorphisms (SNPs) to identify samples from the same individual.
-        input: file containing all vcfs in project
-        output:
-        """
-
-        jobs = []
-
-        inputs = []
-        for sample in self.samples:
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".hc.vcf.gz"))
-
-        output = os.path.join("metrics", "dna", "checkmate")
-        vcf_file = os.path.join(output, 'checkmate.tsv')
-   
-        jobs.append(concat_jobs([
-            bash.mkdir(
-                output,
-                remove=False
-            ),
-            Job(
-                inputs,
-                [vcf_file],
-                command="ls " + " ".join(inputs) + " > " + vcf_file
-            ),
-            ngscheckmate.run(
-                vcf_file,
-                output
-            ),
-        ], name="run_checkmate.sample_level"))
-
-        return jobs
-
-    def metrics_peddy(self):
-        """
-        peddy compares familial-relationships and sexes as reported in a PED/FAM file with those inferred from a VCF.
-        input: one vcf with all project samples
-        output: qc files and corrected sex ped file
-		"""
-    
-        jobs = []
-    
-        peddy_file = os.path.join('peddy.ped')
-        input = os.path.join("variants", "AllSamples.hc.vcf.gz")
-    
-        output = os.path.join("metrics", "dna", "peddy")
-    
-        if(peddy_file):
-            job = peddy.run(
-                input,
-                peddy_file,
-                output
-            )
-            job.name = "run_peddy.sample_level"
-            jobs.append(job)
-    
-        else:
-            sys.stderr.write("Please create ped file using given sex designations")
-    
-        return jobs
-
-    def metrics_verify_bam_id(self):
-        """
-        
-        :param self:
-        :return:
-        """
-
-        jobs = []
-
-        for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            output = os.path.join("metrics", "dna", sample.name, "verifyBamId")
-            input = self.select_input_files(
-                [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
-                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]])[0]
-
-            jobs.append(concat_jobs([
-                # Create output directory since it is not done by default by GATK tools
-                bash.mkdir(
-                    output,
-                    remove=False
-                ),
-                verify_bam_id.verify(
-                    input,
-                    os.path.join(output, sample.name)
-                )
-            ], name="verify_bam_id." + sample.name))
-
-        return jobs
-
     def gatk_haplotype_caller(self):
         """
         GATK haplotype caller for snps and small indels.
@@ -1954,7 +1827,7 @@ END
 
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
@@ -2599,12 +2472,12 @@ pandoc \\
                     concat_jobs([
                         mkdir_job,
                         pipe_jobs([
-                            samtools.mpileup(
+                            bcftools.mpileup(
                                 input,
                                 None,
                                 config.param('snp_and_indel_bcf', 'mpileup_other_options')
                                 ),
-                            samtools.bcftools_call(
+                            bcftools.call(
                                 "-",
                                 os.path.join(output_directory, "allSamples.bcf"),
                                 config.param('snp_and_indel_bcf', 'bcftools_other_options')
@@ -2621,13 +2494,13 @@ pandoc \\
                         concat_jobs([
                             mkdir_job,
                             pipe_jobs([
-                                samtools.mpileup(
+                                bcftools.mpileup(
                                     input,
                                     None,
                                     config.param('snp_and_indel_bcf', 'mpileup_other_options'),
                                     region
                                     ),
-                                samtools.bcftools_call(
+                                bcftools.call(
                                     "-",
                                     os.path.join(output_directory, "allSamples." + region + ".bcf"),
                                     config.param('snp_and_indel_bcf', 'bcftools_other_options')
