@@ -17,7 +17,8 @@ usage: ampliconseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                       [-l {debug,info,warning,error,critical}]
                       [--sanity-check]
                       [--container {wrapper, singularity} <IMAGE PATH>]
-                      [-t {qiime,dada2}] [-d DESIGN] [-r READSETS] [-v]
+                      [--genpipes_file GENPIPES_FILE] [-t {qiime,dada2}]
+                      [-d DESIGN] [-r READSETS] [-v]
 
 Version: 3.5.0
 
@@ -55,8 +56,13 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a valid singularity
+                        Run inside a container providing a validsingularity
                         image path
+  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+                        Command file output path. This is the command used to
+                        process the data, or said otherwise, this command will
+                        "run the Genpipes pipeline". Will be redirected to
+                        stdout if the option is not provided.
   -t {qiime,dada2}, --type {qiime,dada2}
                         AmpliconSeq analysis type
   -d DESIGN, --design DESIGN

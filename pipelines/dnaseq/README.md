@@ -12,6 +12,7 @@ usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--no-json] [--report] [--clean]
                  [-l {debug,info,warning,error,critical}] [--sanity-check]
                  [--container {wrapper, singularity} <IMAGE PATH>]
+                 [--genpipes_file GENPIPES_FILE]
                  [-t {mugqic,mpileup,light,sv}] [-r READSETS] [-v]
 
 Version: 3.5.0
@@ -50,8 +51,13 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a valid singularity
+                        Run inside a container providing a validsingularity
                         image path
+  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+                        Command file output path. This is the command used to
+                        process the data, or said otherwise, this command will
+                        "run the Genpipes pipeline". Will be redirected to
+                        stdout if the option is not provided.
   -t {mugqic,mpileup,light,sv}, --type {mugqic,mpileup,light,sv}
                         DNAseq analysis type
   -r READSETS, --readsets READSETS
@@ -152,40 +158,6 @@ light:
 4- sambamba_merge_sam_files
 5- gatk_indel_realigner
 6- sambamba_merge_realigned
-7- sambamba_mark_duplicates
-8- metrics_dna_picard_metrics
-9- metrics_dna_sample_qualimap
-10- metrics_dna_sambamba_flagstat
-11- metrics_dna_fastqc
-12- picard_calculate_hs_metrics
-13- gatk_callable_loci
-14- extract_common_snp_freq
-15- baf_plot
-16- gatk_haplotype_caller
-17- merge_and_call_individual_gvcf
-18- combine_gvcf
-19- merge_and_call_combined_gvcf
-20- variant_recalibrator
-21- haplotype_caller_decompose_and_normalize
-22- haplotype_caller_flag_mappability
-23- haplotype_caller_snp_id_annotation
-24- haplotype_caller_snp_effect
-25- haplotype_caller_dbnsfp_annotation
-26- haplotype_caller_gemini_annotations
-27- run_multiqc
-28- cram_output
-----
-```
-![dnaseq sv workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_sv.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_sv.png)
-```
-sv:
-1- picard_sam_to_fastq
-2- skewer_trimming
-3- bwa_mem_sambamba_sort_sam
-4- sambamba_merge_sam_files
-5- gatk_indel_realigner
-6- sambamba_merge_realigned
 7- picard_mark_duplicates
 8- recalibration
 9- sym_link_final_bam
@@ -210,6 +182,36 @@ sv:
 28- haplotype_caller_gemini_annotations
 29- run_multiqc
 30- cram_output
+----
+```
+![dnaseq sv workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_sv.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_sv.png)
+```
+sv:
+1- picard_sam_to_fastq
+2- skewer_trimming
+3- bwa_mem_sambamba_sort_sam
+4- sambamba_merge_sam_files
+5- gatk_indel_realigner
+6- sambamba_merge_realigned
+7- picard_mark_duplicates
+8- recalibration
+9- gatk_haplotype_caller
+10- merge_and_call_individual_gvcf
+11- metrics_dna_picard_metrics
+12- delly_call_filter
+13- delly_sv_annotation
+14- manta_sv_calls
+15- manta_sv_annotation
+16- lumpy_paired_sv
+17- lumpy_sv_annotation
+18- wham_call_sv
+19- wham_sv_annotation
+20- cnvkit_batch
+21- cnvkit_sv_annotation
+22- run_breakseq2
+23- ensemble_metasv
+24- metasv_sv_annotation
 
 ```
 picard_sam_to_fastq
@@ -369,7 +371,7 @@ run_multiqc
 cram_output
 -----------
 Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list 
+Using this function will include the orginal final bam file into the  removable file list
 
 sym_link_fastq
 --------------
@@ -482,12 +484,66 @@ change rate by chromosome, changes by type, effects by impact, effects by functi
 counts by genomic region, SNV quality, coverage, InDel lengths, base changes,  transition-transversion rates,
 summary of allele frequencies, codon changes, amino acid changes, changes per chromosome, change rates.
 
-sambamba_mark_duplicates
-------------------------
-Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
-(for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
-will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
-
 metrics_dna_sambamba_flagstat
 -----------------------------
+delly_call_filter
+-----------------
+Delly2 is an integrated structural variant prediction method that can
+discover, genotype and visualize deletions, tandem duplications, inversions and translocations
+at single-nucleotide resolution in short-read massively parallel sequencing data. It uses paired-ends
+and split-reads to sensitively and accurately delineate genomic rearrangements throughout the genome.
+Structural variants can be visualized using Delly-maze and Delly-suave.
+input: normal and tumor final bams
+Returns:bcf file
+
+
+delly_sv_annotation
+-------------------
+manta_sv_calls
+--------------
+Manta calls structural variants (SVs) and indels from mapped paired-end sequencing reads. It is optimized for
+analysis of germline variation in small sets of individuals and somatic variation in tumor/normal sample pairs.
+Manta discovers, assembles and scores large-scale SVs, medium-sized indels and large insertions within a
+single efficient workflow.
+Returns:Manta accepts input read mappings from BAM or CRAM files and reports all SV and indel inferences
+ in VCF 4.1 format.
+
+
+manta_sv_annotation
+-------------------
+lumpy_paired_sv
+---------------
+A probabilistic framework for structural variant discovery.
+Lumpy traditional with paired ends and split reads on tumor normal pair.
+Returns:bams.
+
+
+lumpy_sv_annotation
+-------------------
+wham_call_sv
+------------
+Wham (Whole-genome Alignment Metrics) to provide a single, integrated framework for both structural variant
+calling and association testing, thereby bypassing many of the difficulties that currently frustrate attempts
+to employ SVs in association testing.
+Returns:vcf.
+
+
+wham_sv_annotation
+------------------
+cnvkit_batch
+------------
+
+cnvkit_sv_annotation
+--------------------
+run_breakseq2
+-------------
+BreakSeq2: Ultrafast and accurate nucleotide-resolution analysis of structural variants
+
+
+ensemble_metasv
+---------------
+
+
+metasv_sv_annotation
+--------------------
 
