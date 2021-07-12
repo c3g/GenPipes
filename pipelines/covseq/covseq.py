@@ -39,6 +39,7 @@ from pipelines.dnaseq import dnaseq
 from bfx import bcftools
 from bfx import bedtools
 from bfx import bwa
+from bfx import covseq_tools
 from bfx import cutadapt
 from bfx import fgbio
 from bfx import freebayes
@@ -47,6 +48,7 @@ from bfx import htslib
 from bfx import ivar
 from bfx import kraken2
 from bfx import multiqc
+from bfx import ncovtools
 from bfx import quast
 from bfx import sambamba
 from bfx import samtools
@@ -1362,27 +1364,28 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
             concat_jobs([
                 bash.mkdir(metrics_directory),
                 bash.mkdir(os.path.dirname(run_metadata)),
-                Job(
-                    input_files=covid_collect_metrics_inputs,
-                    output_files=[os.path.join("metrics", "metrics.csv"), os.path.join("metrics", "host_contamination_metrics.tsv"), os.path.join("metrics", "host_removed_metrics.tsv"), os.path.join("metrics", "kraken2_metrics.tsv")],
-                    module_entries=[
-                        ['prepare_table', 'module_R'],
-                        ['prepare_table', 'module_CoVSeQ_tools'],
-                        ['prepare_table', 'module_samtools']
-                    ],
-                    command="""\\
-echo "Collecting metrics..." && \\
-covid_collect_metrics.sh -r {readset_file}""".format(
-    readset_file=readset_file
-    )
+                covseq_tools.covid_collect_metrics(
+                    readset_file,
+                    covid_collect_metrics_inputs
                     ),
+#                 Job(
+#                     input_files=covid_collect_metrics_inputs,
+#                     output_files=[os.path.join("metrics", "metrics.csv"), os.path.join("metrics", "host_contamination_metrics.tsv"), os.path.join("metrics", "host_removed_metrics.tsv"), os.path.join("metrics", "kraken2_metrics.tsv")],
+#                     module_entries=[
+#                         ['prepare_table', 'module_R'],
+#                         ['prepare_table', 'module_CoVSeQ_tools'],
+#                         ['prepare_table', 'module_samtools']
+#                     ],
+#                     command="""\\
+# echo "Collecting metrics..." && \\
+# covid_collect_metrics.sh -r {readset_file}""".format(
+#     readset_file=readset_file
+#     )
+#                     ),
                 Job(
                     input_files=[],
                     output_files=[run_metadata, software_version],
-                    module_entries=[
-                        ['prepare_report', 'module_R'],
-                        ['prepare_report', 'module_CoVSeQ_tools']
-                    ],
+                    module_entries=[],
                     command="""\\
 echo "Preparing to run metadata..." && \\
 echo "run_name,{run_name}
@@ -1498,60 +1501,70 @@ fi""".format(
         jobs.append(
             concat_jobs([
                 job,
-                Job(
-                    input_files=[ivar_output_filtered_bam, ivar_output_primer_trimmed_bam, ivar_output_consensus, ivar_output_variants],
-                    output_files=[],
-                    module_entries=[
-                        ['prepare_report', 'module_ncovtools']
-                    ],
-                    command="""\\
-module purge && \\
-module load {ncovtools} && \\
-echo "Preparing to run ncov_tools..." && \\
-NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet", ""\\""$1"\\""}} END {{print substr(pwet,2)}}') && \\
-echo "data_root: data
-platform: \\"{platform}\\"
-run_name: \\"{run_name}\\"
-reference_genome: {reference_genome}
-amplicon_bed: {amplicon_bed}
-primer_bed: {primer_bed}
-offset: 0
-completeness_threshold: 0.9
-bam_pattern: \\"{{data_root}}/{{sample}}{ivar_bam_pattern_extension}\\"
-primer_trimmed_bam_pattern: \\"{{data_root}}/{{sample}}{ivar_primer_trimmed_bam_pattern_extension}\\"
-consensus_pattern: \\"{{data_root}}/{{sample}}{ivar_consensus_pattern_extension}\\"
-variants_pattern: \\"{{data_root}}/{{sample}}{ivar_variants_pattern_extension}\\"
-metadata: \\"{ivar_metadata}\\"
-negative_control_samples: [$NEG_CTRL]
-assign_lineages: true" > {ivar_ncovtools_config} && \\
-echo "Running ncov_tools..." && \\
-cd {ivar_ncovtools_directory} && \\
-snakemake --unlock --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE
-snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all
-snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary
-snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
-    ncovtools=config.param('prepare_report', 'module_ncovtools'),
-    readset_file=readset_file,
-    # neg_ctrl=os.path.join("report", "neg_controls.txt"),
-    platform=config.param('prepare_report', 'platform', required=True),
-    run_name=config.param('prepare_report', 'run_name', required=True),
-    reference_genome=config.param('prepare_report', 'reference_genome', required=True),
-    amplicon_bed=config.param('prepare_report', 'amplicon_bed', required=True),
-    primer_bed=config.param('prepare_report', 'primer_bed', required=True),
-    ivar_bam_pattern_extension=re.sub(r"^.*?\.", ".", ivar_output_filtered_bam),
-    ivar_primer_trimmed_bam_pattern_extension=re.sub(r"^.*?\.", ".", ivar_output_primer_trimmed_bam),
-    ivar_consensus_pattern_extension=re.sub(r"^.*?\.", ".", ivar_output_consensus),
-    ivar_variants_pattern_extension=re.sub(r"^.*?\.", ".", ivar_output_variants),
-    ivar_metadata=os.path.basename(ivar_metadata),
-    ivar_ncovtools_directory=ivar_ncovtools_directory,
-    ivar_ncovtools_config=ivar_ncovtools_config,
-    ivar_ncovtools_config_local=os.path.basename(ivar_ncovtools_config),
-    nb_threads=config.param('prepare_report', 'nb_threads'),
-    output_dir=self.output_dir
-    )
+                ncovtools.run_ncovtools(
+                    ivar_output_filtered_bam,
+                    ivar_output_primer_trimmed_bam,
+                    ivar_output_consensus,
+                    ivar_output_variants,
+                    readset_file,
+                    ivar_metadata,
+                    ivar_ncovtools_directory,
+                    ivar_ncovtools_config,
+                    self.output_dir
                     ),
-                Job(
-                    input_files=[software_version, run_metadata],
+#                 Job(
+#                     input_files=[ivar_output_filtered_bam, ivar_output_primer_trimmed_bam, ivar_output_consensus, ivar_output_variants],
+#                     output_files=[],
+#                     module_entries=[
+#                         ['prepare_report', 'module_ncovtools']
+#                     ],
+#                     command="""\\
+# module purge && \\
+# module load {ncovtools} && \\
+# echo "Preparing to run ncov_tools..." && \\
+# NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet", ""\\""$1"\\""}} END {{print substr(pwet,2)}}') && \\
+# echo "data_root: data
+# platform: \\"{platform}\\"
+# run_name: \\"{run_name}\\"
+# reference_genome: {reference_genome}
+# amplicon_bed: {amplicon_bed}
+# primer_bed: {primer_bed}
+# offset: 0
+# completeness_threshold: 0.9
+# bam_pattern: \\"{{data_root}}/{{sample}}{ivar_bam_pattern_extension}\\"
+# primer_trimmed_bam_pattern: \\"{{data_root}}/{{sample}}{ivar_primer_trimmed_bam_pattern_extension}\\"
+# consensus_pattern: \\"{{data_root}}/{{sample}}{ivar_consensus_pattern_extension}\\"
+# variants_pattern: \\"{{data_root}}/{{sample}}{ivar_variants_pattern_extension}\\"
+# metadata: \\"{ivar_metadata}\\"
+# negative_control_samples: [$NEG_CTRL]
+# assign_lineages: true" > {ivar_ncovtools_config} && \\
+# echo "Running ncov_tools..." && \\
+# cd {ivar_ncovtools_directory} && \\
+# snakemake --unlock --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE
+# snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all
+# snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary
+# snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
+#     ncovtools=config.param('prepare_report', 'module_ncovtools'),
+#     readset_file=readset_file,
+#     # neg_ctrl=os.path.join("report", "neg_controls.txt"),
+#     platform=config.param('prepare_report', 'platform', required=True),
+#     run_name=config.param('prepare_report', 'run_name', required=True),
+#     reference_genome=config.param('prepare_report', 'reference_genome', required=True),
+#     amplicon_bed=config.param('prepare_report', 'amplicon_bed', required=True),
+#     primer_bed=config.param('prepare_report', 'primer_bed', required=True),
+#     ivar_bam_pattern_extension=re.sub(r"^.*?\.", ".", ivar_output_filtered_bam),
+#     ivar_primer_trimmed_bam_pattern_extension=re.sub(r"^.*?\.", ".", ivar_output_primer_trimmed_bam),
+#     ivar_consensus_pattern_extension=re.sub(r"^.*?\.", ".", ivar_output_consensus),
+#     ivar_variants_pattern_extension=re.sub(r"^.*?\.", ".", ivar_output_variants),
+#     ivar_metadata=os.path.basename(ivar_metadata),
+#     ivar_ncovtools_directory=ivar_ncovtools_directory,
+#     ivar_ncovtools_config=ivar_ncovtools_config,
+#     ivar_ncovtools_config_local=os.path.basename(ivar_ncovtools_config),
+#     nb_threads=config.param('prepare_report', 'nb_threads'),
+#     output_dir=self.output_dir
+#     )
+#                     ),
+                Job(input_files=[],
                     output_files=[],
                     module_entries=[
                         ['prepare_report', 'module_R'],
@@ -1559,19 +1572,42 @@ snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores 
                     ],
                     command="""\\
 module purge && \\
-module load {R_covseqtools} && \\
-cd {output_dir} && \\
-echo "Generating report tables..." && \\
-generate_report_tables.R --report_readset={ivar_readset_file_report} --metrics={ivar_metrics} --host_contamination_metrics={host_contamination_metrics} --output_name_pattern=report/report_metrics_ivar && \\
-echo "Rendering report..." && \\
-Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT', report_path, overwrite = TRUE); rmarkdown::render(report_path, output_file='run_report.pdf', output_format = 'all', output_dir='$(pwd)/report', knit_root_dir='$(pwd)')" """.format(
+module load {R_covseqtools}""".format(
     R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
-    output_dir=self.output_dir,
-    ivar_readset_file_report=ivar_readset_file_report,
-    ivar_metrics=os.path.join("metrics", "metrics.csv"),
-    host_contamination_metrics=os.path.join("metrics", "host_contamination_metrics.tsv")
-    )
+    output_dir=self.output_dir)
+                    ),
+                covseq_tools.generate_report_tables(
+                    ivar_readset_file_report,
+                    output_name_pattern=os.path.join("report", "report_metrics_ivar")
+                    ),
+                covseq_tools.render_report(
+                    software_version,
+                    run_metadata,
+                    output_name_pattern=os.path.join("report", "report_metrics_ivar"),
+                    caller="ivar"
                     )
+#                 Job(
+#                     input_files=[software_version, run_metadata],
+#                     output_files=[],
+#                     module_entries=[
+#                         ['prepare_report', 'module_R'],
+#                         ['prepare_report', 'module_CoVSeQ_tools']
+#                     ],
+#                     command="""\\
+# module purge && \\
+# module load {R_covseqtools} && \\
+# cd {output_dir} && \\
+# echo "Generating report tables..." && \\
+# generate_report_tables.R --report_readset={ivar_readset_file_report} --metrics={ivar_metrics} --host_contamination_metrics={host_contamination_metrics} --output_name_pattern=report/report_metrics_ivar && \\
+# echo "Rendering report..." && \\
+# Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT', report_path, overwrite = TRUE); rmarkdown::render(report_path, output_file='run_report.pdf', output_format = 'all', output_dir='$(pwd)/report', knit_root_dir='$(pwd)')" """.format(
+#     R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
+#     output_dir=self.output_dir,
+#     ivar_readset_file_report=ivar_readset_file_report,
+#     ivar_metrics=os.path.join("metrics", "metrics.csv"),
+#     host_contamination_metrics=os.path.join("metrics", "host_contamination_metrics.tsv")
+#     )
+#                     )
                 ],
                 name="prepare_report." + config.param('prepare_report', 'run_name', required=True)
                 )
@@ -1745,60 +1781,70 @@ fi""".format(
         jobs.append(
             concat_jobs([
                 job,
-                Job(
-                    input_files=[freebayes_output_filtered_bam, freebayes_output_primer_trimmed_bam, freebayes_output_consensus, freebayes_output_variants],
-                    output_files=[],
-                    module_entries=[
-                        ['prepare_report', 'module_ncovtools']
-                    ],
-                    command="""\\
-module purge && \\
-module load {ncovtools} && \\
-echo "Preparing to run ncov_tools..." && \\
-NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet", ""\\""$1"\\""}} END {{print substr(pwet,2)}}') && \\
-echo "data_root: data
-platform: \\"{platform}\\"
-run_name: \\"{run_name}\\"
-reference_genome: {reference_genome}
-amplicon_bed: {amplicon_bed}
-primer_bed: {primer_bed}
-offset: 0
-completeness_threshold: 0.9
-bam_pattern: \\"{{data_root}}/{{sample}}{freebayes_bam_pattern_extension}\\"
-primer_trimmed_bam_pattern: \\"{{data_root}}/{{sample}}{freebayes_primer_trimmed_bam_pattern_extension}\\"
-consensus_pattern: \\"{{data_root}}/{{sample}}{freebayes_consensus_pattern_extension}\\"
-variants_pattern: \\"{{data_root}}/{{sample}}{freebayes_variants_pattern_extension}\\"
-metadata: \\"{freebayes_metadata}\\"
-negative_control_samples: [$NEG_CTRL]
-assign_lineages: true" > {freebayes_ncovtools_config} && \\
-echo "Running ncov_tools..." && \\
-cd {freebayes_ncovtools_directory} && \\
-snakemake --unlock --configfile {freebayes_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE
-snakemake --rerun-incomplete --configfile {freebayes_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all
-snakemake --rerun-incomplete --configfile {freebayes_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary
-snakemake --rerun-incomplete --configfile {freebayes_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
-    ncovtools=config.param('prepare_report', 'module_ncovtools'),
-    readset_file=readset_file,
-    # neg_ctrl=os.path.join("report", "neg_controls.txt"),
-    platform=config.param('prepare_report', 'platform', required=True),
-    run_name=config.param('prepare_report', 'run_name', required=True),
-    reference_genome=config.param('prepare_report', 'reference_genome', required=True),
-    amplicon_bed=config.param('prepare_report', 'amplicon_bed', required=True),
-    primer_bed=config.param('prepare_report', 'primer_bed', required=True),
-    freebayes_bam_pattern_extension=re.sub(r"^.*?\.", ".", freebayes_output_filtered_bam),
-    freebayes_primer_trimmed_bam_pattern_extension=re.sub(r"^.*?\.", ".", freebayes_output_primer_trimmed_bam),
-    freebayes_consensus_pattern_extension=re.sub(r"^.*?\.", ".", freebayes_output_consensus),
-    freebayes_variants_pattern_extension=re.sub(r"^.*?\.", ".", freebayes_output_variants),
-    freebayes_metadata=os.path.basename(freebayes_metadata),
-    freebayes_ncovtools_directory=freebayes_ncovtools_directory,
-    freebayes_ncovtools_config=freebayes_ncovtools_config,
-    freebayes_ncovtools_config_local=os.path.basename(freebayes_ncovtools_config),
-    nb_threads=config.param('prepare_report', 'nb_threads'),
-    output_dir=self.output_dir
-    )
+                ncovtools.run_ncovtools(
+                    freebayes_output_filtered_bam,
+                    freebayes_output_primer_trimmed_bam,
+                    freebayes_output_consensus,
+                    freebayes_output_variants,
+                    readset_file,
+                    freebayes_metadata,
+                    freebayes_ncovtools_directory,
+                    freebayes_ncovtools_config,
+                    self.output_dir
                     ),
-                Job(
-                    input_files=[software_version, run_metadata],
+#                 Job(
+#                     input_files=[freebayes_output_filtered_bam, freebayes_output_primer_trimmed_bam, freebayes_output_consensus, freebayes_output_variants],
+#                     output_files=[],
+#                     module_entries=[
+#                         ['prepare_report', 'module_ncovtools']
+#                     ],
+#                     command="""\\
+# module purge && \\
+# module load {ncovtools} && \\
+# echo "Preparing to run ncov_tools..." && \\
+# NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet", ""\\""$1"\\""}} END {{print substr(pwet,2)}}') && \\
+# echo "data_root: data
+# platform: \\"{platform}\\"
+# run_name: \\"{run_name}\\"
+# reference_genome: {reference_genome}
+# amplicon_bed: {amplicon_bed}
+# primer_bed: {primer_bed}
+# offset: 0
+# completeness_threshold: 0.9
+# bam_pattern: \\"{{data_root}}/{{sample}}{freebayes_bam_pattern_extension}\\"
+# primer_trimmed_bam_pattern: \\"{{data_root}}/{{sample}}{freebayes_primer_trimmed_bam_pattern_extension}\\"
+# consensus_pattern: \\"{{data_root}}/{{sample}}{freebayes_consensus_pattern_extension}\\"
+# variants_pattern: \\"{{data_root}}/{{sample}}{freebayes_variants_pattern_extension}\\"
+# metadata: \\"{freebayes_metadata}\\"
+# negative_control_samples: [$NEG_CTRL]
+# assign_lineages: true" > {freebayes_ncovtools_config} && \\
+# echo "Running ncov_tools..." && \\
+# cd {freebayes_ncovtools_directory} && \\
+# snakemake --unlock --configfile {freebayes_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE
+# snakemake --rerun-incomplete --configfile {freebayes_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all
+# snakemake --rerun-incomplete --configfile {freebayes_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary
+# snakemake --rerun-incomplete --configfile {freebayes_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
+#     ncovtools=config.param('prepare_report', 'module_ncovtools'),
+#     readset_file=readset_file,
+#     # neg_ctrl=os.path.join("report", "neg_controls.txt"),
+#     platform=config.param('prepare_report', 'platform', required=True),
+#     run_name=config.param('prepare_report', 'run_name', required=True),
+#     reference_genome=config.param('prepare_report', 'reference_genome', required=True),
+#     amplicon_bed=config.param('prepare_report', 'amplicon_bed', required=True),
+#     primer_bed=config.param('prepare_report', 'primer_bed', required=True),
+#     freebayes_bam_pattern_extension=re.sub(r"^.*?\.", ".", freebayes_output_filtered_bam),
+#     freebayes_primer_trimmed_bam_pattern_extension=re.sub(r"^.*?\.", ".", freebayes_output_primer_trimmed_bam),
+#     freebayes_consensus_pattern_extension=re.sub(r"^.*?\.", ".", freebayes_output_consensus),
+#     freebayes_variants_pattern_extension=re.sub(r"^.*?\.", ".", freebayes_output_variants),
+#     freebayes_metadata=os.path.basename(freebayes_metadata),
+#     freebayes_ncovtools_directory=freebayes_ncovtools_directory,
+#     freebayes_ncovtools_config=freebayes_ncovtools_config,
+#     freebayes_ncovtools_config_local=os.path.basename(freebayes_ncovtools_config),
+#     nb_threads=config.param('prepare_report', 'nb_threads'),
+#     output_dir=self.output_dir
+#     )
+#                     ),
+                Job(input_files=[],
                     output_files=[],
                     module_entries=[
                         ['prepare_report', 'module_R'],
@@ -1806,19 +1852,42 @@ snakemake --rerun-incomplete --configfile {freebayes_ncovtools_config_local} --c
                     ],
                     command="""\\
 module purge && \\
-module load {R_covseqtools} && \\
-cd {output_dir} && \\
-echo "Generating report tables..." && \\
-generate_report_tables.R --report_readset={freebayes_readset_file_report} --metrics={freebayes_metrics} --host_contamination_metrics={host_contamination_metrics} --output_name_pattern=report/report_metrics_freebayes && \\
-echo "Rendering report..." && \\
-Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT_FREEBAYES', report_path, overwrite = TRUE); rmarkdown::render(report_path, output_file='run_report_freebayes.pdf', output_format = 'all', output_dir='$(pwd)/report', knit_root_dir='$(pwd)')" """.format(
+module load {R_covseqtools}""".format(
     R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
-    output_dir=self.output_dir,
-    freebayes_readset_file_report=freebayes_readset_file_report,
-    freebayes_metrics=os.path.join("metrics", "metrics_freebayes.csv"),
-    host_contamination_metrics=os.path.join("metrics", "host_contamination_metrics.tsv")
-    )
+    output_dir=self.output_dir)
+                    ),
+                covseq_tools.generate_report_tables(
+                    freebayes_readset_file_report,
+                    output_name_pattern=os.path.join("report", "report_metrics_freebayes")
+                    ),
+                covseq_tools.render_report(
+                    software_version,
+                    run_metadata,
+                    output_name_pattern=os.path.join("report", "report_metrics_freebayes"),
+                    caller="freebayes"
                     )
+#                 Job(
+#                     input_files=[software_version, run_metadata],
+#                     output_files=[],
+#                     module_entries=[
+#                         ['prepare_report', 'module_R'],
+#                         ['prepare_report', 'module_CoVSeQ_tools']
+#                     ],
+#                     command="""\\
+# module purge && \\
+# module load {R_covseqtools} && \\
+# cd {output_dir} && \\
+# echo "Generating report tables..." && \\
+# generate_report_tables.R --report_readset={freebayes_readset_file_report} --metrics={freebayes_metrics} --host_contamination_metrics={host_contamination_metrics} --output_name_pattern=report/report_metrics_freebayes && \\
+# echo "Rendering report..." && \\
+# Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT_FREEBAYES', report_path, overwrite = TRUE); rmarkdown::render(report_path, output_file='run_report_freebayes.pdf', output_format = 'all', output_dir='$(pwd)/report', knit_root_dir='$(pwd)')" """.format(
+#     R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
+#     output_dir=self.output_dir,
+#     freebayes_readset_file_report=freebayes_readset_file_report,
+#     freebayes_metrics=os.path.join("metrics", "metrics_freebayes.csv"),
+#     host_contamination_metrics=os.path.join("metrics", "host_contamination_metrics.tsv")
+#     )
+#                     )
                 ],
                 name="prepare_report." + config.param('prepare_report', 'run_name', required=True)
                 )
