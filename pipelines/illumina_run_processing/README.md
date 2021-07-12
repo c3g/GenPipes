@@ -68,10 +68,11 @@ usage: illumina_run_processing.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                   [-l {debug,info,warning,error,critical}]
                                   [--sanity-check]
                                   [--container {wrapper, singularity} <IMAGE PATH>]
-                                  [-d RUN_DIR] [--lane LANE_NUMBER]
-                                  [-r READSETS] [-i CASAVA_SHEET_FILE]
-                                  [-x FIRST_INDEX] [-y LAST_INDEX]
-                                  [-m NUMBER_OF_MISMATCHES] [-w] [-v]
+                                  [--genpipes_file GENPIPES_FILE] [-d RUN_DIR]
+                                  [--lane LANE_NUMBER] [-r READSETS]
+                                  [-i CASAVA_SHEET_FILE] [-x FIRST_INDEX]
+                                  [-y LAST_INDEX] [-m NUMBER_OF_MISMATCHES]
+                                  [-w] [-v]
 
 Version: 3.5.0
 
@@ -111,6 +112,11 @@ optional arguments:
   --container {wrapper, singularity} <IMAGE PATH>
                         Run inside a container providing a valid singularity
                         image path
+  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+                        Command file output path. This is the command used to
+                        process the data, or said otherwise, this command will
+                        "run the Genpipes pipeline". Will be redirected to
+                        stdout if the option is not provided.
   -d RUN_DIR, --run RUN_DIR
                         run directory
   --lane LANE_NUMBER    lane number

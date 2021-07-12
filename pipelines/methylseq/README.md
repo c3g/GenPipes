@@ -31,8 +31,8 @@ usage: methylseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                     [--no-json] [--report] [--clean]
                     [-l {debug,info,warning,error,critical}] [--sanity-check]
                     [--container {wrapper, singularity} <IMAGE PATH>]
-                    [-d DESIGN] [-t {mugqic,mpileup,light,sv}] [-r READSETS]
-                    [-v]
+                    [--genpipes_file GENPIPES_FILE] [-d DESIGN]
+                    [-t {mugqic,mpileup,light,sv}] [-r READSETS] [-v]
 
 Version: 3.5.0
 
@@ -72,6 +72,11 @@ optional arguments:
   --container {wrapper, singularity} <IMAGE PATH>
                         Run inside a container providing a valid singularity
                         image path
+  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+                        Command file output path. This is the command used to
+                        process the data, or said otherwise, this command will
+                        "run the Genpipes pipeline". Will be redirected to
+                        stdout if the option is not provided.
   -d DESIGN, --design DESIGN
                         design file
   -t {mugqic,mpileup,light,sv}, --type {mugqic,mpileup,light,sv}
@@ -197,6 +202,6 @@ Prepare input file for methylKit differential analysis
 cram_output
 -----------
 Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list 
+Using this function will include the orginal final bam file into the  removable file list
 
 
