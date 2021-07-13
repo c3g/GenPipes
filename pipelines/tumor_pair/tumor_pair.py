@@ -894,7 +894,7 @@ END`""".format(
             if not os.path.exists(varscan_directory):
                 os.makedirs(varscan_directory)
 
-            temp_dir = os.path.join(os.getcwd(), pair_directory)
+            temp_dir = config.param('DEFAULT', 'tmp_dir')
             gemini_prefix = os.path.join(pair_directory, tumor_pair.name)
 
             jobs.append(concat_jobs([
@@ -1042,8 +1042,12 @@ END`""".format(
 
             output = os.path.join(metrics_directory, tumor_pair.name + ".multiqc")
 
-            jobs.append(concat_jobs([
-                multiqc.run(input, output, input_dep=input_dep),
+            jobs.append(
+                concat_jobs([
+                    multiqc.run(
+                        input_dep,
+                        output
+                        )
             ], name="multiqc." + tumor_pair.name))
 
         return jobs
@@ -2894,7 +2898,7 @@ END`""".format(
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        temp_dir = os.path.join(os.getcwd(), ensemble_directory)
+        temp_dir = config.param('DEFAULT', 'tmp_dir')
         gemini_module = config.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
@@ -2924,7 +2928,7 @@ END`""".format(
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        temp_dir = os.path.join(os.getcwd(), ensemble_directory)
+        temp_dir = config.param('DEFAULT', 'tmp_dir')
         gemini_module = config.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
@@ -3230,7 +3234,7 @@ END`""".format(
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        temp_dir = os.path.join(os.getcwd(), ensemble_directory)
+        temp_dir = config.param('DEFAULT', 'tmp_dir')
         gemini_prefix = os.path.join(ensemble_directory, "allPairs")
 
         jobs.append(concat_jobs([
@@ -3255,7 +3259,7 @@ END`""".format(
         jobs = []
 
         ensemble_directory = os.path.join("pairedVariants", "ensemble")
-        temp_dir = os.path.join(os.getcwd(), ensemble_directory)
+        temp_dir = config.param('DEFAULT', 'tmp_dir')
         gemini_prefix = os.path.join(ensemble_directory, "allPairs")
 
         jobs.append(concat_jobs([

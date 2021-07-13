@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
@@ -355,19 +355,12 @@ def print_report(report, to_stdout=True, to_tsv=None):
             logger.error('No time recorded on that job')
             total_human = None
 
-        print("Human time: {}\n Cumulative machine time: {}\n"
-              " cumulative core time: {}".format(total_human, total_machine,
-                                                 total_machine_core))
-        print("******* No Problem ********")
-        print('\n'.join(ok_message))
-        print("******* Some Problem ********")
-        print('\n'.join(bad_message))
-
-        print("******* Details ********")
-        stdout_writer = csv.writer(sys.stdout, lineterminator=os.linesep, delimiter='\t')
-        stdout_writer.writerow(header)
-        for row in data_table:
-            stdout_writer.writerow(row)
+        print("""
+    Cumulative time spent on compute nodes: {1}
+    Cumulative core time: {2}
+    Human time from beginning of pipeline to its end: {0}"
+    """
+              .format(total_human, total_machine, total_machine_core))
 
     if to_tsv:
         if not isinstance(to_tsv, str):

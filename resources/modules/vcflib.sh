@@ -2,11 +2,8 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-# Here we set these variable for the sake of install_genome.sh
-# The archive will be downloaded but we actually will clone the vcflib github repository
-# in order to install tjhe software
 SOFTWARE=vcflib
-VERSION=1.0.0-rc0
+VERSION=1.0.0
 ARCHIVE=$SOFTWARE-${VERSION%%-*}.tar.gz
 ARCHIVE_URL=https://github.com/$SOFTWARE/$SOFTWARE/archive/v$VERSION.tar.gz
 SOFTWARE_DIR=$SOFTWARE-${VERSION%%-*}
@@ -20,7 +17,6 @@ VERSION=${VERSION%%-*}
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE
   git clone --recursive git://github.com/ekg/vcflib.git $SOFTWARE_DIR
 
   # Install software

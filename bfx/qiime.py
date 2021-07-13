@@ -455,7 +455,7 @@ def sample_rarefaction_plot(
         command="""\
 MPLBACKEND=Agg $QIIME_HOME/make_rarefaction_plots.py \\
   -i {sample_collated_directory} \\
-  -m {sample_map}\\
+  -m {sample_map} \\
   -o {sample_rarefaction_directory}""".format(
         sample_collated_directory=sample_collated_directory,
         sample_map=sample_map,
@@ -550,7 +550,7 @@ def rarefaction_plot(
         command="""\
 MPLBACKEND=Agg $QIIME_HOME/make_rarefaction_plots.py \\
   -i {alpha_diversity_collated_merge_rarefied_directory} \\
-  -m {map_file}\\
+  -m {map_file} \\
   -o {alpha_diversity_rarefaction_rarefied_directory}""".format(
         alpha_diversity_collated_merge_rarefied_directory=alpha_diversity_collated_merge_rarefied_directory,
         map_file=map_file,

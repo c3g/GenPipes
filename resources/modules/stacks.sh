@@ -2,9 +2,8 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-
 SOFTWARE=Stacks
-VERSION=1.46
+VERSION=2.55
 ARCHIVE=${SOFTWARE,}-${VERSION}.tar.gz
 ARCHIVE_URL=http://catchenlab.life.illinois.edu/${SOFTWARE,}/source/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE,}-${VERSION}
@@ -18,7 +17,7 @@ build() {
   tar xfvz $ARCHIVE
 
   cd $SOFTWARE_DIR
-  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --enable-sparsehash --with-sparsehash-include-path=/cvmfs/soft.mugqic/CentOS6/software/sparsehash_libs/sparsehash-2.0.2/include
+  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
   make -j12
 
   make install
@@ -34,8 +33,6 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin
-prepend-path    LD_LIBRARY_PATH     /cvmfs/soft.mugqic/CentOS6/software/sparsehash_libs/sparsehash-2.0.2/lib
-prepend-path    CPLUS_INCLUDE_PATH  /cvmfs/soft.mugqic/CentOS6/software/sparsehash_libs/sparsehash-2.0.2/include
 "
 }
 

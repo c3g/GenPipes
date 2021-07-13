@@ -306,7 +306,7 @@ def merge_stats(
             command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   MergeMutectStats {options} \\
-  {stats}\\
+  {stats} \\
   --output {output}""".format(
                 tmp_dir=config.param('gatk_merge_stats', 'tmp_dir'),
                 java_other_options=config.param('gatk_merge_stats', 'java_other_options'),

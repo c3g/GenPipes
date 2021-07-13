@@ -20,22 +20,17 @@
 ################################################################################
 
 # Python Standard Modules
-import argparse
 import logging
-import math
 import os
 import re
 import sys
 import itertools
-import commands
-import gzip
-import subprocess
-import pysam
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
+from bfx import bash_cmd as bash
 from core.config import config, SanitycheckError, _raise
 from core.job import Job, concat_jobs, pipe_jobs
 from pipelines import common
@@ -225,7 +220,7 @@ class HicSeq(common.Illumina):
             sample_output = os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam")
             readset_bams = [os.path.join(self.output_dirs['hicup_output_directory'], readset.sample.name, readset.name, readset.name + ".trim.pair1_2.fastq.gz.edited.hicup.bam") for readset in sample.readsets]
 
-            mkdir_job = Job(command="mkdir -p " + self.output_dirs['bams_output_directory'])
+            mkdir_job = bash.mkdir(self.output_dirs['bams_output_directory'])
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM.
             if len(sample.readsets) == 1:
@@ -394,46 +389,74 @@ class HicSeq(common.Illumina):
                         #get sample names with relative file path
                         #since pairwise_sample_combination is a list with two elements, in each index, 0 and 1 have been
                         #used to call the each sample
-                        input_sample1_file_path = os.path.join(self.output_dirs['matrices_output_directory'], sample[0].name,
-                                                    "chromosomeMatrices",
-                                                    "_".join(("HTD", sample[0].name, self.enzyme, chromosome, res, "rawRN.txt")))
+                        input_sample1_file_path = os.path.join(
+                            self.output_dirs['matrices_output_directory'],
+                            sample[0].name,
+                            "chromosomeMatrices",
+                            "_".join(("HTD", sample[0].name, self.enzyme, chromosome, res, "rawRN.txt"))
+                            )
 
-                        input_sample2_file_path = os.path.join(self.output_dirs['matrices_output_directory'], sample[1].name,
-                                                    "chromosomeMatrices",
-                                                    "_".join(("HTD", sample[1].name, self.enzyme, chromosome, res, "rawRN.txt")))
-                        out_dir = os.path.join(output_dir, temp_dir,
-                                                   "_".join(( sample[0].name, "vs",  sample[1].name)))
+                        input_sample2_file_path = os.path.join(self.output_dirs['matrices_output_directory'],
+                            sample[1].name,
+                            "chromosomeMatrices",
+                            "_".join(("HTD", sample[1].name, self.enzyme, chromosome, res, "rawRN.txt"))
+                            )
+                        out_dir = os.path.join(
+                            output_dir,
+                            temp_dir,
+                           "_".join((sample[0].name, "vs",  sample[1].name))
+                           )
 
-                        job_chr = hicrep.calculate_reproducible_score( out_dir, sample[0].name, sample[1].name,
-                                                                      input_sample1_file_path, input_sample2_file_path,
-                                                                       chromosome, res, bound_width, weights, corr,
-                                                                       down_sampling,smooth)
-                        output_file = "".join(
-                                (out_dir, "_".join(("/hicrep", sample[0].name, "vs", sample[1].name, chromosome, res,
-                                                    "res",  smooth, bound_width,down_sampling)), ".tmp"))
+                        output_file = os.path.join(out_dir, "hicrep_" + sample[0].name + "_vs_" + sample[1].name + "_" + chromosome + "_" + res + "_res_" + smooth + "_" + bound_width + "_" + down_sampling + ".tmp")
+
+                        job_chr = concat_jobs([
+                            bash.mkdir(out_dir),
+                            hicrep.calculate_reproducible_score(
+                                output_file,
+                                sample[0].name,
+                                sample[1].name,
+                                input_sample1_file_path,
+                                input_sample2_file_path,
+                                chromosome,
+                                res,
+                                bound_width,
+                                weights,
+                                corr,
+                                down_sampling,
+                                smooth
+                                )
+                            ])
+
                         job_chr.samples = sample
 
                         input_files_for_merging.append(output_file)
                         job_all_chr.append(job_chr)
                         job = concat_jobs(job_all_chr)
-                        job.name = "_".join(("reproducibility_scores.hicrep", sample[0].name, "vs",
-                                                 sample[1].name, res, bound_width, weights,
-                                                 corr, down_sampling, smooth))
+                        job.name = "_".join(("reproducibility_scores.hicrep", sample[0].name, "vs", sample[1].name, res))
+                        job.removable_files = [output_file]
 
                     jobs.append(job)
-                    tsv_output = os.path.join( output_dir, temp_dir, ".".join(("_".join((sample[0].name,"vs",sample[1].name, "res", res, smooth, bound_width,
-                                                     down_sampling)), "tsv")))
+                    tsv_output = os.path.join(
+                        output_dir,
+                        temp_dir,
+                        ".".join(("_".join((sample[0].name,"vs",sample[1].name, "res", res, smooth, bound_width, down_sampling)), "tsv"))
+                        )
                     #Storing output files for next step in a list
                     tsv_files_for_merging.append(tsv_output)
                 #create a job for merginh .tsv file with individual reproducibnility score for each pairwise comparison
-                job_merge = hicrep.merge_tmp_files( input_files_for_merging, tsv_files_for_merging, output_dir, res, smooth, bound_width, down_sampling, temp_dir)
+                job_merge = hicrep.merge_tmp_files(input_files_for_merging, tsv_files_for_merging, output_dir, res, smooth, bound_width, down_sampling, temp_dir)
                 job_merge.samples = self.samples
-                job_merge.name = "".join(("merge_hicrep_scores." + res))
+                job_merge.name = "merge_hicrep_scores." + res
                 jobs.append(job_merge)
 
             #finally all the .tsv files are merged and create a one file (.csv) with all the values
             output_csv_file = "hicrep_combined_reproducibility_scores.csv"
-            job_tsv_merge = hicrep.merge_tsv(tsv_files_for_merging, output_dir, output_csv_file, temp_dir)
+            job_tsv_merge = hicrep.merge_tsv(
+                tsv_files_for_merging,
+                output_dir,
+                output_csv_file,
+                temp_dir
+                )
             job_tsv_merge.name = "merge_hicrep_scores"
             job_tsv_merge.samples = self.samples
             job_tsv_merge.removable_files = [os.path.join(output_dir, temp_dir)]
@@ -446,10 +469,10 @@ class HicSeq(common.Illumina):
     def quality_scores(self):
 
         """
-             Quality score per chromosome for each sample is calculated using QUASAR-QC at all resolutions
-             and sequencing depths (coverages) and down_sampling value (coverage) defined in quality_scores step of ini config file
-             QUASAR-QC is a part of the hifive hic-seq analysis suite
-             for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_scoring.html]
+        Quality score per chromosome for each sample is calculated using QUASAR-QC at all resolutions
+        and sequencing depths (coverages) and down_sampling value (coverage) defined in quality_scores step of ini config file
+        QUASAR-QC is a part of the hifive hic-seq analysis suite
+        for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_scoring.html]
         """
         jobs = []
 
@@ -641,7 +664,7 @@ class HicSeq(common.Illumina):
 
                     job_inputFile = concat_jobs(
                         [
-                            Job(command="mkdir -p " + sample_output_dir),
+                            bash.mkdir(sample_output_dir),
                             topdom.create_input(input_matrix, tmp_matrix, output_matrix, output_script, res)
                         ],
                         name="identify_TADs.TopDom_create_input." + sample.name + "_" + chr + "_res" + res,
@@ -688,7 +711,7 @@ class HicSeq(common.Illumina):
                 output_calls = os.path.join(sample_output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)/1000) ,"_minW250_maxW500_minRatio1.5_threshold0.2.txt")))
 
                 job = concat_jobs([
-                    Job(command="mkdir -p " + sample_output_dir),
+                    bash.mkdir(sample_output_dir),
                     robustad.call_TADs(input_matrix, sample_output_dir, res)
                 ])
                 job.name = "identify_TADs.RobusTAD." + sample.name + "_" + chr
@@ -737,7 +760,7 @@ class HicSeq(common.Illumina):
             hic_output = os.path.join(self.output_dirs['hicfiles_output_directory'], sample.name + ".hic")
 
             job = concat_jobs([
-                Job(command="mkdir -p " + self.output_dirs['hicfiles_output_directory']),
+                bash.mkdir(self.output_dirs['hicfiles_output_directory']),
                 samtools.sort(sample_input, sortedBamPrefix, sort_by_name=True),
                 hic.create_input(sortedBam, sample.name),
                 hic.create_hic(sample.name + ".juicebox.input.sorted", hic_output, self.genome)
@@ -780,7 +803,7 @@ class HicSeq(common.Illumina):
         input_file = self.genome_digest
 
         job = concat_jobs([
-            Job(command="mkdir -p " + self.output_dirs['chicago_input_files']),
+            bash.mkdir(self.output_dirs['chicago_input_files']),
             tools.sh_create_rmap(input_file, output, "create_rmap_file." + self.enzyme),
             bedops.sort_bed(output, sorted_output)
         ])
@@ -907,11 +930,10 @@ class HicSeq(common.Illumina):
 
         if features_file != "None":
 
-            job_create_dir = Job(command = "mkdir -p {output_dir}".format(output_dir = output_dir))
             job_sort_features_file = bedops.sort_bed(features_file, sorted_features_file)
 
             job = concat_jobs([
-                job_create_dir,
+                bash.mkdir(output_dir),
                 job_sort_features_file
             ])
             job.name = "bait_intersect.sort_feature." + os.path.basename(sorted_features_file)
@@ -962,10 +984,9 @@ class HicSeq(common.Illumina):
         output_dir = os.path.join(chicago_output_dir, intersect_output_dir)
 
         if features_file != "None":
-            job_create_dir = Job(command = "mkdir -p {output_dir}".format(output_dir = output_dir))
             job_sort_features_file = bedops.sort_bed(features_file, sorted_features_file)
 
-            job = concat_jobs([job_create_dir, job_sort_features_file])
+            job = concat_jobs([bash.mkdir(output_dir), job_sort_features_file])
             job.name = "capture_intersect.sort_feature." + os.path.basename(sorted_features_file)
             job.removable_files = [sorted_features_file]
             job.samples = self.samples

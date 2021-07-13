@@ -1,10 +1,12 @@
-
+#!/bin/bash
 # Functions
 
 SLEEP_TIME=120
 MAX_QUEUE=500
 SHEDULER_USER=$USER
 SCHEDULER=slurm
+type squeue > /dev/null 2>&1 || SCHEDULER=pbs
+
 
 usage (){
 
@@ -40,6 +42,7 @@ cancel_jobs () {
   elif [[ ${SCHEDULER} ==  'pbs' ]]; then
     qdel $(cat ${job_list} | awk -F'=' '{print $2}')
   fi
+  rm ${job_list}  2>/dev/null
   echo canceled all jobs from ${job_list}
 }
 
@@ -50,23 +53,24 @@ cancel_trap () {
 }
 
 submit () {
-  echo submit $1
+  echo submitting $1
   job_script=${1}
   job_list=${job_script%.sh}.out
   while true; do
     # clean cancel if there is an interruption
     trap "echo cleanup; cancel_trap ${job_list}" EXIT
-    bash ${job_script}
+    bash ${job_script} 2> ${job_script%.sh}.err
     ret_code=$?
     if [ ${ret_code} -eq 0 ]; then
       trap - SIGTERM
       touch ${job_list}
-      echo ${job_script} was sucssfully submitted
+      echo ${job_script} was sucessfully submitted
       break
     else
-      echo error in submition
+      echo error in submits
       cancel_jobs ${job_list}
-      echo restarting submition
+      sleep 1
+      echo resubmitting
     fi
   done
 }
@@ -130,8 +134,8 @@ ret_code=$?
 if [[ $ret_code -ne 0 ]] ; then
   echo it seems that another $0 process is runnning
   echo If you are sure that no other process in running, run "'rm -r ${chunk_folder}/.lockdir'"
-  echo and restart $0 
-  exit 1 
+  echo and restart $0
+  exit 1
 else
   trap "rm -rf $chunk_folder/.lockdir" EXIT
 fi
@@ -160,3 +164,6 @@ for sh_script in "${all_sh[@]}"; do
   fi
 
 done
+
+echo All done, uploading usage statistics
+bash ${chunk_folder}/wget_call.sh

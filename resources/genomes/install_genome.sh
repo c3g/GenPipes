@@ -2,22 +2,22 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-module_bismark=#mugqic/bismark/0.21.0
-module_bowtie=mugqic/bowtie/1.1.2
-module_bowtie2=mugqic/bowtie2/2.2.9
+module_bismark=mugqic/bismark/0.21.0
+module_bowtie=mugqic/bowtie/1.2.2
+module_bowtie2=mugqic/bowtie2/2.3.5
 module_bwa=mugqic/bwa/0.7.17
 module_java=mugqic/java/openjdk-jdk1.8.0_72
-module_mugqic_tools=mugqic/mugqic_tools/2.2.2
-module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.5
+module_mugqic_tools=mugqic/mugqic_tools/2.4.0
+module_mugqic_R_packages=mugqic/mugqic_R_packages/1.0.6
 module_perl=mugqic/perl/5.22.1
 module_picard=mugqic/picard/2.0.1
 module_python=mugqic/python/2.7.14
-module_R=mugqic/R_Bioconductor/3.6.0_3.9
-module_samtools=mugqic/samtools/1.3.1
-module_star=mugqic/star/2.7.2b
+module_R=mugqic/R_Bioconductor/3.6.1_3.10
+module_samtools=mugqic/samtools/1.11
+module_star=mugqic/star/2.7.8a
 module_tabix=mugqic/tabix/0.2.6
 module_tophat=mugqic/tophat/2.0.14
-module_ucsc=mugqic/ucsc/v359
+module_ucsc=mugqic/ucsc/v387
 module_hicup=mugqic/HiCUP/v0.7.2
 module_kallisto=mugqic/kallisto/0.44.0
 
@@ -109,7 +109,13 @@ set_urls() {
     VCF_TBI_URL=$VCF_URL.tbi
     BIOMART_MART=ENSEMBL_MART_ENSEMBL
     # Retrieve species short name e.g. "mmusculus" for "Mus_musculus"
-    SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
+    if [[ $(echo "${SPECIES}" | awk -F"_" '{print NF-1}') == 2 ]]
+    then
+        SPECIES_2ND_NAME=`echo ${SPECIES#*_}`
+        SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES_2ND_NAME:0:1}${SPECIES##*_} | tr [:upper:] [:lower:]`
+    else
+        SPECIES_SHORT_NAME=`echo ${SPECIES:0:1}${SPECIES#*_} | tr [:upper:] [:lower:]`
+    fi
     BIOMART_DATASET=${SPECIES_SHORT_NAME}_gene_ensembl
     BIOMART_GENE_ID=ensembl_gene_id
     BIOMART_GO_ID=go_id
@@ -264,7 +270,7 @@ download_urls() {
 
 # Test genome size to decide whether indexing requires more cores or memory
 is_genome_big() {
-  GENOME_SIZE_LIMIT=200000000
+  GENOME_SIZE_LIMIT=2000000
 
   if [ `stat --printf="%s" $GENOME_DIR/$GENOME_FASTA` -gt $GENOME_SIZE_LIMIT ]
   then
@@ -326,8 +332,10 @@ create_picard_index() {
     echo
     echo "Creating genome Picard sequence dictionary..."
     echo
-    module load $module_picard $module_java
-    java -jar $PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$GENOME_DIR/$GENOME_FASTA OUTPUT=$GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1
+    PICARD_CMD="\
+module load $module_picard $module_java && \
+java -jar \$PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$GENOME_DIR/$GENOME_FASTA OUTPUT=$GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_$TIMESTAMP.log 2>&1"
+    cmd_or_job PICARD_CMD 8
   else
     echo
     echo "Genome Picard sequence dictionary up to date... skipping"
@@ -360,7 +368,7 @@ create_bismark_genome_reference() {
     echo "Appending sequences of lambda phage and pUC19 vector to genome reference FASTA file..."
     echo
     mkdir -p $BISMARK_INDEX_DIR
-    cat $GENOME_DIR/$GENOME_FASTA ${!INSTALL_HOME}/genomes/lamba_phage.fa ${!INSTALL_HOME}/genomes/pUC19.fa > $BISMARK_INDEX_DIR/$GENOME_FASTA
+    cat $GENOME_DIR/$GENOME_FASTA ${!INSTALL_HOME}/genomes/lambda_phage.fa ${!INSTALL_HOME}/genomes/pUC19.fa > $BISMARK_INDEX_DIR/$GENOME_FASTA
   else
     echo
     echo "Custom Genome Reference for Bismark is up to date... skipping"
@@ -370,9 +378,11 @@ create_bismark_genome_reference() {
   then
     echo
     echo "Creating SAMtools FASTA index for the custom Genome Reference for Bismark..."
-    echo
+    echo "loading $module_samtools"
     module load $module_samtools
+    echo "launching samtools faidx $BISMARK_INDEX_DIR/$GENOME_FASTA > $LOG_DIR/samtools_for_bismark_$TIMESTAMP.log 2>&1"
     samtools faidx $BISMARK_INDEX_DIR/$GENOME_FASTA > $LOG_DIR/samtools_for_bismark_$TIMESTAMP.log 2>&1 
+    echo "done"
   else
     echo
     echo "Genome SAMtools FASTA index for the custom Genome Reference for Bismark is up to date... skipping"
@@ -383,8 +393,10 @@ create_bismark_genome_reference() {
     echo
     echo "Creating genome Picard sequence dictionary for the custom Genome Reference for Bismark..."
     echo
-    module load $module_picard $module_java
-    java -jar $PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$BISMARK_INDEX_DIR/$GENOME_FASTA OUTPUT=$BISMARK_INDEX_DIR/${GENOME_FASTA/.fa/.dict} GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_for_bismark_$TIMESTAMP.log 2>&1
+    INDEX_CMD="\
+module load $module_picard $module_java && \
+java -jar \$PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$BISMARK_INDEX_DIR/$GENOME_FASTA OUTPUT=$BISMARK_INDEX_DIR/${GENOME_FASTA/.fa/.dict} GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > $LOG_DIR/picard_for_bismark_$TIMESTAMP.log 2>&1"
+    cmd_or_job INDEX_CMD 8
   else
     echo
     echo "Genome Picard sequence dictionary for the custom Genome Reference for Bismark is up to date... skipping"
@@ -396,23 +408,12 @@ create_bismark_genome_reference() {
     echo "Creating Bisulfite Genome Reference with Bismark..."
     echo
     BISMARK_CMD="\
-mkdir -p $BISMARK_INDEX_DIR && \
-cat $GENOME_DIR/$GENOME_FASTA ${!INSTALL_HOME}/genomes/lambda_phage.fa ${!INSTALL_HOME}/genomes/pUC19.fa > $BISMARK_INDEX_DIR/$GENOME_FASTA && \
-module load $module_samtools && \
-SAM_LOG=$LOG_DIR/samtools_for_bismark_$TIMESTAMP.log && \
-samtools faidx $BISMARK_INDEX_DIR/$GENOME_FASTA > \$SAM_LOG 2>&1 && \
-module load $module_picard $module_java && \
-PIC_LOG=$LOG_DIR/picard_for_bismark_$TIMESTAMP.log && \
-java -jar \$PICARD_HOME/picard.jar CreateSequenceDictionary REFERENCE=$BISMARK_INDEX_DIR/$GENOME_FASTA OUTPUT=$BISMARK_GENOME_DICT GENOME_ASSEMBLY=${GENOME_FASTA/.fa} > \$PIC_LOG 2>&1 && \
-module load mugqic/bismark mugqic/bowtie2 && \
-BIS_LOG=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.log && \
-BIS_ERR=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.err && \
-bismark_genome_preparation $BISMARK_INDEX_DIR > \$BIS_LOG 2> \$BIS_ERR && \
-module load $module_mugqic_tools mugqic/python/2.7.14 && \
-BIN_LOG=$LOG_DIR/wgbs_bin100bp_GC_$TIMESTAMP.log && \
-\$PYTHON_TOOLS/getFastaBinedGC.py -s 100 -r $BISMARK_INDEX_DIR/$GENOME_FASTA -o $ANNOTATIONS_DIR/${ASSEMBLY}_wgbs_bin100bp_GC.bed > \$BIN_LOG 2>&1 && \
-chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$SAM_LOG \$PIC_LOG \$BIS_LOG \$BIS_ERR \$BIN_LOG"
-    cmd_or_job BISMARK_CMD 8 BISMARK_CMD 128G
+module load $module_bismark $module_bowtie2 && \
+LOG=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.log && \
+ERR=$LOG_DIR/bismark_genome_preparation_$TIMESTAMP.err &&\
+bismark_genome_preparation $BISMARK_INDEX_DIR > \$LOG 2> \$ERR && \
+chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
+    cmd_or_job BISMARK_CMD 8
   else
     echo
     echo "Bismark Bisulfite Genome Reference is up to date... skipping"
@@ -426,8 +427,8 @@ chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$SAM_LOG \$PIC_LOG \$BIS_LOG \$BIS_ERR 
   BINGC_CMD="\
 module load $module_python $module_mugqic_tools && \
 LOG=$LOG_DIR/wgbs_bin100bp_GC_$TIMESTAMP.log && \
-\$PYTHON_TOOLS/getFastaBinedGC.py -s 100 -r $BISMARK_INDEX_DIR/$GENOME_FASTA -o $ANNOTATIONS_DIR/${ASSEMBLY}_wgbs_bin100bp_GC.bed > \$LOG 2>&1 && \
-chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
+\$PYTHON_TOOLS/getFastaBinedGC.py -s 100 -r $BISMARK_INDEX_DIR/$GENOME_FASTA -o $ANNOTATIONS_DIR/${ASSEMBLY}_wgbs_bin100bp_GC.bed > \$LOG 2>&1" # && \
+#chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
     cmd_or_job BINGC_CMD 8
   else
     echo
@@ -473,8 +474,8 @@ ln -s -f -t $BOWTIE_INDEX_DIR ../$GENOME_FASTA && \
 module load $module_bowtie && \
 LOG=$LOG_DIR/bowtie_$TIMESTAMP.log && \
 ERR=$LOG_DIR/bowtie_$TIMESTAMP.err && \
-bowtie-build $BOWTIE_INDEX_DIR/$GENOME_FASTA $BOWTIE_INDEX_PREFIX > \$LOG 2> \$ERR && \
-chmod -R ug+rwX,o+rX $BOWTIE_INDEX_DIR \$LOG \$ERR"
+bowtie-build $BOWTIE_INDEX_DIR/$GENOME_FASTA $BOWTIE_INDEX_PREFIX > \$LOG 2> \$ERR" # && \
+#chmod -R ug+rwX,o+rX $BOWTIE_INDEX_DIR \$LOG \$ERR"
   cmd_or_job BOWTIE_CMD 4
   else
     echo
@@ -547,15 +548,30 @@ create_star_index() {
   else
     runThreadN=1
   fi
-
+  # Since version 102 or so, Ensembl gtf files have an additional column inserted at column 3, this makes STAR genome generation crash and needs to be removed...
+  # For Human only !
+  #if ! is_up2date $ANNOTATIONS_DIR/${GTF/.gtf/.star_index.gtf}
+  if ! is_up2date $ANNOTATIONS_DIR/$GTF
+  then
+    #cut -f -2,4- $ANNOTATIONS_DIR/$GTF > $ANNOTATIONS_DIR/${GTF/.gtf/.star_index.gtf}
+    cut -f -2,4- $ANNOTATIONS_DIR/$GTF > $ANNOTATIONS_DIR/$GTF
+  fi
   for sjdbOverhang in 49 74 99 124 149
   do
-    INDEX_DIR=$INSTALL_DIR/genome/star_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang
+    STAR_VERSION=$(echo $module_star | cut -f3 -d/)
+    INDEX_DIR=$INSTALL_DIR/genome/star${STAR_VERSION}_index/$SOURCE$VERSION.sjdbOverhang$sjdbOverhang
     if ! is_up2date $INDEX_DIR/SAindex
     then
       echo
       echo "Creating STAR index with sjdbOverhang $sjdbOverhang..."
       echo
+#      STAR_CMD="\
+#mkdir -p $INDEX_DIR && \
+#module load $module_star && \
+#LOG=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.log && \
+#ERR=$LOG_DIR/star_${sjdbOverhang}_$TIMESTAMP.err && \
+#STAR --runMode genomeGenerate --genomeDir $INDEX_DIR --genomeFastaFiles $GENOME_DIR/$GENOME_FASTA --runThreadN $runThreadN --sjdbOverhang $sjdbOverhang --genomeSAindexNbases 4 --limitGenomeGenerateRAM 92798303616 --sjdbGTFfile $ANNOTATIONS_DIR/${GTF/.gtf/.star_index.gtf} --outFileNamePrefix $INDEX_DIR/ > \$LOG 2> \$ERR && \
+#chmod -R ug+rwX,o+rX $INDEX_DIR \$LOG \$ERR"
       STAR_CMD="\
 mkdir -p $INDEX_DIR && \
 module load $module_star && \
@@ -634,6 +650,7 @@ create_kallisto_index() {
 }
 
 create_transcripts2genes_file() {
+  #ANNOTATION_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.star_index.gtf}
   ANNOTATION_GTF=$ANNOTATIONS_DIR/$GTF
   if is_up2date $ANNOTATION_GTF
   then
@@ -669,7 +686,7 @@ EOF
 }
 
 create_gene_annotations() {
- ANNOTATION_PREFIX=$ANNOTATIONS_DIR/${GTF/.gtf}
+  ANNOTATION_PREFIX=$ANNOTATIONS_DIR/${GTF/.gtf}
 
   if ! is_up2date $ANNOTATION_PREFIX.genes.length.tsv $ANNOTATION_PREFIX.geneid2Symbol.tsv $ANNOTATION_PREFIX.genes.tsv
   then
@@ -679,8 +696,10 @@ create_gene_annotations() {
     cd $ANNOTATIONS_DIR
     module load $module_R
     module load $module_mugqic_R_packages
+    module load $module_perl
     R --no-restore --no-save<<EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
+#gtf.fn     = "${GTF/.gtf/.star_index.gtf}"
 gtf.fn     = "$GTF"
 annotation = "$ANNOTATION_PREFIX"
 
@@ -705,6 +724,7 @@ EOF
 
 create_gene_annotations_flat() {
   ANNOTATION_PREFIX=$ANNOTATIONS_DIR/${GTF/.gtf}
+
   if ! is_up2date $ANNOTATION_PREFIX.ref_flat.tsv
   then
     echo
@@ -712,8 +732,8 @@ create_gene_annotations_flat() {
     echo
     cd $ANNOTATIONS_DIR
     module load $module_ucsc
-#    gtfToGenePred -genePredExt -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
-    gtfToGenePred -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
+    gtfToGenePred -genePredExt -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
+#    gtfToGenePred -geneNameAsName2 ${ANNOTATION_PREFIX}.star_index.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
     cut -f 12 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt
     cut -f 1-10 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt
     paste ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt > ${ANNOTATION_PREFIX}.ref_flat.tsv
@@ -737,8 +757,10 @@ create_go_annotations() {
       echo
       module load $module_R
       module load $module_mugqic_R_packages
+      module load $module_perl
       R --no-restore --no-save<<EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
+httr::set_config(httr::config(cainfo = '/etc/ssl/certs/ca-bundle.crt'))
 res = getBMsimple("$BIOMART_HOST","$BIOMART_MART","$BIOMART_DATASET",c("$BIOMART_GENE_ID", "$BIOMART_GO_ID", "$BIOMART_GO_NAME", "$BIOMART_GO_DEFINITION"))
 res = res[ res[["$BIOMART_GENE_ID"]] != '' & res[["$BIOMART_GO_ID"]] != '', ]
 write.table(res, file="$ANNOTATIONS_DIR/$GO", quote=FALSE,sep='\t',col.names=FALSE,row.names=FALSE)
@@ -886,8 +908,8 @@ LOG=$LOG_DIR/${enzyme}_digest_$TIMESTAMP.log && \
 ERR=$LOG_DIR/${enzyme}_digest_$TIMESTAMP.err && \
 ASSEMBLY_FOR_CMD=$(echo $ASSEMBLY | sed -e 's/[-.]/_/g')
 hicup_digester --genome \$ASSEMBLY_FOR_CMD --re1 ${enzymes[$enzyme]},${enzyme} $GENOME_DIGEST/$GENOME_FASTA > \$LOG 2> \$ERR && \
-mv Digest_\$ASSEMBLY_FOR_CMD_*${enzyme}_None_*.txt $GENOME_DIGEST_FILE && \
-chmod -R ug+rwX,o+rX $GENOME_DIGEST \$LOG \$ERR"
+mv Digest_\$ASSEMBLY_FOR_CMD_*${enzyme}_None_*.txt $GENOME_DIGEST_FILE" # && \
+#chmod -R ug+rwX,o+rX $GENOME_DIGEST \$LOG \$ERR"
       cmd_or_job Digest_CMD 2
     else
       echo
@@ -957,7 +979,8 @@ common_name=$COMMON_NAME
 assembly=$ASSEMBLY
 assembly_synonyms=$ASSEMBLY_SYNONYMS
 source=$SOURCE
-version=$VERSION" > $INI
+version=$VERSION
+module_star=$module_star" > $INI
 
   if [ ! -z "${DBSNP_VERSION:-}" ]
   then

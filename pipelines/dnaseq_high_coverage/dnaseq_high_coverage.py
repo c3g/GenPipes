@@ -301,7 +301,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeq):
         jobs = []
 
         output_directory = "variants"
-        temp_dir = os.path.join(os.getcwd(), output_directory)
+        temp_dir = config.param('DEFAULT', 'tmp_dir')
         gemini_prefix = os.path.join(output_directory, "allSamples")
         gemini_module=config.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2],gemini_module[-1]])

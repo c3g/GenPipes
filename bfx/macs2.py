@@ -25,26 +25,26 @@
 from core.config import *
 from core.job import *
 
-def callpeak (format, genome_size, treatment_files, control_files, output_prefix_name, output, other_options=""):
+def callpeak (options, genome_size, treatment_files, control_files, output_prefix_name, output, other_options="", ini_section='macs2_callpeak'):
 
     return Job(
             treatment_files + control_files,
-            [output],
+            output,
             [
-                ['macs2_callpeak', 'module_python'],
-                ['macs2_callpeak', 'module_macs2']
+                [ini_section, 'module_python'],
+                [ini_section, 'module_macs2']
             ],
             command="""\
-macs2 callpeak {format}{other_options} \\
+macs2 callpeak {options} {other_options} \\
   --tempdir {tmp_dir} \\
   --gsize {genome_size} \\
   --treatment \\
   {treatment_files}{control_files} \\
   --name {output_prefix_name} \\
   >& {output_prefix_name}.diag.macs.out""".format(
-                format=format,
+                options=options,
                 other_options=other_options,
-                tmp_dir=config.param('callpeak', "tmp_dir"),
+                tmp_dir=config.param(ini_section, "tmp_dir"),
                 genome_size=genome_size,
                 treatment_files=" \\\n  ".join(treatment_files),
                 control_files=" \\\n  --control \\\n  " + " \\\n  ".join(control_files) if control_files else " \\\n  --nolambda",
