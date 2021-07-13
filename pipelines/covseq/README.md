@@ -24,7 +24,7 @@ usage: covseq.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                   [--sanity-check]
                                   [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}] [-v]
 
-Version: 3.3.0
+Version: 3.5.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 

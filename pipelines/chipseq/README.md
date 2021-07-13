@@ -28,12 +28,13 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                   [--no-json] [--report] [--clean]
                   [-l {debug,info,warning,error,critical}] [--sanity-check]
-                  [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
-                  [-d DESIGN] [-t {mugqic,mpileup,light}] [-r READSETS] [-v]
+                  [--container {wrapper, singularity} <IMAGE PATH>]
+                  [--genpipes_file GENPIPES_FILE] [-d DESIGN]
+                  [-t {chipseq,atacseq}] [-r READSETS] [-v]
 
-Version: 3.1.5
+Version: 3.5.0
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
@@ -66,30 +67,38 @@ optional arguments:
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
-                        run pipeline inside a container providing a container
-                        image path or accessible docker/singularity hub path
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a valid singularity
+                        image path
+  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+                        Command file output path. This is the command used to
+                        process the data, or said otherwise, this command will
+                        "run the Genpipes pipeline". Will be redirected to
+                        stdout if the option is not provided.
   -d DESIGN, --design DESIGN
                         design file
-  -t {mugqic,mpileup,light}, --type {mugqic,mpileup,light}
-                        DNAseq analysis type
+  -t {chipseq,atacseq}, --type {chipseq,atacseq}
+                        Type of pipeline (default chipseq)
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
 
 Steps:
+------
+
+----
 ```
 ![chipseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq.resized.png)
 [download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq.png)
 ```
-------
+chipseq:
 1- picard_sam_to_fastq
 2- trimmomatic
 3- merge_trimmomatic_stats
-4- bwa_mem_picard_sort_sam
-5- samtools_view_filter
-6- picard_merge_sam_files
-7- picard_mark_duplicates
+4- mapping_bwa_mem_sambamba
+5- sambamba_merge_bam_files
+6- sambamba_mark_duplicates
+7- sambamba_view_filter
 8- metrics
 9- homer_make_tag_directory
 10- qc_metrics
@@ -98,11 +107,36 @@ Steps:
 13- homer_annotate_peaks
 14- homer_find_motifs_genome
 15- annotation_graphs
-16- ihec_preprocess_files
-17- run_spp
+16- run_spp
+17- differential_binding
 18- ihec_metrics
 19- multiqc_report
 20- cram_output
+----
+```
+![chipseq atacseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_atacseq.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_atacseq.png)
+```
+atacseq:
+1- picard_sam_to_fastq
+2- trimmomatic
+3- merge_trimmomatic_stats
+4- mapping_bwa_mem_sambamba
+5- sambamba_merge_bam_files
+6- sambamba_mark_duplicates
+7- sambamba_view_filter
+8- metrics
+9- homer_make_tag_directory
+10- qc_metrics
+11- homer_make_ucsc_file
+12- macs2_atacseq_callpeak
+13- homer_annotate_peaks
+14- homer_find_motifs_genome
+15- annotation_graphs
+16- run_spp
+17- ihec_metrics
+18- multiqc_report
+19- cram_output
 
 ```
 picard_sam_to_fastq
@@ -128,11 +162,11 @@ merge_trimmomatic_stats
 -----------------------
 The trim statistics per readset are merged at this step.
 
-bwa_mem_picard_sort_sam
------------------------
+mapping_bwa_mem_sambamba
+------------------------
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
 The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
+BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
 
@@ -140,24 +174,24 @@ This step takes as input files:
 2. Else, FASTQ files from the readset file if available
 3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-samtools_view_filter
---------------------
-Filter unique reads by mapping quality using [Samtools](http://www.htslib.org/).
-
-picard_merge_sam_files
-----------------------
-BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+sambamba_merge_bam_files
+------------------------
+BAM readset files are merged into one file per sample. Merge is done using [Sambamba]().
 
 This step takes as input files:
 
 1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
 2. Else, BAM files from the readset file
 
-picard_mark_duplicates
-----------------------
+sambamba_mark_duplicates
+------------------------
 Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
 (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
-will be marked as a duplicate in the BAM file. Marking duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
+will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba]().
+
+sambamba_view_filter
+--------------------
+Filter out unmapped reads and low quality reads [Sambamba](http://www.htslib.org/).
 
 metrics
 -------
@@ -165,7 +199,7 @@ The number of raw/filtered and aligned reads per sample are computed at this sta
 
 homer_make_tag_directory
 ------------------------
-The Homer Tag directories, used to check for quality metrics, are computed at this step. 
+The Homer Tag directories, used to check for quality metrics, are computed at this step.
 
 qc_metrics
 ----------
@@ -203,20 +237,19 @@ not included in the above categories); The distribution of peaks found within ex
 The distribution of peak distance relative to the transcription start sites (TSS);
 the Location of peaks per design.
 
-ihec_preprocess_files
----------------------
-Generate IHEC's files.
-
-
 run_spp
 -------
 runs spp to estimate NSC and RSC ENCODE metrics. For more information: https://github.com/kundajelab/phantompeakqualtools
 
+differential_binding
+--------------------
+Performs differential binding analysis using [DiffBind](http://bioconductor.org/packages/release/bioc/html/DESeq.html)
+Merge the results of the analysis in a single csv file.
+html report will be generated to QC samples and check how well differential binding analysis was performed.
 
 ihec_metrics
 ------------
 Generate IHEC's standard metrics.
-
 
 multiqc_report
 --------------
@@ -226,6 +259,13 @@ For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc
 cram_output
 -----------
 Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list 
+Using this function will include the orginal final bam file into the  removable file list
+
+macs2_atacseq_callpeak
+----------------------
+Peaks are called using the MACS2 software. Different calling strategies are used for narrow and broad peaks.
+The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
+The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
+The default mfold parameter of MACS2 is [10,30].
 
 
