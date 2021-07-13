@@ -477,7 +477,7 @@ RNA-Seq, RNA-Seq De Novo Assembly and ChIP-Seq pipelines can perform differentia
 
 The Design File is a TAB-separated values plain text file with one line per sample and the following columns:
 
-### RNA-Seq and NA-Seq De Novo Assembly
+### RNA-Seq and RNA-Seq De Novo Assembly
 * Sample: first column; must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; the sample name must match a sample name in the readset file; mandatory;
 * Contrast: each of the following columns defines an experimental design contrast; the column name defines the contrast name, and the following values represent the sample group membership for this contrast:
     * '__0__' or '': the sample does not belong to any group;
