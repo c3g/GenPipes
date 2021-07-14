@@ -88,8 +88,8 @@ Steps:
 
 ----
 ```
-![chipseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq.png)
+![chipseq workflow diagram](https://genpipes.readthedocs.io/en/genpipes-v-3.5.0/_images/chipseq.png)
+[download full-size diagram](https://genpipes.readthedocs.io/en/genpipes-v-3.5.0/_images/chipseq.png)
 ```
 chipseq:
 1- picard_sam_to_fastq
@@ -114,8 +114,8 @@ chipseq:
 20- cram_output
 ----
 ```
-![chipseq atacseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_atacseq.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_atacseq.png)
+![chipseq atacseq workflow diagram](https://genpipes.readthedocs.io/en/genpipes-v-3.5.0/_images/chipseq-atac.png)
+[download full-size diagram](https://genpipes.readthedocs.io/en/genpipes-v-3.5.0/_images/chipseq-atac.png)
 ```
 atacseq:
 1- picard_sam_to_fastq
