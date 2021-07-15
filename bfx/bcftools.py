@@ -67,6 +67,9 @@ def mpileup(inputs, output, options=None, regions=None, regionFile=None):
     """
     New bcftools mpileup function
     """
+    if not isinstance(inputs, list):
+        inputs = [inputs]
+        
     return Job(
         inputs,
         [output],
