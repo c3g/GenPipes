@@ -128,7 +128,7 @@ install_genome() {
   create_genome_ini_file
 
   # Add permissions
-  chmod -R ug+rwX,o+rX $INSTALL_DIR
+  chmod -R ug+rwX,o+rX,g+s $INSTALL_DIR
 }
 
 install_genome "$SPECIES" "$COMMON_NAME" "$ASSEMBLY" "$ASSEMBLY_SYNONYMS" "$SOURCE" "$VERSION"

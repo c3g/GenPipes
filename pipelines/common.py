@@ -220,6 +220,7 @@ class Illumina(MUGQICPipeline):
                             )
                         ], name="picard_sam_to_fastq."+readset.name, samples=[readset.sample])
                     )
+
                 else:
                     _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
         return jobs

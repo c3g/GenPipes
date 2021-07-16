@@ -24,11 +24,13 @@ import re
 import argparse
 import os
 
+
 def getFileExtension(file):
     parsedFile = file.split(".")
     return parsedFile[-1]
 
-def decompressFile(file):   
+
+def decompressFile(file):
     decompressedFile = gzip.GzipFile(file, 'rb')
     content = decompressedFile.read()
     decompressedFile.close()
@@ -38,12 +40,13 @@ def decompressFile(file):
     wigFile.close()
     return filename[:-3]
 
+
 def sortSignals(filename):
     """
         Sorts the signals of a wig file from strongest to weakest
     """
 
-    #if file gziped we create a new decompressed file                                                                                                                                     
+    # if file gziped we create a new decompressed file
     fileExt = getFileExtension(filename)
     if fileExt == "gz":
         filename = decompressFile(filename)
@@ -51,27 +54,29 @@ def sortSignals(filename):
     if not (fileExt == "wig" or fileExt == "bedgraph"):
         raise Exception("Error : " + filename + " has to be .wig or .bedgraph")
 
-    lines = [] #An array containing each lines of the file                                                                                                                                
+    lines = []  # An array containing each lines of the file
 
     with open(filename) as file:
         for line in file:
             parsed_line = line.split("\t")
-            if not re.search("[a-zA-Z]", parsed_line[-1]): #checks if line is a description line                                                                                  
+            if not re.search("[a-zA-Z]", parsed_line[
+                -1]):  # checks if line is a description line
                 lines.append(parsed_line[-1])
 
-    lines.sort(reverse = True)
+    lines.sort(reverse=True)
     return lines
+
 
 def computeMetrics(sorted_signals, percent1, percent2):
     """
         Calculates the sum of the signals and the sum of the top 10 and 5% signals
     """
-    
+
     signalSum = 0
     sumTopBins_1 = 0
     sumTopBins_2 = 0
 
-    #Creates all the values needed to calculate metrics                                                                                                                                   
+    # Creates all the values needed to calculate metrics
     nbBins = len(sorted_signals)
     nbTopBins_1 = int(round(nbBins * percent1))
     nbTopBins_2 = int(round(nbBins * percent2))
@@ -80,41 +85,46 @@ def computeMetrics(sorted_signals, percent1, percent2):
         signalSum += float(sorted_signals[i])
 
     for i in range(nbTopBins_1):
-        if(i == nbTopBins_2):
-                sumTopBins_2 = sumTopBins_1
+        if (i == nbTopBins_2):
+            sumTopBins_2 = sumTopBins_1
         sumTopBins_1 += float(sorted_signals[i])
 
     return [signalSum, sumTopBins_1, sumTopBins_2]
+
 
 def outputFile(signalSum, sumTopBins_1, sumTopBins_2, percent1, percent2, output_path):
     """
         Stores the ratio between the signal sum and the top 10 and 5% in an output file
     """
-    percent1 = percent1*100
-    percent2 = percent2*100
+    percent1 = percent1 * 100
+    percent2 = percent2 * 100
 
-    columns = "Signal sum\tTop " + str(percent1) + "% bins sum\tTop " + str(percent2) + "% bins sum\tRatio top " + str(percent1) + "% bins\tRatio top " + str(percent2) + "% bins"
+    columns = "Signal sum\tTop " + str(percent1) + "% bins sum\tTop " + str(percent2) + "% bins sum\tRatio top " + str(
+        percent1) + "% bins\tRatio top " + str(percent2) + "% bins"
     if signalSum != 0:
-        values = str(signalSum)+"\t"+str(sumTopBins_1)+"\t"+str(sumTopBins_2)+"\t"+str(sumTopBins_1/signalSum)+"\t"+str(sumTopBins_2/signalSum)
+        values = str(signalSum) + "\t" + str(sumTopBins_1) + "\t" + str(sumTopBins_2) + "\t" + str(
+            sumTopBins_1 / signalSum) + "\t" + str(sumTopBins_2 / signalSum)
     else:
         values = "0\t0\t0\t0\t0"
 
     complete_file_name = output_path
 
-    #Writes metrics in a new file                                                                                                                                                         
+    # Writes metrics in a new file
     output = open(complete_file_name, "w+")
-    output.write(columns+"\n")
+    output.write(columns + "\n")
     output.write(values)
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description="Calculates the amount of noise in a signal track")
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,
+                                     description="Calculates the amount of noise in a signal track")
     parser.add_argument("-i", "--input_file", help="Path to input file to analyse", type=str, required=True)
     parser.add_argument("-p1", "--percent1", help="Percent 1 for ratio1", type=float, required=True)
     parser.add_argument("-p2", "--percent2", help="Percent 2 for ratio2", type=float, required=True)
     parser.add_argument("-o", "--output", help="Output directory", type=str, required=False, default=".")
     args = parser.parse_args()
-                                                                                                                                                                       
-    filename = args.input_file #converted file                                                                                                                                            
+
+    filename = args.input_file  # converted file
     output_path = args.output
     percent1 = args.percent1
     percent2 = args.percent2

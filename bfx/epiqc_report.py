@@ -19,6 +19,7 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 import matplotlib
+
 matplotlib.use('Agg')
 
 import argparse
@@ -28,8 +29,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-
-def report_bigwiginfo(bigwiginfo_file, chromCount, low_alert_bases_covered, medium_alert_bases_covered, report_file_name):
+def report_bigwiginfo(bigwiginfo_file, chromCount, low_alert_bases_covered, medium_alert_bases_covered,
+                      report_file_name):
     """
         Reads the output from the BigWigInfo step of the pipeline and determines if there is a highlevel alert or not.
         Chromosome count < 23 || no chromcount found => High level alert
@@ -48,25 +49,25 @@ def report_bigwiginfo(bigwiginfo_file, chromCount, low_alert_bases_covered, medi
                     chrom_count = int(line[1])
                     if chrom_count < int(chromCount):
                         msg = "BigWigInfo : HIGH LEVEL ALERT : Chromosome count < {chromCount}  ! (chromCount = {chromCount})\n".format(
-                                chromCount = chromCount
-                                )
+                            chromCount=chromCount
+                        )
                         report_file.write(msg)
                     else:
                         report_file.write("BigWigInfo : Chromosome count passed !\n")
 
                 if line[0] == "basesCovered":
-                    bases_covered = int(line[1].replace(",",""))
+                    bases_covered = int(line[1].replace(",", ""))
                     if bases_covered < int(low_alert_bases_covered):
                         msg = "BigWigInfo : LOW LEVEL ALERT : Bases covered < {low_alert_bases_covered} ! (bases covered = {bases_covered})\n".format(
-                                low_alert_bases_covered = low_alert_bases_covered,
-                                bases_covered = bases_covered
-                                )
+                            low_alert_bases_covered=low_alert_bases_covered,
+                            bases_covered=bases_covered
+                        )
                         report_file.write(msg)
                     elif bases_covered < int(medium_alert_bases_covered):
                         msg = "BigWigInfo : MEDIUM LEVEL ALERT : Bases covered < {medium_alert_bases_covered} ! (bases covered = {bases_covered})\n".format(
-                                medium_alert_bases_covered = medium_alert_bases_covered,
-                                bases_covered = bases_covered
-                                )
+                            medium_alert_bases_covered=medium_alert_bases_covered,
+                            bases_covered=bases_covered
+                        )
                         report_file.write(msg)
                     else:
                         report_file.write("BigWigInfo : Bases covered normal !\n")
@@ -86,7 +87,7 @@ def report_chromimpute(chromimpute_eval_file, percent1, percent2, thresholdM, th
     report_file = open(report_file_name, "a")
 
     try:
-        read_eval_file = csv.DictReader(open(chromimpute_eval_file), delimiter = "\t")
+        read_eval_file = csv.DictReader(open(chromimpute_eval_file), delimiter="\t")
     except:
         report_file.write("File " + chromimpute_eval_file + " could not be read !")
 
@@ -96,30 +97,31 @@ def report_chromimpute(chromimpute_eval_file, percent1, percent2, thresholdM, th
 
         if observed_impute < float(thresholdM):
             msg = "ChromImpute : MEDIUM Level Alert : OBSERVED_{percent1}_IMPUTE_{percent2} < {thresholdM}% (OBSERVED_{percent1}_IMPUTE_{percent2} = {observed_impute}%)\n".format(
-                    percent1 = percent1,
-                    percent2 = percent2,
-                    thresholdM = thresholdM,
-                    observed_impute = observed_impute
-                    )
+                percent1=percent1,
+                percent2=percent2,
+                thresholdM=thresholdM,
+                observed_impute=observed_impute
+            )
             report_file.write(msg)
         elif both < float(thresholdL):
             msg = "ChromImpute : Low Level Alert : BOTH_{percent1} < {thresholdL}% (BOTH_{percent1} = {both}%)\n".format(
-                    percent1 = percent1,
-                    percent2 = percent2,
-                    thresholdL = thresholdL,
-                    both = both                    
-                    )
+                percent1=percent1,
+                percent2=percent2,
+                thresholdL=thresholdL,
+                both=both
+            )
             report_file.write(msg)
         else:
             msg = "ChromImpute : ChromImpute evaluation passed ! ({observed_impute} > {thresholdM}% & {both} > {thresholdL}%)\n".format(
-                    observed_impute = observed_impute,
-                    both = both,
-                    thresholdM = thresholdM,
-                    thresholdL = thresholdL
-                    )
+                observed_impute=observed_impute,
+                both=both,
+                thresholdM=thresholdM,
+                thresholdL=thresholdL
+            )
             report_file.write(msg)
 
     report_file.close()
+
 
 def report_signal_noise(signal_noise_file, toppercent1, toppercent2, thresholdM, thresholdL, report_file_name):
     """
@@ -131,43 +133,44 @@ def report_signal_noise(signal_noise_file, toppercent1, toppercent2, thresholdM,
     report_file = open(report_file_name, "a")
 
     try:
-        read_signal_noise_file = csv.DictReader(open(signal_noise_file), delimiter = "\t")
+        read_signal_noise_file = csv.DictReader(open(signal_noise_file), delimiter="\t")
     except:
         report_file.write("File " + signal_noise_file + " could not be read !")
 
-    toppercent1 = float(toppercent1)*100
-    toppercent2 = float(toppercent2)*100
-    thresholdL_percent = float(thresholdL)*100
-    thresholdM_percent = float(thresholdM)*100
+    toppercent1 = float(toppercent1) * 100
+    toppercent2 = float(toppercent2) * 100
+    thresholdL_percent = float(thresholdL) * 100
+    thresholdM_percent = float(thresholdM) * 100
 
     for line in read_signal_noise_file:
-        ratio_1 = float(line['Ratio top '+ str(toppercent1) +'% bins'])
-        ratio_2 = float(line['Ratio top '+ str(toppercent2) +'% bins'])
+        ratio_1 = float(line['Ratio top ' + str(toppercent1) + '% bins'])
+        ratio_2 = float(line['Ratio top ' + str(toppercent2) + '% bins'])
 
     if ratio_1 < float(thresholdM):
         msg = "Signal to noise : MEDIUM Level Alert : signal in top {toppercent1}% bins < {thresholdM_percent}% ({ratio_1})\n".format(
-                toppercent1 = toppercent1,
-                thresholdM_percent = thresholdM_percent,
-                ratio_1 = ratio_1
-                )
+            toppercent1=toppercent1,
+            thresholdM_percent=thresholdM_percent,
+            ratio_1=ratio_1
+        )
         report_file.write(msg)
     elif ratio_2 < float(thresholdL):
         msg = "Signal to noise : Low Level Alert : signal in top {toppercent2}% bins < {thresholdL_percent}% ({ratio_2})\n".format(
-                toppercent2 = toppercent2,
-                thresholdL_percent = thresholdL_percent,
-                ratio_2 = ratio_2
-                )
+            toppercent2=toppercent2,
+            thresholdL_percent=thresholdL_percent,
+            ratio_2=ratio_2
+        )
         report_file.write(msg)
     else:
         msg = "Signal to noise : Signal to noise ratio passed ! ( {ratio_1} > {thresholdM_percent} & {ratio_2} > {thresholdL_percent})\n".format(
-                ratio_1 = ratio_1,
-                thresholdM_percent = thresholdM_percent,
-                ratio_2 = ratio_2,
-                thresholdL_percent = thresholdL_percent
-                )
+            ratio_1=ratio_1,
+            thresholdM_percent=thresholdM_percent,
+            ratio_2=ratio_2,
+            thresholdL_percent=thresholdL_percent
+        )
         report_file.write(msg)
 
     report_file.close()
+
 
 def report_epigeec(correlation_matrix, output_dir):
     """
@@ -189,35 +192,39 @@ def report_epigeec(correlation_matrix, output_dir):
     cpt = 0
     for sample in samples:
         split = sample.split(".")
-        samples[cpt] = split[2]+"_"+split[-3]
+        samples[cpt] = split[2] + "_" + split[-3]
         cpt += 1
 
-    #Convert matrix to float
+    # Convert matrix to float
     matrix = np.array(matrix)
     matrix = matrix.astype(np.float)
-    
+
     cell_size_inch = 0.3
     matrix_height = cell_size_inch * matrix.shape[0]
 
     fig, ax = plt.subplots()
     if matrix_height > 10:
-      fig.set_size_inches(matrix_height, matrix_height+5)
+        fig.set_size_inches(matrix_height, matrix_height + 5)
     ax.matshow(matrix)
     ax.set(xticks=np.arange(len(samples)), xticklabels=samples,
            yticks=np.arange(len(samples)), yticklabels=samples)
 
     plt.setp(ax.get_xticklabels(), rotation=-45, ha="right",
-         rotation_mode="anchor")
+             rotation_mode="anchor")
 
     fig.tight_layout()
-    plt.savefig(output_dir+"/correlation_matrix.png")
+    plt.savefig(output_dir + "/correlation_matrix.png")
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description="Analyses the output of EpiQC")
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,
+                                     description="Analyses the output of EpiQC")
     parser.add_argument("-b", "--bigwiginfo", help="Analyses a bigwiginfo file", type=str, default="")
     parser.add_argument("-cb", "--chromcount", help="Chromosome count threshold", type=str, default="23")
-    parser.add_argument("-bc1", "--basecovertedL", help="Low level threshold for bases covered (required if -b)", type=str, default="75000000")
-    parser.add_argument("-bc2", "--basecovertedM", help="Medium level threshold for bases covered (required if -b)", type=str, default="25000000")
+    parser.add_argument("-bc1", "--basecovertedL", help="Low level threshold for bases covered (required if -b)",
+                        type=str, default="75000000")
+    parser.add_argument("-bc2", "--basecovertedM", help="Medium level threshold for bases covered (required if -b)",
+                        type=str, default="25000000")
     parser.add_argument("-c", "--chromimpute", help="Analyses a chromimpute eval file", type=str, default="")
     parser.add_argument("-p1", "--percent1", help="Percent1 of chromimpute eval (required if -c)", type=str, default="")
     parser.add_argument("-p2", "--percent2", help="Percent2 of chromimpute eval (required if -c)", type=str, default="")
@@ -228,7 +235,8 @@ if __name__ == "__main__":
     parser.add_argument("-s2", "--toppercent2", help="Top percent2 for signal to noise", type=str, default="0.05")
     parser.add_argument("-st1", "--sthresholdM", help="Signal noise threshold medium alert", type=str, default="0.3")
     parser.add_argument("-st2", "--sthresholdL", help="Signal noise threshold low alert", type=str, default="0.2")
-    parser.add_argument("-e", "--epigeec", help="Creates heatmap from the epigeec correlation matrix", type=str, default="")
+    parser.add_argument("-e", "--epigeec", help="Creates heatmap from the epigeec correlation matrix", type=str,
+                        default="")
     parser.add_argument("-o", "--output", help="File to write results", type=str, default="")
     args = parser.parse_args()
 
@@ -242,7 +250,8 @@ if __name__ == "__main__":
     if args.chromimpute != "":
         if args.percent1 != "" and args.percent2 != "":
             if args.output != "":
-                report_chromimpute(args.chromimpute, args.percent1, args.percent2, args.cthresholdM, args.cthresholdL, report_file)
+                report_chromimpute(args.chromimpute, args.percent1, args.percent2, args.cthresholdM, args.cthresholdL,
+                                   report_file)
             else:
                 print("Specify output file with -o !")
         else:
@@ -250,7 +259,8 @@ if __name__ == "__main__":
     if args.signalnoise != "":
         if args.toppercent1 != "" and args.toppercent2 != "":
             if args.output != "":
-                report_signal_noise(args.signalnoise, args.toppercent1, args.toppercent2, args.sthresholdM, args.sthresholdL, report_file)
+                report_signal_noise(args.signalnoise, args.toppercent1, args.toppercent2, args.sthresholdM,
+                                    args.sthresholdL, report_file)
             else:
                 print("Specify output file with -o !")
         else:

@@ -55,6 +55,7 @@ class Pipeline(object):
 
         self._genpipes_version = subprocess.check_output("cat " + os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "VERSION"), shell=True)
 
+
         if self.protocol is None:
             step_list = self.steps
         elif self.args.help:
@@ -121,9 +122,9 @@ class Pipeline(object):
             config.filepath = os.path.abspath(config_trace.name)
 
         self._output_dir = os.path.abspath(self.args.output_dir)
-
         self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config, container=self.args.container,
                                            genpipes_file=self.args.genpipes_file)
+
 
         self._json = True
         if self.args.no_json:
@@ -143,9 +144,10 @@ class Pipeline(object):
                 raise Exception("Error: step range \"" + self.args.steps +
                                 "\" is invalid (should match \d+([,-]\d+)*)!")
         else:
-#            self.argparser.error("argument -s/--steps is required!")
+            #            self.argparser.error("argument -s/--steps is required!")
             log.warning("No step provided by the user => launching the entire pipeline\n")
             self._step_range = self.step_list
+
         self._sample_list = []
         self._sample_paths = []
 
@@ -175,7 +177,6 @@ class Pipeline(object):
 ***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag to check for more potential issues...""".format(
                    error=e
                    ))
-
                 exit(1)
 
     # Pipeline command line arguments parser
@@ -240,6 +241,7 @@ class Pipeline(object):
                                               "the data, or said otherwise, this command will \"run the "
                                               "Genpipes pipeline\". Will be redirected to stdout if the "
                                               "option is not provided.")
+
 
 
         return self._argparser
@@ -343,7 +345,6 @@ class Pipeline(object):
             _raise(SanitycheckError("Error: missing candidate input files: " + str(candidate_input_files) +
                                     " neither found in dependencies nor on file system!"))
 
-
     def dependency_jobs(self, current_job):
         dependency_jobs = []
         dependency_input_files = set()
@@ -430,10 +431,12 @@ class Pipeline(object):
         log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
 
 
+
     def submit_jobs(self):
         self.scheduler.submit(self)
 
         ## Print a copy of sample JSONs for the genpipes dashboard
+
     #        if self.json and self.portal_output_dir != "":
     #            copy_commands = []
     #            for i, sample in enumerate(self.sample_list):
@@ -533,4 +536,5 @@ class ValidateContainer(argparse.Action):
         Container = collections.namedtuple('container', 'type name')
 
         setattr(args, self.dest, Container(c_type, container))
+
 
