@@ -24,15 +24,14 @@ import os
 from core.config import *
 from core.job import *
 
-def tohdf5(input_dir, output_dir, signal_file):
+def tohdf5(output_dir, signal_file):
     signal_file_basename = os.path.basename(signal_file)+".hdf5"
     output_path = os.path.join(output_dir, signal_file_basename)
-
+    log.info(signal_file)
     return Job(
-        [input_dir],
-        [output_dir, output_dir+"_"+signal_file_basename], # Unique output name for each file
+        [signal_file],
+        [output_path], # Unique output name for each file
         [['epigeec', 'module_python']],
-        name = "epigeec_tohdf5",
         command = """\
 epigeec to_hdf5 \\
   -{file_type} \\
@@ -42,39 +41,40 @@ epigeec to_hdf5 \\
   {output}""".format(
             file_type = config.param('epigeec', 'file_type'),
             signal_file = signal_file,
-            chromsizes = config.param('DEFAULT', 'chromsizes'),
+            chromsizes = config.param('DEFAULT', 'chromosome_size'),
             resolution = config.param('epigeec', 'resolution'),
             output = output_path
         )
     )
 
-def filter(input_dir, output_dir, hdf5_file):
-    hdf5_basename = os.path.basename(hdf5_file)
+def filter(output_dir, hdf5_file):
 
+##linux if command below checks whether select and exclude files are available. then it adds -s and -e options to the
+# command based on their avaialability
+    filtered_output = os.path.join(output_dir, os.path.basename(hdf5_file))
     return Job(
-        [input_dir+"_"+hdf5_basename], # Job starts as soon as its corresponding bigwig file is converted to hdf5
-        [output_dir],
+        [hdf5_file], # Job starts as soon as its corresponding bigwig file is converted to hdf5
+        [filtered_output],
         [['epigeec', 'module_python']],
-        name = "epigeec_filter",
         command = """\
 epigeec filter \\
   {hdf5_file} \\
   {chromsizes} \\
   {output_file} \\
-  {select} \\
-  {exclude}""".format(
+  `if [[ "{select}" != "" ]]; then echo "-s {select}"; fi; if [[ "{exclude}" != "" ]]; then echo "-e {exclude}" ;fi`""".format(
         hdf5_file = hdf5_file,
-        chromsizes = config.param('DEFAULT', 'chromsizes'),
-        output_file = os.path.join(output_dir, hdf5_basename),
+        chromsizes = config.param('DEFAULT', 'chromosome_size'),
+        output_file = filtered_output,
         select = config.param('epigeec', 'select'),
         exclude = config.param('epigeec', 'exclude')
         )
     )
 
-def correlate(input_dir, output_dir, hdf5_list):
+def correlate(input_files, output_dir, hdf5_list):
+    correlation_matrix = os.path.join(output_dir, "correlation_matrix.tsv")
     return Job(
-        [input_dir],
-        [output_dir],
+        input_files,
+        [correlation_matrix],
         [['epigeec', 'module_python']],
         name = "epigeec_correlate",
         command = """\
@@ -83,8 +83,18 @@ epigeec correlate \\
   {chromsizes} \\
   {outMatrix}""".format(
         hdf5_list = hdf5_list,
-        chromsizes = config.param('DEFAULT', 'chromsizes'),
-        outMatrix = os.path.join(output_dir, "correlation_matrix.tsv")
+        chromsizes = config.param('DEFAULT', 'chromosome_size'),
+        outMatrix = correlation_matrix
         )
     )
+
+def generate_hdf5_list(hdf5_list_file, file_path):
+    return Job(
+        input_files=[hdf5_list_file],
+        command="""\
+            echo -e "{file_path}" >> {hdf5_list_file}""".format(
+            hdf5_list_file=hdf5_list_file,
+            file_path=file_path
+            )
+        )
 

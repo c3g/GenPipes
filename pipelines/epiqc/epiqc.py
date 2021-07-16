@@ -1049,64 +1049,104 @@ mkdir -p \\
 
         return jobs
 
+   # job_chr_sizes = chromimpute.generate_chr_sizes(chr_sizes_file, chr_sizes, chr)
+   # job.append(job_chr_sizes)
+    #job_chrs_sizes = concat_jobs(job)
     def epigeec_tohdf5(self):
         jobs = []
 
         input_dir = 'epigeec'
         output_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_hdf5'])
-
+        job_epigeec_hdf5 =[]
+        hdf5_folder = Job(
+            command="mkdir -p {output_dir}".format(
+                output_dir=output_dir
+            ))
         for sample in self.samples:
             for readset in sample.readsets:
-                if readset.bigwig != None:  # Check if the readset has a BIGWIG column
-                    bigwig_file = readset.bigwig
-                else:  # If not, we search for the path from a chipseq pipeline
-                    prefix_path = "/".join(self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
-                    bigwig_file = os.path.join(prefix_path, "tracks", sample.name, "bigWig",
-                                               sample.name + ".bw")  # Create path to bigwig file
+                input_files = []
+                if readset.mark_type != "I":
+                    if readset.bigwig:  # Check if the readset has a BIGWIG column != None
+                        bigwig_file = readset.bigwig
+                    else:  # If not, we search for the path from a chipseq pipeline
+                        prefix_path = "/".join(self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
+                        bigwig_file = os.path.join(prefix_path, "tracks", sample.name, readset.mark_name, "bigWig",
+                                                   sample.name + "." + readset.mark_name + ".bw")  # Create path to bigwig file
+                    file_ext = bigwig_file.split(".")[-1]
 
-                file_ext = bigwig_file.split(".")[-1]
-                if file_ext != "bigWig" and file_ext != "bw":
-                    raise Exception("Error : " + os.path.basename(bigwig_file) + " not a bigWig file !")
 
-                jobs.append(epigeec.tohdf5(input_dir, output_dir, bigwig_file))
+                    job_epigeec_hdf5.append(epigeec.tohdf5(output_dir, bigwig_file))
+                    jobs_epigeec_hdf5 = concat_jobs(job_epigeec_hdf5)
+        jobs.append(concat_jobs([hdf5_folder, jobs_epigeec_hdf5],name = "epigeec_tohdf5"))
 
         return jobs
 
     def epigeec_filter(self, hdf5_files):
         jobs = []
-
+        filter_job = []
         input_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_hdf5'])
         output_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_filtered'])
+        filter_folder_job = Job(
+            command="mkdir -p {output_dir}".format(
+                output_dir=output_dir
+            ))
+
+
 
         for hdf5_file in hdf5_files:
-            path_to_hdf5_file = os.path.join(self.output_dirs['epigeec_output_directory'],
-                                             self.output_dirs['epigeec_hdf5'], hdf5_file)
-            jobs.append(epigeec.filter(input_dir, output_dir, path_to_hdf5_file))
+            path_to_hdf5_file = os.path.join(input_dir, hdf5_file)
+            filter_job.append(epigeec.filter(output_dir, path_to_hdf5_file))
+            filter_jobs = concat_jobs(filter_job)
+
+        jobs.append(concat_jobs([filter_folder_job, filter_jobs],name="epigeec_filter"))
 
         return jobs
 
     def epigeec_correlate(self, skip_filter_step, hdf5_files):
-        file_list = open(config.param('epigeec', 'hdf5_list'), "w+")
+        jobs=[]
+        job=[]
+        hdf5_file_list_name = os.path.join(self.output_dirs['epigeec_output_directory'],
+                                                 "hdf5_list.txt")
+
+        input_files =[]
+        output_dir = os.path.join(self.output_dirs['epigeec_output_directory'],
+                                                 self.output_dirs['epigeec_output'])
+        output_folder_job = Job(
+            command="mkdir -p {output_dir}".format(
+                output_dir=output_dir
+            ))
+
+        job_create_hdf5_list_file = Job(
+            output_files=[hdf5_file_list_name],
+            command="""\
+        if test -f "{hdf5_file_list_name}"; then
+        rm {hdf5_file_list_name} &&
+        touch {hdf5_file_list_name}
+        else
+            touch {hdf5_file_list_name}
+        fi""".format(
+            hdf5_file_list_name=hdf5_file_list_name)
+        )
 
         for hdf5_file in hdf5_files:
             if skip_filter_step:
                 path_to_hdf5_file = os.path.join(self.output_dirs['epigeec_output_directory'],
                                                  self.output_dirs['epigeec_hdf5'], hdf5_file)
+                input_files.append(path_to_hdf5_file)
             else:
                 path_to_hdf5_file = os.path.join(self.output_dirs['epigeec_output_directory'],
                                                  self.output_dirs['epigeec_filtered'], hdf5_file)
+                input_files.append(path_to_hdf5_file)
 
-            file_list.write(path_to_hdf5_file + "\n")
+            job_hdf5_list_file = epigeec.generate_hdf5_list(hdf5_file_list_name, path_to_hdf5_file)
+            job.append(job_hdf5_list_file)
+            jobs_hdf5_list_file = concat_jobs(job)
 
-        file_list.close()
 
-        if skip_filter_step:
-            input_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_hdf5'])
-        else:
-            input_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_filtered'])
-        output_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_output'])
+        job_matrix = epigeec.correlate(input_files, output_dir, hdf5_file_list_name)
+        jobs.append(concat_jobs([output_folder_job, job_create_hdf5_list_file, jobs_hdf5_list_file, job_matrix], name="epigeec_matrix"))
 
-        return epigeec.correlate(input_dir, output_dir, config.param('epigeec', 'hdf5_list'))
+        return jobs
 
     def epigeec(self):
         """
@@ -1120,47 +1160,28 @@ mkdir -p \\
 
         skip_filter_step = config.param('epigeec', 'select') == '' and config.param('epigeec', 'exclude') == ''
 
-        filtered_dir = self.output_dirs['epigeec_filtered']
-        if skip_filter_step:
-            filtered_dir = ""
-
-        jobs.append(Job(
-            [],
-            ['epigeec'],
-            [],
-            command=
-            "mkdir -p \
-              {output_dir}/{hdf5_dir} \
-              {output_dir}/{filtered_dir} \
-              {output_dir}/{correlate}".format(
-                output_dir=self.output_dirs['epigeec_output_directory'],
-                hdf5_dir=self.output_dirs['epigeec_hdf5'],
-                filtered_dir=filtered_dir,
-                correlate=self.output_dirs['epigeec_output']),
-            name="mkdir_epigeec"))
-
         hdf5_files = []
 
         for sample in self.samples:
             for readset in sample.readsets:
-                if readset.bigwig != None:  # Check if the readset has a BIGWIG column
-                    bigwig_file = readset.bigwig
-                else:  # If not, we search for the path from a chipseq pipeline
-                    prefix_path = "/".join(self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
-                    bigwig_file = os.path.join(prefix_path, "tracks", sample.name, "bigWig",
-                                               sample.name + ".bw")  # Create path to bigwig file
+                if readset.mark_type != "I":
+                    if readset.bigwig:  # Check if the readset has a BIGWIG column != None
+                        bigwig_file = readset.bigwig
+                    else:  # If not, we search for the path from a chipseq pipeline
+                        prefix_path = "/".join(self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
+                        bigwig_file = os.path.join(prefix_path, "tracks", sample.name, readset.mark_name, "bigWig",
+                                                   sample.name + "." + readset.mark_name + ".bw")  # Create path to bigwig file
 
-                hdf5_files.append(os.path.basename(bigwig_file) + ".hdf5")
+                    hdf5_files.append(os.path.basename(bigwig_file) + ".hdf5")
 
-        log.debug("epigeec_tohdf5")
         jobs.extend(self.epigeec_tohdf5())
 
         if not skip_filter_step:  # We skip this step if there are no filter files
-            log.debug("epigee_filter")
+
             jobs.extend(self.epigeec_filter(hdf5_files))
 
-        log.debug("epigeec_correlate")
-        jobs.append(self.epigeec_correlate(skip_filter_step, hdf5_files))
+
+        jobs.extend(self.epigeec_correlate(skip_filter_step, hdf5_files))
 
         return jobs
 
@@ -1316,7 +1337,8 @@ mkdir -p \\
            # self.chromimpute_train_step,
            # self.chromimpute_compute_metrics,
              self.signal_to_noise,
-            # self.epigeec,
+            #self.epigeec_tohdf5,
+         self.epigeec,
             # self.epiqc_report
         ]
 

@@ -46,7 +46,9 @@ def modify_inputinfofile(input_file, sample, histone,  output_inputinfo_file):
 
 def generate_chr_sizes(chr_sizes_file, chr_sizes, chr):
     return Job(
+        #to do: remove comment and add output_files. if got errors remove it.
         input_files=[chr_sizes],
+      #  output_files=[chr_sizes_file],
         command="""\
         awk -v OFS="\\t" '{{  if($1=="{chr}") {{print $1,$2}}  }}' {chr_sizes} >> {chr_sizes_file}""".format(
             chr_sizes_file=chr_sizes_file,
