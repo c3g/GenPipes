@@ -40,6 +40,7 @@ from bfx import bigwiginfo
 from bfx import chromimpute
 from bfx import wigSignalNoise
 from bfx import epigeec
+from bfx import epiqc_reports
 from bfx import epiqc_report
 from bfx.readset import parse_illumina_readset_file
 from bfx.design import parse_chipseq_design_file
@@ -96,28 +97,24 @@ class EpiQC(common.Illumina):
 
         return dirs
 
-    # @property
-    # def contrasts(self):
-    #     contrasts = super(EpiQC, self).contrasts
-    #
-    #     # Parse contrasts to retrieve name and type
-    #     for contrast in contrasts:
-    #         if re.search("^\w[\w.-]*,[BN]$", contrast.name):
-    #             contrast.real_name = contrast.name.split(",")[0]
-    #             if contrast.name.split(",")[1] == 'B':
-    #                 contrast.type = 'broad'
-    #             elif contrast.name.split(",")[1] == 'N':
-    #                 contrast.type = 'narrow'
-    #         else:
-    #             _raise(SanitycheckError(
-    #                 "Error: contrast name \"" + contrast.name + "\" is invalid (should be <contrast>,B for broad or <contrast>,N for narrow)!"))
-    #
-    #     return contrasts
-
     @property
     def inputinfo_file(self):
         inputinfo_filename = "inputinfofile.ChromImpute.txt"
         return inputinfo_filename
+
+    @property
+    def bigwiginfo_output(self):
+        file_name = {'prefix': 'bigwiginfo',
+                     'extension': '.txt'}
+        return file_name
+
+    @property
+    def chipseq_bigwig(self):
+        file_name = { 'tracks_dir' : 'tracks',
+        'bigwig_dir': 'bigWig',
+        'extension': '.bw'
+        }
+        return file_name
 
     @property
     def mark_type_conversion(self):
@@ -148,50 +145,22 @@ class EpiQC(common.Illumina):
         return self._readsets
 
     @property
-    def contrasts(self):
-        flag = False
-        if self.args.design:
-            self._contrast = parse_chipseq_design_file(self.args.design.name, self.samples)
-        else:
-            self.argparser.error("argument -d/--design is required!")
-        return self._contrast
+    def chromosome_file(self):
+        file_name = os.path.join(self.output_dirs['chromimpute_output_directory'],
+                                      "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
+                                                                                                         'assembly'),
+                                                "chrom_sizes.txt")))
+        return file_name
 
-    def createInputInfoFile(self):
-        """
-            Creates the input info file for ChromImpute after converting the dataset in a bedgraph format.
-        """
-        with open(config.param('chromimpute', 'inputinfofile'), "w+") as inputinfofile:
-            for contrast in self.contrasts:
-                if contrast.treatments:
-                    for sample in contrast.treatments:
-                        inputinfofile.write("{sample}\t{histone}\t{file}".format(
-                            sample=sample.name,
-                            histone=contrast.real_name,
-                            file=os.path.join(self.output_dirs['bedgraph_converted_directory'],
-                                              sample.name + ".bedgraph")))
-
-        # inputinfofile = open(config.param('chromimpute', 'inputinfofile'), "w+")
-        # marks = config.param('chromimpute', 'marks') # Looks for the marks in the ini file (marks are seperated with commas)
-        # marks = marks.split(",")
-        # cpt = 0
-
-        # # Convert bigwig files to bedgraph and create inputinfofile
-        # for sample in self.samples:
-        #     for readset in sample.readsets:
-        #         if readset.bigwig: # Check if the readset has a BIGWIG column != None
-        #             bigwig_file = readset.bigwig
-        #             if cpt < len(marks):
-        #                 mark = marks[cpt]
-        #                 cpt += 1
-        #         else:                      # If not, we search for the path from a chipseq pipeline
-        #             prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
-        #             bigwig_file = os.path.join(prefix_path, "tracks", sample.name, "bigWig", sample.name + ".bw") # Create path to bigwig file
-        #             mark = config.param('DEFAULT', 'chip_type')
-
-        #         # mark = os.path.basename(bigwig_file+".bedgraph").split(".")[-4] # Use only for IHEC database samples
-        #         inputinfofile.write(sample.name+"\t"+mark+"\t"+os.path.basename(bigwig_file+".bedgraph")+"\n")
-
-        # inputinfofile.close()
+#delete later
+    # @property
+    # def contrasts(self):
+    #     flag = False
+    #     if self.args.design:
+    #         self._contrast = parse_chipseq_design_file(self.args.design.name, self.samples)
+    #     else:
+    #         self.argparser.error("argument -d/--design is required!")
+    #     return self._contrast
 
     def parseInputInfoFile(self, inputinfofile):
         """
@@ -205,24 +174,6 @@ class EpiQC(common.Illumina):
 
         return samplesMarksFiles
 
-    def test(self):
-        jobs = []
-        S1 = {}
-        for sample in self.samples:
-            for readset in sample.readsets:
-                # S1.setdefault(sample.name,[]).append(readset.bigwig)
-                S1.setdefault(sample.name, {})[readset.bigwig] = 1
-                print(sample.name)
-                print(readset.bigwig)
-
-        print ("dict")
-
-        for key, values in S1.iteritems():
-            for value in values:
-                print(key, '->', value)
-
-        return jobs
-
     def bigwiginfo(self):
         """
             Runs the tool bigWigInfo on bigwig files.
@@ -232,13 +183,11 @@ class EpiQC(common.Illumina):
             improperly generated tracks.
             If an EpiQC readset is given to the pipeline, we search for the BIGWIG column to get the files
             If epiqc is ran after a chipseq pipeline, the path to the bigwig files is reconstructed through the location
-             of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT OF THE CHIPSEQ PIPELINE)
+            of the chipseq readset file (HAS TO BE IN THE SAME FOLDER AS THE OUTPUT OF THE ChIP-Seq PIPELINE)
         """
         jobs = []
 
         output_dir = self.output_dirs['bigwiginfo_output_directory']
-
-        log.debug("bigwiginfo_creating_jobs")
 
         #obtain samples names for only histone marks (not inputs) from design
         for sample in self.samples:
@@ -248,19 +197,18 @@ class EpiQC(common.Illumina):
                         bigwig_file = readset.bigwig
                     else:                      # If not, we search for the path from a chipseq pipeline
                         prefix_path = "/".join(self.args.readsets.name.split("/")[:-1]) # Find path to chipseq folder
-                        bigwig_file = os.path.join(prefix_path, "tracks", sample.name, readset.mark_name,"bigWig", sample.name +"."+ readset.mark_name+".bw") # Create path to bigwig file
-                    file_ext = bigwig_file.split(".")[-1]
-                    #This is not a good way. we need to accept this and write a descriptive warning in job output without raising an error the job
-                    #Becuase bigwinfoinfo it self can identify the file type without the extension
-                 #   if file_ext not in ("bigWig", "bw"):# != "bigWig" and file_ext != "bw":
-                 #       raise Exception("Error : " + os.path.basename(bigwig_file) + " not a bigWig file !")
+                        bigwig_file = os.path.join(prefix_path, self.chipseq_bigwig['tracks_dir'], sample.name,
+                                                   readset.mark_name, self.chipseq_bigwig['bigwig_dir'],
+                                                   sample.name +"."+ readset.mark_name+ self.chipseq_bigwig['extension']) # Create path to bigwig file
 
+                    output_file = os.path.join(output_dir,
+                                          self.bigwiginfo_output['prefix'] + "_" + os.path.basename(bigwig_file) + self.bigwiginfo_output['extension'])
                     job = concat_jobs([
                             Job(command="mkdir -p " + output_dir),
-                            bigwiginfo.bigWigInfo(bigwig_file, self.output_dirs['bigwiginfo_output_directory'])
+                            bigwiginfo.bigWigInfo(bigwig_file, output_file)
                         ])
                     job.name = "bigwiginfo." + readset.name
-                    job.samples = self.samples
+                    job.samples = [readset.sample]
                     jobs.append(job)
 
         return jobs
@@ -277,27 +225,6 @@ class EpiQC(common.Illumina):
         """
         jobs = []
 
-        # select histone mark sample names removing input chip-seq samples from desgin file
-        # print(sample_name_list)
-        # for contrast in self.contrasts:
-        #     for sample in contrast.treatments:
-        #         sample_name_list.append(sample.name)
-        # print(sample_name_list)
-
-        # /!\ gz bedgraph to save space
-
-        #         jobs.append(Job(
-        #             [],
-        #             ['dataset_dir'],
-        #             [],
-        #             command="""\
-        # mkdir -p \\
-        #   {dataset_dir} \\
-        #   {dataset_error}""".format(
-        #     dataset_dir=self.output_dirs['bedgraph_converted_directory'],
-        #     dataset_error=self.output_dirs['bedgraph_converted_directory']+"_error"),
-        #             name='mkdirs_bedgraph_converted_directory'))
-
         for sample in self.samples:
             for readset in sample.readsets:
                 if readset.mark_type != "I":
@@ -306,9 +233,10 @@ class EpiQC(common.Illumina):
                     else:  # If not, we search for the path from a chipseq pipeline
                         prefix_path = "/".join(
                             self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
-                        bigwig_file = os.path.join(prefix_path, "tracks", sample.name, readset.mark_name, "bigWig",
-                                                   sample.name + "." + readset.mark_name + ".bw")  # Create path to bigwig file
-                    # checking the file extension and writing a warning in job output should be also done here
+                        bigwig_file = os.path.join(prefix_path, self.chipseq_bigwig['tracks_dir'], sample.name,
+                                                   readset.mark_name, self.chipseq_bigwig['bigwig_dir'],
+                                                   sample.name + "." + readset.mark_name + self.chipseq_bigwig[
+                                                       'extension'])  # Create path to bigwig file
                     output_bedgraph = os.path.join(self.output_dirs['bedgraph_converted_directory'],
                                                    sample.name + "_" + readset.mark_name + ".bedgraph")
                     output_bedgraph_gz = os.path.join(self.output_dirs['bedgraph_converted_directory'],
@@ -320,8 +248,8 @@ class EpiQC(common.Illumina):
                         Job(output_files=[output_bedgraph_gz], command="gzip -f " + output_bedgraph)
                     ])
                     job.name = "bigwig_to_bedgraph." + sample.name + "_" + readset.mark_name
+                    job.samples = [readset.sample]
                     jobs.append(job)
-                # jobs.append(bigwiginfo.bigWigToBedGraph(bigwig_file, self.output_dirs['bedgraph_converted_directory']))
 
         return jobs
 
@@ -375,16 +303,14 @@ mkdir -p \\
         # copy IHEC inputinfor file from the cvmfs and paste it in the chromimpute folder
         job_copy_inputinfo = Job(output_files=[inputinfofile],
                                  command="""\
-                        if test -f "{inputinfofile}"; then
-                    rm {inputinfofile} 
-                    fi &&
+        if test -f "{inputinfofile}"; then
+        rm {inputinfofile} 
+        fi &&
         cp {ihec_inputinfofile} {inputinfofile}""".format(
                                      inputinfofile=inputinfofile,
                                      ihec_inputinfofile="/project/6007512/C3G/projects/pubudu/epiQC_main/inputinfofile.txt")
                                  )
 
-        # jobs.append(job_folder_create)
-        # job_folder_create.name = "chromimpute_preprocess"
         job = []
         # copy histone mark, sample and file paths in user's samples into inputinfo file (avoid input histone files)
         for sample in self.samples:
@@ -394,7 +320,7 @@ mkdir -p \\
                                      sample.name + "_" + readset.mark_name + ".bedgraph.gz")
                     job_sample = chromimpute.modify_inputinfofile(input_file, sample.name, readset.mark_name,
                                                               inputinfofile)
-                    job_sample.samples = [sample]
+                    job_sample.samples = [readset.sample]
                     job.append(job_sample)
                     job_inputinfo = concat_jobs(job)
                 # job_inputinfo.name = "chromimpute_preprocess.inputinfo"
@@ -421,10 +347,7 @@ mkdir -p \\
         else:
             chrs = config.param('chromimpute_preprocess', 'chromosomes').split(",")
 
-        chr_sizes_file = os.path.join(output_dir,
-                                      "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
-                                                                                                         'assembly'),
-                                                "chrom_sizes.txt")))
+        chr_sizes_file = self.chromosome_file
 
         job_create_chr_sizes = Job(
             output_files=[chr_sizes_file],
@@ -437,65 +360,16 @@ mkdir -p \\
         fi""".format(
             chr_sizes_file=chr_sizes_file)
         )
-
-        ##double check this code, the below jobs seems only working in chr1, not sure though
         job = []
         for chr in chrs:
             job_chr_sizes = chromimpute.generate_chr_sizes(chr_sizes_file, chr_sizes, chr)
             job.append(job_chr_sizes)
             job_chrs_sizes = concat_jobs(job)
 
-            # do not delete below command
-            # if someday you want to run convert for each chromosomes parellaly just uncomment below code
-
-        # job_bdg_folder = Job(input_files=bedgraph_converted_files,
-        #                      output_files=[os.path.join(self.output_dirs['chromimpute_output_directory'],
-        #                                                self.output_dirs['bedgraph_chr_converted_directory'])],
-        #                      command="""\
-        #         mkdir -p {chromimpute_output_dir}/{input_dir}""".format(
-        #                          chromimpute_output_dir=self.output_dirs['chromimpute_output_directory'],
-        #                          input_dir=self.output_dirs['bedgraph_chr_converted_directory'])
-        #                      )
-
         jobs.append(concat_jobs([job_folder_create, job_copy_inputinfo, job_inputinfo, job_create_simlinks,
                                  job_create_chr_sizes, job_chrs_sizes], name="chromimpute_preprocess"))
-        # todo #add samples info to the above job,
 
-        # do not delete below code
-        # if someday you want to run convert for each chromosomes parellaly just uncomment below code
-
-        # if user request not to run all the chromosomes, bedgraph files for specific chromosomes should be created
-        # if(chrs!="All"):
-        #     chrs = config.param('chromimpute_preprocess', 'chromosomes').split(",")
-        #     job =[]
-        #     outputdir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-        #                                self.output_dirs['bedgraph_chr_converted_directory'])
-        #     for chr in chrs:
-        #         for contrast in self.contrasts:
-        #             for sample in contrast.treatments:
-        #                 input_file = os.path.join(self.output_dirs['bedgraph_converted_directory'],
-        #                                           sample.name + ".bedgraph.gz")
-        #
-        #                 output_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
-        #                                            self.output_dirs['bedgraph_chr_converted_directory'],
-        #                                           chr +"_"+ sample.name + ".bedgraph.gz")
-        #
-        #
-        #
-        #                 job_bdg_chr = chromimpute.convert_chr_bedgraph(input_file, output_file, chr, outputdir)
-        #                 job_bdg_chr.samples = [sample]
-        #                 job_bdg_chr.name = "bigwig_to_bedgraph.select_chr_" + sample.name + "_"+ chr
-        #                 jobs.append(job_bdg_chr)
-        # job_inputinfo.name = "chromimpute_preprocess.inputinfo"
-        # jobs.extend([job_folder_create, job_inputinfo])
-        # jobs.extend([job_folder_create, job_inputinfo])
         return jobs
-
-    # def create_bedgraph_for_chr(self, chr):
-
-    def chromimpute(self):
-        self.bigwig_to_bedgraph()
-        self.chromimpute_preprocess()
 
     def chromimpute_convert(self):
         """
@@ -506,17 +380,8 @@ mkdir -p \\
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
 
-        # check ini file and user request specific chromosoems change the input folder accrdingly
+        # check ini file whether user has requested specific chromosoems instead All chromosomes. Then change the input folder accordingly
         chrs = config.param('chromimpute_preprocess', 'chromosomes')
-
-        # if someday you want to run convert for each chromosomes parellaly just uncomment below code
-        # if chrs=="All":
-        #     input_dir = self.output_dirs['bedgraph_converted_directory']
-        #     genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
-        #     all_chrs = genome.chr_names_conv(genome_dict)
-        # else:
-        #     input_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['bedgraph_chr_converted_directory'])
-        #     all_chrs = config.param('chromimpute_preprocess', 'chromosomes').split(",")
 
         if chrs == "All":
             genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
@@ -527,20 +392,7 @@ mkdir -p \\
         input_dir = self.output_dirs['bedgraph_converted_directory']
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'],
                                   self.output_dirs['chromimpute_converted_directory'])
-
-        # for contrast in self.contrasts:
-        #     if contrast.treatments:
-        #         output_files = []
-        #         for sample in contrast.treatments:
-        #             with open(os.path.join(os.environ[config.param('chromimpute', 'chromosome_size').split("/")[0].replace("$", "")], config.param('chromimpute', 'chromosome_size').replace(config.param('chromimpute', 'chromosome_size').split("/")[0]+"/", "")), "r") as chrominfofile:
-        #                 for line in chrominfofile:
-        #                     output_files.append(os.path.join(output_dir, "%s_%s.bedgraph.gz.wig.gz" % (line.split("\t")[0], sample.name)))
-        #                 job = chromimpute.convert(input_dir, output_dir, output_files, inputinfofile, contrast.real_name, sample.name)
-        #                 jobs.append(job)
-        chr_sizes_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                      "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
-                                                                                                         'assembly'),
-                                                "chrom_sizes.txt")))
+        chr_sizes_file = self.chromosome_file
 
         for sample in self.samples:
             for readset in sample.readsets:
@@ -556,8 +408,6 @@ mkdir -p \\
                                               readset.mark_name, sample.name, chr_sizes_file)
                     job.samples = [sample]
                     jobs.append(job)
-                # treatment_files = [os.path.join(self.output_dirs['bedgraph_converted_directory'], sample.name + ".bedgraph.gz") for sample in contrast.treatments]
-
         return jobs
 
     def chromimpute_compute_global_dist(self):
@@ -565,11 +415,7 @@ mkdir -p \\
             Creates a job for chromimpute ComputeGlobalDist for each unique mark in the inputinfo file
         """
         jobs = []
-        chr_sizes_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                      "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
-                                                                                                         'assembly'),
-                                                "chrom_sizes.txt")))
-
+        chr_sizes_file = self.chromosome_file
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
         converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'],
@@ -587,7 +433,7 @@ mkdir -p \\
 
 
 
-        # this check all the converted file for converted step as input file
+        # this check all the converted files for converted step as input file
         # so it takes time
         # if you want to do this uncomment this and comment the code below this
         # for histone in histone_marks:
@@ -655,10 +501,7 @@ mkdir -p \\
                                     self.output_dirs['chromimpute_converted_directory'])
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'],
                                   self.output_dirs['chromimpute_traindata_directory'])
-        chr_sizes_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                      "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
-                                                                                                         'assembly'),
-                                                "chrom_sizes.txt")))
+        chr_sizes_file = self.chromosome_file
         #get all the unique histone marks in user's readset file
         histone_marks =[]
         for sample in self.samples:
@@ -789,6 +632,15 @@ mkdir -p \\
 
         return jobs
 
+    def chromimpute(self):
+        jobs = []
+        jobs.extend(self.bigwig_to_bedgraph())
+        jobs.extend(self.chromimpute_preprocess())
+        jobs.extend(self.chromimpute_convert())
+        jobs.extend(self.chromimpute_compute_global_dist())
+        jobs.extend(self.chromimpute_generate_train_data())
+        return jobs
+
     def chromimpute_train(self):
         """
             Creates a job for chromimpute Train for every sample mark combination given in the dataset
@@ -849,13 +701,6 @@ mkdir -p \\
 
         jobs = []
 
-        # inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], "inputinfofile.ChromImpute.txt")
-        # path_dataset = os.path.join(os.getcwd(), config.param('chromimpute', 'dataset'))
-
-        # self.createInputInfoFile()
-        # read_inputinfofile = csv.reader(open(config.param('chromimpute', 'inputinfofile'), 'rb'), delimiter='\t')
-        # samplesMarksFiles = self.parseInputInfoFile(read_inputinfofile)
-
         log.debug("chromimpute_convert")
         jobs.extend(self.chromimpute_convert())
         log.debug("chromimpute_compute_global_dist")
@@ -885,10 +730,7 @@ mkdir -p \\
                                     self.output_dirs['chromimpute_predictor_directory'])
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'],
                                   self.output_dirs['chromimpute_apply'])
-        chr_sizes_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                      "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
-                                                                                                         'assembly'),
-                                                "chrom_sizes.txt")))
+        chr_sizes_file = self.chromosome_file
 
         for sample in self.samples:
             for readset in sample.readsets:
@@ -927,26 +769,6 @@ mkdir -p \\
 
         return jobs
 
-    # def chromimpute_eval(self, samplesMarksFile):
-    #     """
-    #         Creates a job for chromimpute Eval for every sample mark given in the dataset
-    #     """
-    #     jobs = []
-    #
-    #     input_base = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_apply']) # input_base is the name of the folder containing imputed files
-    #     converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converted_directory'])
-    #     percent1 = config.param('chromimpute', 'percent1')
-    #     percent2 = config.param('chromimpute', 'percent2')
-    #
-    #
-    #     for contrast in self.contrasts:
-    #         if contrast.treatments:
-    #             input_dir = input_base+"_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]
-    #             output_path = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_eval'], "eval_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]+".txt")
-    #             jobs.append(chromimpute.eval(input_dir, percent1, percent2, converteddir, sampleMarkFile[2]+".wig.gz", input_base, "impute_"+sampleMarkFile[0]+"_"+sampleMarkFile[1]+".wig.gz", output_path))
-    #
-    #     return jobs
-
     def chromimpute_eval(self):
         """
             Creates a job for chromimpute Eval for every sample mark given in the dataset
@@ -957,10 +779,7 @@ mkdir -p \\
                                     self.output_dirs['chromimpute_converted_directory'])
         imputeddir = os.path.join(self.output_dirs['chromimpute_output_directory'],
                                   self.output_dirs['chromimpute_apply'])
-        chr_sizes_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                      "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
-                                                                                                         'assembly'),
-                                                "chrom_sizes.txt")))
+        chr_sizes_file = self.chromosome_file
 
         percent1 = config.param('chromimpute_eval', 'percent1')
         percent2 = config.param('chromimpute_eval', 'percent2')
@@ -1003,11 +822,7 @@ mkdir -p \\
         """
         jobs = []
         output_dir = self.output_dirs['signal_to_noise_output_directory']
-        chr_sizes_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                      "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
-                                                                                                         'assembly'),
-                                                "chrom_sizes.txt")))
-   #     jobs.append()
+        chr_sizes_file = self.chromosome_file
 
         converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'],
                                     self.output_dirs['chromimpute_converted_directory'])
@@ -1034,11 +849,11 @@ mkdir -p \\
                                 [output_file],
                                 [['signal_noise', 'module_python']],
                                 command="""\
-                            python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bfx/signal_noise.py \\
-                              -i {input_file} \\
-                              -p1 {percent1} \\
-                              -p2 {percent2} \\
-                              -o {output_dir}""".format(
+python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bfx/signal_noise.py \\
+-i {input_file} \\
+-p1 {percent1} \\
+-p2 {percent2} \\
+-o {output_dir}""".format(
                                     input_file=converted_bedgraph_file,
                                     percent1=config.param('signal_noise', 'percent1'),
                                     percent2=config.param('signal_noise', 'percent2'),
@@ -1049,9 +864,6 @@ mkdir -p \\
 
         return jobs
 
-   # job_chr_sizes = chromimpute.generate_chr_sizes(chr_sizes_file, chr_sizes, chr)
-   # job.append(job_chr_sizes)
-    #job_chrs_sizes = concat_jobs(job)
     def epigeec_tohdf5(self):
         jobs = []
 
@@ -1072,8 +884,6 @@ mkdir -p \\
                         prefix_path = "/".join(self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
                         bigwig_file = os.path.join(prefix_path, "tracks", sample.name, readset.mark_name, "bigWig",
                                                    sample.name + "." + readset.mark_name + ".bw")  # Create path to bigwig file
-                    file_ext = bigwig_file.split(".")[-1]
-
 
                     job_epigeec_hdf5.append(epigeec.tohdf5(output_dir, bigwig_file))
                     jobs_epigeec_hdf5 = concat_jobs(job_epigeec_hdf5)
@@ -1185,6 +995,148 @@ mkdir -p \\
 
         return jobs
 
+    def epiqc_report2(self):
+        """
+            Creates a report file for each bigwig file.
+
+            Alert levels :
+                High Level Alert:
+                    Chromosome count is under 23
+                Medium Level Alert:
+                    Whole genome bases covered under 25,000,000
+                    GeEC average correlation score under 50% within the same consortium tracks
+                    Signal in top 10% bins below 30%
+                    ChromImpute OBSERVED_1.0_IMPUTE_5.0 below 30%
+                Low Level Alert:
+                    Whole genome bases covered under 75,000,000
+                    Signal in top 5% bins below 20%
+                    ChromImpute BOTH_1.0 below 20%
+        """
+        jobs = []
+
+        chr_sizes_file = self.chromosome_file
+
+        signal_noise_output_dir = self.output_dirs['signal_to_noise_output_directory']
+
+
+        for sample in self.samples:
+            for readset in sample.readsets:
+                if readset.mark_type != "I":
+                    if readset.bigwig:  # Check if the readset has a BIGWIG column != None
+                        bigwig_file = readset.bigwig
+
+                    else:  # If not, we search for the path from a chipseq pipeline
+                        prefix_path = "/".join(self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
+                        bigwig_file = os.path.join(prefix_path, self.chipseq_bigwig['tracks_dir'], sample.name,
+                                                   readset.mark_name, self.chipseq_bigwig['bigwig_dir'],
+                                                   sample.name + "." + readset.mark_name + self.chipseq_bigwig[
+                                                       'extension'])  # Create path to bigwig file
+
+                    bigwiginfo_file = os.path.join(self.output_dirs['bigwiginfo_output_directory'],
+                                               self.bigwiginfo_output['prefix'] + "_" + os.path.basename(bigwig_file) +
+                                               self.bigwiginfo_output['extension'])
+                    report_file = os.path.join(self.output_dirs['report_dir'],
+                                               "report_" + sample.name + "_" + readset.mark_name + ".txt")
+                    report_folder_job = Job(
+                        command="mkdir -p {output_dir}".format(
+                            output_dir=self.output_dirs['report_dir']
+                        ))
+
+                    bigwiginfo_report = Job(
+                        [bigwiginfo_file],
+                        [report_file],
+                        [['epiqc_report','module_python']],
+                        command="""\
+python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bfx/epiqc_report.py \\
+-b {bigwiginfo_file} \\
+-cb {chromCount} \\
+-bc1 {low_alert_bases_covered} \\
+-bc2 {medium_alert_bases_covered} \\
+-o {output_file}""".format(
+                            bigwiginfo_file=bigwiginfo_file,
+                            chromCount=config.param('epiqc_report', 'chromcount_threshold'),
+                            low_alert_bases_covered=config.param('epiqc_report', 'low_alert_bases_covered'),
+                            medium_alert_bases_covered=config.param('epiqc_report', 'medium_alert_bases_covered'),
+                            output_file=report_file))
+
+                    with open(chr_sizes_file, "r") as chrominfofile:
+                        for line in chrominfofile:
+                            chr_name = line.strip().split("\t")[0]
+                            signal_noise_file = os.path.join(signal_noise_output_dir,
+                                                       "%s_%s_%s.tsv" % (chr_name, sample.name, readset.mark_name))
+
+                    ### curerently the code only calls the final line in the chromosome file. Either select all chrs or
+                    # first one
+                    # TODO: add concat jobs to run all the chrs
+
+                    signal_to_noise_report = Job(
+                                        [signal_noise_file],
+                                        [report_file],
+                                        [['epiqc_report','module_python']],
+                                        command ="""\
+python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bfx/epiqc_report.py \\
+-s {signal_noise_file} \\
+-s1 {percent1} \\
+-s2 {percent2} \\
+-st1 {signal_noise_threshold_M} \\
+-st2 {signal_noise_threshold_L} \\
+-o {output_file}""".format(
+                                        signal_noise_file = signal_noise_file,
+                                        percent1 = config.param('signal_noise', 'percent1'),
+                                        percent2 = config.param('signal_noise', 'percent2'),
+                                        signal_noise_threshold_M = config.param('epiqc_report', 'signal_noise_threshold_M'),
+                                        signal_noise_threshold_L = config.param('epiqc_report', 'signal_noise_threshold_L'),
+                                        output_file = report_file))
+
+
+                    eval_file = "eval_" + sample.name + "_" + readset.mark_name + ".tsv"
+                    eval_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
+                                            self.output_dirs['chromimpute_eval'], eval_file)
+                    chromimpute_report = Job(
+                        [eval_file],
+                        [report_file],
+                        [['epiqc_report','module_python']],
+                        command="""\
+python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bfx/epiqc_report.py \\
+-c {eval_file} \\
+-p1 {percent1} \\
+-p2 {percent2} \\
+-ct1 {chromimpute_threshold_M} \\
+-ct2 {chromimpute_threshold_L} \\
+-o {output_file}""".format(
+                            eval_file=eval_file,
+                            percent1=config.param('chromimpute_eval', 'percent1'),
+                            percent2=config.param('chromimpute_eval', 'percent2'),
+                            chromimpute_threshold_M=config.param('epiqc_report', 'chromimpute_threshold_M'),
+                            chromimpute_threshold_L=config.param('epiqc_report', 'chromimpute_threshold_L'),
+                            output_file=report_file))
+
+
+                    job = concat_jobs([ report_folder_job, bigwiginfo_report , signal_to_noise_report, chromimpute_report])
+                    job.name = "epiqc_report." + readset.name + "_" +readset.mark_name
+                    job.samples = self.samples
+                    jobs.append(job)
+
+
+        input_dir = os.path.join(self.output_dirs['epigeec_output_directory'],
+                                             self.output_dirs['epigeec_output'])
+        report_dir = os.path.join(self.output_dirs['report_dir'])
+        output_heatmap_file = os.path.join(report_dir, "correlation_matrix.png")
+        input_matrix_file = os.path.join(input_dir, "correlation_matrix.tsv")
+        epigeec_report = Job(
+                        [input_matrix_file],
+                        [output_heatmap_file],
+                        [['epiqc_report', 'module_python']],
+                        name="epigeec_report",
+                        command="""\
+python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bfx/epiqc_report.py \\
+-e {correlation_matrix} \\
+-o {output_dir}""".format(
+                            correlation_matrix=input_matrix_file,
+                            output_dir=report_dir))
+        jobs.append(epigeec_report)
+        return jobs
+
     def epiqc_report(self):
         """
             Creates a report file for each bigwig file.
@@ -1204,128 +1156,78 @@ mkdir -p \\
         """
         jobs = []
 
-        jobs.append(Job(
-            [],
-            ['epiqc_report'],
-            [],
-            command=
-            "mkdir \
-              {output_dir}".format(
-                output_dir=self.output_dirs['report_dir']),
-            name="mkdir_report_epiqc"))
+        chr_sizes_file = self.chromosome_file
 
-        chromimpute_output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                              self.output_dirs['chromimpute_eval'])
-
-        read_inputinfofile = csv.reader(open(config.param('chromimpute', 'inputinfofile'), 'rb'), delimiter='\t')
-        samplesMarksFiles = self.parseInputInfoFile(read_inputinfofile)
-
-        marks = config.param('chromimpute', 'marks')
-        marks = marks.split(",")
-        cpt = 0
+        signal_noise_output_dir = self.output_dirs['signal_to_noise_output_directory']
 
         for sample in self.samples:
             for readset in sample.readsets:
-                if readset.bigwig is not None:
+                if readset.mark_type != "I":
+                    if readset.bigwig:  # Check if the readset has a BIGWIG column != None
+                        bigwig_file = readset.bigwig
+
+                    else:  # If not, we search for the path from a chipseq pipeline
+                        prefix_path = "/".join(
+                            self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
+                        bigwig_file = os.path.join(prefix_path, self.chipseq_bigwig['tracks_dir'], sample.name,
+                                                   readset.mark_name, self.chipseq_bigwig['bigwig_dir'],
+                                                   sample.name + "." + readset.mark_name + self.chipseq_bigwig[
+                                                       'extension'])  # Create path to bigwig file
+
                     bigwiginfo_file = os.path.join(self.output_dirs['bigwiginfo_output_directory'],
-                                                   "bigwiginfo_" + os.path.basename(readset.bigwig) + ".txt")
-                    signal_noise_file = os.path.join(self.output_dirs['signal_to_noise_output_directory'],
-                                                     os.path.basename(readset.bigwig) + ".bedgraph.wig.gz.tsv")
-                    mark = marks[cpt]  # Corresponds to the marks specified in the epiqc.base.ini
-                    cpt += 1
-                else:
-                    bigwiginfo_file = os.path.join(self.output_dirs['bigwiginfo_output_directory'],
-                                                   "bigwiginfo_" + sample.name + ".bw.txt")
-                    signal_noise_file = os.path.join(self.output_dirs['signal_to_noise_output_directory'],
-                                                     sample.name + ".bw.bedgraph.wig.gz.tsv")
-                    mark = config.param('DEFAULT', 'chip_type')
+                                                   self.bigwiginfo_output['prefix'] + "_" + os.path.basename(
+                                                       bigwig_file) +
+                                                   self.bigwiginfo_output['extension'])
+                    report_file = os.path.join(self.output_dirs['report_dir'],
+                                               "report_" + sample.name + "_" + readset.mark_name + ".txt")
+                    report_folder_job = Job(
+                        command="mkdir -p {output_dir}".format(
+                            output_dir=self.output_dirs['report_dir']
+                        ))
 
-                report_file = os.path.join(self.output_dirs['report_dir'],
-                                           "report_" + sample.name + "_" + mark + ".txt")
+                    bigwiginfo_report = epiqc_reports.bigwiginfo_report(bigwiginfo_file,report_file)
 
-                jobs.append(Job(
-                    ['epiqc_report', bigwiginfo_file],
-                    [],
-                    [],
-                    name="report_bigwiginfo_" + os.path.basename(bigwiginfo_file),
-                    command=
-                    "python ../genpipes/bfx/epiqc_report.py \
-                      -b {bigwiginfo_file} \
-                      -cb {chromCount} \
-                      -bc1 {low_alert_bases_covered} \
-                      -bc2 {medium_alert_bases_covered} \
-                      -o {output_file}".format(
-                        bigwiginfo_file=bigwiginfo_file,
-                        chromCount=config.param('epiqc_report', 'chromcount_threshold'),
-                        low_alert_bases_covered=config.param('epiqc_report', 'low_alert_bases_covered'),
-                        medium_alert_bases_covered=config.param('epiqc_report', 'medium_alert_bases_covered'),
-                        output_file=report_file)))
 
-                eval_file = "eval_" + sample.name + "_" + mark + ".txt"
-                eval_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                         self.output_dirs['chromimpute_eval'], eval_file)
+                    with open(chr_sizes_file, "r") as chrominfofile:
+                        for line in chrominfofile:
+                            chr_name = line.strip().split("\t")[0]
+                            signal_noise_file = os.path.join(signal_noise_output_dir,
+                                                             "%s_%s_%s.tsv" % (
+                                                             chr_name, sample.name, readset.mark_name))
 
-        #                 jobs.append(Job(
-        #                     ['epiqc_report', eval_file],
-        #                     [],
-        #                     [],
-        #                     name = "report_eval_"+os.path.basename(eval_file),
-        #                     command =
-        # "python ../genpipes/bfx/epiqc_report.py \
-        #   -c {eval_file} \
-        #   -p1 {percent1} \
-        #   -p2 {percent2} \
-        #   -ct1 {chromimpute_threshold_M} \
-        #   -ct2 {chromimpute_threshold_L} \
-        #   -o {output_file}".format(
-        #                     eval_file = eval_file,
-        #                     percent1 = config.param('chromimpute', 'percent1'),
-        #                     percent2 = config.param('chromimpute', 'percent2'),
-        #                     chromimpute_threshold_M=config.param('epiqc_report', 'chromimpute_threshold_M'),
-        #                     chromimpute_threshold_L=config.param('epiqc_report', 'chromimpute_threshold_L'),
-        #                     output_file = report_file)))
+                    ### curerently the code only calls the final line in the chromosome file. Either select all chrs or
+                    # first one
+                    # TODO: add concat jobs to run all the chrs
 
-        #             jobs.append(Job(
-        #                     ['epiqc_report', signal_noise_file],
-        #                     [],
-        #                     [],
-        #                     name = "report_signal_noise_" + os.path.basename(signal_noise_file),
-        #                     command =
-        # "python ../genpipes/bfx/epiqc_report.py \
-        #   -s {signal_noise_file} \
-        #   -s1 {percent1} \
-        #   -s2 {percent2} \
-        #   -st1 {signal_noise_threshold_M} \
-        #   -st2 {signal_noise_threshold_L} \
-        #   -o {output_file}".format(
-        #                     signal_noise_file = signal_noise_file,
-        #                     percent1 = config.param('signal_noise', 'percent1'),
-        #                     percent2 = config.param('signal_noise', 'percent2'),
-        #                     signal_noise_threshold_M = config.param('epiqc_report', 'signal_noise_threshold_M'),
-        #                     signal_noise_threshold_L = config.param('epiqc_report', 'signal_noise_threshold_L'),
-        #                     output_file = report_file)))
+                    signal_to_noise_report = epiqc_reports.signal_to_noise_report(signal_noise_file, report_file)
 
-        input_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_output'])
-        jobs.append(Job(
-            ['epiqc_report', input_dir],
-            [],
-            [],
-            name="report_heatmap",
-            command=
-            "python ../genpipes/bfx/epiqc_report.py \
-              -e {correlation_matrix} \
-              -o {output_dir}".format(
-                correlation_matrix=input_dir + "/correlation_matrix.tsv",
-                output_dir=self.output_dirs['report_dir'])))
+                    eval_file = "eval_" + sample.name + "_" + readset.mark_name + ".tsv"
+                    eval_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
+                                             self.output_dirs['chromimpute_eval'], eval_file)
+                    chromimpute_report = epiqc_reports.chromimpute_report(eval_file, report_file)
 
+                    job = concat_jobs(
+                        [report_folder_job, bigwiginfo_report, signal_to_noise_report, chromimpute_report])
+                    job.name = "epiqc_report." + readset.name + "_" + readset.mark_name
+                    job.samples = self.samples
+                    jobs.append(job)
+
+        input_dir = os.path.join(self.output_dirs['epigeec_output_directory'],
+                                 self.output_dirs['epigeec_output'])
+        report_dir = os.path.join(self.output_dirs['report_dir'])
+        output_heatmap_file = os.path.join(report_dir, "correlation_matrix.png")
+        input_matrix_file = os.path.join(input_dir, "correlation_matrix.tsv")
+        epigeec_report = epiqc_reports.epigeec_report(input_matrix_file, output_heatmap_file, report_dir)
+        jobs.append(epigeec_report)
         return jobs
 
     @property
     def steps(self):
         # TODO : - Create steps table
         return [
-           # self.test,
+            # self.test,
             self.bigwiginfo,
+            self.chromimpute,
             self.bigwig_to_bedgraph,
             self.chromimpute_preprocess,
             self.chromimpute_convert,
@@ -1334,14 +1236,12 @@ mkdir -p \\
             self.chromimpute_train,
             self.chromimpute_apply,
             self.chromimpute_eval,
-           # self.chromimpute_train_step,
-           # self.chromimpute_compute_metrics,
-             self.signal_to_noise,
-            #self.epigeec_tohdf5,
-         self.epigeec,
-            # self.epiqc_report
+            # self.chromimpute_train_step,
+            # self.chromimpute_compute_metrics,
+            self.signal_to_noise,
+            self.epigeec,
+            self.epiqc_report
         ]
-
 
 if __name__ == "__main__":
     EpiQC()

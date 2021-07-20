@@ -58,7 +58,7 @@ def generate_chr_sizes(chr_sizes_file, chr_sizes, chr):
 
 def convert_chr_bedgraph(input_file, output_file, chr, outputdir):
     return Job(
-        [input_file, outputdir],
+        [input_file],
         [output_file],
         [],
         command="""\
@@ -108,7 +108,6 @@ def compute_global_dist(input_files, output_dir, output_files, converteddir, inp
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name="chromimpute_compute_global_dist." + histone_mark,
         command="""\
-
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   ComputeGlobalDist \\
   -m {histone_mark} \\

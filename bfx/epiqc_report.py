@@ -18,6 +18,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
+import logging
+
 import matplotlib
 
 matplotlib.use('Agg')
@@ -133,14 +135,16 @@ def report_signal_noise(signal_noise_file, toppercent1, toppercent2, thresholdM,
     report_file = open(report_file_name, "a")
 
     try:
+        #read the file as a dictionary
         read_signal_noise_file = csv.DictReader(open(signal_noise_file), delimiter="\t")
     except:
         report_file.write("File " + signal_noise_file + " could not be read !")
 
-    toppercent1 = float(toppercent1) * 100
-    toppercent2 = float(toppercent2) * 100
+    toppercent1 = int(float(toppercent1) * 100)
+    toppercent2 = int(float(toppercent2) * 100)
     thresholdL_percent = float(thresholdL) * 100
     thresholdM_percent = float(thresholdM) * 100
+
 
     for line in read_signal_noise_file:
         ratio_1 = float(line['Ratio top ' + str(toppercent1) + '% bins'])
@@ -188,12 +192,12 @@ def report_epigeec(correlation_matrix, output_dir):
             cpt = 1
         else:
             matrix.append(line[1:])
-
     cpt = 0
+
     for sample in samples:
-        split = sample.split(".")
-        samples[cpt] = split[2] + "_" + split[-3]
-        cpt += 1
+        if(sample[-3:]==".bw"):
+            samples[cpt] = sample[:-3]
+            cpt += 1
 
     # Convert matrix to float
     matrix = np.array(matrix)
