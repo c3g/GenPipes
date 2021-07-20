@@ -68,7 +68,7 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a validsingularity
+                        Run inside a container providing a valid singularity
                         image path
   --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
                         Command file output path. This is the command used to
@@ -88,8 +88,8 @@ Steps:
 
 ----
 ```
-![chipseq chipseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_chipseq.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_chipseq.png)
+![chipseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq.png)
 ```
 chipseq:
 1- picard_sam_to_fastq
@@ -260,6 +260,13 @@ cram_output
 -----------
 Generate long term storage version of the final alignment files in CRAM format
 Using this function will include the orginal final bam file into the  removable file list
+
+macs2_atacseq_callpeak
+----------------------
+Peaks are called using the MACS2 software. Different calling strategies are used for narrow and broad peaks.
+The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
+The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
+The default mfold parameter of MACS2 is [10,30].
 
 macs2_atacseq_callpeak
 ----------------------

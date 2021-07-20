@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-
-#!/usr/bin/env python
 
 # Python Standard Modules
 

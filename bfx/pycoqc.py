@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -25,11 +25,7 @@ from core.config import *
 from core.job import *
 
 
-def pycoqc(readset_name,
-           input_summary,
-           output_directory,
-           input_bam
-           ):
+def pycoqc(readset_name, input_summary, output_directory, input_barcode=None, input_bam=None):
     """
     Create a pycoQC job for nanopore reads QC.
 
@@ -38,19 +34,16 @@ def pycoqc(readset_name,
 
     min_qual = config.param('pycoqc', 'min_pass_qual')
 
-    in_bam = ' --bam_file ' + input_bam
-
     out_html = os.path.join(output_directory, readset_name + ".html")
     out_json = os.path.join(output_directory, readset_name + ".json")
 
     return Job(
         [input_summary, input_bam],
-        [out_html,
-         out_json],
-        [["pycoqc", "module_python3"]],
+        [out_html, out_json],
+        [["pycoqc", "module_pycoqc"]],
         command="""\
 mkdir -p {output_directory} && \\
-pycoQC --verbose {other_options} --summary_file {input_summary}{in_bam} \\
+pycoQC --verbose {other_options} --summary_file {input_summary}{input_barcode}{input_bam} \\
     --report_title {readset_name} \\
     --min_pass_qual {min_qual} \\
     --html_outfile {out_html} \\
@@ -59,7 +52,8 @@ pycoQC --verbose {other_options} --summary_file {input_summary}{in_bam} \\
             output_directory=output_directory,
             other_options=config.param('pycoqc', 'other_options', required=False),
             input_summary=input_summary,
-            in_bam=in_bam,
+            input_barcode=" --barcode_file " + input_barcode if input_barcode else "",
+            input_bam=" --bam_file " + input_bam if input_bam else "",
             readset_name=readset_name,
             min_qual=min_qual,
             out_html=out_html,

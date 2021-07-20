@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -25,44 +25,32 @@ from core.config import *
 from core.job import *
 
 
-def minimap2_ont(readset_name,
-                 read_fastq_dir,
-                 output_directory,
-                 read_group):
+def minimap2_ont(read_fastq_dir,
+                 read_group,
+                 out_sam=None,
+                 ini_section='minimap2_ont'):
     """
     Align nanopore reads to a reference using minimap2.
 
     :return: a job for nanopore alignment
     """
 
-    genome_fasta = config.param('minimap2_align', 'genome_fasta', required=True)
-
-    minimap_preset = config.param('minimap2_align', 'preset')
-
-    out_sam = os.path.join(output_directory, "Aligned.out.sam")
-    out_bam = os.path.join(output_directory, readset_name + ".sorted.bam")
-    out_bai = os.path.join(output_directory, readset_name + ".sorted.bai")
+    # out_sam = os.path.join(output_directory, "Aligned.out.sam")
+    # out_bam = os.path.join(output_directory, readset_name + ".sorted.bam")
+    # out_bai = os.path.join(output_directory, readset_name + ".sorted.bai")
 
     return Job(
         [read_fastq_dir],
-        [out_bam, out_bai, out_sam],
-        [["minimap2", "module_minimap2"],
-         ["minimap2", "module_samtools"]],
+        [out_sam],
+        [[ini_section, "module_minimap2"]],
         command="""\
-mkdir -p {output_directory} && \\
-minimap2 -ax {minimap_preset} -R {read_group} {other_options} {genome_fasta} {read_fastq_dir}/*.fastq* > {out_sam} && \\
-samtools view -b {out_sam} -@ 8 | samtools sort -@ 6 --reference {genome_fasta} -T {output_directory} > {out_bam} && \\ 
-samtools index {out_bam} {out_bai}
-        """.format(
-            output_directory=output_directory,
-            minimap_preset=minimap_preset,
+minimap2 -ax {minimap_preset} -R {read_group} {other_options} {genome_fasta} {read_fastq_dir}/*.fastq*{out_sam}""".format(
+            minimap_preset=config.param(ini_section, 'preset'),
             read_group=read_group,
-            other_options=config.param('minimap2_align', 'other_options', required=False),
-            genome_fasta=genome_fasta,
+            other_options=config.param(ini_section, 'minimap2_other_options', required=False),
+            genome_fasta=config.param(ini_section, 'genome_fasta', required=True),
             read_fastq_dir=read_fastq_dir,
-            out_sam=out_sam,
-            out_bam=out_bam,
-            out_bai=out_bai
+            out_sam=" \\\n  > " + out_sam if out_sam else ""
         ),
         removable_files=[out_sam]
     )

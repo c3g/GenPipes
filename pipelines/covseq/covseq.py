@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -96,15 +96,14 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
             readset_bam_host_removed_sorted_index = os.path.join(host_removal_directory, readset.name + ".host_removed.sorted.bam.bai")
             readset_bam_host_removed_name_sorted = os.path.join(host_removal_directory, readset.name + ".host_removed.nsorted.bam")
 
-            output_other = os.path.join(host_removal_directory, readset.name + ".host_removed.other.fastq.gz")
-            output_single = os.path.join(host_removal_directory, readset.name + ".host_removed.single.fastq.gz")
-
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [
                     [readset.fastq1, readset.fastq2]
                     ]
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
+                output_other = os.path.join(host_removal_directory, readset.name + ".host_removed.other.fastq.gz")
+                output_single = os.path.join(host_removal_directory, readset.name + ".host_removed.single.fastq.gz")
                 output_pair1 = os.path.join(host_removal_directory, readset.name + ".host_removed.pair1.fastq.gz")
                 output_pair2 = os.path.join(host_removal_directory, readset.name + ".host_removed.pair2.fastq.gz")
 
@@ -114,8 +113,10 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
                     ]
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
-                output_pair1 = os.path.join(host_removal_directory, readset.name + ".host_removed.single.fastq.gz")
+                output_pair1 = None
                 output_pair2 = None
+                output_other = os.path.join(host_removal_directory, readset.name + ".host_removed.fastq.gz")
+                output_single = None
 
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
