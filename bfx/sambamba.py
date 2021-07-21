@@ -28,7 +28,7 @@ from core.job import *
 def sort(input_bam,
          output_bam,
          tmp_dir,
-         other_options=config.param('sambamba_sort_sam', 'options', required=False)):
+         other_options=None):
     
     output_bai = output_bam + ".bai"
     
@@ -43,14 +43,17 @@ sambamba sort {options} \\
   {input} \\
   --tmpdir {tmp} \\
   {output}""".format(
-        options=other_options,
+        options=other_options if other_options else "",
         input=input_bam,
         output="--out " + output_bam if output_bam else "",
         tmp=tmp_dir
         )
     )
 
-def index(input, output, other_options=config.param('sambamba_index', 'options', required=False)):
+def index(input,
+          output,
+          other_options=None
+          ):
 
     return Job(
         [input],
@@ -62,13 +65,16 @@ def index(input, output, other_options=config.param('sambamba_index', 'options',
 sambamba index {options} \\
   {input} \\
   {output}""".format(
-        options=other_options,
+        options=other_options if other_options else "",
         input=input,
         output=output,
         )
     )
 
-def merge(input_bams, output_bam, ini_section='sambamba_merge_sam_files'):
+def merge(input_bams,
+          output_bam,
+          ini_section='sambamba_merge_sam_files'
+          ):
 
     return Job(
         input_bams,
@@ -87,7 +93,10 @@ sambamba merge {options} \\
         )
     )
 
-def markdup(input_bam, output_bam):
+def markdup(input_bam,
+            output_bam
+            ):
+    
     if not isinstance(input_bam, list):
         input_bam=[input_bam]
 
@@ -109,7 +118,11 @@ sambamba markdup {options} \\
         )
     )
 
-def view(input_bam, output_bam, options, chr=[]):
+def view(input_bam,
+         output_bam,
+         options,
+         chr=[]
+         ):
 
     return Job(
         [input_bam],
@@ -128,7 +141,7 @@ sambamba view {options} \\
         )
     )
 
-def flagstat(input, output, options=""):
+def flagstat(input, output, options=None):
 
     return Job(
         [input],
@@ -140,7 +153,7 @@ def flagstat(input, output, options=""):
 sambamba flagstat {options} \\
   {input} \\
   {output}""".format(
-        options=options,
+        options=options if options else "",
         input=input,
         output="> " + output,
         )
