@@ -69,13 +69,13 @@ usage: rnaseq_denovo_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                  [--no-json] [--report] [--clean]
                                  [-l {debug,info,warning,error,critical}]
                                  [--sanity-check]
-                                 [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
-                                 [-d DESIGN] [-t {cufflinks,stringtie}]
-                                 [-r READSETS] [-v]
+                                 [--container {wrapper, singularity} <IMAGE PATH>]
+                                 [--genpipes_file GENPIPES_FILE] [-d DESIGN]
+                                 [-t {cufflinks,stringtie}] [-r READSETS] [-v]
 
-Version: 3.1.5
+Version: 3.5.0
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
@@ -108,9 +108,14 @@ optional arguments:
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
-                        run pipeline inside a container providing a container
-                        image path or accessible docker/singularity hub path
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a valid singularity
+                        image path
+  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+                        Command file output path. This is the command used to
+                        process the data, or said otherwise, this command will
+                        "run the Genpipes pipeline". Will be redirected to
+                        stdout if the option is not provided.
   -d DESIGN, --design DESIGN
                         design file
   -t {cufflinks,stringtie}, --type {cufflinks,stringtie}

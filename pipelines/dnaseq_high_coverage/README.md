@@ -24,12 +24,14 @@ usage: dnaseq_high_coverage.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                [--report] [--clean]
                                [-l {debug,info,warning,error,critical}]
                                [--sanity-check]
-                               [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
-                               [-t {mugqic,mpileup,light}] [-r READSETS] [-v]
+                               [--container {wrapper, singularity} <IMAGE PATH>]
+                               [--genpipes_file GENPIPES_FILE]
+                               [-t {mugqic,mpileup,light,sv}] [-r READSETS]
+                               [-v]
 
-Version: 3.1.5
+Version: 3.5.0
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
@@ -62,10 +64,15 @@ optional arguments:
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
-                        run pipeline inside a container providing a container
-                        image path or accessible docker/singularity hub path
-  -t {mugqic,mpileup,light}, --type {mugqic,mpileup,light}
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a valid singularity
+                        image path
+  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+                        Command file output path. This is the command used to
+                        process the data, or said otherwise, this command will
+                        "run the Genpipes pipeline". Will be redirected to
+                        stdout if the option is not provided.
+  -t {mugqic,mpileup,light,sv}, --type {mugqic,mpileup,light,sv}
                         DNAseq analysis type
   -r READSETS, --readsets READSETS
                         readset file
@@ -78,21 +85,20 @@ Steps:
 ```
 ------
 1- picard_sam_to_fastq
-2- trimmomatic
-3- merge_trimmomatic_stats
-4- bwa_mem_picard_sort_sam
-5- picard_merge_sam_files
-6- gatk_indel_realigner
-7- merge_realigned
-8- picard_fixmate
-9- metrics
-10- picard_calculate_hs_metrics
-11- gatk_callable_loci
-12- call_variants
-13- preprocess_vcf
-14- snp_effect
-15- gemini_annotations
-16- cram_output
+2- skewer_trimming
+3- bwa_mem_sambamba_sort_sam
+4- sambamba_merge_sam_files
+5- gatk_indel_realigner
+6- sambamba_merge_realigned
+7- picard_fixmate
+8- metrics
+9- picard_calculate_hs_metrics
+10- gatk_callable_loci
+11- call_variants
+12- preprocess_vcf
+13- snp_effect
+14- gemini_annotations
+15- cram_output
 
 ```
 picard_sam_to_fastq
@@ -100,38 +106,22 @@ picard_sam_to_fastq
 Convert SAM/BAM files from the input readset file into FASTQ format
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
-trimmomatic
------------
-Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
-If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
-it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
-an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
-reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
-only Adapter1 is used and left unchanged.
+skewer_trimming
+---------------
 
-This step takes as input files:
-
-1. FASTQ files from the readset file if available
-2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
-
-merge_trimmomatic_stats
------------------------
-The trim statistics per readset are merged at this step.
-
-bwa_mem_picard_sort_sam
------------------------
+bwa_mem_sambamba_sort_sam
+-------------------------
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
 The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
-
+BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
 This step takes as input files:
 
 1. Trimmed FASTQ files if available
 2. Else, FASTQ files from the readset file if available
 3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-picard_merge_sam_files
-----------------------
+sambamba_merge_sam_files
+------------------------
 BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
 
 This step takes as input files:
@@ -147,9 +137,9 @@ Such regions will introduce false positive variant calls which may be filtered o
 those regions properly. Realignment is done using [GATK](https://www.broadinstitute.org/gatk/).
 The reference genome is divided by a number regions given by the `nb_jobs` parameter.
 
-merge_realigned
----------------
-BAM files of regions of realigned reads are merged per sample using [Picard](http://broadinstitute.github.io/picard/).
+sambamba_merge_realigned
+------------------------
+BAM files of regions of realigned reads are merged per sample using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 picard_fixmate
 --------------
@@ -197,6 +187,6 @@ Load functionally annotated vcf file into a mysql lite annotation database : htt
 cram_output
 -----------
 Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list 
+Using this function will include the orginal final bam file into the  removable file list
 
 
