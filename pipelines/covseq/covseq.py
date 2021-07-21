@@ -1014,7 +1014,6 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
 
         jobs = []
 
-        # job = bash.mkdir(os.path.join("consensus"))
         for sample in self.samples:
             consensus_directory = os.path.join("consensus", sample.name)
             [ivar_consensus] = self.select_input_files([
@@ -1022,21 +1021,12 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
                 [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
                 [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
             ])
-            # freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.fasta"
-            # freebayes_consensus_renamed = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.renamed.fasta"
             quast_ivar_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics_ivar")
             quast_ivar_html = os.path.join(quast_ivar_directory, "report.html")
             quast_ivar_tsv = os.path.join(quast_ivar_directory, "report.tsv")
 
-            # quast_freebayes_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics_freebayes")
-            # quast_freebayes_html = os.path.join(quast_freebayes_directory, "report.html")
-            # quast_freebayes_tsv = os.path.join(quast_freebayes_directory, "report.tsv")
-
             ivar_output_fa = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
             ivar_output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'sequencing_technology', required=False), status="${IVAR_STATUS}"))
-
-            # freebayes_output_fa = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.renamed.fasta"
-            # freebayes_output_status_fa = os.path.join(consensus_directory, """{sample_name}.freebayes_calling.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'sequencing_technology', required=False), status="${FREEBAYES_STATUS}"))
 
             variant_directory = os.path.join("variant", sample.name)
             [ivar_vcf] = self.select_input_files([
@@ -1045,8 +1035,6 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
                 [os.path.join(variant_directory, sample.name + ".sorted.vcf.gz")]
             ])
             ivar_annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(ivar_vcf)))
-            # freebayes_vcf = os.path.join(variant_directory, sample.name) + ".freebayes_calling.fixed.norm.vcf.gz"
-            # freebayes_annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(freebayes_vcf)))
 
             alignment_directory = os.path.join("alignment", sample.name)
             [input_bam] = self.select_input_files([
@@ -1059,7 +1047,6 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
             jobs.append(
                 concat_jobs([
                     bash.mkdir(os.path.dirname(ivar_output_fa)),
-                    # bash.mkdir(os.path.dirname(freebayes_output_fa)),
                     Job(
                         input_files=[quast_ivar_tsv, quast_ivar_html],
                         output_files=[],
@@ -1090,8 +1077,6 @@ ln -sf {ivar_output_status_fa_basename} {ivar_output_fa}""".format(
     province=config.param('rename_consensus_header', 'province', required=False),
     year=config.param('rename_consensus_header', 'year', required=False),
     seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
-    # assemb_method=config.param('rename_consensus_header', 'assemb_method', required=False),
-    # snv_call_method=config.param('rename_consensus_header', 'snv_call_method', required=False),
     sample=sample.name,
     ivar_consensus=ivar_consensus,
     ivar_output_status_fa_basename=os.path.basename(ivar_output_status_fa),
@@ -1115,7 +1100,6 @@ ln -sf {ivar_output_status_fa_basename} {ivar_output_fa}""".format(
 
         jobs = []
 
-        # job = bash.mkdir(os.path.join("consensus"))
         for sample in self.samples:
             consensus_directory = os.path.join("consensus", sample.name)
             freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.fasta"
@@ -1198,17 +1182,11 @@ ln -sf {freebayes_output_status_fa_basename} {freebayes_output_fa}""".format(
             input_oxog = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".oxog_metrics.txt")
             input_qcbias = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".qcbias_metrics.txt")
             input_all_picard = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".all.metrics.quality_distribution.pdf")
-            # input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", sample.name + ".genome_results.txt")
-            # input_fastqc = os.path.join(metrics_directory, sample.name, "fastqc", sample.name + ".fastqc.zip")
-            # input_flagstat = os.path.join(metrics_directory, sample.name, "flagstat", sample.name + ".flagstat")
 
             input_dep += [
                 input_oxog,
                 input_qcbias,
                 input_all_picard
-                # input_qualimap,
-                # input_fastqc,
-                # input_flagstat
             ]
 
             inputs += [os.path.join(metrics_directory, sample.name)]
@@ -1368,20 +1346,6 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
                     readset_file,
                     covid_collect_metrics_inputs
                     ),
-#                 Job(
-#                     input_files=covid_collect_metrics_inputs,
-#                     output_files=[os.path.join("metrics", "metrics.csv"), os.path.join("metrics", "host_contamination_metrics.tsv"), os.path.join("metrics", "host_removed_metrics.tsv"), os.path.join("metrics", "kraken2_metrics.tsv")],
-#                     module_entries=[
-#                         ['prepare_table', 'module_R'],
-#                         ['prepare_table', 'module_CoVSeQ_tools'],
-#                         ['prepare_table', 'module_samtools']
-#                     ],
-#                     command="""\\
-# echo "Collecting metrics..." && \\
-# covid_collect_metrics.sh -r {readset_file}""".format(
-#     readset_file=readset_file
-#     )
-#                     ),
                 Job(
                     input_files=[],
                     output_files=[run_metadata, software_version],
@@ -1512,58 +1476,6 @@ fi""".format(
                     ivar_ncovtools_config,
                     self.output_dir
                     ),
-#                 Job(
-#                     input_files=[ivar_output_filtered_bam, ivar_output_primer_trimmed_bam, ivar_output_consensus, ivar_output_variants],
-#                     output_files=[],
-#                     module_entries=[
-#                         ['prepare_report', 'module_ncovtools']
-#                     ],
-#                     command="""\\
-# module purge && \\
-# module load {ncovtools} && \\
-# echo "Preparing to run ncov_tools..." && \\
-# NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet", ""\\""$1"\\""}} END {{print substr(pwet,2)}}') && \\
-# echo "data_root: data
-# platform: \\"{platform}\\"
-# run_name: \\"{run_name}\\"
-# reference_genome: {reference_genome}
-# amplicon_bed: {amplicon_bed}
-# primer_bed: {primer_bed}
-# offset: 0
-# completeness_threshold: 0.9
-# bam_pattern: \\"{{data_root}}/{{sample}}{ivar_bam_pattern_extension}\\"
-# primer_trimmed_bam_pattern: \\"{{data_root}}/{{sample}}{ivar_primer_trimmed_bam_pattern_extension}\\"
-# consensus_pattern: \\"{{data_root}}/{{sample}}{ivar_consensus_pattern_extension}\\"
-# variants_pattern: \\"{{data_root}}/{{sample}}{ivar_variants_pattern_extension}\\"
-# metadata: \\"{ivar_metadata}\\"
-# negative_control_samples: [$NEG_CTRL]
-# assign_lineages: true" > {ivar_ncovtools_config} && \\
-# echo "Running ncov_tools..." && \\
-# cd {ivar_ncovtools_directory} && \\
-# snakemake --unlock --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE
-# snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all
-# snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary
-# snakemake --rerun-incomplete --configfile {ivar_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
-#     ncovtools=config.param('prepare_report', 'module_ncovtools'),
-#     readset_file=readset_file,
-#     # neg_ctrl=os.path.join("report", "neg_controls.txt"),
-#     platform=config.param('prepare_report', 'platform', required=True),
-#     run_name=config.param('prepare_report', 'run_name', required=True),
-#     reference_genome=config.param('prepare_report', 'reference_genome', required=True),
-#     amplicon_bed=config.param('prepare_report', 'amplicon_bed', required=True),
-#     primer_bed=config.param('prepare_report', 'primer_bed', required=True),
-#     ivar_bam_pattern_extension=re.sub(r"^.*?\.", ".", ivar_output_filtered_bam),
-#     ivar_primer_trimmed_bam_pattern_extension=re.sub(r"^.*?\.", ".", ivar_output_primer_trimmed_bam),
-#     ivar_consensus_pattern_extension=re.sub(r"^.*?\.", ".", ivar_output_consensus),
-#     ivar_variants_pattern_extension=re.sub(r"^.*?\.", ".", ivar_output_variants),
-#     ivar_metadata=os.path.basename(ivar_metadata),
-#     ivar_ncovtools_directory=ivar_ncovtools_directory,
-#     ivar_ncovtools_config=ivar_ncovtools_config,
-#     ivar_ncovtools_config_local=os.path.basename(ivar_ncovtools_config),
-#     nb_threads=config.param('prepare_report', 'nb_threads'),
-#     output_dir=self.output_dir
-#     )
-#                     ),
                 Job(input_files=[],
                     output_files=[],
                     module_entries=[
@@ -1586,28 +1498,6 @@ module load {R_covseqtools}""".format(
                     output_name_pattern=os.path.join("report", "report_metrics_ivar"),
                     caller="ivar"
                     )
-#                 Job(
-#                     input_files=[software_version, run_metadata],
-#                     output_files=[],
-#                     module_entries=[
-#                         ['prepare_report', 'module_R'],
-#                         ['prepare_report', 'module_CoVSeQ_tools']
-#                     ],
-#                     command="""\\
-# module purge && \\
-# module load {R_covseqtools} && \\
-# cd {output_dir} && \\
-# echo "Generating report tables..." && \\
-# generate_report_tables.R --report_readset={ivar_readset_file_report} --metrics={ivar_metrics} --host_contamination_metrics={host_contamination_metrics} --output_name_pattern=report/report_metrics_ivar && \\
-# echo "Rendering report..." && \\
-# Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT', report_path, overwrite = TRUE); rmarkdown::render(report_path, output_file='run_report.pdf', output_format = 'all', output_dir='$(pwd)/report', knit_root_dir='$(pwd)')" """.format(
-#     R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
-#     output_dir=self.output_dir,
-#     ivar_readset_file_report=ivar_readset_file_report,
-#     ivar_metrics=os.path.join("metrics", "metrics.csv"),
-#     host_contamination_metrics=os.path.join("metrics", "host_contamination_metrics.tsv")
-#     )
-#                     )
                 ],
                 name="prepare_report." + config.param('prepare_report', 'run_name', required=True)
                 )
@@ -1630,41 +1520,6 @@ module load {R_covseqtools}""".format(
         freebayes_ncovtools_data_directory = os.path.join(freebayes_ncovtools_directory, "data")
         freebayes_ncovtools_config = os.path.join(freebayes_ncovtools_directory, "config.yaml")
 
-        # modules = []
-        # # Retrieve all unique module version values in config files
-        # # assuming that all module key names start with "module_"
-        # for section in config.sections():
-        #     for name, value in config.items(section):
-        #         if re.search("^module_", name) and value not in modules:
-        #             modules.append(value)
-
-        # # Finding all kraken outputs
-        # kraken_outputs = []
-        # library = {}
-        # for readset in self.readsets:
-        #     ##check the library status
-        #     if not library.has_key(readset.sample):
-        #         library[readset.sample] = "SINGLE_END"
-        #     if readset.run_type == "PAIRED_END":
-        #         library[readset.sample] = "PAIRED_END"
-
-        #     kraken_directory = os.path.join("metrics", "dna", readset.sample.name, "kraken_metrics")
-        #     kraken_out_prefix = os.path.join(kraken_directory, readset.name)
-        #     kraken_output = kraken_out_prefix + ".kraken2_output"
-        #     kraken_report = kraken_out_prefix + ".kraken2_report"
-        #     kraken_outputs.extend((kraken_output, kraken_report))
-        #     if readset.run_type == "PAIRED_END":
-        #         unclassified_output_1 = kraken_out_prefix + ".unclassified_sequences_1.fastq"
-        #         unclassified_output_2 = kraken_out_prefix + ".unclassified_sequences_2.fastq"
-        #         classified_output_1 = kraken_out_prefix + ".classified_sequences_1.fastq"
-        #         classified_output_2 = kraken_out_prefix + ".classified_sequences_2.fastq"
-        #         kraken_outputs.extend((unclassified_output_1, unclassified_output_2, classified_output_1, classified_output_2))
-
-        #     elif readset.run_type == "SINGLE_END":
-        #         unclassified_output = kraken_out_prefix + ".unclassified_sequences.fastq"
-        #         classified_output = kraken_out_prefix + ".classified_sequences.fastq"
-        #         kraken_outputs.extend((unclassified_output, classified_output))
-
         job = concat_jobs([
             bash.mkdir(freebayes_ncovtools_data_directory),
             Job(
@@ -1680,51 +1535,8 @@ echo -e "sample\\tct\\tdate" > {freebayes_metadata}""".format(
                 ),
             ])
 
-        # quast_outputs = []
-        # flagstat_outputs = []
-        # bedgraph_outputs = []
-        # picard_outputs = []
         for sample in self.samples:
-            # # Finding quast outputs
-            # freebayes_quast_output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics_freebayes")
-            # quast_outputs.extend([
-            #     os.path.join(freebayes_quast_output_dir, "report.html"),
-            #     os.path.join(freebayes_quast_output_dir, "report.pdf"),
-            #     os.path.join(freebayes_quast_output_dir, "report.tex"),
-            #     os.path.join(freebayes_quast_output_dir, "report.tsv"),
-            #     os.path.join(freebayes_quast_output_dir, "report.txt")
-            #     ])
-            # # Finding flagstat outputs
-            # flagstat_directory = os.path.join("metrics", "dna", sample.name, "flagstat")
-            alignment_directory = os.path.join("alignment", sample.name)
-            # input_bams = [
-            #     os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam"),
-            #     os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam"),
-            #     os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            # ]
-            # for input_bam in input_bams:
-            #     flagstat_outputs.append(os.path.join(flagstat_directory, re.sub("\.bam$", ".flagstat", os.path.basename(input_bam))))
-            # # Finding BedGraph file
-            # [input_bam] = self.select_input_files([
-            #     [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-            #     [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
-            # ])
-            # bedgraph_outputs.append(os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(input_bam))))
-
-            # # Picard collect multiple metrics outputs
-            # picard_directory = os.path.join("metrics", "dna", sample.name, "picard_metrics")
-            # picard_out = os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input_bam)) + ".all.metrics")
-
-            # if library[sample] == "PAIRED_END":
-            #     picard_outputs.extend([
-            #         picard_out + ".alignment_summary_metrics",
-            #         picard_out + ".insert_size_metrics"
-            #     ])
-            # else:
-            #     picard_outputs.extend([
-            #         picard_out + ".alignment_summary_metrics",
-            #     ])
-
+        
             filtered_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
             primer_trimmed_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")
             consensus_directory = os.path.join("consensus", sample.name)
@@ -1771,13 +1583,6 @@ fi""".format(
                     samples=[sample]
                     )
 
-        # covid_collect_metrics_inputs = []
-        # covid_collect_metrics_inputs.extend(kraken_outputs)
-        # covid_collect_metrics_inputs.append(input_bam)
-        # covid_collect_metrics_inputs.extend(quast_outputs)
-        # covid_collect_metrics_inputs.extend(flagstat_outputs)
-        # covid_collect_metrics_inputs.extend(bedgraph_outputs)
-        # covid_collect_metrics_inputs.extend(picard_outputs)
         jobs.append(
             concat_jobs([
                 job,
@@ -1792,58 +1597,6 @@ fi""".format(
                     freebayes_ncovtools_config,
                     self.output_dir
                     ),
-#                 Job(
-#                     input_files=[freebayes_output_filtered_bam, freebayes_output_primer_trimmed_bam, freebayes_output_consensus, freebayes_output_variants],
-#                     output_files=[],
-#                     module_entries=[
-#                         ['prepare_report', 'module_ncovtools']
-#                     ],
-#                     command="""\\
-# module purge && \\
-# module load {ncovtools} && \\
-# echo "Preparing to run ncov_tools..." && \\
-# NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet", ""\\""$1"\\""}} END {{print substr(pwet,2)}}') && \\
-# echo "data_root: data
-# platform: \\"{platform}\\"
-# run_name: \\"{run_name}\\"
-# reference_genome: {reference_genome}
-# amplicon_bed: {amplicon_bed}
-# primer_bed: {primer_bed}
-# offset: 0
-# completeness_threshold: 0.9
-# bam_pattern: \\"{{data_root}}/{{sample}}{freebayes_bam_pattern_extension}\\"
-# primer_trimmed_bam_pattern: \\"{{data_root}}/{{sample}}{freebayes_primer_trimmed_bam_pattern_extension}\\"
-# consensus_pattern: \\"{{data_root}}/{{sample}}{freebayes_consensus_pattern_extension}\\"
-# variants_pattern: \\"{{data_root}}/{{sample}}{freebayes_variants_pattern_extension}\\"
-# metadata: \\"{freebayes_metadata}\\"
-# negative_control_samples: [$NEG_CTRL]
-# assign_lineages: true" > {freebayes_ncovtools_config} && \\
-# echo "Running ncov_tools..." && \\
-# cd {freebayes_ncovtools_directory} && \\
-# snakemake --unlock --configfile {freebayes_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE
-# snakemake --rerun-incomplete --configfile {freebayes_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all
-# snakemake --rerun-incomplete --configfile {freebayes_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary
-# snakemake --rerun-incomplete --configfile {freebayes_ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
-#     ncovtools=config.param('prepare_report', 'module_ncovtools'),
-#     readset_file=readset_file,
-#     # neg_ctrl=os.path.join("report", "neg_controls.txt"),
-#     platform=config.param('prepare_report', 'platform', required=True),
-#     run_name=config.param('prepare_report', 'run_name', required=True),
-#     reference_genome=config.param('prepare_report', 'reference_genome', required=True),
-#     amplicon_bed=config.param('prepare_report', 'amplicon_bed', required=True),
-#     primer_bed=config.param('prepare_report', 'primer_bed', required=True),
-#     freebayes_bam_pattern_extension=re.sub(r"^.*?\.", ".", freebayes_output_filtered_bam),
-#     freebayes_primer_trimmed_bam_pattern_extension=re.sub(r"^.*?\.", ".", freebayes_output_primer_trimmed_bam),
-#     freebayes_consensus_pattern_extension=re.sub(r"^.*?\.", ".", freebayes_output_consensus),
-#     freebayes_variants_pattern_extension=re.sub(r"^.*?\.", ".", freebayes_output_variants),
-#     freebayes_metadata=os.path.basename(freebayes_metadata),
-#     freebayes_ncovtools_directory=freebayes_ncovtools_directory,
-#     freebayes_ncovtools_config=freebayes_ncovtools_config,
-#     freebayes_ncovtools_config_local=os.path.basename(freebayes_ncovtools_config),
-#     nb_threads=config.param('prepare_report', 'nb_threads'),
-#     output_dir=self.output_dir
-#     )
-#                     ),
                 Job(input_files=[],
                     output_files=[],
                     module_entries=[
@@ -1866,28 +1619,6 @@ module load {R_covseqtools}""".format(
                     output_name_pattern=os.path.join("report", "report_metrics_freebayes"),
                     caller="freebayes"
                     )
-#                 Job(
-#                     input_files=[software_version, run_metadata],
-#                     output_files=[],
-#                     module_entries=[
-#                         ['prepare_report', 'module_R'],
-#                         ['prepare_report', 'module_CoVSeQ_tools']
-#                     ],
-#                     command="""\\
-# module purge && \\
-# module load {R_covseqtools} && \\
-# cd {output_dir} && \\
-# echo "Generating report tables..." && \\
-# generate_report_tables.R --report_readset={freebayes_readset_file_report} --metrics={freebayes_metrics} --host_contamination_metrics={host_contamination_metrics} --output_name_pattern=report/report_metrics_freebayes && \\
-# echo "Rendering report..." && \\
-# Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT_FREEBAYES', report_path, overwrite = TRUE); rmarkdown::render(report_path, output_file='run_report_freebayes.pdf', output_format = 'all', output_dir='$(pwd)/report', knit_root_dir='$(pwd)')" """.format(
-#     R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
-#     output_dir=self.output_dir,
-#     freebayes_readset_file_report=freebayes_readset_file_report,
-#     freebayes_metrics=os.path.join("metrics", "metrics_freebayes.csv"),
-#     host_contamination_metrics=os.path.join("metrics", "host_contamination_metrics.tsv")
-#     )
-#                     )
                 ],
                 name="prepare_report." + config.param('prepare_report', 'run_name', required=True)
                 )
