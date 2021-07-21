@@ -1,0 +1,5 @@
+peaks_annotation:
+  id: peaks_annotation
+  parent_title: Peaks Annotation
+  content: |
+    The peaks called previously are annotated with [[homer]] using RefSeq annotations. Gene ontology and genome ontology analyses are also performed at this stage.

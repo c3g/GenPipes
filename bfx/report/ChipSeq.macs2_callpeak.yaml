@@ -1,0 +1,14 @@
+peak_calls:
+  id: peak_calls
+  parent_title: "Peak Calls"
+  content: |
+    Peaks are called using [[macs]] software. The table below shows the general peak calling strategies for narrow and wide peaks.
+
+    Table: Peak Calling Strategies using [[macs]]
+
+    Input       | Narrow Peaks  | Broad Peaks
+    ------------|---------------|------------
+    No          | --fix-bimodal | --nomodel --broad
+    Yes         | --nomodel     | --nomodel --broad
+
+    The following links will direct you to the [[macs]] peak calls:

@@ -1,0 +1,7 @@
+ucsc_tracks:
+  id: ucsc_tracks
+  parent_title: UCSC Tracks
+  content: |
+    bedGraph Track Format files are generated from the aligned reads using [[homer]]. They can be loaded in browsers like [[igv]] or [[ucsc]] (for [[ucsc]], some naming conventions and/or coordinate limits may cause some problems).
+
+    [The coverage tracks are available here](tracks.zip)

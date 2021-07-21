@@ -1,0 +1,12 @@
+N_peaks_motifs_analysis:
+  id: N_peaks_motifs_analysis
+  parent_title: Narrow Peaks Motif Analysis
+  content: |
+    De novo motif analyses are performed using [[homer]]. The following guidelines are helpful when intepreting de novo motifs results; a candidate motif should typically have:
+
+    * A low p-value (< 1E-50)
+    * High sequence complexity
+    * No simple repeats
+    * A high % of target sequences and a low % of background sequences
+
+    The following links will direct you to the [[homer]] motif results for each Narrow Peak design:
