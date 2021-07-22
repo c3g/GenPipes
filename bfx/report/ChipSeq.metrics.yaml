@@ -4,7 +4,7 @@ sequencing_alignment_metrics:
   content: "General summary statistics are provided per sample. Sample readsets are merged for clarity."
   table_title: "Sequencing and Alignment Statistics per Sample"
   file_path:
-    - $sample_table$
+    - report_metrics_file
   header_descriptions:
     Sample: "Name of sample"
     Mark Name: "Name of Histone mark"

@@ -9,7 +9,7 @@ ihec_metrics:
 
   table_title: IHEC metrics per Sample
   file_path:
-    - $IHEC_chipseq_metrics$
+    - ihec_metrics_merged_table
   header_descriptions:
     Sample_Name: "Name of sample"
     Mark_Name: "Name of Histone mark"
