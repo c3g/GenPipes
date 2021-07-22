@@ -168,6 +168,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
         return self._is_dual_index
 
     @property
+    def mask(self):
+        if not hasattr(self, "_mask"):
+            _raise(SanitycheckError("No mask could be found !!"))
+        return self._mask
+
+    @property
     def is_demultiplexed(self):
         if not hasattr(self, "_is_demultiplexed"):
             if self.args.demux_fastq:
@@ -175,12 +181,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
             else:
                 self._is_demultiplexed = False
         return self._is_demultiplexed
-
-    @property
-    def mask(self):
-        if not hasattr(self, "_mask"):
-            _raise(SanitycheckError("No mask could be found !!"))
-        return self._mask 
 
     @property
     def merge_undetermined(self):
@@ -434,10 +434,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
     @property
     def readset_file(self):
-        if self.args.readsets:
-            return self.args.readsets.name
-        else:
-            _raise(SanitycheckError("Error: missing '-r/--readsets' argument !"))
+        if not hasattr(self, "_readset_file"):
+            if self.args.readsets:
+                self._readset_file = os.path.realpath(self.args.readsets.name)
+            else:
+                _raise(SanitycheckError("Error: missing '-r/--readsets' argument !"))
+        return self._readset_file
 
     @property
     def bioinfo_files(self):
@@ -1802,7 +1804,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 demuxfastqs_outputs.extend(readset_r2_outputs)
                 outputs = [readset.fastq2, readset.index_fastq1]
                 if self.is_dual_index[lane]:
-                    outputs.extend(readset.index_fastq2)
+                    outputs.append(readset.index_fastq2)
                 postprocessing_jobs.append(
                     concat_jobs(
                         [
@@ -1862,7 +1864,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
             ]
             if self.is_dual_index[lane]:
-                outputs.extend(os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz"))
+                outputs.append(os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz"))
             postprocessing_jobs.append(
                 pipe_jobs(
                     [

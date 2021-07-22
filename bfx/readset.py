@@ -250,8 +250,16 @@ class IlluminaRawReadset(IlluminaReadset):
         super(IlluminaRawReadset, self).__init__(name, run_type)
 
     @property
+    def index_name(self):
+        return self._index_name
+
+    @property
     def index(self):
         return self._index
+
+    @property
+    def indexes(self):
+        return self._indexes
 
     @property
     def index_type(self):
@@ -301,8 +309,8 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._library_source
 
     @property
-    def lib_type(self):
-        return self._lib_type
+    def protocol(self):
+        return self._protocol
 
     @property
     def library_type(self):
@@ -334,14 +342,17 @@ def parse_illumina_raw_readset_files(
     run_dir,
     run_type,
     readset_file,
-    casava_sheet_file,
     lane,
     genome_root,
     nb_cycles,
+    index1cycles,
+    index2cycles,
+    seqtype
     ):
 
     readsets = []
     samples = []
+    skipped_db = []
     GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
 
     # Parsing Clarity event file
@@ -367,7 +378,7 @@ def parse_illumina_raw_readset_files(
 
         current_lane = line['Position'].split(':')[0]
 
-        if int(current_lane) != lane:
+        if int(current_lane) != int(lane):
             continue
 
         sample_name = line['SampleName']
@@ -380,13 +391,14 @@ def parse_illumina_raw_readset_files(
         readset = IlluminaRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
         readset._quality_offset = 33
         readset._description = line['Index'].split(' ')[0]
+        readset._index_name = line['Index']
         readset._library = line['LibraryLUID']
         readset._sample_tag = line['Sample Tag']
         readset._gender = line['Gender']
 
         for protocol_line in protocol_csv:
             if protocol_line['Clarity Step Name'] == line['LibraryProcess']:
-                readset._lib_type = line['LibraryProcess']
+                readset._protocol = line['LibraryProcess']
                 readset._library_source = protocol_line['Processing Protocol Name']
                 readset._library_type = protocol_line['Library Structure']
 
@@ -440,12 +452,34 @@ def parse_illumina_raw_readset_files(
         readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
 
         readset._beds = line['Capture REF_BED'].split(";") if line['Capture REF_BED'] and line['Capture REF_BED'] != "N/A" else []
-        readsets.append(readset)
-        sample.add_readset(readset)
+        
+        fastq_file_pattern = os.path.join(
+            output_dir,
+            "Unaligned." + readset.lane,
+            "Project_" + readset.project_id,
+            "Sample_" + readset.name,
+            readset.name + '_S' + readset.sample_number + "_L00" + readset.lane + "_R{read_number}_001.fastq.gz"
+        )
+        readset.fastq1 = fastq_file_pattern.format(read_number=1)
+        readset.fastq2 = fastq_file_pattern.format(read_number=2) if run_type == "PAIRED_END" else None
+        readset.index_fastq1 = re.sub("_R1_", "_I1_", readset.fastq1)
+        readset.index_fastq2 = re.sub("_R2_", "_I2_", readset.fastq2) if readset.run_type == "PAIRED_END" and readset.index_type == "DUALINDEX" else None
 
-    skipped_db = []
-    # Searching for a matching reference for the specified species
-    for readset in readsets:
+        readset._indexes = get_index(readset, index1cycles, index2cycles, seqtype)
+        log.error(readset.library_type)
+
+        if any(s in readset.protocol for s in ["10X_scRNA", "Single Cell RNA"]):
+            readset._is_scrna = True
+        else:
+            readset._is_scrna = False
+
+#        readsets.append(readset)
+#        sample.add_readset(readset)
+
+#    skipped_db = []
+#    # Searching for a matching reference for the specified species
+#    for readset in readsets:
+
         m = re.search("(?P<build>\w+):(?P<assembly>[\w\.]+)", readset.genomic_database)
         genome_build = None
         if m:
@@ -476,9 +510,9 @@ def parse_illumina_raw_readset_files(
                         output_dir,
                         "Aligned." + readset.lane,
                         'alignment',
-                        readset.sample.name,
+                        sample_name,
                         'run' + readset.run + "_" + readset.lane,
-                        readset.sample.name + "." + readset.library + ".sorted"
+                        sample_name + "." + readset.library + ".sorted"
                     )
 
                 else:
@@ -489,6 +523,9 @@ def parse_illumina_raw_readset_files(
 
         if readset.bam is None and len(readset.genomic_database) > 0 and readset.genomic_database not in skipped_db:
             skipped_db.append(readset.genomic_database)
+
+        readsets.append(readset)
+        sample.add_readset(readset)
 
     if len(skipped_db) > 0:
         log.info("Skipping alignment for the genomic database: '" + "', '".join(skipped_db) + "'")
@@ -746,13 +783,17 @@ def parse_mgi_raw_readset_files(
     # Parse the RUN ID from BioInfo.csv file
     bioinfo_csv = csv.reader(open(bioinfo_file, 'rb'))
     for row in bioinfo_csv:
+        if row[0] == "Barcode":
+            index1cycles = int(row[1])
+        if row[0] == "Dual Barcode":
+            if row[1] == '':
+                index2cycles = 0
+            else:
+                index2cycles = int(row[1])
         if row[0] == "DNB ID":
             (run, lane_string) = row[1].split("_")
             if lane_string[-1] != lane:
                 _raise(SanitycheckError("Conflict in lanes ! " + lane_string[-1] + " vs. " + lane))
-            break
-    else:
-        _raise(SanitycheckError("Could not find RUN ID from " + bioinfo_file))
 
     # Parsing MGI readset sheet
     log.info("Parsing Clarity event file " + readset_file + " ...")
@@ -851,7 +892,7 @@ def parse_mgi_raw_readset_files(
         readset.index_fastq1 = re.sub("_R1_", "_I1_", readset.fastq1)
         readset.index_fastq2 = re.sub("_R2_", "_I2_", readset.fastq2)
 
-        readset._indexes = get_index(readset, bioinfo_file, seqtype)
+        readset._indexes = get_index(readset, index1cycles, index2cycles, seqtype)
 
         if any(s in readset.protocol for s in ["10X_scRNA", "Single Cell RNA"]):
             readset._is_scrna = True
@@ -1160,23 +1201,12 @@ def checkDuplicateReadsets(readset_file):
 
 def get_index(
         readset,
-        bioinfo_file,
+        index1cycles,
+        index2cycles,
         seqtype
         ):
         """
         """
-
-        index1cycles = 0
-        index2cycles = 0
-        bioinfo_csv = csv.reader(open(bioinfo_file, 'rb'))
-        for row in bioinfo_csv:
-            if row[0] == "Barcode":
-                index1cycles = int(row[1])
-            if row[0] == "Dual Barcode":
-                if row[1] == '':
-                    index2cycles = 0
-                else:
-                    index2cycles = int(row[1])
 
         indexes = []
         index1 = ""

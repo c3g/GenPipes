@@ -54,7 +54,6 @@ from pipelines import common
 
 log = logging.getLogger(__name__)
 
-
 class RunInfoRead(object):
     """ 
     Model of a read from the Illumina sequencer.
@@ -77,7 +76,6 @@ class RunInfoRead(object):
     @property
     def is_index(self):
         return self._is_index
-
 
 class IlluminaRunProcessing(common.MUGQICPipeline):
     """
@@ -137,10 +135,13 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
 
     def __init__(self, protocol=None):
         self._protocol=protocol
-        self.copy_job_inputs = []
-        self.argparser.add_argument("-d", "--run", help="Run directory", required=False, dest="run_dir")
-        self.argparser.add_argument("--lane", help="Lane number", type=int, required=False, dest="lane_number")
-        self.argparser.add_argument("-r", "--readsets", help="clarity event file (mandatory)", type=file, required=False)
+        self.copy_job_inputs = {}
+        self.argparser.add_argument("-d", "--run", help="Run directory (mandatory)", required=False, dest="run_dir")
+        self.argparser.add_argument("--run-id", help="Run ID. Default is parsed from the run folder", required=False, dest="run_id")
+#        self.argparser.add_argument("--flowcell-id", help="Flowcell ID. Default is parsed from the run folder", required=False, dest="flowcell_id")
+        self.argparser.add_argument("--raw-fastq-prefix", help="Prefix used to search for the raw fastq from the sequencer. Default <FLOWCELL_ID>_<RUN_ID>", required=False, dest="raw_fastq_prefix")
+        self.argparser.add_argument("--lane", help="Lane number (to only process the given lane)", type=int, required=False, dest="lane_number")
+        self.argparser.add_argument("-r", "--readsets", help="Readset file i.e. Clarity event file (mandatory)", type=file, required=False)
         self.argparser.add_argument("-x", help="First index base to use for demultiplexing (inclusive). The index from the sample sheet will be adjusted according to that value.", type=int, required=False, dest="first_index")
         self.argparser.add_argument("-y", help="Last index base to use for demultiplexing (inclusive)", type=int, required=False, dest="last_index")
         self.argparser.add_argument("-m", help="Number of index mistmaches allowed for demultiplexing (default 1). Barcode collisions are always checked.", type=int, required=False, dest="number_of_mismatches")
@@ -150,15 +151,100 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     @property
     def readsets(self):
         if not hasattr(self, "_readsets"):
-            self._readsets = self.load_readsets()
-            self.generate_illumina_lane_casava_sheet()
+            self._readsets = {}
+            if not hasattr(self, "_mask"):
+                self._mask = {}
+            for lane in self.lanes:
+                self._readsets[lane] = self.load_readsets(lane)
+                self._mask[lane] = self.get_mask(lane)
+                self.generate_illumina_lane_casava_sheet(lane)
         return self._readsets
+
+    @property
+    def samples(self):
+        if not hasattr(self, "_samples"):
+            self._samples = {}
+        for lane in self.lanes:
+            self._samples[lane] = list(OrderedDict.fromkeys([readset.sample for readset in self.readsets[lane]]))
+        return self._samples
+
+    @property
+    def lanes(self):
+        if not hasattr(self, "_lanes"):
+            if self.lane_number:
+                self._lanes = [lane]
+            else:
+                self._lanes = [lane for lane in list(set([line['Position'].split(":")[0] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter=str(u'\t').encode('utf-8'), quotechar=str(u'"').encode('utf-8'))]))]
+            for lane in self._lanes:
+                self.copy_job_inputs[lane] = []
+        return self._lanes
 
     @property
     def is_paired_end(self):
         if not hasattr(self, "_is_paired_end"):
-            self._is_paired_end = len([read_info for read_info in self.read_infos if (not read_info.is_index)]) > 1
+            if len([read_info for read_info in self.read_infos if not read_info.is_index]) > 1:
+                self._is_paired_end = True
+            else:
+                self._is_paired_end = False
         return self._is_paired_end
+
+    @property
+    def is_dual_index(self):
+        if not hasattr(self, "_is_dual_index"):
+            if len([read_info for read_info in self.read_infos[lane] if read_info.is_index]) > 1:
+                self._is_dual_index = True
+            else:
+                self._is_dual_index = False
+        return self._is_dual_index
+
+    @property
+    def mask(self):
+        if not hasattr(self, "_mask"):
+            _raise(SanitycheckError("No mask could be found !!"))
+        return self._mask 
+
+    @property
+    def merge_undetermined(self):
+        if not hasattr(self, "_merge_undetermined"):
+            self._merge_undetermined = {}
+            for lane in self.lanes:
+                self._merge_undetermined[lane] = False
+                # If only one library on the lane
+                if len(self.readsets[lane]) == 1:
+                    self._merge_undetermined[lane] = True
+                if config.param('fastq', 'merge_undetermined', required=False, type='boolean'):
+                    self._merge_undetermined[lane] = config.param('fastq', 'merge_undetermined')
+        return self._merge_undetermined
+
+    @property
+    def instrument(self):
+        if not hasattr(self, "_instrument"):
+            self._instrument = ""
+            for lane in self.lanes:
+                lane_instrument = self.get_instrument()
+                if self._instrument and self._instrument != lane_instrument:
+                    _raise(SanitycheckError("One run (\"" + self.run_id + "\") cannot be shared by different instruments !! (\"" + lane_instrument + "\" vs. \"" +  self._instrument + "\")"))
+                else:
+                    self._instrument = lane_instrument
+        return self._instrument
+
+    @property
+    def experiment_name(self):
+        if not hasattr(self, "_experiment_name"):
+            self._experiment_name = self.get_experiment_name()
+        return self._experiment_name
+
+    @property
+    def run_number(self):
+        if not hasattr(self, "_run_number"):
+            self._run_number = self.get_run_number()
+        return self._run_number
+
+    @property
+    def seq_category(self):
+        if not hasattr(self, "_seq_category"):
+            self._seq_category = self.get_seq_category()
+        return self._seq_category
 
     @property
     def run_id(self):
@@ -194,12 +280,18 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     @property
     def flowcell_id(self):
         if not hasattr(self, "_flowcell_id"):
-            fc_set = set([readset.flow_cell for readset in self.readsets if readset.flow_cell])
-            if len(fc_set) == 0:
-                _raise(SanitycheckError("Error: no flowcell id could be found in the readset objects..."))
-            if len(fc_set) > 1:
-                _raise(SanitycheckError("Error: more than one flowcell id found in the readset objects..."))
-            self._flowcell_id = list(fc_set)[0]
+            self._flowcell_id = ""
+            for lane in self.lanes:
+                fc_set = set([readset.flow_cell for readset in self.readsets[lane] if readset.flow_cell])
+                if len(fc_set) == 0:
+                    _raise(SanitycheckError("Error: no flowcell id could be found in the readset objects for lane '" + lane + "'..."))
+                if len(fc_set) > 1:
+                    _raise(SanitycheckError("Error: more than one flowcell id found in the readset objects for lane '" + lane + "'..."))
+                fc_id = list(fc_set)[0]
+                if not self._flowcell_id:
+                    self._flowcell_id = fc_id
+                elif not self._flowcell_id == fc_id:
+                    _raise(SanitycheckError("Error: more than one flowcell id found for the run, please check the readset file '" + self.readset_file + "'...")) 
         return self._flowcell_id
 
     @property
@@ -207,14 +299,16 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         if self.args.lane_number:
             return self.args.lane_number
         else:
-            _raise(SanitycheckError("Error: missing '--lane' option!"))
+            None
 
     @property
-    def clarity_event_file(self):
-        if self.args.readsets:
-            return os.path.realpath(self.args.readsets.name)
-        else :
-            _raise(SanitycheckError("Error: missing '-r/--readsets' argument !"))
+    def readset_file(self):
+        if not hasattr(self, "_readset_file"):
+            if self.args.readsets:
+                self._readset_file = os.path.realpath(self.args.readsets.name)
+            else:
+                _raise(SanitycheckError("Error: missing '-r/--readsets' argument !"))
+        return self._readset_file
 
     @property
     def number_of_mismatches(self):
@@ -229,27 +323,10 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self.args.last_index if self.args.last_index else 999
 
     @property
-    def mask(self):
-        if not hasattr(self, "_mask"):
-            self._mask = self.get_mask()
-        return self._mask
-
-    @property
     def umi(self):
         if not hasattr(self, "_umi"):
             self._umi = False
         return self._umi
-
-    @property
-    def merge_undetermined(self):
-        if not hasattr(self, "_merge_undetermined"):
-            self._merge_undetermined = False
-            # If only one library on the lane
-            if len(self.readsets) == 1:
-                self._merge_undetermined = True
-            if config.param('fastq', 'merge_undetermined', required=False, type='boolean'):
-                self._merge_undetermined = config.param('fastq', 'merge_undetermined')
-        return self._merge_undetermined
 
     @property
     def bcl2fastq_extra_option(self):
@@ -283,12 +360,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self._seqtype
 
     @property
-    def instrument(self):
-        if not hasattr(self, "_instrument"):
-            self._instrument = self.get_instrument()
-        return self._instrument
-
-    @property
     def read_infos(self):
         if not hasattr(self, "_read_infos"):
             self._read_infos = self.parse_run_info_file()
@@ -312,14 +383,16 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
     @property
     def report_inputs(self):
         if not hasattr(self, "_report_inputs"):
-            self._report_inputs = {
-                'index' : {},
-                'sample_tag' : {},
-                'qc' : {},
-                'blast' : {},
-                'mark_dup' : {},
-                'align' : {}
-            }
+            self._report_inputs = {}
+            for lane in self.lanes:
+                self._report_inputs[lane] = {
+                    'index' : {},
+                    'sample_tag' : {},
+                    'qc' : {},
+                    'blast' : {},
+                    'mark_dup' : {},
+                    'align' : {}
+                }
         return self._report_inputs
 
     def index(self):
@@ -349,82 +422,87 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
 
         if index_length == 0:
             log.info("No Indexes, *NOT* Generating index counts")
+
         else:
-            input = os.path.join(self.run_dir, "RunInfo.xml")
-            output = os.path.join(self.output_dir, "index",  self.run_id + "_" + str(self.lane_number) + '.metrics')
-            basecalls_dir = os.path.join(self.output_dir, "index", "BaseCalls")
+            for lane in self.lanes:
+                lane_jobs = []
 
-            # CountIlluminaBarcode
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(basecalls_dir),
-                    bash.ln(
-                        os.path.join(self.run_dir, "Data", "Intensities", "BaseCalls", "L00" + str(self.lane_number)),
-                        os.path.join(basecalls_dir, "L00" + str(self.lane_number))
-                    ) if not os.path.islink(os.path.join(basecalls_dir, "L00" + str(self.lane_number))) else None,
-                    bash.ln(
-                        os.path.join(self.run_dir, "Data", "Intensities", "s.locs"),
-                        os.path.join(self.output_dir, "index", "s.locs")
-                    ) if not os.path.islink(os.path.join(self.output_dir, "index", "s.locs")) else None,
-                    run_processing_tools.index(
-                        input,
-                        output,
-                        basecalls_dir,
-                        self.number_of_mismatches,
-                        self.lane_number,
-                        mask
-                )],
-                name="index." + self.run_id + "." + str(self.lane_number),
-                samples=self.samples
-            ))
+                input = os.path.join(self.run_dir, "RunInfo.xml")
+                output = os.path.join(self.output_dir, "index",  self.run_id + "_" + lane + '.metrics')
+                basecalls_dir = os.path.join(self.output_dir, "index", "BaseCalls")
 
-            # BCL2fasq
-            jobs.append(
-                concat_jobs([
-                    run_processing_tools.bcl2fastq_for_index(
-                        self.run_dir,
-                        os.path.join(self.output_dir, "index", "bcl2fastq"),
-                        os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".indexed.csv"),
-                        self.flowcell_id,
-                        self.lane_number,
-                        demultiplex=True,
-                        mismatches=self.number_of_mismatches,
-                        mask=self.mask
-                    ),
-                    bash.cp(
-                        os.path.join(self.output_dir, "index", "bcl2fastq", "Reports", "html", self.flowcell_id, "all/all/all/lane.html"),
-                        os.path.join(self.output_dir, "index", "index_stats.html")
-                    ),
-                    tools.edit_index_stats(
-                        os.path.join(self.output_dir, "index", "index_per_readset.json"),
-                        os.path.join(self.output_dir, "index", "bcl2fastq", "Stats", "Stats.json"),
-                        os.path.join(self.output_dir, "index", "index_stats.json")
-                    )
-                ],
-                name="bcl2fastq_index." + self.run_id + "." + str(self.lane_number),
-                samples=self.samples,
-                removable_files=[os.path.join(self.output_dir, "index", "bcl2fastq")]
-            ))
+                # CountIlluminaBarcode
+                lane_jobs.append(
+                    concat_jobs([
+                        bash.mkdir(basecalls_dir),
+                        bash.ln(
+                            os.path.join(self.run_dir, "Data", "Intensities", "BaseCalls", "L00" + lane),
+                            os.path.join(basecalls_dir, "L00" + lane)
+                        ),
+                        bash.ln(
+                            os.path.join(self.run_dir, "Data", "Intensities", "s.locs"),
+                            os.path.join(self.output_dir, "index", "s.locs")
+                        ),
+                        run_processing_tools.index(
+                            input,
+                            output,
+                            basecalls_dir,
+                            self.number_of_mismatches,
+                            lane,
+                            mask
+                    )],
+                    name="index." + self.run_id + "." + lane,
+                    samples=self.samples[lane]
+                ))
 
-        # Index Validation
-        idx_val_job = tools.index_validation(
-            os.path.join(self.output_dir, "index", "index_per_readset.json"),
-            output,
-            os.path.join(self.output_dir, "index", "index_stats.html"),
-            self.lane_number,
-            self.number_of_mismatches
-        )
-        idx_val_job.name = "index_validation." + self.run_id + "." + str(self.lane_number)
-        idx_val_job.samples = self.samples
-        jobs.append(idx_val_job)
+                # BCL2fasq
+                lane_jobs.append(
+                    concat_jobs([
+                        run_processing_tools.bcl2fastq_for_index(
+                            self.run_dir,
+                            os.path.join(self.output_dir, "index", "L00" + lane),
+                            os.path.join(self.output_dir, "casavasheet." + lane + ".indexed.csv"),
+                            self.flowcell_id,
+                            lane,
+                            demultiplex=True,
+                            mismatches=self.number_of_mismatches,
+                            mask=self.mask[lane]
+                        ),
+                        bash.cp(
+                            os.path.join(self.output_dir, "index", "L00" + lane, "Reports", "html", self.flowcell_id, "all/all/all/lane.html"),
+                            os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_stats.html")
+                        ),
+                        tools.edit_index_stats(
+                            os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_per_readset.json"),
+                            os.path.join(self.output_dir, "index", "L00" + lane, "Stats", "Stats.json"),
+                            os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_stats.json")
+                        )
+                    ],
+                    name="bcl2fastq_index." + self.run_id + "." + lane,
+                    samples=self.samples[lane],
+                    removable_files=[os.path.join(self.output_dir, "index", "L00" + lane)]
+                ))
 
-        self.add_to_report_hash("index", jobs)
-        for readset in self.readsets:
-            self.report_inputs['index'][readset.name] = [
-                os.path.join(self.output_dir, "index", "index_stats.json"),
-                os.path.join(self.output_dir, "index", "index_per_readset.json")
-            ]
-        self.add_copy_job_inputs(jobs)
+                # Index Validation
+                idx_val_job = tools.index_validation(
+                    os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_per_readset.json"),
+                    output,
+                    os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_stats.html"),
+                    lane,
+                    self.number_of_mismatches
+                )
+                idx_val_job.name = "index_validation." + self.run_id + "." + lane
+                idx_val_job.samples = self.samples[lane]
+                lane_jobs.append(idx_val_job)
+
+                self.add_to_report_hash("index", lane_jobs)
+                for readset in self.readsets[lane]:
+                    self.report_inputs[lane]['index'][readset.name] = [
+                        os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_stats.json"),
+                        os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_per_readset.json")
+                    ]
+                self.add_copy_job_inputs(lane_jobs, lane)
+                jobs.extend(lane_jobs)
 
         return jobs
 
@@ -445,103 +523,107 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         """
         jobs = []
 
-        input = self.clarity_event_file
-        fastq_outputs, final_fastq_jobs = self.generate_fastq_outputs()
-        output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
-        casava_sample_sheet = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".indexed.csv")
+        for lane in self.lanes:
+            lane_jobs = []
 
-        if self.umi:
-            output_dir_noindex = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number) + ".noindex")
-            casava_sample_sheet_noindex = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".noindex.csv")
+            input = self.readset_file
+            fastq_outputs, final_fastq_jobs = self.generate_fastq_outputs(lane)
+            output_dir = os.path.join(self.output_dir, "Unaligned." + lane)
+            casava_sample_sheet = os.path.join(self.output_dir, "casavasheet." + lane + ".indexed.csv")
 
-            jobs.append(
-                concat_jobs([
-                    run_processing_tools.bcl2fastq(
-                        input,
-                        fastq_outputs,
-                        output_dir,
-                        casava_sample_sheet,
-                        self.run_dir,
-                        self.lane_number,
-                        self.bcl2fastq_extra_option,
-                        demultiplex=True,
-                        mismatches=self.number_of_mismatches,
-                        mask=self.mask
-                    ),
-                    run_processing_tools.bcl2fastq(
-                        input,
-                        fastq_outputs,
-                        output_dir_noindex,
-                        casava_sample_sheet_noindex,
-                        self.run_dir,
-                        self.lane_number,
-                        self.bcl2fastq_extra_option
-                )],
-                name="fastq." + self.run_id + "." + str(self.lane_number),
-                samples=self.samples
-            ))
+            if self.umi:
+                output_dir_noindex = os.path.join(self.output_dir, "Unaligned." + lane + ".noindex")
+                casava_sample_sheet_noindex = os.path.join(self.output_dir, "casavasheet." + lane + ".noindex.csv")
 
-        else:
-            bcl2fastq_job = run_processing_tools.bcl2fastq(
-                input,
-                fastq_outputs,
-                output_dir,
-                casava_sample_sheet,
-                self.run_dir,
-                self.lane_number,
-                self.bcl2fastq_extra_option,
-                demultiplex=True,
-                mismatches=self.number_of_mismatches,
-                mask=self.mask
-            )
-            bcl2fastq_job.name = "fastq." + self.run_id + "." + str(self.lane_number)
-            bcl2fastq_job.samples = self.samples
-            jobs.append(bcl2fastq_job)
+                lane_jobs.append(
+                    concat_jobs([
+                        run_processing_tools.bcl2fastq(
+                            input,
+                            fastq_outputs,
+                            output_dir,
+                            casava_sample_sheet,
+                            self.run_dir,
+                            lane,
+                            self.bcl2fastq_extra_option,
+                            demultiplex=True,
+                            mismatches=self.number_of_mismatches,
+                            mask=self.mask[lane]
+                        ),
+                        run_processing_tools.bcl2fastq(
+                            input,
+                            fastq_outputs,
+                            output_dir_noindex,
+                            casava_sample_sheet_noindex,
+                            self.run_dir,
+                            lane,
+                            self.bcl2fastq_extra_option
+                    )],
+                    name="fastq." + self.run_id + "." + lane,
+                    samples=self.samples[lane]
+                ))
 
-        if final_fastq_jobs:
-            jobs.extend(final_fastq_jobs)
+            else:
+                bcl2fastq_job = run_processing_tools.bcl2fastq(
+                    input,
+                    fastq_outputs,
+                    output_dir,
+                    casava_sample_sheet,
+                    self.run_dir,
+                    self.lane_number,
+                    self.bcl2fastq_extra_option,
+                    demultiplex=True,
+                    mismatches=self.number_of_mismatches,
+                    mask=self.mask[lane]
+                )
+                bcl2fastq_job.name = "fastq." + self.run_id + "." + lane
+                bcl2fastq_job.samples = self.samples[lane]
+                lane_jobs.append(bcl2fastq_job)
 
-        # don't depend on notification commands
-        self.add_copy_job_inputs(jobs)
+            if final_fastq_jobs:
+                lane_jobs.extend(final_fastq_jobs)
 
-        notification_command_start = config.param('fastq_notification_start', 'notification_command', required=False)
-        if notification_command_start:
-            notification_command_start = notification_command_start.format(
-                output_dir=self.output_dir,
-                number_of_mismatches=self.number_of_mismatches,
-                lane_number=self.lane_number,
-                mask=self.mask,
-                technology=config.param('fastq', 'technology'),
-                run_id=self.run_id
-            )
-            # Use the same inputs and output of fastq job to send a notification each time the fastq job run
-            job = Job(
-                [input],
-                ["notificationFastqStart." + str(self.lane_number) + ".out"],
-                command=notification_command_start,
-                name="fastq_notification_start." + self.run_id + "." + str(self.lane_number),
-                samples=self.samples
-            )
-#            jobs.append(job)
+            # don't depend on notification commands
+            self.add_copy_job_inputs(lane_jobs, lane)
 
-        notification_command_end = config.param('fastq_notification_end', 'notification_command', required=False)
-        if notification_command_end:
-            notification_command_end = notification_command_end.format(
-                output_dir=self.output_dir,
-                lane_number=self.lane_number,
-                technology=config.param('fastq', 'technology'),
-                run_id=self.run_id
-            )
-            job = Job(
-                fastq_outputs,
-                ["notificationFastqEnd." + str(self.lane_number) + ".out"], 
-                command=notification_command_end,
-                name="fastq_notification_end." + self.run_id + "." + str(self.lane_number),
-                samples=self.samples
-            )
-#            jobs.append(job)
+            notification_command_start = config.param('fastq_notification_start', 'notification_command', required=False)
+            if notification_command_start:
+                notification_command_start = notification_command_start.format(
+                    output_dir=self.output_dir,
+                    number_of_mismatches=self.number_of_mismatches,
+                    lane_number=self.lane_number,
+                    mask=self.mask[lane],
+                    technology=config.param('fastq', 'technology'),
+                    run_id=self.run_id
+                )
+                # Use the same inputs and output of fastq job to send a notification each time the fastq job run
+                job = Job(
+                    [input],
+                    ["notificationFastqStart." + lane + ".out"],
+                    command=notification_command_start,
+                    name="fastq_notification_start." + self.run_id + "." + lane,
+                    samples=self.samples[lane]
+                )
+#                lane_jobs.append(job)
 
-        self.add_to_report_hash("fastq", jobs)
+            notification_command_end = config.param('fastq_notification_end', 'notification_command', required=False)
+            if notification_command_end:
+                notification_command_end = notification_command_end.format(
+                    output_dir=self.output_dir,
+                    lane_number=self.lane_number,
+                    technology=config.param('fastq', 'technology'),
+                    run_id=self.run_id
+                )
+                job = Job(
+                    fastq_outputs,
+                    ["notificationFastqEnd." + lane + ".out"], 
+                    command=notification_command_end,
+                    name="fastq_notification_end." + self.run_id + "." + lane,
+                    samples=self.samples[lane]
+                )
+#                lane_jobs.append(job)
+
+            self.add_to_report_hash("fastq", lane_jobs)
+            jobs.extend(lane_jobs)
 
         return jobs
 
@@ -550,28 +632,32 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         """
         jobs = []
 
-        for readset in self.readsets:
-            ouput_directory = os.path.join(self.output_dir, "Unaligned." + readset.lane, 'Project_' + readset.project_id, 'Sample_' + readset.name, "sample_tag.R1")                                           
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(ouput_directory),
-                    tools.sh_sample_tag_summary(
-                        readset.fastq1,
-                        ouput_directory
-                    ),
-                    tools.sh_sample_tag_stats(
-                        readset.fastq1,
-                        ouput_directory,
-                        readset.sample_tag,
-                        readset.name
-                )],
-                name="sample_tag." + readset.name + "." + self.run_id + "." + str(readset.lane),
-                samples=[readset.sample]
-            ))
-            self.report_inputs['sample_tag'][readset.name] = os.path.join(ouput_directory, readset.name + ".sample_tag_stats.csv")
+        for lane in self.lanes:
+            lane_jobs = []
+            for readset in self.readsets[lane]:
+                ouput_directory = os.path.join(self.output_dir, "Unaligned." + readset.lane, 'Project_' + readset.project_id, 'Sample_' + readset.name, "sample_tag.R1")
 
-        self.add_to_report_hash("sample_tag", jobs)
-        self.add_copy_job_inputs(jobs)
+                lane_jobs.append(
+                    concat_jobs([
+                        bash.mkdir(ouput_directory),
+                            tools.sh_sample_tag_summary(
+                            readset.fastq1,
+                            ouput_directory
+                        ),
+                        tools.sh_sample_tag_stats(
+                            readset.fastq1,
+                            ouput_directory,
+                            readset.sample_tag,
+                            readset.name
+                    )],
+                    name="sample_tag." + readset.name + "." + self.run_id + "." + str(readset.lane),
+                    samples=[readset.sample]
+                ))
+                self.report_inputs[lane]['sample_tag'][readset.name] = os.path.join(ouput_directory, readset.name + ".sample_tag_stats.csv")
+
+            self.add_to_report_hash("sample_tag", lane_jobs)
+            self.add_copy_job_inputs(lane_jobs, lane)
+            jobs.extend(lane_jobs)
 
         return self.throttle_jobs(jobs)
 
@@ -589,31 +675,35 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         """
         jobs = []
 
-        for readset in self.readsets:
-            output_dir = os.path.join(os.path.dirname(readset.fastq1), "qc")
-            region_name = readset.name + "_" + readset.sample_number + "_L00" + readset.lane
+        for lane in self.lanes:
+            lane_jobs = []
 
-            file1 = readset.fastq1
-            file2 = readset.fastq2
-            type = "FASTQ"
+            for readset in self.readsets[lane]:
+                output_dir = os.path.join(os.path.dirname(readset.fastq1), "qc")
+                region_name = readset.name + "_" + readset.sample_number + "_L00" + readset.lane
 
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(output_dir),
-                    bvatools.readsqc(
-                        file1,
-                        file2,
-                        type,
-                        region_name,
-                        output_dir
-                )],
-                name="qc." + readset.name + ".qc." + self.run_id + "." + str(self.lane_number),
-                samples=[readset.sample]
-            ))
-            self.report_inputs['qc'][readset.name] = os.path.join(output_dir, "mpsQC_" + region_name + "_stats.xml")
+                file1 = readset.fastq1
+                file2 = readset.fastq2
+                type = "FASTQ"
 
-        self.add_to_report_hash("qc_graphs", jobs)
-        self.add_copy_job_inputs(jobs)
+                lane_jobs.append(
+                    concat_jobs([
+                        bash.mkdir(output_dir),
+                        bvatools.readsqc(
+                            file1,
+                            file2,
+                            type,
+                            region_name,
+                            output_dir
+                    )],
+                    name="qc." + readset.name + ".qc." + self.run_id + "." + lane,
+                    samples=[readset.sample]
+                ))
+                self.report_inputs[lane]['qc'][readset.name] = os.path.join(output_dir, "mpsQC_" + region_name + "_stats.xml")
+
+            self.add_to_report_hash("qc_graphs", lane_jobs)
+            self.add_copy_job_inputs(lane_jobs, lane)
+            jobs.extend(lane_jobs)
 
         return self.throttle_jobs(jobs)
 
@@ -621,48 +711,53 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         """
         """
         jobs = []
-        for readset in self.readsets:
-            input_dict = {
-                readset.fastq1 : [
-                    os.path.join(os.path.dirname(readset.fastq1), "fastqc.R1", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.fastq1))),
-                    os.path.join(os.path.dirname(readset.fastq1), "fastqc.R1", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.fastq1))),
-                ],
-                readset.index_fastq1 : [
-                    os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.I1", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq1))),
-                    os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.I1", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq1))),
-                ]
-            }
-            if readset.run_type == "PAIRED_END":
-                input_dict[readset.fastq2] = [
-                    os.path.join(os.path.dirname(readset.fastq2), "fastqc.R2", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.fastq2))),
-                    os.path.join(os.path.dirname(readset.fastq2), "fastqc.R2", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.fastq2))),
-                ]
-                if readset.index_type == "DUALINDEX":
-                    input_dict[readset.index_fastq2] = [
-                        os.path.join(os.path.dirname(readset.index_fastq2), "fastqc.I2", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq2))),
-                        os.path.join(os.path.dirname(readset.index_fastq2), "fastqc.I2", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq2))),
-                    ]
-            for input, outputs in input_dict.items():
-                job_suffix = re.search('.*fastqc\.([IR][12])', os.path.dirname(outputs[0])).group(1)
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(
-                            os.path.dirname(outputs[0]),
-                            remove=True
-                        ),
-                        fastqc.fastqc(
-                            input,
-                            None,
-                            outputs,
-                            adapter_file=None,
-                            use_tmp=True
-                    )],
-                    name="fastqc." + readset.name + "_" + job_suffix,
-                    samples=[readset.sample]
-                ))
 
-        self.add_to_report_hash("fastqc", jobs)
-        self.add_copy_job_inputs(jobs)
+        for lane in self.lanes:
+            lane_jobs = []
+
+            for readset in self.readsets[lane]:
+                input_dict = {
+                    readset.fastq1 : [
+                        os.path.join(os.path.dirname(readset.fastq1), "fastqc.R1", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.fastq1))),
+                        os.path.join(os.path.dirname(readset.fastq1), "fastqc.R1", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.fastq1))),
+                    ],
+                    readset.index_fastq1 : [
+                        os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.I1", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq1))),
+                        os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.I1", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq1))),
+                    ]
+                }
+                if readset.run_type == "PAIRED_END":
+                    input_dict[readset.fastq2] = [
+                        os.path.join(os.path.dirname(readset.fastq2), "fastqc.R2", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.fastq2))),
+                        os.path.join(os.path.dirname(readset.fastq2), "fastqc.R2", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.fastq2))),
+                    ]
+                    if readset.index_type == "DUALINDEX":
+                        input_dict[readset.index_fastq2] = [
+                            os.path.join(os.path.dirname(readset.index_fastq2), "fastqc.I2", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq2))),
+                            os.path.join(os.path.dirname(readset.index_fastq2), "fastqc.I2", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq2))),
+                        ]
+                for input, outputs in input_dict.items():
+                    job_suffix = re.search('.*fastqc\.([IR][12])', os.path.dirname(outputs[0])).group(1)
+                    lane_jobs.append(
+                        concat_jobs([
+                            bash.mkdir(
+                                os.path.dirname(outputs[0]),
+                                remove=True
+                            ),
+                            fastqc.fastqc(
+                                input,
+                                None,
+                                outputs,
+                                adapter_file=None,
+                                use_tmp=True
+                        )],
+                        name="fastqc." + readset.name + "_" + job_suffix,
+                        samples=[readset.sample]
+                    ))
+
+            self.add_to_report_hash("fastqc", lane_jobs)
+            self.add_copy_job_inputs(lane_jobs, lane)
+            jobs.extend(lane_jobs)
         return self.throttle_jobs(jobs)
 
     def blast(self):
@@ -675,7 +770,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         in the `Blast_sample` folder, under the Unaligned folder.
         """
         jobs = []
-        self.report_inputs['blast'] = {}
 
         nb_blast_to_do = config.param('blast', 'nb_blast_to_do', type="posint")
         is_nb_blast_per_lane = config.param('blast', 'is_nb_for_whole_lane', type="boolean")
@@ -685,49 +779,55 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
 
         nb_blast_to_do = max(1, nb_blast_to_do)
 
-        for readset in self.readsets:
-            output_prefix = os.path.join(
-                self.output_dir,
-                "Unaligned." + readset.lane,
-                "Blast_sample",
-                readset.name + "_" + readset.sample_number + "_L00" + readset.lane
-            )
-            output = output_prefix + '.R1.RDP.blastHit_20MF_species.txt'
-            self.report_inputs['blast'][readset.name] = os.path.join(output)
-            current_jobs = [
-                bash.mkdir(os.path.dirname(output))
-            ]
+        for lane in self.lanes:
+            lane_jobs = []
 
-            fasta_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.fasta".format(
-                nb_blast_to_do=nb_blast_to_do
-            )
-            result_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.blastres".format(
-                nb_blast_to_do=nb_blast_to_do
-            )
+            self.report_inputs[lane]['blast'] = {}
 
-            inputs = [readset.fastq1, readset.fastq2]
-            command = "runBlast.sh " + str(nb_blast_to_do) + " " + output_prefix + " " + readset.fastq1 + " "
-            if readset.fastq2:
-                command += readset.fastq2
-            current_jobs.append(
-                Job(
-                    inputs,
-                    [output],
-                    [
-                        ["blast", "module_mugqic_tools"],
-                        ["blast", "module_blast"]
-                    ],
-                    command=command
+            for readset in self.readsets[lane]:
+                output_prefix = os.path.join(
+                    self.output_dir,
+                    "Unaligned." + readset.lane,
+                    "Blast_sample",
+                    readset.name + "_" + readset.sample_number + "_L00" + readset.lane
                 )
-            )
+                output = output_prefix + '.R1.RDP.blastHit_20MF_species.txt'
+                self.report_inputs[lane]['blast'][readset.name] = os.path.join(output)
+                current_jobs = [
+                    bash.mkdir(os.path.dirname(output))
+                ]
 
-            # rRNA estimate using silva blast db, using the same subset of reads as the "normal" blast
-            rrna_db = config.param('blast', 'rrna_db', required=False)
-            if readset.is_rna and rrna_db:
-                rrna_result_file = result_file + "Rrna"
-                rrna_output = output_prefix + ".R1.subSampled_{nb_blast_to_do}.rrna".format(
-                    nb_blast_to_do=nb_blast_to_do)
-                command = """\
+                fasta_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.fasta".format(
+                    nb_blast_to_do=nb_blast_to_do
+                )
+                result_file = output_prefix + ".R1.subSampled_{nb_blast_to_do}.blastres".format(
+                    nb_blast_to_do=nb_blast_to_do
+                )
+
+                inputs = [readset.fastq1, readset.fastq2]
+                command = "runBlast.sh " + str(nb_blast_to_do) + " " + output_prefix + " " + readset.fastq1 + " "
+                if readset.fastq2:
+                    command += readset.fastq2
+                current_jobs.append(
+                    Job(
+                        inputs,
+                        [output],
+                        [
+                            ["blast", "module_mugqic_tools"],
+                            ["blast", "module_blast"]
+                        ],
+                        command=command
+                    )
+                )
+
+                # rRNA estimate using silva blast db, using the same subset of reads as the "normal" blast
+                rrna_db = config.param('blast', 'rrna_db', required=False)
+                if readset.is_rna and rrna_db:
+                    rrna_result_file = result_file + "Rrna"
+                    rrna_output = output_prefix + ".R1.subSampled_{nb_blast_to_do}.rrna".format(
+                        nb_blast_to_do=nb_blast_to_do
+                    )
+                    command = """\
 blastn \\
   -query {fasta_file} \\
   -db {db} \\
@@ -735,75 +835,75 @@ blastn \\
   -perc_identity 80 \\
   -num_descriptions 1 \\
   -num_alignments 1""".format(
-                    fasta_file=fasta_file,
-                    result_file=rrna_result_file,
-                    db=rrna_db
-                )
-                current_jobs.append(
-                    Job(
-                        [],
-                        [],
-                        [["blast", "module_blast"]],
-                        command=command
+                        fasta_file=fasta_file,
+                        result_file=rrna_result_file,
+                        db=rrna_db
                     )
-                )
+                    current_jobs.append(
+                        Job(
+                            [],
+                            [],
+                            [["blast", "module_blast"]],
+                            command=command
+                        )
+                    )
 
-                command = """\
+                    command = """\
 echo '{db}' \\
   > {output}""".format(
-                    db=rrna_db,
-                    output=rrna_output
-                )
-                current_jobs.append(
-                    Job(
-                        [],
-                        [output],
-                        [],
-                        command=command
+                        db=rrna_db,
+                        output=rrna_output
                     )
-                    
-                )
+                    current_jobs.append(
+                        Job(
+                            [],
+                            [output],
+                            [],
+                            command=command
+                        )                    
+                    )
 
-                command = """\
+                    command = """\
 grep ">" {result_file} | \\
 wc -l >> {output}""".format(
-                    result_file=rrna_result_file,
-                    output=rrna_output
-                )
-                current_jobs.append(
-                    Job(
-                        [],
-                        [output],
-                        [],
-                        command=command
+                        result_file=rrna_result_file,
+                        output=rrna_output
                     )
-                )
+                    current_jobs.append(
+                        Job(
+                            [],
+                            [output],
+                            [],
+                            command=command
+                        )
+                    )
 
-                command = """\
+                    command = """\
 grep ">" {fasta_file} | \\
 wc -l >> {output}""".format(
-                    fasta_file=fasta_file,
-                    output=rrna_output
-                )
-                current_jobs.append(
-                    Job(
-                        [],
-                        [output],
-                        [],
-                        command=command
+                        fasta_file=fasta_file,
+                        output=rrna_output
                     )
+                    current_jobs.append(
+                        Job(
+                            [],
+                            [output],
+                            [],
+                            command=command
+                        )
+                    )
+
+                # merge all blast steps of the readset into one job
+                job = concat_jobs(
+                    current_jobs,
+                    name="blast." + readset.name + ".blast." + self.run_id + "." + lane,
+                    samples = [readset.sample]
                 )
+                lane_jobs.append(job)
 
-            # merge all blast steps of the readset into one job
-            job = concat_jobs(
-                current_jobs,
-                name="blast." + readset.name + ".blast." + self.run_id + "." + str(self.lane_number),
-                samples = [readset.sample]
-            )
-            jobs.append(job)
-
-        self.add_to_report_hash("blast", jobs)
-        self.add_copy_job_inputs(jobs)
+            self.add_to_report_hash("blast", lane_jobs)
+            self.add_copy_job_inputs(lane_jobs, lane)
+            jobs.extend(lane_jobs)
         return self.throttle_jobs(jobs)
 
     def align(self):
@@ -820,13 +920,18 @@ wc -l >> {output}""".format(
         align the reads.
         """
         jobs = []
-        for readset in [readset for readset in self.readsets if readset.bam]:
-            job = readset.aligner.get_alignment_job(readset)
-            job.samples = [readset.sample]
-            jobs.append(job)
 
-        self.add_to_report_hash("align", jobs)
-        self.add_copy_job_inputs(jobs)
+        for lane in self.lanes:
+            lane_jobs = []
+
+            for readset in [readset for readset in self.readsets[lane] if readset.bam]:
+                job = readset.aligner.get_alignment_job(readset)
+                job.samples = [readset.sample]
+                lane_jobs.append(job)
+
+            self.add_to_report_hash("align", lane_jobs)
+            self.add_copy_job_inputs(lane_jobs, lane)
+            jobs.extend(lane_jobs)
         return self.throttle_jobs(jobs)
 
     def picard_mark_duplicates(self):
@@ -835,24 +940,28 @@ wc -l >> {output}""".format(
         """
         jobs = []
 
-        for readset in [readset for readset in self.readsets if readset.bam]:
-            input_file_prefix = readset.bam + '.'
-            input = input_file_prefix + "bam"
-            output = input_file_prefix + "dup.bam"
-            metrics_file = input_file_prefix + "dup.metrics"
-            self.report_inputs['mark_dup'][readset.name] = metrics_file
+        for lane in self.lanes:
+            lane_jobs = []
 
-            job = picard.mark_duplicates(
-                [input],
-                output,
-                metrics_file
-            )
-            job.name = "picard_mark_duplicates." + readset.name + ".dup." + self.run_id + "." + str(self.lane_number)
-            job.samples = [readset.sample]
-            jobs.append(job)
+            for readset in [readset for readset in self.readsets[lane] if readset.bam]:
+                input_file_prefix = readset.bam + '.'
+                input = input_file_prefix + "bam"
+                output = input_file_prefix + "dup.bam"
+                metrics_file = input_file_prefix + "dup.metrics"
+                self.report_inputs[lane]['mark_dup'][readset.name] = metrics_file
 
-        self.add_to_report_hash("picard_mark_duplicates", jobs)
-        self.add_copy_job_inputs(jobs)
+                job = picard.mark_duplicates(
+                    [input],
+                    output,
+                    metrics_file
+                )
+                job.name = "picard_mark_duplicates." + readset.name + ".dup." + self.run_id + "." + lane
+                job.samples = [readset.sample]
+                lane_jobs.append(job)
+
+            self.add_to_report_hash("picard_mark_duplicates", lane_jobs)
+            self.add_copy_job_inputs(lane_jobs, lane)
+            jobs.extend(lane_jobs)
         return self.throttle_jobs(jobs)
 
     def metrics(self):
@@ -875,30 +984,34 @@ wc -l >> {output}""".format(
         """
         jobs = []
 
-        for readset in [readset for readset in self.readsets if readset.bam]:
-            job_list = readset.aligner.get_metrics_jobs(readset)
-            for job in job_list:
-                job.samples = [readset.sample]
-            jobs.extend(job_list)
+        for lane in self.lanes:
+            lane_jobs = []
 
-            if readset.is_rna:
-                self.report_inputs['align'][readset.name] = [
-                    readset.bam + '.metrics.alignment_summary_metrics',
-                    readset.bam + '.metrics.insert_size_metrics',
-                    os.path.join(os.path.dirname(readset.bam), readset.sample.name + "." + readset.library + '.rnaseqc.sorted.dup.metrics.tsv'),
-                    readset.bam + '.metrics.rRNA.tsv'
-                ]
-            else:
-                self.report_inputs['align'][readset.name] = [
-                    readset.bam + '.metrics.alignment_summary_metrics',
-                    readset.bam + '.metrics.insert_size_metrics',
-                    readset.bam + ".dup.metrics",
-                    readset.bam + ".metrics.verifyBamId.tsv",
-                    readset.bam + ".metrics.targetCoverage.txt"
-                ]
+            for readset in [readset for readset in self.readsets[lane] if readset.bam]:
+                job_list = readset.aligner.get_metrics_jobs(readset)
+                for job in job_list:
+                    job.samples = [readset.sample]
+                lane_jobs.extend(job_list)
 
-        self.add_to_report_hash("metrics", jobs)
-        self.add_copy_job_inputs(jobs)
+                if readset.is_rna:
+                    self.report_inputs[lane]['align'][readset.name] = [
+                        readset.bam + '.metrics.alignment_summary_metrics',
+                        readset.bam + '.metrics.insert_size_metrics',
+                        os.path.join(os.path.dirname(readset.bam), readset.sample.name + "." + readset.library + '.rnaseqc.sorted.dup.metrics.tsv'),
+                        readset.bam + '.metrics.rRNA.tsv'
+                    ]
+                else:
+                    self.report_inputs[lane]['align'][readset.name] = [
+                        readset.bam + '.metrics.alignment_summary_metrics',
+                        readset.bam + '.metrics.insert_size_metrics',
+                        readset.bam + ".dup.metrics",
+                        readset.bam + ".metrics.verifyBamId.tsv",
+                        readset.bam + ".metrics.targetCoverage.txt"
+                    ]
+
+            self.add_to_report_hash("metrics", lane_jobs)
+            self.add_copy_job_inputs(lane_jobs, lane)
+            jobs.extend(lane_jobs)
 
         return self.throttle_jobs(jobs)
 
@@ -910,60 +1023,66 @@ wc -l >> {output}""".format(
         One checksum file is created for each file.
         """
         jobs = []
-        for readset in self.readsets:
-            current_jobs = [
-                Job(
-                    [readset.fastq1],
-                    [readset.fastq1 + ".md5"],
-                    command="md5sum -b " + readset.fastq1 + " > " + readset.fastq1 + ".md5"
-                )
-            ]
 
-            # Second read in paired-end run
-            if readset.fastq2:
-                current_jobs.append(
+        for lane in self.lanes:
+            lane_jobs = []
+
+            for readset in self.readsets[lane]:
+                current_jobs = [
                     Job(
-                        [readset.fastq2],
-                        [readset.fastq2 + ".md5"],
-                        command="md5sum -b " + readset.fastq2 + " > " + readset.fastq2 + ".md5"
+                        [readset.fastq1],
+                        [readset.fastq1 + ".md5"],
+                        command="md5sum -b " + readset.fastq1 + " > " + readset.fastq1 + ".md5"
                     )
+                ]
+
+                # Second read in paired-end run
+                if readset.fastq2:
+                    current_jobs.append(
+                        Job(
+                            [readset.fastq2],
+                            [readset.fastq2 + ".md5"],
+                            command="md5sum -b " + readset.fastq2 + " > " + readset.fastq2 + ".md5"
+                        )
+                    )
+
+                # Alignment files
+                if readset.bam:
+                    current_jobs.append(
+                        Job(
+                            [readset.bam + ".bam"],
+                            [readset.bam + ".bam.md5"],
+                            command="md5sum -b " + readset.bam + ".bam" + " > " + readset.bam + ".bam.md5"
+                        )
+                    )
+                    current_jobs.append(
+                        Job(
+                            [],
+                            [readset.bam + ".bai.md5"],
+                            command="md5sum -b " + readset.bam + ".bai" + " > " + readset.bam + ".bai.md5"
+                        )
+                    )
+
+                job = concat_jobs(
+                    current_jobs,
+                    name="md5." + readset.name + ".md5." + self.run_id + "." + lane,
+                    samples=[readset.sample]
                 )
 
-            # Alignment files
-            if readset.bam:
-                current_jobs.append(
-                    Job(
-                        [readset.bam + ".bam"],
-                        [readset.bam + ".bam.md5"],
-                        command="md5sum -b " + readset.bam + ".bam" + " > " + readset.bam + ".bam.md5"
-                    )
+                lane_jobs.append(job)
+
+            if config.param('md5', 'one_job', required=False, type="boolean"):
+                job = concat_jobs(
+                    lane_jobs,
+                    name="md5." + self.run_id + "." + lane
                 )
-                current_jobs.append(
-                    Job(
-                        [],
-                        [readset.bam + ".bai.md5"],
-                        command="md5sum -b " + readset.bam + ".bai" + " > " + readset.bam + ".bai.md5"
-                    )
-                )
+                self.add_copy_job_inputs([job], lane)
+                jobs.extend([job])
+            else:
+                self.add_copy_job_inputs(lane_jobs, lane)
+                jobs.extend(lane_jobs)
 
-            job = concat_jobs(
-                current_jobs,
-                name="md5." + readset.name + ".md5." + self.run_id + "." + str(self.lane_number),
-                samples=[readset.sample]
-            )
-
-            jobs.append(job)
-
-        if config.param('md5', 'one_job', required=False, type="boolean"):
-            job = concat_jobs(
-                jobs,
-                name="md5." + self.run_id + "." + str(self.lane_number)
-            )
-            self.add_copy_job_inputs([job])
-            return [job]
-        else:
-            self.add_copy_job_inputs(jobs)
-            return jobs
+        return self.throttle_jobs(jobs)
 
     def copy(self):
         """
@@ -978,94 +1097,103 @@ wc -l >> {output}""".format(
         inputs = self.copy_job_inputs
         jobs_to_concat = []
 
-        # Notification
-        output1 = os.path.join(self.output_dir, "notificationProcessingComplete." + str(self.lane_number) + ".out")
-        output2 = os.path.join(self.output_dir, "notificationCopyStart." + str(self.lane_number) + ".out")
+        full_destination_folder = os.path.join(
+            config.param('copy', 'destination_folder', type="dirpath"),
+            self.seq_category,
+            self.year,
+            os.path.basename(self.run_dir) + "-" + self.seqtype
+        )
 
-        notification_command = config.param('copy', 'notification_command', required=False)
-        if notification_command:
-            job = Job(
-                inputs,
-                [output1, output2],
-                name="start_copy_notification." + self.run_id + "." + str(self.lane_number),
-                samples=self.samples
-            )
-            job.command = notification_command.format(
-                technology=config.param('copy', 'technology'),
-                output_dir=self.output_dir,
-                run_id=self.run_id,
-                output1=output1,
-                output2=output2,
-                lane_number=self.lane_number
-            )
-            jobs_to_concat.append(job)
+        for lane in self.lanes:
+            inputs = self.copy_job_inputs[lane]
 
-        # Actual copy
-        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(self.run_dir)
-        output = os.path.join(full_destination_folder, "copyCompleted." + str(self.lane_number) + ".out")
+            # Notification
+            output1 = os.path.join(self.output_dir, "notificationProcessingComplete." + lane + ".out")
+            output2 = os.path.join(self.output_dir, "notificationCopyStart." + lane + ".out")
 
-        exclude_bam = config.param('copy', 'exclude_bam', required=False, type='boolean')
-        exclude_fastq_with_bam = config.param('copy', 'exclude_fastq_with_bam', required=False, type='boolean')
-        if exclude_bam and exclude_fastq_with_bam:
-            log.warn("Excluding both BAM and fastq files")
+            notification_command = config.param('copy', 'notification_command', required=False)
+            if notification_command:
+                job = Job(
+                    inputs,
+                    [output1, output2],
+                    name="start_copy_notification." + self.run_id + "." + lane,
+                    samples=self.samples[lane]
+                )
+                job.command = notification_command.format(
+                    technology=config.param('copy', 'technology'),
+                    output_dir=self.output_dir,
+                    run_id=self.run_id,
+                    output1=output1,
+                    output2=output2,
+                    lane_number=lane
+                )
+                jobs_to_concat.append(job)
 
-        excluded_files = []
+            # Actual copy
+            output = os.path.join(full_destination_folder, "copyCompleted." + lane + ".out")
 
-        if exclude_bam or exclude_fastq_with_bam:
-            for readset in [readset for readset in self.readsets if readset.bam]:
-                if exclude_bam:
-                    excluded_files.append(readset.bam + ".bam*")
-                    excluded_files.append(readset.bam + ".bai*")
-                if exclude_fastq_with_bam and not exclude_bam:
-                    excluded_files.append(readset.fastq1)
-                    if readset.fastq2:
-                        excluded_files.append(readset.fastq2)
+            exclude_bam = config.param('copy', 'exclude_bam', required=False, type='boolean')
+            exclude_fastq_with_bam = config.param('copy', 'exclude_fastq_with_bam', required=False, type='boolean')
+            if exclude_bam and exclude_fastq_with_bam:
+                log.warn("Excluding both BAM and fastq files")
 
-        if self.run_dir != self.output_dir:
-            copy_command_run_folder = config.param('copy', 'copy_command', required=False).format(
-                exclusion_clauses="",
+            excluded_files = []
+
+            if exclude_bam or exclude_fastq_with_bam:
+                for readset in [readset for readset in self.readsets[lane] if readset.bam]:
+                    if exclude_bam:
+                        excluded_files.append(readset.bam + ".bam*")
+                        excluded_files.append(readset.bam + ".bai*")
+                    if exclude_fastq_with_bam and not exclude_bam:
+                        excluded_files.append(readset.fastq1)
+                        if readset.fastq2:
+                            excluded_files.append(readset.fastq2)
+
+            if self.run_dir != self.output_dir:
+                copy_command_run_folder = config.param('copy', 'copy_command', required=False).format(
+                    exclusion_clauses="",
+                    lane_number=lane,
+                    run_id=self.run_id,
+                    source=self.run_dir,
+                    run_name=os.path.basename(self.run_dir)
+                )
+                jobs_to_concat.append(
+                    Job(
+                        inputs,
+                        [output],
+                        command=copy_command_run_folder,
+                        samples=self.samples[lane]
+                    )
+                )
+
+            copy_command_output_folder = config.param('copy', 'copy_command', required=False).format(
+                exclusion_clauses="\\\n".join(
+                    [" --exclude '" + excludedfile.replace(self.output_dir + os.sep, "") + "'" for excludedfile in excluded_files]),
                 lane_number=self.lane_number,
                 run_id=self.run_id,
-                source=self.run_dir,
+                source=self.output_dir,
                 run_name=os.path.basename(self.run_dir)
             )
             jobs_to_concat.append(
                 Job(
                     inputs,
                     [output],
-                    command=copy_command_run_folder,
-                    samples=self.samples
+                    command=copy_command_output_folder,
+                    samples=self.samples[lane]
+                )
+            )
+            jobs_to_concat.append(
+                Job(
+                    command="touch " + output,
+                    samples=self.samples[lane]
                 )
             )
 
-        copy_command_output_folder = config.param('copy', 'copy_command', required=False).format(
-            exclusion_clauses="\\\n".join(
-                [" --exclude '" + excludedfile.replace(self.output_dir + os.sep, "") + "'" for excludedfile in excluded_files]),
-            lane_number=self.lane_number,
-            run_id=self.run_id,
-            source=self.output_dir,
-            run_name=os.path.basename(self.run_dir)
-        )
-        jobs_to_concat.append(
-            Job(
-                inputs,
-                [output],
-                command=copy_command_output_folder,
-                samples=self.samples
-            )
-        )
-        jobs_to_concat.append(
-            Job(
-                command="touch " + output,
-                samples=self.samples
-            )
-        )
-
         job = concat_jobs(
             jobs_to_concat,
-            name="copy." + self.run_id + "." + str(self.lane_number)
+            name="copy." + self.run_id,
+            samples=self.samples[lane]
         )
-
         return [job]
 
     def end_copy_notification(self):
@@ -1077,29 +1205,40 @@ wc -l >> {output}""".format(
         """
         jobs = []
 
-        full_destination_folder = config.param('copy', 'destination_folder', type="dirpath") + os.path.basename(
-            self.run_dir)
-        input = os.path.join(full_destination_folder, "copyCompleted." + str(self.lane_number) + ".out")
-        output = os.path.join(full_destination_folder, "notificationAssociation." + str(self.lane_number) + ".out")
+        full_destination_folder = os.path.join(
+            config.param('copy', 'destination_folder', type="dirpath"),
+            self.seq_category,
+            self.year,
+            os.path.basename(self.run_dir) + "-" + self.seqtype
+        )
 
-        notification_command = config.param('end_copy_notification', 'notification_command', required=False)
-        if notification_command:
-            job = Job(
-                [input],
-                [output],
-                name="end_copy_notification." + self.run_id + "." + str(self.lane_number)
-            )
-            job.command = notification_command.format(
-                technology=config.param('end_copy_notification', 'technology'),
-                output_dir=self.output_dir,
-                run_name=os.path.basename(self.run_dir),
-                run_id=self.run_id,
-                output=output,
-                lane_number=self.lane_number
-            )
-            job.samples = self.samples
-            jobs.append(job)
+        for lane in self.lanes:
+            input = os.path.join(full_destination_folder, "copyCompleted." + lane + ".out")
+            output = os.path.join(full_destination_folder, "notificationAssociation." + lane + ".out")
 
+            notification_command = config.param('end_copy_notification', 'notification_command', required=False)
+            if notification_command:
+                job = Job(
+                    [input],
+                    [output],
+                    name="end_copy_notification." + self.run_id + "." + lane
+                )
+                job.command = notification_command.format(
+                    technology=config.param('end_copy_notification', 'technology'),
+                    output_dir=self.output_dir,
+                    run_name=os.path.basename(self.run_dir),
+                    run_id=self.run_id,
+                    output=output,
+                    lane_number=lane
+                )
+                job.samples = self.samples[lane]
+                jobs.append(job)
+
+        job = concat_jobs(
+            jobs,
+            name="end_copy_notification." + self.run_id,
+            samples=self.samples[lane]
+        )
         return jobs
 
     def report(self):
@@ -1109,42 +1248,48 @@ wc -l >> {output}""".format(
         jobs = []
 
         report_dir = os.path.join(self.output_dir, "report")
-        sample_report_dir  = os.path.join(report_dir, "sample_json")
 
-        for readset in self.readsets:
-            output_file = os.path.join(sample_report_dir, readset.name + ".report.json")
-            jobs.append(
+        for lane in self.lanes:
+            lane_jobs = []
+
+            sample_report_dir  = os.path.join(report_dir, "sample_json", "L00" + lane)
+
+            for readset in self.readsets[lane]:
+                output_file = os.path.join(sample_report_dir, readset.name + ".report.json")
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(sample_report_dir),
+                        tools.run_validation_sample_report(
+                            readset,
+                            self.report_inputs[lane],
+                            output_file
+                        )],
+                        name="sample_report." + readset.name + "." + self.run_id + "." + str(readset.lane)
+                    )
+                )
+
+            run_validation_report_json = os.path.join(report_dir, self.run_id + "." + lane + ".run_validation_report.json")
+            general_information_file = os.path.join(self.output_dir, self.run_id + "." + lane + ".general_information.json")
+            with open(general_information_file, 'w') as out_json:
+                json.dump(self.report_hash, out_json, indent=4)
+
+            run_validation_inputs = []
+            for sample_job in jobs:
+                run_validation_inputs.extend(sample_job.output_files)
+
+            lane_jobs.append(
                 concat_jobs([
-                    bash.mkdir(sample_report_dir),
-                    tools.run_validation_sample_report(
-                        readset,
-                        self.report_inputs,
-                        output_file
+                    bash.mkdir(report_dir),
+                    tools.run_validation_aggregate_report(
+                        general_information_file,
+                        run_validation_inputs,
+                        run_validation_report_json
                     )],
-                    name="sample_report." + readset.name + "." + self.run_id + "." + str(readset.lane)
+                    name="report." + self.run_id + "." + lane
                 )
             )
 
-        run_validation_report_json = os.path.join(report_dir, self.run_id + "." + str(self.lane_number) + ".run_validation_report.json")
-        general_information_file = os.path.join(self.output_dir, self.run_id + "." + str(self.lane_number) + ".general_information.json")
-        with open(general_information_file, 'w') as out_json:
-            json.dump(self.report_hash, out_json, indent=4)
-
-        run_validation_inputs = []
-        for sample_job in jobs:
-            run_validation_inputs.extend(sample_job.output_files)
-
-        jobs.append(
-            concat_jobs([
-                bash.mkdir(report_dir),
-                tools.run_validation_aggregate_report(
-                    general_information_file,
-                    run_validation_inputs,
-                    run_validation_report_json
-                )],
-                name="report." + self.run_id + "." + str(self.lane_number)
-            )
-        )
+            jobs.extend(lane_jobs)
 
         return jobs
 
@@ -1152,11 +1297,11 @@ wc -l >> {output}""".format(
     # Utility methods
     #
 
-    def add_copy_job_inputs(self, jobs):
+    def add_copy_job_inputs(self, jobs, lane):
         for job in jobs:
             # we first remove dependencies of the current job, since we will have a dependency on that job
-            self.copy_job_inputs = [item for item in self.copy_job_inputs if item not in job.input_files]
-            self.copy_job_inputs.extend(job.output_files)
+            self.copy_job_inputs[lane] = [item for item in self.copy_job_inputs[lane] if item not in job.input_files]
+            self.copy_job_inputs[lane].extend(job.output_files)
 
     def add_to_report_hash(self, step_name, jobs=[]):
         report_hash = {
@@ -1213,7 +1358,25 @@ wc -l >> {output}""".format(
         """
         return Xml.parse(os.path.join(self.run_dir, "RunInfo.xml")).getroot().find('Run').find('Instrument').text
 
-    def validate_barcodes(self):
+    def get_experiment_name(self):
+        """
+        Parse the RunParameters.xml file for the experiment name of the run
+        """
+        return Xml.parse(os.path.join(self.run_dir, "RunParameters.xml")).getroot().find('ExperimentName').text
+
+    def get_run_number(self):
+        """
+        Parse the RunInfo.xml file for the run number
+        """
+        return Xml.parse(os.path.join(self.run_dir, "RunInfo.xml")).getroot().find('Run').get('Number')
+
+    def get_seq_category(self):
+        if "hiseq" in self.seqtype:
+            return "hiseq"
+        else:
+            return self.seqtype
+
+    def validate_barcodes(self, lane):
         """
         Validate all index sequences against each other to ensure they aren't in collision according to the chosen
         number of mismatches parameter.
@@ -1223,7 +1386,7 @@ wc -l >> {output}""".format(
         validated_indexes = []
         collisions = []
 
-        for readset in self.readsets:
+        for readset in self.readsets[lane]:
             current_index = readset.index.replace('-', '')
 
             for candidate_index in validated_indexes:
@@ -1234,7 +1397,7 @@ wc -l >> {output}""".format(
         if len(collisions) > 0:
             _raise(SanitycheckError("Barcode collisions: " + ";".join(collisions)))
 
-    def get_mask(self):
+    def get_mask(self, lane):
         """
         Returns a BCL2FASTQ friendly mask of the reads cycles.
 
@@ -1244,7 +1407,7 @@ wc -l >> {output}""".format(
             - the number of index cycles on the sequencer;
         """
         mask = ""
-        index_lengths = self.get_smallest_index_length()
+        index_lengths = self.get_smallest_index_length(lane)
         index_read_count = 0
         nb_total_index_base_used = 0
 
@@ -1283,7 +1446,7 @@ wc -l >> {output}""".format(
                 mask += 'Y' + str(read_info.nb_cycles)
         return mask
 
-    def generate_illumina_lane_casava_sheet(self):
+    def generate_illumina_lane_casava_sheet(self, lane):
         """
         Create a CASAVA sheet to use with the BCL2FASTQ software
         from the Clarity data.
@@ -1308,7 +1471,7 @@ wc -l >> {output}""".format(
         ]
         csv_file = os.path.join(
             self.output_dir,
-            "casavasheet." + str(self.lane_number) + ".indexed.csv"
+            "casavasheet." + lane + ".indexed.csv"
         )
         writer = csv.DictWriter(
             open(csv_file, 'wb'),
@@ -1322,7 +1485,7 @@ wc -l >> {output}""".format(
 
         writer.writeheader()
 
-        mask = self.mask
+        mask = self.mask[lane]
 
         overmask = ""
         overindex1 = None
@@ -1333,7 +1496,7 @@ wc -l >> {output}""".format(
 
         # barcode validation
         if re.search("I", mask):
-            self.validate_barcodes()
+            self.validate_barcodes(lane)
 
         # IDT - UMI9 in index2
         if re.search(",I17", mask):
@@ -1343,8 +1506,8 @@ wc -l >> {output}""".format(
             overindex2=8
 
         # HaloPlex - UMI8 in index2 alone
-        if sum(1 for readset in [readset for readset in self.readsets if re.search("HaloPlex", readset.lib_type)]) > 0:
-            if "DUALINDEX" in set([readset.index_type for readset in self.readsets]) :
+        if sum(1 for readset in [readset for readset in self.readsets[lane] if re.search("HaloPlex", readset.protocol)]) > 0:
+            if "DUALINDEX" in set([readset.index_type for readset in self.readsets[lane]]) :
                 _raise(SanityCheckError("HaloPlex libraries cannot be mixed with DUAL INDEX libraries"))
             overmask=re.sub(",I8,I10,", ",I8,Y10,", mask)
             overindex1=8
@@ -1352,7 +1515,7 @@ wc -l >> {output}""".format(
             self._bcl2fastq_extra_option="--mask-short-adapter-reads 10"
 
         # If SINGLEINDEX only
-        if "DUALINDEX" not in set([readset.index_type for readset in self.readsets]):
+        if "DUALINDEX" not in set([readset.index_type for readset in self.readsets[lane]]):
             if re.search("I", mask.split(",")[2]):
                 split_mask = mask.split(",") if overmask == "" else overmask.split(",")
                 overmask=','.join([split_mask[0], split_mask[1], "n*", split_mask[3]])
@@ -1363,7 +1526,7 @@ wc -l >> {output}""".format(
         final_index1 = self.index1cycles if overindex1 is None else overindex1
         final_index2 = self.index2cycles if overindex2 is None else overindex2
 
-        self._mask = config.param('fastq', 'overmask') if config.param('fastq', 'overmask', required=False, type='string') else final_mask
+        self._mask[lane] = config.param('fastq', 'overmask') if config.param('fastq', 'overmask', required=False, type='string') else final_mask
         self._index1cycles = config.param('fastq', 'overindex1') if config.param('fastq', 'overindex1', required=False, type='int') else final_index1
         self._index2cycles = config.param('fastq', 'overindex2') if config.param('fastq', 'overindex2', required=False, type='int') else final_index2
 
@@ -1375,40 +1538,25 @@ wc -l >> {output}""".format(
         # Proceed to dualindex demultiplexing
         if ''.join(i for i in self.mask if not i.isdigit()) == "Y,I,Y,Y":
             dualindex_demultiplexing = True
-        output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
-        casava_sample_sheet = os.path.join(self.output_dir, "casavasheet." + str(self.lane_number) + ".indexed.csv")
+        output_dir = os.path.join(self.output_dir, "Unaligned." + lane)
+        casava_sample_sheet = os.path.join(self.output_dir, "casavasheet." + lane + ".indexed.csv")
 
         count = 0
         index_per_readset = {}
-        for readset in self.readsets:
+        for readset in self.readsets[lane]:
             count += 1
-            readset_indexes = self.get_index(readset)
-            index_per_readset[readset.name] = readset_indexes
+            index_per_readset[readset.name] = readset.indexes
 
-            for readset_index in readset_indexes:
-
-                fastq_file_pattern = os.path.join(
-                    self.output_dir,
-                    "Unaligned." + readset.lane,
-                    'Project_' + readset.project_id,
-                    'Sample_' + readset.name,
-                    readset.name + '_S' + readset.sample_number + '_L00' + readset.lane +
-                    '_R{read_number}_001.fastq.gz'
-                )
-                readset.fastq1 = fastq_file_pattern.format(read_number=1)
-                readset.fastq2 = fastq_file_pattern.format(read_number=2) if readset.run_type == "PAIRED_END" else None
-                readset.index_fastq1 = re.sub("_R1_", "_I1_", readset.fastq1)
-                readset.index_fastq2 = re.sub("_R2_", "_I2_", readset.fastq2) if readset.run_type == "PAIRED_END" and readset.index_type == "DUALINDEX" else None
-
+            for readset_index in readset.indexes:
                 csv_dict = {
                     "FCID": readset.flow_cell,
-                    "Lane": self.lane_number,
-                    "Sample_ID": "Sample_" + readset_index['BCL2FASTQ_NAME'],
-                    "Sample_Name": readset_index['BCL2FASTQ_NAME'],
+                    "Lane": lane,
+                    "Sample_ID": "Sample_" + readset_index['SAMPLESHEET_NAME'],
+                    "Sample_Name": readset_index['SAMPLESHEET_NAME'],
                     "SampleRef": "",
                     "Index": readset_index['INDEX1'],
                     "Index2": readset_index['INDEX2'],
-                    "Description": readset.description + ' - ' + readset.lib_type + ' - ' + readset.library_source,
+                    "Description": readset.description + ' - ' + readset.protocol + ' - ' + readset.library_source,
                     "Control": readset.control,
                     "Recipe": readset.recipe,
                     "Operator": readset.operator,
@@ -1428,7 +1576,7 @@ wc -l >> {output}""".format(
         #os.makedirs(os.path.dirname(index_file), exist_ok=True)
 
         # Print to file
-        index_json = os.path.join(self.output_dir, "index", "index_per_readset.json")
+        index_json = os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_per_readset.json")
         with open(index_json, 'w') as out_json:
             out_json.write(json.dumps(index_per_readset, indent=4))
 
@@ -1457,15 +1605,15 @@ wc -l >> {output}""".format(
                 }
             )
 
-    def generate_fastq_outputs(self):
+    def generate_fastq_outputs(self, lane):
         bcl2fastq_outputs = []
         final_fastq_jobs = []
         count = 0
         merge = self.merge_undetermined
 
-        output_dir = os.path.join(self.output_dir, "Unaligned." + str(self.lane_number))
+        output_dir = os.path.join(self.output_dir, "Unaligned." + lane)
 
-        for readset in self.readsets:
+        for readset in self.readsets[lane]:
             final_fastq_jobs_per_readset = []
             count += 1
 
@@ -1737,181 +1885,35 @@ wc -l >> {output}""".format(
 
         return bcl2fastq_outputs, final_fastq_jobs
 
-    def get_index(self, readset):
-        """
-        """
-
-        indexes = []
-        idx_seq_array = []
-        index1 = ""
-        index2 = ""
-        index1seq = ""
-        index2seq = ""
-
-        index_file = config.param('DEFAULT', 'index_settings_file', type='filepath', required=False)
-        if not (index_file and os.path.isfile(index_file)):
-            index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
-
-        index_seq_pattern = "grep '%s,' %s | head -n1 | awk -F',' '{print $%d}'"
-
-        if readset.library_type == "tenX_sc_RNA_v2" or readset.library_type == "tenX_DNA_v2" :
-            index1 = readset.description
-
-            for idx, char in enumerate(['_A', '_B', '_C', '_D']):
-                index1seq = subprocess.check_output(index_seq_pattern % (index1, index_file, idx+2), shell=True).strip()
-                [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = self.sub_get_index(readset, index1seq, index2seq)
-                indexes.append({
-                    'BCL2FASTQ_NAME': readset.name + char,
-                    'LIBRARY': readset.library,
-                    'PROJECT': readset.project_id,
-                    'INDEX_NAME': readset.description,
-                    'INDEX1': actual_index1seq,
-                    'INDEX2': actual_index2seq,
-                    'ADAPTERi7' : adapteri7,
-                    'ADAPTERi5' : adapteri5
-                })
-                (actual_index1seq != "") and idx_seq_array.append(actual_index1seq)
-                (actual_index2seq != "") and idx_seq_array.append(actual_index2seq)
-
-        elif readset.library_type == "tenX_sc_RNA_v1" :
-            index2 = readset.description
-
-            
-            for idx, char in enumerate(['_A', '_B', '_C', '_D']):
-                index2seq = subprocess.check_output(index_seq_pattern % (index2, index_file, idx+2), shell=True).strip()
-                [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = self.sub_get_index(readset, index1seq, index2seq)
-                indexes.append({
-                    'BCL2FASTQ_NAME': readset.name + char,
-                    'LIBRARY': readset.library,
-                    'PROJECT': readset.project_id,
-                    'INDEX_NAME': readset.description,
-                    'INDEX1': actual_index1seq,
-                    'INDEX2': actual_index2seq,
-                    'ADAPTERi7' : adapteri7,
-                    'ADAPTERi5' : adapteri5
-                })
-                (actual_index1seq != "") and idx_seq_array.append(actual_index1seq)
-                (actual_index2seq != "") and idx_seq_array.append(actual_index2seq)
-
-        else:
-            if re.search("-", readset.description):
-                index1 = readset.description.split("-")[0]
-                index2 = readset.description.split("-")[1]
-                index1seq = subprocess.check_output(index_seq_pattern % (index1, index_file, 2), shell=True).strip()
-                index2seq = subprocess.check_output(index_seq_pattern % (index2, index_file, 2), shell=True).strip()
-
-            else:
-                index1 = readset.description
-
-                index1seq = subprocess.check_output(index_seq_pattern % (index1, index_file, 2), shell=True).strip()
-
-            [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = self.sub_get_index(readset, index1seq, index2seq)
-            indexes.append({
-                'BCL2FASTQ_NAME': readset.name,
-                'LIBRARY': readset.library,
-                'PROJECT': readset.project_id,
-                'INDEX_NAME': readset.description,
-                'INDEX1': actual_index1seq,
-                'INDEX2': actual_index2seq,
-                'ADAPTERi7' : adapteri7,
-                'ADAPTERi5' : adapteri5
-            })
-            (actual_index1seq != "") and idx_seq_array.append(actual_index1seq)
-            (actual_index2seq != "") and idx_seq_array.append(actual_index2seq)
-
-        return indexes
-
-    def sub_get_index(self, readset, index1seq, index2seq):
-        """
-        """
-        index_file = config.param('DEFAULT', 'index_settings_file', type='filepath', required=False)
-        if not (index_file and os.path.isfile(index_file)):
-            index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
-
-        actual_index1seq='';
-        actual_index2seq='';
-
-        seqtype = self.seqtype
-        primer_seq_pattern = "grep -A8 '%s' %s | grep '_IDX_' | awk -F':' '{print $2}' | tr -d \"35\'\- \" | awk -F',' '{print $%d}'"
-
-        index1_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 1") % (seqtype, index_file, 1), shell=True).strip()
-        index1_primeroffset = int(subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 1") % (seqtype, index_file, 2), shell=True).strip())
-        index2_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 2") % (seqtype, index_file, 1), shell=True).strip()
-        index2_primeroffset = int(subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 2") % (seqtype, index_file, 2), shell=True).strip())
-
-        main_seq_pattern = "grep -A4 '^%s:' %s | grep -E \"^3'|^5'\" | head -n 1 | sed \"s/5'//g\"  | sed \"s/3'//g\" | tr -d \" '\-\" | grep %s"
-        actual_seq_pattern = "echo %s | awk -F\"%s\" '{print $%d}' | sed \"%s\" | cut -c %s"
-
-        present = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, "-c " + index1_primer), shell=True).strip()
-        if present == "1" :
-
-            main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, index1_primer), shell=True).strip()
-
-            actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, index1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(index1_primeroffset+1)+"-"+str(index1_primeroffset+self.index1cycles)), shell=True).strip()
-
-            if readset.index_type == "DUALINDEX" :
-                main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, index2_primer), shell=True).strip()
-
-                if seqtype == "hiseqx" or seqtype == "hiseq4000" or seqtype == "iSeq" :
-                    actual_index2seq = subprocess.check_output(actual_seq_pattern.replace("| cut -c", "| rev | cut -c") % (main_seq, index2_primer, 1, "s/\[i5c\]/$(echo "+index2seq+" | tr 'ATGC' 'TACG' )/g", str(index2_primeroffset+1)+"-"+str(index2_primeroffset+self.index2cycles)), shell=True).strip()
-                else :
-                    actual_index2seq = subprocess.check_output(actual_seq_pattern % (main_seq, index2_primer, 2, "s/\[i5\]/"+index2seq+"/g", str(index2_primeroffset+1)+"-"+str(index2_primeroffset+self.index2cycles)), shell=True).strip()
-
-        else :
-            indexn1_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N1").replace("_DIGIT_", "1"), shell=True).strip()
-            indexn1_primeroffset = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N1").replace("_DIGIT_", "2"), shell=True).strip()
-            indexn2_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N2").replace("_DIGIT_", "1"), shell=True).strip()
-            indexn2_primeroffset = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N2").replace("_DIGIT_", "2"), shell=True).strip()
-
-            main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, indexn1_primer), shell=True).strip()
-
-            actual_index1seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn1_primer, 2, "s/\[i7\]/"+index1seq+"/g", str(indexn1_primeroffset+1)+"-"+str(indexn1_primeroffset+self.index1cycles)), shell=True).strip()
-
-            if readset.index_type == "DUALINDEX" :
-                main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, indexn2_primer), shell=True).strip()
-
-                if seqtype == "hiseqx" or seqtype == "hiseq4000" or seqtype == "iSeq" :
-                    actual_index2seq = subprocess.check_output(actual_seq_pattern.replace("| cut -c", "| rev | cut -c") % (main_seq, indexn2_primer, 1, "s/\[i5c\]/$(echo "+index2seq+" | tr 'ATGC' 'TACG' )/g", str(indexn2_primeroffset+1)+"-"+str(indexn2_primeroffset+self.index2cycles)), shell=True).strip()
-                else :
-                    actual_index2seq = subprocess.check_output(actual_seq_pattern % (main_seq, indexn2_primer, 2, "s/\[i5\]/"+index2seq+"/g", str(indexn2_primeroffset+1)+"-"+str(indexn2_primeroffset+self.index2cycles)), shell=True).strip()
-
-        main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, "\[i7\]"), shell=True).strip()
-        adapteri7 = subprocess.check_output("echo \"%s\" | awk -F\'\\\[i7\\\]\' '{print $1}' | awk -F\'\\\]\' '{print $NF}'" % (main_seq), shell=True).strip()
-
-        main_seq = subprocess.check_output(main_seq_pattern.replace("| head -n 1 |", "|") % (readset.library_type, index_file, "\[i5c\]"), shell=True).strip()
-        adapteri5 = subprocess.check_output("echo \"%s\" | awk -F\'\\\[i5c\\\]\' '{print $2}' | awk -F\'\\\[\' '{print $1}' | rev" % (main_seq), shell=True).strip()
-
-        return [actual_index1seq, actual_index2seq, adapteri7, adapteri5]
-
-    def has_single_index(self):
+    def has_single_index(self, lane):
         """ 
         Returns True when there is at least one sample on the lane that doesn't use double-indexing or we only have
         one read of indexes.
         """
-        return len([readset for readset in self.readsets if ("-" not in readset.index)]) > 0 or\
-               len([read for read in self.read_infos if read.is_index]) < 2
+        return len([readset for readset in self.readsets[lane] if ("-" not in readset.index)]) > 0 or\
+               len([read for read in self.read_infos[lane] if read.is_index]) < 2
 
-    def get_smallest_index_length(self):
+    def get_smallest_index_length(self, lane):
         """
         Returns a list (for each index read of the lane) of the minimum between the number of index cycle on the
         sequencer and all the index lengths.
         """
         run_index_lengths = [r.nb_cycles for r in self.read_infos if r.is_index] # from RunInfo
 
-        if len(run_index_lengths) == 0 and len(self.readsets) > 1:
-            _raise(SanitycheckError("Multiple samples on a lane, but no indexes were read from the sequencer."))
+        if len(run_index_lengths) == 0 and len(self.readsets[lane]) > 1:
+            _raise(SanitycheckError("Multiple samples on lane '" + lane + "', but no indexes were read from the sequencer."))
 
         # loop on all index reads, to compare with samples index length
         for i in range(len(run_index_lengths)):
             min_sample_index_length = 0
             try:
                 min_sample_index_length = min(len(readset.index.split("-")[i])
-                                              for readset in self.readsets
+                                              for readset in self.readsets[lane]
                                               if (len(readset.index.split("-")) > i and len(readset.index.split("-")[i]) > 0))
             except ValueError:
                 pass  # we don't have a sample with this Ith index read, use the 0 already set
 
-            empty_index_list = [ readset for readset in self.readsets if (len(readset.index.split("-")) <= i or len(readset.index.split("-")[i]) == 0) ]
+            empty_index_list = [ readset for readset in self.readsets[lane] if (len(readset.index.split("-")) <= i or len(readset.index.split("-")[i]) == 0) ]
         
             if len(empty_index_list):
                 # we have samples without this Ith index read, so we skip it
@@ -1928,7 +1930,7 @@ wc -l >> {output}""".format(
         reads = Xml.parse(os.path.join(self.run_dir, "RunInfo.xml")).getroot().find('Run').find('Reads')
         return [ RunInfoRead(int(r.get("Number")), int(r.get("NumCycles")), r.get("IsIndexedRead") == "Y") for r in reads.iter('Read') ]
 
-    def load_readsets(self):
+    def load_readsets(self, lane):
         """
         Parse the sample sheet and return a list of readsets.
         """
@@ -1937,11 +1939,13 @@ wc -l >> {output}""".format(
             self.output_dir,
             self.run_dir,
             "PAIRED_END" if self.is_paired_end else "SINGLE_END",
-            self.clarity_event_file,
-            None,
-            self.args.lane_number,
+            self.readset_file,
+            lane,
             config.param('DEFAULT', 'genomes_home', type="dirpath"),
             self.get_sequencer_minimum_read_length(),
+            self.index1cycles,
+            self.index2cycles,
+            self.seqtype
         )
 
     def submit_jobs(self):
@@ -1969,9 +1973,12 @@ wc -l >> {output}""".format(
                 merged_jobs = []
                 for x in range(max_jobs_per_step):
                     if x * number_task_by_job < len(current_jobs):
-                        merged_jobs.append(concat_jobs(
-                            current_jobs[x * number_task_by_job:min((x + 1) * number_task_by_job, len(current_jobs))],
-                            job_name + "." + str(x + 1) + "." + self.run_id + "." + str(self.lane_number)))
+                        merged_jobs.append(
+                            concat_jobs(
+                                current_jobs[x * number_task_by_job:min((x + 1) * number_task_by_job, len(current_jobs))],
+                                name=job_name + "." + str(x + 1) + "." + self.run_id
+                            )
+                        )
                 reply.extend(merged_jobs)
             else:
                 reply.extend(current_jobs)
@@ -1990,10 +1997,15 @@ wc -l >> {output}""".format(
             self.picard_mark_duplicates,
             self.metrics,
             self.md5,
-            self.report
+            self.report,
+            self.copy,
+            self.end_copy_notification
         ]
 
-def distance(str1, str2):
+def distance(
+    str1,
+    str2
+    ):
     """
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
@@ -2006,5 +2018,4 @@ if __name__ == '__main__':
         utils.utils.container_wrapper_argparse(argv)
     else:
         IlluminaRunProcessing()
-
 
