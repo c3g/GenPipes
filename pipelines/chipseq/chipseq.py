@@ -923,7 +923,7 @@ done""".format(
                 command="""\
 mkdir -p {report_yaml_dir} && \\
 zip -r {report_dir}/tracks.zip tracks/*/*/*.ucsc.bedGraph.gz && \\
-cp {report_template_dir}/{basename_report_file} {report_file}/""".format(
+cp {report_template_dir}/{basename_report_file} {report_file}""".format(
                     report_yaml_dir=report_yaml_dir,
                     report_dir=self.output_dirs['report_output_directory'],
                     report_template_dir=self.report_template_dir,
@@ -1060,7 +1060,7 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
                 [report_file],
                 command="""\
 mkdir -p {report_yaml_dir} && \\
-cp {report_template_dir}/{basename_report_file} {report_file}/ && \\
+cp {report_template_dir}/{basename_report_file} {report_file} && \\
 declare -A samples_associative_array=({samples_associative_array}) && \\
 for sample in ${{!samples_associative_array[@]}}
 do
@@ -1206,7 +1206,7 @@ awk '{{if ($9 > 1000) {{$9 = 1000}}; printf( \"%s\\t%s\\t%s\\t%s\\t%0.f\\n\", $1
                 [report_file],
                 command="""\
 mkdir -p {report_yaml_dir} && \\
-cp {report_template_dir}/{basename_report_file} {report_file}/ && \\
+cp {report_template_dir}/{basename_report_file} {report_file} && \\
 declare -A samples_associative_array=({samples_associative_array}) && \\
 for sample in ${{!samples_associative_array[@]}}
 do
@@ -1495,7 +1495,7 @@ done""".format(
                     command="""\
 mkdir -p {report_dir}/{annotation_dir}/ && \\
 mkdir -p {report_yaml_dir} && \\
-cp {report_template_dir}/{basename_report_file} {report_file}/ && \\
+cp {report_template_dir}/{basename_report_file} {report_file} && \\
 declare -A samples_associative_array=({samples_associative_array}) && \\
 for sample in ${{!samples_associative_array[@]}}
 do
