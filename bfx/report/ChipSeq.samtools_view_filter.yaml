@@ -1,4 +1,4 @@
-view_filter>:
+view_filter:
   id: view_filter
   parent_title: "Aligned Reads Base Quality Filtering"
   content: "This step allows the filtering of aligned reads based on the alignment quality of the BAM file. The alignment file per sample is filtered using [[samtools]]. All alignments with MAPQ smaller than **$min_mapq$** are excluded from the resulting file in BAM format as long as unmapped reads."
