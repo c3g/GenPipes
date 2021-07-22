@@ -1422,6 +1422,7 @@ do
   done
 done""".format(
                     annotation_dir=self.output_dirs['anno_output_directory'],
+                    report_yaml_dir=report_yaml_dir,
                     samples_associative_array=" ".join(samples_associative_array),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
