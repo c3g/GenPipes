@@ -925,6 +925,7 @@ mkdir -p {report_yaml_dir} && \\
 zip -r {report_dir}/tracks.zip tracks/*/*/*.ucsc.bedGraph.gz && \\
 cp {report_template_dir}/{basename_report_file} {report_file}/""".format(
                     report_yaml_dir=report_yaml_dir,
+                    report_dir=self.output_dirs['report_output_directory'],
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
