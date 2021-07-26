@@ -1058,7 +1058,7 @@ ivar_frameshift=`if grep -q "frameshift_variant" {ivar_annotated_vcf}; then echo
 genome_size=`awk '{{print $2}}' {genome_file}`
 bam_cov50X=`awk '{{if ($4 > 50) {{count = count + $3-$2}}}} END {{if (count) {{print count}} else {{print 0}}}}' {bedgraph_file}`
 bam_cov50X=`echo "scale=2; 100*$bam_cov50X/$genome_size" | bc -l`
-IVAR_STATUS=`awk -v bam_cov50X=$bam_cov50X -v ivar_frameshift=$ivar_frameshift -v ivar_cons_perc_N=$ivar_cons_perc_N 'BEGIN {{ if (ivar_cons_perc_N < 1 && ivar_frameshift != "FLAG" && bam_cov50X >= 90) {{print "pass"}}  else if (ivar_cons_perc_N > 5) {{print "rej"}} else if ((ivar_cons_perc_N >= 1 && ivar_cons_perc_N <= 5) || ivar_frameshift == "FLAG" || bam_cov50X < 90) {{print "flag"}} }}'`
+IVAR_STATUS=`awk -v bam_cov50X=$bam_cov50X -v ivar_frameshift=$ivar_frameshift -v ivar_cons_perc_N=$ivar_cons_perc_N 'BEGIN {{ if (ivar_cons_perc_N < 5 && ivar_frameshift != "FLAG" && bam_cov50X >= 90) {{print "pass"}}  else if (ivar_cons_perc_N > 10) {{print "rej"}} else if ((ivar_cons_perc_N >= 5 && ivar_cons_perc_N <= 10) || ivar_frameshift == "FLAG" || bam_cov50X < 90) {{print "flag"}} }}'`
 export IVAR_STATUS""".format(
     quast_ivar_html=quast_ivar_html,
     quast_ivar_tsv=quast_ivar_tsv,
@@ -1137,7 +1137,7 @@ freebayes_frameshift=`if grep -q "frameshift_variant" {freebayes_annotated_vcf};
 genome_size=`awk '{{print $2}}' {genome_file}`
 bam_cov50X=`awk '{{if ($4 > 50) {{count = count + $3-$2}}}} END {{if (count) {{print count}} else {{print 0}}}}' {bedgraph_file}`
 bam_cov50X=`echo "scale=2; 100*$bam_cov50X/$genome_size" | bc -l`
-FREEBAYES_STATUS=`awk -v bam_cov50X=$bam_cov50X -v freebayes_frameshift=$freebayes_frameshift -v freebayes_cons_perc_N=$freebayes_cons_perc_N 'BEGIN {{ if (freebayes_cons_perc_N < 1 && freebayes_frameshift != "FLAG" && bam_cov50X >= 90) {{print "pass"}}  else if (freebayes_cons_perc_N > 5) {{print "rej"}} else if ((freebayes_cons_perc_N >= 1 && freebayes_cons_perc_N <= 5) || freebayes_frameshift == "FLAG" || bam_cov50X < 90) {{print "flag"}} }}'`
+FREEBAYES_STATUS=`awk -v bam_cov50X=$bam_cov50X -v freebayes_frameshift=$freebayes_frameshift -v freebayes_cons_perc_N=$freebayes_cons_perc_N 'BEGIN {{ if (freebayes_cons_perc_N < 5 && freebayes_frameshift != "FLAG" && bam_cov50X >= 90) {{print "pass"}}  else if (freebayes_cons_perc_N > 10) {{print "rej"}} else if ((freebayes_cons_perc_N >= 5 && freebayes_cons_perc_N <= 10) || freebayes_frameshift == "FLAG" || bam_cov50X < 90) {{print "flag"}} }}'`
 export FREEBAYES_STATUS""".format(
     quast_freebayes_html=quast_freebayes_html,
     quast_freebayes_tsv=quast_freebayes_tsv,
@@ -1536,7 +1536,7 @@ echo -e "sample\\tct\\tdate" > {freebayes_metadata}""".format(
             ])
 
         for sample in self.samples:
-        
+            alignment_directory = os.path.join("alignment", sample.name)
             filtered_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
             primer_trimmed_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")
             consensus_directory = os.path.join("consensus", sample.name)
