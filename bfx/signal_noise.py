@@ -57,14 +57,17 @@ def sortSignals(filename):
 
 
 def computeMetrics(sorted_signals, perc1, perc2):
+
+    perc1 = float(float(perc1)/100)
+    perc2 = float(float(perc2) / 100)
     signalSum = 0
     sumTopBins_10 = 0
     sumTopBins_05 = 0
 
     # Creates all the values needed to calculate metrics
     nbBins = len(sorted_signals)
-    nbTopBins_10 = int(round(nbBins * float(perc1)))
-    nbTopBins_05 = int(round(nbBins * float(perc2)))
+    nbTopBins_10 = int(round(nbBins * (perc1)))
+    nbTopBins_05 = int(round(nbBins * (perc2)))
     for i in range(nbBins):
         signalSum += float(sorted_signals[i])
 
