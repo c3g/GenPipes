@@ -563,7 +563,9 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             job = sambamba.markdup(
                 normal_input,
-                normal_output
+                normal_output,
+                config.param('sambamba_mark_duplicates', 'tmp_dir'),
+                other_options=config.param('sambamba_mark_duplicates', 'options')
             )
             job.name = "sambamba_mark_duplicates." + tumor_pair.name + "." + tumor_pair.normal.name
             #job.samples = [tumor_pair.normal]
@@ -571,7 +573,9 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             job = sambamba.markdup(
                 tumor_input,
-                tumor_output
+                tumor_output,
+                config.param('sambamba_mark_duplicates', 'tmp_dir'),
+                other_options=config.param('sambamba_mark_duplicates', 'options')
             )
             job.name = "sambamba_mark_duplicates." + tumor_pair.name + "." + tumor_pair.tumor.name
             #job.samples = [tumor_pair.tumor]
