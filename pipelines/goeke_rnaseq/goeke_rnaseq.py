@@ -97,12 +97,15 @@ class RnaSeqLight(rnaseq.RnaSeq):
         """
         Step 2: Index Creation (with Salmon)
         """
+        jobs = []
         output_dir = os.path.join(self.output_dir, "salmon_index")
         transcriptome_file = config.param('salmon_index', 'transcriptome_fasta', required=True, type='filepath')
 
-        return concat_jobs([bash.mkdir(output_dir, remove=True),
-                            salmon.salmon_index(transcriptome_file, output_dir)],
-                           name="salmon_index")
+        jobs.append(concat_jobs([bash.mkdir(output_dir, remove=True),
+                                 salmon.salmon_index(transcriptome_file, output_dir)],
+                                 name="salmon_index"))
+
+        return jobs
 
     def salmon_quant(self):
         """
