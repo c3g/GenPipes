@@ -57,7 +57,7 @@ def salmon_quant(readset_name,
     out_sf=os.path.join(output_directory,readset_name,readset_name, ".sf")
 
     return Job(
-        [read1_fastq, read2_fastq],
+        [read1_fastq, read2_fastq, salmon_index],
         [out_sf],
         [["salmon_quant", "module_salmon"]],
         command="""\
