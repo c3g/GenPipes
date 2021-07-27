@@ -97,14 +97,50 @@ class RnaSeqLight(rnaseq.RnaSeq):
         """
         Step 2: Index Creation (with Salmon)
         """
+        output_dir = os.path.join(self.output_dir, "salmon_index")
+        transcriptome_file = config.param('salmon_index', 'transcriptome_fasta', required=True, type='filepath')
 
-
+        return concat_jobs([bash.mkdir(output_dir, remove=True),
+                            salmon.salmon_index(transcriptome_file, output_dir)],
+                           name="salmon_index")
 
     def salmon_quant(self):
         """
         Step 3: Quantification (with Salmon)
         """
+        jobs = []
 
+        for readset in self.readsets:
+
+            output_dir = os.path.join(self.output_dir, "salmon", readset.sample.name, readset.name)
+            salmon_idx= os.path.join(self.output_dir, "salmon_index")
+            job_name = "salmon_quant." + readset.name
+
+            # PAIRED
+            if readset.run_type == "PAIRED_END":
+                fastq1 = readset.fastq1
+                fastq2 = readset.fastq2
+                job = salmon.salmon_quant(readset_name=readset.name, read1_fastq=fastq1, read2_fastq=fastq2,
+                                          output_directory=output_dir, salmon_index=salmon_idx)
+                job_samples = [readset.sample]
+
+                jobs.append(
+                    concat_jobs([bash.mkdir(output_dir, remove=True), job], name=job_name, samples=job_samples)
+                )
+
+            # SINGLE
+            elif readset.run_type == "SINGLE_END":
+                fastq1 = readset.fastq1
+                fastq2 = None
+                job = salmon.salmon_quant(readset_name=readset.name, read1_fastq=fastq1, read2_fastq=fastq2,
+                                          output_directory=output_dir, salmon_index=salmon_idx)
+                job_samples = [readset.sample]
+
+                jobs.append(
+                    concat_jobs([bash.mkdir(output_dir, remove=True), job], name=job_name, samples=job_samples)
+                )
+
+        return jobs
 
 
 ############
