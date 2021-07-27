@@ -846,7 +846,7 @@ do
   do
     cp --parents {graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps {report_dir}/
     convert -rotate 90 {graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps {report_dir}/graphs/${{sample}}.${{mark_name}}_QC_Metrics.png
-    echo -e "\\t![QC Metrics for Sample $sample and Mark $mark_name ([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps))]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.png)\\n" >> {report_file}
+    echo -e "    ![QC Metrics for Sample $sample and Mark $mark_name ([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps))]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.png)\\n" >> {report_file}
   done
 done""".format(
                     samples_associative_array=" ".join(
@@ -1067,7 +1067,7 @@ do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
     cp -a --parents {macs_dir}/$sample/$mark_name/ {report_dir}/ && \\
-    echo -e "\\t* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}_peaks.xls)\\n" >> {report_file}
+    echo -e "    * [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}_peaks.xls)\\n" >> {report_file}
   done
 done""".format(
                     report_yaml_dir=report_yaml_dir,
@@ -1213,7 +1213,7 @@ do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
     cp -a --parents {macs_dir}/$sample/$mark_name/ {report_dir}/ && \\
-    echo -e "\\t* [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}_peaks.xls)\\n" >> {report_file}
+    echo -e "    * [Peak Calls File for Sample $sample and Mark $mark_name]({macs_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}_peaks.xls)\\n" >> {report_file}
   done
 done""".format(
                     report_yaml_dir=report_yaml_dir,
@@ -1418,7 +1418,7 @@ do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
     rsync -rvP {annotation_dir}/$sample {report_dir}/{annotation_dir}/ && \\
-    echo -e "\\t* [Gene Annotations for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}.annotated.csv)\\n\\t* [HOMER Gene Ontology Annotations for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/geneOntology.html)\\n\\t* [HOMER Genome Ontology Annotations for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/GenomeOntology.html)\\n" >> {report_file}
+    echo -e "    * [Gene Annotations for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/${{sample}}.${{mark_name}}.annotated.csv)\\n    * [HOMER Gene Ontology Annotations for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/geneOntology.html)\\n    * [HOMER Genome Ontology Annotations for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/GenomeOntology.html)\\n" >> {report_file}
   done
 done""".format(
                     annotation_dir=self.output_dirs['anno_output_directory'],
@@ -1502,7 +1502,7 @@ do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
     rsync -rvP {annotation_dir}/$sample {report_dir}/{annotation_dir}/ && \\
-    echo -e "\\t* [HOMER _De Novo_ Motif Results for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/homerResults.html)\\n\\t* [HOMER Known Motif Results for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/knownResults.html)\\n" >> {report_file}
+    echo -e "    * [HOMER _De Novo_ Motif Results for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/homerResults.html)\\n\\t* [HOMER Known Motif Results for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/knownResults.html)\\n" >> {report_file}
   done
 done""".format(
                         annotation_dir=self.output_dirs['anno_output_directory'],
