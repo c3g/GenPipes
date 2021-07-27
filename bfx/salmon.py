@@ -32,18 +32,17 @@ def salmon_index(reference_fasta,
     """
     Create a Salmon index from the reference fasta.
     """
-    index_directory=output_directory
 
     return Job(
         [reference_fasta],
-        [index_directory],
+        [output_directory],
         [["salmon_index", "module_salmon"]],
         command="""\
 salmon index \\
  -t {reference_fasta} \\
  -i {index_directory}""".format(
             reference_fasta=reference_fasta,
-            output_directory=output_directory ),
+            index_directory=output_directory),
         removable_files=[output_directory]
     )
 
