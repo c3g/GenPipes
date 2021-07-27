@@ -94,9 +94,10 @@ sambamba merge {options} \\
     )
 
 def markdup(input_bam,
-            output_bam
+            output_bam,
+            tmp_dir,
+            other_options=None
             ):
-    
     if not isinstance(input_bam, list):
         input_bam=[input_bam]
 
@@ -104,15 +105,16 @@ def markdup(input_bam,
         input_bam,
         [output_bam],
         [
+            ['sambamba_mark_duplicates', 'module_samtools'],
             ['sambamba_mark_duplicates', 'module_sambamba']
         ],
         command="""\
-sambamba markdup {options} \\
+sambamba markdup {other_options} \\
   {input} \\
-  --tmpdir {temp} \\
+  --tmpdir {tmp} \\
   {output}""".format(
-        options=config.param('sambamba_mark_duplicates', 'options', required=False),
-        temp=config.param('sambamba_mark_duplicate', 'tmp_dir'),
+        other_options=other_options,
+        tmp=tmp_dir,
         input=" \\\n  ".join(input for input in input_bam),
         output=output_bam,
         )
