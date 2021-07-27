@@ -90,6 +90,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
                     concat_jobs([bash.mkdir(output_dir, remove=True), job], name=job_name, samples=job_samples)
                 )
 
+        return jobs
 
 
     def salmon_index(self):
