@@ -36,9 +36,10 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 import utils.utils
 
-from bfx import gq_seq_utils
+from bfx import adapters
 from bfx import fastqc
 from bfx import salmon
+from bfx import bash_cmd as bash
 
 from pipelines import common
 from pipelines.rnaseq import rnaseq
@@ -54,10 +55,51 @@ class RnaSeqLight(rnaseq.RnaSeq):
         """
         Step 1: Quality Control (with FastQC)
         """
-
         jobs = []
+
         for readset in self.readsets:
-            qc_dir = os.path.join("qc", readset.sample.name, readset.name + ".trim.")
+
+            output_dir = os.path.join(self.output_dir, "qc", readset.sample.name, readset.name)
+            job_name = "fastqc." + readset.name
+
+            adapter_file = config.param('fastqc', 'adapter_file', required=False, type='filepath')
+            adapter_job = None
+
+            if not adapter_file:
+                adapter_file = os.path.join(output_dir, "adapter.tsv")
+                adapter_job = adapters.create(
+                    readset.readsets[0],
+                    adapter_file,
+                    fastqc=True
+                )
+
+            # PAIRED
+            if readset.run_type == "PAIRED_END":
+                fastq1 = readset.fastq1
+                fastq2 = readset.fastq2
+                output = os.path.join(output_dir, readset.name + "_fastqc.zip")
+                job = fastqc.fastqc(input1=fastq1, input2=fastq2, output_directory=output_dir,
+                                    output=output, adapter_file=adapter_file)
+                job_samples = [readset.sample]
+
+                jobs.append(
+                    concat_jobs([bash.mkdir(output_dir, remove=True), adapter_job, job], name=job_name, samples=job_samples)
+                )
+
+            # SINGLE
+            elif readset.run_type == "SINGLE_END":
+                fastq1 = readset.fastq1
+                fastq2 = None
+                output = os.path.join(output_dir, readset.name + "_fastqc.zip")
+                job = fastqc.fastqc(input1=fastq1, input2=fastq2, output_directory=output_dir,
+                                    output=output, adapter_file=adapter_file)
+                job_samples = [readset.sample]
+
+                jobs.append(
+                    concat_jobs([bash.mkdir(output_dir, remove=True), adapter_job, job], name=job_name, samples=job_samples)
+                )
+
+
 
     def salmon_index(self):
         """
@@ -78,7 +120,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
     @property
     def steps(self):
         return [
-            self.fastq,
+            self.fastqc,
             self.salmon_index,
             self.salmon_quant,
             ]
