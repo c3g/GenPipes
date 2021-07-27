@@ -68,7 +68,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
             if not adapter_file:
                 adapter_file = os.path.join(output_dir, "adapter.tsv")
                 adapter_job = adapters.create(
-                    readset.readsets[0],
+                    readset,
                     adapter_file,
                     fastqc=True
                 )
