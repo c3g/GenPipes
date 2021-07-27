@@ -62,16 +62,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
             output_dir = os.path.join(self.output_dir, "qc", readset.sample.name, readset.name)
             job_name = "fastqc." + readset.name
 
-            adapter_file = config.param('fastqc', 'adapter_file', required=False, type='filepath')
-            adapter_job = None
-
-            if not adapter_file:
-                adapter_file = os.path.join(output_dir, "adapter.tsv")
-                adapter_job = adapters.create(
-                    readset,
-                    adapter_file,
-                    fastqc=True
-                )
+            adapter_file = config.param('fastqc', 'adapter_file', required=True, type='filepath')
 
             # PAIRED
             if readset.run_type == "PAIRED_END":
@@ -83,7 +74,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 job_samples = [readset.sample]
 
                 jobs.append(
-                    concat_jobs([bash.mkdir(output_dir, remove=True), adapter_job, job], name=job_name, samples=job_samples)
+                    concat_jobs([bash.mkdir(output_dir, remove=True), job], name=job_name, samples=job_samples)
                 )
 
             # SINGLE
@@ -96,7 +87,7 @@ class RnaSeqLight(rnaseq.RnaSeq):
                 job_samples = [readset.sample]
 
                 jobs.append(
-                    concat_jobs([bash.mkdir(output_dir, remove=True), adapter_job, job], name=job_name, samples=job_samples)
+                    concat_jobs([bash.mkdir(output_dir, remove=True), job], name=job_name, samples=job_samples)
                 )
 
 
