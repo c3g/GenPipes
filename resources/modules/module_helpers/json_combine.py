@@ -42,7 +42,11 @@ def get_versions(
     for version in files:
         version
         versions.append(version)
-    return sorted(versions, key=lambda s: [int(u) for u in s.split('.') if u.isdigit()], reverse=True)
+    versions.sort(key=lambda s: [int(u) for u in s.split('.') if u.isdigit()], reverse=True)
+    if len(versions) > 3:
+      return versions[:3] + ['...']
+    else:
+      return versions[:3]
 
 def add_to_jsons(
     dict_
