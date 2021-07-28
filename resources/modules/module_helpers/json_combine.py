@@ -40,9 +40,9 @@ def get_versions(
     files = [file for file in files if file[0] is not '.']
     versions = []
     for version in files:
-        version 
+        version
         versions.append(version)
-    return versions
+    return sorted(versions, key=lambda s: [int(u) for u in s.split('.') if u.isdigit()], reverse=True)
 
 def add_to_jsons(
     dict_
@@ -53,6 +53,7 @@ def add_to_jsons(
         json_f = os.path.join(json_p, '.metadata.json')
         tmp_json_f = os.path.join(tmp_stack, os.path.basename(json_p), '.metadata.json')
         if os.path.isfile(json_f):
+            log.info("%s found" % json_f)
             load_json = read_json(json_f)
             sw_name = os.path.split(json_p)[1]
             sw_name = sw_name.lower()
