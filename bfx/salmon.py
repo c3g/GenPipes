@@ -62,17 +62,15 @@ def salmon_quant(readset_name,
         [["salmon_quant", "module_salmon"]],
         command="""\
 salmon quant \\
- -i {salmon_index} \\
+ {other_options} -i {salmon_index} \\
  -l A \\
- -o {output_directory} \\ 
  -1 {read1_fastq} \\
  -2 {read2_fastq} \\
- {other_options}""".format(
+ -o {output_directory}""".format(
+            other_options=config.param('salmon_quant', 'other_options', required=False),
             salmon_index=salmon_index,
-            output_directory=output_directory,
             read1_fastq=read1_fastq,
             read2_fastq=read2_fastq,
-            other_options=config.param('salmon', 'other_options', required=False)
-        ),
+            output_directory=output_directory),
         removable_files=[]
     )
