@@ -216,8 +216,8 @@ class EpiQC(common.Illumina):
 
 
         output_dir = self.output_dirs['bigwiginfo_output_directory']
-        log.info(self.prefix_path)
-        log.info(self.output_dir)
+
+        log.info(os.environ[config.param('DEFAULT', 'mugqic_path')]+"/"+ config.param('DEFAULT', 'chromosome_size'))
         #obtain samples names for only histone marks (not inputs) from design
         for sample in self.samples:
             for readset in sample.readsets:
