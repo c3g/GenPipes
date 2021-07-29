@@ -103,7 +103,7 @@ def report_chromimpute(chromimpute_eval_file, percent1, percent2, thresholdM, th
         both = float(line['BOTH_' + percent1])
 
         if observed_impute < float(thresholdM):
-            msg = "ChromImpute:ChromImpute_evaluation: MEDIUM_LEVEL_ALERT : OBSERVED_{percent1}_IMPUTE_{percent2} < {thresholdM}% (OBSERVED_{percent1}_IMPUTE_{percent2} = {observed_impute}%)\n".format(
+            msg = "ChromImpute: ChromImpute_evaluation: MEDIUM_LEVEL_ALERT : OBSERVED_{percent1}_IMPUTE_{percent2} < {thresholdM}% (OBSERVED_{percent1}_IMPUTE_{percent2} = {observed_impute}%)\n".format(
                 percent1=percent1,
                 percent2=percent2,
                 thresholdM=thresholdM,

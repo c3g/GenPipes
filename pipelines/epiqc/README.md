@@ -20,6 +20,9 @@ This new pipeline can be used for pre-validation in order to assess the usabilit
 
 You can test this pipeline with ChIP-Seq samples from the [IHEC portal](https://epigenomesportal.ca/ihec/grid.html?assembly=4&build=2018-10).
 
+**Special Note: the readset file should be in the same folder as the ChIp-Seq output).**
+
+
 [Here](https://bitbucket.org/mugqic/mugqic_pipelines/downloads/MUGQIC_Bioinfo_ChIP-Seq.pptx)
 is more information about developing epiQC pipeline that you may find interesting.
 
@@ -282,6 +285,7 @@ This step is performed to generate a heatmap from EpiGeEC results
 Once all metrics have been obtained, they are gathered in a TSV formatted
 report and compared to predetermined thresholds. A column holding EpicsQC’s verdict for a signal track is
 also included, using these thresholds evaluations. The following metrics threshold were used:
+Note: an Alert will be generated even if there is an issue with one metric.
 
 * **High Level Alert:**
     * Chromosome count is under 23

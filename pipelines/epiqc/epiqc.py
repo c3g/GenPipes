@@ -162,6 +162,10 @@ class EpiQC(common.Illumina):
 
     @property
     def prefix_path(self):
+        # Depending on the path of the readset, file this try to generate the path to singal tracks folder
+        # Therefore, It is necessary to place the readset file in the ChIP-seq output directory
+        #
+        #gets the complete path to the readset directory and remove the readset name from the file path
         path = os.path.relpath(self.args.readsets.name, self.output_dir).replace(self.args.readsets.name, '')
         return path
 
@@ -223,7 +227,7 @@ class EpiQC(common.Illumina):
                         bigwig_file = os.path.join(self.prefix_path, self.chipseq_bigwig['tracks_dir'], sample.name,
                                                    readset.mark_name, self.chipseq_bigwig['bigwig_dir'],
                                                    sample.name +"."+ readset.mark_name+ self.chipseq_bigwig['extension']) # Create path to bigwig file
-                        log.info(bigwig_file)
+
                     output_file = os.path.join(output_dir,
                                           self.bigwiginfo_output['prefix'] + "_" + os.path.basename(bigwig_file) + self.bigwiginfo_output['extension'])
                     job = concat_jobs([
@@ -258,7 +262,7 @@ class EpiQC(common.Illumina):
                                                    sample.name + "_" + readset.mark_name + ".bedgraph")
                     output_bedgraph_gz = os.path.join(self.output_dirs['bedgraph_converted_directory'],
                                                       sample.name + "_" + readset.mark_name + ".bedgraph.gz")
-
+                    # one job for each sample and each jobs has a job for create the folder if not exist
                     job = concat_jobs([
                         Job(command="mkdir -p " + self.output_dirs['bedgraph_converted_directory']),
                         bigwiginfo.bigWigToBedGraph(bigwig_file, output_bedgraph),
@@ -316,7 +320,7 @@ mkdir -p \\
                                     eval=self.output_dirs['chromimpute_eval'])
                                 )
 
-        # load inputinfo file path from ini file. this file is stored in CVMFS and currently file stored in user directory not supported
+        # load inputinfo file path from ini file. this file is stored in CVMFS and currently, file stored in user directory is not supported
         # because there is a prefix file path which called CVMFS directory
         # in future when need to add user inputinfo file. add another paramter in ini file and check it with a IF statement
         # to check whether user needs to add inputinfo file in epiqc.py
@@ -327,12 +331,16 @@ mkdir -p \\
          #                                                                                            'IHEC_inputinfo')
 
         #remove inputinfor file if exist
+        #at this point imputation directory has already been created as chromosome file has generated first
         if os.path.exists(inputinfofile):
             os.remove(inputinfofile)
         #copy inputinfor file from CVMFS
         copyfile(ihec_inputinfofile, inputinfofile)
 
         #add user histone marks to inputinfo file
+        # dynamically extend inputinfor file adding user samples (this is not a job, this step is executed
+        # when generating the job script
+        # copy histone mark, sample and file paths in user's samples into inputinfo file (avoid input histone files)
         with open(inputinfofile, "a") as inputinfo:
             for sample in self.samples:
                 for readset in sample.readsets:
@@ -351,6 +359,8 @@ mkdir -p \\
                                     self.output_dirs['chromimpute_converted_directory'])
 
         inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+
+        #gather converted file paths in CVMFS as they needed to feed into the job as input files
         converted_simlinks = []
         if train_user_data == "F":
             with open(chr_sizes_file, "r") as chrominfofile:
@@ -367,8 +377,12 @@ mkdir -p \\
 
 
         job = []
-        # copy histone mark, sample and file paths in user's samples into inputinfo file (avoid input histone files)
+
+        #add chr_sizes_file and inputinfo file to list of input files
         converted_simlinks.extend([chr_sizes_file, inputinfofile])
+
+        #job to create simlinks for converted signal tracks in IHEC data set stored in CVMFS
+        #these will be used in ChromImpute
         job_create_simlinks = Job(
             output_files=converted_simlinks,
             command="""\
@@ -393,7 +407,8 @@ mkdir -p \\
 
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-
+        #get environment variable to generate the path of the chromosome file. different from usual ini file path.
+        #check the ini file
         chr_sizes = os.environ[config.param('DEFAULT', 'mugqic_path')]+"/"+ config.param('DEFAULT', 'chromosome_size')
         chrs = config.param('chromimpute_preprocess', 'chromosomes')
         # get the chromosome from the ini file if one chr specified it gets the chromosome and split the string in the
@@ -409,7 +424,7 @@ mkdir -p \\
 
         if os.path.exists(chr_sizes_file):
             os.remove(chr_sizes_file)
-
+        # Dynamically creates the chromosome size file using ini file parameters
         for chr in chrs:
             with open(chr_sizes, "r") as chr_sizes_genome:
                 for chr_line in chr_sizes_genome:
@@ -511,6 +526,9 @@ mkdir -p \\
 
         # this only get first line in the chromosome file(i.e chr1) as inputs to the converted step. if u want to get
         # all the chrms uncomment above comment and comment below code
+
+        #don't need to add self.output_dir as the prefix here since they are jobs and job system can identify the
+        # correct path
         for histone in histone_marks:
             input_files = []
             output_files = []
@@ -545,7 +563,8 @@ mkdir -p \\
         """
         jobs = []
 
-
+        # since the inputinfo file is called when generating job scripts, the prefix to identify the working
+        # directory is necessary.
 
         inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
         temp2_inputinfofile_path = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'],
@@ -561,12 +580,6 @@ mkdir -p \\
         chr_sizes_file = self.chromosome_file
         #get all the unique histone marks in user's readset file
 
-        histone_marks_all = []
-        with open(inputinfofile, "r") as histone_marks_total:
-            for line in histone_marks_total:
-                histone_marks_all.append(line.strip().split("\t")[1])
-        histone_marks_all = list(set(histone_marks_all))
-
         histone_marks =[]
         for sample in self.samples:
             for readset in sample.readsets:
@@ -578,7 +591,7 @@ mkdir -p \\
         #train_data_path = config.param('chromimpute_generate_train_data', 'pre_trained_data_path') #currently not supported
         train_data_path = ""
         # create temp inputinfo file with interneal indexes used in traindata step
-        # this file will be used to get the integer index for output file
+        # this file will be used to get the integer index for list of output files
 
         # job_temp_inputinfo = chromimpute.temp_inputinfo( inputinfofile, temp_inputinfofile)
         # jobs.append(job_temp_inputinfo)
@@ -639,11 +652,13 @@ mkdir -p \\
                                     if inputinfoline.split("\t")[1] == histone:
                                         input_files.append(os.path.join(distancedir, "%s_%s.txt" % (
                                             inputinfoline.split("\t")[0], histone)))
-
+                                        # to make this job step independent of global distance step we need to correctly
+                                        # specify all the dependency input files
                                         with open(inputinfofile, "r") as inputinfo2:
                                             for inpputinfo2line in inputinfo2:
                                                 input_files.append(os.path.join(distancedir, "%s_%s.txt" % (
                                                 inpputinfo2line.split("\t")[0], inpputinfo2line.split("\t")[1])))
+                                        # distance files generated for user histone marks
                                         input_files.append(os.path.join(converteddir,
                                                                         "%s_%s.wig.gz" %
                                                                         (chr_name,
@@ -655,10 +670,6 @@ mkdir -p \\
                                         output_files.append(
                                             os.path.join(output_dir, "attributes_%s_%i_0.txt.gz" % (
                                                 histone, int(inputinfoline.strip().split("\t")[3]))))
-
-
-
-                                        
 
 
                     # input_files.append(temp_inputinfofile)
@@ -931,6 +942,8 @@ python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bf
         return jobs
 
     def epigeec_tohdf5(self):
+
+        #create hdf5 files
         jobs = []
 
         input_dir = 'epigeec'
@@ -958,6 +971,8 @@ python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bf
         return jobs
 
     def epigeec_filter(self, hdf5_files):
+
+        # filter regions from hdf5 files
         jobs = []
         filter_job = []
         input_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_hdf5'])
@@ -979,6 +994,8 @@ python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bf
         return jobs
 
     def epigeec_correlate(self, skip_filter_step, hdf5_files):
+
+        #create the correlate matrix file
         jobs=[]
         job=[]
         hdf5_file_list_name = os.path.join(self.output_dirs['epigeec_output_directory'],
@@ -1037,7 +1054,9 @@ python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bf
 
         """
         jobs = []
-
+        #check wjether filter files are specified in the ini, if so get the paths
+        #paths should be specified as absolute paths
+        #if not filter step will be skipped
         skip_filter_step = config.param('epigeec', 'select') == '' and config.param('epigeec', 'exclude') == ''
 
         hdf5_files = []
@@ -1066,6 +1085,10 @@ python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bf
         return jobs
 
     def bigwig_info_report(self):
+
+        """
+        This step is performed to generate report on bigwiginfo result
+        """
         jobs = []
         job = []
         for sample in self.samples:
@@ -1106,6 +1129,9 @@ python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bf
         return jobs
 
     def signal_to_noise_report(self):
+        """
+        This step is performed to generate report on signal_to_noise result
+        """
         jobs = []
         chr_job = []
 
@@ -1149,6 +1175,10 @@ python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bf
         return jobs
 
     def chromimpute_report(self):
+        """
+        This step is performed to generate a report comparing ChromImpute imputed signal
+track and input signal track (in bedgraph format).
+        """
         jobs = []
         impute_job = []
 
@@ -1179,6 +1209,9 @@ python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bf
         return jobs
 
     def epigeec_report(self):
+        """
+        This step is performed to generate a heatmap from EpiGeEC results
+        """
         jobs = []
 
         report_folder_job = Job(
