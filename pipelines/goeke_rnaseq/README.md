@@ -94,6 +94,9 @@ Steps:
 3- salmon_quant
 
 ```
+
+
+
 fastqc
 -------------------
 Step 1: Quality Control (with FastQC)
