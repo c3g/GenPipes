@@ -510,7 +510,14 @@ END
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
-            readset_bams = self.select_input_files([[os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets], [readset.bam for readset in sample.readsets]])
+            # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
+            candidate_readset_bams = [
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets],
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
+            ]
+            if readset.bam:
+                candidate_readset_bams.append([readset.bam for readset in sample.readsets])
+            readset_bams = self.select_input_files(candidate_readset_bams)
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
