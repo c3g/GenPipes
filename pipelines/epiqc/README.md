@@ -20,7 +20,9 @@ This new pipeline can be used for pre-validation in order to assess the usabilit
 
 You can test this pipeline with ChIP-Seq samples from the [IHEC portal](https://epigenomesportal.ca/ihec/grid.html?assembly=4&build=2018-10).
 
-**Special Note: the readset file should be in the same folder as the ChIp-Seq output).**
+**Special Note: you can use the same readset file used in ChIP-seq pipeline without any modification
+but it should be in the same folder as the ChIp-Seq output. Becuase input files for
+epiQC pipeline are located based on the readset file path).**
 
 
 [Here](https://bitbucket.org/mugqic/mugqic_pipelines/downloads/MUGQIC_Bioinfo_ChIP-Seq.pptx)

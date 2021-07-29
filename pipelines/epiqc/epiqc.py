@@ -166,7 +166,8 @@ class EpiQC(common.Illumina):
         # Therefore, It is necessary to place the readset file in the ChIP-seq output directory
         #
         #gets the complete path to the readset directory and remove the readset name from the file path
-        path = os.path.relpath(self.args.readsets.name, self.output_dir).replace(self.args.readsets.name, '')
+        path = os.path.relpath(self.args.readsets.name, self.output_dir).replace(os.path.basename(self.args.readsets.name), '')
+
         return path
 
 #delete later
@@ -215,7 +216,8 @@ class EpiQC(common.Illumina):
 
 
         output_dir = self.output_dirs['bigwiginfo_output_directory']
-
+        log.info(self.prefix_path)
+        log.info(self.output_dir)
         #obtain samples names for only histone marks (not inputs) from design
         for sample in self.samples:
             for readset in sample.readsets:
