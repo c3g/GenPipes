@@ -326,9 +326,9 @@ mkdir -p \\
         # to check whether user needs to add inputinfo file in epiqc.py
         # accordingly call SVMFS or user file
 
-        ihec_inputinfofile = "/home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc_test/test_version2/inputinfofile.txt"
-        #ihec_inputinfofile = os.environ[config.param('DEFAULT', 'mugqic_path')] + "/" + config.param('chromimpute',
-         #                                                                                            'IHEC_inputinfo')
+        #ihec_inputinfofile = "/home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc_test/test_version2/inputinfofile.txt"
+        ihec_inputinfofile = os.environ[config.param('DEFAULT', 'mugqic_path')] + "/" + config.param('chromimpute',
+                                                                                                     'IHEC_inputinfo')
 
         #remove inputinfor file if exist
         #at this point imputation directory has already been created as chromosome file has generated first
