@@ -58,7 +58,7 @@ import utils
 
 log = logging.getLogger(__name__)
 
-class RnaSeq(common.Illumina):
+class RnaSeqRaw(common.Illumina):
     """
     RNA-Seq Pipeline
     ================
@@ -94,12 +94,11 @@ class RnaSeq(common.Illumina):
     information about the RNA-Seq pipeline that you may find interesting.
     """
 
-    def __init__(self, protocol='stringtie'):
+    def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=file)
-        self.argparser.add_argument("-t", "--type", help="Type of RNA-seq assembly method (default stringtie)", choices = ["cufflinks", "stringtie"], default="stringtie")
-        super(RnaSeq, self).__init__(protocol)
+        super(RnaSeqRaw, self).__init__(protocol)
 
     def star(self):
         """
@@ -1167,16 +1166,11 @@ done""".format(
             self.wiggle,
             self.raw_counts,
             self.raw_counts_metrics,
-            self.cufflinks,
-            self.cuffmerge,
-            self.cuffquant,
-            self.cuffdiff,
-            self.cuffnorm,
-            self.fpkm_correlation_matrix,
-            self.gq_seq_utils_exploratory_analysis_rnaseq,
+            self.stringtie,
+            self.stringtie_merge,
+            self.stringtie_abund,
+            self.ballgown,
             self.differential_expression,
-            self.differential_expression_goseq,
-            self.ihec_metrics,
             self.cram_output
             ],
             [self.picard_sam_to_fastq,
@@ -1193,14 +1187,25 @@ done""".format(
             self.wiggle,
             self.raw_counts,
             self.raw_counts_metrics,
-            self.stringtie,
-            self.stringtie_merge,
-            self.stringtie_abund,
-            self.ballgown,
+            self.cufflinks,
+            self.cuffmerge,
+            self.cuffquant,
+            self.cuffdiff,
+            self.cuffnorm,
+            self.fpkm_correlation_matrix,
+            self.gq_seq_utils_exploratory_analysis_rnaseq,
             self.differential_expression,
+            self.differential_expression_goseq,
+            self.ihec_metrics,
             self.cram_output
             ]
         ]
+class RnaSeq(RnaSeqRaw):
+    def __init__(self, protocol=None):
+        self._protocol = protocol
+        # Add pipeline specific arguments
+        self.argparser.add_argument("-t", "--type", help="RNAseq analysis type", choices=["stringtie","cufflinks"], default="stringtie")
+        super(RnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
     argv = sys.argv

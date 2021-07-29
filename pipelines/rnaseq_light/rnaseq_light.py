@@ -47,7 +47,7 @@ from pipelines.rnaseq import rnaseq
 
 log = logging.getLogger(__name__)
 
-class RnaSeqLight(rnaseq.RnaSeq):
+class RnaSeqLight(rnaseq.RnaSeqRaw):
     def __init__(self,protocol=None):
         self._protocol=protocol
         super(RnaSeqLight, self).__init__(protocol)
