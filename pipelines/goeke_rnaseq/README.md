@@ -1,13 +1,31 @@
 [TOC]
 
+Salmon Proof-of-Concept RNA-seq Pipeline
+================
+This pipeline is a minimal example implementation for a bioinformatics RNA-seq 
+workflow using GenPipes. It is based on a basic Salmon quantification analysis
+as shown in [this repository](https://github.com/GoekeLab/bioinformatics-workflows).
 
+The implementation consists of three steps, the first is a basic quality control using
+fastQC. The second and third steps use Salmon to index a reference transcriptome and 
+quantify transcripts in a sample. 
+
+The implementation assumes the presence of linux modules for fastQC, Salmon and Java i
+(OpenJDK). As with all GenPipes pipelines, it supports running as a batch or using 
+the PBS and SLURM schedulers. 
+
+Standard GenPipes features like dependency management, readset/sample merging, and 
+job reporting are available. Since this is a minimal implementation, additional features
+such such as protocols, designs, etc. are not available for this pipeline. 
+
+For more information, please consult the [GenPipes Documentation](https://genpipes.readthedocs.io/en/master/index.html)
 
 Usage
 -----
 ```
 #!text
 
-usage: rnaseq_light.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
+usage: goeke_rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                        [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                        [--no-json] [--report] [--clean]
                        [-l {debug,info,warning,error,critical}]
@@ -69,57 +87,24 @@ optional arguments:
 
 Steps:
 ```
-![rnaseq_light workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_light.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_light.png)
 ```
 ------
-1- picard_sam_to_fastq
-2- trimmomatic
-3- merge_trimmomatic_stats
-4- kallisto
-5- kallisto_count_matrix
-6- gq_seq_utils_exploratory_analysis_rnaseq_light
-7- sleuth_differential_expression
+1- fastqc
+2- salmon_index
+3- salmon_quant
 
 ```
-picard_sam_to_fastq
+fastqc
 -------------------
-Convert SAM/BAM files from the input readset file into FASTQ format
-if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+Step 1: Quality Control (with FastQC)
 
-trimmomatic
+salmon_index
 -----------
-Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
-If an adapter FASTA file is specified in the config file (section 'trimmomatic', param 'adapter_fasta'),
-it is used first. Else, 'Adapter1' and 'Adapter2' columns from the readset file are used to create
-an adapter FASTA file, given then to Trimmomatic. For PAIRED_END readsets, readset adapters are
-reversed-complemented and swapped, to match Trimmomatic Palindrome strategy. For SINGLE_END readsets,
-only Adapter1 is used and left unchanged.
+iStep 2: Index Creation (with Salmon)
 
-This step takes as input files:
-
-1. FASTQ files from the readset file if available
-2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
-
-merge_trimmomatic_stats
+salmon_quant
 -----------------------
-The trim statistics per readset are merged at this step.
+Step 3: Quantification (with Salmon)
 
-kallisto
---------
-Run Kallisto on fastq files for a fast esimate of abundance.
-
-kallisto_count_matrix
----------------------
-Use the output from Kallisto to create a transcript count matrix. 
-
-gq_seq_utils_exploratory_analysis_rnaseq_light
-----------------------------------------------
-Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight
-
-sleuth_differential_expression
-------------------------------
-Performs differential gene expression analysis using [Sleuth](http://pachterlab.github.io/sleuth/). 
-Analysis are performed both at a transcript and gene level, using two different tests: LRT and WT. 
 
 
