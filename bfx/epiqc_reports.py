@@ -89,6 +89,7 @@ python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bf
 
 
 def epigeec_report(input_matrix_file, output_heatmap_file, report_dir):
+
     return Job(
             [input_matrix_file],
             [output_heatmap_file],
@@ -103,6 +104,12 @@ python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bf
 
 def final_report(bigwiginfo_report, chromimpute_report, signalnoise_report, final_report, sample, histone):
 
+    #generate the final report TSV file by integrating all report files from each step.
+    #Do not change anything in report files, or report generating scripts since the final report is
+    #completely depend on the string matches in individual reports
+
+    #first extract first and second columns of the report and check whether they match with predefined strings
+    #and then generate the report accordingly
     return Job(
             [bigwiginfo_report, chromimpute_report, signalnoise_report],
             [final_report],
@@ -156,6 +163,8 @@ else
   echo -e "{sample}\t{histone}\tMEDIUM_LEVEL_ALERT" >> {final_report}
  elif [[ "$bigwig2" == "LOW_LEVEL_ALERT" || "$impute" == "LOW_LEVEL_ALERT" || "$signal" == "LOW_LEVEL_ALERT" ]] ; then
   echo -e "{sample}\t{histone}\tLOW_LEVEL_ALERT" >> {final_report}
+ elif [[ "$bigwig2" == "FILE_ERROR" || "$impute" == "FILE_ERROR" || "$signal" == "FILE_ERROR" ]] ; then
+  echo -e "{sample}\t{histone}\tFILE_ERROR" >> {final_report}
  else
   echo -e "{sample}\t{histone}\tPASSED" >> {final_report}
  fi
