@@ -43,7 +43,7 @@ usage: nanopore.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                    [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
                    [-r READSETS] [-v]
 
-Version: 3.5.0
+Version: 3.6.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
 

@@ -31,10 +31,10 @@ usage: methylseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                     [--no-json] [--report] [--clean]
                     [-l {debug,info,warning,error,critical}] [--sanity-check]
                     [--container {wrapper, singularity} <IMAGE PATH>]
-                    [--genpipes_file GENPIPES_FILE] [-d DESIGN]
-                    [-t {mugqic,mpileup,light,sv}] [-r READSETS] [-v]
+                    [--genpipes_file GENPIPES_FILE] [-d DESIGN] [-r READSETS]
+                    [-v]
 
-Version: 3.5.0
+Version: 3.6.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -70,7 +70,7 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a valid singularity
+                        Run inside a container providing a validsingularity
                         image path
   --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
                         Command file output path. This is the command used to
@@ -79,8 +79,6 @@ optional arguments:
                         stdout if the option is not provided.
   -d DESIGN, --design DESIGN
                         design file
-  -t {mugqic,mpileup,light,sv}, --type {mugqic,mpileup,light,sv}
-                        DNAseq analysis type
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
