@@ -134,18 +134,25 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         job.samples = [readset.sample]
         jobs.append(job)
 
+        report_dir = os.path.join(elf.output_dir, "report")
+
         #copy tx2genes file
         jobs.append(
-            Job(
-                [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv"), os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_transcripts.csv")],
-                [],
-                command="""\
+            concat_jobs(
+                [
+                    bash.mkdir(report_dir),
+                    Job(
+                        [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv"), os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_transcripts.csv")],
+                        [],
+                        command="""\
 cp \\
   {tx2genes_file} \\
   {report_dir}""".format(
-                    tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
-                    report_dir="report"
-                ),
+                            tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
+                            report_dir=report_dir
+                        )
+                    )
+                ],
                 name="report.copy_tx2genes_file",
                 samples=self.samples
             )
