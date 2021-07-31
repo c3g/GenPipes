@@ -135,7 +135,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         job.samples = [readset.sample]
         jobs.append(job)
 
-        report_dir = os.path.join(elf.output_dir, "report")
+        report_dir = os.path.join(self.output_dir, "report")
 
         #copy tx2genes file
         jobs.append(
