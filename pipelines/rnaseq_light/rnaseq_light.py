@@ -36,6 +36,7 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 import utils.utils
 
+from bfx import bash_cmd as bash
 from bfx import gq_seq_utils
 from bfx import picard
 from bfx import rmarkdown
