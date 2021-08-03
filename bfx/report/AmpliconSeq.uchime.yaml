@@ -1,0 +1,11 @@
+uchime:
+  id: uchime
+  parent_title: "Read discarding and Chimera detection"
+  content: "Reads with at least **sequence_max_n** 'N' base are discarded then chimera detection is applied to the merged reads using [[uchime]]. Uchime performs reference based detection. The **chimera_db**\ [[chimera_ref]] database is used for reference based detection."
+  table_title: "Chimera Detection Statistics per Readset"
+  table_path:
+    - uchime_readset_table
+  header_descriptions:
+    Total Merged read_type Reads \#: "number of Remaining read_type Reads after the merging step"
+    Total Chimera filtered out read_type Reads \#: "number of Remaining read_type Reads after the chimera removal step"
+    Total Chimera filtered out read_type Reads %: "percentage of Total Chimera filtered out read_type Reads / Total Merged read_type Reads"

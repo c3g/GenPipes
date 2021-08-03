@@ -8,7 +8,7 @@ ihec_metrics:
     General summary statistics are provided per sample. Sample readsets are merged for clarity.
 
   table_title: IHEC metrics per Sample
-  file_path:
+  table_path:
     - ihec_metrics_merged_table
   header_descriptions:
     Sample_Name: "Name of sample"

@@ -1,11 +1,14 @@
 trimming:
-  id: trimming
-  parent_title: "Read Trimming and Clipping of Adapters"
-  content: "Reads are trimmed from the 3' end to have a phred score of at least **trailing_min_quality**. Illumina sequencing adapters are removed from the reads, and all reads are required to have a length of at least **min_length** bp. Trimming and clipping are performed using [[trimmomatic]]."
-  table_title: "Trimming Statistics per Readset"
-  file_path:
-    - readset_merge_trim_stats
-  header_descriptions:
-    Raw read_type Reads \#: "number of read_type Reads obtained from the sequencer"
-    Surviving read_type Reads \#: "number of Remaining read_type Reads after the trimming step"
-    Surviving read_type Reads %: "percentage of Surviving read_type Reads / Raw read_type Reads"
+  trimmomatic:
+    info: "is perfoming trimming and cliping."
+    extra: |
+      Reads are trimmed from the 3' end to have a phred score of at least <b>trailing_min_quality</b>. Illumina sequencing adapters are removed from the reads, and all reads are required to have a length of at least <b>min_length</b> bp.
+      <br>Trimming Statistics per Readset table (<a href='readset_merge_trim_stats'>download full table</a>).
+      <ul>
+        <li>Raw read_type Reads #: "number of read_type Reads obtained from the sequencer"</li>
+        <li>Surviving read_type Reads #: "number of Remaining read_type Reads after the trimming step"</li>
+        <li>Surviving read_type Reads %: "percentage of Surviving read_type Reads / Raw read_type Reads"</li>
+      </ul>
+
+trimmomatic:
+  s_name_filenames: true

@@ -180,7 +180,9 @@ awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
             ])
 
         sample_merge_trim_stats = os.path.join("metrics", "trimSampleTable.tsv")
-        report_file = os.path.join("report", "Illumina.merge_trimmomatic_stats.md")
+        report_yaml_dir = os.path.join(self.output_dirs['report_output_directory'], "yaml")
+        report_file = os.path.join(report_yaml_dir, "Illumina.merge_trimmomatic_stats.yaml")
+        # report_file = os.path.join("report", "Illumina.merge_trimmomatic_stats.md")
         return [concat_jobs([
             job,
             Job(
@@ -201,16 +203,14 @@ cut -f1,3- {readset_merge_trim_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{if 
                 command="""\
 mkdir -p report && \\
 cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/ && \\
-trim_readset_table_md=`LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:"}} else {{print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5)}}}}' {readset_merge_trim_stats}` && \\
-pandoc \\
-  {report_template_dir}/{basename_report_file} \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable trailing_min_quality="NA" \\
-  --variable min_length="NA" \\
-  --variable read_type={read_type} \\
-  --variable trim_readset_table="$trim_readset_table_md" \\
-  --to markdown \\
-  > {report_file}""".format(
+sed -e 's@trailing_min_quality@{trailing_min_quality}@g' \\
+    -e 's@min_length@{min_length}@g' \\
+    -e 's@read_type@{read_type}@g' \\
+    -e 's@readset_merge_trim_stats@{readset_merge_trim_stats}@g' \\
+    {report_template_dir}/{basename_report_file} > {report_file}""".format(
+                    report_yaml_dir=report_yaml_dir,
+                    trailing_min_quality=config.param('trimmomatic', 'trailing_min_quality', type='int'),
+                    min_length=config.param('trimmomatic', 'min_length', type='posint'),
                     read_type=read_type,
                     report_template_dir=self.report_template_dir,
                     readset_merge_trim_stats=readset_merge_trim_stats,
@@ -219,7 +219,11 @@ pandoc \\
                     report_file=report_file
                 ),
                 report_files=[report_file]
-            )], name="merge_trimmomatic_stats16S")]
+                )
+            ],
+            name="merge_trimmomatic_stats16S"
+            )
+        ]
 
     def flash(self, flash_stats_file=None):
         """

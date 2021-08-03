@@ -3,7 +3,7 @@ sequencing_alignment_metrics:
   parent_title: "Sequencing and Alignment Metrics per Sample"
   content: "General summary statistics are provided per sample. Sample readsets are merged for clarity."
   table_title: "Sequencing and Alignment Statistics per Sample"
-  file_path:
+  table_path:
     - report_metrics_file
   header_descriptions:
     Sample: "Name of sample"

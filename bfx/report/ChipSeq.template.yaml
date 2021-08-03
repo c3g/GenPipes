@@ -1,0 +1,34 @@
+title: "ChIP-Seq Analysis Report"
+
+intro_text: "This document contains the description of the current MUGQIC ChIP-Seq analysis."
+
+module_order:
+  # - c3g_section:
+  #   id: introduction
+  - c3g_section:
+    id: trimming
+  - trimmomatic
+  - c3g_section:
+    id: mark_dup
+  - c3g_section:
+    id: view_filter
+  - c3g_section:
+    id: sequencing_alignment_metrics
+  - picard
+  - c3g_section:
+    id: qc_tag
+  - homer
+  - c3g_section:
+    id: ucsc_tracks
+  - c3g_section:
+    id: peak_calls
+  - c3g_section:
+    id: peaks_annotation
+  - c3g_section:
+    id: N_peaks_motifs_analysis
+  - c3g_section:
+    id: peak_stats_narrow
+  - c3g_section:
+    id: peak_location_stats
+  - c3g_section:
+    id: ihec_metrics

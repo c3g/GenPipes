@@ -1,42 +1,42 @@
 software:
+  bismark: https://www.bioinformatics.babraham.ac.uk/projects/bismark/
   blasr: https://github.com/PacificBiosciences/blasr
   blast: http://www.ncbi.nlm.nih.gov/books/NBK52640/
   bwa: http://bio-bwa.sourceforge.net/
   celera: http://wgs-assembler.sourceforge.net/
+  css: http://bioconductor.org/packages/release/bioc/html/metagenomeSeq.html
   cuffdiff: http://cole-trapnell-lab.github.io/cufflinks/cuffdiff/
   cufflinks: http://cole-trapnell-lab.github.io/cufflinks/
   cuffmerge: http://cole-trapnell-lab.github.io/cufflinks/cuffmerge/
   cuffnorm: http://cole-trapnell-lab.github.io/cufflinks/cuffnorm/
   deseq: http://bioconductor.org/packages/release/bioc/html/DESeq.html
   edger: http://bioconductor.org/packages/release/bioc/html/edgeR.html
+  fasttree: http://www.microbesonline.org/fasttree/
+  flash: http://ccb.jhu.edu/software/FLASH/
   gatk: https://www.broadinstitute.org/gatk/
+  gold: http://microbiomeutil.sourceforge.net/
   goseq: http://www.bioconductor.org/packages/release/bioc/html/goseq.html
   hgap: https://github.com/PacificBiosciences/Bioinformatics-Training/wiki/HGAP
   homer: http://homer.salk.edu/homer/
   htseq: http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html
   igv: https://www.broadinstitute.org/igv/
+  krona: http://sourceforge.net/p/krona/home/krona/
   macs: https://github.com/taoliu/MACS
   picard: http://broadinstitute.github.io/picard/
+  pynast: http://biocore.github.io/pynast/
+  qiime: http://qiime.org/
   rsem: http://deweylab.biostat.wisc.edu/rsem/
   sambamba: https://lomereiter.github.io/sambamba/
   samtools: http://www.htslib.org/
   snpeff: http://snpeff.sourceforge.net/
   snpsift: http://snpeff.sourceforge.net/SnpSift.html
+  spp: https://github.com/kundajelab/phantompeakqualtools
   star: https://github.com/alexdobin/STAR
   trimmomatic: http://www.usadellab.org/cms/index.php?page=trimmomatic
   trinity: https://trinityrnaseq.github.io/
-  ucsc: http://genome.ucsc.edu/
-  flash: http://ccb.jhu.edu/software/FLASH/
   uchime: http://drive5.com/usearch/usearch_docs.html
-  qiime: http://qiime.org/
-  usearch: http://drive5.com/usearch/usearch_docs.html
   uclust: http://drive5.com/usearch/manual/uclust_algo.html
-  pynast: http://biocore.github.io/pynast/
-  fasttree: http://www.microbesonline.org/fasttree/
-  krona: http://sourceforge.net/p/krona/home/krona/
-  vsearch: https://github.com/torognes/vsearch
-  css: http://bioconductor.org/packages/release/bioc/html/metagenomeSeq.html
-  gold: http://microbiomeutil.sourceforge.net/
+  ucsc: http://genome.ucsc.edu/
   unite: https://unite.ut.ee/repository.php
-  bismark: https://www.bioinformatics.babraham.ac.uk/projects/bismark/
-  spp: https://github.com/kundajelab/phantompeakqualtools
+  usearch: http://drive5.com/usearch/usearch_docs.html
+  vsearch: https://github.com/torognes/vsearch
