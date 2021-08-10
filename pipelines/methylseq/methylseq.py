@@ -56,7 +56,7 @@ from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
 
-class MethylSeq(dnaseq.DnaSeq):
+class MethylSeq(dnaseq.DnaSeqRaw):
     """
     Methyl-Seq Pipeline
     ================

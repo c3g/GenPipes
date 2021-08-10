@@ -30,12 +30,13 @@ usage: methylseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                     [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                     [--no-json] [--report] [--clean]
                     [-l {debug,info,warning,error,critical}] [--sanity-check]
-                    [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
-                    [-d DESIGN] [-t {mugqic,mpileup,light}] [-r READSETS] [-v]
+                    [--container {wrapper, singularity} <IMAGE PATH>]
+                    [--genpipes_file GENPIPES_FILE] [-d DESIGN] [-r READSETS]
+                    [-v]
 
-Version: 3.1.5
+Version: 3.6.0
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
@@ -68,13 +69,16 @@ optional arguments:
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
-                        run pipeline inside a container providing a container
-                        image path or accessible docker/singularity hub path
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a validsingularity
+                        image path
+  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+                        Command file output path. This is the command used to
+                        process the data, or said otherwise, this command will
+                        "run the Genpipes pipeline". Will be redirected to
+                        stdout if the option is not provided.
   -d DESIGN, --design DESIGN
                         design file
-  -t {mugqic,mpileup,light}, --type {mugqic,mpileup,light}
-                        DNAseq analysis type
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
@@ -90,7 +94,7 @@ Steps:
 3- merge_trimmomatic_stats
 4- bismark_align
 5- add_bam_umi
-6- picard_merge_sam_files
+6- sambamba_merge_sam_files
 7- picard_remove_duplicates
 8- metrics
 9- methylation_call
@@ -134,8 +138,8 @@ add_bam_umi
 -----------
 Add read UMI tag to individual bam files using fgbio
 
-picard_merge_sam_files
-----------------------
+sambamba_merge_sam_files
+------------------------
 BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
 
 This step takes as input files:
@@ -196,6 +200,6 @@ Prepare input file for methylKit differential analysis
 cram_output
 -----------
 Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list 
+Using this function will include the orginal final bam file into the  removable file list
 
 

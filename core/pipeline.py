@@ -174,7 +174,6 @@ class Pipeline(object):
                    ))
                 exit(1)
             
-
     # Pipeline command line arguments parser
     @property
     def argparser(self):

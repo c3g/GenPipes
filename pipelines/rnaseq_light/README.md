@@ -12,13 +12,13 @@ usage: rnaseq_light.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                        [--no-json] [--report] [--clean]
                        [-l {debug,info,warning,error,critical}]
                        [--sanity-check]
-                       [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
-                       [-d DESIGN] [-t {cufflinks,stringtie}] [-r READSETS]
-                       [-v]
+                       [--container {wrapper, singularity} <IMAGE PATH>]
+                       [--genpipes_file GENPIPES_FILE] [-d DESIGN]
+                       [-r READSETS] [-v]
 
-Version: 3.1.5
+Version: 3.6.0
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
@@ -51,13 +51,16 @@ optional arguments:
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
-                        run pipeline inside a container providing a container
-                        image path or accessible docker/singularity hub path
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a validsingularity
+                        image path
+  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+                        Command file output path. This is the command used to
+                        process the data, or said otherwise, this command will
+                        "run the Genpipes pipeline". Will be redirected to
+                        stdout if the option is not provided.
   -d DESIGN, --design DESIGN
                         design file
-  -t {cufflinks,stringtie}, --type {cufflinks,stringtie}
-                        Type of RNA-seq assembly method (default stringtie)
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
@@ -106,6 +109,8 @@ Run Kallisto on fastq files for a fast esimate of abundance.
 
 kallisto_count_matrix
 ---------------------
+Use the output from Kallisto to create a transcript count matrix. 
+
 gq_seq_utils_exploratory_analysis_rnaseq_light
 ----------------------------------------------
 Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight
@@ -114,7 +119,5 @@ sleuth_differential_expression
 ------------------------------
 Performs differential gene expression analysis using [Sleuth](http://pachterlab.github.io/sleuth/). 
 Analysis are performed both at a transcript and gene level, using two different tests: LRT and WT. 
-
-Still in development, use with caution. 
 
 

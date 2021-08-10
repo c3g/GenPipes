@@ -33,12 +33,13 @@ log = logging.getLogger(__name__)
 
 class SampleTumorPair(object):
 
-    def __init__(self, name, normal, tumor, readsets, pair_profyle, normal_profyle, tumor_profyle):
+    def __init__(self, name, normal, tumor, readsets, multiple_normal, pair_profyle, normal_profyle, tumor_profyle):
         if re.search("^\w[\w.-]*$", name):
             self._name = name
             self._normal = normal
             self._tumor = tumor
             self._readsets = readsets
+            self._multiple_normal = multiple_normal
             self._pair_profyle = pair_profyle
             self._normal_profyle = normal_profyle
             self._tumor_profyle = tumor_profyle
@@ -63,6 +64,10 @@ class SampleTumorPair(object):
         return self._readsets
 
     @property
+    def multiple_normal(self):
+        return self._multiple_normal
+
+    @property
     def pair_profyle(self):
         return self._pair_profyle
 
@@ -74,12 +79,28 @@ class SampleTumorPair(object):
     def tumor_profyle(self):
         return self._tumor_profyle
 
+
+
 def parse_tumor_pair_file(tumor_pair_file, samples, profyle=False):
     samples_dict = dict((sample.name, sample) for sample in samples)
     readsets_dict = dict((sample.name, sample.readsets) for sample in samples)
 
     tumor_pairs = dict()
+    seen = {}
+    dup_normal_check = {}
 
+    pair_csv = csv.reader(open(tumor_pair_file, 'rb'), delimiter=',')
+    for line in pair_csv:
+        normal = samples_dict[line[1]]
+
+        if normal.name not in seen:
+            seen[normal.name] = 1
+            dup_normal_check[normal.name] = 0
+        else:
+            if seen[normal.name] == 1:
+                dup_normal_check[normal.name] = 1
+            seen[normal.name] += 1
+    
     log.info("Parse Tumor Pair file " + tumor_pair_file + " ...")
     pair_csv = csv.reader(open(tumor_pair_file, 'rb'), delimiter=',')
     for line in pair_csv:
@@ -92,10 +113,27 @@ def parse_tumor_pair_file(tumor_pair_file, samples, profyle=False):
             profyle_tumor = tumor.name.split("_")
             profyle_pair = profyle_normal[1] + "_" + profyle_tumor[1]
 
-            sample_tumor_pair = SampleTumorPair(sample_name, normal, tumor, readsets_dict, profyle_pair, profyle_normal[0] + "_" + profyle_normal[1],
-                                                profyle_tumor[0] + "_" + profyle_tumor[1])
+            sample_tumor_pair = SampleTumorPair(
+                sample_name,
+                normal,
+                tumor,
+                readsets_dict,
+                dup_normal_check[normal.name],
+                profyle_pair,
+                profyle_normal[0] + "_" + profyle_normal[1],
+                profyle_tumor[0] + "_" + profyle_tumor[1]
+            )
         else:
-            sample_tumor_pair = SampleTumorPair(sample_name, normal, tumor, readsets_dict, None, None, None)
+            sample_tumor_pair = SampleTumorPair(
+                sample_name,
+                normal,
+                tumor,
+                readsets_dict,
+                dup_normal_check[normal.name],
+                None,
+                None,
+                None
+            )
 
         tumor_pairs[sample_name] = sample_tumor_pair
 

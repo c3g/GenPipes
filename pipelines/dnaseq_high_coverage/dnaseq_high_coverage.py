@@ -52,7 +52,7 @@ from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
 
-class DnaSeqHighCoverage(dnaseq.DnaSeq):
+class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
     """
     DnaSeq high Coverage Pipeline
     =================

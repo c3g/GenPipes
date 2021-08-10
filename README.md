@@ -322,7 +322,6 @@ For more information about a specific pipeline, visit:
 ### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/ampliconseq/)
 ### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/)
 ### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/)
-### [Illumina Run Processing Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/illumina_run_processing/)
 ### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore/)
 
 Readset File
@@ -477,8 +476,9 @@ RNA-Seq, RNA-Seq De Novo Assembly and ChIP-Seq pipelines can perform differentia
 
 The Design File is a TAB-separated values plain text file with one line per sample and the following columns:
 
+### RNA-Seq and RNA-Seq De Novo Assembly
 * Sample: first column; must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; the sample name must match a sample name in the readset file; mandatory;
-* <contrast>: each of the following columns defines an experimental design contrast; the column name defines the contrast name, and the following values represent the sample group membership for this contrast:
+* Contrast: each of the following columns defines an experimental design contrast; the column name defines the contrast name, and the following values represent the sample group membership for this contrast:
     * '__0__' or '': the sample does not belong to any group;
     * '__1__': the sample belongs to the control group;
     * '__2__': the sample belongs to the treatment test case group.
@@ -491,6 +491,26 @@ Example:
     sampleC	0	2	0
     sampleD	0	0	2
 
+### Chip-Seq
+
+* Sample: first column; must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; the sample name must match a sample name in the readset file; mandatory;
+* MarkName: Second Column; name of the histone mark; mandatory
+* Contrast: each of the following columns defines an experimental design contrast; the column name defines the contrast name, and the following values represent the sample group membership for this contrast:
+    * '__0__' or '': the sample does not belong to any group;
+    * '__1__': the sample belongs to the control group;
+    * '__2__': the sample belongs to the treatment test case group.
+
+Example:
+
+    Sample	MarkName Contrast1 Contrast2
+    sampleA	H3K27ac 1   0
+    sampleB	H3K27ac 1   0
+    sampleC	H3K27ac 2   0
+    sampleD	H3K27ac 2   0
+    sampleA H3K4me3 0   1
+    sampleB H3K4me3 0   1
+    sampleC H3K4me3 0   2
+    sampleD H3K4me3 0   2
 
 HTML Analysis Report
 --------------------

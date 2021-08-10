@@ -36,6 +36,7 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 import utils.utils
 
+from bfx import bash_cmd as bash
 from bfx import gq_seq_utils
 from bfx import picard
 from bfx import rmarkdown
@@ -47,7 +48,7 @@ from pipelines.rnaseq import rnaseq
 
 log = logging.getLogger(__name__)
 
-class RnaSeqLight(rnaseq.RnaSeq):
+class RnaSeqLight(rnaseq.RnaSeqRaw):
     def __init__(self,protocol=None):
         self._protocol=protocol
         super(RnaSeqLight, self).__init__(protocol)
@@ -134,18 +135,25 @@ class RnaSeqLight(rnaseq.RnaSeq):
         job.samples = [readset.sample]
         jobs.append(job)
 
+        report_dir = os.path.join(self.output_dir, "report")
+
         #copy tx2genes file
         jobs.append(
-            Job(
-                [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv"), os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_transcripts.csv")],
-                [],
-                command="""\
+            concat_jobs(
+                [
+                    bash.mkdir(report_dir),
+                    Job(
+                        [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv"), os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_transcripts.csv")],
+                        [],
+                        command="""\
 cp \\
   {tx2genes_file} \\
   {report_dir}""".format(
-                    tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
-                    report_dir="report"
-                ),
+                            tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
+                            report_dir=report_dir
+                        )
+                    )
+                ],
                 name="report.copy_tx2genes_file",
                 samples=self.samples
             )
