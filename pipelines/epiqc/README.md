@@ -21,11 +21,11 @@ This new pipeline can be used for pre-validation in order to assess the usabilit
 You can test this pipeline with ChIP-Seq samples from the [IHEC portal](https://epigenomesportal.ca/ihec/grid.html?assembly=4&build=2018-10).
 
 **Special Note: you can use the same readset file used in ChIP-seq pipeline without any modification
-but it should be in the same folder as the ChIp-Seq output. Becuase input files for
+but it should be in the same folder as the ChIp-Seq output. Because input files for
 epiQC pipeline are located based on the readset file path).**
 
 
-[Here](https://bitbucket.org/mugqic/mugqic_pipelines/downloads/MUGQIC_Bioinfo_ChIP-Seq.pptx)
+[Here](https://bitbucket.org/mugqic/genpipes/downloads//MUGQIC_Bioinfo_ChIP-Seq.pptx)
 is more information about developing epiQC pipeline that you may find interesting.
 
 
@@ -76,7 +76,7 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a validsingularity
+                        Run inside a container providing a valid singularity
                         image path                                                                                                              
                         Type of pipeline (default chipseq)
   -r READSETS, --readsets READSETS                                                         
@@ -84,7 +84,7 @@ optional arguments:
   -v, --version         show the version information and exit
 
 ```
-![chipseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_epiqc.resized.png)
+![chipseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_epiqc.png)
 [download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_epiqc.png)
 
 ```
@@ -129,7 +129,7 @@ have been mapped experimentally.
 ChromImpute bases its predictions on features from signal tracks 
 of other marks that have been mapped in the target sample and the target mark in 
 other samples with these features combined using an ensemble of regression trees.
-Currently, only signal trackes mapped to GRCh38 are supported with chromimpute 
+Currently, only signal tracks mapped to GRCh38 are supported with chromimpute 
 analysis. GRCh37 will be added in the future. For better results, usage of 
 multiple histone marks from one sample is recommended.
 
@@ -255,10 +255,10 @@ The user can specify the options and the bed file path in the ini file. Otherwis
 epiqc_report
 --------------------
 
-epiQC report is consist of five sub-steps inclduing four independent steps to generate individual
+epiQC report is consist of five sub-steps including four independent steps to generate individual
 report files for each metric computed and one step to combine all of them to generate
 a final report file. A user can independently run each sub step but in order to
-generate final report, reforts from BigWigInfo, ChromImpute and EpiGeEC are required.
+generate final report, reports from BigWigInfo, ChromImpute and EpiGeEC are required.
 This final report is a TSV file with the decision of each signal track
 [i.e whether the sample has passed from all the
 metrics or there are alerts that user need to be concerned]
