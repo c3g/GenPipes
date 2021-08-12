@@ -24,11 +24,6 @@ You can test this pipeline with ChIP-Seq samples from the [IHEC portal](https://
 but it should be in the same folder as the ChIp-Seq output. Because input files for
 epiQC pipeline are located based on the readset file path).**
 
-
-[Here](https://bitbucket.org/mugqic/genpipes/downloads//MUGQIC_Bioinfo_ChIP-Seq.pptx)
-is more information about developing epiQC pipeline that you may find interesting.
-
-
 Usage
 -----
 ```
