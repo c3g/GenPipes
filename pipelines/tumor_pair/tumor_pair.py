@@ -184,29 +184,30 @@ class TumorPair(dnaseq.DnaSeqRaw):
             
             for key, inputFile in inputs.iteritems():
                 for readset in inputFile:
-                    jobs.append(concat_jobs([
-                        deliverables.md5sum(
-                            readset,
-                            readset + ".md5",
-                            self.output_dir
-                        ),
-                        deliverables.sym_link_pair(
-                            readset,
-                            tumor_pair,
-                            self.output_dir,
-                            type="raw_reads",
-                            sample=key,
-                            profyle=self.args.profyle
-                        ),
-                        deliverables.sym_link_pair(
-                            readset + ".md5",
-                            tumor_pair,
-                            self.output_dir,
-                            type="raw_reads",
-                            sample=key,
-                            profyle=self.args.profyle
-                        ),
-                    ], name="sym_link_fastq.pairs." + tumor_pair.name + "." + key))
+                    symlink_pair_job = deliverables.sym_link_pair(
+                        readset,
+                        tumor_pair,
+                        self.output_dir,
+                        type="raw_reads",
+                        sample=key,
+                        profyle=self.args.profyle
+                    )
+                    dir_name, file_name = os.path.split(symlink_pair_job.output_files[0])
+                    # do not compute md5sum in the readset input directory
+                    md5sum_job = deliverables.md5sum(
+                        symlink_pair_job.output_files[0],
+                        file_name + ".md5",
+                        dir_name
+                    )
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                symlink_pair_job,
+                                md5sum_job
+                            ],
+                            name="sym_link_fastq.pairs." + tumor_pair.name + "." + key
+                        )
+                    )
 
         return jobs
 
