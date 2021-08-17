@@ -1733,7 +1733,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --TMP_DIR {tmp_dir} \\
   --INPUT {input} \\
   --LOD_THRESHOLD {lod_threshold} \\
-  --OUTPUT={output} """.format(
+  --OUTPUT {output} """.format(
                 tmp_dir=config.param('gatk_cluster_crosscheck_metrics', 'tmp_dir'),
                 options=config.param('gatk_cluster_crosscheck_metrics', 'options'),
                 java_other_options=config.param('gatk_cluster_crosscheck_metrics', 'gatk4_java_options'),
