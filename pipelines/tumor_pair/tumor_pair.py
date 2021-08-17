@@ -2497,15 +2497,17 @@ class TumorPair(dnaseq.DnaSeqRaw):
             somatic_dir = os.path.abspath(os.path.join(pair_directory, "rawStrelka2_somatic"))
             output_prefix = os.path.abspath(os.path.join(pair_directory, tumor_pair.name))
 
-            input_normal = self.select_input_files(
-                [[os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
-                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]])
+            input_normal = self.select_input_files([
+                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
+                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+            ])
 
-            input_tumor = self.select_input_files(
-                [[os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
-                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]])
+            input_tumor = self.select_input_files([
+                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+            ])
 
             mantaIndels = None
             if os.path.isfile(os.path.join("SVariants", tumor_pair.name, "rawManta", "results", "variants", "candidateSmallIndels.vcf.gz")):
@@ -2524,84 +2526,110 @@ class TumorPair(dnaseq.DnaSeqRaw):
             #     ], name="rm_strelka2_directory." + tumor_pair.name))
 
             if coverage_bed:
-                bed_file = coverage_bed + ".gz"
-                jobs.append(concat_jobs([
-                    Job(
-                        [coverage_bed],
-                        [coverage_bed + ".sort"],
-                        command="sort -V -k1,1 -k2,2n -k3,3n "
-                                + coverage_bed + " > "
-                                + coverage_bed + ".sort ; sleep 15"
-                    ),
-                    htslib.bgzip(
-                        coverage_bed + ".sort",
-                        coverage_bed + ".gz"
-                    ),
-                    htslib.tabix(
-                        coverage_bed + ".gz",
-                        "-p bed"
-                    ),
-                 ],name="bed_index." + tumor_pair.name))
+                local_coverage_bed = os.path.join(somatic_dir, os.path.basename(coverage_bed))
+                bed_file = local_coverage_bed + ".gz"
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.ln(
+                                coverage_bed,
+                                local_coverage_bed
+                            ),
+                            Job(
+                                [local_coverage_bed],
+                                [local_coverage_bed + ".sort"],
+                                command="sort -V -k1,1 -k2,2n -k3,3n "
+                                        + local_coverage_bed + " > "
+                                        + local_coverage_bed + ".sort ; sleep 15"
+                            ),
+                            htslib.bgzip(
+                                local_coverage_bed + ".sort",
+                                bed_file
+                            ),
+                            htslib.tabix(
+                                bed_file,
+                                "-p bed"
+                            )
+                        ],
+                        name="bed_index." + tumor_pair.name
+                    )
+                )
 
             else:
                 bed_file=config.param('strelka2_paired_somatic', 'bed_file')
 
-            output_dep = [os.path.join(somatic_dir, "results/variants/somatic.snvs.vcf.gz"),
-                          os.path.join(somatic_dir, "results/variants/somatic.indels.vcf.gz")]
+            output_dep = [
+                os.path.join(somatic_dir, "results/variants/somatic.snvs.vcf.gz"),
+                os.path.join(somatic_dir, "results/variants/somatic.indels.vcf.gz")
+            ]
 
-            jobs.append(concat_jobs([
-                strelka2.somatic_config(
-                    input_normal[0],
-                    input_tumor[0],
-                    somatic_dir,
-                    bed_file,
-                    mantaIndels
-                ),
-                strelka2.run(
-                    somatic_dir,
-                    output_dep=output_dep
-                ),
-            ], name="strelka2_paired_somatic.call." + tumor_pair.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        strelka2.somatic_config(
+                            input_normal[0],
+                            input_tumor[0],
+                            somatic_dir,
+                            bed_file,
+                            mantaIndels
+                        ),
+                        strelka2.run(
+                            somatic_dir,
+                            output_dep=output_dep
+                        ),
+                    ],
+                    name="strelka2_paired_somatic.call." + tumor_pair.name
+                )
+            )
 
-            jobs.append(concat_jobs([
-                pipe_jobs([
-                    bcftools.concat(
-                        output_dep,
-                        None
-                    ),
-                    Job(
-                        [None],
-                        [None],
-                        command="sed 's/TUMOR/" + tumor_pair.tumor.name + "/g' | sed 's/NORMAL/" + tumor_pair.normal.name
-                                + "/g' | sed 's/Number=R/Number=./g' | grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
-                    ),
-                    htslib.bgzip_tabix(
-                        None,
-                        output_prefix + ".strelka2.vcf.gz"
-                    ),
-                ]),
-                pipe_jobs([
-                    vt.decompose_and_normalize_mnps(
-                        output_prefix + ".strelka2.vcf.gz",
-                        None
-                    ),
-                    htslib.bgzip_tabix(
-                        None,
-                        output_prefix + ".strelka2.vt.vcf.gz"
-                    ),
-                ]),
-                tools.fix_genotypes_strelka(
-                    output_prefix + ".strelka2.vt.vcf.gz",
-                    output_prefix + ".strelka2.somatic.gt.vcf.gz",
-                    tumor_pair.normal.name,
-                    tumor_pair.tumor.name
-                ),
-                bcftools.view(
-                    output_prefix + ".strelka2.somatic.gt.vcf.gz",
-                    output_prefix + ".strelka2.somatic.vt.vcf.gz",
-                    config.param('strelka2_paired_somatic', 'filter_options')
-                ),
-            ], name="strelka2_paired_somatic.filter." + tumor_pair.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        pipe_jobs(
+                            [
+                                bcftools.concat(
+                                    output_dep,
+                                    None
+                                ),
+                                Job(
+                                    [None],
+                                    [None],
+                                    command="sed 's/TUMOR/" + tumor_pair.tumor.name + "/g' | sed 's/NORMAL/" + tumor_pair.normal.name
+                                        + "/g' | sed 's/Number=R/Number=./g' | grep -v 'GL00' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
+                                ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    output_prefix + ".strelka2.vcf.gz"
+                                )
+                            ]
+                        ),
+                        pipe_jobs(
+                            [
+                                vt.decompose_and_normalize_mnps(
+                                    output_prefix + ".strelka2.vcf.gz",
+                                    None
+                                ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    output_prefix + ".strelka2.vt.vcf.gz"
+                                )
+                            ]
+                        ),
+                        tools.fix_genotypes_strelka(
+                            output_prefix + ".strelka2.vt.vcf.gz",
+                            output_prefix + ".strelka2.somatic.gt.vcf.gz",
+                            tumor_pair.normal.name,
+                            tumor_pair.tumor.name
+                        ),
+                        bcftools.view(
+                            output_prefix + ".strelka2.somatic.gt.vcf.gz",
+                            output_prefix + ".strelka2.somatic.vt.vcf.gz",
+                            config.param('strelka2_paired_somatic', 'filter_options')
+                        )
+                    ],
+                    name="strelka2_paired_somatic.filter." + tumor_pair.name
+                )
+            )
 
         return jobs
 
@@ -2626,15 +2654,17 @@ class TumorPair(dnaseq.DnaSeqRaw):
             germline_dir = os.path.abspath(os.path.join(pair_directory, "rawStrelka2_germline"))
             output_prefix = os.path.abspath(os.path.join(pair_directory, tumor_pair.name))
 
-            input_normal = self.select_input_files(
-                [[os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
-                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]])
+            input_normal = self.select_input_files([
+                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
+                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+            ])
 
-            input_tumor = self.select_input_files(
-                [[os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
-                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]])
+            input_tumor = self.select_input_files([
+                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+            ])
         
             input = [input_normal[0], input_tumor[0]]
         
@@ -2650,73 +2680,97 @@ class TumorPair(dnaseq.DnaSeqRaw):
             #     ], name="rm_strelka2_directory." + tumor_pair.name))
         
             if coverage_bed:
-                bed_file = coverage_bed + ".gz"
-                jobs.append(concat_jobs([
-                    Job(
-                        [coverage_bed],
-                        [coverage_bed + ".sort"],
-                        command="sort -V -k1,1 -k2,2n -k3,3n "
-                                + coverage_bed + " > "
-                                + coverage_bed + ".sort ; sleep 15"
-                    ),
-                    htslib.bgzip(
-                        coverage_bed + ".sort",
-                        coverage_bed + ".gz"
-                    ),
-                    htslib.tabix(
-                        coverage_bed + ".gz",
-                        "-p bed"
-                    ),
-                ], name="bed_index." + tumor_pair.name))
+                local_coverage_bed = os.path.join(germline_dir, os.path.basename(coverage_bed))
+                bed_file = local_coverage_bed + ".gz"
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.ln(
+                                coverage_bed,
+                                local_coverage_bed
+                            ),
+                            Job(
+                                [local_coverage_bed],
+                                [local_coverage_bed + ".sort"],
+                                command="sort -V -k1,1 -k2,2n -k3,3n "
+                                        + local_coverage_bed + " > "
+                                        + local_coverage_bed + ".sort ; sleep 15"
+                            ),
+                            htslib.bgzip(
+                                local_coverage_bed + ".sort",
+                                bed_file
+                            ),
+                            htslib.tabix(
+                                bed_file,
+                                "-p bed"
+                            )
+                        ],
+                        name="bed_index." + tumor_pair.name
+                    )
+                )
             
             else:
                 bed_file = config.param('strelka2_paired_germline', 'bed_file')
                 
             output_dep = [os.path.join(germline_dir, "results/variants/variants.vcf.gz")]
         
-            jobs.append(concat_jobs([
-                strelka2.germline_config(
-                    input,
-                    germline_dir,
-                    bed_file,
-                ),
-                strelka2.run(
-                    germline_dir,
-                    output_dep=output_dep
-                ),
-            ], name="strelka2_paired_germline.call." + tumor_pair.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        strelka2.germline_config(
+                            input,
+                            germline_dir,
+                            bed_file,
+                        ),
+                        strelka2.run(
+                            germline_dir,
+                            output_dep=output_dep
+                        )
+                    ],
+                    name="strelka2_paired_germline.call." + tumor_pair.name
+                )
+            )
         
-            jobs.append(concat_jobs([
-                pipe_jobs([
-                    Job(
-                        [os.path.join(germline_dir, "results/variants/variants.vcf.gz")],
-                        [None],
-                        command="zcat " + os.path.join(germline_dir, "results/variants/variants.vcf.gz")
-                                + " | sed 's/TUMOR/" + tumor_pair.tumor.name + "/g'"
-                                + " | sed 's/NORMAL/" + tumor_pair.normal.name
-                                + "/g' | sed 's/Number=R/Number=./g' | grep -vE 'GL00|hs37d5' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
-                    ),
-                    htslib.bgzip_tabix(
-                        None,
-                        output_prefix + ".strelka2.germline.vcf.gz"
-                    ),
-                ]),
-                pipe_jobs([
-                    vt.decompose_and_normalize_mnps(
-                        output_prefix + ".strelka2.germline.vcf.gz",
-                        None
-                    ),
-                    htslib.bgzip_tabix(
-                        None,
-                        output_prefix + ".strelka2.germline.gt.vcf.gz"
-                    ),
-                ]),
-                bcftools.view(
-                    output_prefix + ".strelka2.germline.gt.vcf.gz",
-                    output_prefix + ".strelka2.germline.vt.vcf.gz",
-                    config.param('strelka2_paired_germline', 'filter_options')
-                ),
-            ], name="strelka2_paired_germline.filter." + tumor_pair.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        pipe_jobs(
+                            [
+                                Job(
+                                    [os.path.join(germline_dir, "results/variants/variants.vcf.gz")],
+                                    [None],
+                                    command="zcat " + os.path.join(germline_dir, "results/variants/variants.vcf.gz")
+                                            + " | sed 's/TUMOR/" + tumor_pair.tumor.name + "/g'"
+                                            + " | sed 's/NORMAL/" + tumor_pair.normal.name
+                                            + "/g' | sed 's/Number=R/Number=./g' | grep -vE 'GL00|hs37d5' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
+                                ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    output_prefix + ".strelka2.germline.vcf.gz"
+                                )
+                            ]
+                        ),
+                        pipe_jobs(
+                            [
+                                vt.decompose_and_normalize_mnps(
+                                    output_prefix + ".strelka2.germline.vcf.gz",
+                                    None
+                                ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    output_prefix + ".strelka2.germline.gt.vcf.gz"
+                                )
+                            ]
+                         ),
+                        bcftools.view(
+                            output_prefix + ".strelka2.germline.gt.vcf.gz",
+                            output_prefix + ".strelka2.germline.vt.vcf.gz",
+                            config.param('strelka2_paired_germline', 'filter_options')
+                        )
+                    ],
+                    name="strelka2_paired_germline.filter." + tumor_pair.name
+                )
+            )
     
         return jobs
 
@@ -5957,7 +6011,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 self.gatk_variant_annotator_germline,
                 self.merge_gatk_variant_annotator_germline,
                 self.compute_cancer_effects_germline,
-	            self.ensemble_germline_dbnsfp_annotation,
+                self.ensemble_germline_dbnsfp_annotation,
                 self.sample_gemini_annotations_germline,
                 #self.combine_tumor_pairs_somatic,
                 #self.decompose_and_normalize_mnps_somatic,
