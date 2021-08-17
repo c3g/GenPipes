@@ -160,15 +160,21 @@ cp \\
         )
 
         # Create kallisto report
+        readset_merge_trim_stats = os.path.join("metrics", "trimReadsetTable.tsv") # set in merge trimmomatic stats
+
         jobs.append(
             rmarkdown.render(
-                job_input            = [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv"), os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_transcripts.csv")],
-                job_name             = "report.kallisto_count_matrix",
-                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd"),
-                samples              = self.samples,
-                render_output_dir    = 'report',
-                module_section       = 'report',
-                prerun_r             = 'report_dir="report";'
+                job_input            =[os.path.join(self.output_dir, "kallisto"
+                                                    , "All_readsets","all_readsets.abundance_genes.csv")
+                    , os.path.join(self.output_dir, "kallisto", "All_readsets",
+                                   "all_readsets.abundance_transcripts.csv")
+                    , readset_merge_trim_stats],
+                job_name             ="report.kallisto_count_matrix",
+                input_rmarkdown_file =os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd"),
+                samples              =self.samples,
+                render_output_dir    ='report',
+                module_section       ='report',
+                prerun_r             ='report_dir="report";'
             )
         )
 
