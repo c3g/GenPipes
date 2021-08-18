@@ -1892,7 +1892,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         Returns a string serving as instructions for awk.
         This produces the command to convert the header of R1 fastq file from MGI to Illumina format
         """
-        return """-v inst=\"{instrument}\" -v run=\"{run}\" 'match($0, /@(V[0-9]+)L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):([ACTGN]+)\/([0-9]{{1}})/, head_items) {{
+        return """-v inst=\"{instrument}\" -v run=\"{run}\" 'match($0, /@(V[0-9]+)L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):([ACTGN-]+)\/([0-9]{{1}})/, head_items) {{
  gsub("^0*", "", head_items[3])
  gsub("^0*", "", head_items[4])
  gsub("^0*", "", head_items[5])
@@ -1916,7 +1916,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
  getline seq
  getline sep
  getline qual
- match(header, /@(V[0-9]+)L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):([ACTGN]+)\/([0-9]{{1}})/, head_items)
+ match(header, /@(V[0-9]+)L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):([ACTGN-]+)\/([0-9]{{1}})/, head_items)
  gsub("^0*", "", head_items[3]); gsub("^0*", "", head_items[4]); gsub("^0*", "", head_items[5])
  header="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:" head_items[6]
  b1_head="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:1"
