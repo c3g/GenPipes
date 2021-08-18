@@ -2531,6 +2531,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 jobs.append(
                     concat_jobs(
                         [
+                            bash.mkdir(somatic_dir),
                             bash.ln(
                                 coverage_bed,
                                 local_coverage_bed
@@ -2685,6 +2686,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 jobs.append(
                     concat_jobs(
                         [
+                            bash.mkdir(germline_dir),
                             bash.ln(
                                 coverage_bed,
                                 local_coverage_bed
