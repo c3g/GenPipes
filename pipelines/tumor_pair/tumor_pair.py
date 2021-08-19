@@ -622,7 +622,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 tumor_pair.normal.readsets[0]
             )
             if coverage_bed:
-                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                interval_list = os.path.join(tumor_alignment_directory, re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed)))
             
                 if not os.path.isfile(interval_list):
                     job = tools.bed2interval_list(
@@ -1800,13 +1800,17 @@ class TumorPair(dnaseq.DnaSeqRaw):
             if coverage_bed:
                 bed_file = coverage_bed
 
-            input_normal = self.select_input_files([[os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
-                                                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                                                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]])
+            input_normal = self.select_input_files([
+                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
+                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+            ])
 
-            input_tumor = self.select_input_files([[os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
-                                                   [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                                                   [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]])
+            input_tumor = self.select_input_files([
+                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+            ])
 
             nb_jobs = config.param('rawmpileup', 'nb_jobs', type='posint')
             if nb_jobs > 50:
@@ -1815,39 +1819,54 @@ class TumorPair(dnaseq.DnaSeqRaw):
             
             if nb_jobs == 1:
                 pair_output = os.path.join(varscan_directory, tumor_pair.name + ".mpileup")
-                jobs.append(concat_jobs([
-                    bash.mkdir(
-                        varscan_directory,
-                        remove=True
-                    ),
-                    samtools.mpileup(
-                        [input_normal[0], input_tumor[0]],
-                        pair_output,
-                        config.param('rawmpileup', 'mpileup_other_options'),
-                        regionFile=bed_file
-                    ),
-                ], name="rawmpileup." + tumor_pair.name))
-
-            else:
-                
-                for sequence in self.sequence_dictionary_variant():
-                    if sequence['type'] is 'primary':
-                        pair_output = os.path.join(varscan_directory,
-                                                   tumor_pair.name + "." + sequence['name'] + ".mpileup")
-
-                        jobs.append(concat_jobs([
+                jobs.append(
+                    concat_jobs(
+                        [
                             bash.mkdir(
                                 varscan_directory,
                                 remove=True
                             ),
                             samtools.mpileup(
-                                [input_normal[0], input_tumor[0]],
+                                [
+                                    input_normal[0],
+                                    input_tumor[0]
+                                ],
                                 pair_output,
                                 config.param('rawmpileup', 'mpileup_other_options'),
-                                region=sequence['name'],
                                 regionFile=bed_file
-                            ),
-                        ], name="rawmpileup." + tumor_pair.name + "." + sequence['name']))
+                            )
+                        ],
+                        name="rawmpileup." + tumor_pair.name
+                    )
+                )
+
+            else:
+                
+                for sequence in self.sequence_dictionary_variant():
+                    if sequence['type'] is 'primary':
+                        pair_output = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".mpileup")
+
+                        jobs.append(
+                            concat_jobs(
+                                [
+                                    bash.mkdir(
+                                        varscan_directory,
+                                        remove=True
+                                    ),
+                                    samtools.mpileup(
+                                        [
+                                            input_normal[0],
+                                            input_tumor[0]
+                                        ],
+                                        pair_output,
+                                        config.param('rawmpileup', 'mpileup_other_options'),
+                                        region=sequence['name'],
+                                        regionFile=bed_file
+                                    )
+                                ],
+                                name="rawmpileup." + tumor_pair.name + "." + sequence['name']
+                            )
+                        )
 
         return jobs
 
@@ -2168,21 +2187,23 @@ class TumorPair(dnaseq.DnaSeqRaw):
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             mutect_directory = os.path.join(pair_directory, "rawMuTect2")
 
-            input_normal = self.select_input_files(
-                [[os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
-                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]])
+            input_normal = self.select_input_files([
+                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
+                [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
+            ])
 
-            input_tumor = self.select_input_files(
-                [[os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
-                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]])
+            input_tumor = self.select_input_files([
+                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
+            ])
 
             interval_list = None
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
             if coverage_bed:
-                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                interval_list = os.path.join(mutect_directory, re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed)))
 
                 if not interval_list in created_interval_lists:
                     job = tools.bed2interval_list(
@@ -2195,22 +2216,27 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             if nb_jobs == 1:
 
-                jobs.append(concat_jobs([
-                    # Create output directory since it is not done by default by GATK tools
-                    bash.mkdir(
-                        mutect_directory,
-                        remove=True
-                    ),
-                    gatk4.mutect2(
-                        input_normal[0],
-                        tumor_pair.normal.name,
-                        input_tumor[0],
-                        tumor_pair.tumor.name,
-                        os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz"),
-                        os.path.join(mutect_directory, tumor_pair.name + ".f1r2.tar.gz"),
-                        interval_list=interval_list,
+                jobs.append(
+                    concat_jobs(
+                        [
+                            # Create output directory since it is not done by default by GATK tools
+                            bash.mkdir(
+                                mutect_directory,
+                                remove=True
+                            ),
+                            gatk4.mutect2(
+                                input_normal[0],
+                                tumor_pair.normal.name,
+                                input_tumor[0],
+                                tumor_pair.tumor.name,
+                                os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz"),
+                                os.path.join(mutect_directory, tumor_pair.name + ".f1r2.tar.gz"),
+                                interval_list=interval_list
+                            )
+                        ],
+                        name="gatk_mutect2." + tumor_pair.name
                     )
-                ], name="gatk_mutect2." + tumor_pair.name))
+                )
 
             else:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
@@ -2219,42 +2245,52 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 for idx, sequences in enumerate(unique_sequences_per_job):
 
                     outprefix = tumor_pair.name + "." + str(idx) + ".mutect2"
-                    jobs.append(concat_jobs([
-                        # Create output directory since it is not done by default by GATK tools
-                        bash.mkdir(
-                            mutect_directory,
-                            remove=True
-                        ),
-                        gatk4.mutect2(
-                            input_normal[0],
-                            tumor_pair.normal.name,
-                            input_tumor[0],
-                            tumor_pair.tumor.name,
-                            os.path.join(mutect_directory, outprefix + ".vcf.gz"),
-                            os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".f1r2.tar.gz"),
-                            intervals=sequences,
-                            interval_list=interval_list,
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                # Create output directory since it is not done by default by GATK tools
+                                bash.mkdir(
+                                    mutect_directory,
+                                    remove=True
+                                ),
+                                gatk4.mutect2(
+                                    input_normal[0],
+                                    tumor_pair.normal.name,
+                                    input_tumor[0],
+                                    tumor_pair.tumor.name,
+                                    os.path.join(mutect_directory, outprefix + ".vcf.gz"),
+                                    os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".f1r2.tar.gz"),
+                                    intervals=sequences,
+                                    interval_list=interval_list
+                                )
+                            ],
+                            name="gatk_mutect2." + tumor_pair.name + "." + str(idx)
                         )
-                    ], name="gatk_mutect2." + tumor_pair.name + "." + str(idx)))
+                    )
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
-                jobs.append(concat_jobs([
-                    # Create output directory since it is not done by default by GATK tools
-                    bash.mkdir(
-                        mutect_directory,
-                        remove=True
-                    ),
-                    gatk4.mutect2(
-                        input_normal[0],
-                        tumor_pair.normal.name,
-                        input_tumor[0],
-                        tumor_pair.tumor.name,
-                        os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"),
-                        os.path.join(mutect_directory, tumor_pair.name + ".others.f1r2.tar.gz"),
-                        exclude_intervals=unique_sequences_per_job_others,
-                        interval_list=interval_list,
+                jobs.append(
+                    concat_jobs(
+                        [
+                            # Create output directory since it is not done by default by GATK tools
+                            bash.mkdir(
+                                mutect_directory,
+                                remove=True
+                            ),
+                            gatk4.mutect2(
+                                input_normal[0],
+                                tumor_pair.normal.name,
+                                input_tumor[0],
+                                tumor_pair.tumor.name,
+                                os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"),
+                                os.path.join(mutect_directory, tumor_pair.name + ".others.f1r2.tar.gz"),
+                                exclude_intervals=unique_sequences_per_job_others,
+                                interval_list=interval_list
+                            )
+                        ],
+                        name="gatk_mutect2." + tumor_pair.name + ".others"
                     )
-                ], name="gatk_mutect2." + tumor_pair.name + ".others"))
+                )
 
         return jobs
 
@@ -2532,15 +2568,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     concat_jobs(
                         [
                             bash.mkdir(somatic_dir),
-                            bash.ln(
-                                coverage_bed,
-                                local_coverage_bed
-                            ),
                             Job(
-                                [local_coverage_bed],
+                                [coverage_bed],
                                 [local_coverage_bed + ".sort"],
                                 command="sort -V -k1,1 -k2,2n -k3,3n "
-                                        + local_coverage_bed + " > "
+                                        + coverage_bed + " > "
                                         + local_coverage_bed + ".sort ; sleep 15"
                             ),
                             htslib.bgzip(
@@ -2687,15 +2719,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     concat_jobs(
                         [
                             bash.mkdir(germline_dir),
-                            bash.ln(
-                                coverage_bed,
-                                local_coverage_bed
-                            ),
                             Job(
-                                [local_coverage_bed],
+                                [coverage_bed],
                                 [local_coverage_bed + ".sort"],
                                 command="sort -V -k1,1 -k2,2n -k3,3n "
-                                        + local_coverage_bed + " > "
+                                        + coverage_bed + " > "
                                         + local_coverage_bed + ".sort ; sleep 15"
                             ),
                             htslib.bgzip(
@@ -4539,62 +4567,78 @@ class TumorPair(dnaseq.DnaSeqRaw):
             )
 
             if coverage_bed:
-                bed_file = coverage_bed + ".gz"
-                jobs.append(concat_jobs([
-                    Job(
-                        [coverage_bed],
-                        [coverage_bed + ".sort"],
-                        command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > "
-                                + coverage_bed + ".sort"
-                    ),
-                    htslib.bgzip(
-                        coverage_bed + ".sort",
-                        coverage_bed + ".gz"
-                    ),
-                    htslib.tabix(
-                        coverage_bed + ".gz",
-                        "-p bed"
-                    ),
-                 ],name="bed_index." + tumor_pair.name))
+                local_coverage_bed = os.path.join(manta_dir, os.path.basename(coverage_bed))
+                bed_file = local_coverage_bed + ".gz"
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(manta_dir),
+                            Job(
+                                [coverage_bed],
+                                [local_coverage_bed + ".sort"],
+                                command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > "
+                                        + local_coverage_bed + ".sort"
+                            ),
+                            htslib.bgzip(
+                                local_coverage_bed + ".sort",
+                                bed_file
+                            ),
+                            htslib.tabix(
+                                bed_file,
+                                "-p bed"
+                            ),
+                         ],
+                         name="bed_index." + tumor_pair.name
+                     )
+                )
 
-            output_dep = [manta_somatic_output, manta_somatic_output + ".tbi", manta_germline_output, manta_germline_output + ".tbi"]
+            output_dep = [
+                manta_somatic_output,
+                manta_somatic_output + ".tbi",
+                manta_germline_output,
+                manta_germline_output + ".tbi"
+            ]
 
-            jobs.append(concat_jobs([
-                bash.mkdir(
-                    manta_directory,
-                    remove=True
-                ),
-                manta.manta_config(
-                    inputNormal,
-                    inputTumor,
-                    manta_directory,
-                    bed_file
-                ),
-                manta.manta_run(
-                    manta_directory,
-                    output_dep=output_dep
-                ),
-                bash.ln(
-                    manta_somatic_output,
-                    output_prefix + ".manta.somatic.vcf.gz",
-                    self.output_dir,
-                ),
-                bash.ln(
-                    manta_somatic_output + ".tbi",
-                    output_prefix + ".manta.somatic.vcf.gz.tbi",
-                    self.output_dir
-                ),
-                bash.ln(
-                    manta_germline_output,
-                    output_prefix + ".manta.germline.vcf.gz",
-                    self.output_dir,
-                ),
-                bash.ln(
-                    manta_germline_output + ".tbi",
-                    output_prefix + ".manta.germline.vcf.gz.tbi",
-                    self.output_dir,
-                ),
-            ], name="manta_sv." + tumor_pair.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            manta_directory,
+                            remove=True
+                         ),
+                         manta.manta_config(
+                            inputNormal,
+                            inputTumor,
+                            manta_directory,
+                            bed_file
+                        ),
+                        manta.manta_run(
+                            manta_directory,
+                            output_dep=output_dep
+                        ),
+                        bash.ln(
+                            manta_somatic_output,
+                            output_prefix + ".manta.somatic.vcf.gz",
+                            self.output_dir,
+                        ),
+                        bash.ln(
+                            manta_somatic_output + ".tbi",
+                            output_prefix + ".manta.somatic.vcf.gz.tbi",
+                            self.output_dir
+                        ),
+                        bash.ln(
+                            manta_germline_output,
+                            output_prefix + ".manta.germline.vcf.gz",
+                            self.output_dir,
+                        ),
+                        bash.ln(
+                            manta_germline_output + ".tbi",
+                            output_prefix + ".manta.germline.vcf.gz.tbi",
+                            self.output_dir,
+                        ),
+                    ], name="manta_sv." + tumor_pair.name
+                )
+            )
 
         return jobs
 
@@ -5311,8 +5355,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             if coverage_bed:
                 bed = coverage_bed
 
-            vardict_vcf = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name,
-                                       tumor_pair.name + ".vardict.germline.vt.vcf.gz")
+            vardict_vcf = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
 
             input_vcf = None
             normal = None
@@ -5322,87 +5365,109 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 normal = tumor_pair.normal.name
                 tumor = tumor_pair.tumor.name
 
-            jobs.append(concat_jobs([
-                bash.mkdir(
-                    cnvkit_dir,
-                    remove=True
-                ),
-                cnvkit.batch(
-                    inputTumor,
-                    inputNormal,
-                    cnvkit_dir,
-                    tar_dep=tarcov_cnn,
-                    antitar_dep=antitarcov_cnn,
-                    target_bed=bed,
-                    reference=pool_ref_cnn,
-                    output_cnn=ref_cnn
-                ),
-            ], name="cnvkit_batch." + tumor_pair.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            cnvkit_dir,
+                            remove=True
+                        ),
+                        cnvkit.batch(
+                            inputTumor,
+                            inputNormal,
+                            cnvkit_dir,
+                            tar_dep=tarcov_cnn,
+                            antitar_dep=antitarcov_cnn,
+                            target_bed=bed,
+                            reference=pool_ref_cnn,
+                            output_cnn=ref_cnn
+                        )
+                    ],
+                    name="cnvkit_batch." + tumor_pair.name
+                )
+            )
 
-            jobs.append(concat_jobs([
-                bash.mkdir(
-                    cnvkit_dir,
-                    remove=True
-                ),
-                cnvkit.fix(
-                    tarcov_cnn,
-                    antitarcov_cnn,
-                    os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"),
-                    reference=pool_ref_cnn,
-                    ref_cnn=ref_cnn
-                ),
-                cnvkit.segment(
-                    os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"),
-                    tumor_cns
-                ),
-            ], name="cnvkit_batch.correction." + tumor_pair.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            cnvkit_dir,
+                            remove=True
+                        ),
+                        cnvkit.fix(
+                            tarcov_cnn,
+                            antitarcov_cnn,
+                            os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"),
+                            reference=pool_ref_cnn,
+                            ref_cnn=ref_cnn
+                        ),
+                        cnvkit.segment(
+                            os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"),
+                            tumor_cns
+                        )
+                    ],
+                    name="cnvkit_batch.correction." + tumor_pair.name
+                )
+            )
 
-            jobs.append(concat_jobs([
-                bash.mkdir(
-                    cnvkit_dir,
-                    remove=True
-                ),
-                cnvkit.call(
-                    tumor_cns,
-                    os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns")
-                ),
-                pipe_jobs([
-                    cnvkit.export(
-                        os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"),
-                        None,
-                        sample_id=tumor_pair.tumor.name
-                    ),
-                    htslib.bgzip_tabix(
-                        None,
-                        vcf_gz
-                    ),
-                ]),
-            ], name="cnvkit_batch.call." + tumor_pair.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            cnvkit_dir,
+                            remove=True
+                        ),
+                        cnvkit.call(
+                            tumor_cns,
+                            os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns")
+                        ),
+                        pipe_jobs(
+                            [
+                                cnvkit.export(
+                                    os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"),
+                                    None,
+                                    sample_id=tumor_pair.tumor.name
+                                ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    vcf_gz
+                                )
+                            ]
+                        )
+                    ],
+                    name="cnvkit_batch.call." + tumor_pair.name
+                )
+            )
 
-            jobs.append(concat_jobs([
-                bash.mkdir(
-                    cnvkit_dir,
-                    remove=True
-                ),
-                cnvkit.metrics(
-                    os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"),
-                    os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"),
-                    os.path.join(metrics, tumor_pair.name + ".metrics.tsv")
-                ),
-                cnvkit.scatter(
-                    os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"),
-                    os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"),
-                    os.path.join(cnvkit_dir, tumor_pair.name + ".scatter.pdf"),
-                    input_vcf,
-                    normal,
-                    tumor
-                ),
-                cnvkit.diagram(
-                    os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"),
-                    os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"),
-                    os.path.join(cnvkit_dir, tumor_pair.name + ".diagram.pdf")
-                ),
-            ], name="cnvkit_batch.metrics." + tumor_pair.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            cnvkit_dir,
+                            remove=True
+                        ),
+                        cnvkit.metrics(
+                            os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"),
+                            os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"),
+                            os.path.join(metrics, tumor_pair.name + ".metrics.tsv")
+                        ),
+                        cnvkit.scatter(
+                            os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"),
+                            os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"),
+                            os.path.join(cnvkit_dir, tumor_pair.name + ".scatter.pdf"),
+                            input_vcf,
+                            normal,
+                            tumor
+                        ),
+                        cnvkit.diagram(
+                            os.path.join(cnvkit_dir, tumor_pair.name + ".cnr"),
+                            os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"),
+                            os.path.join(cnvkit_dir, tumor_pair.name + ".diagram.pdf")
+                        )
+                    ],
+                    name="cnvkit_batch.metrics." + tumor_pair.name
+                )
+            )
 
         return jobs
 
@@ -5788,38 +5853,36 @@ class TumorPair(dnaseq.DnaSeqRaw):
             if coverage_bed:
                 bed = coverage_bed
 
-            coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.tumor.readsets[0])
-
-            bed = None
-
-            if coverage_bed:
-                bed = coverage_bed
-
-            jobs.append(concat_jobs([
-                bash.mkdir(
-                    svaba_directory,
-                    remove=True
-                ),
-                Job(
-                    command="cd " + svaba_directory
-                ),
-                svaba.run(
-                    input_tumor,
-                    tumor_pair.name,
-                    input_normal,
-                    bed
-                ),
-                Job(
-                    [somatic_input],
-                    [somatic_output],
-                    command="sed -e 's#" + os.path.abspath(input_normal) + "#" + tumor_pair.normal.name + "#g' " + somatic_input + " | " +
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            svaba_directory,
+                            remove=True
+                        ),
+                        Job(
+                            command="cd " + svaba_directory
+                        ),
+                        svaba.run(
+                            input_tumor,
+                            tumor_pair.name,
+                            input_normal,
+                            bed
+                        ),
+                        Job(
+                            [somatic_input],
+                            [somatic_output],
+                            command="sed -e 's#" + os.path.abspath(input_normal) + "#" + tumor_pair.normal.name + "#g' " + somatic_input + " | " +
                                                                "sed -e 's#" + os.path.abspath(input_tumor) + "#" + tumor_pair.tumor.name + "#g' > " + somatic_output),
-                Job(
-                    [germline_input],
-                    [germline_output],
-                    command="sed -e 's#" + os.path.abspath(input_normal) + "#" + tumor_pair.normal.name + "#g' " + germline_input + " | "
+                        Job(
+                            [germline_input],
+                            [germline_output],
+                            command="sed -e 's#" + os.path.abspath(input_normal) + "#" + tumor_pair.normal.name + "#g' " + germline_input + " | "
                                                                "sed -e 's#" + os.path.abspath(input_tumor) + "#" + tumor_pair.tumor.name + "#g' > " + germline_output)
-            ], name="svaba_run." + tumor_pair.name))
+                    ],
+                    name="svaba_run." + tumor_pair.name
+                )
+            )
 
         return jobs
 
