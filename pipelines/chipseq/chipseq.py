@@ -846,7 +846,7 @@ do
   do
     cp --parents {graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps {report_dir}/
     convert -rotate 90 {graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps {report_dir}/graphs/${{sample}}.${{mark_name}}_QC_Metrics.png
-    echo -e "\\n\\n\\t----\\n\\t![]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.png)\\n\\n\\tQC Metrics for Sample $sample and Mark $mark_name \([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps)\)" >> {report_file}
+    echo -e "\\n\\n    ----\\n    ![]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.png)\\n\\n    QC Metrics for Sample $sample and Mark $mark_name \([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_QC_Metrics.ps)\)" >> {report_file}
   done
 done""".format(
                     samples_associative_array=" ".join(
@@ -1598,7 +1598,7 @@ do
   do
     cp --parents {graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps {report_dir}/
     convert -rotate 90 {graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps {report_dir}/graphs/${{sample}}.${{mark_name}}_Misc_Graphs.png
-    echo -e "\\n\\n\\t----\\n\\t![]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.png)\\n\\n\\tAnnotation Statistics for Sample $sample and Mark $mark_name \([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps)\)" >> {report_file}
+    echo -e "\\n\\n    ----\\n    ![]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.png)\\n\\n    Annotation Statistics for Sample $sample and Mark $mark_name \([download high-res image]({graphs_dir}/${{sample}}.${{mark_name}}_Misc_Graphs.ps)\)" >> {report_file}
   done
 done""".format(
                     annotation_dir=self.output_dirs['anno_output_directory'],
