@@ -71,6 +71,7 @@ submit () {
       SUBMIT_RETCODE=0
       break
     else
+      SUBMIT_RETCODE=1
       echo error in submits
       cancel_jobs ${job_list}
       sleep 1
@@ -79,7 +80,7 @@ submit () {
   done
   if [[ ${SUBMIT_RETCODE} -eq 1 ]]; then
     echo "could not complete submit after $RETRY retry"
-    echo "Failed on:"
+    echo "Error log in ${job_script%.sh}.err:"
     cat "${job_script%.sh}.err"
   fi
 }
@@ -181,6 +182,5 @@ if [[ ${SUBMIT_RETCODE} -eq 0 ]]; then
   echo All done, uploading usage statistics
   bash ${chunk_folder}/wget_call.sh
 else
-  echo Error
   exit 1
 fi
