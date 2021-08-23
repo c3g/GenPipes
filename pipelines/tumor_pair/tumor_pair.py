@@ -625,61 +625,51 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 interval_list = os.path.join(tumor_alignment_directory, re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed)))
             
                 if not os.path.isfile(interval_list):
-                    job = tools.bed2interval_list(
-                        coverage_bed,
-                        interval_list
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(tumor_alignment_directory),
+                                tools.bed2interval_list(
+                                    coverage_bed,
+                                    interval_list
+                                )
+                            ],
+                            name="interval_list." + os.path.basename(coverage_bed)
+                        )
                     )
-                    job.name = "interval_list." + os.path.basename(coverage_bed)
-                    jobs.append(job)
         
-            jobs.append(
-                concat_jobs([
-                    gatk4.base_recalibrator(
-                        normal_input,
-                        normal_base_recalibrator_output,
-                        intervals=interval_list
-                    )
-                ],
-                    name="gatk_base_recalibrator." + tumor_pair.name + "." + tumor_pair.normal.name
-                )
+            job = gatk4.base_recalibrator(
+                normal_input,
+                normal_base_recalibrator_output,
+                intervals=interval_list
             )
+            job.name = "gatk_base_recalibrator." + tumor_pair.name + "." + tumor_pair.normal.name
+            jobs.append(job)
         
-            jobs.append(
-                concat_jobs([
-                    gatk4.print_reads(
-                        normal_input,
-                        normal_print_reads_output,
-                        normal_base_recalibrator_output
-                    ),
-                ],
-                    name="gatk_print_reads." + tumor_pair.name + "." + tumor_pair.normal.name
-                )
+            job = gatk4.print_reads(
+                normal_input,
+                normal_print_reads_output,
+                normal_base_recalibrator_output
             )
+            job.name = "gatk_print_reads." + tumor_pair.name + "." + tumor_pair.normal.name
+            jobs.append(job)
 
-            jobs.append(
-                concat_jobs([
-                    gatk4.base_recalibrator(
-                        tumor_input,
-                        tumor_base_recalibrator_output,
-                        intervals=interval_list
-                    )
-                ],
-                    name="gatk_base_recalibrator." + tumor_pair.name + "." + tumor_pair.tumor.name
-                )
+            job = gatk4.base_recalibrator(
+                tumor_input,
+                tumor_base_recalibrator_output,
+                intervals=interval_list
             )
+            job.name = "gatk_base_recalibrator." + tumor_pair.name + "." + tumor_pair.tumor.name
+            jobs.append(job)
 
-            jobs.append(
-                concat_jobs([
-                    gatk4.print_reads(
-                        tumor_input,
-                        tumor_print_reads_output,
-                        tumor_base_recalibrator_output
-                    ),
-                ],
-                    name="gatk_print_reads." + tumor_pair.name + "." + tumor_pair.tumor.name
-                )
+            job = gatk4.print_reads(
+                tumor_input,
+                tumor_print_reads_output,
+                tumor_base_recalibrator_output
             )
-            
+            job.name = "gatk_print_reads." + tumor_pair.name + "." + tumor_pair.tumor.name
+            jobs.append(job)
+
         return jobs
 
     def sym_link_final_bam(self):
@@ -2206,12 +2196,18 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 interval_list = os.path.join(mutect_directory, re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed)))
 
                 if not interval_list in created_interval_lists:
-                    job = tools.bed2interval_list(
-                        coverage_bed,
-                        interval_list
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(mutect_directory),
+                                tools.bed2interval_list(
+                                    coverage_bed,
+                                    interval_list
+                                )
+                            ],
+                            name="interval_list." + os.path.basename(coverage_bed)
+                        )
                     )
-                    job.name = "interval_list." + os.path.basename(coverage_bed)
-                    jobs.append(job)
                     created_interval_lists.append(interval_list)
 
             if nb_jobs == 1:
@@ -2826,11 +2822,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
         splitjobs_dir = os.path.join(self.output_dir, "pairedVariants", "splitjobs", "vardict" )
         if use_bed:
             for idx in range(nb_jobs):
-                interval_list.append(os.path.join(
-                    splitjobs_dir,
-                    "exome",
-                    "interval_list",
-                    str(idx).zfill(4) + "-scattered.interval_list"
+                interval_list.append(
+                    os.path.join(
+                        splitjobs_dir,
+                        "exome",
+                        "interval_list",
+                        str(idx).zfill(4) + "-scattered.interval_list"
                     )
                 )
 
