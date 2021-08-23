@@ -5,6 +5,7 @@ SLEEP_TIME=120
 MAX_QUEUE=500
 SHEDULER_USER=$USER
 SCHEDULER=slurm
+export RETRY=10
 type squeue > /dev/null 2>&1 || SCHEDULER=pbs
 
 
@@ -19,6 +20,7 @@ echo "   -n <MAX QUEUE>          Maximum number of job in slurm queue"
 echo "                             default=$MAX_QUEUE"
 echo "   -s <SLEEP TIME>         Number of second to sleep when queue is full default=$SLEEP_TIME"
 echo "   -S <SCHEDULER>          Scheduler running on the cluster (slurm or pbs) default=$SCHEDULER"
+echo "   -l <N>                  Will retry N time to resubmit a chunk if error occurs default=$RETRY"
 
 }
 
@@ -56,7 +58,8 @@ submit () {
   echo submitting $1
   job_script=${1}
   job_list=${job_script%.sh}.out
-  while true; do
+
+  for N in {1..$RETRY}; do
     # clean cancel if there is an interruption
     trap "echo cleanup; cancel_trap ${job_list}" EXIT
     bash ${job_script} 2> ${job_script%.sh}.err
@@ -73,12 +76,16 @@ submit () {
       echo resubmitting
     fi
   done
+  echo "could not complete submit after $RETRY retry"
+  echo "Failed on:"
+  cat ${job_script%.sh}.err
+
 }
 
 
 #  Script
 
-while getopts "hn:u:s:S:" opt; do
+while getopts "hl:n:u:s:S:" opt; do
   case $opt in
     u)
       SHEDULER_USER=${OPTARG}
@@ -97,6 +104,9 @@ while getopts "hn:u:s:S:" opt; do
     ;;
     n)
       MAX_QUEUE=${OPTARG}
+    ;;
+    l)
+      RETRY=${OPTARG}
     ;;
     h)
       usage
