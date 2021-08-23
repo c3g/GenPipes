@@ -77,7 +77,7 @@ submit () {
       echo resubmitting
     fi
   done
-  if [[ SUBMIT_RETCODE -eq 1 ]]; then
+  if [[ ${SUBMIT_RETCODE} -eq 1 ]]; then
     echo "could not complete submit after $RETRY retry"
     echo "Failed on:"
     cat "${job_script%.sh}.err"
@@ -177,5 +177,10 @@ for sh_script in "${all_sh[@]}"; do
 
 done
 
-echo All done, uploading usage statistics
-bash ${chunk_folder}/wget_call.sh
+if [[ ${SUBMIT_RETCODE} -eq 0 ]]; then
+  echo All done, uploading usage statistics
+  bash ${chunk_folder}/wget_call.sh
+else
+  echo Error
+  exit 1
+fi
