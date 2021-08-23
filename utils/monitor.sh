@@ -5,6 +5,7 @@ SLEEP_TIME=120
 MAX_QUEUE=500
 SHEDULER_USER=$USER
 SCHEDULER=slurm
+export SUBMIT_RETCODE=1
 export RETRY=10
 type squeue > /dev/null 2>&1 || SCHEDULER=pbs
 
@@ -58,7 +59,6 @@ submit () {
   echo submitting $1
   job_script=${1}
   job_list=${job_script%.sh}.out
-
   for N in {1..$RETRY}; do
     # clean cancel if there is an interruption
     trap "echo cleanup; cancel_trap ${job_list}" EXIT
@@ -68,6 +68,7 @@ submit () {
       trap - SIGTERM
       touch ${job_list}
       echo ${job_script} was sucessfully submitted
+      SUBMIT_RETCODE=0
       break
     else
       echo error in submits
@@ -76,10 +77,11 @@ submit () {
       echo resubmitting
     fi
   done
-  echo "could not complete submit after $RETRY retry"
-  echo "Failed on:"
-  cat ${job_script%.sh}.err
-
+  if [[ SUBMIT_RETCODE -eq 1 ]]; then
+    echo "could not complete submit after $RETRY retry"
+    echo "Failed on:"
+    cat "${job_script%.sh}.err"
+  fi
 }
 
 
