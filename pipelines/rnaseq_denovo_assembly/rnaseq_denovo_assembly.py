@@ -1047,27 +1047,81 @@ pandoc --to=markdown \\
             # if readset is single end then one job will be created for the forward read
             if(merge_readsets_fastq2):
                 #job to merge double reads
-                merge_fastq = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory, sample.name)),
+                merge_fastq = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory, merge_sample)),
                                         Job(input_files=merge_readsets_fastq1,
-                                            output_files=[os.path.join(output_directory, sample.name,
-                                                                      sample.name + "merged.pair1.fastq")],
-                                           command="cat  " + ' '.join(merge_readsets_fastq1) + " > " +
-                                         os.path.join(output_directory, sample.name, sample.name + "merged.pair1.fastq")),
+                                            output_files=[os.path.join(output_directory, merge_sample,
+                                                                      merge_sample + "_merged.pair1.fastq.gz")],
+                                           command="""if (file {input1} | grep -q compressed ) ; then
+ln -nsf {input1} {temp_out1}
+else
+gzip -c {input1} > {temp_out1} 
+fi &&
+if (file {input2} | grep -q compressed ) ; then
+ln -nsf {input2} {temp_out2}
+else 
+gzip -c {input2} > {temp_out2}
+fi &&
+zcat  {temp_out1} {temp_out2} > {output} &&
+rm {temp_out1} &&
+rm {temp_out2}""".format(
+                                               input1 = merge_readsets_fastq1[0],
+                                               input2 = merge_readsets_fastq1[1],
+                                               temp_out1 = os.path.join(output_directory, merge_sample, merge_sample + "_temp1.read1.fastq.gz"),
+                                               temp_out2= os.path.join(output_directory, merge_sample,
+                                                                      merge_sample + "_temp2.read1.fastq.gz"),
+                                               output = os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair1.fastq.gz")
+                                           )),
+
                                            Job(input_files=merge_readsets_fastq2,
-                                               output_files=[os.path.join(output_directory, sample.name,
-                                                                    sample.name + "merged.pair2.fastq")],
-                                           command="cat  " + ' '.join(merge_readsets_fastq2) + " > " +
-                                                       os.path.join(output_directory, sample.name,
-                                                                    sample.name + "merged.pair2.fastq"))
+                                               output_files=[os.path.join(output_directory, merge_sample,
+                                                                    merge_sample + "_merged.pair2.fastq.gz")],
+                                           command="""if (file {input1} | grep -q compressed ) ; then
+ln -nsf {input1} {temp_out1}
+else
+gzip -c {input1} > {temp_out1} 
+fi &&
+if (file {input2} | grep -q compressed ) ; then
+ln -nsf {input2} {temp_out2}
+else 
+gzip -c {input2} > {temp_out2}
+fi &&
+zcat  {temp_out1} {temp_out2} > {output} &&
+rm {temp_out1} &&
+rm {temp_out2}""".format(
+                                               input1 = merge_readsets_fastq2[0],
+                                               input2 = merge_readsets_fastq2[1],
+                                               temp_out1 = os.path.join(output_directory, merge_sample, merge_sample + "_temp1.read2.fastq.gz"),
+                                               temp_out2=os.path.join(output_directory, merge_sample,
+                                                                      merge_sample + "_temp2.read2.fastq.gz"),
+                                               output = os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair2.fastq.gz")
+                                           ))
                                            ])
             else:
                 #jobs to merge single reads
-                merge_fastq = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory, sample.name)),
+                merge_fastq = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory, merge_sample)),
                                         Job(input_files=merge_readsets_fastq1,
-                                            output_files=[os.path.join(output_directory, sample.name,
-                                                                      sample.name + "merged.pair1.fastq")],
-                                           command="cat  " + ' '.join(merge_readsets_fastq1) + " > " +
-                                         os.path.join(output_directory, sample.name, sample.name + "merged.pair1.fastq"))
+                                            output_files=[os.path.join(output_directory, merge_sample,
+                                                                      merge_sample + "_merged.pair1.fastq.gz")],
+                                           command="""if (file {input1} | grep -q compressed ) ; then
+ln -nsf {input1} {temp_out1}
+else
+gzip -c {input1} > {temp_out1} 
+fi &&
+if (file {input2} | grep -q compressed ) ; then
+ln -nsf {input2} {temp_out2}
+else 
+gzip -c {input2} > {temp_out2}
+fi &&
+zcat  {temp_out1} {temp_out2} > {output} &&
+rm {temp_out1} &&
+rm {temp_out2}""".format(
+                                               input1 = merge_readsets_fastq1[0],
+                                               input2 = merge_readsets_fastq1[1],
+                                               temp_out1 = os.path.join(output_directory, merge_sample, merge_sample + "_temp1.read1.fastq.gz"),
+                                               temp_out2= os.path.join(output_directory, merge_sample,
+                                                                      merge_sample + "_temp2.read1.fastq.gz"),
+                                               output = os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair1.fastq.gz")
+                                           ))
                                            ])
             merge_fastq_job.append(merge_fastq)
             merge_fastq_jobs = concat_jobs(merge_fastq_job)
@@ -1094,11 +1148,14 @@ pandoc --to=markdown \\
         #these samples will already have merged fastq and we need to use them for the seq2fun
 
         merge_fastq_dir = "merge_fastq"
-        write_line_jobs = []
+        write_line_control_jobs = []
+        write_line_treatment_jobs = []
         folder_jobs = []
         for contrast in self.contrasts:
+            output_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.temp.txt")
             folder_job = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory, contrast.name)),
-            Job(command="touch " + os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.txt"))])
+            Job(output_files= [output_file_contrast],
+                command="touch " + output_file_contrast)])
             folder_jobs.append(folder_job)
             create_folder_jobs = concat_jobs(folder_jobs)
 
@@ -1111,10 +1168,11 @@ pandoc --to=markdown \\
                             if sample.name == readset.sample.name:
                                 if readset.run_type == "PAIRED_END":
                                     if len(sample.readsets) > 1:
+
                                         candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
-                                                     sample.name + "merged.pair1.fastq")
+                                                     sample.name + "_merged.pair1.fastq.gz")
                                         candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name,
-                                                                        sample.name + "merged.pair2.fastq")
+                                                                        sample.name + "_merged.pair2.fastq.gz")
 
                                     else:
                                         candidate_fastq1 = readset.fastq1
@@ -1127,20 +1185,20 @@ pandoc --to=markdown \\
                                                                             readset.sample.name,
                                                                             readset.name + ".pair2.fastq.gz")
                                     write_line_job = Job(
+                                        input_files= [candidate_fastq1, candidate_fastq2],
                                             command="""echo -e "{sample}\t{fastq1}\t{fastq2}\tcontrol" >> {file}""".format(
                                                 sample=sample.name,
-                                                file=os.path.join(output_directory, contrast.name,
-                                                                  contrast.name + "_sample_table.txt"),
+                                                file=output_file_contrast,
                                                 fastq1=candidate_fastq1,
                                                 fastq2=candidate_fastq2
                                             )
                                         )
-                                    write_line_jobs.append(write_line_job)
-                                    sample_table_jobs = concat_jobs(write_line_jobs)
+                                    write_line_control_jobs.append(write_line_job)
+                                    sample_table_contrast_jobs = concat_jobs(write_line_control_jobs)
                                 elif readset.run_type == "SINGLE_END":
                                     if len(sample.readsets) > 1:
                                         candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
-                                                                        sample.name + "merged.pair1.fastq")
+                                                                        sample.name + "merged.pair1.fastq.gz")
                                     else:
                                         candidate_fastq1 = readset.fastq1
                                         if readset.bam:
@@ -1148,18 +1206,105 @@ pandoc --to=markdown \\
                                                                             readset.sample.name,
                                                                             readset.name + ".pair1.fastq.gz")
                                     write_line_job = Job(
+                                        input_files=[candidate_fastq1],
                                             command="""echo -e "{sample}\t{fastq1}\tcontrol" >> {file}""".format(
                                                 sample=sample.name,
-                                                file=os.path.join(output_directory, contrast.name,
-                                                                  contrast.name + "_sample_table.txt"),
+                                                file=output_file_contrast,
                                                 fastq1=candidate_fastq1
                                             )
 
                                         )
-                                    write_line_jobs.append(write_line_job)
-                                    sample_table_jobs = concat_jobs(write_line_jobs)
+                                    write_line_control_jobs.append(write_line_job)
+                                    sample_table_contrast_jobs = concat_jobs(write_line_control_jobs)
+        for contrast in self.contrasts:
+            #####treatments
+            output_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.temp.txt")
+            for treatment in contrast.treatments:
 
-        job = concat_jobs([create_folder_jobs,sample_table_jobs])
+                for sample in self.samples:
+                    if treatment.name == sample.name:
+
+                        for readset in self.readsets:
+                            if sample.name == readset.sample.name:
+                                if readset.run_type == "PAIRED_END":
+                                    if len(sample.readsets) > 1:
+
+                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
+                                                                        sample.name + "_merged.pair1.fastq.gz")
+                                        candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name,
+                                                                        sample.name + "_merged.pair2.fastq.gz")
+
+                                    else:
+                                        candidate_fastq1 = readset.fastq1
+                                        candidate_fastq2 = readset.fastq2
+                                        if readset.bam:
+                                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
+                                                                            readset.sample.name,
+                                                                            readset.name + ".pair1.fastq.gz")
+                                            candidate_fastq2 = os.path.join(self.output_dir, "raw_reads",
+                                                                            readset.sample.name,
+                                                                            readset.name + ".pair2.fastq.gz")
+                                    write_line_job = Job(
+                                        input_files=[candidate_fastq1, candidate_fastq2],
+                                        command="""echo -e "{sample}\t{fastq1}\t{fastq2}\ttreatment" >> {file}""".format(
+                                            sample=sample.name,
+                                            file= output_file_contrast,
+                                            fastq1=candidate_fastq1,
+                                            fastq2=candidate_fastq2
+                                        )
+                                    )
+                                    write_line_treatment_jobs.append(write_line_job)
+                                    sample_table_treatment_jobs = concat_jobs(write_line_treatment_jobs)
+                                elif readset.run_type == "SINGLE_END":
+                                    if len(sample.readsets) > 1:
+                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
+                                                                        sample.name + "merged.pair1.fastq.gz")
+                                    else:
+                                        candidate_fastq1 = readset.fastq1
+                                        if readset.bam:
+                                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
+                                                                            readset.sample.name,
+                                                                            readset.name + ".pair1.fastq.gz")
+                                    write_line_job = Job(
+                                        input_files=[candidate_fastq1],
+                                        command="""echo -e "{sample}\t{fastq1}\ttreatment" >> {file}""".format(
+                                            sample=sample.name,
+                                            file=output_file_contrast,
+                                            fastq1=candidate_fastq1
+                                        )
+
+                                    )
+                                    write_line_treatment_jobs.append(write_line_job)
+                                    sample_table_treatment_jobs = concat_jobs(write_line_treatment_jobs)
+
+
+        remove_duplicates_job = []
+        ##remove duplicates
+        for contrast in self.contrasts:
+
+            input_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.temp.txt")
+            output_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.txt")
+            remove_duplicates = concat_jobs([Job(
+                input_files=[input_file_contrast],
+                command="""sort -u {input_file} > {output_file}""".format(
+                    input_file=input_file_contrast,
+                    output_file=output_file_contrast
+                )
+
+            ),Job(
+                input_files=[input_file_contrast],
+                command="""rm {temp_file}""".format(
+                    temp_file=input_file_contrast
+
+                )
+
+            )])
+            remove_duplicates_job.append(remove_duplicates)
+            remove_duplicates_jobs = concat_jobs(remove_duplicates_job)
+
+
+
+        job = concat_jobs([create_folder_jobs,sample_table_contrast_jobs, sample_table_treatment_jobs, remove_duplicates_jobs])
         job.samples = self.samples
         job.name = "create_sample_table"
         jobs.append(job)
