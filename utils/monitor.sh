@@ -59,7 +59,7 @@ submit () {
   echo submitting $1
   job_script=${1}
   job_list=${job_script%.sh}.out
-  for N in {1..$RETRY}; do
+  for ((N=1;N<=RETRY;N++)); do
     # clean cancel if there is an interruption
     trap "echo cleanup; cancel_trap ${job_list}" EXIT
     bash ${job_script} 2> ${job_script%.sh}.err
