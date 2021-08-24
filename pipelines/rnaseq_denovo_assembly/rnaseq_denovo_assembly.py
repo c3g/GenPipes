@@ -46,6 +46,7 @@ from bfx import trinotate
 from bfx import blast
 from bfx import exonerate
 from bfx import bash_cmd as bash
+from bfx import seq2fun
 
 from pipelines import common
 from pipelines.rnaseq import rnaseq
@@ -1151,11 +1152,14 @@ rm {temp_out2}""".format(
         write_line_control_jobs = []
         write_line_treatment_jobs = []
         folder_jobs = []
+        seq2fun_input_files = []
+        seq2fun_output_samples = []
+
         for contrast in self.contrasts:
+
             output_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.temp.txt")
             folder_job = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory, contrast.name)),
-            Job(output_files= [output_file_contrast],
-                command="touch " + output_file_contrast)])
+            Job(command="touch " + output_file_contrast)])
             folder_jobs.append(folder_job)
             create_folder_jobs = concat_jobs(folder_jobs)
 
@@ -1184,10 +1188,14 @@ rm {temp_out2}""".format(
                                             candidate_fastq2 = os.path.join(self.output_dir, "raw_reads",
                                                                             readset.sample.name,
                                                                             readset.name + ".pair2.fastq.gz")
+
+                                    seq2fun_input_files.append(candidate_fastq1)
+                                    seq2fun_input_files.append(candidate_fastq2)
+                                    seq2fun_output_samples.append(sample.name)
                                     write_line_job = Job(
                                         input_files= [candidate_fastq1, candidate_fastq2],
                                             command="""echo -e "{sample}\t{fastq1}\t{fastq2}\tcontrol" >> {file}""".format(
-                                                sample=sample.name,
+                                                sample=os.path.join(output_directory, contrast.name, sample.name),
                                                 file=output_file_contrast,
                                                 fastq1=candidate_fastq1,
                                                 fastq2=candidate_fastq2
@@ -1205,10 +1213,13 @@ rm {temp_out2}""".format(
                                             candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
                                                                             readset.sample.name,
                                                                             readset.name + ".pair1.fastq.gz")
+
+                                    seq2fun_input_files.append(candidate_fastq1)
+                                    seq2fun_output_samples.append(sample.name)
                                     write_line_job = Job(
                                         input_files=[candidate_fastq1],
                                             command="""echo -e "{sample}\t{fastq1}\tcontrol" >> {file}""".format(
-                                                sample=sample.name,
+                                                sample=os.path.join(output_directory, contrast.name, sample.name),
                                                 file=output_file_contrast,
                                                 fastq1=candidate_fastq1
                                             )
@@ -1244,10 +1255,14 @@ rm {temp_out2}""".format(
                                             candidate_fastq2 = os.path.join(self.output_dir, "raw_reads",
                                                                             readset.sample.name,
                                                                             readset.name + ".pair2.fastq.gz")
+
+                                    seq2fun_input_files.append(candidate_fastq1)
+                                    seq2fun_input_files.append(candidate_fastq2)
+                                    seq2fun_output_samples.append(sample.name)
                                     write_line_job = Job(
                                         input_files=[candidate_fastq1, candidate_fastq2],
                                         command="""echo -e "{sample}\t{fastq1}\t{fastq2}\ttreatment" >> {file}""".format(
-                                            sample=sample.name,
+                                            sample=os.path.join(output_directory, contrast.name, sample.name),
                                             file= output_file_contrast,
                                             fastq1=candidate_fastq1,
                                             fastq2=candidate_fastq2
@@ -1265,10 +1280,12 @@ rm {temp_out2}""".format(
                                             candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
                                                                             readset.sample.name,
                                                                             readset.name + ".pair1.fastq.gz")
+                                    seq2fun_input_files.append(candidate_fastq1)
+                                    seq2fun_output_samples.append(sample.name)
                                     write_line_job = Job(
                                         input_files=[candidate_fastq1],
                                         command="""echo -e "{sample}\t{fastq1}\ttreatment" >> {file}""".format(
-                                            sample=sample.name,
+                                            sample=os.path.join(output_directory, contrast.name, sample.name),
                                             file=output_file_contrast,
                                             fastq1=candidate_fastq1
                                         )
@@ -1278,27 +1295,36 @@ rm {temp_out2}""".format(
                                     sample_table_treatment_jobs = concat_jobs(write_line_treatment_jobs)
 
 
-        remove_duplicates_job = []
-        ##remove duplicates
-        for contrast in self.contrasts:
 
+        remove_duplicates_job = []
+        ##remove duplicates and execute seq2fun
+        for contrast in self.contrasts:
+            seq2fun_outputs =[]
+            output_dir = os.path.join(output_directory, contrast.name)
+            seq2fun_outputs.append(output_dir + "/All_sample_KO_abundance_table_submit2networkanalyst.txt")
+            seq2fun_outputs.append(output_dir + "/All_sample_KO_abundance_table.txt")
+            seq2fun_outputs.append(output_dir + "/All_sample_pathway_table.txt")
+            seq2fun_outputs.append(output_dir + "/All_samples.html")
+            seq2fun_outputs.append(os.path.join(output_directory, contrast.name,
+                                                "All_sample_species_table.txt"))
             input_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.temp.txt")
             output_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.txt")
             remove_duplicates = concat_jobs([Job(
-                input_files=[input_file_contrast],
+                output_files= [output_file_contrast],
                 command="""sort -u {input_file} > {output_file}""".format(
                     input_file=input_file_contrast,
                     output_file=output_file_contrast
                 )
 
             ),Job(
-                input_files=[input_file_contrast],
                 command="""rm {temp_file}""".format(
                     temp_file=input_file_contrast
 
                 )
 
-            )])
+            ),
+            seq2fun.processing(seq2fun_input_files, seq2fun_outputs, output_file_contrast)
+            ])
             remove_duplicates_job.append(remove_duplicates)
             remove_duplicates_jobs = concat_jobs(remove_duplicates_job)
 
@@ -1306,9 +1332,10 @@ rm {temp_out2}""".format(
 
         job = concat_jobs([create_folder_jobs,sample_table_contrast_jobs, sample_table_treatment_jobs, remove_duplicates_jobs])
         job.samples = self.samples
-        job.name = "create_sample_table"
+        job.name = "seq2fun.processing"
         jobs.append(job)
         return jobs
+
 
     @property
     def steps(self):
