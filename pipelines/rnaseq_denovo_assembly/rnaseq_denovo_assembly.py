@@ -1298,15 +1298,22 @@ rm {temp_out2}""".format(
 
         remove_duplicates_job = []
         ##remove duplicates and execute seq2fun
+        genemap = (config.param('seq2fun', 'genemap'))
+        tfmi = (config.param('seq2fun', 'tfmi'))
+        other_options = config.param('seq2fun', 'other_options')
+
         for contrast in self.contrasts:
             seq2fun_outputs =[]
             output_dir = os.path.join(output_directory, contrast.name)
-            seq2fun_outputs.append(output_dir + "/All_sample_KO_abundance_table_submit2networkanalyst.txt")
             seq2fun_outputs.append(output_dir + "/All_sample_KO_abundance_table.txt")
-            seq2fun_outputs.append(output_dir + "/All_sample_pathway_table.txt")
-            seq2fun_outputs.append(output_dir + "/All_samples.html")
-            seq2fun_outputs.append(os.path.join(output_directory, contrast.name,
-                                                "All_sample_species_table.txt"))
+            if "profiling" in other_options:
+                seq2fun_outputs.append(output_dir + "/All_sample_KO_abundance_table_submit2networkanalyst.txt")
+                seq2fun_outputs.append(output_dir + "/All_sample_pathway_table.txt")
+                seq2fun_outputs.append(output_dir + "/All_samples.html")
+                seq2fun_outputs.append(os.path.join(output_directory, contrast.name,
+                                                    "All_sample_species_table.txt"))
+
+
             input_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.temp.txt")
             output_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.txt")
             remove_duplicates = concat_jobs([Job(
@@ -1323,7 +1330,7 @@ rm {temp_out2}""".format(
                 )
 
             ),
-            seq2fun.processing(seq2fun_input_files, seq2fun_outputs, output_file_contrast)
+            seq2fun.processing(seq2fun_input_files, seq2fun_outputs, output_file_contrast, genemap, tfmi, other_options)
             ])
             remove_duplicates_job.append(remove_duplicates)
             remove_duplicates_jobs = concat_jobs(remove_duplicates_job)
