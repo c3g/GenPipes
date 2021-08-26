@@ -159,7 +159,7 @@ freebayes_calling
 -----------------
 FreeBayes is a haplotype-based variant detector designed to find small polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels (insertions and deletions), MNPs (multi-nucleotide polymorphisms), and complex events (composite insertion and substitution events) smaller than the length of a short-read sequencing alignment.
 
-        This method avoids one of the core problems with alignment-based variant detection— that identical sequences may have multiple possible alignments. See ![FreeBayes details here](https://github.com/freebayes/freebayes).
+This method avoids one of the core problems with alignment-based variant detection— that identical sequences may have multiple possible alignments. See ![FreeBayes details here](https://github.com/freebayes/freebayes).
 
 ivar_calling
 ------------
