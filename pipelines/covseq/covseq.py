@@ -729,7 +729,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         """
         FreeBayes is a haplotype-based variant detector designed to find small polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels (insertions and deletions), MNPs (multi-nucleotide polymorphisms), and complex events (composite insertion and substitution events) smaller than the length of a short-read sequencing alignment.
 
-        This method avoids one of the core problems with alignment-based variant detection— that identical sequences may have multiple possible alignments.
+        This method avoids one of the core problems with alignment-based variant detection that identical sequences may have multiple possible alignments.
         """
 
         jobs = []
