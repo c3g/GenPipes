@@ -32,7 +32,7 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [--genpipes_file GENPIPES_FILE] [-d DESIGN]
                   [-t {chipseq,atacseq}] [-r READSETS] [-v]
 
-Version: 3.5.0
+Version: 3.6.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -68,7 +68,7 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a valid singularity
+                        Run inside a container providing a validsingularity
                         image path
   --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
                         Command file output path. This is the command used to
@@ -88,8 +88,8 @@ Steps:
 
 ----
 ```
-![chipseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq.png)
+![chipseq chipseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_chipseq.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_chipseq.png)
 ```
 chipseq:
 1- picard_sam_to_fastq

@@ -68,7 +68,7 @@ def calculate_hs_metrics(input, output, intervals, reference_sequence=None):
                 ['picard_calculate_hs_metrics', 'module_picard']
             ],
             command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CalculateHsMetrics \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CollectHsMetrics \\
  TMP_DIR={tmp_dir} \\
  INPUT={input} \\
  OUTPUT={output} \\
@@ -358,6 +358,40 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
+def mark_duplicates_mate_cigar(inputs, output, metrics_file, remove_duplicates="false"):
+    if not isinstance(inputs, list):
+        inputs=[inputs]
+    if config.param('picard_mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] > "4":
+        return gatk4.mark_duplicates_mate_cigar(inputs, output, metrics_file, remove_duplicates)
+    else:
+        return Job(
+            inputs,
+            [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
+            [
+                ['picard_mark_duplicates_mate_cigar', 'module_java'],
+                ['picard_mark_duplicates_mate_cigar', 'module_picard']
+            ],
+            command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar \\
+ MarkDuplicatesWithMateCigar \\
+ REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
+ TMP_DIR={tmp_dir} \\
+ {inputs} \\
+ OUTPUT={output} \\
+ METRICS_FILE={metrics_file} \\
+ MAX_RECORDS_IN_RAM={max_records_in_ram} {other_options}""".format(
+            tmp_dir=config.param('picard_mark_duplicates_mate_cigar', 'tmp_dir'),
+            java_other_options=config.param('picard_mark_duplicates_mate_cigar', 'java_other_options'),
+            ram=config.param('picard_mark_duplicates_mate_cigar', 'ram'),
+            remove_duplicates=remove_duplicates,
+            inputs=" \\\n  ".join(["INPUT=" + str(input) for input in inputs]),
+            output=output,
+            metrics_file=metrics_file,
+            max_records_in_ram=config.param('picard_mark_duplicates_mate_cigar', 'max_records_in_ram', type='int'),
+            other_options=config.param('picard_mark_duplicates_mate_cigar', 'other_options',required = False) if config.param('picard_mark_duplicates', 'other_options',required = False) else ""),
+            removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
+        )
+
 def merge_sam_files(inputs, output):
 
     if not isinstance(inputs, list):
@@ -540,7 +574,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         )
   )
 
-
 def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
 
     if config.param('picard_collect_rna_metrics', 'module_picard').split("/")[2] < "2":
@@ -593,6 +626,8 @@ def add_read_groups(input, output, readgroup, library, processing_unit, sample, 
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar AddOrReplaceReadGroups \\
+ VALIDATION_STRINGENCY=SILENT  \\
+ TMP_DIR={tmp_dir} \\
  CREATE_INDEX=true \\
  INPUT={input} \\
  OUTPUT={output} \\
@@ -617,7 +652,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
                 sequencing_center=("RGCN=\"" + config.param('picard_add_read_groups', 'sequencing_center') + "\"" if config.param('picard_add_read_groups', 'sequencing_center', required=False) else "")
             )
         )
-
 
 def bed2interval_list(dictionary, bed, output):
     if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
@@ -644,5 +678,52 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             dictionary=dictionary if dictionary else config.param('picard_bed2interval_list', 'genome_dictionary', type='filepath'),
             bed=bed,
             output=output,
+        )
+    )
+
+def interval_list2bed(input, output):
+    return Job(
+        [input],
+        [output],
+        [
+            ['picard_interval_list2bed', 'module_java'],
+            ['picard_interval_list2bed', 'module_picard']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar IntervalListToBed \\
+  INPUT={input} \\
+  OUTPUT={output}""".format(
+            tmp_dir=config.param('picard_interval_list2bed', 'tmp_dir'),
+            java_other_options=config.param('picard_interval_list2bed', 'java_other_options'),
+            ram=config.param('picard_interval_list2bed', 'ram'),
+            input=input,
+            output=output
+            )
+        )
+
+def scatterIntervalsByNs(reference,
+                  output,
+                  options= None):
+#                  exclude_intervals=None):
+
+    return Job(
+        [reference],
+        [output],
+        [
+            ['picard_ScatterIntervalsByNs', 'module_java'],
+            ['picard_ScatterIntervalsByNs', 'module_picard']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar \\
+  ScatterIntervalsByNs {options} \\
+  REFERENCE={reference} \\
+  OUTPUT={output}""".format(
+            tmp_dir=config.param('picard_ScatterIntervalsByNs', 'tmp_dir'),
+            options=options if options else config.param('picard_ScatterIntervalsByNs', 'options'),
+            java_other_options=config.param('picard_ScatterIntervalsByNs', 'java_other_options'),
+            ram=config.param('picard_ScatterIntervalsByNs', 'ram'),
+            reference=reference if reference else config.param('picard_ScatterIntervalsByNs', 'genome_fasta', type='filepath'),
+#            exclude_intervals=exclude_intervals if exclude_intervals else "".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
+            output=output
         )
     )
