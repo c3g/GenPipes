@@ -53,7 +53,7 @@ from pipelines.rnaseq import rnaseq
 
 log = logging.getLogger(__name__)
 
-class RnaSeqDeNovoAssembly(rnaseq.RnaSeq):
+class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
     """
     RNA-Seq De Novo Assembly Pipeline
     =================================

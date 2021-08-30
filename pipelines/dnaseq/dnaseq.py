@@ -270,6 +270,13 @@ END
                         re.sub("\.bam$", ".", os.path.basename(readset.bam))
                     )
                     candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        readset.name + "."
+                    )
+                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
             elif readset.run_type == "SINGLE_END":
@@ -388,7 +395,7 @@ END
                                 "\\tSM:" + readset.sample.name + \
                                 "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
                                 #("\\tPU:" + readset.name) + \
-                                ("\\tPU:" + readset.run + "." + readset.lane if readset.run and readset.lane else "") + \
+                                ("\\tPU:" + readset.sample.name + "." + readset.run + "." + readset.lane if readset.sample.name and readset.run and readset.lane else "") + \
                                 ("\\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
                                 ("\\tPL:" + config.param('bwa_mem', 'sequencing_technology') if config.param('bwa_mem', 'sequencing_technology', required=False) else "Illumina") + \
                                 "'"
@@ -503,7 +510,14 @@ END
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
-            readset_bams = self.select_input_files([[os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets], [readset.bam for readset in sample.readsets]])
+            # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
+            candidate_readset_bams = [
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets],
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
+            ]
+            if readset.bam:
+                candidate_readset_bams.append([readset.bam for readset in sample.readsets])
+            readset_bams = self.select_input_files(candidate_readset_bams)
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
@@ -787,7 +801,6 @@ END
         need to be recalculated since the reads are realigned at positions that differ from their original alignment.
         Fixing the read mate positions is done using [BVATools](https://bitbucket.org/mugqic/bvatools).
         """
-
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
@@ -976,7 +989,7 @@ END
 
             job = sambamba.markdup(
                 input,
-                output,
+                output
             )
             job.name = "sambamba_mark_duplicates." + sample.name
             job.samples = [sample]
@@ -1012,7 +1025,6 @@ END
 
                 if not os.path.isfile(interval_list):
                     job = tools.bed2interval_list(
-                        None,
                         coverage_bed,
                         interval_list
                     )
@@ -1108,7 +1120,8 @@ END
 
         jobs = []
         for sample in self.samples:
-            picard_directory = os.path.join("metrics", "dna", sample.name, "picard_metrics")
+            picard_directory = os.path.join(self.output_dir, "metrics", "dna", sample.name, "picard_metrics")
+
             alignment_directory = os.path.join("alignment", sample.name)
             readset = sample.readsets[0]
 
@@ -1128,6 +1141,7 @@ END
                 picard_directory,
                 remove=True
             )
+        
             jobs.append(
                 concat_jobs([
                     mkdir_job,
@@ -1141,7 +1155,7 @@ END
                     samples=[sample]
                     )
                 )
-
+            
             jobs.append(
                 concat_jobs([
                     mkdir_job,
@@ -1176,7 +1190,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            qualimap_directory = os.path.join("metrics", "dna", sample.name, "qualimap", sample.name)
+            qualimap_directory = os.path.join(self.output_dir, "metrics", "dna", sample.name, "qualimap", sample.name)
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
@@ -1259,16 +1273,17 @@ END
 
         jobs = []
         for sample in self.samples:
-            fastqc_directory = os.path.join("metrics", "dna", sample.name, "fastqc")
+            fastqc_directory = os.path.join(self.output_dir,"metrics", "dna", sample.name, "fastqc")
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                #[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
             ])
-            output_dir = os.path.join(fastqc_directory)
+            output_dir = os.path.join(self.output_dir, fastqc_directory)
             file = re.sub(".bam", "", os.path.basename(input))
             output = os.path.join(fastqc_directory, file + "_fastqc.zip")
 
@@ -1309,14 +1324,14 @@ END
 
         jobs = []
 
-        metrics_directory = os.path.join("metrics", "dna")
+        metrics_directory = os.path.join(self.output_dir,"metrics", "dna")
         input_dep = []
         inputs = []
         for sample in self.samples:
             input_oxog = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".oxog_metrics.txt")
             input_qcbias = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".qcbias_metrics.txt")
             input_all_picard = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".all.metrics.quality_distribution.pdf")
-            input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", sample.name,"genome_results.txt")
+            input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", sample.name, "genome_results.txt")
             [input_fastqc] = self.select_input_files([
                 [os.path.join(metrics_directory, sample.name, "fastqc", sample.name + ".sorted.dup_fastqc.zip")],
                 [os.path.join(metrics_directory, sample.name, "fastqc", sample.name + "_fastqc.zip")],
@@ -1746,6 +1761,62 @@ END
             
         return jobs
 
+    def gatk_readset_fingerprint(self):
+        """
+    	CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
+    	"""
+    
+        jobs = []
+        inputs = []
+
+        for readset in self.readsets:
+            alignment_directory = os.path.join("alignment", readset.sample.name, readset.name)
+            input = os.path.join(alignment_directory, readset.sample.name, readset.name + ".sorted.bam")
+            inputs.append(input)
+
+        output = os.path.join("metrics", "dna", "readset.fingerprint")
+
+        job = gatk4.crosscheck_fingerprint(inputs, output)
+        job.name = "gatk_crosscheck_fingerprint.readset"
+    
+        jobs.append(job)
+        
+        return jobs
+
+    # def metrics_gatk_cluster_fingerprint_sample(self):
+    #     """
+    #     CheckFingerprint (Picard)
+    #     Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+    #     input: sample SAM/BAM or VCF
+    #     output: fingerprint file
+    #     """
+    #     job = self.metrics_gatk_cluster_fingerprint(
+    #         os.path.join("metrics", "dna", "sample.fingerprint"),
+    #         os.path.join("metrics", "dna", "sample.cluster.fingerprint"),
+    #         "gatk_cluster_fingerprint.sample"
+    #     )
+    #     return job
+    #
+    # def metrics_gatk_cluster_fingerprint_variant(self) :
+    #     """
+    #     CheckFingerprint (Picard)
+    #     Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+    #     input: sample SAM/BAM or VCF
+    #     output: fingerprint file
+    #     """
+    #
+    #     job = self.metrics_gatk_cluster_fingerprint(
+    #         os.path.join("metrics", "dna", "variant.fingerprint"),
+    #         os.path.join("metrics", "dna", "variant.cluster.fingerprint"),
+    #         "gatk_cluster_fingerprint.variant"
+    #     )
+    #     #job.samples = self.samples
+    #
+    #     return job
+
     def gatk_haplotype_caller(self):
         """
         GATK haplotype caller for snps and small indels.
@@ -1763,7 +1834,7 @@ END
 
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
@@ -2113,7 +2184,7 @@ END
         if nb_haplotype_jobs > 1 and interval_list is None:
             unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
             gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
-            
+
             gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
             job = gatk4.cat_variants(
@@ -2408,12 +2479,12 @@ pandoc \\
                     concat_jobs([
                         mkdir_job,
                         pipe_jobs([
-                            samtools.mpileup(
+                            bcftools.mpileup(
                                 input,
                                 None,
                                 config.param('snp_and_indel_bcf', 'mpileup_other_options')
                                 ),
-                            samtools.bcftools_call(
+                            bcftools.call(
                                 "-",
                                 os.path.join(output_directory, "allSamples.bcf"),
                                 config.param('snp_and_indel_bcf', 'bcftools_other_options')
@@ -2430,13 +2501,13 @@ pandoc \\
                         concat_jobs([
                             mkdir_job,
                             pipe_jobs([
-                                samtools.mpileup(
+                                bcftools.mpileup(
                                     input,
                                     None,
                                     config.param('snp_and_indel_bcf', 'mpileup_other_options'),
                                     region
                                     ),
-                                samtools.bcftools_call(
+                                bcftools.call(
                                     "-",
                                     os.path.join(output_directory, "allSamples." + region + ".bcf"),
                                     config.param('snp_and_indel_bcf', 'bcftools_other_options')
@@ -2630,6 +2701,7 @@ pandoc \\
 
         return jobs
 
+
     def haplotype_caller_snp_id_annotation(self):
         """
         dbSNP annotation applied to haplotype caller vcf.
@@ -2749,6 +2821,7 @@ pandoc \\
         
         return jobs
 
+
     def haplotype_caller_dbnsfp_annotation(self):
         """
         Additional SVN annotations applied to haplotype caller vcf.
@@ -2759,7 +2832,6 @@ pandoc \\
         (SIFT, Polyphen2, LRT and MutationTaster), three conservation scores (PhyloP, GERP++ and SiPhy)
         and other function annotations).
         """
-
         job = self.dbnsfp_annotation(
             "variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.vcf.gz",
             "variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp.vcf",
@@ -2959,6 +3031,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         )
         return jobs
 
+
     def mpileup_metrics_snv_graph_metrics(self):
         """
         See general metrics_vcf_stats !  Applied to mpileup vcf
@@ -2993,8 +3066,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                              [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
                                              [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
 
-            inputs = [input]
-
             SV_types = config.param('delly_call_filter', 'sv_types_options').split(",")
 
             for sv_type in SV_types:
@@ -3007,7 +3078,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         remove=True
                     ),
                     delly.call(
-                        input,
+                        [input],
                         output_bcf,
                         sv_type
                     ),
@@ -3192,18 +3263,45 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             jobs.append(concat_jobs([
                 bash.mkdir(lumpy_directory, remove=True),
                 pipe_jobs([
-                    samtools.view(inputNormal, None, "-b -F 1294"),
-                    sambamba.sort("/dev/stdin", discordants_normal, lumpy_directory, config.param('extract_discordant_reads', 'discordants_sort_option')),
+                    samtools.view(
+                        inputNormal,
+                        None,
+                        "-b -F 1294"
+                    ),
+                    sambamba.sort(
+                        "/dev/stdin",
+                        discordants_normal,
+                        lumpy_directory,
+                        config.param('extract_discordant_reads', 'sambamba_option')
+                    ),
                 ]),
             ], name="extract_discordant_reads." + sample.name))
 
             jobs.append(concat_jobs([
                 bash.mkdir(lumpy_directory, remove=True),
                 pipe_jobs([
-                    samtools.view(inputNormal, None, "-h"),
-                    Job([None], [None], [['lumpy_sv', 'module_lumpy']], command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"),
-                    samtools.view("-", None, " -Sb "),
-                    sambamba.sort("/dev/stdin", splitters_normal, lumpy_directory, config.param('extract_split_reads', 'split_sort_option')),
+                    samtools.view(
+                        inputNormal,
+                        None,
+                        "-h"
+                    ),
+                    Job(
+                        [None],
+                        [None],
+                        [['lumpy_sv', 'module_lumpy']],
+                        command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"
+                    ),
+                    samtools.view(
+                        "-",
+                        None,
+                        " -Sb "
+                    ),
+                    sambamba.sort(
+                        "/dev/stdin",
+                        splitters_normal,
+                        lumpy_directory,
+                        config.param('extract_split_reads', 'sambamba_option')
+                    ),
                 ]),
             ], name="extract_split_reads." + sample.name))
 
@@ -3378,7 +3476,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 background = [os.path.join(metrics, sample.name + ".metrics.tsv") for sample in self.samples]
 
             else:
-           
                 jobs.append(concat_jobs([
                     bash.mkdir(cnvkit_dir, remove=True),
                     cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn, target_bed=bed, reference=pool_ref_cnn, output_cnn=ref_cnn),

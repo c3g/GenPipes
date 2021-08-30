@@ -5,6 +5,8 @@ SLEEP_TIME=120
 MAX_QUEUE=500
 SHEDULER_USER=$USER
 SCHEDULER=slurm
+export SUBMIT_RETCODE=1
+export RETRY=10
 type squeue > /dev/null 2>&1 || SCHEDULER=pbs
 
 
@@ -19,6 +21,7 @@ echo "   -n <MAX QUEUE>          Maximum number of job in slurm queue"
 echo "                             default=$MAX_QUEUE"
 echo "   -s <SLEEP TIME>         Number of second to sleep when queue is full default=$SLEEP_TIME"
 echo "   -S <SCHEDULER>          Scheduler running on the cluster (slurm or pbs) default=$SCHEDULER"
+echo "   -l <N>                  Will retry N time to resubmit a chunk if error occurs default=$RETRY"
 
 }
 
@@ -56,7 +59,7 @@ submit () {
   echo submitting $1
   job_script=${1}
   job_list=${job_script%.sh}.out
-  while true; do
+  for ((N=1;N<=RETRY;N++)); do
     # clean cancel if there is an interruption
     trap "echo cleanup; cancel_trap ${job_list}" EXIT
     bash ${job_script} 2> ${job_script%.sh}.err
@@ -65,20 +68,27 @@ submit () {
       trap - SIGTERM
       touch ${job_list}
       echo ${job_script} was sucessfully submitted
+      SUBMIT_RETCODE=0
       break
     else
+      SUBMIT_RETCODE=1
       echo error in submits
       cancel_jobs ${job_list}
       sleep 1
       echo resubmitting
     fi
   done
+  if [[ ${SUBMIT_RETCODE} -eq 1 ]]; then
+    echo "could not complete submit after $RETRY retry"
+    echo "Error log in ${job_script%.sh}.err:"
+    cat "${job_script%.sh}.err"
+  fi
 }
 
 
 #  Script
 
-while getopts "hn:u:s:S:" opt; do
+while getopts "hl:n:u:s:S:" opt; do
   case $opt in
     u)
       SHEDULER_USER=${OPTARG}
@@ -97,6 +107,9 @@ while getopts "hn:u:s:S:" opt; do
     ;;
     n)
       MAX_QUEUE=${OPTARG}
+    ;;
+    l)
+      RETRY=${OPTARG}
     ;;
     h)
       usage
@@ -165,5 +178,9 @@ for sh_script in "${all_sh[@]}"; do
 
 done
 
-echo All done, uploading usage statistics
-bash ${chunk_folder}/wget_call.sh
+if [[ ${SUBMIT_RETCODE} -eq 0 ]]; then
+  echo All done, uploading usage statistics
+  bash ${chunk_folder}/wget_call.sh
+else
+  exit 1
+fi

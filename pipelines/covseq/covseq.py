@@ -39,6 +39,7 @@ from pipelines.dnaseq import dnaseq
 from bfx import bcftools
 from bfx import bedtools
 from bfx import bwa
+from bfx import covseq_tools
 from bfx import cutadapt
 from bfx import fgbio
 from bfx import freebayes
@@ -47,6 +48,7 @@ from bfx import htslib
 from bfx import ivar
 from bfx import kraken2
 from bfx import multiqc
+from bfx import ncovtools
 from bfx import quast
 from bfx import sambamba
 from bfx import samtools
@@ -824,32 +826,46 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
         for sample in self.samples:
             variant_directory = os.path.join("variant", sample.name)
-            metrics_prefix = os.path.join("metrics", "dna", sample.name, "snpeff_metrics", sample.name + ".snpEff")
+            metrics_ivar_prefix = os.path.join("metrics", "dna", sample.name, "snpeff_metrics_ivar", sample.name + ".snpEff")
+            metrics_freebayes_prefix = os.path.join("metrics", "dna", sample.name, "snpeff_metrics_freebayes", sample.name + ".snpEff")
 
-            [input_vcf] = self.select_input_files([
+            [ivar_vcf] = self.select_input_files([
                 [os.path.join(variant_directory, sample.name + ".sorted.filtered.primerTrim.vcf.gz")],
                 [os.path.join(variant_directory, sample.name + ".sorted.filtered.vcf.gz")],
                 [os.path.join(variant_directory, sample.name + ".sorted.vcf.gz")]
             ])
 
-            output_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
+            ivar_output_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(ivar_vcf)))
+
+            freebayes_vcf = os.path.join(variant_directory, sample.name) + ".freebayes_calling.fixed.norm.vcf.gz"
+            freebayes_output_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(freebayes_vcf)))
 
             jobs.append(
                 concat_jobs([
-                    bash.mkdir(os.path.dirname(metrics_prefix)),
+                    bash.mkdir(os.path.dirname(metrics_ivar_prefix)),
                     snpeff.snpeff_annotate(
-                        input_vcf,
-                        output_vcf,
-                        metrics_prefix
+                        ivar_vcf,
+                        ivar_output_vcf,
+                        metrics_ivar_prefix
                         ),
                     htslib.bgzip_tabix(
-                        output_vcf,
-                        output_vcf + ".gz"
+                        ivar_output_vcf,
+                        ivar_output_vcf + ".gz"
+                        ),
+                    bash.mkdir(os.path.dirname(metrics_freebayes_prefix)),
+                    snpeff.snpeff_annotate(
+                        freebayes_vcf,
+                        freebayes_output_vcf,
+                        metrics_freebayes_prefix
+                        ),
+                    htslib.bgzip_tabix(
+                        freebayes_output_vcf,
+                        freebayes_output_vcf + ".gz"
                         )
                     ],
                     name="snpeff_annotate." + sample.name,
-                    samples=[sample],
-                    removable_files=[output_vcf]
+                    samples=[sample]
+                    # removable_files=[output_vcf]
                     )
                 )
 
@@ -961,20 +977,26 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
         jobs = []
         for sample in self.samples:
             consensus_directory = os.path.join("consensus", sample.name)
-            output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics")
-            [input_fa] = self.select_input_files([
+            ivar_output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics_ivar")
+            [ivar_consensus] = self.select_input_files([
                 [os.path.join(consensus_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
                 [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
                 [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
             ])
+            freebayes_output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics_freebayes")
+            freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.fasta"
 
             jobs.append(
                 concat_jobs([
-                    bash.mkdir(output_dir),
+                    bash.mkdir(ivar_output_dir),
                     quast.quast(
-                        input_fa,
-                        output_dir,
-                        prefix="quast_consensus_metrics"
+                        ivar_consensus,
+                        ivar_output_dir
+                        ),
+                    bash.mkdir(freebayes_output_dir),
+                    quast.quast(
+                        freebayes_consensus,
+                        freebayes_output_dir
                         )
                     ],
                     name="quast_consensus_metrics." + sample.name,
@@ -985,37 +1007,34 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
         return jobs
 
 
-    def rename_consensus_header(self):
+    def rename_consensus_header_ivar(self):
         """
         Rename reads headers
         """
 
         jobs = []
 
-        # job = bash.mkdir(os.path.join("consensus"))
         for sample in self.samples:
             consensus_directory = os.path.join("consensus", sample.name)
-            [input_fa] = self.select_input_files([
+            [ivar_consensus] = self.select_input_files([
                 [os.path.join(consensus_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
                 [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
                 [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
             ])
-            freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.fasta"
-            freebayes_consensus_renamed = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.renamed.fasta"
-            quast_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics")
-            quast_html = os.path.join(quast_directory, "report.html")
-            quast_tsv = os.path.join(quast_directory, "report.tsv")
+            quast_ivar_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics_ivar")
+            quast_ivar_html = os.path.join(quast_ivar_directory, "report.html")
+            quast_ivar_tsv = os.path.join(quast_ivar_directory, "report.tsv")
 
-            output_fa = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
-            output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'sequencing_technology', required=False), status="${STATUS}"))
+            ivar_output_fa = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
+            ivar_output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'sequencing_technology', required=False), status="${IVAR_STATUS}"))
 
             variant_directory = os.path.join("variant", sample.name)
-            [input_vcf] = self.select_input_files([
+            [ivar_vcf] = self.select_input_files([
                 [os.path.join(variant_directory, sample.name + ".sorted.filtered.primerTrim.vcf.gz")],
                 [os.path.join(variant_directory, sample.name + ".sorted.filtered.vcf.gz")],
                 [os.path.join(variant_directory, sample.name + ".sorted.vcf.gz")]
             ])
-            annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
+            ivar_annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(ivar_vcf)))
 
             alignment_directory = os.path.join("alignment", sample.name)
             [input_bam] = self.select_input_files([
@@ -1027,47 +1046,42 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
 
             jobs.append(
                 concat_jobs([
-                    bash.mkdir(os.path.dirname(output_fa)),
+                    bash.mkdir(os.path.dirname(ivar_output_fa)),
                     Job(
-                        input_files=[quast_tsv, quast_html],
+                        input_files=[quast_ivar_tsv, quast_ivar_html],
                         output_files=[],
                         command="""\\
-cons_len=`grep -oP "Total length \(>= 0 bp\)\\t\K.*?(?=$)" {quast_tsv}`
-N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\[\K.*?(?=])" {quast_html}`
-cons_perc_N=`echo "scale=2; 100*$N_count/$cons_len" | bc -l`
-frameshift=`if grep -q "frameshift_variant" {annotated_vcf}; then echo "FLAG"; fi`
+ivar_cons_len=`grep -oP "Total length \(>= 0 bp\)\\t\K.*?(?=$)" {quast_ivar_tsv}`
+ivar_N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\[\K.*?(?=])" {quast_ivar_html}`
+ivar_cons_perc_N=`echo "scale=2; 100*$ivar_N_count/$ivar_cons_len" | bc -l`
+ivar_frameshift=`if grep -q "frameshift_variant" {ivar_annotated_vcf}; then echo "FLAG"; fi`
 genome_size=`awk '{{print $2}}' {genome_file}`
 bam_cov50X=`awk '{{if ($4 > 50) {{count = count + $3-$2}}}} END {{if (count) {{print count}} else {{print 0}}}}' {bedgraph_file}`
 bam_cov50X=`echo "scale=2; 100*$bam_cov50X/$genome_size" | bc -l`
-STATUS=`awk -v bam_cov50X=$bam_cov50X -v frameshift=$frameshift -v cons_perc_N=$cons_perc_N 'BEGIN {{ if (cons_perc_N < 1 && frameshift != "FLAG" && bam_cov50X >= 90) {{print "pass"}}  else if (cons_perc_N > 5) {{print "rej"}} else if ((cons_perc_N >= 1 && cons_perc_N <= 5) || frameshift == "FLAG" || bam_cov50X < 90) {{print "flag"}} }}'`
-export STATUS""".format(
-    quast_html=quast_html,
-    quast_tsv=quast_tsv,
+IVAR_STATUS=`awk -v bam_cov50X=$bam_cov50X -v ivar_frameshift=$ivar_frameshift -v ivar_cons_perc_N=$ivar_cons_perc_N 'BEGIN {{ if (ivar_cons_perc_N < 5 && ivar_frameshift != "FLAG" && bam_cov50X >= 90) {{print "pass"}}  else if (ivar_cons_perc_N > 10) {{print "rej"}} else if ((ivar_cons_perc_N >= 5 && ivar_cons_perc_N <= 10) || ivar_frameshift == "FLAG" || bam_cov50X < 90) {{print "flag"}} }}'`
+export IVAR_STATUS""".format(
+    quast_ivar_html=quast_ivar_html,
+    quast_ivar_tsv=quast_ivar_tsv,
     genome_file=config.param('DEFAULT', 'igv_genome', required=False),
-    annotated_vcf=annotated_vcf,
+    ivar_annotated_vcf=ivar_annotated_vcf,
     bedgraph_file=bedgraph_file
     )
                         ),
                     Job(
-                        input_files=[input_fa, freebayes_consensus],
-                        output_files=[output_fa, freebayes_consensus_renamed],
+                        input_files=[ivar_consensus],
+                        output_files=[ivar_output_fa],
                         command="""\\
-awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:ivar|snv_call_method:ivar"; next}}{{print}}' < {input_fa} > {output_status_fa} && \\
-ln -sf {output_status_fa_basename} {output_fa} && \\
-awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:bcftools|snv_call_method:freebayes"; next}}{{print}}' < {freebayes_consensus} > {freebayes_consensus_renamed}""".format(
+awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:ivar|snv_call_method:ivar"; next}}{{print}}' < {ivar_consensus} > {ivar_output_status_fa} && \\
+ln -sf {ivar_output_status_fa_basename} {ivar_output_fa}""".format(
     country=config.param('rename_consensus_header', 'country', required=False),
     province=config.param('rename_consensus_header', 'province', required=False),
     year=config.param('rename_consensus_header', 'year', required=False),
     seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
-    # assemb_method=config.param('rename_consensus_header', 'assemb_method', required=False),
-    # snv_call_method=config.param('rename_consensus_header', 'snv_call_method', required=False),
     sample=sample.name,
-    input_fa=input_fa,
-    output_status_fa_basename=os.path.basename(output_status_fa),
-    output_status_fa=output_status_fa,
-    output_fa=output_fa,
-    freebayes_consensus=freebayes_consensus,
-    freebayes_consensus_renamed=freebayes_consensus_renamed
+    ivar_consensus=ivar_consensus,
+    ivar_output_status_fa_basename=os.path.basename(ivar_output_status_fa),
+    ivar_output_status_fa=ivar_output_status_fa,
+    ivar_output_fa=ivar_output_fa
     )
                         )
                 ],
@@ -1078,6 +1092,84 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
 
         return jobs
 
+
+    def rename_consensus_header_freebayes(self):
+        """
+        Rename reads headers
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            consensus_directory = os.path.join("consensus", sample.name)
+            freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.fasta"
+            
+            quast_freebayes_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics_freebayes")
+            quast_freebayes_html = os.path.join(quast_freebayes_directory, "report.html")
+            quast_freebayes_tsv = os.path.join(quast_freebayes_directory, "report.tsv")
+
+            freebayes_output_fa = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.renamed.fasta"
+            freebayes_output_status_fa = os.path.join(consensus_directory, """{sample_name}.freebayes_calling.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'sequencing_technology', required=False), status="${FREEBAYES_STATUS}"))
+
+            variant_directory = os.path.join("variant", sample.name)
+            freebayes_vcf = os.path.join(variant_directory, sample.name) + ".freebayes_calling.fixed.norm.vcf.gz"
+            freebayes_annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(freebayes_vcf)))
+
+            alignment_directory = os.path.join("alignment", sample.name)
+            [input_bam] = self.select_input_files([
+                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+            ])
+
+            bedgraph_file = os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(input_bam)))
+
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(os.path.dirname(freebayes_output_fa)),
+                    Job(
+                        input_files=[quast_freebayes_tsv, quast_freebayes_html],
+                        output_files=[],
+                        command="""\\
+freebayes_cons_len=`grep -oP "Total length \(>= 0 bp\)\\t\K.*?(?=$)" {quast_freebayes_tsv}`
+freebayes_N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\[\K.*?(?=])" {quast_freebayes_html}`
+freebayes_cons_perc_N=`echo "scale=2; 100*$freebayes_N_count/$freebayes_cons_len" | bc -l`
+freebayes_frameshift=`if grep -q "frameshift_variant" {freebayes_annotated_vcf}; then echo "FLAG"; fi`
+genome_size=`awk '{{print $2}}' {genome_file}`
+bam_cov50X=`awk '{{if ($4 > 50) {{count = count + $3-$2}}}} END {{if (count) {{print count}} else {{print 0}}}}' {bedgraph_file}`
+bam_cov50X=`echo "scale=2; 100*$bam_cov50X/$genome_size" | bc -l`
+FREEBAYES_STATUS=`awk -v bam_cov50X=$bam_cov50X -v freebayes_frameshift=$freebayes_frameshift -v freebayes_cons_perc_N=$freebayes_cons_perc_N 'BEGIN {{ if (freebayes_cons_perc_N < 5 && freebayes_frameshift != "FLAG" && bam_cov50X >= 90) {{print "pass"}}  else if (freebayes_cons_perc_N > 10) {{print "rej"}} else if ((freebayes_cons_perc_N >= 5 && freebayes_cons_perc_N <= 10) || freebayes_frameshift == "FLAG" || bam_cov50X < 90) {{print "flag"}} }}'`
+export FREEBAYES_STATUS""".format(
+    quast_freebayes_html=quast_freebayes_html,
+    quast_freebayes_tsv=quast_freebayes_tsv,
+    genome_file=config.param('DEFAULT', 'igv_genome', required=False),
+    freebayes_annotated_vcf=freebayes_annotated_vcf,
+    bedgraph_file=bedgraph_file
+    )
+                        ),
+                    Job(
+                        input_files=[freebayes_consensus],
+                        output_files=[freebayes_output_fa],
+                        command="""\\
+awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:bcftools|snv_call_method:freebayes"; next}}{{print}}' < {freebayes_consensus} > {freebayes_output_status_fa} && \\
+ln -sf {freebayes_output_status_fa_basename} {freebayes_output_fa}""".format(
+    country=config.param('rename_consensus_header', 'country', required=False),
+    province=config.param('rename_consensus_header', 'province', required=False),
+    year=config.param('rename_consensus_header', 'year', required=False),
+    seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
+    sample=sample.name,
+    freebayes_consensus=freebayes_consensus,
+    freebayes_output_status_fa_basename=os.path.basename(freebayes_output_status_fa),
+    freebayes_output_status_fa=freebayes_output_status_fa,
+    freebayes_output_fa=freebayes_output_fa
+    )
+                        )
+                ],
+                name="rename_consensus_header." + sample.name,
+                samples=[sample]
+                )
+            )
+
+        return jobs
 
     def run_multiqc(self):
 
@@ -1090,17 +1182,11 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
             input_oxog = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".oxog_metrics.txt")
             input_qcbias = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".qcbias_metrics.txt")
             input_all_picard = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".all.metrics.quality_distribution.pdf")
-            # input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", sample.name + ".genome_results.txt")
-            # input_fastqc = os.path.join(metrics_directory, sample.name, "fastqc", sample.name + ".fastqc.zip")
-            # input_flagstat = os.path.join(metrics_directory, sample.name, "flagstat", sample.name + ".flagstat")
 
             input_dep += [
                 input_oxog,
                 input_qcbias,
                 input_all_picard
-                # input_qualimap,
-                # input_fastqc,
-                # input_flagstat
             ]
 
             inputs += [os.path.join(metrics_directory, sample.name)]
@@ -1154,19 +1240,16 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
 
         return jobs
 
-    def prepare_report(self):
+    def prepare_table(self):
 
         jobs = []
 
+        metrics_directory = os.path.join("metrics", "dna")
+
         readset_file=os.path.relpath(self.args.readsets.name, self.output_dir)
-        readset_file_report="report.readset.tsv"
 
         run_metadata = os.path.join("report", "run_metadata.csv")
-
-        ncovtools_directory = os.path.join("report", "ncov_tools")
-        metadata = os.path.join(ncovtools_directory, "metadata.tsv")
-        ncovtools_data_directory = os.path.join(ncovtools_directory, "data")
-        ncovtools_config = os.path.join(ncovtools_directory, "config.yaml")
+        software_version = os.path.join("report", "software_versions.csv")
 
         modules = []
         # Retrieve all unique module version values in config files
@@ -1203,35 +1286,19 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
                 classified_output = kraken_out_prefix + ".classified_sequences.fastq"
                 kraken_outputs.extend((unclassified_output, classified_output))
 
-        job = concat_jobs([
-            bash.mkdir(ncovtools_data_directory),
-            bash.mkdir(os.path.join("report", "sample_reports")),
-            Job(
-                    input_files=[],
-                    output_files=[readset_file_report, metadata],
-                    command="""\\
-head -n 1 {readset_file} > {readset_file_report} && \\
-echo -e "sample\\tct\\tdate" > {metadata}""".format(
-    readset_file=readset_file,
-    readset_file_report=readset_file_report,
-    metadata=metadata
-    )
-                ),
-            ])
-
         quast_outputs = []
         flagstat_outputs = []
         bedgraph_outputs = []
         picard_outputs = []
         for sample in self.samples:
             # Finding quast outputs
-            quast_output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics")
+            ivar_quast_output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics_ivar")
             quast_outputs.extend([
-                os.path.join(quast_output_dir, "report.html"),
-                os.path.join(quast_output_dir, "report.pdf"),
-                os.path.join(quast_output_dir, "report.tex"),
-                os.path.join(quast_output_dir, "report.tsv"),
-                os.path.join(quast_output_dir, "report.txt")
+                os.path.join(ivar_quast_output_dir, "report.html"),
+                os.path.join(ivar_quast_output_dir, "report.pdf"),
+                os.path.join(ivar_quast_output_dir, "report.tex"),
+                os.path.join(ivar_quast_output_dir, "report.tsv"),
+                os.path.join(ivar_quast_output_dir, "report.txt")
                 ])
             # Finding flagstat outputs
             flagstat_directory = os.path.join("metrics", "dna", sample.name, "flagstat")
@@ -1264,55 +1331,6 @@ echo -e "sample\\tct\\tdate" > {metadata}""".format(
                     picard_out + ".alignment_summary_metrics",
                 ])
 
-            filtered_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
-            primer_trimmed_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")
-            consensus_directory = os.path.join("consensus", sample.name)
-            ivar_consensus = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
-            freebayes_consensus = os.path.join(consensus_directory, sample.name + ".freebayes_calling.consensus.renamed.fasta")
-            variant_directory = os.path.join("variant", sample.name)
-            ivar_variants = os.path.join(variant_directory, sample.name + ".variants.tsv")
-            freebayes_variants = os.path.join(variant_directory, sample.name + ".freebayes_calling.consensus.vcf")
-
-            output_filtered_bam = os.path.join(ncovtools_data_directory, os.path.basename(filtered_bam))
-            output_primer_trimmed_bam = os.path.join(ncovtools_data_directory, os.path.basename(primer_trimmed_bam))
-            output_consensus = os.path.join(ncovtools_data_directory, os.path.basename(ivar_consensus))
-            output_variants = os.path.join(ncovtools_data_directory, os.path.basename(ivar_variants))
-
-            job = concat_jobs([
-                        job,
-                        Job(
-                            input_files=[filtered_bam, primer_trimmed_bam, ivar_consensus, ivar_variants],
-                            output_files=[output_filtered_bam, output_primer_trimmed_bam, output_consensus, output_variants],
-                            command="""\\
-echo "Linking files for ncov_tools for sample {sample_name}..." && \\
-if [ "$(ls -1 {filtered_bam})" != "" ] && [ "$(ls -1 {primer_trimmed_bam})" != "" ] && [ "$(ls -1 {ivar_consensus})" != "" ] && [ "$(ls -1 {ivar_variants})" != "" ];
-  then
-    ln -fs $(pwd -P )/$(ls -1 {filtered_bam}) {output_filtered_bam} && \\
-    ln -fs $(pwd -P )/$(ls -1 {primer_trimmed_bam}) {output_primer_trimmed_bam} && \\
-    ln -fs $(pwd -P )/$(ls -1 {ivar_consensus}) {output_consensus} && \\
-    ln -fs $(pwd -P )/$(ls -1 {ivar_variants}) {output_variants} && \\
-    grep {sample_name} {readset_file} >> {readset_file_report} && \\
-    echo -e "{sample_name}\\tNA\\tNA" >> {metadata}
-
-fi""".format(
-    readset_file=readset_file,
-    readset_file_report=readset_file_report,
-    filtered_bam=filtered_bam,
-    primer_trimmed_bam=primer_trimmed_bam,
-    ivar_consensus=ivar_consensus,
-    ivar_variants=ivar_variants,
-    output_filtered_bam=output_filtered_bam,
-    output_primer_trimmed_bam=output_primer_trimmed_bam,
-    output_consensus=output_consensus,
-    output_variants=output_variants,
-    sample_name=sample.name,
-    metadata=metadata
-    )
-                            )
-                    ],
-                    samples=[sample]
-                    )
-
         covid_collect_metrics_inputs = []
         covid_collect_metrics_inputs.extend(kraken_outputs)
         covid_collect_metrics_inputs.append(input_bam)
@@ -1322,82 +1340,17 @@ fi""".format(
         covid_collect_metrics_inputs.extend(picard_outputs)
         jobs.append(
             concat_jobs([
-                job,
-                Job(
-                    input_files=covid_collect_metrics_inputs,
-                    output_files=[os.path.join("metrics", "metrics.csv"), os.path.join("metrics", "host_contamination_metrics.tsv"), os.path.join("metrics", "host_removed_metrics.tsv"), os.path.join("metrics", "kraken2_metrics.tsv")],
-                    module_entries=[
-                        ['prepare_report', 'module_R'],
-                        ['prepare_report', 'module_CoVSeQ_tools'],
-                        ['prepare_report', 'module_samtools']
-                    ],
-                    command="""\\
-echo "Collecting metrics..." && \\
-covid_collect_metrics.sh {readset_file}""".format(
-    readset_file=readset_file
-    )
-                    ),
-                Job(
-                    input_files=[output_filtered_bam, output_primer_trimmed_bam, output_consensus, output_variants],
-                    output_files=[],
-                    module_entries=[
-                        ['prepare_report', 'module_ncovtools']
-                    ],
-                    command="""\\
-module purge && \\
-module load {ncovtools} && \\
-echo "Preparing to run ncov_tools..." && \\
-NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg" {readset_file} | awk '{{pwet=pwet", ""\\""$1"\\""}} END {{print substr(pwet,2)}}') && \\
-echo "data_root: data
-platform: \\"{platform}\\"
-run_name: \\"{run_name}\\"
-reference_genome: {reference_genome}
-amplicon_bed: {amplicon_bed}
-primer_bed: {primer_bed}
-offset: 0
-completeness_threshold: 0.9
-bam_pattern: \\"{{data_root}}/{{sample}}{bam_pattern_extension}\\"
-primer_trimmed_bam_pattern: \\"{{data_root}}/{{sample}}{primer_trimmed_bam_pattern_extension}\\"
-consensus_pattern: \\"{{data_root}}/{{sample}}{consensus_pattern_extension}\\"
-variants_pattern: \\"{{data_root}}/{{sample}}{variants_pattern_extension}\\"
-metadata: \\"{metadata}\\"
-negative_control_samples: [$NEG_CTRL]
-assign_lineages: true" > {ncovtools_config} && \\
-echo "Running ncov_tools..." && \\
-cd {ncovtools_directory} && \\
-snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all
-snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary
-snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis""".format(
-    ncovtools=config.param('prepare_report', 'module_ncovtools'),
-    readset_file=readset_file,
-    # neg_ctrl=os.path.join("report", "neg_controls.txt"),
-    platform=config.param('prepare_report', 'platform', required=True),
-    run_name=config.param('prepare_report', 'run_name', required=True),
-    reference_genome=config.param('prepare_report', 'reference_genome', required=True),
-    amplicon_bed=config.param('prepare_report', 'amplicon_bed', required=True),
-    primer_bed=config.param('prepare_report', 'primer_bed', required=True),
-    bam_pattern_extension=re.sub(r"^.*?\.", ".", output_filtered_bam),
-    primer_trimmed_bam_pattern_extension=re.sub(r"^.*?\.", ".", output_primer_trimmed_bam),
-    consensus_pattern_extension=re.sub(r"^.*?\.", ".", output_consensus),
-    variants_pattern_extension=re.sub(r"^.*?\.", ".", output_variants),
-    metadata=os.path.basename(metadata),
-    ncovtools_directory=ncovtools_directory,
-    ncovtools_config=ncovtools_config,
-    ncovtools_config_local=os.path.basename(ncovtools_config),
-    nb_threads=config.param('prepare_report', 'nb_threads'),
-    )
+                bash.mkdir(metrics_directory),
+                bash.mkdir(os.path.dirname(run_metadata)),
+                covseq_tools.covid_collect_metrics(
+                    readset_file,
+                    covid_collect_metrics_inputs
                     ),
                 Job(
                     input_files=[],
-                    output_files=[],
-                    module_entries=[
-                        ['prepare_report', 'module_R'],
-                        ['prepare_report', 'module_CoVSeQ_tools']
-                    ],
+                    output_files=[run_metadata, software_version],
+                    module_entries=[],
                     command="""\\
-module purge && \\
-module load {R_covseqtools} && \\
-cd {output_dir} && \\
 echo "Preparing to run metadata..." && \\
 echo "run_name,{run_name}
 genpipes_version,{genpipes_version}
@@ -1405,12 +1358,7 @@ cluster_server,{cluster_server}
 assembly_synonyms,{assembly_synonyms}
 sequencing_technology,{sequencing_technology}" > {run_metadata} && \\
 echo "Software Versions
-{modules_all}" > {software_version} && \\
-echo "Generating report tables..." && \\
-generate_report_tables.R --report_readset={readset_file_report} --metrics={metrics} --host_contamination_metrics={host_contamination_metrics} && \\
-echo "Rendering report..." && \\
-Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT', report_path, overwrite = TRUE); rmarkdown::render(report_path, output_file='run_report.pdf', output_format = 'all', output_dir='$(pwd)/report', knit_root_dir='$(pwd)')" """.format(
-    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
+{modules_all}" > {software_version}""".format(
     output_dir=self.output_dir,
     run_name=config.param('prepare_report', 'run_name', required=True),
     genpipes_version=self.genpipes_version.strip(),
@@ -1419,11 +1367,257 @@ Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT', 
     sequencing_technology=config.param('prepare_report', 'sequencing_technology'),
     run_metadata=run_metadata,
     modules_all="\n".join(modules),
-    software_version=os.path.join("report", "software_versions.csv"),
-    readset_file_report=readset_file_report,
-    metrics=os.path.join("metrics", "metrics.csv"),
-    host_contamination_metrics=os.path.join("metrics", "host_contamination_metrics.tsv")
+    software_version=software_version
     )
+                    )
+                ],
+                name="prepare_table." + config.param('prepare_report', 'run_name', required=True)
+                )
+            )
+
+        return jobs
+
+    def prepare_report_ivar(self):
+
+        jobs = []
+
+        readset_file=os.path.relpath(self.args.readsets.name, self.output_dir)
+        ivar_readset_file_report="report.readset_ivar.tsv"
+
+        software_version = os.path.join("report", "software_versions.csv")
+        run_metadata = os.path.join("report", "run_metadata.csv")
+
+        ivar_ncovtools_directory = os.path.join("report", "ncov_tools_ivar")
+        ivar_metadata = os.path.join(ivar_ncovtools_directory, "metadata.tsv")
+        ivar_ncovtools_data_directory = os.path.join(ivar_ncovtools_directory, "data")
+        ivar_ncovtools_config = os.path.join(ivar_ncovtools_directory, "config.yaml")
+
+        modules = []
+        # Retrieve all unique module version values in config files
+        # assuming that all module key names start with "module_"
+        for section in config.sections():
+            for name, value in config.items(section):
+                if re.search("^module_", name) and value not in modules:
+                    modules.append(value)
+
+        job = concat_jobs([
+            bash.mkdir(ivar_ncovtools_data_directory),
+            Job(
+                    input_files=[],
+                    output_files=[ivar_readset_file_report, ivar_metadata],
+                    command="""\\
+head -n 1 {readset_file} > {ivar_readset_file_report} && \\
+echo -e "sample\\tct\\tdate" > {ivar_metadata}""".format(
+    readset_file=readset_file,
+    ivar_readset_file_report=ivar_readset_file_report,
+    ivar_metadata=ivar_metadata
+    )
+                ),
+            ])
+
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            filtered_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
+            primer_trimmed_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")
+            consensus_directory = os.path.join("consensus", sample.name)
+            ivar_consensus = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
+            variant_directory = os.path.join("variant", sample.name)
+            ivar_variants = os.path.join(variant_directory, sample.name + ".variants.tsv")
+
+            ivar_output_filtered_bam = os.path.join(ivar_ncovtools_data_directory, os.path.basename(filtered_bam))
+            ivar_output_primer_trimmed_bam = os.path.join(ivar_ncovtools_data_directory, os.path.basename(primer_trimmed_bam))
+            ivar_output_consensus = os.path.join(ivar_ncovtools_data_directory, os.path.basename(ivar_consensus))
+            ivar_output_variants = os.path.join(ivar_ncovtools_data_directory, os.path.basename(ivar_variants))
+
+            job = concat_jobs([
+                        job,
+                        Job(
+                            input_files=[filtered_bam, primer_trimmed_bam, ivar_consensus, ivar_variants],
+                            output_files=[ivar_output_filtered_bam, ivar_output_primer_trimmed_bam, ivar_output_consensus, ivar_output_variants],
+                            command="""\\
+echo "Linking files for ncov_tools for sample {sample_name}..." && \\
+if [ "$(ls -1 {filtered_bam})" != "" ] && [ "$(ls -1 {primer_trimmed_bam})" != "" ] && [ "$(ls -1 {ivar_consensus})" != "" ] && [ "$(ls -1 {ivar_variants})" != "" ];
+  then
+    ln -fs $(pwd -P )/$(ls -1 {filtered_bam}) {ivar_output_filtered_bam} && \\
+    ln -fs $(pwd -P )/$(ls -1 {primer_trimmed_bam}) {ivar_output_primer_trimmed_bam} && \\
+    ln -fs $(pwd -P )/$(ls -1 {ivar_consensus}) {ivar_output_consensus} && \\
+    ln -fs $(pwd -P )/$(ls -1 {ivar_variants}) {ivar_output_variants} && \\
+    grep {sample_name} {readset_file} >> {ivar_readset_file_report} && \\
+    echo -e "{sample_name}\\tNA\\tNA" >> {ivar_metadata}
+fi""".format(
+    readset_file=readset_file,
+    ivar_readset_file_report=ivar_readset_file_report,
+    filtered_bam=filtered_bam,
+    primer_trimmed_bam=primer_trimmed_bam,
+    ivar_consensus=ivar_consensus,
+    ivar_variants=ivar_variants,
+    ivar_output_filtered_bam=ivar_output_filtered_bam,
+    ivar_output_primer_trimmed_bam=ivar_output_primer_trimmed_bam,
+    ivar_output_consensus=ivar_output_consensus,
+    ivar_output_variants=ivar_output_variants,
+    sample_name=sample.name,
+    ivar_metadata=ivar_metadata
+    )
+                            )
+                    ],
+                    samples=[sample]
+                    )
+        jobs.append(
+            concat_jobs([
+                job,
+                ncovtools.run_ncovtools(
+                    ivar_output_filtered_bam,
+                    ivar_output_primer_trimmed_bam,
+                    ivar_output_consensus,
+                    ivar_output_variants,
+                    readset_file,
+                    ivar_metadata,
+                    ivar_ncovtools_directory,
+                    ivar_ncovtools_config,
+                    self.output_dir
+                    ),
+                Job(input_files=[],
+                    output_files=[],
+                    module_entries=[
+                        ['prepare_report', 'module_R'],
+                        ['prepare_report', 'module_CoVSeQ_tools']
+                    ],
+                    command="""\\
+module purge && \\
+module load {R_covseqtools}""".format(
+    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
+    output_dir=self.output_dir)
+                    ),
+                covseq_tools.generate_report_tables(
+                    ivar_readset_file_report,
+                    output_name_pattern=os.path.join("report", "report_metrics_ivar")
+                    ),
+                covseq_tools.render_report(
+                    software_version,
+                    run_metadata,
+                    output_name_pattern=os.path.join("report", "report_metrics_ivar"),
+                    caller="ivar"
+                    )
+                ],
+                name="prepare_report." + config.param('prepare_report', 'run_name', required=True)
+                )
+            )
+
+        return jobs
+
+    def prepare_report_freebayes(self):
+
+        jobs = []
+
+        readset_file=os.path.relpath(self.args.readsets.name, self.output_dir)
+        freebayes_readset_file_report="report.readset_freebayes.tsv"
+
+        software_version = os.path.join("report", "software_versions.csv")
+        run_metadata = os.path.join("report", "run_metadata.csv")
+
+        freebayes_ncovtools_directory = os.path.join("report", "ncov_tools_freebayes")
+        freebayes_metadata = os.path.join(freebayes_ncovtools_directory, "metadata.tsv")
+        freebayes_ncovtools_data_directory = os.path.join(freebayes_ncovtools_directory, "data")
+        freebayes_ncovtools_config = os.path.join(freebayes_ncovtools_directory, "config.yaml")
+
+        job = concat_jobs([
+            bash.mkdir(freebayes_ncovtools_data_directory),
+            Job(
+                    input_files=[],
+                    output_files=[freebayes_readset_file_report, freebayes_metadata],
+                    command="""\\
+head -n 1 {readset_file} > {freebayes_readset_file_report} && \\
+echo -e "sample\\tct\\tdate" > {freebayes_metadata}""".format(
+    readset_file=readset_file,
+    freebayes_readset_file_report=freebayes_readset_file_report,
+    freebayes_metadata=freebayes_metadata
+    )
+                ),
+            ])
+
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+            filtered_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
+            primer_trimmed_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")
+            consensus_directory = os.path.join("consensus", sample.name)
+            freebayes_consensus = os.path.join(consensus_directory, sample.name + ".freebayes_calling.consensus.renamed.fasta")
+            variant_directory = os.path.join("variant", sample.name)
+            freebayes_variants = os.path.join(variant_directory, sample.name + ".freebayes_calling.consensus.vcf")
+
+            freebayes_output_filtered_bam = os.path.join(freebayes_ncovtools_data_directory, os.path.basename(filtered_bam))
+            freebayes_output_primer_trimmed_bam = os.path.join(freebayes_ncovtools_data_directory, os.path.basename(primer_trimmed_bam))
+            freebayes_output_consensus = os.path.join(freebayes_ncovtools_data_directory, os.path.basename(freebayes_consensus))
+            freebayes_output_variants = os.path.join(freebayes_ncovtools_data_directory, os.path.basename(freebayes_variants))
+
+            job = concat_jobs([
+                        job,
+                        Job(
+                            input_files=[filtered_bam, primer_trimmed_bam, freebayes_consensus, freebayes_variants],
+                            output_files=[freebayes_output_filtered_bam, freebayes_output_primer_trimmed_bam, freebayes_output_consensus, freebayes_output_variants],
+                            command="""\\
+echo "Linking files for ncov_tools for sample {sample_name}..." && \\
+if [ "$(ls -1 {filtered_bam})" != "" ] && [ "$(ls -1 {primer_trimmed_bam})" != "" ] && [ "$(ls -1 {freebayes_consensus})" != "" ] && [ "$(ls -1 {freebayes_variants})" != "" ];
+  then
+    ln -fs $(pwd -P )/$(ls -1 {filtered_bam}) {freebayes_output_filtered_bam} && \\
+    ln -fs $(pwd -P )/$(ls -1 {primer_trimmed_bam}) {freebayes_output_primer_trimmed_bam} && \\
+    ln -fs $(pwd -P )/$(ls -1 {freebayes_consensus}) {freebayes_output_consensus} && \\
+    ln -fs $(pwd -P )/$(ls -1 {freebayes_variants}) {freebayes_output_variants} && \\
+    grep {sample_name} {readset_file} >> {freebayes_readset_file_report} && \\
+    echo -e "{sample_name}\\tNA\\tNA" >> {freebayes_metadata}
+fi""".format(
+    readset_file=readset_file,
+    freebayes_readset_file_report=freebayes_readset_file_report,
+    filtered_bam=filtered_bam,
+    primer_trimmed_bam=primer_trimmed_bam,
+    sample_name=sample.name,
+    freebayes_consensus=freebayes_consensus,
+    freebayes_variants=freebayes_variants,
+    freebayes_output_filtered_bam=freebayes_output_filtered_bam,
+    freebayes_output_primer_trimmed_bam=freebayes_output_primer_trimmed_bam,
+    freebayes_output_consensus=freebayes_output_consensus,
+    freebayes_output_variants=freebayes_output_variants,
+    freebayes_metadata=freebayes_metadata
+    )
+                            )
+                    ],
+                    samples=[sample]
+                    )
+
+        jobs.append(
+            concat_jobs([
+                job,
+                ncovtools.run_ncovtools(
+                    freebayes_output_filtered_bam,
+                    freebayes_output_primer_trimmed_bam,
+                    freebayes_output_consensus,
+                    freebayes_output_variants,
+                    readset_file,
+                    freebayes_metadata,
+                    freebayes_ncovtools_directory,
+                    freebayes_ncovtools_config,
+                    self.output_dir
+                    ),
+                Job(input_files=[],
+                    output_files=[],
+                    module_entries=[
+                        ['prepare_report', 'module_R'],
+                        ['prepare_report', 'module_CoVSeQ_tools']
+                    ],
+                    command="""\\
+module purge && \\
+module load {R_covseqtools}""".format(
+    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
+    output_dir=self.output_dir)
+                    ),
+                covseq_tools.generate_report_tables(
+                    freebayes_readset_file_report,
+                    output_name_pattern=os.path.join("report", "report_metrics_freebayes")
+                    ),
+                covseq_tools.render_report(
+                    software_version,
+                    run_metadata,
+                    output_name_pattern=os.path.join("report", "report_metrics_freebayes"),
+                    caller="freebayes"
                     )
                 ],
                 name="prepare_report." + config.param('prepare_report', 'run_name', required=True)
@@ -1451,9 +1645,12 @@ Rscript -e "report_path <- tempfile(fileext = '.Rmd'); file.copy('$RUN_REPORT', 
             self.ivar_create_consensus,
             self.bcftools_create_consensus,
             self.quast_consensus_metrics,
-            self.rename_consensus_header,
+            self.rename_consensus_header_ivar,
+            self.rename_consensus_header_freebayes,
             self.ncovtools_quickalign,
-            self.prepare_report
+            self.prepare_table,
+            self.prepare_report_ivar,
+            self.prepare_report_freebayes
             # self.run_multiqc
         ]
 
