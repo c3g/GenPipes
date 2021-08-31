@@ -28,19 +28,22 @@ from core.config import *
 from core.job import *
 
 
-def processing( input_files, output_file, sample_file, genemap, tfmi, other_options):
-
+def processing( input_files, output_file, sample_file, profiling):
+    genemap = (config.param('seq2fun', 'genemap'))
+    tfmi = (config.param('seq2fun', 'tfmi'))
+    other_options = config.param('seq2fun', 'other_options')
     return Job(
         input_files,
         output_file,
         [
             ['seq2fun', 'module_seq2fun']
         ],
-        command="""seq2fun --sampletable {sample_file} --tfmi {tfmi} --genemap {genemap} {other_options}""".format(
+        command="""seq2fun --sampletable {sample_file} --tfmi {tfmi} --genemap {genemap} {profiling} {other_options}""".format(
             sample_file=sample_file,
             tfmi = tfmi,
             genemap = genemap,
-            other_options = other_options
+            other_options = other_options,
+            profiling = profiling
                    )
 
     )
