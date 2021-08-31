@@ -1298,20 +1298,17 @@ rm {temp_out2}""".format(
 
         remove_duplicates_job = []
         ##remove duplicates and execute seq2fun
-        genemap = (config.param('seq2fun', 'genemap'))
-        tfmi = (config.param('seq2fun', 'tfmi'))
-        other_options = config.param('seq2fun', 'other_options')
 
         for contrast in self.contrasts:
             seq2fun_outputs =[]
             output_dir = os.path.join(output_directory, contrast.name)
+            profiling = (config.param('seq2fun', 'profiling'))
             seq2fun_outputs.append(output_dir + "/All_sample_KO_abundance_table.txt")
-            if "profiling" in other_options:
+            if "--profiling" == profiling:
                 seq2fun_outputs.append(output_dir + "/All_sample_KO_abundance_table_submit2networkanalyst.txt")
                 seq2fun_outputs.append(output_dir + "/All_sample_pathway_table.txt")
                 seq2fun_outputs.append(output_dir + "/All_samples.html")
-                seq2fun_outputs.append(os.path.join(output_directory, contrast.name,
-                                                    "All_sample_species_table.txt"))
+                seq2fun_outputs.append(output_dir + "/All_sample_species_table.txt")
 
 
             input_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.temp.txt")
@@ -1330,7 +1327,7 @@ rm {temp_out2}""".format(
                 )
 
             ),
-            seq2fun.processing(seq2fun_input_files, seq2fun_outputs, output_file_contrast, genemap, tfmi, other_options)
+            seq2fun.processing(seq2fun_input_files, seq2fun_outputs, output_file_contrast, profiling)
             ])
             remove_duplicates_job.append(remove_duplicates)
             remove_duplicates_jobs = concat_jobs(remove_duplicates_job)
@@ -1341,6 +1338,158 @@ rm {temp_out2}""".format(
         job.samples = self.samples
         job.name = "seq2fun.processing"
         jobs.append(job)
+        return jobs
+
+
+    def seq2fun_count_matrix(self):
+        jobs =[]
+        merge_fastq_dir = "merge_fastq"
+        seq2fun_input_files = []
+        output_directory = "seq2fun/count_matrix"
+        write_line_jobs = []
+        output_sample_temp_file = os.path.join(output_directory,  "common_sample_table.temp.txt")
+        output_sample_file = os.path.join(output_directory, "common_sample_table.txt")
+
+        folder_job = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory)),
+                                  Job(command="touch " + output_sample_temp_file)])
+       # folder_jobs.append(folder_job)
+        #create_folder_jobs = concat_jobs(folder_jobs)
+
+        for sample in self.samples:
+                for readset in self.readsets:
+                    if sample.name == readset.sample.name:
+                        if readset.run_type == "PAIRED_END":
+                            if len(sample.readsets) > 1:
+
+                                candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
+                                                                sample.name + "_merged.pair1.fastq.gz")
+                                candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name,
+                                                                sample.name + "_merged.pair2.fastq.gz")
+
+                            else:
+                                candidate_fastq1 = readset.fastq1
+                                candidate_fastq2 = readset.fastq2
+                                if readset.bam:
+                                    candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
+                                                                    readset.sample.name,
+                                                                    readset.name + ".pair1.fastq.gz")
+                                    candidate_fastq2 = os.path.join(self.output_dir, "raw_reads",
+                                                                    readset.sample.name,
+                                                                    readset.name + ".pair2.fastq.gz")
+
+                            seq2fun_input_files.append(candidate_fastq1)
+                            seq2fun_input_files.append(candidate_fastq2)
+                            write_line_job = Job(
+                                input_files=[candidate_fastq1, candidate_fastq2],
+                                command="""echo -e "{sample}\t{fastq1}\t{fastq2}\tcontrol" >> {file}""".format(
+                                    sample=os.path.join(output_directory, sample.name),
+                                    file=output_sample_temp_file,
+                                    fastq1=candidate_fastq1,
+                                    fastq2=candidate_fastq2
+                                )
+                            )
+                            write_line_jobs.append(write_line_job)
+                            sample_table_contrast_jobs = concat_jobs(write_line_jobs)
+                        elif readset.run_type == "SINGLE_END":
+                            if len(sample.readsets) > 1:
+                                candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
+                                                                sample.name + "merged.pair1.fastq.gz")
+                            else:
+                                candidate_fastq1 = readset.fastq1
+                                if readset.bam:
+                                    candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
+                                                                    readset.sample.name,
+                                                                    readset.name + ".pair1.fastq.gz")
+
+                            seq2fun_input_files.append(candidate_fastq1)
+                            write_line_job = Job(
+                                input_files=[candidate_fastq1],
+                                command="""echo -e "{sample}\t{fastq1}\tcontrol" >> {file}""".format(
+                                    sample=os.path.join(output_directory, sample.name),
+                                    file=output_sample_temp_file,
+                                    fastq1=candidate_fastq1
+                                )
+
+                            )
+                            write_line_jobs.append(write_line_job)
+                            sample_table_contrast_jobs = concat_jobs(write_line_jobs)
+
+        remove_duplicates_job = []
+        ##remove duplicates and execute seq2fun
+        seq2fun_outputs = []
+        profiling = ""
+        seq2fun_outputs.append(output_directory + "/All_sample_KO_abundance_table.txt")
+
+        remove_duplicates = concat_jobs([
+            Job(
+            output_files=[output_sample_file],
+            command="""sort -u {input_file} > {output_file}""".format(
+                input_file=output_sample_temp_file,
+                output_file=output_sample_file
+            )
+        ),
+            Job(
+            command="""rm {temp_file}""".format(
+                temp_file=output_sample_temp_file
+            )
+        ),
+            seq2fun.processing(seq2fun_input_files, seq2fun_outputs, output_sample_file, profiling)
+        ])
+        remove_duplicates_job.append(remove_duplicates)
+        remove_duplicates_jobs = concat_jobs(remove_duplicates_job)
+
+
+        job = concat_jobs(
+            [folder_job, sample_table_contrast_jobs, remove_duplicates_jobs])
+        job.samples = self.samples
+        job.name = "seq2fun.count_matrix.processing"
+        jobs.append(job)
+        return jobs
+
+    def differential_expression_seq2fun(self):
+        """
+        Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
+        Merge the results of the analysis in a single csv file.
+        """
+
+        output_directory = "differential_expression/seq2fun"
+        count_matrix_temp = os.path.join("seq2fun", "count_matrix", "All_sample_KO_abundance_table.txt")
+        count_matrix = os.path.join("seq2fun", "count_matrix", "count_matrix.csv")
+        prepare_matrix_job = Job(output_files=[count_matrix],
+                                 input_files=[count_matrix_temp],
+            command="""awk 'BEGIN{{FS=OFS="\t"}} NF--' {input} | awk '{{if(NR!=2){{print $0}} }}' | awk -v OFS="\t" '{{ print $1,$0}}' > {output}""".format(
+                input = count_matrix_temp,
+                output = count_matrix
+            )
+        )
+        # If --design <design_file> option is missing, self.contrasts call will raise an Exception
+        if self.contrasts:
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+        edger_job = differential_expression.edger(design_file, count_matrix, output_directory)
+        edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
+        edger_job.samples = self.samples
+
+        deseq_job = differential_expression.deseq2(design_file, count_matrix, output_directory)
+        deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
+        deseq_job.samples = self.samples
+
+        return [concat_jobs([
+            Job(command="mkdir -p " + output_directory),
+            prepare_matrix_job,
+            edger_job,
+            deseq_job
+        ], name="differential_expression.seq2fun")]
+
+    def pathway_enrichment_seq2fun(self):
+        jobs = []
+        profiling = (config.param('seq2fun', 'profiling'))
+        if "--profiling" == profiling:
+            for contrast in self.contrasts:
+                pathway_job = Job(
+
+                )
+        else:
+            log.info("You should first run seq2fun with profiling on to conduct the pathway enrichment analysis... skipping")
         return jobs
 
 
@@ -1375,7 +1524,9 @@ rm {temp_out2}""".format(
             [
                 self.picard_sam_to_fastq,
                 self.merge_fastq,
-                self.seq2fun
+                self.seq2fun,
+                self.seq2fun_count_matrix,
+                self.differential_expression_seq2fun
 
              ]
         ]
