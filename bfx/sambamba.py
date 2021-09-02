@@ -30,11 +30,9 @@ def sort(input_bam,
          tmp_dir,
          other_options=None):
     
-    output_bai = output_bam + ".bai"
-    
     return Job(
         [input_bam],
-        [output_bam, output_bai],
+        [output_bam],
         [
             ['sambamba_sort_sam', 'module_sambamba']
         ],
