@@ -217,7 +217,6 @@ class EpiQC(common.Illumina):
 
         output_dir = self.output_dirs['bigwiginfo_output_directory']
 
-        log.info(os.environ[config.param('DEFAULT', 'mugqic_path')]+"/"+ config.param('DEFAULT', 'chromosome_size'))
         #obtain samples names for only histone marks (not inputs) from design
         for sample in self.samples:
             for readset in sample.readsets:
@@ -379,7 +378,7 @@ mkdir -p \\
 
 
         job = []
-
+        log.info(config.param('chromimpute', 'IHEC_data'))
         #add chr_sizes_file and inputinfo file to list of input files
         converted_simlinks.extend([chr_sizes_file, inputinfofile])
 
