@@ -281,10 +281,11 @@ class PBSScheduler(Scheduler):
             self.config.config_error('Invalid ini input for {} cluster_walltime: {}'.format(job_name_prefix, walltime))
 
         # take the DD-HH:MM format to HH:MM
-        days, rest = walltime.split('-')
-        rest = rest.split(':')[0]
-        hours = int(rest[0]) + int(days * 24)
-        return '-l walltime={}:'.format(hours, ':'.join(rest[1:]))
+        time = utils.time_to_datetime(walltime)
+        sec = time.seconds % 60
+        minutes = ((time.seconds - sec) / 60) % 60
+        hours = (time.seconds - sec - 60 * minutes) / 3600 + time.days * 24
+        return '-l walltime={:02d}:{:02d}:{:02d}'.format(hours, minutes, sec)
 
     def submit(self, pipeline):
         self.print_header(pipeline)

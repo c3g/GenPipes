@@ -90,18 +90,19 @@ def cleanFiles(x):
         print(i +"is now removed\n")
 
 
-def slurm_time_to_datetime(time):
+def time_to_datetime(time):
     """
-        From slurm doc:
+        From transform time str to delta time:
         Acceptable time formats include "minutes", "minutes:seconds",
         "hours:minutes:seconds", "days-hours",
         "days-hours:minutes" and "days-hours:minutes:seconds"
         In fact it will also work for pbs/torque.
-    :param time: sting from slurm sbatch --time option
+    :param time: sting containing a slurm "--time" format substring
     :return: timedelta object
     """
 
     time = re.search("([0-9]+-)?[0-9]+:[0-9]+(:[0-9]+)?", time).group()
+
     if '-' in time:
         days, rest = time.split('-')
         rest = rest.split(':')[0]
