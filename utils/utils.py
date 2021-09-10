@@ -21,7 +21,6 @@
 
 # Python Standard Modules
 import argparse
-import configparser as ConfigParser
 import glob
 import logging
 import os
@@ -101,33 +100,18 @@ def slurm_time_to_datetime(time):
     :param time: sting from slurm sbatch --time option
     :return: timedelta object
     """
-    time = ' '.join(time.split())
-    time = time.lstrip('--time=')
-    time = time.lstrip('-l walltime=')  # pbs/torque support
-    time = time.split(' ')[0] # in case of triling options e.g. "-l mem=12GB"
 
-    colon = time.count(':')
-    dash = time.count('-')
-    split_t = time.split(':')
-    if len(split_t) == 1:
-        split_d = split_t[0].split('-')
-        if len(split_d) == 2:
-            return datetime.timedelta(days=int(split_d[0]), hours=int(split_d[1]))
-        return datetime.timedelta(minutes=int(split_t[0]))
-    elif len(split_t) == 2:
-        split_d = split_t[0].split('-')
-        if len(split_d) == 2:
-            return datetime.timedelta(days=int(split_d[0]),
-                                      hours=int(split_d[1]), minutes=int(split_t[1]))
-        return datetime.timedelta(hours=int(split_t[0]), minutes=int(split_t[1]))
-    elif len(split_t) == 3:
-        split_d = split_t[0].split('-')
-        if len(split_d) == 2:
-            return datetime.timedelta(days=int(split_d[0]),
-                                      hours=int(split_d[1]),
-                                      minutes=int(split_t[1]), seconds=int(split_t[2]))
-        return datetime.timedelta(hours=int(split_t[0]),
-                                  minutes=int(split_t[1]), seconds=int(split_t[2]))
+    time = re.search("([0-9]+-)?[0-9]+:[0-9]+(:[0-9]+)?", time).group()
+    days, rest = time.split('-')
+    rest = rest.split(':')[0]
+    hours = int(rest[0]) + int(days * 24)
+    minutes = int(rest[1])
+    if len(rest) > 2:
+        sec = int(rest[2])
+    else:
+        sec = 0
+
+    return datetime.timedelta(hours=hours, minutes=minutes, seconds=sec)
 
 
 def expandvars(path, skip_escaped=False):
