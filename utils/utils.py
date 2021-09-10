@@ -102,10 +102,16 @@ def slurm_time_to_datetime(time):
     """
 
     time = re.search("([0-9]+-)?[0-9]+:[0-9]+(:[0-9]+)?", time).group()
-    days, rest = time.split('-')
-    rest = rest.split(':')[0]
+    if '-' in time:
+        days, rest = time.split('-')
+        rest = rest.split(':')[0]
+    else:
+        rest = time.split(':')
+        days = 0
+
     hours = int(rest[0]) + int(days * 24)
     minutes = int(rest[1])
+
     if len(rest) > 2:
         sec = int(rest[2])
     else:
