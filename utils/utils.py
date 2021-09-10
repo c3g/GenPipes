@@ -97,6 +97,7 @@ def time_to_datetime(time):
         "hours:minutes:seconds", "days-hours",
         "days-hours:minutes" and "days-hours:minutes:seconds"
         In fact it will also work for pbs/torque.
+        Note that is strip from the string everithing that is not the time
     :param time: sting containing a slurm "--time" format substring
     :return: timedelta object
     """

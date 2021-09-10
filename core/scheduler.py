@@ -275,12 +275,7 @@ class PBSScheduler(Scheduler):
 
     def walltime(self, job_name_prefix):
         walltime = self.config.param(job_name_prefix, 'cluster_walltime')
-        try:
-            walltime =re.search("([0-9]+-)?[0-9]+:[0-9]+(:[0-9]+)?", walltime).group()
-        except AttributeError:
-            self.config.config_error('Invalid ini input for {} cluster_walltime: {}'.format(job_name_prefix, walltime))
-
-        # take the DD-HH:MM format to HH:MM
+        # force the DD-HH:MM[:00] format to HH:MM[:00]
         time = utils.time_to_datetime(walltime)
         sec = time.seconds % 60
         minutes = ((time.seconds - sec) / 60) % 60
@@ -429,6 +424,16 @@ class SlurmScheduler(Scheduler):
     def __init__(self, *args, **kwargs):
         super(SlurmScheduler, self).__init__(*args, **kwargs)
         self.name = 'SLURM'
+        self.config = config
+
+    def walltime(self, job_name_prefix):
+        walltime = self.config.param(job_name_prefix, 'cluster_walltime')
+        # force the DD-HH:MM[:00] format to HH:MM[:00]
+        time = utils.time_to_datetime(walltime)
+        sec = time.seconds % 60
+        minutes = ((time.seconds - sec) / 60) % 60
+        hours = (time.seconds - sec - 60 * minutes) / 3600 + time.days * 24
+        return '--time={:02d}:{:02d}:{:02d}'.format(hours, minutes, sec)
 
     def submit(self, pipeline):
         self.print_header(pipeline)
@@ -504,7 +509,7 @@ exit \$MUGQIC_STATE" | \\
                         config.param(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
                         config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
                         config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
-                        config.param(job_name_prefix, 'cluster_walltime') + " " + \
+                        self.walltime(job_name_prefix) + " " + \
                         config.param(job_name_prefix, 'cluster_queue') + " " + \
                         config.param(job_name_prefix, 'cluster_cpu')
                     if job.dependency_jobs:
