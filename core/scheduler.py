@@ -21,6 +21,7 @@
 import json
 import logging
 import os
+import re
 import stat
 import sys
 import tempfile
@@ -65,6 +66,8 @@ class Scheduler(object):
                 st = os.stat(genpipes_file.name)
                 os.chmod(genpipes_file.name, st.st_mode | stat.S_IEXEC | stat.S_IXGRP)
 
+    def walltime(self):
+        raise NotImplementedError
 
     def submit(self, pipeline):
         # Needs to be defined in scheduler child class
@@ -266,6 +269,22 @@ class PBSScheduler(Scheduler):
     def __init__(self, *args, **kwargs):
         super(PBSScheduler, self).__init__(*args, **kwargs)
         self.name = 'PBS/TORQUE'
+        # should be fed in the arguments but hey lets do that first.
+        self.config = config
+
+
+    def walltime(self, job_name_prefix):
+        walltime = self.config.param(job_name_prefix, 'cluster_walltime')
+        try:
+            walltime =re.search("([0-9]+-)?[0-9]+:[0-9]+(:[0-9]+)?", walltime).group()
+        except AttributeError:
+            self.config.config_error('Invalid ini input for {} cluster_walltime: {}'.format(job_name_prefix, walltime))
+
+        # take the DD-HH:MM format to HH:MM
+        days, rest = walltime.split('-')
+        rest = rest.split(':')[0]
+        hours = int(rest[0]) + int(days * 24)
+        return '-l walltime={}:'.format(hours, ':'.join(rest[1:]))
 
     def submit(self, pipeline):
         self.print_header(pipeline)
@@ -331,16 +350,9 @@ exit \$MUGQIC_STATE" | \\
                         config.param(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
                         config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
                         config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
-                        config.param(job_name_prefix, 'cluster_walltime') + " " + \
+                        self.walltime(job_name_prefix) + " " + \
                         config.param(job_name_prefix, 'cluster_queue') + " " + \
                         config.param(job_name_prefix, 'cluster_cpu')
-                    #cmd += \
-                        #config.param(job_name_prefix, 'cluster_submit_cmd') + " " + \
-                        #config.param(job_name_prefix, 'cluster_other_arg') + " " + \
-                        #config.param(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
-                        #config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
-                        #config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
-                        #config.param(job_name_prefix, 'cluster_queue') + " -l walltime=1:00:0 -l nodes=1:ppn=1 "
 
                     if job.dependency_jobs:
                         cmd += " " + config.param(job_name_prefix, 'cluster_dependency_arg') + "$JOB_DEPENDENCIES"

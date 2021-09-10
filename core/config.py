@@ -167,19 +167,25 @@ class Config(configparser.SafeConfigParser):
         else:
             return ""
 
+    @staticmethod
+    def config_error(message=''):
+        _raise(SanitycheckError(message))
+
 class Error(Exception):
     pass
+
 
 class SanitycheckError(Error):
     pass
 
-def _raise(object):
+
+def _raise(error_obj):
     if config.sanity:
-        if isinstance(object, SanitycheckError):
-            object.message = ' --- TO FIX --- {}'.format(object.message)
-        log.error(object.message)
+        if isinstance(error_obj, SanitycheckError):
+            error_obj.message = ' --- TO FIX --- {}'.format(error_obj.message)
+        log.error(error_obj.message)
     else:
-        raise object
+        raise error_obj
 
 # Global config object used throughout the whole pipeline
 config = Config()
