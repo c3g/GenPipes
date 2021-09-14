@@ -818,7 +818,7 @@ pandoc --to=markdown \\
         edger_job.output_files = [os.path.join(output_directory, item, contrast.name, "edger_results.csv") for contrast in self.contrasts]
 
         # Perform DESeq
-        deseq_job = differential_expression.deseq(os.path.relpath(self.args.design.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
+        deseq_job = differential_expression.deseq2(os.path.relpath(self.args.design.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
         deseq_job.output_files = [os.path.join(output_directory, item, contrast.name, "dge_results.csv") for contrast in self.contrasts]
 
         jobs.append(
@@ -1124,12 +1124,15 @@ rm {temp_out2}""".format(
                                                output = os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair1.fastq.gz")
                                            ))
                                            ])
-            merge_fastq_job.append(merge_fastq)
-            merge_fastq_jobs = concat_jobs(merge_fastq_job)
-        job = concat_jobs([merge_fastq_jobs])
-        job.samples = self.samples
-        job.name = "merge_fastq"
-        jobs.append(job)
+
+                merge_fastq_job.append(merge_fastq)
+                merge_fastq_jobs = concat_jobs(merge_fastq_job)
+
+        if len(samples_to_merge) != 0:
+            job = concat_jobs([merge_fastq_jobs])
+            job.samples = self.samples
+            job.name = "merge_fastq"
+            jobs.append(job)
         return jobs
 
     def seq2fun(self):
@@ -1342,6 +1345,10 @@ rm {temp_out2}""".format(
 
 
     def seq2fun_count_matrix(self):
+
+        #this job create common sample table that will be used in differential expression. The original seq2fun outputs
+        # can be used in networkanalysis web applicaiton
+        #extend this job to diff expression function
         jobs =[]
         merge_fastq_dir = "merge_fastq"
         seq2fun_input_files = []
@@ -1442,7 +1449,7 @@ rm {temp_out2}""".format(
         job = concat_jobs(
             [folder_job, sample_table_contrast_jobs, remove_duplicates_jobs])
         job.samples = self.samples
-        job.name = "seq2fun.count_matrix.processing"
+        job.name = "seq2fun.count_matrix"
         jobs.append(job)
         return jobs
 
@@ -1465,29 +1472,71 @@ rm {temp_out2}""".format(
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         if self.contrasts:
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
-        edger_job = differential_expression.edger(design_file, count_matrix, output_directory)
-        edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
-        edger_job.samples = self.samples
 
-        deseq_job = differential_expression.deseq2(design_file, count_matrix, output_directory)
-        deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
-        deseq_job.samples = self.samples
+        #check whether design file has any contrast with no replicates. If so deseq2 cannot handle it and analysis should be
+        #skipped
+        no_replicates = False
 
-        return [concat_jobs([
-            Job(command="mkdir -p " + output_directory),
-            prepare_matrix_job,
-            edger_job,
-            deseq_job
-        ], name="differential_expression.seq2fun")]
+        for contrast in self.contrasts:
+            if len(contrast.treatments) < 2:
+                no_replicates = True
+            elif len(contrast.controls) < 2 :
+                no_replicates = True
+
+
+
+
+
+        if no_replicates == False:
+            edger_job = differential_expression.edger(design_file, count_matrix, output_directory)
+            edger_job.input_files = [design_file, count_matrix]
+            edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
+            edger_job.samples = self.samples
+
+            deseq_job = seq2fun.deseq2(design_file, count_matrix, output_directory)
+            deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
+
+
+            deseq_job.samples = self.samples
+            report_jobs = []
+            for contrast in self.contrasts:
+                report_job = Job(input_files = [os.path.join(output_directory, contrast.name, "dge_results.csv")],
+                             output_files = [os.path.join("report", "differential_expression", "seq2fun", contrast.name, "dge_results.csv")],
+                command = ("""mkdir -p {output_folder} && rm -f {output_file} && cp {input_file} {output_file}""").format(
+                input_file = os.path.join(output_directory, contrast.name, "dge_results.csv"),
+                output_file=os.path.join("report", "differential_expression", "seq2fun", contrast.name, "dge_results.csv"),
+                output_folder = os.path.join("report", "differential_expression", "seq2fun", contrast.name)
+                        ) )
+                report_jobs.append(report_job)
+                report_matrix_job = concat_jobs(report_jobs)
+
+            return [concat_jobs([
+                Job(command="mkdir -p " + output_directory),
+                prepare_matrix_job,
+                edger_job,
+                deseq_job,
+                report_matrix_job
+            ], name="differential_expression.seq2fun")]
+        else:
+            log.info("remove all the contrasts without replicates and re-run the pipeline")
+            return []
 
     def pathway_enrichment_seq2fun(self):
         jobs = []
+        output_prefix = "seq2fun_ko_pathway"
+        DGE_output_directory=  "differential_expression/seq2fun"
         profiling = (config.param('seq2fun', 'profiling'))
         if "--profiling" == profiling:
             for contrast in self.contrasts:
-                pathway_job = Job(
-
-                )
+                output_file = os.path.join(DGE_output_directory, contrast.name, "edger_results.csv")
+                #html_file = os.path.join("seq2fun", contrast.name, "All_samples.html")
+                output_dir = os.path.join("seq2fun_pathway", contrast.name)
+                mkdir_job = Job(command="mkdir -p " + output_dir)
+                pathway_job = seq2fun.ko_pathway_analysis(output_file, output_prefix,  output_dir)
+                job = concat_jobs([mkdir_job, pathway_job])
+                job.name = "seq2fun_pathway." + contrast.name
+                job.samples = self.samples
+                jobs.append(job)
         else:
             log.info("You should first run seq2fun with profiling on to conduct the pathway enrichment analysis... skipping")
         return jobs
@@ -1526,7 +1575,8 @@ rm {temp_out2}""".format(
                 self.merge_fastq,
                 self.seq2fun,
                 self.seq2fun_count_matrix,
-                self.differential_expression_seq2fun
+                self.differential_expression_seq2fun,
+                self.pathway_enrichment_seq2fun
 
              ]
         ]

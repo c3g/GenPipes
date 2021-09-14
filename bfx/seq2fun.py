@@ -29,8 +29,8 @@ from core.job import *
 
 
 def processing( input_files, output_file, sample_file, profiling):
-    genemap = (config.param('seq2fun', 'genemap'))
-    tfmi = (config.param('seq2fun', 'tfmi'))
+    genemap = config.param('seq2fun', 'genemap')
+    tfmi = config.param('seq2fun', 'tfmi')
     other_options = config.param('seq2fun', 'other_options')
     return Job(
         input_files,
@@ -47,3 +47,60 @@ def processing( input_files, output_file, sample_file, profiling):
                    )
 
     )
+
+def deseq2(
+    design_file,
+    count_matrix,
+    output_dir
+    ):
+
+    localfit = "-l" if config.param('differential_expression_deseq', 'localfit') else ""
+
+    return  Job(
+        [count_matrix],
+        [os.path.join(output_dir, "deseq_results.csv"), os.path.join(output_dir, "dge_results.csv")],
+        [
+            ['seq2fun', 'module_R']
+        ],
+        command="""\
+Rscript $R_TOOLS/deseq2.R \\
+  -d {design_file} \\
+  -c {count_matrix} \\
+  -o {output_dir} \\
+  {localfit}""".format(
+        design_file=design_file,
+        count_matrix=count_matrix,
+        output_dir=output_dir,
+        localfit=localfit
+    ))
+
+
+def ko_pathway_analysis(diff_report, output_prefix,   output_dir):
+    fdr = config.param('seq2fun_pathway', 'fdr')
+    rds_file = config.param('seq2fun_pathway', 'rds')
+    map_list = config.param('seq2fun_pathway', 'user_pathway_list')
+    kegg_all = config.param('seq2fun_pathway', 'kegg_all')
+    return Job(
+        [diff_report],
+        [os.path.join(output_dir, output_prefix + ".txt")],
+        [
+            ['seq2fun', 'module_R']
+        ],
+        command="""\
+    #Rscript $R_TOOLS/KOPathawayAnalysis.R \\
+    Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/seq2fun/testing_august_2021/KOPathawayAnalysis.R \\
+      -i {diff_report} \\
+      -map {map_list} \\
+      -o {output_dir} \\
+      -p {output_prefix} \\
+      -rds {rds_file} \\
+      -kegg {kegg_all} \\
+      -fdr {fdr}""".format(
+            diff_report=diff_report,
+            map_list=map_list,
+            output_dir=output_dir,
+            fdr=fdr,
+            output_prefix=output_prefix,
+            rds_file= rds_file,
+            kegg_all= kegg_all
+        ))
