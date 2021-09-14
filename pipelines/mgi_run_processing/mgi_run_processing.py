@@ -111,6 +111,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         self.argparser.add_argument("-y", help="Last index base to use for demultiplexing (inclusive)", type=int, required=False, dest="last_index")
         self.argparser.add_argument("-m", help="Number of index mistmaches allowed for demultiplexing (default 1). Barcode collisions are always checked.", type=int, required=False, dest="number_of_mismatches")
         self.argparser.add_argument("--allow-barcode-collision", help="Allow barcode collision by not comparing barcode sequences to each other (usually decreases the demultiplexing efficiency).", action="store_true", required=False, dest="allow_barcode_collision")
+        self.argparser.add_argument("-t", "--type", help = "MGI sequencing technology", choices = ["g400", "t7"], default="g400")
 
         super(MGIRunProcessing, self).__init__(protocol)
 
@@ -150,22 +151,54 @@ class MGIRunProcessing(common.MUGQICPipeline):
         if not hasattr(self, "_is_paired_end"):
             self._is_paired_end = {}
             for lane in self.lanes:
-                if self.get_read2cycles(lane):
+                if self.read2cycles[lane]:
                     self._is_paired_end[lane] = True
                 else:
                     self._is_paired_end[lane] = False
         return self._is_paired_end
 
     @property
+    def read1cycles(self):
+        if not hasattr(self, "_read1cycles"):
+            self._read1cycles = {}
+            for lane in self.lanes:
+                self._read1cycles[lane] = self.get_read1cycles(lane)
+        return self._read1cycles
+
+    @property
+    def read2cycles(self):
+        if not hasattr(self, "_read2cycles"):
+            self._read2cycles = {}
+            for lane in self.lanes:
+                self._read2cycles[lane] = self.get_read2cycles(lane)
+        return self._read2cycles
+
+    @property
     def is_dual_index(self):
         if not hasattr(self, "_is_dual_index"):
             self._is_dual_index = {}
             for lane in self.lanes:
-                if self.get_index2cycles(lane) == "0":
+                if self.index2cycles[lane] == "0":
                     self._is_dual_index[lane] = False
                 else:
                     self._is_dual_index[lane] = True
         return self._is_dual_index
+
+    @property
+    def index1cycles(self):
+        if not hasattr(self, "_index1cycles"):
+            self._index1cycles = {}
+            for lane in self.lanes:
+                self._index1cycles[lane] = self.get_index1cycles(lane)
+        return self._index1cycles
+
+    @property
+    def index2cycles(self):
+        if not hasattr(self, "_index2cycles"):
+            self._index2cycles = {}
+            for lane in self.lanes:
+                self._index2cycles[lane] = self.get_index2cycles(lane)
+        return self._index2cycles
 
     @property
     def mask(self):
@@ -489,6 +522,101 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     'mark_dup' : {}
                 }
         return self._report_inputs
+
+    def basecall(self):
+        """
+        Use write_fastq software from MGI to perfor the base calling.
+        Takes the raw .cal files from the sequencer and produces fastq files.
+        Demultiplexing while doing the basecalling is still under testings...
+        """
+
+        jobs = []
+        self._read1cycles = {}
+        self._read2cycles = {}
+        self._index1cycles = {}
+        self._index2cycles = {}
+
+        for lane in self.lanes:
+            # First, redefine some attributes and properties which are specific to the T7 protocol
+            json_flag_file = os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"), self.run_id + "_" + lane + "_20" + self.date + "*.json")
+            for filename in os.listdir(os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"))):
+                if re.match(self.run_id + "_" + lane + "_20" + self.date + ".+json", filename):
+                    json_flag_file = os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"), filename)
+                    with open(json_flag_file, "r") as jff:
+                        json_flag_content = json.load(jff)
+            keys = [item[0] for item in json_flag_content['experimentInfoVec']]
+            vals = [item[1] for item in json_flag_content['experimentInfoVec']]
+            flag_dict = dict(zip(keys, vals))
+            self._instrument = flag_dict['Machine ID']
+            self._flowcell_position = flag_dict['Flow Cell Pos']
+            self._read1cycles[lane] = flag_dict['Read1'] if flag_dict['Read1'] else 0
+            self._read2cycles[lane] = flag_dict['Read2'] if flag_dict['Read2'] else 0
+            self._index1cycles[lane] = flag_dict['Barcode'] if flag_dict['Barcode'] else 0
+            self._index2cycles[lane] = flag_dict['Dual Barcode'] if flag_dict['Dual Barcode'] else 0
+            # flowcell_id format looks like : E100021630_Lane1
+            # where run_id is : E100021630
+            # and run counter is : 21630
+            self._sequencer_run_id = flag_dict['Flow Cell ID'].split("_")[0]
+            self._run_counter = flag_dict['Flow Cell ID'].split("_")[0][-5:]
+            # sometimes, format is misleading : 1074
+            # so we correct it to : 10074
+            #while len(run_counter) < 5:
+            #    run_counter[:1] + "0" +  run_counter[1:]
+
+        for lane in self.lanes:
+            lane_jobs = []
+
+            input = self.readset_file
+
+            unaligned_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane)
+            basecall_dir = os.path.join(unaligned_dir, "basecall")
+            basecall_outputs = [
+                os.path.join(basecall_dir, self.run_id, "L0" + lane),
+                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
+                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_2.fq.gz"),
+                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
+                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
+                os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv")
+            ]
+            raw_fastq_dir = os.path.join(unaligned_dir, "raw_fastq")
+            raw_fastq_outputs = [
+                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
+                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + "_read_2.fq.gz"),
+                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
+                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
+                os.path.join(raw_fastq_dir, "summaryTable.csv")
+            ]
+
+            lane_config_file = os.path.join(unaligned_dir, self.run_id + "." + lane + ".settings.config")
+            lane_basecall_done_file = os.path.join(basecall_dir, "basecall_" + lane + "_done.Success")
+
+            lane_basecall_job = concat_jobs(
+                [
+                    bash.mkdir(basecall_dir),
+                    run_processing_tools.mgi_t7_basecall(
+                        input,
+                        self.flowcell_id,
+                        basecall_outputs,
+                        basecall_dir,
+                        json_flag_file,
+                        lane_config_file
+                    ),
+                    bash.touch(lane_basecall_done_file),
+                    bash.ln(
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane),
+                        raw_fastq_dir
+                    )
+                ],
+                name="basecall." + self.run_id + "." + lane,
+                samples=self.samples[lane] 
+            )
+            lane_basecall_job.output_files.extend(raw_fastq_outputs)
+            lane_jobs.append(lane_basecall_job)
+
+            self.add_copy_job_inputs(lane_jobs, lane)
+            jobs.extend(lane_jobs)
+        return jobs
+
 
     def index(self):
         """
@@ -1649,11 +1777,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
         index_read_count = 0
         nb_total_index_base_used = 0
     
-        index_cycles = [int(self.get_index1cycles(lane))]
+        index_cycles = [int(self.index1cycles[lane])]
         if self.is_dual_index[lane]:
-            index_cycles.insert(0, int(self.get_index2cycles(lane)))
+            index_cycles.insert(0, int(self.index2cycles[lane]))
     
-        mask = self.get_read1cycles(lane) + 'T ' + self.get_read2cycles(lane) + 'T'
+        mask = self.read1cycles[lane] + 'T ' + self.read2cycles[lane] + 'T'
         for idx_nb_cycles in index_cycles:
             if idx_nb_cycles >= index_lengths[index_read_count]:
                 if index_lengths[index_read_count] == 0 or self.last_index <= nb_total_index_base_used:
@@ -1736,6 +1864,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     "Sample_Barcode": sample_barcode
                 }
                 writer.writerow(csv_dict)
+
+
+    def generate_basecall_outputs(self, lane):
+        basecall_outputs = []
+        postprocessing_jobs = []
+        output_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane)
 
     def generate_demuxfastqs_outputs(self, lane):
         demuxfastqs_outputs = []
@@ -1933,8 +2067,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
 """.format(
                 instrument=self.instrument,
                 run=self.run_counter,
-                read_len=self.get_read2cycles(lane),
-                barcode_len=self.get_index2cycles(lane),
+                read_len=self.read2cycles[lane],
+                barcode_len=self.index2cycles[lane],
                 r2_out=readset.fastq2 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
                 i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz"),
                 i2_out=readset.index_fastq2 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
@@ -1959,8 +2093,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
 """.format(
                 instrument=self.instrument,
                 run=self.run_counter,
-                read_len=self.get_read2cycles(lane),
-                barcode_len=self.get_index1cycles(lane),
+                read_len=self.read2cycles[lane],
+                barcode_len=self.index1cycles[lane],
                 r2_out=readset.fastq2 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
                 i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
             )
@@ -1979,10 +2113,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
         if self.is_dual_index[lane]:
             min_sample_index_length = min(len(index['INDEX2']) for index in all_indexes)
-            run_index_lengths.append(min(min_sample_index_length, int(self.get_index2cycles(lane))))
+            run_index_lengths.append(min(min_sample_index_length, int(self.index2cycles[lane])))
 
         min_sample_index_length = min(len(index['INDEX1']) for index in all_indexes)
-        run_index_lengths.append(min(min_sample_index_length, int(self.get_index1cycles(lane))))
+        run_index_lengths.append(min(min_sample_index_length, int(self.index1cycles[lane])))
 
         return run_index_lengths
 
@@ -1993,11 +2127,15 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
         return parse_mgi_raw_readset_files(
             self.readset_file,
-            self.bioinfo_files[lane],
             "PAIRED_END" if self.is_paired_end[lane] else "SINGLE_END",
             self.seqtype,
+            self.run_id,
             self.flowcell_id,
             lane,
+            self.read1cycles[lane],
+            self.read2cycles[lane],
+            self.index1cycles[lane],
+            self.index2cycles[lane],
             os.path.join(self.output_dir, "L0" + lane)
         )
 
@@ -2040,20 +2178,34 @@ class MGIRunProcessing(common.MUGQICPipeline):
     @property
     def steps(self):
         return [
-            self.index,
-#            self.fastq,
-            self.demuxfastq,
-            self.fastq,
-            self.qc_graphs,
-            self.fastqc,
-            self.blast,
-            self.align,
-            self.picard_mark_duplicates,
-            self.metrics,
-#            self.md5,
-            self.report,
-            self.copy,
-            self.final_notification
+            [
+                self.index,
+                self.fastq,
+                self.qc_graphs,
+                self.fastqc,
+                self.blast,
+                self.align,
+                self.picard_mark_duplicates,
+                self.metrics,
+#                self.md5,
+                self.report,
+                self.copy,
+                self.final_notification
+            ],
+            [
+                self.basecall,
+                self.fastq,
+                self.qc_graphs,
+                self.fastqc,
+                self.blast,
+                self.align,
+                self.picard_mark_duplicates,
+                self.metrics,
+#                self.md5,
+                self.report,
+                self.copy,
+                self.final_notification
+            ]
         ]
 
 def distance(
@@ -2071,5 +2223,5 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        MGIRunProcessing()
+        MGIRunProcessing(protocol=['g400', 't7'])
 
