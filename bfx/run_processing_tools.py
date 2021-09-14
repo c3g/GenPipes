@@ -267,3 +267,54 @@ bcl2fastq \\
         )
     )
 
+def mgi_t7_basecall(
+    input,
+    flowcell_id,
+    fastq_outputs,
+    output_dir,
+    json_flag_file,
+    lane_config_file,
+    ini_section='basecall'
+    ):
+
+    return Job(
+        [input, json_flag_file],
+        fastq_outputs,
+        [
+            [ini_section, 'module_basecall_t7']
+        ],
+        command="""\
+# Create environment variables to mathose in the config template file
+export MGI_MEMORYSIZEMB={mem}
+export MGI_THREADCOUNT={thread}
+export MGI_WRITEFQMEMORY={mem}
+export MGI_SAVEIMAGE_DIR=""
+export MGI_WORKSPACE_DIR={workspace}
+export MGI_GENFASTQ_DIR={fastq}
+
+# Replace the environment variables by their values and create the config file to use
+envsubst < {config_template} > {config_file}
+
+# Create a sym link to the report scripts
+BINARY=$(which processor)
+ln -s ${{BINARY%/*}}/report {target_dir}/
+
+cpulimit -i -l {thread}00 processor {config_file} & \\
+sleep 10 && \\
+client_linux \\
+    ignored 1 1 1 1 \\
+    -F \\
+    -N {fcid} \\
+    --writefq_config {json_flag} \\
+    -I {config_file}""".format(
+            mem=config.param(ini_section, 'mem'),
+            thread=config.param(ini_section, 'thread'),
+            workspace=config.param(ini_section, 'mgi_t7_workspace'),
+            fastq=output_dir,
+            config_template=os.path.expandvars(config.param(ini_section, 'mgi_t7_config_template')),
+            config_file=lane_config_file,
+            target_dir=os.path.dirname(lane_config_file),
+            fcid=flowcell_id,
+            json_flag=json_flag_file
+        )
+    )
