@@ -1125,9 +1125,10 @@ rm {temp_out2}""".format(
                                            ))
                                            ])
 
-                merge_fastq_job.append(merge_fastq)
-                merge_fastq_jobs = concat_jobs(merge_fastq_job)
+            merge_fastq_job.append(merge_fastq)
+            merge_fastq_jobs = concat_jobs(merge_fastq_job)
 
+        #if there is no multiple readsets for any sample, an empty job will be created.
         if len(samples_to_merge) != 0:
             job = concat_jobs([merge_fastq_jobs])
             job.samples = self.samples
@@ -1143,6 +1144,13 @@ rm {temp_out2}""".format(
 
         1. FASTQ files from the readset file if available
         2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
+        This step perform seq2fun analysis and generates output files including KO abundance table and KO mapped fastq files
+        (https://www.seq2fun.ca/manual.xhtml#sect4) and (https://www.seq2fun.ca/manual.xhtml#sect20)
+
+        For each contrast different folders and all the files for that particular contrast are generated
+        generated. Therefore, only pairwise comparisons are possible
+        (treatment and controls will be added according to the 1 and 2 in the design file)
         """
         jobs = []
         samples_to_merge = []
@@ -1157,6 +1165,9 @@ rm {temp_out2}""".format(
         folder_jobs = []
         seq2fun_input_files = []
         seq2fun_output_samples = []
+
+        #First we need to create sample table for seq2fun. Since there can be redundancy, at the end we need to remove
+        #duplicate rows. If a merged fastq file is there, the path for the merged  fastq file will be added.
 
         for contrast in self.contrasts:
 
@@ -1175,7 +1186,7 @@ rm {temp_out2}""".format(
                             if sample.name == readset.sample.name:
                                 if readset.run_type == "PAIRED_END":
                                     if len(sample.readsets) > 1:
-
+                                        #get merged fasq link
                                         candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
                                                      sample.name + "_merged.pair1.fastq.gz")
                                         candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name,
@@ -1345,10 +1356,16 @@ rm {temp_out2}""".format(
 
 
     def seq2fun_count_matrix(self):
+        """
+        This step (only runs when running differential expression) creates common sample table that will be used in
+        differential expression. The original seq2fun sample table and KO abundance table
+        cannot be used in this case as differential expression needs all the samples together.
+        The design file is directly used to find the contrasts.
 
-        #this job create common sample table that will be used in differential expression. The original seq2fun outputs
-        # can be used in networkanalysis web applicaiton
         #extend this job to diff expression function
+
+        """
+
         jobs =[]
         merge_fastq_dir = "merge_fastq"
         seq2fun_input_files = []
@@ -1359,8 +1376,6 @@ rm {temp_out2}""".format(
 
         folder_job = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory)),
                                   Job(command="touch " + output_sample_temp_file)])
-       # folder_jobs.append(folder_job)
-        #create_folder_jobs = concat_jobs(folder_jobs)
 
         for sample in self.samples:
                 for readset in self.readsets:
@@ -1455,10 +1470,10 @@ rm {temp_out2}""".format(
 
     def differential_expression_seq2fun(self):
         """
-        Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
+        Performs differential gene expression analysis using [DESEQ2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
         Merge the results of the analysis in a single csv file.
         """
-
+        jobs = []
         output_directory = "differential_expression/seq2fun"
         count_matrix_temp = os.path.join("seq2fun", "count_matrix", "All_sample_KO_abundance_table.txt")
         count_matrix = os.path.join("seq2fun", "count_matrix", "count_matrix.csv")
@@ -1477,15 +1492,12 @@ rm {temp_out2}""".format(
         #skipped
         no_replicates = False
 
+        #check whether the replicates are there in a contrast. If replicates are not found this step will be skipped
         for contrast in self.contrasts:
             if len(contrast.treatments) < 2:
                 no_replicates = True
             elif len(contrast.controls) < 2 :
                 no_replicates = True
-
-
-
-
 
         if no_replicates == False:
             edger_job = differential_expression.edger(design_file, count_matrix, output_directory)
@@ -1509,19 +1521,27 @@ rm {temp_out2}""".format(
                         ) )
                 report_jobs.append(report_job)
                 report_matrix_job = concat_jobs(report_jobs)
-
-            return [concat_jobs([
+            jobs.extend(self.seq2fun_count_matrix())
+            jobs.extend([concat_jobs([
                 Job(command="mkdir -p " + output_directory),
                 prepare_matrix_job,
                 edger_job,
                 deseq_job,
                 report_matrix_job
-            ], name="differential_expression.seq2fun")]
+            ], name="differential_expression.seq2fun")])
+            return jobs
         else:
             log.info("remove all the contrasts without replicates and re-run the pipeline")
             return []
 
     def pathway_enrichment_seq2fun(self):
+
+        """
+
+        seq2fun pathway analysis using fgsea (https://bioconductor.org/packages/release/bioc/html/fgsea.html)
+         and user provide universal pathway list as KEGG map ID
+
+        """
         jobs = []
         output_prefix = "seq2fun_ko_pathway"
         DGE_output_directory=  "differential_expression/seq2fun"
@@ -1574,7 +1594,7 @@ rm {temp_out2}""".format(
                 self.picard_sam_to_fastq,
                 self.merge_fastq,
                 self.seq2fun,
-                self.seq2fun_count_matrix,
+               # self.seq2fun_count_matrix,
                 self.differential_expression_seq2fun,
                 self.pathway_enrichment_seq2fun
 
