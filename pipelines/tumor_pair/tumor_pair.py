@@ -229,7 +229,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 symlink_pair_job,
                                 md5sum_job
                             ],
-                            name="sym_link_fastq.pairs." + read + "." + tumor_pair.name + "." + key
+                            name="sym_link_fastq.pairs." + str(read) + "." + tumor_pair.name + "." + key
                         )
                     )
 
