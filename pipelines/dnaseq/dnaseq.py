@@ -1833,7 +1833,7 @@ END
             haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
 
             [input_bam] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
@@ -1854,7 +1854,6 @@ END
 
                 if not os.path.isfile(interval_list):
                     job = tools.bed2interval_list(
-                        None,
                         coverage_bed,
                         interval_list
                     )
