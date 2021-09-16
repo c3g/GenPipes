@@ -1493,12 +1493,13 @@ fi""".format(
                     output_files=[],
                     module_entries=[
                         ['prepare_report', 'module_R'],
-                        ['prepare_report', 'module_CoVSeQ_tools']
+                        ['prepare_report', 'module_CoVSeQ_tools'],
+                        ['prepare_report', 'module_pandoc']
                     ],
                     command="""\\
 module purge && \\
 module load {R_covseqtools}""".format(
-    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
+    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools') + " " + config.param('prepare_report', 'module_pandoc'),
     output_dir=self.output_dir)
                     ),
                 covseq_tools.generate_report_tables(
@@ -1617,12 +1618,13 @@ fi""".format(
                     output_files=[],
                     module_entries=[
                         ['prepare_report', 'module_R'],
-                        ['prepare_report', 'module_CoVSeQ_tools']
+                        ['prepare_report', 'module_CoVSeQ_tools'],
+                        ['prepare_report', 'module_pandoc']
                     ],
                     command="""\\
 module purge && \\
 module load {R_covseqtools}""".format(
-    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
+    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools') + " " + config.param('prepare_report', 'module_pandoc'),
     output_dir=self.output_dir)
                     ),
                 covseq_tools.generate_report_tables(
