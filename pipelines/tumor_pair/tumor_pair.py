@@ -207,7 +207,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             )
             
             for key, input_files in inputs.iteritems():
-                for read, file in input_files:
+                for read, file in enumerate(input_files):
                     symlink_pair_job = deliverables.sym_link_pair(
                         file,
                         tumor_pair,
