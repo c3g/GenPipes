@@ -59,7 +59,7 @@ class JobStat(object):
         self.jobid = int(jobid)
         self._dependency = dependency
         self._name = name
-        self._prologue = {}
+        self. _prologue = {}
         self._epilogue = {}
         self._delta = None
         self._delta_with_overhead = None
@@ -242,14 +242,14 @@ class JobStat(object):
     def prologue_time(self):
         try:
             return self.start_time + self.start
-        except TypeError:
+        except (TypeError, KeyError):
             return None
 
     @property
     def epilogue_time(self):
         try:
             return self.start_time + self.stop
-        except TypeError:
+        except (TypeError, KeyError):
             return None
 
     @property
