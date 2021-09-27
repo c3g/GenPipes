@@ -180,7 +180,8 @@ def demux_fastqs(
     outputs,
     metrics_file,
     R1_fastq,
-    R2_fastq
+    R2_fastq,
+    ini_section='fastq'
     ):
 
     return Job(
@@ -190,8 +191,8 @@ def demux_fastqs(
         ],
         outputs + [metrics_file],
         [
-            ['fastq', 'module_java'],
-            ['fastq', 'module_fgbio']
+            [ini_section, 'module_java'],
+            [ini_section, 'module_fgbio']
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} \\
@@ -207,10 +208,10 @@ java -Djava.io.tmpdir={tmp_dir} \\
   --output {output_dir} \\
   --output-type fastq \\
   --include-all-bases-in-fastqs true""".format(
-            tmp_dir=config.param('fastq', 'tmp_dir'),
-            java_other_options=config.param('fastq', 'java_other_options'),
-            ram=config.param('fastq', 'ram'),
-            threads=config.param('fastq', 'threads'),
+            tmp_dir=config.param(ini_section, 'tmp_dir'),
+            java_other_options=config.param(ini_section, 'java_other_options'),
+            ram=config.param(ini_section, 'ram'),
+            threads=config.param(ini_section, 'threads'),
             mismatches=mismatches,
             metrics_file=metrics_file,
             inputs=" ".join([R1_fastq, R2_fastq]),
@@ -281,7 +282,8 @@ def mgi_t7_basecall(
         [input, json_flag_file],
         fastq_outputs,
         [
-            [ini_section, 'module_basecall_t7']
+            [ini_section, 'module_basecall_t7'],
+            [ini_section, 'module_python']
         ],
         command="""\
 # Create environment variables to mathose in the config template file
@@ -297,7 +299,7 @@ envsubst < {config_template} > {config_file}
 
 # Create a sym link to the report scripts
 BINARY=$(which processor)
-ln -s ${{BINARY%/*}}/report {target_dir}/
+ln -s -f ${{BINARY%/*}}/report {target_dir}/
 
 cpulimit -i -l {thread}00 processor {config_file} & \\
 sleep 10 && \\
