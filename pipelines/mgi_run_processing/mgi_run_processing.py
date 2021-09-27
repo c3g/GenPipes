@@ -123,8 +123,9 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 self._mask = {}
             for lane in self.lanes:
                 self._readsets[lane] = self.load_readsets(lane)
-                self._mask[lane] = self.get_mask(lane)
-                self.generate_mgi_lane_sample_sheet(lane)
+                if not len(self._readsets[lane]) == 1:
+                    self._mask[lane] = self.get_mask(lane)
+                    self.generate_mgi_lane_sample_sheet(lane)
         return self._readsets
 
     @property
@@ -635,7 +636,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         jobs = []
 
         for lane in self.lanes:
-            if ("(no_barcode)" in self.run_dir) or (int(self._index1cycles[lane]) + int(self._index2cycles[lane]) == 0):
+            if ("(no_barcode)" in self.run_dir) or (int(self.index1cycles[lane]) + int(self.index2cycles[lane]) == 0):
                 if len(self.readsets[lane]) > 1:
                     err_msg = "LANE SETTING ERROR :\n"
                     err_msg += "Unable to demultiplex " + str(len(self.readsets[lane])) + " samples : No barcode in fastq files...\n(in "
@@ -720,43 +721,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 rename_job.name = "index.rename." + self.run_id + "." + lane
                 rename_job.samples = self.samples[lane]
     
-            elif (len(self.readsets[lane]) == 1) or ("(no_barcode)" in self.run_dir) or (int(self._index1cycles[lane]) + int(self._index2cycles[lane]) == 0):
-                readset = self.readsets[lane][0]
-                rename_job = concat_jobs(
-                    [
-                        bash.mkdir(os.path.dirname(readset.fastq1)),
-                        bash.cp(
-                            os.path.join(raw_fastq_dir, raw_name_prefix + "_read_1.fq.gz"),
-                            readset.fastq1,
-                        ),
-                        bash.cp(
-                            os.path.join(raw_fastq_dir, raw_name_prefix + "_read_1.fq.fqStat.txt"),
-                            re.sub("gz", "fqStat.txt", readset.fastq1),
-                        ),
-                        bash.cp(
-                            os.path.join(raw_fastq_dir, raw_name_prefix + "_read.report.html"),
-                            re.sub("_R1_001.fastq.gz", "_read.report.html", readset.fastq1),
-                        )
-                    ]
-                )
-                if readset.run_type == "PAIRED_END":
-                    rename_job = concat_jobs(
-                        [
-                            rename_job,
-                            bash.cp(
-                                os.path.join(raw_fastq_dir, raw_name_prefix + "_read_2.fq.gz"),
-                                readset.fastq2,
-                            ),
-                            bash.cp(
-                                os.path.join(raw_fastq_dir, raw_name_prefix + "_read_2.fq.fqStat.txt"),
-                                re.sub("gz", "fqStat.txt", readset.fastq2),
-                            )
-                        ]
-                    )
-                rename_job.output_files.append(copy_done_file)
-                rename_job.name = "index.rename." + self.run_id + "." + lane
-                rename_job.samples = self.samples[lane]
-    
             # If no demultiplexing was done on the sequencer i.e. no MGI adpater used... 
             # Nothing to do, fgbio DemuxFastqs will used the raw fastq files in the fastq step,
             # But set the copy jobs output_dependency
@@ -766,7 +730,44 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 copy_job_output_dependency.append(os.path.join(raw_fastq_dir, raw_name_prefix + "_read_1.fq.fqStat.txt"))
                 copy_job_output_dependency.append(os.path.join(raw_fastq_dir, raw_name_prefix + "_read_2.fq.fqStat.txt"))
                 copy_job_output_dependency.append(os.path.join(raw_fastq_dir, raw_name_prefix + "_read.report.html"))
-   
+
+                if (len(self.readsets[lane]) == 1) or ("(no_barcode)" in self.run_dir) or (int(self._index1cycles[lane]) + int(self._index2cycles[lane]) == 0):
+                    readset = self.readsets[lane][0]
+                    rename_job = concat_jobs(
+                        [
+                            bash.mkdir(os.path.dirname(readset.fastq1)),
+                            bash.cp(
+                                os.path.join(raw_fastq_dir, raw_name_prefix + "_read_1.fq.gz"),
+                                readset.fastq1,
+                            ),
+                            bash.cp(
+                                os.path.join(raw_fastq_dir, raw_name_prefix + "_read_1.fq.fqStat.txt"),
+                                re.sub("gz", "fqStat.txt", readset.fastq1),
+                            ),
+                            bash.cp(
+                                os.path.join(raw_fastq_dir, raw_name_prefix + "_read.report.html"),
+                                re.sub("_R1_001.fastq.gz", "_read.report.html", readset.fastq1),
+                            )
+                        ]
+                    )
+                    if readset.run_type == "PAIRED_END":
+                        rename_job = concat_jobs(
+                            [
+                                rename_job,
+                                bash.cp(
+                                    os.path.join(raw_fastq_dir, raw_name_prefix + "_read_2.fq.gz"),
+                                    readset.fastq2,
+                                ),
+                                bash.cp(
+                                    os.path.join(raw_fastq_dir, raw_name_prefix + "_read_2.fq.fqStat.txt"),
+                                 re.sub("gz", "fqStat.txt", readset.fastq2),
+                                )
+                            ]
+                        )
+                    rename_job.output_files.append(copy_done_file)
+                    rename_job.name = "index.rename." + self.run_id + "." + lane
+                    rename_job.samples = self.samples[lane]
+    
             # Job submission :
             # First we copy all the lane folder into the raw_fastq folder (unless already done...)
             if not os.path.exists(copy_done_file) or self.force_jobs:
@@ -1022,20 +1023,22 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         os.path.join(os.path.dirname(readset.fastq2), "fastqc.R2", re.sub(".fastq.gz", "_fastqc", os.path.basename(readset.fastq2)), re.sub(".fastq.gz", "_fastqc", "fastqc_data.txt"))
                     ]
                 if not self.is_demultiplexed:
-                    input_dict[readset.index_fastq1] = [
-                        os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.Barcodes", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq1))),
-                        os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.Barcodes", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq1)))
-                    ]
+                    if readset.index_fastq1:
+                        input_dict[readset.index_fastq1] = [
+                            os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.Barcodes", re.sub(".fastq.gz", "_fastqc.zip", os.path.basename(readset.index_fastq1))),
+                            os.path.join(os.path.dirname(readset.index_fastq1), "fastqc.Barcodes", re.sub(".fastq.gz", "_fastqc.html", os.path.basename(readset.index_fastq1)))
+                        ]
                 for input1, outputs in input_dict.items():
                     unzip = False
                     if input1 == readset.fastq1:
                         job_suffix = "R1."
                         input2 = None
                         unzip = True
-                        if self.is_demultiplexed:
-                            self.report_inputs[lane]['index'][readset.name] = [outputs[0]]
-                        else:
-                            self.report_inputs[lane]['index'][readset.name].append(outputs[0])
+                        if not len(self.readsets[lane]) == 1:
+                            if self.is_demultiplexed:
+                                self.report_inputs[lane]['index'][readset.name] = [outputs[0]]
+                            else:
+                                self.report_inputs[lane]['index'][readset.name].append(outputs[0])
                     elif input1 == readset.fastq2:
                         job_suffix = "R2."
                         input2 = None
@@ -1419,6 +1422,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.report_hash[lane]["barcodes"] = dict([(readset.name, readset.indexes) for readset in self.readsets[lane]])
     
             general_information_file = os.path.join(self.output_dir, "L0" + lane, self.run_id + "." + lane + ".general_information.json")
+            if not os.path.exists(os.path.dirname(general_information_file)):
+                os.makedirs(os.path.dirname(general_information_file))
             with open(general_information_file, 'w') as out_json:
                 json.dump(self.report_hash[lane], out_json, indent=4)
     
@@ -1915,7 +1920,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     "Sample_Barcode": sample_barcode
                 }
                 writer.writerow(csv_dict)
-
 
     def generate_basecall_outputs(self, lane):
         basecall_outputs = []
