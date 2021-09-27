@@ -402,39 +402,40 @@ def parse_illumina_raw_readset_files(
                 readset._library_source = protocol_line['Processing Protocol Name']
                 readset._library_type = protocol_line['Library Structure']
 
-                if re.search("SI-*", readset._description):
-                    key = readset._description
-                    for index_line in index_csv:
-                        if index_line and index_line[0] == key:
-                            readset._index = "-".join(index_line[1:])
-                            break
-                    else:
-                        _raise(SanitycheckError("Could not find index " + key + " in index file " + index_file + " Aborting..."))
-                else:
-                    key = readset._description.split("-")[0]
-                    index_to_use = ""
-                    for idx, index in enumerate(readset._description.split("-")):
+                if readset.index_name:
+                    if re.search("SI-*", readset._description):
+                        key = readset._description
                         for index_line in index_csv:
-                            if index_line and index_line[0] == index:
-                                if idx > 0 and len(index_line[1]) > 0:
-                                    index_to_use += "-"
-                                index_to_use += index_line[1]
+                            if index_line and index_line[0] == key:
+                                readset._index = "-".join(index_line[1:])
                                 break
                         else:
-                            _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
-                    readset._index = index_to_use
-                for adapter_line in adapter_csv:
-                    if adapter_line:
-                        if adapter_line[0] == key:
-                            readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
-                            readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
-                            break
-                else:
-                    _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + " Aborting..."))
-                # At this point, inedx_file, adapter_file  protocol_file were succesfully parsed, then exit the loop !
-                break
-        else:
-            _raise(SanitycheckError("Could not find protocol " + line['LibraryProcess'] + " (from event file " + readset_file + ") in protocol library file " + protocol_file + " for readset " + readset.name + " Aborting..."))
+                            _raise(SanitycheckError("Could not find index " + key + " in index file " + index_file + " Aborting..."))
+                    else:
+                        key = readset._description.split("-")[0]
+                        index_to_use = ""
+                        for idx, index in enumerate(readset._description.split("-")):
+                            for index_line in index_csv:
+                                if index_line and index_line[0] == index:
+                                    if idx > 0 and len(index_line[1]) > 0:
+                                        index_to_use += "-"
+                                    index_to_use += index_line[1]
+                                    break
+                            else:
+                                _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
+                        readset._index = index_to_use
+                    for adapter_line in adapter_csv:
+                        if adapter_line:
+                            if adapter_line[0] == key:
+                                readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
+                                readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
+                                break
+                    else:
+                        _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + " Aborting..."))
+                    # At this point, inedx_file, adapter_file  protocol_file were succesfully parsed, then exit the loop !
+                    break
+            else:
+                _raise(SanitycheckError("Could not find protocol " + line['LibraryProcess'] + " (from event file " + readset_file + ") in protocol library file " + protocol_file + " for readset " + readset.name + " Aborting..."))
 
         readset._genomic_database = line['Reference']
 
@@ -462,10 +463,10 @@ def parse_illumina_raw_readset_files(
         )
         readset.fastq1 = fastq_file_pattern.format(read_number=1)
         readset.fastq2 = fastq_file_pattern.format(read_number=2) if run_type == "PAIRED_END" else None
-        readset.index_fastq1 = re.sub("_R1_", "_I1_", readset.fastq1)
-        readset.index_fastq2 = re.sub("_R2_", "_I2_", readset.fastq2) if readset.run_type == "PAIRED_END" and readset.index_type == "DUALINDEX" else None
+        readset.index_fastq1 = re.sub("_R1_", "_I1_", readset.fastq1) if index1cycles else None
+        readset.index_fastq2 = re.sub("_R2_", "_I2_", readset.fastq2) if index2cycles else None
 
-        readset._indexes = get_index(readset, index1cycles, index2cycles, seqtype)
+        readset._indexes = get_index(readset, index1cycles, index2cycles, seqtype) if index1cycles else None
 
         if any(s in readset.protocol for s in ["10X_scRNA", "Single Cell RNA"]):
             readset._is_scrna = True
@@ -773,7 +774,7 @@ def parse_mgi_raw_readset_files(
     flowcell,
     lane,
     read1cycles,
-    readecycles,
+    read2cycles,
     index1cycles,
     index2cycles,
     output_dir
@@ -817,39 +818,40 @@ def parse_mgi_raw_readset_files(
         readset._sample_tag = line['Sample Tag']
         readset._gender = line['Gender']
 
-        # Dual Index
-        if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name):
-            key = readset.index_name.split('-')[0]
-            for idx, index in enumerate(readset.index_name.split("-")):
+        if readset.index_name:
+            # Dual Index
+            if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name):
+                key = readset.index_name.split('-')[0]
+                for idx, index in enumerate(readset.index_name.split("-")):
+                    for index_line in index_csv:
+                        if index_line and index_line[0] == index:
+                            if idx > 0 and len(index_line[1]) > 0:
+                                index2 = index_line[1]
+                            else:
+                                index1 = index_line[1]
+                            break
+                    else:
+                         _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
+                index_from_lims = [{'INDEX1':index1, 'INDEX2':index2}] 
+            # Single-index (pooled or not)
+            else:
+                key = readset.index_name
                 for index_line in index_csv:
-                    if index_line and index_line[0] == index:
-                        if idx > 0 and len(index_line[1]) > 0:
-                            index2 = index_line[1]
-                        else:
-                            index1 = index_line[1]
+                    if index_line and index_line[0] == key:
+                        index_from_lims = [{'INDEX1':index, 'INDEX2':""} for index in index_line[1:] if len(index) > 0]
                         break
                 else:
-                     _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
-            index_from_lims = [{'INDEX1':index1, 'INDEX2':index2}] 
-        # Single-index (pooled or not)
-        else:
-            key = readset.index_name
-            for index_line in index_csv:
-                if index_line and index_line[0] == key:
-                    index_from_lims = [{'INDEX1':index, 'INDEX2':""} for index in index_line[1:] if len(index) > 0]
-                    break
-            else:
-                _raise(SanitycheckError("Could not find index " + key + " in index file file " + index_file + " Aborting..."))
-        readset._index = index_from_lims
+                    _raise(SanitycheckError("Could not find index " + key + " in index file file " + index_file + " Aborting..."))
+            readset._index = index_from_lims
 
-        for adapter_line in adapter_csv:
-            if adapter_line :
-                if adapter_line[0] == key:
-                    readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
-                    readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
-                    break
-        else:
-            _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + " Aborting..."))
+            for adapter_line in adapter_csv:
+                if adapter_line :
+                    if adapter_line[0] == key:
+                        readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
+                        readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
+                        break
+            else:
+                _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + " Aborting..."))
 
         readset._project = line['ProjectName']
         readset._project_id = line['ProjectLUID']
@@ -877,10 +879,10 @@ def parse_mgi_raw_readset_files(
         )
         readset.fastq1 = fastq_file_pattern.format(read_number=1)
         readset.fastq2 = fastq_file_pattern.format(read_number=2) if run_type == "PAIRED_END" else None
-        readset.index_fastq1 = re.sub("_R1_", "_I1_", readset.fastq1)
+        readset.index_fastq1 = re.sub("_R1_", "_I1_", readset.fastq1) if index1cycles else None
         readset.index_fastq2 = re.sub("_R2_", "_I2_", readset.fastq2) if index2cycles else None
 
-        readset._indexes = get_index(readset, index1cycles, index2cycles, seqtype)
+        readset._indexes = get_index(readset, index1cycles, index2cycles, seqtype) if index1cycles else None
 
         if any(s in readset.protocol for s in ["10X_scRNA", "Single Cell RNA"]):
             readset._is_scrna = True

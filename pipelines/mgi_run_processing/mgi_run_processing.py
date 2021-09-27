@@ -493,6 +493,38 @@ class MGIRunProcessing(common.MUGQICPipeline):
         return self._bioinfo_files
 
     @property
+    def bioinfo_hash(self):
+        if not hasattr(self, "_bioinfo_hash"):
+            self._bioinfo_hash = {}
+            for lane in self.lanes:
+                bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
+                self._bioinfo_hash[lane] = dict(bioinfo_csv)
+        return self._bioinfo_hash
+
+    @property
+    def json_flag_files(self):
+        if not hasattr(self, "_json_flag_files"):
+            self._json_flag_files = {}
+            for lane in self.lanes:
+                for filename in os.listdir(os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"))):
+                    if re.match(self.run_id + "_" + lane + "_20" + self.date + ".+json", filename):
+                        self._json_flag_files[lane] = os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"), filename)
+        return self._json_flag_files
+
+    @property
+    def json_flag_hash(self):
+        if not hasattr(self, "_json_flag_hash"):
+            self._json_flag_hash = {}
+            for lane in self.lanes:
+                with open(self.json_flag_files[lane], "r") as jff:
+                    json_flag_content = json.load(jff)
+                keys = [item[0] for item in json_flag_content['experimentInfoVec']]
+                vals = [item[1] for item in json_flag_content['experimentInfoVec']]
+                self._json_flag_hash[lane] = dict(zip(keys, vals))
+        return self._json_flag_hash
+
+
+    @property
     def report_hash(self):
         if not hasattr(self, "_report_hash"):
             self._report_hash = {}
@@ -531,37 +563,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
         """
 
         jobs = []
-        self._read1cycles = {}
-        self._read2cycles = {}
-        self._index1cycles = {}
-        self._index2cycles = {}
-
-        for lane in self.lanes:
-            # First, redefine some attributes and properties which are specific to the T7 protocol
-            json_flag_file = os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"), self.run_id + "_" + lane + "_20" + self.date + "*.json")
-            for filename in os.listdir(os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"))):
-                if re.match(self.run_id + "_" + lane + "_20" + self.date + ".+json", filename):
-                    json_flag_file = os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"), filename)
-                    with open(json_flag_file, "r") as jff:
-                        json_flag_content = json.load(jff)
-            keys = [item[0] for item in json_flag_content['experimentInfoVec']]
-            vals = [item[1] for item in json_flag_content['experimentInfoVec']]
-            flag_dict = dict(zip(keys, vals))
-            self._instrument = flag_dict['Machine ID']
-            self._flowcell_position = flag_dict['Flow Cell Pos']
-            self._read1cycles[lane] = flag_dict['Read1'] if flag_dict['Read1'] else 0
-            self._read2cycles[lane] = flag_dict['Read2'] if flag_dict['Read2'] else 0
-            self._index1cycles[lane] = flag_dict['Barcode'] if flag_dict['Barcode'] else 0
-            self._index2cycles[lane] = flag_dict['Dual Barcode'] if flag_dict['Dual Barcode'] else 0
-            # flowcell_id format looks like : E100021630_Lane1
-            # where run_id is : E100021630
-            # and run counter is : 21630
-            self._sequencer_run_id = flag_dict['Flow Cell ID'].split("_")[0]
-            self._run_counter = flag_dict['Flow Cell ID'].split("_")[0][-5:]
-            # sometimes, format is misleading : 1074
-            # so we correct it to : 10074
-            #while len(run_counter) < 5:
-            #    run_counter[:1] + "0" +  run_counter[1:]
 
         for lane in self.lanes:
             lane_jobs = []
@@ -570,6 +571,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
             unaligned_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane)
             basecall_dir = os.path.join(unaligned_dir, "basecall")
+            #basecall_dir = os.path.join(config.param('basecall', 'basecall_dir', required=True), "basecall") # usually set to the local tmp folder on the compute node
             basecall_outputs = [
                 os.path.join(basecall_dir, self.run_id, "L0" + lane),
                 os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
@@ -598,7 +600,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         self.flowcell_id,
                         basecall_outputs,
                         basecall_dir,
-                        json_flag_file,
+                        self.json_flag_files[lane],
                         lane_config_file
                     ),
                     bash.touch(lane_basecall_done_file),
@@ -633,6 +635,13 @@ class MGIRunProcessing(common.MUGQICPipeline):
         jobs = []
 
         for lane in self.lanes:
+            if ("(no_barcode)" in self.run_dir) or (int(self._index1cycles[lane]) + int(self._index2cycles[lane]) == 0):
+                if len(self.readsets[lane]) > 1:
+                    err_msg = "LANE SETTING ERROR :\n"
+                    err_msg += "Unable to demultiplex " + str(len(self.readsets[lane])) + " samples : No barcode in fastq files...\n(in "
+                    err_msg += self.run_dir + ")"
+                    _raise(SanitycheckError(err_msg))
+
             lane_jobs = []
 
             # First we copy all the lane folder into the raw_fastq folder
@@ -666,23 +675,23 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         _raise(SanitycheckError("MGI Index error : unable to parse barcode # in : " + readset.index_name))
     
                     copy_job_output_dependency.extend([
-                        os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + lane + "_" + index_number + "_1.fq.gz"),
-                        os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + lane + "_" + index_number + "_1.fq.fqStat.txt"),
-                        os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + lane + "_" + index_number + ".report.html")
+                        os.path.join(raw_fastq_dir, raw_name_prefix + "_" + index_number + "_1.fq.gz"),
+                        os.path.join(raw_fastq_dir, raw_name_prefix + "_" + index_number + "_1.fq.fqStat.txt"),
+                        os.path.join(raw_fastq_dir, raw_name_prefix + "_" + index_number + ".report.html")
                     ])
                     rename_jobs.append(
                         concat_jobs([
                             bash.mkdir(output_dir),
                             bash.cp(
-                                os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + lane + "_" + index_number + "_1.fq.gz"),
+                                os.path.join(raw_fastq_dir, raw_name_prefix + "_" + index_number + "_1.fq.gz"),
                                 readset.fastq1
                             ),
                             bash.cp(
-                                os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + lane + "_" + index_number + "_1.fq.fqStat.txt"),
+                                os.path.join(raw_fastq_dir, raw_name_prefix + "_" + index_number + "_1.fq.fqStat.txt"),
                                 re.sub("gz", "fqStat.txt", readset.fastq1)
                             ),
                             bash.cp(
-                                os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + lane + "_" + index_number + ".report.html"),
+                                os.path.join(raw_fastq_dir, raw_name_prefix + "_" + index_number + ".report.html"),
                                 re.sub("_R1_001.fastq.gz", ".report.html", readset.fastq1)
                             )
                         ])
@@ -690,17 +699,17 @@ class MGIRunProcessing(common.MUGQICPipeline):
     
                     if readset.run_type == "PAIRED_END":
                         copy_job_output_dependency.extend([
-                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + lane + "_" + index_number + "_2.fq.gz"),
-                            os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + lane + "_" + index_number + "_2.fq.fqStat.txt")
+                            os.path.join(raw_fastq_dir, raw_name_prefix + "_" + index_number + "_2.fq.gz"),
+                            os.path.join(raw_fastq_dir, raw_name_prefix + "_" + index_number + "_2.fq.fqStat.txt")
                         ])
                         rename_jobs.append(
                             concat_jobs([
                                 bash.cp(
-                                    os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + lane + "_" + index_number + "_2.fq.gz"),
+                                    os.path.join(raw_fastq_dir, raw_name_prefix + "_" + index_number + "_2.fq.gz"),
                                     readset.fastq2,
                                 ),
                                 bash.cp(
-                                    os.path.join(raw_fastq_dir, readset.flow_cell + "_L0" + lane + "_" + index_number + "_2.fq.fqStat.txt"),
+                                    os.path.join(raw_fastq_dir, raw_name_prefix + "_" + index_number + "_2.fq.fqStat.txt"),
                                     re.sub("gz", "fqStat.txt", readset.fastq2),
                                 )
                             ])
@@ -711,26 +720,21 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 rename_job.name = "index.rename." + self.run_id + "." + lane
                 rename_job.samples = self.samples[lane]
     
-            elif "(no_barcode)" in self.run_dir:
-                if len(self.readsets[lane]) > 1:
-                    err_msg = "LANE SETTING ERROR :\n"
-                    err_msg += "Unable to demultiplex " + str(len(self.readsets[lane])) + " samples : No barcode in fastq files...\n(in "
-                    err_msg += self.run_dir + ")"
-                    _raise(SanitycheckError(err_msg))
+            elif (len(self.readsets[lane]) == 1) or ("(no_barcode)" in self.run_dir) or (int(self._index1cycles[lane]) + int(self._index2cycles[lane]) == 0):
                 readset = self.readsets[lane][0]
                 rename_job = concat_jobs(
                     [
                         bash.mkdir(os.path.dirname(readset.fastq1)),
                         bash.cp(
-                            os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + lane + "_read_1.fq.gz"),
+                            os.path.join(raw_fastq_dir, raw_name_prefix + "_read_1.fq.gz"),
                             readset.fastq1,
                         ),
                         bash.cp(
-                            os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + lane + "_read_1.fq.fqStat.txt"),
+                            os.path.join(raw_fastq_dir, raw_name_prefix + "_read_1.fq.fqStat.txt"),
                             re.sub("gz", "fqStat.txt", readset.fastq1),
                         ),
                         bash.cp(
-                            os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + lane + "_read.report.html"),
+                            os.path.join(raw_fastq_dir, raw_name_prefix + "_read.report.html"),
                             re.sub("_R1_001.fastq.gz", "_read.report.html", readset.fastq1),
                         )
                     ]
@@ -740,11 +744,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         [
                             rename_job,
                             bash.cp(
-                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + lane + "_read_2.fq.gz"),
+                                os.path.join(raw_fastq_dir, raw_name_prefix + "_read_2.fq.gz"),
                                 readset.fastq2,
                             ),
                             bash.cp(
-                                os.path.join(raw_fastq_dir, self.flowcell_id + "_L0" + lane + "_read_2.fq.fqStat.txt"),
+                                os.path.join(raw_fastq_dir, raw_name_prefix + "_read_2.fq.fqStat.txt"),
                                 re.sub("gz", "fqStat.txt", readset.fastq2),
                             )
                         ]
@@ -853,6 +857,15 @@ class MGIRunProcessing(common.MUGQICPipeline):
         *** In the future, may generate the fastq files from the raw CAL files. ***
         Perform demultplexing of the reads with fgbio DemuxFastqs
         """
+
+        ini_section = None
+        if self.args.type == 'g400':
+            ini_section = 'fastq_g400'
+        elif self.args.type == 't7':
+            ini_section = 'fastq_t7'
+        if not ini_section:
+             _raise(SanitycheckError("Could not determine which section to use for fastq step from given protocol " + self.protocol))
+
         jobs = []
 
         if self.is_demultiplexed:
@@ -865,60 +878,68 @@ class MGIRunProcessing(common.MUGQICPipeline):
             log.info("No demultiplexing done on the sequencer... Processing fastq step...")
 
             for lane in self.lanes:
-                lane_jobs = []
-                jobs_to_throttle = []
+                if len(self.readsets[lane]) == 1:
+                    log.info("Only one readset on the lane... Skipping fastq step for lane " + lane + "...")
 
-                input_fastq_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "raw_fastq")
-                raw_name_prefix = self.raw_fastq_prefix +  "_L0" + lane
-                input1 = os.path.join(input_fastq_dir, raw_name_prefix + "_read_1.fq.gz")
-                input2 = os.path.join(input_fastq_dir, raw_name_prefix + "_read_2.fq.gz")
+                elif int(self._index1cycles[lane]) + int(self._index2cycles[lane]) == 0:
+                    log.info("No barcode cycles in the lane... Skipping fastq step for lane " + lane + "...")
 
-                demuxfastqs_outputs, postprocessing_jobs = self.generate_demuxfastqs_outputs(lane)
+                else:
+                    lane_jobs = []
+                    jobs_to_throttle = []
 
-                tmp_output_dir = os.path.dirname(demuxfastqs_outputs[0])    
-                tmp_metrics_file = os.path.join(tmp_output_dir, self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
-                metrics_file = os.path.join(self.output_dir, "L0" + lane,  "Unaligned." + lane, self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
-                demuxfastqs_outputs.append(metrics_file)
+                    input_fastq_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "raw_fastq")
+                    raw_name_prefix = self.raw_fastq_prefix +  "_L0" + lane
+                    input1 = os.path.join(input_fastq_dir, raw_name_prefix + "_read_1.fq.gz")
+                    input2 = os.path.join(input_fastq_dir, raw_name_prefix + "_read_2.fq.gz")
 
-                demultiplex_job = run_processing_tools.demux_fastqs(
-                    os.path.join(self.output_dir, "L0" + lane, "samplesheet." + lane + ".csv"),
-                    self.number_of_mismatches,
-                    self.mask[lane],
-                    demuxfastqs_outputs,
-                    tmp_metrics_file,
-                    input1,
-                    input2
-                )
+                    demuxfastqs_outputs, postprocessing_jobs = self.generate_demuxfastqs_outputs(lane)
 
-                lane_jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(
-                                tmp_output_dir,
-                                remove=True
-                            ),
-                            demultiplex_job,
-                            bash.cp(
-                                tmp_metrics_file,
-                                metrics_file
-                            )
-                        ],
-                        name="fastq.demultiplex." + self.run_id + "." + lane,
-                        samples=self.samples[lane],
-                        input_dependency=demultiplex_job.input_files,
-                        output_dependency=demuxfastqs_outputs
+                    tmp_output_dir = os.path.dirname(demuxfastqs_outputs[0])    
+                    tmp_metrics_file = os.path.join(tmp_output_dir, self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
+                    metrics_file = os.path.join(self.output_dir, "L0" + lane,  "Unaligned." + lane, self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
+                    demuxfastqs_outputs.append(metrics_file)
+
+                    demultiplex_job = run_processing_tools.demux_fastqs(
+                        os.path.join(self.output_dir, "L0" + lane, "samplesheet." + lane + ".csv"),
+                        self.number_of_mismatches,
+                        self.mask[lane],
+                        demuxfastqs_outputs,
+                        tmp_metrics_file,
+                        input1,
+                        input2,
+                        ini_section
                     )
-                )
+
+                    lane_jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(
+                                    tmp_output_dir,
+                                    remove=True
+                                ),
+                                demultiplex_job,
+                                bash.cp(
+                                    tmp_metrics_file,
+                                    metrics_file
+                                )
+                            ],
+                            name=ini_section + ".demultiplex." + self.run_id + "." + lane,
+                            samples=self.samples[lane],
+                            input_dependency=demultiplex_job.input_files,
+                            output_dependency=demuxfastqs_outputs
+                        )
+                    )
     
-                if postprocessing_jobs:
-                    jobs_to_throttle.extend(postprocessing_jobs)
-    
-                for readset in self.readsets[lane]:
-                    self.report_inputs[lane]['index'][readset.name] = [metrics_file]
+                    if postprocessing_jobs:
+                        jobs_to_throttle.extend(postprocessing_jobs)
+
+                    for readset in self.readsets[lane]:
+                        self.report_inputs[lane]['index'][readset.name] = [metrics_file]
    
-                lane_jobs.extend(self.throttle_jobs(jobs_to_throttle)) 
-                self.add_copy_job_inputs(lane_jobs, lane)
-                jobs.extend(lane_jobs)
+                    lane_jobs.extend(self.throttle_jobs(jobs_to_throttle)) 
+                    self.add_copy_job_inputs(lane_jobs, lane)
+                    jobs.extend(lane_jobs)
         return jobs
 
     def qc_graphs(self):
@@ -1636,94 +1657,124 @@ class MGIRunProcessing(common.MUGQICPipeline):
         """
         Parse the BioInfo.csv file for the number of read 1 cycles in the run
         """
-        bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
-        for row in bioinfo_csv:
-            if row[0] == "Read1 Cycles":
-                return row[1]
-        _raise(SanitycheckError("Could not get Read 1 Cycles from " + self.bioinfo_files[lane]))
+        if self.args.type == "g400":
+            return self.bioinfo_hash[lane]["Read1 Cycles"]
+
+        elif self.args.type == "t7":
+            return self.json_flag_hash[lane]['Read1']
+
+        else:
+            _raise(SanitycheckError("Unknown protocol : " + self.args.type))
 
     def get_read2cycles(self, lane):
         """
         Parse the BioInfo.csv file for the number of read 2 cycles in the run
         """
-        bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
-        for row in bioinfo_csv:
-            if row[0] == "Read2 Cycles":
-                return row[1]
-        _raise(SanitycheckError("Could not get Read 2 Cycles from " + self.bioinfo_files[lane]))
+        if self.args.type == "g400":
+            return self.bioinfo_hash[lane]["Read2 Cycles"]
+
+        elif self.args.type == "t7":
+            return self.json_flag_hash[lane]['Read2']
+        else:
+            _raise(SanitycheckError("Unknown protocol : " + self.args.type))
 
     def get_index1cycles(self, lane):
         """
         Parse the BioInfo.csv file for the number of index 1 cycles in the run
         """
-        bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
-        for row in bioinfo_csv:
-            if row[0] == "Barcode":
-                return row[1]
-        _raise(SanitycheckError("Could not get Index 1 Cycles from " + self.bioinfo_files[lane]))
+        if self.args.type == "g400":
+            if self.bioinfo_hash[lane]["Barcode"] == '':
+                return "0"
+            else:
+                return self.bioinfo_hash[lane]["Barcode"]
+            _raise(SanitycheckError("Could not get Index 1 Cycles from " + self.bioinfo_files[lane]))
+
+        elif self.args.type == "t7":
+            if self.json_flag_hash[lane]["Barcode"] == '':
+                return "0"
+            else:
+                return self.json_flag_hash[lane]['Barcode']
+        else:
+            _raise(SanitycheckError("Unknown protocol : " + self.args.type))
 
     def get_index2cycles(self, lane):
         """
         Parse the BioInfo.csv file for the number of index 2 cycles in the run
         """
-        bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
-        for row in bioinfo_csv:
-            if row[0] == "Dual Barcode":
-                if row[1] == '':
-                    return "0"
-                else:
-                    return row[1]
-        _raise(SanitycheckError("Could not get Index 2 Cycles from " + self.bioinfo_files[lane]))
+        if self.args.type == "g400":
+            if self.bioinfo_hash[lane]["Dual Barcode"] == '':
+                return "0"
+            else:
+                return self.bioinfo_hash[lane]["Dual Barcode"]
+
+        elif self.args.type == "t7":
+            if self.json_flag_hash[lane]["Dual Barcode"] == '':
+                return "0"
+            else:
+                return self.json_flag_hash[lane]["Dual Barcode"]
+        else:
+            _raise(SanitycheckError("Unknown protocol : " + self.args.type))
 
     def get_instrument(self, lane):
         """
         Parse the BioInfo.csv file for the instrument name the run has been running on
-        """
-        bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
-        for row in bioinfo_csv:
-            if row[0] == "Machine ID":
-                return row[1]
-        _raise(SanitycheckError("Could not find intrument from " + self.bioinfo_files[lane]))
+        """        
+        if self.args.type == "g400":
+            return self.bioinfo_hash[lane]["Machine ID"]
+
+        elif self.args.type == "t7":
+            return self.json_flag_hash[lane]['Machine ID']
+        else:
+            _raise(SanitycheckError("Unknown protocol : " + self.args.type))
 
     def get_flowcell_position(self, lane):
         """
         Parse the BioInfo.csv file for flowcell position of the run
         """
-        bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
-        for row in bioinfo_csv:
-            if row[0] == "Flowcell Pos":
-                return row[1]
-        _raise(SanitycheckError("Could not find flowcell position from " + self.bioinfo_files[lane]))
+        if self.args.type == "g400":
+            return self.bioinfo_hash[lane]["Flowcell Pos"]
+
+        elif self.args.type == "t7":
+            return self.json_flag_hash[lane]["Flow Cell Pos"]
+
+        else:
+            _raise(SanitycheckError("Unknown protocol : " + self.args.type))
 
     def get_sequencer_run_id(self, lane):
         """
         Parse the BioInfo.csv file for the ID of the run given by the sequencer
         """
-        bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
-        for row in bioinfo_csv:
-            if row[0] == "DNB ID":
-                # dnb_id format looks like : 10074MG01B_Lane4
-                # where run_id is : 10074MG01B
-                return row[1].split("_")[0]
-        _raise(SanitycheckError("Could not find DNB ID from " + self.bioinfo_files[lane]))
+        if self.args.type == "g400":
+            # dnb_id format looks like : 10074MG01B_Lane4
+            # where run_id is : 10074MG01B
+            return self.bioinfo_hash[lane]["DNB ID"].split("_")[0]
+
+        elif self.args.type == "t7":
+            return self.json_flag_hash[lane]['Flow Cell ID'].split("_")[0]
+
+        else:
+            _raise(SanitycheckError("Unknown protocol : " + self.args.type))
 
     def get_run_counter(self, lane):
         """
         Parse the BioInfo.csv file for the ID of the run to extract the run counter
         """
-        bioinfo_csv = csv.reader(open(self.bioinfo_files[lane], 'rb'))
-        for row in bioinfo_csv:
-            if row[0] == "DNB ID":
-                # dnb_id format looks like : 10074MG01B_Lane4
-                # where run_id is : 10074MG01B
-                # and run counter is : 10074
-                run_counter = row[1].split("_")[0][:-5]
-                # sometimes, format is misleading : 1074
-                # so we correct it to : 10074
-                while len(run_counter) < 5:
-                    run_counter[:1] + "0" +  run_counter[1:]
-                return run_counter
-        _raise(SanitycheckError("Could not find intrument from " + self.bioinfo_files[lane]))
+        if self.args.type == "g400":
+            # dnb_id format looks like : 10074MG01B_Lane4
+            # where run_id is : 10074MG01B
+            # and run counter is : 10074
+            run_counter = self.bioinfo_hash[lane]["DNB ID"].split("_")[0][:-5]
+            # sometimes, format is misleading : 1074
+            # so we correct it to : 10074
+            while len(run_counter) < 5:
+                run_counter[:1] + "0" +  run_counter[1:]
+            return run_counter
+
+        elif self.args.type == "t7":
+            return self.json_flag_hash[lane]['Flow Cell ID'].split("_")[0][-5:]
+
+        else:
+            _raise(SanitycheckError("Unknown protocol : " + self.args.type))
 
     def get_seqtype(self):
         """
@@ -1780,7 +1831,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         index_cycles = [int(self.index1cycles[lane])]
         if self.is_dual_index[lane]:
             index_cycles.insert(0, int(self.index2cycles[lane]))
-    
+   
         mask = self.read1cycles[lane] + 'T ' + self.read2cycles[lane] + 'T'
         for idx_nb_cycles in index_cycles:
             if idx_nb_cycles >= index_lengths[index_read_count]:
@@ -1925,7 +1976,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             ]
                         )
                     ],
-                    name="fastq.convert_R1." + readset.name + "." + self.run_id + "." + lane,
+                    name="fastq_convert.R1." + readset.name + "." + self.run_id + "." + lane,
                     samples=self.samples[lane]
                 )
             )
@@ -1959,7 +2010,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             )
                         ],
                         output_dependency=outputs,
-                        name="fastq.convert_R2." + readset.name + "." + self.run_id + "." + lane,
+                        name="fastq_convert.R2." + readset.name + "." + self.run_id + "." + lane,
                         samples=self.samples[lane]
                     )
                 )
@@ -1985,7 +2036,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz")
                     )
                 ],
-                name="fastq.convert_R1.unmatched." + self.run_id + "." + lane,
+                name= "fastq_convert.R1.unmatched." + self.run_id + "." + lane,
                 samples=self.samples[lane]
             )
         )
@@ -2014,7 +2065,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         )
                     ],
                     output_dependency=outputs,
-                    name="fastq.convert_R2.unmatched." + self.run_id + "." + lane,
+                    name="fastq_convert.R2.unmatched." + self.run_id + "." + lane,
                     samples=self.samples[lane]
                 )
             )
@@ -2045,7 +2096,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         This will also convert the headers of the fastqs from MGI Illumina format
         """
         if self.is_dual_index[lane]:
-            return """-v inst=\"{instrument}\" -v run=\"{run}\" -v read_len=\"{read_len}\" -v barcode_len=\"{barcode_len}\" '{{
+            return """-v inst=\"{instrument}\" -v run=\"{run}\" -v read_len=\"{read_len}\" -v barcode1_len=\"{barcode1_len}\" -v barcode2_len=\"{barcode2_len}\" '{{
  header=$0
  getline seq
  getline sep
@@ -2055,11 +2106,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
  header="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:" head_items[6]
  b1_head="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:1"
  r2_seq=substr(seq,1,read_len)
- i1_seq=substr(seq,read_len+barcode_len+1,barcode_len)
- i2_seq=substr(seq,read_len+1,barcode_len)
+ i1_seq=substr(seq,read_len+barcode2_len+1,barcode1_len)
+ i2_seq=substr(seq,read_len+1,barcode2_len)
  r2_qual=substr(qual,1,read_len)
- i1_qual=substr(qual,read_len+barcode_len+1,barcode_len)
- i2_qual=substr(qual,read_len+1,barcode_len)
+ i1_qual=substr(qual,read_len+barcode2_len+1,barcode1_len)
+ i2_qual=substr(qual,read_len+1,barcode2_len)
  print header "\\n" r2_seq "\\n" sep "\\n" r2_qual | "gzip > {r2_out}"
  print b1_head "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
  print header "\\n" i2_seq "\\n" sep "\\n" i2_qual | "gzip > {i2_out}"
@@ -2068,7 +2119,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 instrument=self.instrument,
                 run=self.run_counter,
                 read_len=self.read2cycles[lane],
-                barcode_len=self.index2cycles[lane],
+                barcode1_len=self.index1cycles[lane],
+                barcode2_len=self.index2cycles[lane],
                 r2_out=readset.fastq2 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
                 i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz"),
                 i2_out=readset.index_fastq2 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
@@ -2132,10 +2184,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.run_id,
             self.flowcell_id,
             lane,
-            self.read1cycles[lane],
-            self.read2cycles[lane],
-            self.index1cycles[lane],
-            self.index2cycles[lane],
+            int(self.read1cycles[lane]),
+            int(self.read2cycles[lane]),
+            int(self.index1cycles[lane]),
+            int(self.index2cycles[lane]),
             os.path.join(self.output_dir, "L0" + lane)
         )
 
