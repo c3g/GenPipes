@@ -586,7 +586,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
         ##check the library status
         library = {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample):
+            if not readset.sample in library:
                 library[readset.sample] = "SINGLE_END"
             if readset.run_type == "PAIRED_END":
                 library[readset.sample] = "PAIRED_END"
@@ -1264,7 +1264,7 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         library = {}
         for readset in self.readsets:
             ##check the library status
-            if not library.has_key(readset.sample):
+            if not readset.sample in library:
                 library[readset.sample] = "SINGLE_END"
             if readset.run_type == "PAIRED_END":
                 library[readset.sample] = "PAIRED_END"

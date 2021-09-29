@@ -25,11 +25,11 @@ import csv
 import logging
 import os
 import re
-import ConfigParser
+import configparser as ConfigParser
 
 # MUGQIC Modules
-import run_processing_aligner
-from sample import Sample
+from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner 
+from .sample import Sample
 from core.config import config
 
 log = logging.getLogger(__name__)
@@ -153,7 +153,7 @@ def parse_illumina_readset_file(illumina_readset_file):
     samples = []
 
     log.info("Parse Illumina readset file " + illumina_readset_file + " ...")
-    readset_csv = csv.DictReader(open(illumina_readset_file, 'rb'), delimiter='\t')
+    readset_csv = csv.DictReader(open(illumina_readset_file, 'r'), delimiter='\t')
     for line in readset_csv:
         sample_name = line['Sample']
         sample_names = [sample.name for sample in samples]
@@ -361,9 +361,9 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
             current_genome_folder = genome_root + os.sep + folder_name
 
             if readset.is_rna:
-                readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, nb_cycles)
+                readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, nb_cycles)
             else:
-                readset._aligner = run_processing_aligner.BwaRunProcessingAligner(output_dir, current_genome_folder)
+                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder)
 
             aligner_reference_index = readset.aligner.get_reference_index()
             annotation_files = readset.aligner.get_annotation_files()
@@ -511,7 +511,7 @@ def parse_nanopore_readset_file(nanopore_readset_file):
     samples = []
 
     log.info("Parse Nanopore readset file " + nanopore_readset_file + " ...")
-    readset_csv = csv.DictReader(open(nanopore_readset_file, 'rb'), delimiter='\t')
+    readset_csv = csv.DictReader(open(nanopore_readset_file, 'r'), delimiter='\t')
     for line in readset_csv:
         sample_name = line['Sample']
         sample_names = [sample.name for sample in samples]
