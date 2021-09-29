@@ -168,24 +168,48 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.itervalues():
-            inputs["Normal"] = [self.select_input_files([
-                [readset.fastq1], [os.path.join("raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")]])
-                                for readset in tumor_pair.readsets[tumor_pair.normal.name]][0]
-            inputs["Normal"].append([self.select_input_files([
-                [readset.fastq2], [os.path.join("raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")]])
-                                for readset in tumor_pair.readsets[tumor_pair.normal.name]][0][0])
+            inputs["Normal"] = [
+                self.select_input_files(
+                    [
+                        [readset.fastq1],
+                        [os.path.join("raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")]
+                    ]
+                ) for readset in tumor_pair.readsets[tumor_pair.normal.name]
+            ][0]
+            inputs["Normal"].append(
+                [
+                    self.select_input_files(
+                        [
+                            [readset.fastq2],
+                            [os.path.join("raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")]
+                        ]
+                    ) for readset in tumor_pair.readsets[tumor_pair.normal.name]
+                ][0][0]
+            )
 
-            inputs["Tumor"] = [self.select_input_files([
-                [readset.fastq1], [os.path.join("raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")]])
-                                for readset in tumor_pair.readsets[tumor_pair.tumor.name]][0]
-            inputs["Tumor"].append([self.select_input_files([
-                [readset.fastq2], [os.path.join("raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")]])
-                                for readset in tumor_pair.readsets[tumor_pair.tumor.name]][0][0])
+            inputs["Tumor"] = [
+                self.select_input_files(
+                    [
+                        [readset.fastq1],
+                        [os.path.join("raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")]
+                    ]
+                ) for readset in tumor_pair.readsets[tumor_pair.tumor.name]
+            ][0]
+            inputs["Tumor"].append(
+                [
+                    self.select_input_files(
+                        [
+                            [readset.fastq2],
+                            [os.path.join("raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")]
+                        ]
+                    ) for readset in tumor_pair.readsets[tumor_pair.tumor.name]
+                ][0][0]
+            )
             
-            for key, inputFile in inputs.iteritems():
-                for readset in inputFile:
+            for key, input_files in inputs.iteritems():
+                for read, file in enumerate(input_files):
                     symlink_pair_job = deliverables.sym_link_pair(
-                        readset,
+                        file,
                         tumor_pair,
                         self.output_dir,
                         type="raw_reads",
@@ -205,7 +229,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 symlink_pair_job,
                                 md5sum_job
                             ],
-                            name="sym_link_fastq.pairs." + tumor_pair.name + "." + key
+                            name="sym_link_fastq.pairs." + str(read) + "." + tumor_pair.name + "." + key
                         )
                     )
 

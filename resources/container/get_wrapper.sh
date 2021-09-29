@@ -19,7 +19,7 @@ if test -f "${SCRIPT_DIR}/etc/wrapper.conf"; then
           ;;
     esac
 else
-  echo mv -i ${SCRIPT_DIR}/etc/wrapper.conf.tpl ${SCRIPT_DIR}/etc/wrapper.conf
+   mv -i ${SCRIPT_DIR}/etc/wrapper.conf.tpl ${SCRIPT_DIR}/etc/wrapper.conf
 fi
 
 

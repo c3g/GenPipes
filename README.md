@@ -112,7 +112,7 @@ git clone git@bitbucket.org:mugqic/genpipes.git
 
 A new installation with a better taste:
 
-Singularity needs to be [installed on your system]https://github.com/hpcng/singularity/blob/master/INSTALL.md)
+Singularity needs to be [installed on your system](https://github.com/hpcng/singularity/blob/master/INSTALL.md)
 
 Then, make sure that you have fuse installed on your system,  if `ls /dev/fuse` returns no error, you are all set.
 
@@ -324,6 +324,8 @@ For more information about a specific pipeline, visit:
 ### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/ampliconseq/)
 ### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/)
 ### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore/)
+### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/)
+### [Cov-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/covseq/)
 
 Readset File
 ------------
@@ -331,7 +333,7 @@ Readset File
 The Readset File is a TAB-separated values plain text file with one line per readset and the following columns in any order:
 
 
-### DNA-Seq, DNA-Seq high Coverage, RNA-Seq, RNA-Seq De Novo Assembly, Amplicon-Seq, Methyl-Seq
+### DNA-Seq, DNA-Seq high Coverage, RNA-Seq, RNA-Seq De Novo Assembly, Amplicon-Seq, Tumor Pair, Methyl-Seq, CovSeq
 
 * Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
 * Readset: a unique readset name with the same allowed characters as above; mandatory;

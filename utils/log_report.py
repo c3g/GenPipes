@@ -242,14 +242,14 @@ class JobStat(object):
     def prologue_time(self):
         try:
             return self.start_time + self.start
-        except TypeError:
+        except (TypeError, KeyError):
             return None
 
     @property
     def epilogue_time(self):
         try:
             return self.start_time + self.stop
-        except TypeError:
+        except (TypeError, KeyError):
             return None
 
     @property
