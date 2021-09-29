@@ -1,6 +1,444 @@
-26 tags, 8350 commits
+27 tags, 8721 commits
 
-HEAD        Mon Jul 12 11:52:58 2021 -0400        0 commits
+HEAD        Mon Aug 30 11:06:37 2021 -0400        0 commits
+
+3.6.0        Mon Aug 30 17:55:36 2021 +0000        370 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      5 commits
+
+       cdaafcd Merge branch 'dev' into release_3.6
+       bea48bd GenPipes - updating CHANGELOG and VERSION files (after release)
+       2ea1988 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       4554eaf GenPipes - README : updating version to 3.5.0 in all pipeline READMEs
+       1f71288 GenPipes - Release 3.5.0 : updating CHANGELOG up to tag 3.5.0
+
+  Édouard Henrion <henrione@beluga2.int.ets1.calculquebec.ca>      16 commits
+
+       9eda417 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       79bc0fd GenPipes - Tumor Pair : no more attemps to write where the reference files are (in case of readonly FS, e.g. CVMFS...)
+       79aa7dc Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       86c40fd GenPipes - Tumor Pair : fixed Strelka2 jobs with mkdir
+       ed205e1 GenPipes - Tumor Pair : fixed coverage_bed in strelka steps
+       b7873b9 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       0eafe86 GenPipes - BFX : fixed GATK4 cluster_crosscheck_metrics command
+       a9eb687 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       ae4cc08 GenPipes - Tumor Pair ; deleted dev.ini from dev branch
+       b6fd739 GenPipes - Tumor Pair : fixed symlink_fastq_pair command
+       41ba984 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       84f350f GenPipes - Install script : version change
+       7e07739 GenPipes - RNASeq light : fixing typo
+       e1c1b50 RNASeq light : importing bash_cmd fix
+       3e29063 GenPipes - Release 3.6 : updating the READMEs in dev
+       16be170 GenPipes - Pipelines : Fixed dnaseq_high_coverage inheritance with dnaseq and rnaseq_light & rnaseq_denovo_assembly inheritance with rnaseq
+
+  ehenrion <edouard.henrion@mcgill.ca>      13 commits
+
+       677e9cf Merged in release_3.6 (pull request #250)
+       3591ec9 GenPipes - ChipSeq : updated mugqic_tools with latest version
+       da2b410 GenPipes - Ampliconseq: updated mugqic_tools version in base.ini
+       40cb3b4 GenPipes - AmpliconSeq : updated mugqic_tools version in base.ini
+       92e4919 Rnaseq_light.py: kallisto_count_matrix dependency
+       18d37ad fixing picard2 add_read_groups call
+       952ac0a GenPipes - MethylSeq.py : Fixed pipeline inheritance with DNASeq
+       de571d6 GenPipes - CoVSeq : setting the gatk4_java_options in base.ini
+       11755c1 GenPipes - BFX : fixing add_read_groups in picard2.py
+       fa40033 GenPipes - MethlySeq : fixing sambamba_merge_sam_files dependency
+       2f63183 Merged in pipeline_inherit_fix_eh (pull request #249)
+       aa3ca79 Merged dev into pipeline_inherit_fix_eh
+       273fe54 Merged in release_3.5 (pull request #243)
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      24 commits
+
+       a1f3040 Merged in covseq_stretenp (pull request #248)
+       8374fdb Threshold rename consensus change for LSPQ
+       d3c3b5f Code cleaning
+       7bc5189 Merged dev into covseq_stretenp
+       376368f Upgrading covseq_tools version
+       e473abe Changing regex for finding negative controls for LSPQ
+       d0291fe covseq - prepare_table - debug
+       0ed94bb Merged dev into covseq_stretenp
+       b768d92 Adding bfx for covseq_tools and ncov-tools
+       0c8407e Upgrading cvoseq_tools version
+       6b3f8de Debug
+       7dcbf5d Degrouping rename_consensus step for ivar and freebayes
+       d476c11 Debug
+       00fafc3 Un-grouping freebayes report and ivar report
+       1fe319e Un-grouping freebayes report and ivar report
+       6b32016 Debug
+       3023357 Changing resources for ncovtools
+       58d0497 Debug
+       29d800f Debug
+       8a773f9 Debug
+       5ede73b Debug
+       ce60e36 Debug
+       84cda2b Adding freebayes metrics and reporting
+       d0592cc Renaming prefix parameter in ini_section
+
+  Pierre-Olivier Quirion <pierre-olivier.quirion@computationalgenomics.ca>      3 commits
+
+       eeee6b1 Merged in tp_debug (pull request #257)
+       fae1349 Merged in monitor_limit (pull request #256)
+       6283fd9 Merged in kallisto_rnaseq_light (pull request #254)
+
+  P-O Quirion <pierre-olivier.quirion@computationalgenomics.ca>      13 commits
+
+       8d09333 Bump GiaC to v2.0.3
+       55dd941 patch stolen from Ed to fix recalibration step
+       a89de00 RETRY ret_code corrected
+       64b9f79 RETRY limit on monitor
+       c638ab3 RETRY limit on monitor
+       bf87297 RETRY limit on monitor
+       2c1c895 RETRY limit on monitor
+       207a069 fix ini for graham covid
+       203ea90 update tp ini for cedar
+       64db31b reducing constraint on fit for integration testing
+       a17345d minor fixes before release
+       248078c fix kallisto dependency
+       5583f3f giac updtated to v2.0.2
+
+  P-O Quirion <pioliqui@gmail.com>      2 commits
+
+       fb635da more robust log repport
+       55b928d make log report more robust went jobs are failing
+
+  pubudumanoj <pubudu.nawarathna@mail.mcgill.ca>      2 commits
+
+       e56c39d corrected a typo
+       9110f86 modified readme files for chipseq differential binding step
+
+  Pubudu Nawarathna <pubudu.nawarathna@mail.mcgill.ca>      1 commits
+
+       fbdbe38 Merged in chipseq_readme_fix (pull request #245)
+
+  Robert Eveleigh <eveleigh@beluga1.int.ets1.calculquebec.ca>      40 commits
+
+       ac5a5c5 Homo_sapiens.GRCh38.ini fixes
+       675d5dd samtools mpileup spacing fix
+       f182779 cit fixes after dev.ini removal
+       15e9882 multiqc ini fix
+       1cdfe28 samtools bug fixes to mugqic protocol, variant recalibrator argument fix for gatk3
+       5977acd add portal dir to dnaseq
+       3f93719 hs37d5 and cit strelka2 fixes
+       5a20aa9 removal of cit_gatk4.ini, contents moved to cit.ini
+       59473ce tumor pair converted to gatk4 only, mutect2 LearnReadOrientationModel added to help with FFPE samples
+       d98dd0c merge vardict fix
+       a64d34c job.sample fixes for jsonator
+       63b37d8 vardict exome fixes
+       13b7d0f germline variant annotator fixes
+       d366e78 strelka2 germline and sequenza fixes
+       19b187c cit adjustments to tumor_pair
+       b999375 beluga.ini fixes
+       46f7416 strelka2 germline fixes
+       3d5693d removal of samtools, substitute samtools germline for strelka2
+       ec213ce conflict fixes to dnaseq and tumor pair after dev merge
+       8cad167 fix mpileup dependency chain
+       e6d6aa5 corrections to mpileup bcftools merge and tumor_pair dependencies
+       1dc88b9 samtools bug fixes to mugqic protocol, variant recalibrator argument fix for gatk3
+       9e3ac20 add portal dir to dnaseq
+       4a59db3 portal_dir fix
+       4dfa21b added portal_dir for cit testing
+       528a77b hs37d5 and cit strelka2 fixes
+       9c66ec2 removal of cit_gatk4.ini, contents moved to cit.ini
+       03a602b tumor pair converted to gatk4 only, mutect2 LearnReadOrientationModel added to help with FFPE samples
+       30d7b07 merge vardict fix
+       83b75bf job.sample fixes for jsonator
+       ec14547 vardict exome fixes
+       e5a6145 germline variant annotator fixes
+       fdd20bf strelka2 germline and sequenza fixes
+       a4f8581 cit adjustments to tumor_pair
+       7240e3e beluga.ini fixes
+       849625a strelka2 germline fixes
+       80f5548 removal of samtools, substitute samtools germline for strelka2
+       e92837b conflict fixes to dnaseq and tumor pair after dev merge
+       9aedd69 fix mpileup dependency chain
+       e55e1ff corrections to mpileup bcftools merge and tumor_pair dependencies
+
+  Robert Eveleigh <eveleigh@beluga2.int.ets1.calculquebec.ca>      45 commits
+
+       6ec0367 collect metrics fix - dnaseq
+       fd8ee63 PR fixes to sambamba and multqc
+       afc4b8f PR conflict fixes
+       04c160e updated dev.ini
+       53cde24 cit fixes
+       359c1ae purple sanity check fixes
+       6d12435 cit fixes to purple and vardict exome
+       5da7760 fix for multiple tumors with the same control
+       d7724ad deliverable fixes - sym link final bams
+       63c8bc8 non-diploid GT fixes for mutect2 gatk4 and seqeunza fixes
+       39a2651 bcftools update and filter argument fixes
+       6741048 strelka2 germline and ensemble fixes
+       b1f7396 sequenza and cit fixes
+       c9cef16 fixes to gatk4 for tumor pair
+       bc784a6 gatk4 vsqr cit fix and baf plot for b38
+       e148bd4 argument fixes for picard imported functions in gatk4 and vqsr fixes
+       036809d fixes to multiqc
+       7b0712b exome specific fixes
+       059c613 updates and fixes for cit
+       dbe0ff4 cit fixes to dnaseq and test with real wes data, fixes to dependencies tumor_pair
+       3c52e66 remove briaree ini and update dnaseq base
+       9343e04 updating beluga ini
+       d79e994 updates to beluga.ini and base.ini for dnaseq
+       97793f0 ini updates
+       f716b0e updated dev.ini
+       0f7cccc cit fixes
+       45c9d0b purple sanity check fixes
+       882096d cit fixes to purple and vardict exome
+       97af93a fix for multiple tumors with the same control
+       49f4f38 deliverable fixes - sym link final bams
+       17f001e non-diploid GT fixes for mutect2 gatk4 and seqeunza fixes
+       6729217 bcftools update and filter argument fixes
+       afba10f strelka2 germline and ensemble fixes
+       6326449 sequenza and cit fixes
+       e8a4ac9 fixes to gatk4 for tumor pair
+       3348617 gatk4 vsqr cit fix and baf plot for b38
+       b8ec9bd argument fixes for picard imported functions in gatk4 and vqsr fixes
+       9b714d0 fixes to multiqc
+       ca97ea7 exome specific fixes
+       2e20be2 updates and fixes for cit
+       6793348 cit fixes to dnaseq and test with real wes data, fixes to dependencies tumor_pair
+       8b46abe remove briaree ini and update dnaseq base
+       4795a96 updating beluga ini
+       04d851f updates to beluga.ini and base.ini for dnaseq
+       ab85a84 ini updates
+
+  Robert Eveleigh <eveleigh@beluga3.int.ets1.calculquebec.ca>      37 commits
+
+       6cec0ef module fix
+       7b697cc removal of dev files for CVMFS version
+       46ef162 genome ini fixes
+       466eb23 dev and hs37d5 fixes
+       367666b tumor pair - sambamba markdup fixes
+       d5b857f module fix
+       e7a2849 sambamba markdup fix
+       f7e4fdb strelka cit fixes
+       c320d5a added strelka2 input dependency for purple purity
+       d3c3292 cit fixes to purple and vardict exome
+       89c80a9 muliple normal fix for fastqc
+       00531ff dependency mkdir fix, purple fixes and fix to muliple pairs with same control
+       d1840a0 fixes and strelka conversion addition to purple
+       09d9135 added purity estimate program PURPLE
+       aaaff33 strelka bed manipulation fix
+       f257d83 vardict exome fix
+       f74092d conpair and collectHS metric fixes
+       2822b5f tumor_pair qualimap part 2
+       51e88ab sym link dnaseq.base into tumor pair
+       03e567c updates to b38 variant recal files
+       4757879 fixes to tumor_pair on beluga
+       52e48ce cit dnaseq/tumor pair optimizations and fixes to mpileup and germline sv
+       febb823 strelka cit fixes
+       42fd97c added strelka2 input dependency for purple purity
+       54fd0cd cit fixes to purple and vardict exome
+       858af14 muliple normal fix for fastqc
+       bd1f034 dependency mkdir fix, purple fixes and fix to muliple pairs with same control
+       1b2c03f fixes and strelka conversion addition to purple
+       0957242 added purity estimate program PURPLE
+       37529e6 strelka bed manipulation fix
+       cc31781 vardict exome fix
+       2091afb conpair and collectHS metric fixes
+       8689d63 tumor_pair qualimap part 2
+       a9888f7 sym link dnaseq.base into tumor pair
+       e340eb0 updates to b38 variant recal files
+       7a7b46d fixes to tumor_pair on beluga
+       a449ed5 cit dnaseq/tumor pair optimizations and fixes to mpileup and germline sv
+
+  Robert Eveleigh <eveleigh@beluga4.int.ets1.calculquebec.ca>      28 commits
+
+       58152ae varscan version downgrade
+       7fd72e1 cit fixes
+       3a63b4a fixes to bcftools mpileup for dnaseq mpileup protocol
+       b92ebd8 hs37d5/GRCh37 fixes for purple
+       51c9658 fastpass varscan merge fix
+       2cc7f00 cit fixes to fastpass nb_job=1 for panel, soft include of split/scatter intervals and GenomicsDBImport for dnaseq
+       93ed2f3 cit fix for conpair
+       9672af2 sym link fixes
+       c4d0581 cit fixes to tumor pair
+       41ccead fixes to dnaseq
+       b07afef updates to GRCh38 annotation file, module updates, cit fixes
+       066fb49 fixes to deliverable and b38 ini
+       034447e updates to cit and fixes to one job mpileup steps
+       17d4c79 updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug
+       4668a0b major fixes to deliverables and completion of beluga test
+       9ffad22 fixes to bcftools mpileup for dnaseq mpileup protocol
+       180ae35 hs37d5/GRCh37 fixes for purple
+       87dcc11 fastpass varscan merge fix
+       f662715 cit fixes to fastpass nb_job=1 for panel, soft include of split/scatter intervals and GenomicsDBImport for dnaseq
+       233bc03 cit fix for conpair
+       8084b8f sym link fixes
+       c5840c6 cit fixes to tumor pair
+       e4193ca fixes to dnaseq
+       14aa4a3 updates to GRCh38 annotation file, module updates, cit fixes
+       de7ed14 fixes to deliverable and b38 ini
+       9510061 updates to cit and fixes to one job mpileup steps
+       510efd1 updated wrapper bash commands to use bash_cmd and fixed indel realignment dependency bug
+       cad6781 major fixes to deliverables and completion of beluga test
+
+  Robert Eveleigh <eveleigh@beluga5.int.ets1.calculquebec.ca>      43 commits
+
+       05d65f7 dnaseq sym_link fix
+       c49e469 dnaseq ini fixes
+       6b63aea dnaseq beluga and cedar ini fixes
+       0400745 sequenza bug fix
+       362539f revert back to old sequenza-utils
+       3714cd0 fixes to sequenza for exomes, and minor SV fixes
+       444e6c2 exome cit fix to sequenza
+       9b97f7e converted -n to -c
+       bf70c51 cit fixes - runtimes
+       bfd86d9 config file fixes
+       75fd219 further sanity-check fixes
+       30c2012 sanity check fixes
+       adb0724 multiple pair same control fixes and vardict exome fixes
+       f0c3f89 cit fixes to vardict
+       34b052d cit fixes for tumor exome
+       21e17a2 better cram compression of base recalibrated bams with variantBam
+       baf4196 sequenza and germline ensemble fixes
+       b736a4c sambamba mark_dup fix
+       667a4fe module fixes
+       cee1774 sym link dnaseq cit to tumor_pair cit
+       1e7e2e3 tumor pair cit updates
+       8d35d7f dnaseq sym_link fix
+       7da9cee dnaseq ini fixes
+       3d91118 dnaseq beluga and cedar ini fixes
+       e1a83a3 sequenza bug fix
+       f494d73 revert back to old sequenza-utils
+       ee70ffc fixes to sequenza for exomes, and minor SV fixes
+       9ffeafa exome cit fix to sequenza
+       cb1a59c converted -n to -c
+       00943b3 cit fixes - runtimes
+       29c3394 config file fixes
+       d3eedbb tumor base fix
+       bed7a1d further sanity-check fixes
+       d36c1e8 sanity check fixes
+       e901171 multiple pair same control fixes and vardict exome fixes
+       165e341 cit fixes to vardict
+       10aa2b1 cit fixes for tumor exome
+       ceef654 better cram compression of base recalibrated bams with variantBam
+       3d476d2 sequenza and germline ensemble fixes
+       1edc6d7 sambamba mark_dup fix
+       a3b1208 module fixes
+       caabe63 sym link dnaseq cit to tumor_pair cit
+       b9ed61e tumor pair cit updates
+
+  Robert Eveleigh <eveleigh@cedar1.cedar.computecanada.ca>      8 commits
+
+       e7bd745 code cleaning and fixes to exome interval list
+       a7d6407 fixes to cedar ini
+       cca1a4c fixes to symlinks for paired indel realignment
+       211a29e cedar ini and exome update
+       f65b070 code cleaning and fixes to exome interval list
+       febded3 fixes to cedar ini
+       43d4044 fixes to symlinks for paired indel realignment
+       09c93a5 cedar ini and exome update
+
+  Robert Eveleigh <eveleigh@cedar5.cedar.computecanada.ca>      4 commits
+
+       c7f3fa9 cedar fixes and GRCh38 fixes
+       2baaf56 cedar germline sv updates
+       7367777 cedar fixes and GRCh38 fixes
+       bd82ef1 cedar germline sv updates
+
+  robert.eveleigh@mcgill.ca <reveleig@abacus1.ferrier.genome.mcgill.ca>      46 commits
+
+       21b8896 fixes to sambamba for lumpy - query sorting instead of corrdinate
+       dc9750d updates to metasv - somatic
+       c19ad15 Fixes and updates to reference files
+       08f0027 remove testing steps
+       aad782e updates to SV germline and reference genome tweaks
+       491914d somatic sv fixes: lumpy and svaba annotations
+       d71a64d json fix
+       03bcbc6 fix to germline SV: breakseq2
+       97a4bc1 deleting hidden files
+       b24f8f3 merge fixes
+       9052826 GATK4 fixes - bam indexing and markDupSpark
+       fc33ed9 bcftools fixes for tumor pair
+       0deb8a9 fingerprint and bug fixes
+       57f218a dnaseq - vcftools qc addition: --missing_indv and --depth
+       5c82925 GRCh38 fixes
+       bb43292 select input for variant caller and fixes to one job calling
+       b87e9f5 json and folder updates
+       f15fd74 fixes to sCNAphase
+       34c9e47 Bug fixes prior to json additions
+       ae851f4 merging snv and sv, adding protocols
+       c82ce68 Updates and debug
+       5788360 Add set somatic and actionable mutations
+       bc0ca0a added multiqc and other tweaks
+       c51db53 fixes to sambamba for lumpy - query sorting instead of corrdinate
+       8da9446 updates to metasv - somatic
+       be214eb Fixes and updates to reference files
+       f717bb7 remove testing steps
+       4c64223 updates to SV germline and reference genome tweaks
+       541f671 somatic sv fixes: lumpy and svaba annotations
+       c795a24 json fix
+       8cc8e79 fix to germline SV: breakseq2
+       628ce3d deleting hidden files
+       2a83ec4 merge fixes
+       90ce1f4 GATK4 fixes - bam indexing and markDupSpark
+       4e8c750 bcftools fixes for tumor pair
+       4c874cc fingerprint and bug fixes
+       3cec8c2 dnaseq - vcftools qc addition: --missing_indv and --depth
+       6f3ae37 GRCh38 fixes
+       ebfc764 select input for variant caller and fixes to one job calling
+       4e0b29b json and folder updates
+       fc71742 fixes to sCNAphase
+       a8034e2 Bug fixes prior to json additions
+       2b23267 merging snv and sv, adding protocols
+       3c8b861 Updates and debug
+       92db229 Add set somatic and actionable mutations
+       39425ef added multiqc and other tweaks
+
+  robert.eveleigh@mcgill.ca <reveleig@abacus2.ferrier.genome.mcgill.ca>      24 commits
+
+       3e96d81 dnaseq - fixes for VariantBam
+       2cd2eb5 fixes to purple and mkdir vardict fix
+       3ba332b sequenza WGS fixes
+       86f1fa3 fixes to metasv for tumor pair
+       3d446d9 fixes to sv germline calls
+       6f26955 Single job bug fixes
+       893626b manta I/O fix and other bug fixes
+       9f4109b config updates and b38DH added
+       9098c40 dnaseq germline SV updates
+       8d737df gatk4 updates and bug fixes
+       843ef92 Json related bug fixes
+       54fdadc Bug fixes and modification derived from initial PROFYLE benchmarking
+       5cd6733 dnaseq - fixes for VariantBam
+       047e961 fixes to purple and mkdir vardict fix
+       776c53a sequenza WGS fixes
+       dc8f820 fixes to metasv for tumor pair
+       81b508b fixes to sv germline calls
+       46528cd Single job bug fixes
+       be5f8d2 manta I/O fix and other bug fixes
+       fb73873 config updates and b38DH added
+       9c2a8b0 dnaseq germline SV updates
+       e86e74a gatk4 updates and bug fixes
+       e9b3a2f Json related bug fixes
+       0201d38 Bug fixes and modification derived from initial PROFYLE benchmarking
+
+  robert.eveleigh@mcgill.ca <reveleig@abacus3.ferrier.genome.mcgill.ca>      8 commits
+
+       e9cc405 seqeuenza fixes and sv fixes
+       3786a03 gatk4 mutect2 updates
+       4ae76b7 cit-based fixes to NGScheckmate
+       58c3db3 dnaseq qc additions: NGScheckmate and peddy
+       9ae4210 seqeuenza fixes and sv fixes
+       dc79320 gatk4 mutect2 updates
+       0f9e09a cit-based fixes to NGScheckmate
+       45837b4 dnaseq qc additions: NGScheckmate and peddy
+
+  Robert Eveleigh <robert.eveleigh@mcgill.ca>      6 commits
+
+       f00e0b3 Merged in dev_reveleig (pull request #252)
+       00fb9e9 Merged in rebasing_tp (pull request #246)
+       08361bc Debugging and Guillimin specfic fixes
+       f469997 updates to config
+       07d625a Debugging and Guillimin specfic fixes
+       87f1ef4 updates to config
+
+  Shaloo Shalini <shaloo.shalini@gmail.com>      1 commits
+
+       78f59d5 Merged in ss_wf_chipseq_93 (pull request #244)
+
+  shaloo <shalz@hotmail.com>      1 commits
+
+       8c742ce Updates workflow for chipseq -t chipseq case with differential binding step and dependency update Fixes #93
 
 3.5.0        Mon Jul 12 16:41:20 2021 +0000        1071 commits
 
