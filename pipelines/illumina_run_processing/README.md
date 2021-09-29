@@ -74,7 +74,7 @@ usage: illumina_run_processing.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                   [-y LAST_INDEX] [-m NUMBER_OF_MISMATCHES]
                                   [-w] [-v]
 
-Version: 3.5.0
+Version: 3.6.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -110,7 +110,7 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a valid singularity
+                        Run inside a container providing a validsingularity
                         image path
   --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
                         Command file output path. This is the command used to

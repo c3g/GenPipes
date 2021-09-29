@@ -71,7 +71,7 @@ java {java_other_options} -Djava.io.tmpdir={tmp_dir} -Xms768m -Xmx{ram} -classpa
         reference_fasta=config.param('vardict_paired', 'genome_fasta', type='filepath'),
         tumor_name=tumor_name,
         paired_samples=input_tumor + "|" + input_normal,
-        java_other_options=config.param('DEFAULT', 'java_other_options'),
+        java_other_options=config.param('vardict_paired', 'java_other_options'),
         ram=config.param('vardict_paired', 'ram'),
         classpath=config.param('vardict_paired', 'classpath'),
         vardict_options=config.param('vardict_paired', 'vardict_options'),

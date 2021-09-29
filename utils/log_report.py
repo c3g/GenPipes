@@ -59,7 +59,7 @@ class JobStat(object):
         self.jobid = int(jobid)
         self._dependency = dependency
         self._name = name
-        self._prologue = {}
+        self. _prologue = {}
         self._epilogue = {}
         self._delta = None
         self._delta_with_overhead = None
@@ -186,14 +186,17 @@ class JobStat(object):
                 try:
                     self._prologue[k] = v[pro]
                     self._epilogue[k] = v[epi]
-                except IndexError:
+                except (IndexError, TypeError):
                     logger.warning('{} = {} is not a slurm prologue/epilogue value or is ambiguous'.format(k, v))
 
             tres = re.findall(r"TRES=cpu=(\d+),mem=(\d+\.?\d*\w)", to_parse)
-            self._prologue[self.NUMCPUS] = tres[pro][0]
-            self._epilogue[self.NUMCPUS] = tres[epi][0]
-            self._prologue[self.MEM] = tres[pro][1]
-            self._epilogue[self.MEM] = tres[epi][1]
+            try:
+                self._prologue[self.NUMCPUS] = tres[pro][0]
+                self._epilogue[self.NUMCPUS] = tres[epi][0]
+                self._prologue[self.MEM] = tres[pro][1]
+                self._epilogue[self.MEM] = tres[epi][1]
+            except (IndexError, TypeError):
+                logger.warning('epilogue and or prologue is not in the log')
 
     @property
     def log_file_exit_status(self):
@@ -239,14 +242,14 @@ class JobStat(object):
     def prologue_time(self):
         try:
             return self.start_time + self.start
-        except TypeError:
+        except (TypeError, KeyError):
             return None
 
     @property
     def epilogue_time(self):
         try:
             return self.start_time + self.stop
-        except TypeError:
+        except (TypeError, KeyError):
             return None
 
     @property

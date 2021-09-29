@@ -20,36 +20,43 @@
 ################################################################################
 
 # Python Standard Modules
+import logging
 import os
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def tumor_pair_ensemble(input_callers, output, config_yaml):
-    
+def run(normal, tumor, normal_name, tumor_name, output_dir, other_options=None):
+    tumor_output = os.path.join(output_dir, tumor_name + ".amber.baf.pcf")
+
     return Job(
-        input_callers,
-        [output],
+        [normal, tumor],
+        [tumor_output],
         [
-            ['bcbio_ensemble', 'module_java'],
-            ['bcbio_ensemble', 'module_bcbio_variation'],
-            ['bcbio_ensemble', 'module_bcftools']
+            ['amber', 'module_java'],
+            ['amber', 'module_R'],
+            ['amber', 'module_amber'],
         ],
         command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $BCBIO_VARIATION_JAR \\
-  variant-ensemble \\
-  {config_yaml} \\
-  {reference_sequence} \\
-  {output} \\
-  {input_callers}""".format(
-        tmp_dir=config.param('bcbio_ensemble', 'tmp_dir'),
-        java_other_options=config.param('bcbio_ensemble', 'java_other_options'),
-        ram=config.param('bcbio_ensemble', 'ram'),
-        reference_sequence=config.param('bcbio_ensemble', 'genome_fasta', type='filepath'),
-        config_yaml=config_yaml,
-        output=output,
-        input_callers="  ".join("  \\\n  " + caller for caller in input_callers)
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $AMBER_JAR \\
+  -threads {threads} \\
+  -reference {reference} \\
+  -reference_bam {reference_bam} \\
+  -tumor {tumor} \\
+  -tumor_bam {tumor_bam} \\
+  -loci {loci} \\
+  -output_dir {output_dir}""".format(
+        tmp_dir=config.param('amber', 'tmp_dir'),
+        java_other_options=config.param('amber', 'java_other_options'),
+        ram=config.param('amber', 'ram'),
+        threads=config.param('amber', 'threads'),
+        loci=config.param('amber', 'loci'),
+        reference=normal_name,
+        reference_bam=normal,
+        tumor=tumor_name,
+        tumor_bam=tumor,
+        other_options=other_options,
+        output_dir=output_dir,
         )
     )
-

@@ -6,7 +6,7 @@ Nanopore Pipeline
 
 The Nanopore is used to analyse long reads produced by the Oxford Nanopore Technologies (ONT) sequencers.
 Currently, the pipeline uses minimap2 to align reads to the reference genome. Additionally, it produces
-a QC report that includes an interactive dashboard for each readset with data from the basecalling summary file as well
+a QC report that includes an interactive dashboard with data from the basecalling summary file as well
 as the alignment. A step aligning random reads to the NCBI nt database and reporting the species of the
 highest hits is also done as QC.
 
@@ -21,8 +21,7 @@ analyses. No filtering is performed on the SV calls.
 This pipeline currently does not perform base calling and requires both FASTQ and a sequencing_summary
 file produced by a ONT supported basecaller (we recommend Guppy). Additionally, the testing and
 development of the pipeline were focused on genomics applications, and functionality has not been tested
-for transcriptomics or epigenomics datasets. Beyond the QC dashboards for each readset, there is 
-currently no implemented reporting step in this pipeline.
+for transcriptomics or epigenomics datasets.
 
 For more information on using ONT data for structural variant detection, as well as an alternative
 approach, please consult [this GitHub repository](https://github.com/nanoporetech/pipeline-structural-variation).
@@ -40,12 +39,12 @@ usage: nanopore.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                    [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                    [--no-json] [--report] [--clean]
                    [-l {debug,info,warning,error,critical}] [--sanity-check]
-                   [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
-                   [-r READSETS] [-v]
+                   [--container {wrapper, singularity} <IMAGE PATH>]
+                   [--genpipes_file GENPIPES_FILE] [-r READSETS] [-v]
 
-Version: 3.5.0
+Version: 3.6.1
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
@@ -64,6 +63,11 @@ optional arguments:
   --no-json             do not create JSON file per analysed sample to track
                         the analysis status (default: false i.e. JSON file
                         will be created)
+  --report              create 'pandoc' command to merge all job markdown
+                        report files in the given step range into HTML, if
+                        they exist; if --report is set, --job-scheduler,
+                        --force, --clean options and job up-to-date status are
+                        ignored (default: false)
   --clean               create 'rm' commands for all job removable files in
                         the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
@@ -73,14 +77,23 @@ optional arguments:
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
-                        run pipeline inside a container providing a container
-                        image path or accessible docker/singularity hub path
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a validsingularity
+                        image path
+  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+                        Command file output path. This is the command used to
+                        process the data, or said otherwise, this command will
+                        "run the Genpipes pipeline". Will be redirected to
+                        stdout if the option is not provided.
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
 
 Steps:
+```
+![nanopore workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_nanopore.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_nanopore.png)
+```
 ------
 1- blastqc
 2- minimap2_align

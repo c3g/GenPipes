@@ -96,7 +96,7 @@ def md5sum(input, output, out_dir):
         [output],
     command="""\
 md5sum {input} \\
-        > {output}""".format(
+  > {output}""".format(
         input=os.path.join(out_dir, input),
         output=os.path.join(out_dir, output),
         )

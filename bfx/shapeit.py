@@ -85,4 +85,3 @@ shapeit {options} \\
         output=output,
         )
     )
-
