@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import os
 import re
@@ -78,7 +79,7 @@ class MUGQICPipeline(Pipeline):
         server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
         listName = {}
         for readset in self.readsets:
-            if listName.has_key(readset.sample.name) :
+            if readset.sample.name in listName:
                 listName[readset.sample.name]+="."+readset.name
             else:
                 listName[readset.sample.name]=readset.sample.name+"."+readset.name
@@ -126,7 +127,7 @@ class Illumina(MUGQICPipeline):
 
     def __init__(self, protocol):
         self._protocol=protocol
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file)
+        self.argparser.add_argument("-r", "--readsets", help="readset file", type=argparse.FileType('r'))
         super(Illumina, self).__init__(protocol)
 
     @property
@@ -294,7 +295,7 @@ class Illumina(MUGQICPipeline):
 >Prefix/2
 {sequence2}
 END
-`""".format(adapter_fasta=adapter_fasta, sequence1=readset.adapter2.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1], sequence2=readset.adapter1.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1]))
+`""".format(adapter_fasta=adapter_fasta, sequence1=readset.adapter2.translate(str.maketrans("ACGTacgt","TGCAtgca"))[::-1], sequence2=readset.adapter1.translate(str.maketrans("ACGTacgt","TGCAtgca"))[::-1]))
                     else:
                         _raise(SanitycheckError("Error: missing adapter1 and/or adapter2 for PAIRED_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
                 elif readset.run_type == "SINGLE_END":

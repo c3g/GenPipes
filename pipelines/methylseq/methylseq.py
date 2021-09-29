@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
@@ -98,7 +99,7 @@ class MethylSeq(dnaseq.DnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=file)
+        self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
         super(MethylSeq, self).__init__(protocol)
 
     def bismark_align(self):
@@ -349,11 +350,11 @@ cp \\
         # check the library status
         library, bam = {}, {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample) :
+            if not readset.sample in library:
                 library[readset.sample]="SINGLE_END"
             if readset.run_type == "PAIRED_END" :
                 library[readset.sample]="PAIRED_END"
-            if not bam.has_key(readset.sample):
+            if not readset.sample in bam:
                 bam[readset.sample]=""
             if readset.bam:
                 bam[readset.sample]=readset.bam
@@ -532,7 +533,7 @@ cp \\
         # Check the library status
         library = {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample) :
+            if not readset.sample in library:
                 library[readset.sample]="SINGLE_END"
             if readset.run_type == "PAIRED_END" :
                 library[readset.sample]="PAIRED_END"
@@ -917,14 +918,12 @@ pandoc \\
         input_directory = os.path.join("methylkit", "inputs")
         input_files = []
         for contrast in self.contrasts:
-            input_files.extend([[os.path.join(input_directory, sample.name + ".readset_sorted.dedup.map.input")for
-                                 sample in group] for group in contrast.controls, contrast.treatments])
+            input_files.extend([[os.path.join(input_directory, sample.name + ".readset_sorted.dedup.map.input") for sample in group] for group in [contrast.controls, contrast.treatments]])
 
         input_files = list(itertools.chain.from_iterable(input_files))
 
         output_directory = os.path.join("methylkit", "results")
-        output_files = [os.path.join(output_directory, "Rdata_files", contrast.name, "perbase.testingresults.txt.gz")
-                        for contrast in self.contrasts]
+        output_files = [os.path.join(output_directory, "Rdata_files", contrast.name, "perbase.testingresults.txt.gz") for contrast in self.contrasts]
 
         methylkit_job = tools.methylkit_differential_analysis(
             design_file,

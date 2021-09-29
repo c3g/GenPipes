@@ -20,12 +20,13 @@
 ################################################################################
 
 # Python Standard Modules
+import re
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-import picard
-import gatk4
+from core.config import config
+from core.job import Job
+from . import picard
+from . import gatk4
 
 def build_bam_index(input, output):
 
