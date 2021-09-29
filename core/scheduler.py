@@ -27,7 +27,7 @@ import tempfile
 import textwrap
 from uuid import uuid4
 
-from config import config
+from .config import config
 from utils import utils
 
 # Output comment separator line
@@ -208,7 +208,7 @@ cd $OUTPUT_DIR
             copy_commands = []
             test_copy_commands = []
             for i, sample in enumerate(pipeline.sample_list):
-                unique_uuid = uuid4().get_hex()
+                unique_uuid = str(uuid4())
                 input_file = pipeline.sample_paths[i]
                 output_file = os.path.join(pipeline.portal_output_dir, '$USER.' + sample.name + '.' + unique_uuid + '.json')
                 #test_output_file = os.path.join("/lb/project/mugqic/analyste_dev/portal_test_dir/", '$USER.' + sample.name + '.' + unique_uuid + '.json')

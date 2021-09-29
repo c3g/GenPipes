@@ -21,7 +21,7 @@
 
 # Python Standard Modules
 import argparse
-import ConfigParser
+import configparser as ConfigParser
 import glob
 import logging
 import os
@@ -51,7 +51,7 @@ def number_symbol_converter(x):
     dico["Y"]="000000000000000000000000"
     try:
         int(x[:-1])+1
-        if dico.has_key(x[-1].upper()):
+        if x[-1].upper() in dico:
             return x[:-1]+dico[x[-1].upper()]
         elif int(x[-1])+1 :
             return x
@@ -88,7 +88,7 @@ def cleanFiles(x):
     ##x must be a list of files path 
     for i in x:
         shutil.rmtree(i)
-        print i +"is now removed\n"
+        print(i +"is now removed\n")
 
 
 def slurm_time_to_datetime(time):

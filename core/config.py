@@ -20,14 +20,14 @@
 ################################################################################
 
 # Python Standard Modules
-import ConfigParser
+import configparser as ConfigParser
 import glob
 import logging
 import os
 import re
 import subprocess
 import sys
-
+import io
 
 log = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class Config(ConfigParser.SafeConfigParser):
         # Make option names case sensitive
         self.optionxform = str
         for config_file in config_files:
-            if isinstance(config_file, file):
+            if isinstance(config_file,  io.IOBase):
                 self.readfp(config_file)
             else:
                 with open(config_file, 'r') as f:
@@ -89,7 +89,7 @@ class Config(ConfigParser.SafeConfigParser):
         os.environ['MODULES_PAGER'] = ''
         p = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
         dout, derr = p.communicate()
-        if p.returncode != 0 or ':ERROR:' in dout:
+        if p.returncode != 0 or b':ERROR:' in dout:
             _raise(SanitycheckError("Error in config file(s) with:\n{}".format(dout)))
 
         log.info("module check finished\n")
