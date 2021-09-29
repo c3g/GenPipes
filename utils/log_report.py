@@ -59,7 +59,7 @@ class JobStat(object):
         self.jobid = int(jobid)
         self._dependency = dependency
         self._name = name
-        self. _prologue = {}
+        self._prologue = {}
         self._epilogue = {}
         self._delta = None
         self._delta_with_overhead = None
