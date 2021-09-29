@@ -169,8 +169,6 @@ def parse_illumina_readset_file(illumina_readset_file):
         genpipes_proposed_readset_file = os.path.join(
             os.path.splitext(os.path.basename(illumina_readset_file))[0] + ".genpipes.txt"
         )
-#        if not os.path.exists(os.path.dirname(genpipes_proposed_readset_file)):
-#            os.makedirs(os.path.dirname(genpipes_proposed_readset_file))
         # Set the header
         csv_headers = readset_csv.fieldnames
         writer = csv.DictWriter(
