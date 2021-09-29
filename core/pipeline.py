@@ -317,7 +317,7 @@ class Pipeline(object):
         previous_jobs_output_files = set([output_file for job in self.jobs for output_file in job.output_files])
 
         while not selected_input_files and remaining_candidate_input_files:
-            input_files = [_f for _f in remaining_candidate_input_files.pop() if _f]
+            input_files = list(filter(None, remaining_candidate_input_files.pop()))
             # Skip empty candidate input files
             if input_files:
                 # dependency_jobs() checks if the current candidate input files is valid, otherwise raises an exception

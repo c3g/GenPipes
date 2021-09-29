@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 ################################################################################
 # Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -22,6 +24,7 @@ import csv
 import logging
 import os
 import re
+import configparser as ConfigParser
 
 # MUGQIC Modules
 from .sample import Sample

@@ -34,11 +34,11 @@ class Job(object):
     def __init__(self, input_files=[], output_files=[], module_entries=[],
                  name="", command="", report_files=[], multiqc_files=[], removable_files=[], samples=[]):
         # Remove undefined input/output/removable files if any
-        self._input_files = [_f for _f in input_files if _f]
-        self._output_files = [_f for _f in output_files if _f]
-        self._report_files = [_f for _f in report_files if _f]
-        self._multiqc_files = [_f for _f in multiqc_files if _f]
-        self._removable_files = [_f for _f in removable_files if _f]
+        self._input_files = list(filter(None, input_files))
+        self._output_files = list(filter(None, output_files))
+        self._report_files = list(filter(None, report_files))
+        self._multiqc_files = list(filter(None, multiqc_files))
+        self._removable_files = list(filter(None, removable_files))
 
         # Retrieve modules from config, removing duplicates but keeping the order
         self._modules = list(collections.OrderedDict.fromkeys([config.param(section, option) for section, option in module_entries]))
