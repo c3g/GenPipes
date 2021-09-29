@@ -22,9 +22,9 @@
 # Python Standard Modules
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-import picard2
+from core.config import config
+from core.job import Job
+from . import picard2
 
 def build_bam_index(input, output):
 

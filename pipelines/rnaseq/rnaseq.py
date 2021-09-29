@@ -97,7 +97,7 @@ class RnaSeqRaw(common.Illumina):
     def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=file)
+        self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
         super(RnaSeqRaw, self).__init__(protocol)
 
     def star(self):
@@ -526,7 +526,7 @@ pandoc \\
         ##check the library status
         library = {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample) :
+            if not readset.sample in library:
                 library[readset.sample]="PAIRED_END"
             if readset.run_type == "SINGLE_END" :
                 library[readset.sample]="SINGLE_END"
@@ -676,18 +676,18 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         # Create Wiggle tracks archive
         library = {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample) :
+            if not readset.sample in library:
                 library[readset.sample]="PAIRED_END"
             if readset.run_type == "SINGLE_END" :
                 library[readset.sample]="SINGLE_END"
 
         wiggle_directory = os.path.join("tracks", "bigWig")
         wiggle_archive = "tracks.zip"
-        big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
-        if config.param('DEFAULT', 'strand_info') != 'fr-unstranded' and library[sample] == "PAIRED_END" :
+        if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
             wiggle_files = []
             for sample in self.samples:
-                wiggle_files.extend([os.path.join(wiggle_directory, sample.name) + ".forward.bw", os.path.join(wiggle_directory, sample.name) + ".reverse.bw"])
+                if library[sample] == "PAIRED_END":
+                    wiggle_files.extend([os.path.join(wiggle_directory, sample.name) + ".forward.bw", os.path.join(wiggle_directory, sample.name) + ".reverse.bw"])
         else:
             wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
         jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
@@ -907,11 +907,11 @@ END
         for contrast in self.contrasts:
             job = cufflinks.cuffdiff(
                 # Cuffdiff input is a list of lists of replicate bams per control and per treatment
-                [[os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in group] for group in contrast.controls, contrast.treatments],
+                [[os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in group] for group in [contrast.controls, contrast.treatments]],
                 gtf,
                 os.path.join("cuffdiff", contrast.name)
             )
-            for group in contrast.controls, contrast.treatments:
+            for group in [contrast.controls, contrast.treatments]:
                 job.samples = [sample for sample in group]
             job.removable_files = ["cuffdiff"]
             job.name = "cuffdiff." + contrast.name

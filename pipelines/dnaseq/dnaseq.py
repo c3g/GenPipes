@@ -515,8 +515,7 @@ END
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
             ]
-            if readset.bam:
-                candidate_readset_bams.append([readset.bam for readset in sample.readsets])
+            candidate_readset_bams.append([readset.bam for readset in sample.readsets if readset.bam])
             readset_bams = self.select_input_files(candidate_readset_bams)
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
@@ -1113,7 +1112,7 @@ END
         ##check the library status
         library = {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample):
+            if not readset.sample in library:
                 library[readset.sample] = "SINGLE_END"
             if readset.run_type == "PAIRED_END":
                 library[readset.sample] = "PAIRED_END"
@@ -1375,7 +1374,7 @@ END
         ##check the library status
         library = {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample) :
+            if not readset.sample in library:
                 library[readset.sample] = "SINGLE_END"
             if readset.run_type == "PAIRED_END":
                 library[readset.sample] = "PAIRED_END"
@@ -1960,7 +1959,7 @@ END
                     )
             else:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
-                gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
+                gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in range(len(unique_sequences_per_job))]
 
                 gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
@@ -2183,7 +2182,7 @@ END
 
         if nb_haplotype_jobs > 1 and interval_list is None:
             unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
-            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
+            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in range(len(unique_sequences_per_job))]
 
             gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
@@ -2399,7 +2398,7 @@ pandoc \\
 
             else:
                 for sequence in self.sequence_dictionary:
-                    if sequence['type'] is 'primary':
+                    if sequence['type'] == 'primary':
                         output = os.path.join(mpileup_directory, sample.name + "." + sequence['name'] + ".mpileup.gz")
                         jobs.append(
                             concat_jobs([
@@ -2438,7 +2437,7 @@ pandoc \\
             mpileup_inputs = ""
             if nb_jobs > 1:
                 mpileup_file_prefix = os.path.join("alignment", sample.name, "mpileup", sample.name + ".")
-                mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary if sequence['type'] is 'primary']
+                mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary if sequence['type'] == 'primary']
 
                 gzip_output = mpileup_file_prefix + "mpileup.gz"
                 job = Job(
@@ -3454,7 +3453,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 ], name="cnvkit_batch.vcf_flt." + sample.name))
                 normal = sample.name
                 
-            if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples'):
+            if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples', type='posint'):
                 jobs.append(concat_jobs([
                     bash.mkdir(cnvkit_dir, remove=True),
                     cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn,
@@ -3737,13 +3736,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.cram_output,
                 self.sym_link_fastq,
                 self.sym_link_final_bam,
-	            self.metrics_ngscheckmate,
-	            self.metrics_verify_bam_id,
-	            self.metrics_vcftools_missing_indiv,
-	            self.metrics_vcftools_depth_indiv,
-	            self.metrics_gatk_sample_fingerprint,
-	            self.metrics_gatk_cluster_fingerprint,
-	            #self.metrics_peddy,
+	        self.metrics_ngscheckmate,
+	        self.metrics_verify_bam_id,
+	        self.metrics_vcftools_missing_indiv,
+                self.metrics_vcftools_depth_indiv,
+                self.metrics_gatk_sample_fingerprint,
+	        self.metrics_gatk_cluster_fingerprint,
+	        #self.metrics_peddy,
             ],
             [
                 self.picard_sam_to_fastq,

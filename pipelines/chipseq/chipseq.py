@@ -86,9 +86,8 @@ class ChipSeq(common.Illumina):
     def __init__(self, protocol="chipseq"):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=file, required=False)
-        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)",
-                                    choices=["chipseq", "atacseq"], default="chipseq")
+        self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'), required=False)
+        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)", choices=["chipseq", "atacseq"], default="chipseq")
         super(ChipSeq, self).__init__(protocol)
 
     @property
@@ -156,8 +155,7 @@ class ChipSeq(common.Illumina):
         return self._contrast
 
     def mappable_genome_size(self):
-        genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', type='filepath') + ".fai", 'rb'),
-                                  delimiter='\t')
+        genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', type='filepath') + ".fai", 'r'), delimiter='\t')
         # 2nd column of genome index contains chromosome length
         # HOMER and MACS2 mappable genome size (without repetitive features) is about 80 % of total size
         return sum([int(chromosome[1]) for chromosome in genome_index]) * 0.8

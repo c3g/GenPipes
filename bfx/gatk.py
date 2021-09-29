@@ -21,13 +21,15 @@
 
 # Python Standard Modules
 import re
+import os
 
 # MUGQIC Modules
-from core.job import *
-import core.config
-import gatk4
-import picard
-import picard2
+import core
+from core.job import Job
+from core.config import config
+from . import gatk4
+from . import picard
+from . import picard2
 
 config = core.config.config
 
