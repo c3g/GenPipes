@@ -74,7 +74,7 @@ usage: illumina_run_processing.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                   [-y LAST_INDEX] [-m NUMBER_OF_MISMATCHES]
                                   [-w] [-v]
 
-Version: 3.6.0
+Version: 3.6.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
