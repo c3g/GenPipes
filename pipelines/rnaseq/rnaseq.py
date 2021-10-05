@@ -1204,7 +1204,7 @@ class RnaSeq(RnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="RNAseq analysis type", choices=["stringtie", "cufflinks"], default="stringtie")
+        self.argparser.add_argument("-t", "--type", help="RNAseq analysis type", choices=["stringtie","cufflinks"], default="stringtie")
         super(RnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
