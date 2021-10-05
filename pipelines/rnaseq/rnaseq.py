@@ -1212,4 +1212,4 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        RnaSeq(protocol=['stringtie', 'cufflinks'])
+        RnaSeq(protocol=['stringtie','cufflinks'])
