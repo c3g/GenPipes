@@ -816,7 +816,7 @@ def parse_mgi_raw_readset_files(
         readset._library = line['LibraryLUID']
         readset._index_name = line['Index']
         readset._sample_tag = line['Sample Tag']
-        readset._gender = line['Gender']
+        readset._gender = line['Gender'] if line['Gender'] else 'N/A'
 
         if readset.index_name:
             # Dual Index
