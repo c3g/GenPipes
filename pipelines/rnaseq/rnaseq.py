@@ -38,7 +38,7 @@ import utils.utils
 
 from bfx import bedtools
 from bfx import bwa
-from bfx import cufflinks   
+from bfx import cufflinks
 from bfx import stringtie
 from bfx import ballgown
 from bfx import differential_expression
@@ -734,7 +734,7 @@ pandoc --to=markdown \\
         )
 
         return jobs
-    
+
     def stringtie(self):
         """
         Assemble transcriptome using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
@@ -755,7 +755,7 @@ pandoc --to=markdown \\
 
         return jobs
 
-    def stringtie_merge(self): 
+    def stringtie_merge(self):
         """
         Merge assemblies into a master teranscriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
         Warning: still in testing
@@ -811,9 +811,9 @@ END
 
         # Perform ballgown on each design contrast
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
-        if self.contrasts: 
-            design_file = os.path.relpath(self.args.design.name, self.output_dir)        
-        output_directory = "ballgown" 
+        if self.contrasts:
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+        output_directory = "ballgown"
         input_abund = [os.path.join("stringtie", sample.name, "abundance.tab") for sample in self.samples]
 
         ballgown_job = ballgown.ballgown(input_abund, design_file, output_directory)
@@ -1204,7 +1204,7 @@ class RnaSeq(RnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="RNAseq analysis type", choices=["stringtie","cufflinks"], default="stringtie")
+        self.argparser.add_argument("-t", "--type", help="RNAseq analysis type", choices=["cufflinks", "stringtie"], default="stringtie")
         super(RnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
