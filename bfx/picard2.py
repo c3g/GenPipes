@@ -653,7 +653,12 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-def bed2interval_list(dictionary, bed, output):
+def bed2interval_list(
+    dictionary,
+    bed,
+    output
+    ):
+    
     if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
         return picard.bed2interval_list(
             dictionary,
