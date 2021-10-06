@@ -567,55 +567,48 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
         for lane in self.lanes:
             lane_jobs = []
+            jobs_to_throttle = []
 
             input = self.readset_file
 
-            unaligned_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane)
-            basecall_dir = os.path.join(unaligned_dir, "basecall")
+            basecall_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "basecall")
             #basecall_dir = os.path.join(config.param('basecall', 'basecall_dir', required=True), "basecall") # usually set to the local tmp folder on the compute node
-            basecall_outputs = [
-                os.path.join(basecall_dir, self.run_id, "L0" + lane),
-                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
-                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_2.fq.gz"),
-                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
-                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
-                os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv")
-            ]
-            raw_fastq_dir = os.path.join(unaligned_dir, "raw_fastq")
-            raw_fastq_outputs = [
-                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
-                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + "_read_2.fq.gz"),
-                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
-                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
-                os.path.join(raw_fastq_dir, "summaryTable.csv")
-            ]
 
-            lane_config_file = os.path.join(unaligned_dir, self.run_id + "." + lane + ".settings.config")
-            lane_basecall_done_file = os.path.join(basecall_dir, "basecall_" + lane + "_done.Success")
-
-            lane_basecall_job = concat_jobs(
+            basecall_outputs, postprocessing_jobs = self.generate_basecall_outputs(lane)
+            basecall_outputs.extend(
                 [
-                    bash.mkdir(basecall_dir),
-                    run_processing_tools.mgi_t7_basecall(
-                        input,
-                        self.flowcell_id,
-                        basecall_outputs,
-                        basecall_dir,
-                        self.json_flag_files[lane],
-                        lane_config_file
-                    ),
-                    bash.touch(lane_basecall_done_file),
-                    bash.ln(
-                        os.path.join(basecall_dir, self.run_id, "L0" + lane),
-                        raw_fastq_dir
-                    )
-                ],
-                name="basecall." + self.run_id + "." + lane,
-                samples=self.samples[lane] 
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv")
+                ]
             )
-            lane_basecall_job.output_files.extend(raw_fastq_outputs)
-            lane_jobs.append(lane_basecall_job)
 
+            lane_config_file = os.path.join(basecall_dir, self.run_id + "." + lane + ".settings.config")
+            lane_jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(basecall_dir),
+                        run_processing_tools.mgi_t7_basecall(
+                            input,
+                            self.flowcell_id,
+                            basecall_outputs,
+                            basecall_dir,
+                            self.json_flag_files[lane],
+                            lane_config_file
+                        )
+                    ],
+                    name="basecall." + self.run_id + "." + lane,
+                    samples=self.samples[lane] 
+                )
+            )
+
+            if postprocessing_jobs:
+                jobs_to_throttle.extend(postprocessing_jobs)
+
+            for readset in self.readsets[lane]:
+                self.report_inputs[lane]['index'][readset.name] = [os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv")]
+
+            lane_jobs.extend(self.throttle_jobs(jobs_to_throttle))
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
         return jobs
@@ -980,20 +973,24 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 self.report_inputs[lane]['qc'][readset.name] = os.path.join(output_dir, "mpsQC_" + region_name + "_stats.xml")
    
                 if not self.is_demultiplexed:
-                    # Also process the fastq of the indexes
+                    if readset.index_fastq1:
+                        # Also process the fastq of the indexes
                         lane_jobs.append(
-                            concat_jobs([
-                            bash.mkdir(output_dir + "_index"),
-                            bvatools.readsqc(
-                                readset.index_fastq1,
-                                readset.index_fastq2 if self.is_dual_index[lane] else None,
-                                "FASTQ",
-                                region_name,
-                                output_dir + "_index"
-                        )],
-                        name="qc." + readset.name + ".qc_index." + self.run_id + "." + lane,
-                        samples=[readset.sample]
-                    ))
+                            concat_jobs(
+                                [
+                                    bash.mkdir(output_dir + "_index"),
+                                    bvatools.readsqc(
+                                        readset.index_fastq1,
+                                        readset.index_fastq2 if self.is_dual_index[lane] else None,
+                                        "FASTQ",
+                                        region_name,
+                                        output_dir + "_index"
+                                    )
+                                ],
+                                name="qc." + readset.name + ".qc_index." + self.run_id + "." + lane,
+                                samples=[readset.sample]
+                            )
+                        )
     
             self.add_to_report_hash("qc_graphs", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
@@ -1924,7 +1921,151 @@ class MGIRunProcessing(common.MUGQICPipeline):
     def generate_basecall_outputs(self, lane):
         basecall_outputs = []
         postprocessing_jobs = []
-        output_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane)
+        unaligned_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane)
+        basecall_dir = os.path.join(unaligned_dir, "basecall")
+
+        for readset in self.readsets[lane]:
+            readset_r1_outputs = []
+            readset_r2_outputs = []
+            for index in readset.indexes:
+                readset_r1_outputs.append(
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.gz")
+                )
+                if readset.run_type == "PAIRED_END":
+                    readset_r2_outputs.append(
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.gz")
+                    )
+
+            # If True, then merge the 'Undetermined' reads
+            if self.merge_undetermined[lane]:
+                readset_r1_outputs.append(
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.gz")
+                )
+                if readset.run_type == "PAIRED_END":
+                    readset_r2_outputs.append(
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.gz")
+                    )
+            # Processing R1 fastq outputs :
+            #   convert headers from MGI to Illumina format using zcat and awk
+            basecall_outputs.extend(readset_r1_outputs)
+            postprocessing_jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.dirname(readset.fastq1)),
+                        pipe_jobs(
+                            [
+                                bash.cat(
+                                    readset_r1_outputs,
+                                    None,
+                                    zip=True
+                                ),
+                                bash.awk(
+                                    None,
+                                    None,
+                                    self.awk_read_1_processing_command()
+                                ),
+                                bash.gzip(
+                                    None,
+                                    readset.fastq1
+                                )
+                            ]
+                        )
+                    ],
+                    name="fastq_convert.R1." + readset.name + "." + self.run_id + "." + lane,
+                    samples=self.samples[lane]
+                )
+            )
+
+            # Processing "raw R2" fastq (also contains barcode sequences) :
+            #   convert headers from MGI to Illumina format 
+            #   while extracting I1 and I2 to build clean R2, I1 and R2 fastq
+            #   using zcat and awk
+            if readset.run_type == "PAIRED_END":
+                basecall_outputs.extend(readset_r2_outputs)
+                outputs = [readset.fastq2, readset.index_fastq1]
+                if self.is_dual_index[lane]:
+                    outputs.append(readset.index_fastq2)
+                postprocessing_jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(os.path.dirname(readset.fastq2)),
+                            pipe_jobs(
+                                [
+                                    bash.cat(
+                                        readset_r2_outputs,
+                                        None,
+                                        zip=True
+                                    ),
+                                    bash.awk(
+                                        None,
+                                        None,
+                                        self.awk_read_2_processing_command(readset, lane)
+                                    )
+                                ]
+                            )
+                        ],
+                        output_dependency=outputs,
+                        name="fastq_convert.R2." + readset.name + "." + self.run_id + "." + lane,
+                        samples=self.samples[lane]
+                    )
+                )
+        # Process undetermined reads fastq files
+        unmatched_R1_fastq = os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.gz")
+        if unmatched_R1_fastq not in basecall_outputs:
+            basecall_outputs.append(unmatched_R1_fastq)
+        postprocessing_jobs.append(
+            pipe_jobs(
+                [
+                    bash.cat(
+                        unmatched_R1_fastq,
+                        None,
+                        zip=True
+                    ),
+                    bash.awk(
+                        None,
+                        None,
+                        self.awk_read_1_processing_command()
+                    ),
+                    bash.gzip(
+                        None,
+                        os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz")
+                    )
+                ],
+                name= "fastq_convert.R1.unmatched." + self.run_id + "." + lane,
+                samples=self.samples[lane]
+            )
+        )
+        if self.is_paired_end[lane]:
+            unmatched_R2_fastq = os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.gz")
+            if unmatched_R2_fastq not in basecall_outputs:
+                basecall_outputs.append(unmatched_R2_fastq)
+            outputs = [
+                os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
+                os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
+            ]
+            if self.is_dual_index[lane]:
+                outputs.append(os.path.join(unaligned_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz"))
+            postprocessing_jobs.append(
+                pipe_jobs(
+                    [
+                        bash.cat(
+                            unmatched_R2_fastq,
+                            None,
+                            zip=True
+                        ),
+                        bash.awk(
+                            None,
+                            None,
+                            self.awk_read_2_processing_command(None, lane)
+                        )
+                    ],
+                    output_dependency=outputs,
+                    name="fastq_convert.R2.unmatched." + self.run_id + "." + lane,
+                    samples=self.samples[lane]
+                )
+            )
+
+        return basecall_outputs, postprocessing_jobs
 
     def generate_demuxfastqs_outputs(self, lane):
         demuxfastqs_outputs = []
@@ -2081,7 +2222,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         Returns a string serving as instructions for awk.
         This produces the command to convert the header of R1 fastq file from MGI to Illumina format
         """
-        return """-v inst=\"{instrument}\" -v run=\"{run}\" 'match($0, /@(V[0-9]+)L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):([ACTGN-]+)\/([0-9]{{1}})/, head_items) {{
+        return """-v inst=\"{instrument}\" -v run=\"{run}\" 'match($0, /@({flowcell})L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):?([ACTGN-]+)?\/([0-9]{{1}})/, head_items) {{
  gsub("^0*", "", head_items[3])
  gsub("^0*", "", head_items[4])
  gsub("^0*", "", head_items[5])
@@ -2089,7 +2230,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
  next
 }} 1'""".format(
             instrument=self.instrument,
-            run=self.run_counter
+            run=self.run_counter,
+            flowcell=self.flowcell_id
         )
 
     def awk_read_2_processing_command(self, readset, lane):
@@ -2105,10 +2247,9 @@ class MGIRunProcessing(common.MUGQICPipeline):
  getline seq
  getline sep
  getline qual
- match(header, /@(V[0-9]+)L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):([ACTGN-]+)\/([0-9]{{1}})/, head_items)
+ match(header, /@({flowcell})L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):?([ACTGN-]+)?\/([0-9]{{1}})/, head_items)
  gsub("^0*", "", head_items[3]); gsub("^0*", "", head_items[4]); gsub("^0*", "", head_items[5])
  header="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:" head_items[6]
- b1_head="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:1"
  r2_seq=substr(seq,1,read_len)
  i1_seq=substr(seq,read_len+barcode2_len+1,barcode1_len)
  i2_seq=substr(seq,read_len+1,barcode2_len)
@@ -2116,7 +2257,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
  i1_qual=substr(qual,read_len+barcode2_len+1,barcode1_len)
  i2_qual=substr(qual,read_len+1,barcode2_len)
  print header "\\n" r2_seq "\\n" sep "\\n" r2_qual | "gzip > {r2_out}"
- print b1_head "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
+ print header "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
  print header "\\n" i2_seq "\\n" sep "\\n" i2_qual | "gzip > {i2_out}"
 }}'
 """.format(
@@ -2125,6 +2266,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 read_len=self.read2cycles[lane],
                 barcode1_len=self.index1cycles[lane],
                 barcode2_len=self.index2cycles[lane],
+                flowcell=self.flowcell_id,
                 r2_out=readset.fastq2 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
                 i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz"),
                 i2_out=readset.index_fastq2 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
@@ -2135,22 +2277,22 @@ class MGIRunProcessing(common.MUGQICPipeline):
  getline seq
  getline sep
  getline qual
- match(header, /@(V[0-9]+)L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):([ACTGN]+)\/([0-9]{{1}})/, head_items)
+ match(header, /@({flowcell})L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):?([ACTGN]+)?\/([0-9]{{1}})/, head_items)
  gsub("^0*", "", head_items[3]); gsub("^0*", "", head_items[4]); gsub("^0*", "", head_items[5])
  header="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:" head_items[6]
- b1_head="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:1"
  r2_seq=substr(seq,1,read_len)
  i1_seq=substr(seq,read_len+1,barcode_len)
  r2_qual=substr(qual,1,read_len)
  i1_qual=substr(qual,read_len+1,barcode_len)
  print header "\\n" r2_seq "\\n" sep "\\n" r2_qual | "gzip > {r2_out}"
- print b1_head "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
+ print header "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
 }}'
 """.format(
                 instrument=self.instrument,
                 run=self.run_counter,
                 read_len=self.read2cycles[lane],
                 barcode_len=self.index1cycles[lane],
+                flowcell=self.flowcell_id,
                 r2_out=readset.fastq2 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
                 i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
             )
@@ -2250,7 +2392,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
             ],
             [
                 self.basecall,
-                self.fastq,
                 self.qc_graphs,
                 self.fastqc,
                 self.blast,
