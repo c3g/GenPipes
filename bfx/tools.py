@@ -632,7 +632,8 @@ python $PYTHON_TOOLS/CpG_coverageStats.py \\
 
 def bed2interval_list(
     bed,
-    output
+    output,
+    ref_dict=None,
     ):
     
     return Job(
@@ -647,7 +648,7 @@ bed2IntervalList.pl \\
   --dict {dictionary} \\
   --bed {bed} \\
   > {output}""".format(
-            dictionary=config.param('bed2interval_list', 'genome_dictionary', param_type='filepath'),
+            dictionary=ref_dict if ref_dict else config.param('bed2interval_list', 'genome_dictionary', param_type='filepath'),
             bed=bed,
             output=output
         )

@@ -509,6 +509,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             for lane in self.lanes:
                 for filename in os.listdir(os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"))):
                     if re.match(self.run_id + "_" + lane + "_20" + self.date + ".+json", filename):
+                        log.info("json flag selected : " + os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"), filename))
                         self._json_flag_files[lane] = os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"), filename)
         return self._json_flag_files
 
@@ -571,42 +572,54 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
             input = self.readset_file
 
-            basecall_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "basecall")
+            unaligned_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane)
+            basecall_dir = os.path.join(unaligned_dir, "basecall")
             #basecall_dir = os.path.join(config.param('basecall', 'basecall_dir', required=True), "basecall") # usually set to the local tmp folder on the compute node
+            basecall_outputs = [
+                os.path.join(basecall_dir, self.run_id, "L0" + lane),
+                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
+                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_2.fq.gz"),
+                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
+                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
+                os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv")
+            ]
+            raw_fastq_dir = os.path.join(unaligned_dir, "raw_fastq")
+            raw_fastq_outputs = [
+                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
+                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + "_read_2.fq.gz"),
+                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
+                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
+                os.path.join(raw_fastq_dir, "summaryTable.csv")
+            ]
 
-            basecall_outputs, postprocessing_jobs = self.generate_basecall_outputs(lane)
-            basecall_outputs.extend(
+            lane_config_file = os.path.join(unaligned_dir, self.run_id + "." + lane + ".settings.config")
+            lane_basecall_done_file = os.path.join(basecall_dir, "basecall_" + lane + "_done.Success")
+
+            lane_basecall_job = concat_jobs(
                 [
-                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
-                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
-                    os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv")
-                ]
+                    bash.mkdir(basecall_dir),
+                    run_processing_tools.mgi_t7_basecall(
+                        input,
+                        self.flowcell_id,
+                        basecall_outputs,
+                        basecall_dir,
+                        self.json_flag_files[lane],
+                        lane_config_file
+                    ),
+                    bash.touch(lane_basecall_done_file),
+                    bash.ln(
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane),
+                        raw_fastq_dir
+                    )
+                ],
+                name="basecall." + self.run_id + "." + lane,
+                samples=self.samples[lane] 
             )
-
-            lane_config_file = os.path.join(basecall_dir, self.run_id + "." + lane + ".settings.config")
-            lane_jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(basecall_dir),
-                        run_processing_tools.mgi_t7_basecall(
-                            input,
-                            self.flowcell_id,
-                            basecall_outputs,
-                            basecall_dir,
-                            self.json_flag_files[lane],
-                            lane_config_file
-                        )
-                    ],
-                    name="basecall." + self.run_id + "." + lane,
-                    samples=self.samples[lane] 
-                )
-            )
-
-            if postprocessing_jobs:
-                jobs_to_throttle.extend(postprocessing_jobs)
+            lane_basecall_job.output_files.extend(raw_fastq_outputs)
+            lane_jobs.append(lane_basecall_job)
 
             for readset in self.readsets[lane]:
-                self.report_inputs[lane]['index'][readset.name] = [os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv")]
+                self.report_inputs[lane]['index'][readset.name] = [os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".summaryTable.csv")]
 
             lane_jobs.extend(self.throttle_jobs(jobs_to_throttle))
             self.add_copy_job_inputs(lane_jobs, lane)
@@ -858,8 +871,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         elif self.args.type == 't7':
             ini_section = 'fastq_t7'
         if not ini_section:
-             _raise(SanitycheckError("Could not determine which section to use for fastq step from given protocol " + self.protocol))
-
+            _raise(SanitycheckError("Could not determine which section to use for fastq step from given protocol " + self.protocol))
         jobs = []
 
         if self.is_demultiplexed:
@@ -894,17 +906,28 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     metrics_file = os.path.join(self.output_dir, "L0" + lane,  "Unaligned." + lane, self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
                     demuxfastqs_outputs.append(metrics_file)
 
-                    demultiplex_job = run_processing_tools.demux_fastqs(
-                        os.path.join(self.output_dir, "L0" + lane, "samplesheet." + lane + ".csv"),
-                        self.number_of_mismatches,
-                        self.mask[lane],
-                        demuxfastqs_outputs,
-                        tmp_metrics_file,
-                        input1,
-                        input2,
-                        ini_section
-                    )
-
+                    if self.args.type == 'g400':
+                        demultiplex_job = run_processing_tools.demux_fastqs(
+                            os.path.join(self.output_dir, "L0" + lane, "samplesheet." + lane + ".csv"),
+                            self.number_of_mismatches,
+                            self.mask[lane],
+                            demuxfastqs_outputs,
+                            tmp_metrics_file,
+                            input1,
+                            input2,
+                            ini_section
+                        )
+                    elif self.args.type == 't7':
+                        demultiplex_job = run_processing_tools.demux_fastqs_by_chunk(
+                            os.path.join(self.output_dir, "L0" + lane, "samplesheet." + lane + ".csv"),
+                            self.number_of_mismatches,
+                            self.mask[lane],
+                            demuxfastqs_outputs,
+                            tmp_metrics_file,
+                            input1,
+                            input2,
+                            ini_section
+                        )
                     lane_jobs.append(
                         concat_jobs(
                             [
@@ -2392,6 +2415,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             ],
             [
                 self.basecall,
+                self.fastq,
                 self.qc_graphs,
                 self.fastqc,
                 self.blast,
