@@ -872,6 +872,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             ini_section = 'fastq_t7'
         if not ini_section:
             _raise(SanitycheckError("Could not determine which section to use for fastq step from given protocol " + self.protocol))
+        ini_section = 'fastq_g400'
         jobs = []
 
         if self.is_demultiplexed:
@@ -906,7 +907,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     metrics_file = os.path.join(self.output_dir, "L0" + lane,  "Unaligned." + lane, self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
                     demuxfastqs_outputs.append(metrics_file)
 
-                    if self.args.type == 'g400':
+#                    if self.args.type == 'g400':
+                    if ini_section == 'fastq_g400':
                         demultiplex_job = run_processing_tools.demux_fastqs(
                             os.path.join(self.output_dir, "L0" + lane, "samplesheet." + lane + ".csv"),
                             self.number_of_mismatches,
@@ -917,7 +919,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             input2,
                             ini_section
                         )
-                    elif self.args.type == 't7':
+#                    elif self.args.type == 't7':
+                    elif ini_section == 'fastq_t7':
                         demultiplex_job = run_processing_tools.demux_fastqs_by_chunk(
                             os.path.join(self.output_dir, "L0" + lane, "samplesheet." + lane + ".csv"),
                             self.number_of_mismatches,
