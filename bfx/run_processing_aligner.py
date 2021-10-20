@@ -21,6 +21,7 @@
 import os
 import re
 import ConfigParser
+import sys
 
 # MUGQIC Modules
 from core.job import Job, concat_jobs, pipe_jobs
@@ -193,7 +194,9 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
         if readset.beds:
             coverage_bed = readset.beds[0]
-            full_coverage_bed = (self.output_dir + os.sep + coverage_bed)
+            full_coverage_bed = os.path.join(config.param('DEFAULT', 'bed_path', type='dirpath', required=False), coverage_bed)
+            if not os.path.isfile(full_coverage_bed):
+                full_coverage_bed = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", "bed", coverage_bed)
         else:
             coverage_bed = None
             full_coverage_bed = None
@@ -215,7 +218,11 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             if interval_list not in BwaRunProcessingAligner.created_interval_lists:
                 # Create one job to generate the interval list from the bed file
                 ref_dict = os.path.splitext(readset.reference_file)[0] + '.dict'
-                job = tools.bed2interval_list(ref_dict, full_coverage_bed, interval_list)
+                job = tools.bed2interval_list(
+                    full_coverage_bed,
+                    interval_list,
+                    ref_dict
+                )
                 job.name = "interval_list." + coverage_bed
                 job.samples = [readset.sample]
                 BwaRunProcessingAligner.created_interval_lists.append(interval_list)

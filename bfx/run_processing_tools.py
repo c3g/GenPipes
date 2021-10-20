@@ -222,6 +222,121 @@ java -Djava.io.tmpdir={tmp_dir} \\
         removable_files=[os.path.dirname(metrics_file)]
     )
 
+def demux_fastqs_by_chunk(
+    sample_sheet,
+    mismatches,
+    mask,
+    outputs,
+    metrics_file,
+    R1_fastq,
+    R2_fastq,
+    ini_section='fastq'
+    ):
+
+    metrics_folder = os.path.dirname(metrics_file)
+    return Job(
+        [
+            R1_fastq,
+            R2_fastq
+        ],
+        outputs + [metrics_file],
+        [
+            [ini_section, 'module_parallel'],
+            [ini_section, 'module_java'],
+            [ini_section, 'module_fgbio'],
+            [ini_section, 'module_mugqic_tools']
+        ],
+        command="""\
+FASTQ_1_IN={fastq1}
+FASTQ_2_IN={fastq2}
+READS_PER_CHUNK={reads_per_chunk}
+GZIP_PARALLEL={gzip_thread}   # Rembering that we have $GZIP_PARALLEL processes for fwd and the same again for reverse
+FGBIO_PARALLEL={fgbio_thread}  # Number of parallel instances of FGBIO DemuxFastqs
+FGBIO_THREADS={threads}   # Number of threads per instance of FGBIO DemuxFastqs
+let "BLOCKSIZE = 300 * $READS_PER_CHUNK"
+
+rm -f {tmp_dir} && mkdir -p {tmp_dir}
+rm -f {tmp_dir}/chunks_R[12] joblog.*.txt && mkfifo {tmp_dir}/chunks_R1 {tmp_dir}/chunks_R2
+rm -rf {tmp_dir}/out && mkdir -p {tmp_dir}/out
+rm -rf {tmp_dir}/split && mkdir -p {tmp_dir}/split
+
+# Start chunking up the huge fastqgz into smaller pieces.
+# Chunk filenames+paths are written into the named pipes chunks_R1 and chunks_R2.
+echo "Chunking of the raw fastq files..."
+zcat $FASTQ_1_IN | \\
+  parallel \\
+    --pipe \\
+    -j $GZIP_PARALLEL \\
+    --joblog joblog.1.txt \\
+    --blocksize $BLOCKSIZE \\
+    -N $READS_PER_CHUNK \\
+    -L 4 \\
+    "gzip -c > {tmp_dir}/split/in.1.child_{{#}}.gz; echo {tmp_dir}/split/in.1.child_{{#}}.gz" > {tmp_dir}/chunks_R1 & \\
+zcat $FASTQ_2_IN  \\
+| parallel \\
+    --pipe \\
+    -j $GZIP_PARALLEL \\
+    --joblog joblog.2.txt \\
+    --blocksize $BLOCKSIZE \\
+    -N $READS_PER_CHUNK \\
+    -L 4 \\
+    "gzip -c > {tmp_dir}/split/in.2.child_{{#}}.gz; echo {tmp_dir}/split/in.2.child_{{#}}.gz" > {tmp_dir}/chunks_R2 & \\
+
+# Take those names pipes and process each pair of chunked fastqgzs in parallel.
+echo "Demultinplexing the fastq chunks..."
+mkdir -p {metrics_folder}/chunk && \\
+parallel \\
+  -j $FGBIO_PARALLEL \\
+  --joblog joblog.fgbio.txt \\
+  "java -Djava.io.tmpdir={tmp_dir} \\
+    {java_other_options} \\
+    -Xmx{ram} \\
+    -jar $FGBIO_JAR DemuxFastqs \\
+    --threads $FGBIO_THREADS \\
+    --max-mismatches {mismatches} \\
+    --metrics {metrics_folder}/chunk/metrics.{{#}}.txt \\
+    --inputs {{1}} {{2}} \\
+    --read-structures {read_structure} \\
+    --metadata {sample_sheet} \\
+    --output {tmp_dir}/out/out_{{#}} \\
+    --output-type fastq \\
+    --include-all-bases-in-fastqs true && \\
+   echo \"Removing chunks {{1}} {{2}}\" && \\
+   rm {{1}} {{2}}" \\
+  :::: {tmp_dir}/chunks_R1 \\
+  ::::+ {tmp_dir}/chunks_R2 && \\
+
+# Combine fastqs (iterate though samples and combine fastqgzs for each sample)
+echo "Combining fastq chunks" && \\
+for fastqgz in `ls {tmp_dir}/out/out_1/*.gz`; do
+  basename=$(basename $fastqgz)
+  zcat $(find {tmp_dir}/out -name $basename) | gzip -c > {output_dir}/$basename &
+done
+wait
+
+# Combine metrics using mugqic_tools
+python $PYTHON_TOOLS/combineDemuxFastqsMetrics.py \\
+  -i $(ls {metrics_folder}/chunk/metrics.*.txt)\\
+  -o metrics_file""".format(
+            tmp_dir=config.param(ini_section, 'tmp_dir'),
+            gzip_thread=config.param(ini_section, 'gzip_parallel_thread'),
+            fgbio_thread=config.param(ini_section, 'fgbio_parallel_thread'),
+            reads_per_chunk=config.param(ini_section, 'reads_per_chunk'),
+            java_other_options=config.param(ini_section, 'java_other_options'),
+            ram=config.param(ini_section, 'ram'),
+            threads=config.param(ini_section, 'threads'),
+            mismatches=mismatches,
+            metrics_folder=metrics_folder,
+            metrics_file=metrics_file,
+            fastq1=R1_fastq,
+            fastq2=R2_fastq,	
+            read_structure=mask,
+            sample_sheet=sample_sheet,
+            output_dir=os.path.dirname(metrics_file)
+        ),
+        removable_files=[os.path.dirname(metrics_file)]
+    )
+
 def bcl2fastq_for_index(
     run_dir,
     output_dir,
