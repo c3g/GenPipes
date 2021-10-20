@@ -110,7 +110,8 @@ class MUGQICPipeline(Pipeline):
 # Call home with pipeline statistics
 {separator_line}
 LOG_MD5=$(echo $USER-'{uniqueIdentifier}' | md5sum | awk '{{ print $1 }}')
-echo `wget "{server}?{request}&md5=$LOG_MD5" --quiet --output-document=/dev/null`
+if test -t 1; then ncolors=$(tput colors); if test -n "$ncolors" && test $ncolors -ge 8; then bold="$(tput bold)"; normal="$(tput sgr0)"; yellow="$(tput setaf 3)"; fi; fi
+wget --quiet "{server}?{request}&md5=$LOG_MD5" || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to mugqic.hpc.mcgill.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, uniqueIdentifier=uniqueIdentifier))
 
     def submit_jobs(self):
@@ -225,7 +226,7 @@ class Illumina(MUGQICPipeline):
                     candidate_input_files = [
                         [sortedBam],
                         [readset.bam]
-                    ]                    
+                    ]
                     [bam] = self.select_input_files(candidate_input_files)
 
                     rawReadsDirectory = os.path.join(
@@ -536,7 +537,7 @@ pandoc \\
             input_bam = self.select_input_files(candidate_input_files)[0]
 
             output_cram = re.sub("\.bam$", ".cram", input_bam)
-      
+
             if "recal" in input_bam:
                 job = variantBam.run(
                     input_bam,
@@ -550,7 +551,7 @@ pandoc \\
                     options=config.param('samtools_cram_output', 'options'),
                     removable=False
                 )
-                
+
             job.name = "samtools_cram_output." + sample.name
             job.samples = [sample]
             job.removable_files = input_bam
