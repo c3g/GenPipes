@@ -317,7 +317,7 @@ wait
 # Combine metrics using mugqic_tools
 python $PYTHON_TOOLS/combineDemuxFastqsMetrics.py \\
   -i $(ls {metrics_folder}/chunk/metrics.*.txt)\\
-  -o metrics_file""".format(
+  -o {metrics_file}""".format(
             tmp_dir=config.param(ini_section, 'tmp_dir'),
             gzip_thread=config.param(ini_section, 'gzip_parallel_thread'),
             fgbio_thread=config.param(ini_section, 'fgbio_parallel_thread'),
