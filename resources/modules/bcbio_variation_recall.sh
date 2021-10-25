@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=bcbio.variation.recall
-VERSION=0.1.7
+VERSION=0.2.6
 ARCHIVE=${SOFTWARE//./-}-$VERSION
 ARCHIVE_URL=https://github.com/chapmanb/$SOFTWARE/releases/download/v$VERSION/${SOFTWARE//./-}
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -31,7 +31,7 @@ module-whatis \"$SOFTWARE\"
 
 set             root                            $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                            \$root  
-set-event       BCBIO_VARIATION_RECALL_HOME     \$root
+setenv          BCBIO_VARIATION_RECALL_HOME     \$root
 "
 }
 

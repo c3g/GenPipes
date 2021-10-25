@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=fgbio
-VERSION=0.6.1
+VERSION=1.3.0
 ARCHIVE=${SOFTWARE}-${VERSION}.jar
 ARCHIVE_URL=https://github.com/fulcrumgenomics/${SOFTWARE}/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}
