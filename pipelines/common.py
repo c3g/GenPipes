@@ -75,7 +75,7 @@ class MUGQICPipeline(Pipeline):
         return self._samples
 
     def mugqic_log(self):
-        server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
+        server = "http://mugqicDEBUG.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
         listName = {}
         for readset in self.readsets:
             if listName.has_key(readset.sample.name) :
