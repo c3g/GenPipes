@@ -412,7 +412,7 @@ cut -f1,3- {readset_merge_trim_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{if 
             ),
             Job(
                 [sample_merge_trim_stats],
-                [report_file],
+                [report_file, os.path.join("report", "trimReadsetTable.tsv"), os.path.join("report", "trimSampleTable.tsv")],
                 [['merge_trimmomatic_stats', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
