@@ -3,21 +3,28 @@
 set -eu -o pipefail
 
 SOFTWARE=vcf2db
-VERSION=master_20180427
+VERSION=master.c391574_20210730
 ARCHIVE=$SOFTWARE-${VERSION}.zip
-ARCHIVE_URL=https://github.com/quinlan-lab/vcf2db/archive/master.zip
+ARCHIVE_URL=https://github.com/quinlan-lab/${SOFTWARE}/archive/master.zip
 SOFTWARE_DIR=$SOFTWARE-${VERSION}
+PYTHON_VERSION=3.6.5
+PYTHON_SHORT_VERSION=${PYTHON_VERSION:0:3}
+NOWRAP=1
+NOPATCH=1
 
 build() {
   cd $INSTALL_DIR
-  git clone https://github.com/quinlan-lab/vcf2db
-  mv vcf2db $SOFTWARE_DIR
-  cd $SOFTWARE_DIR
-  module load mugqic/anaconda/2-4.0.0
-  conda install -y gcc snappy # install the C library for snappy
-  conda install -c conda-forge python-snappy
-  conda install -c bioconda cyvcf2 peddy
-  module unload module load mugqic/anaconda/2-4.0.0
+  git clone https://github.com/quinlan-lab/$SOFTWARE
+  cd $SOFTWARE
+  module load mugqic/python/$PYTHON_VERSION
+  pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed -r requirements.txt
+
+  mv vcf2db.py $INSTALL_DIR/$SOFTWARE_DIR/bin/
+  chmod a+rx $INSTALL_DIR/$SOFTWARE_DIR/bin/vcf2db.py
+
+  # create a link of the python executable in the software bin folder
+  ln -s $(which python) $INSTALL_DIR/$SOFTWARE_DIR/bin/python
+  ln -s $(which python3) $INSTALL_DIR/$SOFTWARE_DIR/bin/python3
 }
 
 module_file() {
@@ -29,7 +36,10 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root
+prepend-path    PATH                \$root/bin
+prepend-path    PYTHONPATH          $PYTHONPATH
+prepend-path    PYTHONPATH          \$root/lib/python${PYTHON_SHORT_VERSION}
+prepend-path    PYTHONPATH          \$root/lib/python${PYTHON_SHORT_VERSION}/site-packages
 "
 }
 

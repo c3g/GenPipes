@@ -2,24 +2,20 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=CMake
-VERSION=3.16.0
-ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
-ARCHIVE_URL=https://github.com/Kitware/${SOFTWARE}/releases/download/v${VERSION}/${SOFTWARE,,}-${VERSION}.tar.gz
-SOFTWARE_DIR=${SOFTWARE,,}-${VERSION}
+SOFTWARE=cmake
+VERSION=3.21.0
+ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/Kitware/CMake/releases/download/v${VERSION}-rc1/${SOFTWARE}-${VERSION}-rc1.tar.gz
+SOFTWARE_DIR=CMake-${VERSION}
 
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-  cd $SOFTWARE_DIR
+  cd ${SOFTWARE}-${VERSION}-rc1
   ./bootstrap --prefix=$INSTALL_DIR/$SOFTWARE_DIR
   make
   make install
-
-  # Install software
-  cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {
