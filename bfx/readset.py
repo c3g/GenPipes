@@ -164,6 +164,13 @@ def parse_illumina_readset_file(illumina_readset_file):
             # Create new sample
             sample = Sample(sample_name)
             samples.append(sample)
+        
+        readset_name = line['Readset']
+        readset_names = [readset.name for readset in readsets]
+        if readset_name in readset_names:
+            # Readset already exists
+            raise Exception("Error: Readsets should be unique but \"" + readset_name + "\" is found twice in the readset file \"" + illumina_readset_file + "\"")
+
 
         # Create readset and add it to sample
         readset = IlluminaReadset(line['Readset'], line['RunType'])
