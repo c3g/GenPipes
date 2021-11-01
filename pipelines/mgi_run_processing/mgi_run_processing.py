@@ -2282,8 +2282,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
  print header "\\n" r2_seq "\\n" sep "\\n" r2_qual | "gzip > {r2_out}"
  print header "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
  print header "\\n" i2_seq "\\n" sep "\\n" i2_qual | "gzip > {i2_out}"
-}}'
-""".format(
+}}'""".format(
                 instrument=self.instrument,
                 run=self.run_counter,
                 read_len=self.read2cycles[lane],
@@ -2309,8 +2308,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
  i1_qual=substr(qual,read_len+1,barcode_len)
  print header "\\n" r2_seq "\\n" sep "\\n" r2_qual | "gzip > {r2_out}"
  print header "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
-}}'
-""".format(
+}}'""".format(
                 instrument=self.instrument,
                 run=self.run_counter,
                 read_len=self.read2cycles[lane],
