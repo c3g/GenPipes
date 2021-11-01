@@ -202,7 +202,6 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             full_coverage_bed = None
 
         if coverage_bed:
-            raise Exception(full_coverage_bed)
             if (not os.path.exists(full_coverage_bed)) and (coverage_bed not in BwaRunProcessingAligner.downloaded_bed_files):
                 # Download the bed file
                 command = config.param('DEFAULT', 'fetch_bed_file_command').format(
