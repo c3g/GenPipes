@@ -1353,6 +1353,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_to_report_hash("metrics", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
+#        return self.throttle_jobs(jobs)
         return self.throttle_jobs(jobs)
 
     def md5(self):
