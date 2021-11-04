@@ -2,13 +2,13 @@
 # Exit immediately on error
 set -eu -o pipefail
 
+export NOPATCH=1
+export NOWRAP=1
+
 SOFTWARE=pandoc
-VERSION=1.15.2
-ARCHIVE=$SOFTWARE-$VERSION.zip
-ARCHIVE_URL=https://s3.amazonaws.com/rstudio-buildtools/$ARCHIVE
-#VERSION=1.13.1
-#ARCHIVE=$SOFTWARE-$VERSION.zip
-#ARCHIVE_URL=https://s3.amazonaws.com/rstudio-buildtools/$ARCHIVE
+VERSION=2.16.1
+ARCHIVE=${SOFTWARE}-${VERSION}-linux-amd64.tar.gz
+ARCHIVE_URL=https://github.com/jgm/pandoc/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 # Specific commands to extract and build the software
@@ -16,7 +16,7 @@ SOFTWARE_DIR=$SOFTWARE-$VERSION
 # $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  unzip $ARCHIVE
+  tar -xvf $ARCHIVE
 
   # Install software
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
@@ -31,7 +31,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/linux/debian/x86_64
+prepend-path    PATH                \$root/bin
+prepend-path    MANPATH             \$root/share/man/man1/
 setenv          LANG                en_US.utf8
 "
 }
