@@ -19,7 +19,7 @@ usage: covseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--container {wrapper, singularity} <IMAGE PATH>]
                  [--genpipes_file GENPIPES_FILE] [-r READSETS] [-v]
 
-Version: 3.6.1
+Version: 3.6.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

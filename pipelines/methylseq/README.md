@@ -34,7 +34,7 @@ usage: methylseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                     [--genpipes_file GENPIPES_FILE] [-d DESIGN] [-r READSETS]
                     [-v]
 
-Version: 3.6.1
+Version: 3.6.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

@@ -15,7 +15,7 @@ usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--genpipes_file GENPIPES_FILE] [-t {stringtie,cufflinks}]
                  [-d DESIGN] [-r READSETS] [-v]
 
-Version: 3.6.1
+Version: 3.6.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -71,10 +71,10 @@ Steps:
 
 ----
 ```
-![rnaseq cufflinks workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_cufflinks.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_cufflinks.png)
+![rnaseq stringtie workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_stringtie.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_stringtie.png)
 ```
-cufflinks:
+stringtie:
 1- picard_sam_to_fastq
 2- trimmomatic
 3- merge_trimmomatic_stats
@@ -97,10 +97,10 @@ cufflinks:
 20- cram_output
 ----
 ```
-![rnaseq stringtie workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_stringtie.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_stringtie.png)
+![rnaseq cufflinks workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_cufflinks.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_cufflinks.png)
 ```
-stringtie:
+cufflinks:
 1- picard_sam_to_fastq
 2- trimmomatic
 3- merge_trimmomatic_stats
