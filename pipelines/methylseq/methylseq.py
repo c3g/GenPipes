@@ -452,16 +452,22 @@ cp \\
                 job.samples = [sample]
                 jobs.append(job)
                 
-
                 # Compute on target percent of hybridisation based capture
                 interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
                 if not interval_list in created_interval_lists:
-                    job = tools.bed2interval_list(None, coverage_bed, interval_list)
+                    job = tools.bed2interval_list(
+                        coverage_bed,
+                        interval_list
+                     )
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
                     created_interval_lists.append(interval_list)
                 file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
-                job = picard.calculate_hs_metrics(file_prefix + "bam", file_prefix + "onTarget.tsv", interval_list)
+                job = picard.calculate_hs_metrics(
+                    file_prefix + "bam",
+                    file_prefix + "onTarget.tsv",
+                    interval_list
+                )
                 job.name = "picard_calculate_hs_metrics." + sample.name
                 job.samples = [sample]
                 jobs.append(job)

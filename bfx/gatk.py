@@ -675,22 +675,26 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def bed2interval_list(dictionary, bed, output):
+def bed2interval_list(
+    dictionary,
+    bed,
+    output
+    ):
     if config.param('picard_bed2interval_list', 'module_gatk').split("/")[2] >= "4":
         return gatk4.bed2interval_list(
             dictionary,
             bed,
             output
-            )
+        )
     if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
         return picard.bed2interval_list(
             dictionary,
             bed,
             output
-            )
+        )
     if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] >= "2":
         return picard2.bed2interval_list(
             dictionary,
             bed,
             output
-            )
+        )

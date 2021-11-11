@@ -282,7 +282,11 @@ python $PYTHON_TOOLS/CpG_coverageStats.py \\
 
 ## functions for perl tools ##
 
-def bed2interval_list( bed, output):
+def bed2interval_list(
+    bed,
+    output
+    ):
+    
     return Job(
         [bed],
         [output],

@@ -156,7 +156,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
     )
 
 def base_recalibrator(input, output, intervals=None):
-    if config.param('base_recalibrator', 'module_gatk').split("/")[2] < "4":
+    if config.param('gatk_base_recalibrator', 'module_gatk').split("/")[2] < "4":
         return gatk.base_recalibrator(input, output, intervals)
     else:
         return Job(
@@ -1744,9 +1744,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             )
         )
 
-def bed2interval_list(dictionary,
-                      bed,
-                      output):
+def bed2interval_list(
+    dictionary,
+    bed,
+    output
+    ):
 	
     if config.param('gatk_bed2interval_list', 'module_gatk').split("/")[2] < "4":
         return gatk.bed2interval_list(

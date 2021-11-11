@@ -191,7 +191,7 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
         normalization_stats_file = os.path.join("insilico_read_normalization", "all", "normalization.stats.tsv")
         jobs.append(
             Job(
-                [normalization_stats_file],
+                [normalization_stats_file, os.path.join("report", "trimReadsetTable.tsv")],
                 [report_file],
                 [['insilico_read_normalization_all', 'module_pandoc']],
                 command="""\

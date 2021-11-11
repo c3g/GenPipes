@@ -1,43 +1,43 @@
 #!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
 
-###################
-################### BWA
-###################
-# tpx patch can be found here:
-# ftp://ftp.conveysupport.com/outgoing/bwa/bwa-0.6.2-tpx.patch
-VERSION="20170322"
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/parallel/
-mkdir -p $INSTALL_PATH
-cd $INSTALL_PATH
+################################################################################
+# This is a module install script template which should be copied and used for
+# consistency between module paths, permissions, etc.
+# Only lines marked as "## TO BE ADDED/MODIFIED" should be, indeed, modified.
+# Also, once modified, delete this commented-out header and the ## comments
+################################################################################
 
-# Download
-wget http://ftp.gnu.org/gnu/parallel/parallel-${VERSION}.tar.bz2
-tar xvjf parallel-$VERSION.tar.bz2
-mv parallel-$VERSION parallel-${VERSION}-src
-# Compile
-cd parallel-${VERSION}-src
-./configure --prefix=$MUGQIC_INSTALL_HOME/software/parallel/parallel-${VERSION}
-make -j12
-make install
-cd ..
-rm -r parallel-${VERSION}-src
+SOFTWARE=parallel
+VERSION=20210922
+ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
+ARCHIVE_URL=https://ftp.gnu.org/gnu/${SOFTWARE}/${ARCHIVE}
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Module file
-echo "#%Module1.0
-proc ModulesHelp { } {
-       puts stderr \"\tMUGQIC - GNU Parallel \"
+build() {
+  cd $INSTALL_DOWNLOAD
+  tar jxvf $ARCHIVE
+
+  cd $SOFTWARE_DIR
+  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
+  make -j12
+  make install
 }
-module-whatis \"MUGQIC - GNU Parallel \"
-            
-set             root               \$::env(MUGQIC_INSTALL_HOME)/software/parallel/parallel-${VERSION}
-prepend-path    PATH               \$root/bin
-" > $VERSION
 
-# version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
-" > .version
+module_file() {
+echo "\
+#%Module1.0
+proc ModulesHelp { } {
+  puts stderr \"\tMUGQIC - GNU $SOFTWARE \"
+}
+module-whatis \"MUGQIC - GNU $SOFTWARE\"
 
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/parallel
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/parallel/
+set             root                $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root/bin
+"
+}
 
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@

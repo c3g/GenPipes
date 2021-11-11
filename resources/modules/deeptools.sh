@@ -22,6 +22,8 @@ build() {
   pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed git+https://github.com/${SOFTWARE,,}/deeptools_intervals.git
   pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed git+https://github.com/${SOFTWARE,,}/pyBigWig.git
   pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed git+https://github.com/${SOFTWARE,,}/py2bit.git
+  ln -s $(which python) $INSTALL_DIR/$SOFTWARE_DIR/bin/python
+  ln -s $(which python3) $INSTALL_DIR/$SOFTWARE_DIR/bin/python3
 }
 
 module_file() {
