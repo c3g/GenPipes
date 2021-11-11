@@ -1,6 +1,57 @@
-28 tags, 8738 commits
+29 tags, 8766 commits
 
-HEAD        Wed Sep 29 16:51:05 2021 -0400        0 commits
+HEAD        Tue Nov 9 12:19:43 2021 -0500        0 commits
+
+3.6.2        Thu Nov 11 14:14:18 2021 +0000        28 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      4 commits
+
+       3787dea Cleaning before release
+       c1aef1d GenPipes - Readset : improved readset parser so that it creates a temptative readset file with unique IDs when the readset file provided has duplicate readert IDs
+       cead55d GenPipes - MethylSeq : correted bed2interval_list calls + some minor code reformating
+       499a0f6 Version bump to 3.6.1
+
+  Édouard Henrion <henrione@beluga2.int.ets1.calculquebec.ca>      3 commits
+
+       55074b1 GenPipes - README : updating READMEs and install scripts before release
+       448d7c8 GenPipes - updating version of mugqic_tools in all the pipelines config files
+       1c2d322 GenPipes - Resources : adding some new genome and software install scripts
+
+  ehenrion <edouard.henrion@mcgill.ca>      5 commits
+
+       eb01979 Merged in release_3.6.2 (pull request #267)
+       2fb1dc1 GenPipes - Readset : correcting the parsing of readset files to stop allowing duplicates headsets in file - fixes Issue #113
+       72170d9 GenPipes - RnaDeq denovo Assembly.py : updated merge_trimmomatic_stats outputs to fix insilico_read_normalization_all_report dependencies
+       50519a2 GenPipes - RnaDeq denovo Sssembly.py : fixed insilico_read_normalization_all_report dependencies
+       2e429b1 Merged in release_3.6.1 (pull request #262)
+
+  Pierre-Olivier Quirion <pierre-olivier.quirion@computationalgenomics.ca>      2 commits
+
+       2eca450 Merged in Pierre-Olivier-Quirion/ampliconseqbaseini-edited-online-with-bi-1635366894762 (pull request #266)
+       3d108f9 ampliconseq.base.ini edited online with Bitbucket
+
+  P-O Quirion <pierre-olivier.quirion@computationalgenomics.ca>      2 commits
+
+       cc3f279 update all pipelines to pandoc 2.16.1
+       cd9c041 new pandoc
+
+  Robert Syme <rob.syme@gmail.com>      3 commits
+
+       4ab8e17 Merged in wget_warn_on_fail (pull request #265)
+       d20df3e Merged dev into wget_warn_on_fail
+       b809a05 Merged in rnaseq_protocol_switch_fix (pull request #263)
+
+  Rob Syme <rob.syme@gmail.com>      9 commits
+
+       20154ee Fix server name
+       31fd5fe Test with incorrect server name
+       17aea66 switch quote style
+       8c4410e Intentially introduce an error in the reporting server.
+       beb177e Warn when wget command fails.
+       ca54581 Another tiny whitespace fix
+       cc33046 Tiny whitespace fix
+       b3d620c Switch at correct location
+       2cbdcee Fix protocol mixup for rnaseq pipeline
 
 3.6.1        Wed Sep 29 20:53:55 2021 +0000        17 commits
 
