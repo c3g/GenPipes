@@ -177,7 +177,7 @@ def parse_illumina_readset_file(illumina_readset_file):
         writer.writeheader()
         # Set the counter for already written duplicates
         dup_written = {}
-        readset_csv = csv.DictReader(open(illumina_readset_file, 'rb'), delimiter='\t')
+        readset_csv = csv.DictReader(open(illumina_readset_file, 'r'), delimiter='\t')
         for line in readset_csv:
             # If current redset has no duplicate, just write the line as is
             if readset_dict[line['Readset']] == 1:
