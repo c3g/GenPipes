@@ -1241,7 +1241,7 @@ def get_index(
                     index1seq = seq
                 [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = sub_get_index(readset, index1seq, index2seq, index1cycles, index2cycles, seqtype)
                 indexes.append({
-                    'SAMPLESHEET_NAME': readset.name + "_" + chr(char),
+                    'SAMPLESHEET_NAME': readset.name if len(index_seq) == 1 else readset.name + "_" + chr(char),
                     'LIBRARY': readset.library,
                     'PROJECT': readset.project_id,
                     'INDEX_NAME': readset.index_name,
