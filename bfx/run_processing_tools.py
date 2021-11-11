@@ -266,6 +266,7 @@ echo "Chunking of the raw fastq files..."
 zcat $FASTQ_1_IN | \\
   parallel \\
     --pipe \\
+    --keep-order \\
     -j $GZIP_PARALLEL \\
     --joblog joblog.1.txt \\
     --blocksize $BLOCKSIZE \\
@@ -275,6 +276,7 @@ zcat $FASTQ_1_IN | \\
 zcat $FASTQ_2_IN  \\
 | parallel \\
     --pipe \\
+    --keep-order \\
     -j $GZIP_PARALLEL \\
     --joblog joblog.2.txt \\
     --blocksize $BLOCKSIZE \\
@@ -288,7 +290,8 @@ mkdir -p {metrics_folder}/chunk && \\
 parallel \\
   -j $FGBIO_PARALLEL \\
   --joblog joblog.fgbio.txt \\
-  "java -Djava.io.tmpdir={tmp_dir} \\
+  "echo \"Demuxing chunks {{1}} {{2}}\" && \\
+   java -Djava.io.tmpdir={tmp_dir} \\
     {java_other_options} \\
     -Xmx{ram} \\
     -jar $FGBIO_JAR DemuxFastqs \\

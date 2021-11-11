@@ -621,7 +621,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
             for readset in self.readsets[lane]:
                 self.report_inputs[lane]['index'][readset.name] = [os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".summaryTable.csv")]
 
-            lane_jobs.extend(self.throttle_jobs(jobs_to_throttle))
+            if self.args.type == 't7':
+                lane_jobs.extend(jobs_to_throttle)
+            else:
+                lane_jobs.extend(self.throttle_jobs(jobs_to_throttle))
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
         return jobs
@@ -954,7 +957,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     for readset in self.readsets[lane]:
                         self.report_inputs[lane]['index'][readset.name] = [metrics_file]
    
-                    lane_jobs.extend(self.throttle_jobs(jobs_to_throttle)) 
+                    if self.args.type == 't7':
+                        lane_jobs.extend(jobs_to_throttle)
+                    else:
+                        lane_jobs.extend(self.throttle_jobs(jobs_to_throttle))
                     self.add_copy_job_inputs(lane_jobs, lane)
                     jobs.extend(lane_jobs)
         return jobs
@@ -1018,7 +1024,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_to_report_hash("qc_graphs", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
-        return self.throttle_jobs(jobs)
+
+            if self.args.type == 't7':
+                return jobs
+            else:
+                return self.throttle_jobs(jobs)
 
     def fastqc(self):
         """
@@ -1087,7 +1097,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_to_report_hash("fastqc", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
-        return self.throttle_jobs(jobs)
+            
+            if self.args.type == 't7':
+                return jobs
+            else:
+                return self.throttle_jobs(jobs)
 
     def blast(self):
         """ 
@@ -1247,7 +1261,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_to_report_hash("blast", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
-        return self.throttle_jobs(jobs)
+            
+            if self.args.type == 't7':
+                return jobs
+            else:
+                return self.throttle_jobs(jobs)
 
     def align(self):
         """
@@ -1273,7 +1291,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_to_report_hash("align", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
-        return self.throttle_jobs(jobs)
+            
+            if self.args.type == 't7':
+                return jobs
+            else:
+                return self.throttle_jobs(jobs)
 
     def picard_mark_duplicates(self):
         """
@@ -1304,7 +1326,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
 
             jobs.extend(lane_jobs)
-        return self.throttle_jobs(jobs)
+            
+            if self.args.type == 't7':
+                return jobs
+            else:
+                return self.throttle_jobs(jobs)
 
     def metrics(self):
         """
@@ -1353,8 +1379,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_to_report_hash("metrics", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
-#        return self.throttle_jobs(jobs)
-        return self.throttle_jobs(jobs)
+            
+            if self.args.type == 't7':
+                return jobs
+            else:
+                return self.throttle_jobs(jobs)
 
     def md5(self):
         """
