@@ -22,7 +22,6 @@ import csv
 import logging
 import os
 import re
-import configparser as ConfigParser
 
 # MUGQIC Modules
 from .sample import Sample

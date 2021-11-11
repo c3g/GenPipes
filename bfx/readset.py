@@ -23,12 +23,10 @@ import csv
 import logging
 import os
 import re
-import configparser as ConfigParser
 
 # MUGQIC Modules
 from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner 
 from .sample import Sample
-from core.config import config
 
 log = logging.getLogger(__name__)
 
@@ -160,7 +158,7 @@ def parse_illumina_readset_file(illumina_readset_file):
             readset_dict[readset_key] += 1
         else:
             readset_dict[readset_key] = 1
-    duplicate_readsets = [readset_name for readset_name, readset_count in readset_dict.iteritems() if readset_count > 1]
+    duplicate_readsets = [readset_name for readset_name, readset_count in readset_dict.items() if readset_count > 1]
     # If duplicate readsets are found
     if len(duplicate_readsets) > 0:
         # Rebuild a readset file with unique readset IDs

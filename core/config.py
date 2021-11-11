@@ -20,7 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
-import configparser as ConfigParser
+import configparser 
 import glob
 import logging
 import os
@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 
 
 
-class Config(ConfigParser.SafeConfigParser):
+class Config(configparser.SafeConfigParser):
 
     # True only for continuous integration testing
     continuous_integration_testing = 'GENPIPES_CIT' in os.environ
@@ -48,7 +48,7 @@ class Config(ConfigParser.SafeConfigParser):
     sanity = False
 
     def __init__(self):
-        ConfigParser.SafeConfigParser.__init__(self)
+        configparser.SafeConfigParser.__init__(self)
 
     @property
     def filepath(self):
@@ -105,7 +105,7 @@ class Config(ConfigParser.SafeConfigParser):
             # hack because this class becomes a global
             try:
                 return self.get(section, '{}{}'.format(self.cit_prefix, option))
-            except ConfigParser.Error:
+            except configparser.Error:
                 pass
 
             from utils import utils
