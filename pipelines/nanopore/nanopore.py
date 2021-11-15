@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import os
 import sys
 import logging
@@ -76,7 +77,7 @@ class Nanopore(common.MUGQICPipeline):
 
     def __init__(self, protocol=None):
         self._protocol = protocol
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file)
+        self.argparser.add_argument("-r", "--readsets", help="readset file", type=argparse.FileType('r'))
         super(Nanopore, self).__init__(protocol)
 
     @property

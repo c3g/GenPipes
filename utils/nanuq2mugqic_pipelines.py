@@ -22,7 +22,7 @@
 import argparse
 import csv
 import glob
-import httplib
+import http.client
 import logging
 import os
 import re
@@ -34,7 +34,7 @@ def get_nanuq_file(nanuq_auth_file, nanuq_url, nanuq_file):
     if os.path.exists(nanuq_file):
         log.warning("File " + nanuq_file + " already exists! Skipping...")
     else:
-        https_connection = httplib.HTTPSConnection("genomequebec.mcgill.ca")
+        https_connection = http.client.HTTPSConnection("genomequebec.mcgill.ca")
         https_connection.set_debuglevel(1)
         headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
 
@@ -87,7 +87,7 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
                 log.info("Parsing Nanuq run " + line['Run'] + " ...")
 
                 if seq_type == "Pacbio":
-                    mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if line.has_key('Sample Group') and line['Sample Group'] != "" else line['Name']
+                    mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if 'Sample Group' in line and line['Sample Group'] != "" else line['Name']
                     mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Well']])
 
                     nanuq_vs_mugqic_pipelines_readset_keys = [
@@ -116,7 +116,7 @@ def create_readsets(nanuq_readset_file, seq_type, mugqic_pipelines_readset_file=
                                 symlinks.append([nanuq_readset_path, mugqic_pipelines_readset_path])
 
                 else:  # seq_type = HiSeq or MiSeq or NovaSeq or iSeq
-                    mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if line.has_key('Sample Group') and line['Sample Group'] != "" else line['Name']
+                    mugqic_pipelines_readset_csv_row['Sample'] = line['Sample Group'] if 'Sample Group' in line and line['Sample Group'] != "" else line['Name']
                     mugqic_pipelines_readset_csv_row['Readset'] = ".".join([line['Name'], line['Library Barcode'], line['Run'], line['Region']])
 
                     nanuq_vs_mugqic_pipelines_readset_keys = [

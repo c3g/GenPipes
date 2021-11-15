@@ -37,10 +37,10 @@ import textwrap
 from uuid import uuid4
 
 # MUGQIC Modules
-from config import config, _raise, SanitycheckError
-from job import Job
-from scheduler import create_scheduler
-from step import Step
+from .config import config, _raise, SanitycheckError
+from .job import Job
+from .scheduler import create_scheduler
+from .step import Step
 
 from bfx import jsonator
 
@@ -74,7 +74,7 @@ class Pipeline(object):
             logging.basicConfig(level=getattr(logging, self.args.log.upper()))
 
         if self.args.help:
-            print textwrap.dedent("""\
+            print(textwrap.dedent("""\
               [TOC]
 
               {pipeline_doc}
@@ -93,7 +93,7 @@ class Pipeline(object):
             overview=self.__doc__ or "",
             #step_doc="\n".join([str(idx + 1) + "- " + step.__name__ + "\n" + "-" * len(str(idx + 1) + "- " + step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for idx, step in enumerate(step_list)])
             step_doc="\n".join([step.__name__ + "\n" + "-" * len(step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for step in step_list])
-            )
+            ))
             self.argparser.exit()
 
         # Normal pipeline execution
@@ -104,7 +104,7 @@ class Pipeline(object):
             self.argparser.error("argument -c/--config is required!")
 
         # Create a config trace from merged config file values
-        with open(self.__class__.__name__ + ".config.trace.ini", 'wb') as config_trace:
+        with open(self.__class__.__name__ + ".config.trace.ini", 'w') as config_trace:
             config_trace.write(textwrap.dedent("""\
               # {self.__class__.__name__} Config Trace
               # Created on: {self.timestamp}
@@ -114,7 +114,7 @@ class Pipeline(object):
 
             """).format(config_files="\n#   ".join([config_file.name for config_file in self.args.config]), self=self))
             config.write(config_trace)
-            config.filepath = os.path.abspath(config_trace.name)
+            config._filepath = os.path.abspath(config_trace.name)
 
         self._output_dir = os.path.abspath(self.args.output_dir)
         self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config, container=self.args.container,
@@ -201,7 +201,7 @@ class Pipeline(object):
             self._argparser.add_argument("--help", help="show detailed description of pipeline and steps",
                                          action="store_true")
             self._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are "
-                                                                "overwritten based on files order", nargs="+", type=file)
+                                                                "overwritten based on files order", nargs="+", type=argparse.FileType('r'))
             self._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'")
             self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)",
                                          default=os.getcwd())
@@ -318,7 +318,7 @@ class Pipeline(object):
         previous_jobs_output_files = set([output_file for job in self.jobs for output_file in job.output_files])
 
         while not selected_input_files and remaining_candidate_input_files:
-            input_files = filter(None, remaining_candidate_input_files.pop())
+            input_files = [_f for _f in remaining_candidate_input_files.pop() if _f]
             # Skip empty candidate input files
             if input_files:
                 # dependency_jobs() checks if the current candidate input files is valid, otherwise raises an exception
@@ -329,7 +329,7 @@ class Pipeline(object):
                     selected_input_files = input_files
                 except Exception as e:
                     log.debug("Caught Exception for candidate input file: " +  ", ".join(input_files))
-                    log.debug(e.message)
+                    log.debug(e)
 
         if selected_input_files:
             log.debug("selected_input_files: " + ", ".join(input_files) + "\n")
@@ -382,7 +382,7 @@ class Pipeline(object):
 
                 # Job .done file name contains the command checksum.
                 # Thus, if the command is modified, the job is not up-to-date anymore.
-                job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command_with_modules).hexdigest() + ".mugqic.done")
+                job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command_with_modules.encode('utf-8')).hexdigest() + ".mugqic.done")
                 job.output_dir = self.output_dir
                 job.dependency_jobs = self.dependency_jobs(job)
 

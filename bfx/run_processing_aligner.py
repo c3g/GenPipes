@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -84,7 +82,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
         folder_name = os.path.basename(self.genome_folder)
         ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
         if os.path.isfile(ini_file):
-            genome_config = ConfigParser.SafeConfigParser()
+            genome_config = configparser.SafeConfigParser()
             genome_config.read(ini_file)
 
             section = "DEFAULT"
@@ -232,7 +230,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
         folder_name = os.path.basename(self.genome_folder)
         ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
         if os.path.isfile(ini_file):
-            genome_config = ConfigParser.SafeConfigParser()
+            genome_config = configparser.SafeConfigParser()
             genome_config.read(ini_file)
 
             source = genome_config.get("DEFAULT", "source")
@@ -249,7 +247,7 @@ class StarRunProcessingAligner(RunProcessingAligner):
         folder_name = os.path.basename(self.genome_folder)
         ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
         if os.path.isfile(ini_file):
-            genome_config = ConfigParser.SafeConfigParser()
+            genome_config = configparser.SafeConfigParser()
             genome_config.read(ini_file)
 
             source = genome_config.get("DEFAULT", "source")

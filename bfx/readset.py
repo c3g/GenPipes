@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -25,12 +23,10 @@ import csv
 import logging
 import os
 import re
-import ConfigParser
 
 # MUGQIC Modules
-import run_processing_aligner
-from sample import Sample
-from core.config import config
+from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner 
+from .sample import Sample
 
 log = logging.getLogger(__name__)
 
@@ -153,7 +149,7 @@ def parse_illumina_readset_file(illumina_readset_file):
     samples = []
 
     log.info("Parse Illumina readset file " + illumina_readset_file + " ...")
-    readset_csv = csv.DictReader(open(illumina_readset_file, 'rb'), delimiter='\t')
+    readset_csv = csv.DictReader(open(illumina_readset_file, 'r'), delimiter='\t')
 
     # Check for duplicate readsets in file
     readset_dict = {}
@@ -162,15 +158,13 @@ def parse_illumina_readset_file(illumina_readset_file):
             readset_dict[readset_key] += 1
         else:
             readset_dict[readset_key] = 1
-    duplicate_readsets = [readset_name for readset_name, readset_count in readset_dict.iteritems() if readset_count > 1]
+    duplicate_readsets = [readset_name for readset_name, readset_count in readset_dict.items() if readset_count > 1]
     # If duplicate readsets are found
     if len(duplicate_readsets) > 0:
         # Rebuild a readset file with unique readset IDs
         genpipes_proposed_readset_file = os.path.join(
             os.path.splitext(os.path.basename(illumina_readset_file))[0] + ".genpipes.txt"
         )
-#        if not os.path.exists(os.path.dirname(genpipes_proposed_readset_file)):
-#            os.makedirs(os.path.dirname(genpipes_proposed_readset_file))
         # Set the header
         csv_headers = readset_csv.fieldnames
         writer = csv.DictWriter(
@@ -181,7 +175,7 @@ def parse_illumina_readset_file(illumina_readset_file):
         writer.writeheader()
         # Set the counter for already written duplicates
         dup_written = {}
-        readset_csv = csv.DictReader(open(illumina_readset_file, 'rb'), delimiter='\t')
+        readset_csv = csv.DictReader(open(illumina_readset_file, 'r'), delimiter='\t')
         for line in readset_csv:
             # If current redset has no duplicate, just write the line as is
             if readset_dict[line['Readset']] == 1:
@@ -209,7 +203,7 @@ def parse_illumina_readset_file(illumina_readset_file):
         exit(18)
 
     # If no duplicate readset was found, then parse the readset file
-    readset_csv = csv.DictReader(open(illumina_readset_file, 'rb'), delimiter='\t')
+    readset_csv = csv.DictReader(open(illumina_readset_file, 'r'), delimiter='\t')
     for line in readset_csv:
         sample_name = line['Sample']
         sample_names = [sample.name for sample in samples]
@@ -417,9 +411,9 @@ def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, c
             current_genome_folder = genome_root + os.sep + folder_name
 
             if readset.is_rna:
-                readset._aligner = run_processing_aligner.StarRunProcessingAligner(output_dir, current_genome_folder, nb_cycles)
+                readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, nb_cycles)
             else:
-                readset._aligner = run_processing_aligner.BwaRunProcessingAligner(output_dir, current_genome_folder)
+                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder)
 
             aligner_reference_index = readset.aligner.get_reference_index()
             annotation_files = readset.aligner.get_annotation_files()
@@ -567,7 +561,7 @@ def parse_nanopore_readset_file(nanopore_readset_file):
     samples = []
 
     log.info("Parse Nanopore readset file " + nanopore_readset_file + " ...")
-    readset_csv = csv.DictReader(open(nanopore_readset_file, 'rb'), delimiter='\t')
+    readset_csv = csv.DictReader(open(nanopore_readset_file, 'r'), delimiter='\t')
     for line in readset_csv:
         sample_name = line['Sample']
         sample_names = [sample.name for sample in samples]

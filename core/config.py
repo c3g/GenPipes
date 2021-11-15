@@ -20,20 +20,20 @@
 ################################################################################
 
 # Python Standard Modules
-import ConfigParser
+import configparser 
 import glob
 import logging
 import os
 import re
 import subprocess
 import sys
-
+import io
 
 log = logging.getLogger(__name__)
 
 
 
-class Config(ConfigParser.SafeConfigParser):
+class Config(configparser.SafeConfigParser):
 
     # True only for continuous integration testing
     continuous_integration_testing = 'GENPIPES_CIT' in os.environ
@@ -48,7 +48,7 @@ class Config(ConfigParser.SafeConfigParser):
     sanity = False
 
     def __init__(self):
-        ConfigParser.SafeConfigParser.__init__(self)
+        configparser.SafeConfigParser.__init__(self)
 
     @property
     def filepath(self):
@@ -58,7 +58,7 @@ class Config(ConfigParser.SafeConfigParser):
         # Make option names case sensitive
         self.optionxform = str
         for config_file in config_files:
-            if isinstance(config_file, file):
+            if isinstance(config_file,  io.IOBase):
                 self.readfp(config_file)
             else:
                 with open(config_file, 'r') as f:
@@ -89,7 +89,7 @@ class Config(ConfigParser.SafeConfigParser):
         os.environ['MODULES_PAGER'] = ''
         p = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
         dout, derr = p.communicate()
-        if p.returncode != 0 or ':ERROR:' in dout:
+        if p.returncode != 0 or b':ERROR:' in dout:
             _raise(SanitycheckError("Error in config file(s) with:\n{}".format(dout)))
 
         log.info("module check finished\n")
@@ -105,7 +105,7 @@ class Config(ConfigParser.SafeConfigParser):
             # hack because this class becomes a global
             try:
                 return self.get(section, '{}{}'.format(self.cit_prefix, option))
-            except ConfigParser.Error:
+            except configparser.Error:
                 pass
 
             from utils import utils
