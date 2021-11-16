@@ -48,6 +48,7 @@ def generate_chr_sizes(chr_sizes_file, chr_sizes, chr):
     return Job(
         #to do: remove comment and add output_files. if got errors remove it.
         input_files=[chr_sizes],
+        output_files=[chr_sizes_file],
       #  output_files=[chr_sizes_file],
         command="""\
         awk -v OFS="\\t" '{{  if($1=="{chr}") {{print $1,$2}}  }}' {chr_sizes} >> {chr_sizes_file}""".format(
@@ -75,7 +76,7 @@ def convert(input_dir, input_file, output_dir, output_files, inputinfofile, hist
     # input = input_files.extend(inputinfofile)
 
     return Job(
-        [inputinfofile, input_file],
+        [inputinfofile, input_file, chr_sizes_file],
         output_files,
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name="chromimpute_convert." + sample + "." + histone_mark,
@@ -102,8 +103,10 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
     )
 
 def compute_global_dist(input_files, output_dir, output_files, converteddir, inputinfofile, histone_mark, chr_sizes_file):
+
     return Job(
-        input_files,
+        (input_files),
+       # input_files,
         output_files,
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name="chromimpute_compute_global_dist." + histone_mark,
@@ -232,10 +235,10 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
       )
     )
 
-def apply(input_files, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample, mark, chr, chr_sizes_file):
+def apply(input_files, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample, mark, chr, chr_sizes_file, output_files):
     return Job(
         input_files,
-        [output_dir],
+        output_files,
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name="chromimpute_apply."+sample+"_"+mark,
         command="""\

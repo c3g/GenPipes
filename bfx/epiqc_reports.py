@@ -45,7 +45,7 @@ python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bf
             medium_alert_bases_covered=config.param('epiqc_report', 'medium_alert_bases_covered'),
             output_file=output_file)
     )
-def signal_to_noise_report(signal_noise_file, report_file):
+def signal_to_noise_report(signal_noise_file, report_file, chr_name):
     return Job(
                         [signal_noise_file],
                         [report_file],
@@ -55,12 +55,14 @@ python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bf
 -s {signal_noise_file} \\
 -s1 {percent1} \\
 -s2 {percent2} \\
+-chr {chromosome} \\
 -st1 {signal_noise_threshold_M} \\
 -st2 {signal_noise_threshold_L} \\
 -o {output_file}""".format(
                             signal_noise_file=signal_noise_file,
                             percent1=config.param('signal_noise', 'percent1'),
                             percent2=config.param('signal_noise', 'percent2'),
+                            chromosome =chr_name,
                             signal_noise_threshold_M=config.param('epiqc_report', 'signal_noise_threshold_M'),
                             signal_noise_threshold_L=config.param('epiqc_report', 'signal_noise_threshold_L'),
                             output_file=report_file))
@@ -98,3 +100,69 @@ python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bf
 -o {output_dir}""".format(
                 correlation_matrix=input_matrix_file,
                 output_dir=report_dir))
+
+def final_report(bigwiginfo_report, chromimpute_report, signalnoise_report, final_report, sample, histone):
+
+    return Job(
+            [bigwiginfo_report, chromimpute_report, signalnoise_report],
+            [final_report],
+            [['epiqc_report', 'module_python']],
+            name="epiqc_report",
+            command="""\
+bigwig=$(cut -d ' ' -f1 {bigwiginfo_report} | head -n 1)
+bigwig_title=$(cut -d ' ' -f2 {bigwiginfo_report} | head -n 1)
+
+signalnoise=$(cut -d ' ' -f1 {signalnoise_report} | head -n 1)
+
+chromimpute=$(cut -d ' ' -f1 {chromimpute_report} | head -n 1)
+
+if [ "$bigwig" == "BigWigInfo:" ] ; then
+ if [ "$bigwig_title" == "Chromosome_count:" ] ; then
+  bigwig1=$(cut -d ' ' -f3 {bigwiginfo_report} | head -n 1) &&
+  echo $bigwig1
+fi
+if [ "$bigwig_title" == "Whole_genome_bases_covered:" ] ; then
+ bigwig2=$(cut -d ' ' -f3 {bigwiginfo_report} | head -n 2) &&
+ echo $bigwig2
+fi
+else
+ bigwig1="FILE_ERROR" &&
+ bigwig2="FILE_ERROR" &&
+ echo "Please check whether the BigWigInfo report file is properly structured or not empty"
+fi &&
+
+if [ "$chromimpute" == "ChromImpute:" ] ; then
+ impute=$(cut -d ' ' -f3 {chromimpute_report} | head -n 1) &&
+ echo $impute
+else
+ impute="FILE_ERROR" &&
+ impute="FILE_ERROR" &&
+ echo "Please check whether the ChromImpute report file is properly structured or not empty"
+fi &&
+
+if [ "$signalnoise" == "Signal_to_noise:" ] ; then
+ signal=$(cut -d ' ' -f3 {signalnoise_report} | head -n 1) &&
+ echo $signal
+else
+ signal="FILE_ERROR" &&
+ signal="FILE_ERROR" &&
+ echo "Please check whether the Signal_to_noise report file is properly structured or not empty"
+fi &&
+
+if [ "$bigwig1" == "HIGH_LEVEL_ALERT:" ] ; then
+ echo -e "{sample}\t{histone}\tHIGH_LEVEL_ALERT" >> {final_report}
+else
+ if [[ "$bigwig2" == "MEDIUM_LEVEL_ALERT" || "$impute" == "MEDIUM_LEVEL_ALERT" || "$signal" == "MEDIUM_LEVEL_ALERT" ]] ; then
+  echo -e "{sample}\t{histone}\tMEDIUM_LEVEL_ALERT" >> {final_report}
+ elif [[ "$bigwig2" == "LOW_LEVEL_ALERT" || "$impute" == "LOW_LEVEL_ALERT" || "$signal" == "LOW_LEVEL_ALERT" ]] ; then
+  echo -e "{sample}\t{histone}\tLOW_LEVEL_ALERT" >> {final_report}
+ else
+  echo -e "{sample}\t{histone}\tPASSED" >> {final_report}
+ fi
+fi""".format(
+            bigwiginfo_report=bigwiginfo_report,
+            chromimpute_report=chromimpute_report,
+            signalnoise_report = signalnoise_report,
+            final_report=final_report,
+            sample=sample,
+            histone=histone))
