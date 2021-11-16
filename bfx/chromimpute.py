@@ -90,7 +90,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
-      java_other_options=config.param('chromimpute_convert', 'other_options'),
+      java_other_options=config.param('DEFAULT', 'java_other_options'),
       ram=config.param('chromimpute', 'ram'),
       histone_mark=histone_mark,
       convertsample=sample,
