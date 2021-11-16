@@ -34,7 +34,7 @@ from core.job import *
 
 from bfx import bigwiginfo
 from bfx import chromimpute
-from bfx import signal_noise
+from bfx import wigSignalNoise
 from bfx import epigeec
 from bfx.readset import *
 
@@ -248,7 +248,7 @@ mkdir -p \
         converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs['chromimpute_converteddir'])
 
         log.debug("signal_to_noise")
-        for file in os.listdir(converteddir):
+        for file in os.listdir(config.param('chromimpute', 'dataset')): # Create path to files that are going to be created by chromimpute_convert
             jobs.append(Job(
                 ['signal_noise',converteddir],
                 ['signal_noise'],
@@ -258,8 +258,8 @@ mkdir -p \
 python ../genpipes/bfx/wigSignalNoise.py \\
   -i {file} \\
   -o {output_dir}""".format(
-                file = os.path.join(converteddir, file),
-                output_dir = os.path.join(self.output_dirs['signal_to_noise_output_directory'], file[:-3])
+                file = os.path.join(converteddir, file + ".wig.gz"),
+                output_dir = os.path.join(self.output_dirs['signal_to_noise_output_directory'], file + ".txt")
                 )))
 
         return jobs
