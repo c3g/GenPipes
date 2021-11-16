@@ -64,6 +64,23 @@ to the pipeline main script.
 
 ## Seq2Fun protocol
 
+RNA-seq is a powerful tool to answer many biological questions. 
+While the majority of RNA-seq data has been collected 
+and analyzed in model organisms, it is increasingly collected in non-model organisms 
+such as many species of environmental and/or economical importance, to answer some 
+very basic questions, such as which genes are up- and down- regulated, which pathways 
+are changed under different conditions. In most cases, they either lack of genome 
+references or do not have high-quality genome, which has posed great challenge for 
+RNA-seq data analysis for these organisms.
+
+
+Therefore, Seq2Fun, an ultra-fast, assembly-free, all-in-one tool has been developed
+based on a modern data structure full-text in minute space (FM)
+index and burrow wheeler transformation (BWT), to functional quantification of RNA-seq 
+reads for non-model organisms without transcriptome assembly and genome references.
+
+For further information regarding Seq2Fun visit: https://www.seq2fun.ca/motivation.xhtml
+
 The Seq2fun protocol starts with merging fastq files with multiple readsets. Then Seq2fun use the fastq
 files to generate KO abundance table and several other files (for more info: [seq2fun output files](https://www.seq2fun.ca/manual.xhtml#sect4)) that can be used to perform downstream analysis 
 on [NetworkAnalyst](https://www.networkanalyst.ca/NetworkAnalyst/uploads/TableUploadView.xhtml).
@@ -295,7 +312,64 @@ fastq files are merged if the sample has multiple readsets. create one fastq fil
 
 seq2fun
 ----------------------
-Seq2fun analysis is performed using fastq files and generated sample sheet.
+For most non-model organisms, biological understanding of study outcomes is limited to
+protein-coding genes with functional annotations such as KEGG pathways or
+Gene Ontology or PANTHER classification system.
+Therefore, Seq2Fun databases focused on functionally annotated genes such as KOs
+largely meets the preferred needs of most scientists studying non-model organisms.
+
+**Note:** We have stored number of pre-built databases by the Seq2Fun developers 
+and the list can be found below. 
+
+* Eukaryotes
+* Animals
+* Plants
+* Fungi
+* Protists
+* Mammals
+* Birds
+* Reptiles
+* Amphibians
+* Fishes
+* Arthropods
+* Nematodes
+
+For further information please visit
+https://github.com/xia-lab/Seq2Fun#step-3-database-download
+
+You can specify the required database in a custom.ini file by changing "group" key. The default
+group is "birds"
+
+* *These KOs in the database are KOs assigned to KEGG pathways and they are only
+a proportion of whole list of KOs.*
+* *All KOs include KOs not assigned to KEGG pathways.*
+
+This step takes as input files:
+
+ 1. FASTQ files from the readset file if available
+ 2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
+ This step perform seq2fun analysis and generates [output files](https://www.seq2fun.ca/manual.xhtml#sect4) including KO abundance table and [KO mapped fastq files](https://www.seq2fun.ca/manual.xhtml#sect20).
+These output files can be used for downstream analysis using
+[Network Analyst](https://www.networkanalyst.ca/NetworkAnalyst/uploads/TableUploadView.xhtml)
+ web application The interested comparisons should be specified using a design file (Format is similar to the 
+default RNA-seq design file). Therefore, only pairwise comparisons
+are possible unlike the original Seq2Fun program (treatment and controls will be added according to the 1 and 2 in the design file)
+If you want to compare multiple groups you will have to break the comparison in to pairs.
+
+E.g for 3 group comparison design file should be as follows
+
+    Sample  A_vs_B   B_vs_C   A_vs_C
+     A1       1        0       1
+     B1       2        1       0
+     A2       1        0       1
+     B2       2        1       0
+     C1       0        2       2
+     C2       0        2       2
+
+
+Seq2Fun analysis is performed using fastq files and it generates a 
+sample table.
 
 differential_expression_seq2fun
 ----------------------
@@ -307,4 +381,33 @@ pathway_enrichment_seq2fun
 
 A [KEGG ortholog](https://www.genome.jp/kegg/ko.html) pathway analysis will be performed using fgsea R package
 
+Current KEGG database used for the analysis was created on August, 2021. 
+If you'd like to update the database,
+please follow below instructions to download the latest KEGG pathway database and create
+pathway list for the kegg_all key in the ini file and kegg.rds
+Download the latest KEGG database
+
+**In linux**
+
+```
+wget http://rest.kegg.jp/list/pathway`
+sed -i 's/path://g' pathway
+mv pathway KEGG_all_pathways.txt
+```
+
+**in R**
+
+```
+library(data.table)
+pathway_list <- fread("KEGG_all_pathways.txt", header =F)`
+kegg_ko <- lapply(unique(pathway_list$mapID), fun)
+names(kegg_ko) <- (pathway_list$mapID)
+kegg <- lapply(kegg_ko, substring, 4)
+saveRDS(kegg, "kegg.rds")
+```
+
+Next, specify created files in a custom ini file.
+
+**user_pathway_list** is a file with pathway that are interested with KEGG map id 
+(only one column). You must specify the file path to the user_pathway_list in a custom.ini
 

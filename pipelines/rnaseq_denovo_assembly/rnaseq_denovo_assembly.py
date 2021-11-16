@@ -1148,7 +1148,7 @@ rm {temp_out2}""".format(
         This step perform seq2fun analysis and generates output files including KO abundance table and KO mapped fastq files
         (https://www.seq2fun.ca/manual.xhtml#sect4) and (https://www.seq2fun.ca/manual.xhtml#sect20)
 
-        For each contrast different folders and all the files for that particular contrast are generated
+        For each contrast different folders and all the files for that particular contrast are
         generated. Therefore, only pairwise comparisons are possible
         (treatment and controls will be added according to the 1 and 2 in the design file)
         """
@@ -1186,7 +1186,7 @@ rm {temp_out2}""".format(
                             if sample.name == readset.sample.name:
                                 if readset.run_type == "PAIRED_END":
                                     if len(sample.readsets) > 1:
-                                        #get merged fasq link
+                                        #get merged fastq link
                                         candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
                                                      sample.name + "_merged.pair1.fastq.gz")
                                         candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name,
