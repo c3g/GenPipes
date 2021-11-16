@@ -511,6 +511,7 @@ pandoc \\
         )
 
         return jobs
+
     def cram_output(self):
         """
         Generate long term storage version of the final alignment files in CRAM format
