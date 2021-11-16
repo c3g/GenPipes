@@ -19,42 +19,41 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-import os
-
 from core.job import *
 
-def bigWigToBedGraph(input_dir, bigWigFile, output_dir):
-    # Remove the chr_ prefix to convert on whole genome or change chrom number to convert only for specified chromosome
-    bigWigFile_name = os.path.basename(bigWigFile)
-    output_bedgraph = os.path.join(output_dir, "chr1_"+bigWigFile_name+".bedgraph")
+
+def wigToBigWig(wigFile, chromSizes):
+    output_bigWig = wigFile + ".bigWig"
 
     return Job(
-        [input_dir],
-        [output_dir],
+        [wigFile],
+        [output_bigWig],
         [['ucsc', 'module_ucsc']],
-        name = "bigwig_to_bedgraph",
-        command = """\
-bigWigToBedGraph \\
-  {bigwig} \\
-  {output_file} 2> {stderr}; [ -s {stderr} ] || rm -f {stderr}""".format( # If there are no errors, we delete the stderr file
-        bigwig = bigWigFile,
-        output_file = output_bedgraph,
-        stderr = os.path.join(output_dir, bigWigFile_name+".error")
+        name="wigToBigWig",
+        command="""\
+wigToBigWig \\
+  {wigFile} \\
+  {chromSizes} \\
+  {bigWigFile}""".format(
+            wigFile=wigFile,
+            chromSizes=chromSizes,
+            bigWigFile=output_bigWig
         )
     )
 
-def bigWigInfo(input_dir, bigWigFile, output_dir):
-    output = os.path.join(output_dir, "bigwiginfo_"+ os.path.basename(bigWigFile) + ".txt")
+
+def bigWigInfo(bigWigFile):
+    output = "bigwiginfo_" + bigWigFile + ".txt"
 
     return Job(
-        [input_dir],
+        [bigWigFile],
         [output],
         [['ucsc', 'module_ucsc']],
-        name = "bigwiginfo",
-        command = """\
+        name="bigWigInfo",
+        command="""\
 bigWigInfo \\
-  {bigWigFile} &> {output}""".format(
-        bigWigFile = bigWigFile,
-        output = output
+  {bigWigFile} > {output}""".format(
+            bigWigFile=bigWigFile,
+            output=output
         )
     )

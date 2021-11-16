@@ -21,195 +21,114 @@
 
 # Python Standard Modules
 import os
+import sys
+import logging
+
+# Append mugqic_pipelines directory to Python library path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.job import *
 from core.config import *
+from core.job import *
+from core.pipeline import *
 
-def modify_inputinfofile(input_file, sample, histone,  output_inputinfo_file):
-    return Job(
-        [input_file, output_inputinfo_file],
-        [output_inputinfo_file],
-        [],
-        command="""\
-        echo -e "{sample}\\t{histone}\\t{sample}.bedgraph.gz" >> {inputinfofile}
-        """.format(
-            input_files=input_file,
-            sample=sample,
-            histone=histone,
-            inputinfofile=output_inputinfo_file
+from bfx import bigwiginfo
+from bfx import chromimpute
+from bfx import signal_noise
+from bfx import epigeec
 
-        )
-    )
+log = logging.getLogger(__name__)
 
+class EpiQC(Pipeline):
+    """
+    TODO: write description of pipeline
+    """
+    def __init__(self, protocol=None):
+        self._protocol = protocol
+        self.version = 1.0
+        self.argparser.add_argument("--dataset", help="List of path to signal files (one per line)", type=str, required=True)
+        super(EpiQC, self).__init__()
 
-def convert(input_dir, output_dir, output_files, inputinfofile, histone_mark, sample):
-    # input = input_files.extend(inputinfofile)
-    return Job(
-        [inputinfofile],
-        output_files,
-        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name="chromimpute_convert." + sample + "." + histone_mark,
-        command="""\
-java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
-  Convert {chrom} \\
-  -m {histone_mark} \\
-  -l {convertsample} \\
-  -r {resolution} \\
-  {path_to_dataset} \\
-  {inputinfofile} \\
-  {chrom_sizes} \\
-  {output_dir}""".format(
-      java_other_options=config.param('DEFAULT', 'java_other_options'),
-      ram=config.param('chromimpute', 'ram'),
-      chrom="-c " + config.param('chromimpute', 'chrom') if config.param('chromimpute', 'chrom') else "",
-      histone_mark=histone_mark,
-      convertsample=sample,
-      resolution=config.param('chromimpute', 'resolution'),
-      path_to_dataset=input_dir,
-      inputinfofile=inputinfofile,
-      chrom_sizes="<(awk '{print $1\"\\t\"$2}' %s)" % (config.param('chromimpute', 'chromosome_size')),# config.param('chromimpute', 'chrominfofile')
-      output_dir=output_dir
-      )
-    )
+    @property
+    def output_dirs(self):
+        dirs = {'bigwiginfo_output_directory': 'bigwiginfo',
+                'chromimpute_output_directory': 'imputation',
+                'signal_to_noise_output_directory': 'signal_to_noise',
+                'epiGeEc_output_directory': 'epiGeEC'
+                }
 
-def compute_global_dist(input_files, output_dir, output_files, converteddir, inputinfofile, histone_mark):
-    return Job(
-        input_files,
-        output_files,
-        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name="chromimpute_compute_global_dist." + histone_mark,
-        command="""\
-java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
-  ComputeGlobalDist \\
-  -m {histone_mark} \\
-  -r {resolution} \\
-  {converteddir} \\
-  {inputinfofile} \\
-  {chrom_sizes} \\
-  {output_dir}""".format(
-      java_other_options=config.param('DEFAULT', 'java_other_options'),
-      ram=config.param('chromimpute', 'ram'),
-      histone_mark=histone_mark,
-      resolution=config.param('chromimpute', 'resolution'),
-      converteddir=converteddir,
-      inputinfofile=inputinfofile,
-      chrom_sizes="<(awk '{print $1\"\\t\"$2}' %s)" % (config.param('chromimpute', 'chromosome_size')),# config.param('chromimpute', 'chrominfofile')
-      output_dir=output_dir
-      )
-    )
+        return dirs
 
-def generate_train_data(input_files, output_dir, output_files, converteddir, distancedir, inputinfofile, histone_mark):
-    return Job(
-        input_files,
-        output_files,
-        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name="chromimpute_generate_train_data." + histone_mark,
-        command="""\
-java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
-  GenerateTrainData \\
-  -r {resolution} \\
-  {converteddir} \\
-  {distancedir} \\
-  {inputinfofile} \\
-  {chrom_sizes} \\
-  {output_dir} \\
-  {histone_mark}""".format(
-      java_other_options=config.param('DEFAULT', 'java_other_options'),
-      ram=config.param('chromimpute', 'ram'),
-      # chrom=chrom,#ddddd.param('chromimpute', 'chrom'),
-      resolution=config.param('chromimpute', 'resolution'),
-      converteddir=converteddir,
-      distancedir=distancedir,
-      inputinfofile=inputinfofile,
-      chrom_sizes="<(awk '{print $1\"\\t\"$2}' %s)" % (config.param('chromimpute', 'chromosome_size')),# config.param('chromimpute', 'chrominfofile')
-      output_dir=output_dir,
-      histone_mark=histone_mark
-      )
-    )
+    def bigWigInfo(self):
+        #TODO: - Convert wig to bigWig if not already done
+        #      - Create command for bigWigInfo, output in text file
+        dataset = self.args.dataset
+        jobs = []
 
+        with open(dataset) as list_signal_file:
+            for line in list_signal_file:
+                if line.split(".")[-1].rstrip("\n") == "wig":
+                    converToBigWig = bigwiginfo.wigToBigWig(line, config.param("epigeec", "chromsizes"))
+                    line = line + ".bigWig"
+                    jobs.append(converToBigWig)
 
-def train(input_files, output_dir, output_files, traindatadir, inputinfofile, sample, histone_mark):
-    return Job(
-        input_files,
-        output_files,
-        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name="chromimpute_train." + sample + "_" + histone_mark,
-        command="""\
-java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
-  Train \\
-  {traindatadir} \\
-  {inputinfofile} \\
-  {predictordir} \\
-  {sample} \\
-  {histone_mark}""".format(
-      java_other_options=config.param('DEFAULT', 'java_other_options'),
-      ram=config.param('chromimpute', 'ram'),
-      traindatadir=traindatadir,
-      inputinfofile=inputinfofile,
-      predictordir=output_dir,
-      sample=sample,
-      histone_mark=histone_mark
-      )
-    )
+                if line.split(".")[-1].rstrip("\n") != "bigWig" and line.split(".")[-1].rstrip("\n") != "bw":
+                    raise Exception("bigWigInfo : Not a bigWig file !")
 
-def apply(input_files, output_dir, converteddir, distancedir, predictordir, inputinfofile, sample, mark):
-    return Job(
-        input_files,
-        [output_dir],
-        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name="chromimpute_apply."+sample+"_"+mark,
-        command="""\
-java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
-    Apply \\
-    -r {resolution} \\
-    {converteddir} \\
-    {distancedir} \\
-    {predictordir} \\
-    {inputinfofile} \\
-    {chrom_sizes} \\
-    {output_dir} \\
-    {sample} \\
-    {mark}""".format(
-        java_other_options=config.param('DEFAULT', 'java_other_options'),
-        ram=config.param('chromimpute', 'ram'),
-        # chrom=config.param('chromimpute', 'chrom'),
-        resolution=config.param('chromimpute', 'resolution'),
-        converteddir=converteddir,
-        distancedir=distancedir,
-        predictordir=predictordir,
-        inputinfofile=inputinfofile,
-        chrom_sizes="<(awk '{print $1\"\\t\"$2}' %s)" % (config.param('chromimpute', 'chromosome_size')),# config.param('chromimpute', 'chrominfofile')
-        output_dir=output_dir,
-        sample=sample,
-        mark=mark
-        )
-    )
+                jobs.append(bigwiginfo.bigWigInfo(line))
 
-def eval(input_dir, percent1, percent2, converteddir, converted_file, output_dir, imputed_file, output_path):
-    return Job(
-        [input_dir],
-        [output_path],
-        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name="chromimpute_eval."+converted_file+"."+imputed_file,
-        command="""\
-java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
-    Eval \\
-    -p {percent1} {percent2} \\
-    {converteddir} \\
-    {converted_file} \\
-    {output_dir} \\
-    {imputed_file} \\
-    {chrom_sizes} > {output_path}""".format(
-        java_other_options=config.param('DEFAULT', 'java_other_options'),
-        ram=config.param('chromimpute', 'ram'),
-        percent1=percent1,
-        percent2=percent2,
-        converteddir=converteddir,
-        converted_file=converted_file,
-        output_dir=output_dir,
-        imputed_file=imputed_file,
-        chrom_sizes=config.param('chromimpute', 'chrominfofile'),
-        output_path=output_path
-        )
-    )
+        return jobs
+
+    def chromimpute_convert(self):
+        #TODO: - Create inputinfofile.txt with createInputInfo.py
+        dataset = self.args.dataset
+        jobs = []
+
+    def chromimpute_compute_global_dist(self, converteddir, inputInfo):
+        jobs = []
+
+    def chromimpute_generate_train_data(self, converteddir, distancedir, inputInfo, mark):
+        jobs = []
+
+    def chromimpute_train(self, traindatadir, inputInfo, sample, mark):
+        jobs = []
+
+    def chromimpute_apply(self, converteddir, distancedir, predictordir, inputInfo, sample, mark):
+        jobs = []
+
+    def chromimpute_eval(self, converteddir, convertedFile, imputedir, imputeFile):
+        jobs = []
+
+    def chromimpute(self, dataset):
+        jobs= []
+
+    def signal_to_noise(self, signalFile):
+        #TODO: - Convert bigWig to wig if not already done
+        #      - Create command to run signal_noise.py || Transform signal_noise.py to launch here
+        jobs = []
+
+    def epigeec_tohdf5(self, dataset, resolution):
+        #TODO: - Create command to convert bigWig to hdf5
+        #      - Create txt file containing path to each hdf5 files (one per line)
+        #      - Create command to correlate hdf5 files
+        jobs = []
+
+    # def epigeec_filter():
+
+    def epigeec_correlate(self, chromSizes):
+        jobs = []
+
+    def epigeec_average_score(self, dataset, chromSizes, resolution):
+        jobs = []
+
+    @property
+    def steps(self):
+        #TODO : - Create steps table
+        return [
+            self.bigWigInfo,
+            self.chromimpute,
+            self.signal_to_noise,
+            self.epigeec_average_score]
+
+if __name__ == "__main__":
+    EpiQC()
