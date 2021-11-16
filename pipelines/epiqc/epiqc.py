@@ -38,12 +38,9 @@ from pipelines import common
 
 from bfx import bigwiginfo
 from bfx import chromimpute
-from bfx import wigSignalNoise
 from bfx import epigeec
 from bfx import epiqc_reports
-from bfx import epiqc_report
 from bfx.readset import parse_illumina_readset_file
-from bfx.design import parse_chipseq_design_file
 import utils.utils
 from shutil import copyfile
 from bfx import genome
@@ -78,9 +75,6 @@ class EpiQC(common.Illumina):
 
     def __init__(self, protocol=None):
         self._protocol = protocol
-        # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=file)
-
         super(EpiQC, self).__init__(protocol)
 
     @property
