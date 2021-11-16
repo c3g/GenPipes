@@ -558,4 +558,5 @@ pandoc \\
             job.removable_files = input_bam
 
             jobs.append(job)
+
         return jobs
