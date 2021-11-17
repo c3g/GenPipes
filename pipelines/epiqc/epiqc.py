@@ -920,8 +920,7 @@ mkdir -p \\
                                 [['signal_noise', 'module_python'],
                                  ['signal_noise', 'module_mugqic_tools']],
                                 command="""\
-#python PYTHON_TOOLS/signal_noise.py \\                               
-python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_python3/genpipes/bfx/signal_noise.py \\
+python $PYTHON_TOOLS/signal_noise.py \\                               
 -i {input_file} \\
 -p1 {percent1} \\
 -p2 {percent2} \\
