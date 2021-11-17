@@ -31,9 +31,10 @@ def bigwiginfo_report(bigwiginfo_file, output_file):
     return Job(
         [bigwiginfo_file],
         [output_file],
-        [['epiqc_report', 'module_python']],
+        [['epiqc_report', 'module_python'],
+         ['epiqc_report', 'module_mugqic_tools']],
         command="""\
-python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bfx/epiqc_report.py \\
+python $PYTHON_TOOLS/epiqc_report.py \\
 -b {bigwiginfo_file} \\
 -cb {chromCount} \\
 -bc1 {low_alert_bases_covered} \\
@@ -49,9 +50,10 @@ def signal_to_noise_report(signal_noise_file, report_file, chr_name):
     return Job(
                         [signal_noise_file],
                         [report_file],
-                        [['epiqc_report', 'module_python']],
+                        [['epiqc_report', 'module_python'],
+                         ['epiqc_report', 'module_mugqic_tools']],
                         command="""\
-python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bfx/epiqc_report.py \\
+python $PYTHON_TOOLS/epiqc_report.py \\
 -s {signal_noise_file} \\
 -s1 {percent1} \\
 -s2 {percent2} \\
@@ -71,9 +73,10 @@ def chromimpute_report(eval_file, report_file):
     return Job(
                         [eval_file],
                         [report_file],
-                        [['epiqc_report', 'module_python']],
+                        [['epiqc_report', 'module_python'],
+                         ['epiqc_report', 'module_mugqic_tools']],
                         command="""\
-python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bfx/epiqc_report.py \\
+python $PYTHON_TOOLS/epiqc_report.py \\
 -c {eval_file} \\
 -p1 {percent1} \\
 -p2 {percent2} \\
@@ -93,10 +96,11 @@ def epigeec_report(input_matrix_file, output_heatmap_file, report_dir):
     return Job(
             [input_matrix_file],
             [output_heatmap_file],
-            [['epiqc_report', 'module_python']],
+            [['epiqc_report', 'module_python'],
+             ['epiqc_report', 'module_mugqic_tools']],
             name="epigeec_report",
             command="""\
-python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bfx/epiqc_report.py \\
+python $PYTHON_TOOLS/epiqc_report.py \\
 -e {correlation_matrix} \\
 -o {output_dir}""".format(
                 correlation_matrix=input_matrix_file,

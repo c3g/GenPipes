@@ -372,7 +372,6 @@ mkdir -p \\
 
 
         job = []
-        log.info(config.param('chromimpute', 'IHEC_data'))
         #add chr_sizes_file and inputinfo file to list of input files
         converted_simlinks.extend([chr_sizes_file, inputinfofile])
 
@@ -888,7 +887,6 @@ mkdir -p \\
             Binned signal resolution tracks from chromipute convert step is used to determined the
             percentage of the whole file signal that was located in the top 5% and 10% of the bins
             The resulted output is a tsv file
-
         """
         jobs = []
         output_dir = self.output_dirs['signal_to_noise_output_directory']
@@ -919,9 +917,11 @@ mkdir -p \\
                             signal_noise_job = Job(
                                 [converted_bedgraph_file, chr_sizes_file],
                                 [output_file],
-                                [['signal_noise', 'module_python']],
+                                [['signal_noise', 'module_python'],
+                                 ['signal_noise', 'module_mugqic_tools']],
                                 command="""\
-python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_2021/genpipes/bfx/signal_noise.py \\
+#python PYTHON_TOOLS/signal_noise.py \\                               
+python /home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc/epiqc_python3/genpipes/bfx/signal_noise.py \\
 -i {input_file} \\
 -p1 {percent1} \\
 -p2 {percent2} \\
@@ -1263,7 +1263,6 @@ track and input signal track (in bedgraph format).
 
                     bigwiginfo_report = epiqc_reports.bigwiginfo_report(bigwiginfo_file,report_file)
 
-
                     with open(chr_sizes_file, "r") as chrominfofile:
                         for line in chrominfofile:
                             chr_name = line.strip().split("\t")[0]
@@ -1326,9 +1325,6 @@ track and input signal track (in bedgraph format).
                                                "ChromImpute_report_" + sample.name + "_" + readset.mark_name + ".txt")
                     signalnoise_report = os.path.join(self.output_dirs['report_dir'], sample.name, readset.mark_name,
                                  "SignalToNoise_report_" + sample.name + "_" + readset.mark_name + ".txt")
-
-
-
                     report_job = concat_jobs([
                         epiqc_reports.final_report(bigwiginfo_report, chromimpute_report, signalnoise_report, final_report, sample.name, readset.mark_name)
                     ])
@@ -1357,19 +1353,9 @@ fi""".format(
 
     @property
     def steps(self):
-        # TODO : - Create steps table
         return [
             self.bigwiginfo,
             self.chromimpute,
-           # self.bigwig_to_bedgraph,
-           # self.chromimpute_convert,
-           # self.chromimpute_compute_global_dist,
-           # self.chromimpute_generate_train_data,
-           # self.chromimpute_train,
-           # self.chromimpute_apply,
-          #  self.chromimpute_eval,
-            # self.chromimpute_train_step,
-            # self.chromimpute_compute_metrics,
             self.signal_to_noise,
             self.epigeec,
             self.bigwig_info_report,

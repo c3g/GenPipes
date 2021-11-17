@@ -38,7 +38,9 @@ def decompressFile(file):
     decompressedFile.close()
 
     #:-3 gives the file name without last 3 digits
-    wigFile = open(file[:-3], "w+")
+    #print(os.path.basename(file))
+    wigFile = open(file[:-3], "wb+")
+    #print(wigFile)
     # write contents in decompressed wig file into a new file
     wigFile.write(content)
     wigFile.close()
