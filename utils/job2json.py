@@ -16,7 +16,7 @@ import shutil
 import signal
 import uuid
 
-#from uuid import uuid4
+from uuid import uuid4
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -172,7 +172,7 @@ def main():
             # Print a copy of it for the monitoring interface
             portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
             if portal_output_dir != '':
-                with open(os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + str(uuid.uuid4().hex) + '.json'), 'w') as out_json:
+                with open(os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + str(uuid4().hex) + '.json'), 'w') as out_json:
                     json.dump(current_json, out_json, indent=4)
         finally:
             # Finally unlock the file

@@ -747,11 +747,6 @@ mkdir -p \\
                                     os.path.join(traindatadir, "attributes_%s_%i_0.txt.gz" % (
                                         readset.mark_name, int(inputinfoline.strip().split("\t")[3]))))
 
-                            # adding chr name will make things complex. so haven't added it. may be later
-                            # input_files.append(
-                            #   os.path.join(output_dir, "%s_traindata_%s_%i_0.txt.gz" % (
-                            #      chr_name, histone, int(inputinfoline.strip().split("\t")[3]))))
-
                     jobs.append(
                     chromimpute.train(input_files, output_dir, output_files, traindatadir, inputinfofile, sample.name,
                                       readset.mark_name))
@@ -803,11 +798,6 @@ mkdir -p \\
                             output_files.append(
                                 os.path.join(output_dir, "%s_impute_%s_%s.wig.gz" % (chr_name, sample.name,
                                                                                      readset.mark_name)))
-
-                            # adding chr name will make things complex. so haven't added it. may be later
-                            # input_files.append(
-                            #   os.path.join(output_dir, "%s_traindata_%s_%i_0.txt.gz" % (
-                            #      chr_name, histone, int(inputinfoline.strip().split("\t")[3]))))
 
                             jobs.append(
                                 chromimpute.apply(input_files, output_dir, converteddir, distancedir, predictordir,

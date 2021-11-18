@@ -38,7 +38,7 @@ get_vcf_dbsnp() {
 
 # Download dbNSFP and generate vcfs required to run VerifyBamId
 get_dbNSFP() {
-    DBNSFP_VERSION=dbNSFP4.2c
+    DBNSFP_VERSION=dbNSFP4.2c 
     DBNSFP_URL=ftp://dbnsfp:dbnsfp@dbnsfp.softgenetics.com/${DBNSFP_VERSION}.zip
     DBNSFP=$ANNOTATIONS_DIR/$DBNSFP_VERSION/$DBNSFP_VERSION
     if ! is_up2date $DBNSFP.txt.gz
@@ -104,7 +104,7 @@ install_genome() {
     # Remove Ensembl GTF haplotype annotations, adjust mitochondria and "GK" annotation version names
     grep -v "^CHR_H" $ANNOTATIONS_DIR/$GTF | sed 's/^MT\t/M\t/' | perl -pe "s/^([GK]\S+)\.(\d+)\t/\1v\2\t/" > $ANNOTATIONS_DIR/$GTF.tmp
     # Update Ensembl GTF annotation IDs to match NCBI genome chromosome IDs
-    grep "^>" $GENOME_DIR/$GENOME_FASTA | cut -f1 -d\  | cut -c 2- | perl -pe 's/^(chr([^_\n]*))$/\1\t\2/' | perl -pe 's/^(chr[^_]*_([^_\n]*)(_\S+)?)$/\1\t\2/' | awk -F"\t" 'FNR==NR{id[$2]=$1; next}{OFS="\t"; if (id[$1]) {print id[$1],$0} else {print $0}}' - $ANNOTATIONS_DIR/$GTF.tmp > $ANNOTATIONS_DIR/$GTF
+    grep "^>" $GENOME_DIR/$GENOME_FASTA | cut -f1 -d\  | cut -c 2- | perl -pe 's/^(chr([^_\n]*))$/\1\t\2/' | perl -pe 's/^(chr[^_]*_([^_\n]*)(_\S+)?)$/\1\t\2/' | awk -F"\t" 'FNR==NR{id[$2]=$1; next}{OFS="\t"; if (id[$1]) {print id[$1],$0} else {print $0}}' - $ANNOTATIONS_DIR/$GTF.tmp | cut -f1,3- > $ANNOTATIONS_DIR/$GTF
     rm $ANNOTATIONS_DIR/$GTF.tmp
     echo "gtf updated" > $ANNOTATIONS_DIR/$GTF.updated
     TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
@@ -128,7 +128,7 @@ install_genome() {
   create_genome_ini_file
 
   # Add permissions
-  chmod -R ug+rwX,o+rX,g+s $INSTALL_DIR
+  chmod -R ug+rwX,o+rX $INSTALL_DIR
 }
 
 install_genome "$SPECIES" "$COMMON_NAME" "$ASSEMBLY" "$ASSEMBLY_SYNONYMS" "$SOURCE" "$VERSION"
