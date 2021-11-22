@@ -33,6 +33,12 @@ from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAl
 from .sample import Sample, NanoporeSample
 from core.config import config, _raise, SanitycheckError
 
+# Append mugqic_pipelines directory to Python library path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
+
+# MUGQIC Modules
+from core.config import config, _raise, SanitycheckError
+
 log = logging.getLogger(__name__)
 
 class Readset(object):
