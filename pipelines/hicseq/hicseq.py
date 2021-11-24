@@ -313,8 +313,8 @@ class HicSeq(common.Illumina):
 
                     fileName = os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "raw.txt")))
                     fileNameRN = os.path.join(sample_output_dir_chr, "_".join((tagDirName, chr, res, "rawRN.txt")))
-                    fileNamePlot = os.path.join(sample_output_dir_chr, "".join((tagDirName,"_", chr,"_", res, "_raw-", chr, "\'.ofBins(0-\'*\')\'.", str(int(res)/1000), "K.jpeg")))
-                    newFileNamePlot = os.path.join(sample_output_dir_chr, "".join((tagDirName,"_", chr,"_", res, "_raw-", chr, ".all.", str(int(res)/1000), "K.jpeg")))
+                    fileNamePlot = os.path.join(sample_output_dir_chr, "".join((tagDirName,"_", chr,"_", res, "_raw-", chr, "\'.ofBins(0-\'*\')\'.", str(int(res)//1000), "K.jpeg")))
+                    newFileNamePlot = os.path.join(sample_output_dir_chr, "".join((tagDirName,"_", chr,"_", res, "_raw-", chr, ".all.", str(int(res)//1000), "K.jpeg")))
 
                     jobMatrix = homer.hic_interactionMatrix_chr(sample.name, sample_output_dir_chr, homer_output_dir, res, chr, fileName, fileNameRN)
                     jobMatrix.samples = [sample]
@@ -601,7 +601,7 @@ class HicSeq(common.Illumina):
                     sample.name,
                     res,
                     os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide", "raw"))),
-                    os.path.join(sample_output_dir_genome, tagDirName + "_genomewide_raw-WholeGenome-" + str(int(res)/1000) + "K.jpeg")
+                    os.path.join(sample_output_dir_genome, tagDirName + "_genomewide_raw-WholeGenome-" + str(int(res)//1000) + "K.jpeg")
                 )
                 jobPlot.samples = [sample]
 
@@ -707,8 +707,8 @@ class HicSeq(common.Illumina):
 
                 input_matrix = os.path.join(self.output_dirs['matrices_output_directory'], sample.name, "chromosomeMatrices", "_".join(("HTD", sample.name, self.enzyme, chr, res, "rawRN.txt")))
                 prefix = os.path.splitext(os.path.basename(input_matrix))[0]
-                output_Scores = os.path.join(sample_output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , str(int(res)/1000) ,"_minW250_maxW500_minRatio1.5.txt")))
-                output_calls = os.path.join(sample_output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)/1000) ,"_minW250_maxW500_minRatio1.5_threshold0.2.txt")))
+                output_Scores = os.path.join(sample_output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , str(int(res)//1000) ,"_minW250_maxW500_minRatio1.5.txt")))
+                output_calls = os.path.join(sample_output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)//1000) ,"_minW250_maxW500_minRatio1.5_threshold0.2.txt")))
 
                 job = concat_jobs([
                     bash.mkdir(sample_output_dir),
