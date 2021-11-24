@@ -312,64 +312,11 @@ fastq files are merged if the sample has multiple readsets. create one fastq fil
 
 seq2fun
 ----------------------
-For most non-model organisms, biological understanding of study outcomes is limited to
-protein-coding genes with functional annotations such as KEGG pathways or
-Gene Ontology or PANTHER classification system.
-Therefore, Seq2Fun databases focused on functionally annotated genes such as KOs
-largely meets the preferred needs of most scientists studying non-model organisms.
-
-**Note:** We have stored number of pre-built databases by the Seq2Fun developers 
-and the list can be found below. 
-
-* Eukaryotes
-* Animals
-* Plants
-* Fungi
-* Protists
-* Mammals
-* Birds
-* Reptiles
-* Amphibians
-* Fishes
-* Arthropods
-* Nematodes
-
-For further information please visit
-https://github.com/xia-lab/Seq2Fun#step-3-database-download
-
-You can specify the required database in a custom.ini file by changing "group" key. The default
-group is "birds"
-
-* *These KOs in the database are KOs assigned to KEGG pathways and they are only
-a proportion of whole list of KOs.*
-* *All KOs include KOs not assigned to KEGG pathways.*
-
-This step takes as input files:
-
- 1. FASTQ files from the readset file if available
- 2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
-
  This step perform seq2fun analysis and generates [output files](https://www.seq2fun.ca/manual.xhtml#sect4) including KO abundance table and [KO mapped fastq files](https://www.seq2fun.ca/manual.xhtml#sect20).
 These output files can be used for downstream analysis using
 [Network Analyst](https://www.networkanalyst.ca/NetworkAnalyst/uploads/TableUploadView.xhtml)
  web application The interested comparisons should be specified using a design file (Format is similar to the 
-default RNA-seq design file). Therefore, only pairwise comparisons
-are possible unlike the original Seq2Fun program (treatment and controls will be added according to the 1 and 2 in the design file)
-If you want to compare multiple groups you will have to break the comparison in to pairs.
-
-E.g for 3 group comparison design file should be as follows
-
-    Sample  A_vs_B   B_vs_C   A_vs_C
-     A1       1        0       1
-     B1       2        1       0
-     A2       1        0       1
-     B2       2        1       0
-     C1       0        2       2
-     C2       0        2       2
-
-
-Seq2Fun analysis is performed using fastq files and it generates a 
-sample table.
+default RNA-seq design file).
 
 differential_expression_seq2fun
 ----------------------
@@ -379,35 +326,6 @@ DESE2 and EdgeR will be used to perform differential KO expression analysis
 pathway_enrichment_seq2fun
 ----------------------
 
-A [KEGG ortholog](https://www.genome.jp/kegg/ko.html) pathway analysis will be performed using fgsea R package
-
-Current KEGG database used for the analysis was created on August, 2021. 
-If you'd like to update the database,
-please follow below instructions to download the latest KEGG pathway database and create
-pathway list for the kegg_all key in the ini file and kegg.rds
-Download the latest KEGG database
-
-**In linux**
-
-```
-wget http://rest.kegg.jp/list/pathway`
-sed -i 's/path://g' pathway
-mv pathway KEGG_all_pathways.txt
-```
-
-**in R**
-
-```
-library(data.table)
-pathway_list <- fread("KEGG_all_pathways.txt", header =F)`
-kegg_ko <- lapply(unique(pathway_list$mapID), fun)
-names(kegg_ko) <- (pathway_list$mapID)
-kegg <- lapply(kegg_ko, substring, 4)
-saveRDS(kegg, "kegg.rds")
-```
-
-Next, specify created files in a custom ini file.
-
-**user_pathway_list** is a file with pathway that are interested with KEGG map id 
-(only one column). You must specify the file path to the user_pathway_list in a custom.ini
-
+A [KEGG ortholog](https://www.genome.jp/kegg/ko.html) pathway analysis will be performed using fgsea R package.
+The differential KO expression results obtained
+from edgeR will be using as the input for the pathway enrichment analysis

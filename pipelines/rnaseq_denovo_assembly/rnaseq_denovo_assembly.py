@@ -1310,8 +1310,8 @@ rm {temp_out2}""".format(
 
 
 
-        remove_duplicates_job = []
-        ##remove duplicates and execute seq2fun
+        seq2fun_jobs = []
+        ##remove duplicate lines in the sample table and execute seq2fun
 
         for contrast in self.contrasts:
             seq2fun_outputs =[]
@@ -1343,12 +1343,12 @@ rm {temp_out2}""".format(
             ),
             seq2fun.processing(seq2fun_input_files, seq2fun_outputs, output_file_contrast, profiling)
             ])
-            remove_duplicates_job.append(remove_duplicates)
-            remove_duplicates_jobs = concat_jobs(remove_duplicates_job)
+            seq2fun_jobs.append(remove_duplicates)
+            seq2fun_jobs = concat_jobs(seq2fun_jobs)
 
 
 
-        job = concat_jobs([create_folder_jobs,sample_table_contrast_jobs, sample_table_treatment_jobs, remove_duplicates_jobs])
+        job = concat_jobs([create_folder_jobs,sample_table_contrast_jobs, sample_table_treatment_jobs, seq2fun_jobs])
         job.samples = self.samples
         job.name = "seq2fun.processing"
         jobs.append(job)
@@ -1361,8 +1361,6 @@ rm {temp_out2}""".format(
         differential expression. The original seq2fun sample table and KO abundance table
         cannot be used in this case as differential expression needs all the samples together.
         The design file is directly used to find the contrasts.
-
-        #extend this job to diff expression function
 
         """
 
@@ -1436,7 +1434,7 @@ rm {temp_out2}""".format(
                             write_line_jobs.append(write_line_job)
                             sample_table_contrast_jobs = concat_jobs(write_line_jobs)
 
-        remove_duplicates_job = []
+        seq2fun_jobs = []
         ##remove duplicates and execute seq2fun
         seq2fun_outputs = []
         profiling = ""
@@ -1457,12 +1455,12 @@ rm {temp_out2}""".format(
         ),
             seq2fun.processing(seq2fun_input_files, seq2fun_outputs, output_sample_file, profiling)
         ])
-        remove_duplicates_job.append(remove_duplicates)
-        remove_duplicates_jobs = concat_jobs(remove_duplicates_job)
+        seq2fun_jobs.append(remove_duplicates)
+        seq2fun_jobs = concat_jobs(seq2fun_jobs)
 
 
         job = concat_jobs(
-            [folder_job, sample_table_contrast_jobs, remove_duplicates_jobs])
+            [folder_job, sample_table_contrast_jobs, seq2fun_jobs])
         job.samples = self.samples
         job.name = "seq2fun.count_matrix"
         jobs.append(job)
@@ -1539,7 +1537,8 @@ rm {temp_out2}""".format(
         """
 
         seq2fun pathway analysis using fgsea (https://bioconductor.org/packages/release/bioc/html/fgsea.html)
-         and user provide universal pathway list as KEGG map ID
+         and user provide universal pathway list as KEGG map ID. The differential KO expression results obtained
+         from edgeR will be using as the input for the pathway enrichment analysis
 
         """
         jobs = []
@@ -1594,7 +1593,6 @@ rm {temp_out2}""".format(
                 self.picard_sam_to_fastq,
                 self.merge_fastq,
                 self.seq2fun,
-               # self.seq2fun_count_matrix,
                 self.differential_expression_seq2fun,
                 self.pathway_enrichment_seq2fun
 
