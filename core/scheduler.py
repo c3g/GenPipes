@@ -28,7 +28,6 @@ from uuid import uuid4
 
 from .config import config
 from utils import utils
-from bfx.sample import Sample
 
 # Output comment separator line
 separator_line = "#" + "-" * 79
