@@ -62,8 +62,6 @@ from bfx import multiqc
 from bfx import deliverables
 from bfx import bash_cmd as bash
 
-from bfx import bash_cmd as bash
-
 from pipelines import common
 
 ##Structural variants
