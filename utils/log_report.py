@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
@@ -41,7 +41,8 @@ class JobStat(object):
     REQUEUE = 'Requeue'
     RESTARTS = 'Restarts'
     RUNTIME = 'RunTime'
-    REMOTE = {'beluga': 'beluga.calculcanada.ca',
+    REMOTE = {'narval': 'narval.calculcanada.ca',
+              'beluga': 'beluga.calculcanada.ca',
               'cedar': 'cedar.calculcanada.ca',
               'graham': 'graham.calculcanada.ca'}
 
