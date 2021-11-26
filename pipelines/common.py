@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import os
 import re
@@ -44,6 +45,7 @@ from bfx import bvatools
 from bfx import verify_bam_id
 from bfx import picard
 from bfx import trimmomatic
+from bfx import variantBam
 from bfx import samtools
 from bfx import rmarkdown
 from bfx import jsonator
@@ -77,7 +79,7 @@ class MUGQICPipeline(Pipeline):
         server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
         listName = {}
         for readset in self.readsets:
-            if listName.has_key(readset.sample.name) :
+            if readset.sample.name in listName:
                 listName[readset.sample.name]+="."+readset.name
             else:
                 listName[readset.sample.name]=readset.sample.name+"."+readset.name
@@ -109,7 +111,8 @@ class MUGQICPipeline(Pipeline):
 # Call home with pipeline statistics
 {separator_line}
 LOG_MD5=$(echo $USER-'{uniqueIdentifier}' | md5sum | awk '{{ print $1 }}')
-echo `wget "{server}?{request}&md5=$LOG_MD5" --quiet --output-document=/dev/null`
+if test -t 1; then ncolors=$(tput colors); if test -n "$ncolors" && test $ncolors -ge 8; then bold="$(tput bold)"; normal="$(tput sgr0)"; yellow="$(tput setaf 3)"; fi; fi
+wget --quiet '{server}?{request}&md5=$LOG_MD5' || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to mugqic.hpc.mcgill.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, uniqueIdentifier=uniqueIdentifier))
 
     def submit_jobs(self):
@@ -124,7 +127,7 @@ class Illumina(MUGQICPipeline):
 
     def __init__(self, protocol):
         self._protocol=protocol
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file)
+        self.argparser.add_argument("-r", "--readsets", help="readset file", type=argparse.FileType('r'))
         super(Illumina, self).__init__(protocol)
 
     @property
@@ -224,7 +227,7 @@ class Illumina(MUGQICPipeline):
                     candidate_input_files = [
                         [sortedBam],
                         [readset.bam]
-                    ]                    
+                    ]
                     [bam] = self.select_input_files(candidate_input_files)
 
                     rawReadsDirectory = os.path.join(
@@ -292,7 +295,7 @@ class Illumina(MUGQICPipeline):
 >Prefix/2
 {sequence2}
 END
-`""".format(adapter_fasta=adapter_fasta, sequence1=readset.adapter2.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1], sequence2=readset.adapter1.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1]))
+`""".format(adapter_fasta=adapter_fasta, sequence1=readset.adapter2.translate(str.maketrans("ACGTacgt","TGCAtgca"))[::-1], sequence2=readset.adapter1.translate(str.maketrans("ACGTacgt","TGCAtgca"))[::-1]))
                     else:
                         _raise(SanitycheckError("Error: missing adapter1 and/or adapter2 for PAIRED_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
                 elif readset.run_type == "SINGLE_END":
@@ -410,7 +413,7 @@ cut -f1,3- {readset_merge_trim_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{if 
             ),
             Job(
                 [sample_merge_trim_stats],
-                [report_file],
+                [report_file, os.path.join("report", "trimReadsetTable.tsv"), os.path.join("report", "trimSampleTable.tsv")],
                 [['merge_trimmomatic_stats', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
@@ -515,7 +518,6 @@ pandoc \\
         Using this function will include the orginal final bam file into the  removable file list
         """
 
-
         jobs = []
 
         for sample in self.samples:
@@ -537,14 +539,21 @@ pandoc \\
 
             output_cram = re.sub("\.bam$", ".cram", input_bam)
 
-            # Run samtools
-            job = samtools.view(
-                input_bam,
-                output_cram,
-                options=config.param('samtools_cram_output', 'options'),
-                removable=False
-            )
-            job.name = "cram_output." + sample.name
+            if "recal" in input_bam:
+                job = variantBam.run(
+                    input_bam,
+                    output_cram,
+                )
+            else:
+                # Run samtools
+                job = samtools.view(
+                    input_bam,
+                    output_cram,
+                    options=config.param('samtools_cram_output', 'options'),
+                    removable=False
+                )
+
+            job.name = "samtools_cram_output." + sample.name
             job.samples = [sample]
             job.removable_files = input_bam
 

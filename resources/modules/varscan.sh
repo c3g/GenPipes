@@ -3,11 +3,11 @@
 set -eu -o pipefail
 
 SOFTWARE=VarScan
-VERSION=2.4.3
+VERSION=2.4.4
 # Replace "." in official version number by "_" in archive version number
 ARCHIVE=${SOFTWARE}.v${VERSION}.jar
 #ARCHIVE_URL=https://github.com/dkoboldt/${SOFTWARE,,}/releases/download/${VERSION}/$ARCHIVE     # for version < 2.4.3
-ARCHIVE_URL=https://github.com/dkoboldt/${SOFTWARE,,}/blob/master/$ARCHIVE                      # for version = 2.4.3
+ARCHIVE_URL=https://github.com/dkoboldt/${SOFTWARE,,}/blob/master/$ARCHIVE                      # since version 2.4.3
 SOFTWARE_DIR=${SOFTWARE}.v${VERSION}
 
 build() {
@@ -15,7 +15,7 @@ build() {
 
   # Install software
   mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
-  cp -i $ARCHIVE $INSTALL_DIR/$SOFTWARE_DIR/
+  cp -f $ARCHIVE $INSTALL_DIR/$SOFTWARE_DIR/
 }
 
 module_file() {

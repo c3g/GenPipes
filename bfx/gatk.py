@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -21,13 +19,15 @@
 
 # Python Standard Modules
 import re
+import os
 
 # MUGQIC Modules
-from core.job import *
-import core.config
-import gatk4
-import picard
-import picard2
+import core
+from core.job import Job
+from core.config import config
+from . import gatk4
+from . import picard
+from . import picard2
 
 config = core.config.config
 
@@ -384,8 +384,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --input_file {input} \\
   {input2} \\
   --targetIntervals {target_intervals} \\
-  --knownAlleles {known_mills} \\
-  {output}{intervals}{exclude_intervals} \\
+  {known_mills}{output}{intervals}{exclude_intervals} \\
   --maxReadsInMemory {max_reads_in_memory}""".format(
         tmp_dir=config.param('gatk_indel_realigner', 'tmp_dir'),
         java_other_options=config.param('gatk_indel_realigner', 'java_other_options'),
@@ -396,7 +395,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         input=os.path.join(output_dir, input),
         input2="--input_file " + os.path.join(output_dir, input2) if input2 else "",
         target_intervals=os.path.join(output_dir, target_intervals),
-        known_mills=config.param('gatk_realigner_target_creator', 'known_mills', type='filepath'),
+        known_mills=" \\\n  --knownAlleles " + config.param('gatk_realigner_target_creator', 'known_mills', type='filepath') if config.param('gatk_realigner_target_creator', 'known_mills', type='filepath') else "",
         output=" \\\n  --out " + os.path.join(output_dir,output) if output else "",
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
@@ -455,8 +454,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
   {input2} \\
-  --known {known_mills} \\
-  --out {output}{intervals}{exclude_intervals}""".format(
+  --out {output}{known_mills}{intervals}{exclude_intervals}""".format(
         tmp_dir=config.param('gatk_realigner_target_creator', 'tmp_dir'),
         java_other_options=config.param('gatk_realigner_target_creator', 'java_other_options'),
         ram=config.param('gatk_realigner_target_creator', 'ram'),
@@ -464,8 +462,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         reference_sequence=config.param('gatk_realigner_target_creator', 'genome_fasta', type='filepath'),
         input= os.path.join(output_dir, input),
         input2="--input_file " + os.path.join(output_dir, input2) if input2 else "",
-        known_mills=config.param('gatk_realigner_target_creator', 'known_mills', type='filepath'),
-        #known_1000G=config.param('gatk_realigner_target_creator', 'known_1000G', type='filepath'),
+        known_mills=" \\\n  --known " + config.param('gatk_realigner_target_creator', 'known_mills', type='filepath') if config.param('gatk_realigner_target_creator', 'known_mills', type='filepath') else "",
         output=os.path.join(output_dir, output),
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
         exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
@@ -507,7 +504,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def variant_annotator(input_normal, input_tumor, input_variants, output, intervals=[], exclude_intervals=[]):
+def variant_annotator(input_normal, input_tumor, input_variants, output, other_options, intervals=[], exclude_intervals=[]):
 
     return Job(
         [input_normal, input_tumor, input_variants],
@@ -517,7 +514,7 @@ def variant_annotator(input_normal, input_tumor, input_variants, output, interva
             ['gatk_variant_annotator', 'module_gatk']
         ],
         command="""\
-java {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
+java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type VariantAnnotator {other_options} \\
   --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence} \\
@@ -527,7 +524,7 @@ java {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         tmp_dir=config.param('gatk_variant_annotator', 'tmp_dir'),
         java_other_options=config.param('gatk_variant_annotator', 'java_other_options'),
         ram=config.param('gatk_variant_annotator', 'ram'),
-        other_options=config.param('gatk_variant_annotator', 'other_options',required=False),
+        other_options=other_options,
         reference_sequence=config.param('gatk_variant_annotator', 'genome_fasta', type='filepath'),
         input_normal=input_normal,
         input_tumor=input_tumor,
@@ -678,22 +675,26 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def bed2interval_list(dictionary, bed, output):
+def bed2interval_list(
+    dictionary,
+    bed,
+    output
+    ):
     if config.param('picard_bed2interval_list', 'module_gatk').split("/")[2] >= "4":
         return gatk4.bed2interval_list(
             dictionary,
             bed,
             output
-            )
+        )
     if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
         return picard.bed2interval_list(
             dictionary,
             bed,
             output
-            )
+        )
     if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] >= "2":
         return picard2.bed2interval_list(
             dictionary,
             bed,
             output
-            )
+        )

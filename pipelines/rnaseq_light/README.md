@@ -14,9 +14,9 @@ usage: rnaseq_light.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                        [--sanity-check]
                        [--container {wrapper, singularity} <IMAGE PATH>]
                        [--genpipes_file GENPIPES_FILE] [-d DESIGN]
-                       [-t {cufflinks,stringtie}] [-r READSETS] [-v]
+                       [-r READSETS] [-v]
 
-Version: 3.5.0
+Version: 3.6.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -52,7 +52,7 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a valid singularity
+                        Run inside a container providing a validsingularity
                         image path
   --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
                         Command file output path. This is the command used to
@@ -61,8 +61,6 @@ optional arguments:
                         stdout if the option is not provided.
   -d DESIGN, --design DESIGN
                         design file
-  -t {cufflinks,stringtie}, --type {cufflinks,stringtie}
-                        Type of RNA-seq assembly method (default stringtie)
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit

@@ -85,21 +85,21 @@ def getarg(argument):
     return step_name, job_name, job_log, job_done, json_files, config_files, user, status
 
 def usage():
-    print "\n-------------------------------------------------------------------------------------------"
-    print "job2json.py will append a JSON section describing a pipeline job that has just finished"
-    print "to a JSON file which was pre-generated when the pipeline was launched."
-    print "This script is usually launched automatically before and after each pipeline job."
-    print "This program was written by Edouard HENRION"
-    print "For more information, contact: edouard.henrion@computationalgenomics.ca"
-    print "-------------------------------------------------------------------------------------------\n"
-    print "USAGE : job2json.py [option] "
-    print "       -s    --step_name     : name of the step of the current job"
-    print "       -j    --job_name      : name of the current job"
-    print "       -l    --job_log       : name of the log file for the current job"
-    print "       -d    --job_done      : name of the done file for the current job"
-    print "       -o    --json_outfiles : comma-separated list of names of json files which need to be appended by the current job"
-    print "       -f    --status        : boolean value to indicate if the job has failed (False/0) or succeeded (True/1) - Default : True"
-    print "       -h    --help          : this help \n"
+    print("\n-------------------------------------------------------------------------------------------")
+    print("job2json.py will append a JSON section describing a pipeline job that has just finished")
+    print("to a JSON file which was pre-generated when the pipeline was launched.")
+    print("This script is usually launched automatically before and after each pipeline job.")
+    print("This program was written by Edouard HENRION")
+    print("For more information, contact: edouard.henrion@computationalgenomics.ca")
+    print("-------------------------------------------------------------------------------------------\n")
+    print("USAGE : job2json.py [option] ")
+    print("       -s    --step_name     : name of the step of the current job")
+    print("       -j    --job_name      : name of the current job")
+    print("       -l    --job_log       : name of the log file for the current job")
+    print("       -d    --job_done      : name of the done file for the current job")
+    print("       -o    --json_outfiles : comma-separated list of names of json files which need to be appended by the current job")
+    print("       -f    --status        : boolean value to indicate if the job has failed (False/0) or succeeded (True/1) - Default : True")
+    print("       -h    --help          : this help \n")
 
 def main():
 

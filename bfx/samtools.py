@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -97,7 +95,7 @@ samtools mpileup {other_options} \\
             reference_fasta="-f " + config.param('samtools_mpileup', 'genome_fasta', type='filepath') if config.param('samtools_mpileup', 'genome_fasta', type='filepath') else "",
             region="-r " + region if region else "",
             regionFile="-l " + regionFile if regionFile else "",
-            input_bams="\\\n  ".join([input_bam for input_bam in inputs]),
+            input_bams=" \\\n  ".join([input_bam for input_bam in inputs]),
             output="> " + output if output else ""
             )
         )
@@ -217,7 +215,7 @@ def bcftools_cat(inputs, output):
 bcftools concat \\
   {inputs} \\
   {output}""".format(
-            inputs="\\\n  ".join(inputs),
+            inputs=" \\\n  ".join(inputs),
             output="> " + output if output else ""
             )
         )
@@ -297,7 +295,7 @@ def bcftools_cat_pair(inputs, output):
 $BCFTOOLS_BIN/bcftools cat \\
   {inputs} \\
   {output}""".format(
-            inputs="\\\n  ".join(inputs),
+            inputs=" \\\n  ".join(inputs),
             output="> " + output if output else ""
             )
         )

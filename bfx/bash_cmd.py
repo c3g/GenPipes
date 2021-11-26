@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -34,7 +32,8 @@ def mkdir(
         [],
         [folder],
         command="""\
-mkdir -p {directory}""".format(
+mkdir -p {directory} && \\
+touch {directory}""".format(
             directory=folder
         ),
         removable_files=[folder] if remove else []

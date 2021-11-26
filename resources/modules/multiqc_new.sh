@@ -3,21 +3,21 @@
 set -eu -o pipefail
 
 SOFTWARE=MultiQC
-VERSION=1.9
+VERSION=1.10.1
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://github.com/ewels/${SOFTWARE}/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
-PYTHON_VERSION=3.7.3
+PYTHON_VERSION=3.8.2
+PYTHON_SHORT_VERSION=${PYTHON_VERSION:0:3}
+NOWRAP=1
+NOPATCH=1
 
 build() {
   cd $INSTALL_DOWNLOAD
-#  git clone https://github.com/marcelm/${SOFTWARE}.git -b v${VERSION}
-#  cd $SOFTWARE
-  source /etc/profile.d/modules.sh
-  module load mugqic/python/${PYTHON_VERSION}
-#  export PYTHONPATH=${INSTALL_DIR}/${SOFTWARE_DIR}/lib/python3.7/site-packages:${PYTHONPATH}
-#  python setup.py install --prefix ${INSTALL_DIR}/${SOFTWARE_DIR}
-  pip install --upgrade --target=$INSTALL_DIR/$SOFTWARE_DIR $SOFTWARE==$VERSION
+  #source /etc/profile.d/modules.sh
+  #module load mugqic/python/${PYTHON_VERSION}
+  module load python/3.8.2
+  pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed ${SOFTWARE}==${VERSION}
 }
 
 module_file() {
@@ -31,7 +31,8 @@ module-whatis \"$SOFTWARE\"
 set             root                ${INSTALL_DIR}/${SOFTWARE_DIR}
 prepend-path    PATH                \$root/bin
 prepend-path    PYTHONPATH          $PYTHONPATH
-prepend-path    PYTHONPATH          \$root/
+prepend-path    PYTHONPATH          \$root/lib/python${PYTHON_SHORT_VERSION}
+prepend-path    PYTHONPATH          \$root/lib/python${PYTHON_SHORT_VERSION}/site-packages
 "
 }
 

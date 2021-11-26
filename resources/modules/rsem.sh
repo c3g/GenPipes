@@ -3,18 +3,16 @@
 set -eu -o pipefail
 
 SOFTWARE=rsem
-VERSION=1.3.1
-ARCHIVE=${SOFTWARE^^}-$VERSION.tar.gz
+VERSION=1.3.3
+ARCHIVE=${SOFTWARE^^}-$VERSION.tar.gz
 ARCHIVE_URL=https://github.com/deweylab/${SOFTWARE}/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=${SOFTWARE^^}-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
+  module load mugqic/R_Bioconductor/4.1.0_3.13
   cd $SOFTWARE_DIR
   make -j12
   make ebseq

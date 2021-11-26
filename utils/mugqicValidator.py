@@ -26,7 +26,7 @@ import re
 
 
 def help():
-        print '''
+        print('''
         ---------------------------------------------------------------------------
                                             HELP
         ---------------------------------------------------------------------------
@@ -42,13 +42,13 @@ def help():
         usage: mugqicValidator.py -r myReadsetFile
                mugqicValidator.py -d myDesignFile
 
-        '''
+        ''')
 
 
 def error():
-        print '''
+        print('''
         Error---------Error---------Error---------Error---------Error---------Error
-        '''
+        ''')
 
 
 def loadFile(myFile):
@@ -266,7 +266,7 @@ designFile = readsetFile = None
 try:
     options,remainder = getopt.getopt(sys.argv[1:],'r:d:h',["readsetFile=","designFile=","help"])
 except getopt.GetoptError, e:
-    print "Error - "+str(e)+". See help ('-h' or '--help')"
+    print("Error - "+str(e)+". See help ('-h' or '--help')")
     sys.exit(2)
 
 for opt,arg in options:

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -20,36 +18,29 @@
 ################################################################################
 
 # Python Standard Modules
-import os
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def tumor_pair_ensemble(input_callers, output, config_yaml):
-    
+def run(input, output, region=None, exclude_region=None):
     return Job(
-        input_callers,
+        [input],
         [output],
         [
-            ['bcbio_ensemble', 'module_java'],
-            ['bcbio_ensemble', 'module_bcbio_variation'],
-            ['bcbio_ensemble', 'module_bcftools']
+            ['variantBam', 'module_variantBam'],
         ],
         command="""\
-java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $BCBIO_VARIATION_JAR \\
-  variant-ensemble \\
-  {config_yaml} \\
-  {reference_sequence} \\
-  {output} \\
-  {input_callers}""".format(
-        tmp_dir=config.param('bcbio_ensemble', 'tmp_dir'),
-        java_other_options=config.param('bcbio_ensemble', 'java_other_options'),
-        ram=config.param('bcbio_ensemble', 'ram'),
-        reference_sequence=config.param('bcbio_ensemble', 'genome_fasta', type='filepath'),
-        config_yaml=config_yaml,
-        output=output,
-        input_callers="  ".join("  \\\n  " + caller for caller in input_callers)
+variant \\
+  {input} \\
+  {options}{region}{exclude_region} \\
+  --reference {reference_fasta} \\
+  --output {output}""".format(
+        input=input,
+        options=config.param('samtools_cram_output', 'variantBam_options'),
+        reference_fasta=config.param('samtools_cram_output', 'genome_fasta', type='filepath'),
+        region=" \\\n  " + region if region else "",
+        exclude_region=" \\\n  " + exclude_region if exclude_region else "",
+        output=output
         )
     )
-

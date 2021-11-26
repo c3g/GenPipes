@@ -38,7 +38,7 @@ import utils.utils
 
 from bfx import bedtools
 from bfx import bwa
-from bfx import cufflinks   
+from bfx import cufflinks
 from bfx import stringtie
 from bfx import ballgown
 from bfx import differential_expression
@@ -58,7 +58,7 @@ import utils
 
 log = logging.getLogger(__name__)
 
-class RnaSeq(common.Illumina):
+class RnaSeqRaw(common.Illumina):
     """
     RNA-Seq Pipeline
     ================
@@ -94,12 +94,11 @@ class RnaSeq(common.Illumina):
     information about the RNA-Seq pipeline that you may find interesting.
     """
 
-    def __init__(self, protocol='stringtie'):
+    def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=file)
-        self.argparser.add_argument("-t", "--type", help="Type of RNA-seq assembly method (default stringtie)", choices = ["cufflinks", "stringtie"], default="stringtie")
-        super(RnaSeq, self).__init__(protocol)
+        self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
+        super(RnaSeqRaw, self).__init__(protocol)
 
     def star(self):
         """
@@ -527,7 +526,7 @@ pandoc \\
         ##check the library status
         library = {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample) :
+            if not readset.sample in library:
                 library[readset.sample]="PAIRED_END"
             if readset.run_type == "SINGLE_END" :
                 library[readset.sample]="SINGLE_END"
@@ -677,18 +676,18 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         # Create Wiggle tracks archive
         library = {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample) :
+            if not readset.sample in library:
                 library[readset.sample]="PAIRED_END"
             if readset.run_type == "SINGLE_END" :
                 library[readset.sample]="SINGLE_END"
 
         wiggle_directory = os.path.join("tracks", "bigWig")
         wiggle_archive = "tracks.zip"
-        big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
-        if config.param('DEFAULT', 'strand_info') != 'fr-unstranded' and library[sample] == "PAIRED_END" :
+        if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
             wiggle_files = []
             for sample in self.samples:
-                wiggle_files.extend([os.path.join(wiggle_directory, sample.name) + ".forward.bw", os.path.join(wiggle_directory, sample.name) + ".reverse.bw"])
+                if library[sample] == "PAIRED_END":
+                    wiggle_files.extend([os.path.join(wiggle_directory, sample.name) + ".forward.bw", os.path.join(wiggle_directory, sample.name) + ".reverse.bw"])
         else:
             wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
         jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
@@ -735,7 +734,7 @@ pandoc --to=markdown \\
         )
 
         return jobs
-    
+
     def stringtie(self):
         """
         Assemble transcriptome using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
@@ -756,7 +755,7 @@ pandoc --to=markdown \\
 
         return jobs
 
-    def stringtie_merge(self): 
+    def stringtie_merge(self):
         """
         Merge assemblies into a master teranscriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
         Warning: still in testing
@@ -812,9 +811,9 @@ END
 
         # Perform ballgown on each design contrast
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
-        if self.contrasts: 
-            design_file = os.path.relpath(self.args.design.name, self.output_dir)        
-        output_directory = "ballgown" 
+        if self.contrasts:
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+        output_directory = "ballgown"
         input_abund = [os.path.join("stringtie", sample.name, "abundance.tab") for sample in self.samples]
 
         ballgown_job = ballgown.ballgown(input_abund, design_file, output_directory)
@@ -908,11 +907,11 @@ END
         for contrast in self.contrasts:
             job = cufflinks.cuffdiff(
                 # Cuffdiff input is a list of lists of replicate bams per control and per treatment
-                [[os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in group] for group in contrast.controls, contrast.treatments],
+                [[os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in group] for group in [contrast.controls, contrast.treatments]],
                 gtf,
                 os.path.join("cuffdiff", contrast.name)
             )
-            for group in contrast.controls, contrast.treatments:
+            for group in [contrast.controls, contrast.treatments]:
                 job.samples = [sample for sample in group]
             job.removable_files = ["cuffdiff"]
             job.name = "cuffdiff." + contrast.name
@@ -1167,16 +1166,11 @@ done""".format(
             self.wiggle,
             self.raw_counts,
             self.raw_counts_metrics,
-            self.cufflinks,
-            self.cuffmerge,
-            self.cuffquant,
-            self.cuffdiff,
-            self.cuffnorm,
-            self.fpkm_correlation_matrix,
-            self.gq_seq_utils_exploratory_analysis_rnaseq,
+            self.stringtie,
+            self.stringtie_merge,
+            self.stringtie_abund,
+            self.ballgown,
             self.differential_expression,
-            self.differential_expression_goseq,
-            self.ihec_metrics,
             self.cram_output
             ],
             [self.picard_sam_to_fastq,
@@ -1193,18 +1187,29 @@ done""".format(
             self.wiggle,
             self.raw_counts,
             self.raw_counts_metrics,
-            self.stringtie,
-            self.stringtie_merge,
-            self.stringtie_abund,
-            self.ballgown,
+            self.cufflinks,
+            self.cuffmerge,
+            self.cuffquant,
+            self.cuffdiff,
+            self.cuffnorm,
+            self.fpkm_correlation_matrix,
+            self.gq_seq_utils_exploratory_analysis_rnaseq,
             self.differential_expression,
+            self.differential_expression_goseq,
+            self.ihec_metrics,
             self.cram_output
             ]
         ]
+class RnaSeq(RnaSeqRaw):
+    def __init__(self, protocol=None):
+        self._protocol = protocol
+        # Add pipeline specific arguments
+        self.argparser.add_argument("-t", "--type", help="RNAseq analysis type", choices=["stringtie","cufflinks"], default="stringtie")
+        super(RnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
     argv = sys.argv
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        RnaSeq(protocol=['cufflinks','stringtie'])
+        RnaSeq(protocol=['stringtie','cufflinks'])

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Python Standard Modules
 import logging
 

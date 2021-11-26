@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -31,7 +29,7 @@ def resolve_readset_coverage_bed(readset):
     if coverage_target:
         if coverage_target == "auto":
             if readset.beds:
-                return os.path.abspath(readset.beds[0])
+                return os.path.abspath(os.path.expandvars(readset.beds[0]))
             else:
                 return None
         else:

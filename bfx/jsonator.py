@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -200,7 +198,7 @@ def create(pipeline, sample):
                         } for job in step.jobs if sample in job.samples]
                     }
                 )
-        current_json = json.dumps(json_hash, indent=4)
+        current_json = json.dumps(json_hash, indent=4, default=str)
 
     # If the json file has already been created (during a previous pipeline execution for instance) :
     else :
@@ -209,7 +207,7 @@ def create(pipeline, sample):
 
         # Then check if information is up-to-date by comparing it with the previously retrieved informations
         for info_key in general_info.keys():
-            if not current_json_hash['pipeline']['general_information'].has_key(info_key) or current_json_hash['pipeline']['general_information'][info_key] != general_info[info_key] :
+            if not info_key in current_json_hash['pipeline']['general_information'] or current_json_hash['pipeline']['general_information'][info_key] != general_info[info_key] :
                 current_json_hash['pipeline']['general_information'][info_key] = general_info[info_key]
 
         # And do the same checking with the list of softwares
@@ -265,7 +263,7 @@ def create(pipeline, sample):
                         } for job in step.jobs if sample in job.samples]
                     }
                 )
-        current_json = json.dumps(current_json_hash, indent=4)
+        current_json = json.dumps(current_json_hash, indent=4, default=str)
 
     if not os.path.exists(os.path.join(pipeline.output_dir, "json")):
         os.makedirs(os.path.join(pipeline.output_dir, "json"))

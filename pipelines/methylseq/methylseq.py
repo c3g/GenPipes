@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
@@ -56,7 +57,7 @@ from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
 
-class MethylSeq(dnaseq.DnaSeq):
+class MethylSeq(dnaseq.DnaSeqRaw):
     """
     Methyl-Seq Pipeline
     ================
@@ -98,7 +99,7 @@ class MethylSeq(dnaseq.DnaSeq):
     def __init__(self, protocol=None):
         self._protocol=protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=file)
+        self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
         super(MethylSeq, self).__init__(protocol)
 
     def bismark_align(self):
@@ -349,11 +350,11 @@ cp \\
         # check the library status
         library, bam = {}, {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample) :
+            if not readset.sample in library:
                 library[readset.sample]="SINGLE_END"
             if readset.run_type == "PAIRED_END" :
                 library[readset.sample]="PAIRED_END"
-            if not bam.has_key(readset.sample):
+            if not readset.sample in bam:
                 bam[readset.sample]=""
             if readset.bam:
                 bam[readset.sample]=readset.bam
@@ -452,16 +453,22 @@ cp \\
                 job.samples = [sample]
                 jobs.append(job)
                 
-
                 # Compute on target percent of hybridisation based capture
                 interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
                 if not interval_list in created_interval_lists:
-                    job = tools.bed2interval_list(None, coverage_bed, interval_list)
+                    job = tools.bed2interval_list(
+                        coverage_bed,
+                        interval_list
+                     )
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
                     created_interval_lists.append(interval_list)
                 file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
-                job = picard.calculate_hs_metrics(file_prefix + "bam", file_prefix + "onTarget.tsv", interval_list)
+                job = picard.calculate_hs_metrics(
+                    file_prefix + "bam",
+                    file_prefix + "onTarget.tsv",
+                    interval_list
+                )
                 job.name = "picard_calculate_hs_metrics." + sample.name
                 job.samples = [sample]
                 jobs.append(job)
@@ -526,7 +533,7 @@ cp \\
         # Check the library status
         library = {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample) :
+            if not readset.sample in library:
                 library[readset.sample]="SINGLE_END"
             if readset.run_type == "PAIRED_END" :
                 library[readset.sample]="PAIRED_END"
@@ -911,14 +918,12 @@ pandoc \\
         input_directory = os.path.join("methylkit", "inputs")
         input_files = []
         for contrast in self.contrasts:
-            input_files.extend([[os.path.join(input_directory, sample.name + ".readset_sorted.dedup.map.input")for
-                                 sample in group] for group in contrast.controls, contrast.treatments])
+            input_files.extend([[os.path.join(input_directory, sample.name + ".readset_sorted.dedup.map.input") for sample in group] for group in [contrast.controls, contrast.treatments]])
 
         input_files = list(itertools.chain.from_iterable(input_files))
 
         output_directory = os.path.join("methylkit", "results")
-        output_files = [os.path.join(output_directory, "Rdata_files", contrast.name, "perbase.testingresults.txt.gz")
-                        for contrast in self.contrasts]
+        output_files = [os.path.join(output_directory, "Rdata_files", contrast.name, "perbase.testingresults.txt.gz") for contrast in self.contrasts]
 
         methylkit_job = tools.methylkit_differential_analysis(
             design_file,

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -22,9 +20,9 @@
 # Python Standard Modules
 
 # MUGQIC Modules
-from core.config import *
-from core.job import *
-import picard2
+from core.config import config
+from core.job import Job
+from . import picard2
 
 def build_bam_index(input, output):
 
@@ -434,13 +432,18 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         )
 
 
-def bed2interval_list(dictionary, bed, output):
+def bed2interval_list(
+    dictionary,
+    bed,
+    output
+    ):
+
     if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] >= "2":
         return picard2.bed2interval_list(
             dictionary,
             bed,
             output
-            )
+        )
 
     return Job(
         [dictionary, bed],

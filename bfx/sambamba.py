@@ -17,21 +17,21 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-#!/usr/bin/env python
-
 # Python Standard Modules
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def sort(input_bam, output_bam, tmp_dir, other_options=None):
-
+def sort(input_bam,
+         output_bam,
+         tmp_dir,
+         other_options=None):
+    
     return Job(
         [input_bam],
         [output_bam],
         [
-            ['sambamba_sort_sam', 'module_samtools'],
             ['sambamba_sort_sam', 'module_sambamba']
         ],
         command="""\
@@ -46,26 +46,31 @@ sambamba sort {options} \\
         )
     )
 
-def index(input, output, other_options=config.param('sambamba_index', 'options', required=False)):
+def index(input,
+          output,
+          other_options=None
+          ):
 
     return Job(
         [input],
         [output],
         [
-            ['sambamba_index', 'module_samtools'],
             ['sambamba_index', 'module_sambamba']
         ],
         command="""\
 sambamba index {options} \\
   {input} \\
   {output}""".format(
-        options=other_options,
+        options=other_options if other_options else "",
         input=input,
         output=output,
         )
     )
 
-def merge(input_bams, output_bam, ini_section='sambamba_merge_sam_files'):
+def merge(input_bams,
+          output_bam,
+          ini_section='sambamba_merge_sam_files'
+          ):
 
     return Job(
         input_bams,
@@ -84,7 +89,11 @@ sambamba merge {options} \\
         )
     )
 
-def markdup(input_bam, output_bam, tmp_dir, other_options=None):
+def markdup(input_bam,
+            output_bam,
+            tmp_dir,
+            other_options=None
+            ):
     if not isinstance(input_bam, list):
         input_bam=[input_bam]
 
@@ -107,7 +116,11 @@ sambamba markdup {other_options} \\
         )
     )
 
-def view(input_bam, output_bam, options, chr=[]):
+def view(input_bam,
+         output_bam,
+         options,
+         chr=[]
+         ):
 
     return Job(
         [input_bam],
@@ -126,7 +139,7 @@ sambamba view {options} \\
         )
     )
 
-def flagstat(input, output, options=""):
+def flagstat(input, output, options=None):
 
     return Job(
         [input],
@@ -138,7 +151,7 @@ def flagstat(input, output, options=""):
 sambamba flagstat {options} \\
   {input} \\
   {output}""".format(
-        options=options,
+        options=options if options else "",
         input=input,
         output="> " + output,
         )

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -26,7 +24,16 @@ import os
 from core.config import *
 from core.job import *
 
-def batch(tumor_bam, normal_bam, outdir, tar_dep=[], antitar_dep=[], target_bed=None, reference=None, output_cnn=None):
+def batch(
+        tumor_bam,
+        normal_bam,
+        outdir,
+        tar_dep=[],
+        antitar_dep=[],
+        target_bed=None,
+        reference=None,
+        output_cnn=None
+):
     if tumor_bam is not None:
         inputs = [tumor_bam, normal_bam]
     else:

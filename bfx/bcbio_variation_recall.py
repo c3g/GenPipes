@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -37,7 +35,7 @@ def ensemble(input_callers, output, options):
             ['bcbio_ensemble', 'module_java'],
         ],
         command="""\
-bcbio-variation-recall ensemble \\
+$BCBIO_VARIATION_RECALL_HOME/bcbio.variation.recall ensemble \\
   {options} \\
   {output} \\
   {reference_sequence} \\

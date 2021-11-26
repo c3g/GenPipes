@@ -2,7 +2,7 @@
 
 import argparse
 import csv
-import httplib
+import http.client
 import os
 import sys
 
@@ -20,7 +20,7 @@ def main():
     args = parser.parse_args()
 
     if not os.path.isdir(args.dir):
-      print args.dir + " is not a directory"
+      print(args.dir + " is not a directory")
       sys.exit(1)
 
     print("Reading " + args.dir)
@@ -98,7 +98,7 @@ def getArrayCallRate(sample, report, sampleStats):
             sampleStats['callRate'] = str(float(line['Call Rate'].translate(None, "% "))/100)
             break
     if sample_not_found:
-        print "---------\nWARNING sample ("+ sample + ") is not found in the array sample report\n------\n" 
+        print("---------\nWARNING sample ("+ sample + ") is not found in the array sample report\n------\n")
         sampleStats['callRate'] = str(0.0)
 
 
@@ -176,7 +176,7 @@ def getBarcode(sample, dir, sampleStats):
             sampleStats['barcode'] = values[0]
 
 def contact_server(host, url, auth_file=None):
-    https_connection = httplib.HTTPSConnection(host)
+    https_connection = http.client.HTTPSConnection(host)
     https_connection.set_debuglevel(0)
     headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
 

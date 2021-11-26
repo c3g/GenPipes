@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -28,7 +26,7 @@ from core.job import *
 
 log = logging.getLogger(__name__)
 
-def quast(input, output_dir, prefix):
+def quast(input, output_dir, ini_section='quast_consensus_metrics'):
     inputs = [input]
     outputs = [
         os.path.join(output_dir, "report.html"),
@@ -51,9 +49,9 @@ quast.py {reference} \\
   {features} \\
   {nthread} \\
   {input}""".format(
-      reference="-r " + config.param(prefix, 'reference_genome', required=False),
-      features="--features " + config.param(prefix, 'genomic_feature', required=False) if config.param(prefix, 'genomic_feature', required=False) else "",
-      nthread="--threads " + config.param(prefix, 'threads', required=False),
+      reference="-r " + config.param(ini_section, 'reference_genome', required=False),
+      features="--features " + config.param(ini_section, 'genomic_feature', required=False) if config.param(ini_section, 'genomic_feature', required=False) else "",
+      nthread="--threads " + config.param(ini_section, 'threads', required=False),
       output_dir="--output-dir " + output_dir,
       input=input
       ),

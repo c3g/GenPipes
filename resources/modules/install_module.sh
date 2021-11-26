@@ -112,11 +112,28 @@ if [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="Ubuntu"' ]]; then echo "U
 #if [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="Ubuntu"' ]]
 if [[ `cat /etc/*-release` == *"Ubuntu"* ]]
 then
-  echo "Ubuntu" > /dev/null
-  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
-  LIB=lib
-  INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+  if [[ `cat /etc/*-release` == *"16.04"* ]]
+  then
+    echo "Ubuntu 16.04" > /dev/null
+    C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
+    LIB=lib
+    INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+    LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+  elif [[ `cat /etc/*-release` == *"18.04"* ]]
+  then
+    echo "Ubuntu 18.04" > /dev/null
+    C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1804/1.0
+    LIB=lib
+    INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+    LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+  elif [[ `cat /etc/*-release` == *"21.10"* ]]
+  then
+    echo "Ubuntu 21.0" > /dev/null
+    C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu2110/1.0
+    LIB=lib
+    INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+    LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+  fi
 #elif [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="CentOS Linux"' ]]
 elif [[ `cat /etc/*-release` == *"CentOS"*"7."* ]]
 then

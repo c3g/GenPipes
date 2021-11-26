@@ -36,6 +36,7 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 import utils.utils
 
+from bfx import bash_cmd as bash
 from bfx import gq_seq_utils
 from bfx import picard
 from bfx import rmarkdown
@@ -47,7 +48,7 @@ from pipelines.rnaseq import rnaseq
 
 log = logging.getLogger(__name__)
 
-class RnaSeqLight(rnaseq.RnaSeq):
+class RnaSeqLight(rnaseq.RnaSeqRaw):
     def __init__(self,protocol=None):
         self._protocol=protocol
         super(RnaSeqLight, self).__init__(protocol)
@@ -131,36 +132,49 @@ class RnaSeqLight(rnaseq.RnaSeq):
         job_name_genes="kallisto_count_matrix.genes"
         data_type_genes="genes"
         job=tools.r_create_kallisto_count_matrix(input_abundance_files_genes, output_dir, data_type_genes, job_name_genes)
-        job.samples = [readset.sample]
+        job.samples = self.samples
         jobs.append(job)
+
+        report_dir = os.path.join(self.output_dir, "report")
 
         #copy tx2genes file
         jobs.append(
-            Job(
-                [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv"), os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_transcripts.csv")],
-                [],
-                command="""\
+            concat_jobs(
+                [
+                    bash.mkdir(report_dir),
+                    Job(
+                        [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv"), os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_transcripts.csv")],
+                        [],
+                        command="""\
 cp \\
   {tx2genes_file} \\
   {report_dir}""".format(
-                    tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
-                    report_dir="report"
-                ),
+                            tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
+                            report_dir=report_dir
+                        )
+                    )
+                ],
                 name="report.copy_tx2genes_file",
                 samples=self.samples
             )
         )
 
         # Create kallisto report
+        readset_merge_trim_stats = os.path.join("metrics", "trimReadsetTable.tsv") # set in merge trimmomatic stats
+
         jobs.append(
             rmarkdown.render(
-                job_input            = [os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv"), os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_transcripts.csv")],
-                job_name             = "report.kallisto_count_matrix",
-                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd"),
-                samples              = self.samples,
-                render_output_dir    = 'report',
-                module_section       = 'report',
-                prerun_r             = 'report_dir="report";'
+                job_input            =[os.path.join(self.output_dir, "kallisto"
+                                                    , "All_readsets","all_readsets.abundance_genes.csv")
+                    , os.path.join(self.output_dir, "kallisto", "All_readsets",
+                                   "all_readsets.abundance_transcripts.csv")
+                    , readset_merge_trim_stats],
+                job_name             ="report.kallisto_count_matrix",
+                input_rmarkdown_file =os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd"),
+                samples              =self.samples,
+                render_output_dir    ='report',
+                module_section       ='report',
+                prerun_r             ='report_dir="report";'
             )
         )
 

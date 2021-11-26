@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -121,15 +119,5 @@ done > {output_directory}/multi-bamqc_list.txt""".format(
             )),
         job
     ])
-
-#Job(command="""\
-#unset DISPLAY \\
-#R --no-save --no-restore<<-'EOF'
-  #fns=list.dirs("{input_directory}",full.names=T,recursive=F)
-  #write.table(data.frame(basename(fns), file.path(fns,"bamqc")), file="{output_directory}/multi-bamqc_list.txt", sep='\t', quote=F, col.names=F, row.names=F)
-#EOF""".format(
-                #input_directory=input_directory,
-                #output_directory=output_directory
-            #)),
 
     return job

@@ -53,7 +53,7 @@ from pipelines.rnaseq import rnaseq
 
 log = logging.getLogger(__name__)
 
-class RnaSeqDeNovoAssembly(rnaseq.RnaSeq):
+class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
     """
     RNA-Seq De Novo Assembly Pipeline
     =================================
@@ -191,7 +191,7 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeq):
         normalization_stats_file = os.path.join("insilico_read_normalization", "all", "normalization.stats.tsv")
         jobs.append(
             Job(
-                [normalization_stats_file],
+                [normalization_stats_file, os.path.join("report", "trimReadsetTable.tsv")],
                 [report_file],
                 [['insilico_read_normalization_all', 'module_pandoc']],
                 command="""\

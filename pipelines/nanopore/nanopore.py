@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import os
 import sys
 import logging
@@ -30,6 +31,7 @@ import re
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
+import utils.utils
 from core.config import config, SanitycheckError, _raise
 from core.job import Job, concat_jobs
 from bfx.readset import parse_nanopore_readset_file
@@ -75,7 +77,7 @@ class Nanopore(common.MUGQICPipeline):
 
     def __init__(self, protocol=None):
         self._protocol = protocol
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file)
+        self.argparser.add_argument("-r", "--readsets", help="readset file", type=argparse.FileType('r'))
         super(Nanopore, self).__init__(protocol)
 
     @property
@@ -277,4 +279,8 @@ class Nanopore(common.MUGQICPipeline):
 
 
 if __name__ == '__main__':
-    Nanopore()
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        Nanopore()

@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=bcftools
-VERSION=1.11
+VERSION=1.12
 ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
 ARCHIVE_URL=https://github.com/samtools/bcftools/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -27,7 +27,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/bin/
+prepend-path    PATH                \$root/bin
+setenv          BCFTOOLS_PLUGINS    \$root/libexec/bcftools
 "
 }
 
