@@ -1065,7 +1065,7 @@ END
             readset = sample.readsets[0]
 
             [input_bam] = self.select_input_files([
-                [alignment_file_prefix + "sorted.recal.bam"],
+                [alignment_file_prefix + "sorted.dup.recal.bam"],
                 [alignment_file_prefix + "sorted.dup.bam"],
                 [alignment_file_prefix + "sorted.matefixed.bam"],
                 [alignment_file_prefix + "sorted.realigned.bam"],
@@ -1384,7 +1384,7 @@ END
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
@@ -1462,7 +1462,7 @@ END
                 alignment_directory = os.path.join("alignment", sample.name)
                 [input] = self.select_input_files([
                     # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
@@ -1491,7 +1491,7 @@ END
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
@@ -1520,7 +1520,7 @@ END
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
@@ -2369,7 +2369,7 @@ pandoc \\
             alignment_directory = os.path.join("alignment", sample.name)
 
             [input] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
@@ -2461,7 +2461,7 @@ pandoc \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam") for sample in self.samples],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam") for sample in self.samples],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam") for sample in self.samples],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam") for sample in self.samples],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam") for sample in self.samples],
