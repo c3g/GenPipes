@@ -153,11 +153,13 @@ Remove primer sequences to individual bam files using ivar
 
 covseq_metrics
 --------------
-Multiple metrcis from dnaseq
+Multiple metrics from dnaseq
 
 freebayes_calling
 -----------------
-freebayes calling
+FreeBayes is a haplotype-based variant detector designed to find small polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels (insertions and deletions), MNPs (multi-nucleotide polymorphisms), and complex events (composite insertion and substitution events) smaller than the length of a short-read sequencing alignment.
+
+This method avoids one of the core problems with alignment-based variant detection— that identical sequences may have multiple possible alignments. See ![FreeBayes details here](https://github.com/freebayes/freebayes).
 
 ivar_calling
 ------------
@@ -184,15 +186,29 @@ rename_consensus_header_ivar
 Rename reads headers
 
 rename_consensus_header_freebayes
+
 ---------------------------------
 Rename reads headers
 
 ncovtools_quickalign
 --------------------
+
+Uses quickalign to provides summary statistics, which can be used to determine the sequencing quality and evolutionary novelty of input genomes (e.g. number of new mutations and indels).
+
+It uses ivar consensus as well as freebayes consensus to arrive at the alignment decisions.
+
 prepare_table
 -------------
+
+Gathers all analysis data for quast, kraken and other metrics and module
+ details.
+
 prepare_report_ivar
 -------------------
+
+Prepare ivar analysis report.
+
 prepare_report_freebayes
 ------------------------
 
+Prepare freebayes analysis report.

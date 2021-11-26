@@ -652,7 +652,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
     def covseq_metrics(self):
         """
-        Multiple metrcis from dnaseq
+        Multiple metrics from dnaseq
         """
 
         jobs = []
@@ -670,6 +670,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
 
     def ivar_calling(self):
+
         """
         ivar calling
         """
@@ -726,7 +727,9 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
 
     def freebayes_calling(self):
         """
-        freebayes calling
+        FreeBayes is a haplotype-based variant detector designed to find small polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels (insertions and deletions), MNPs (multi-nucleotide polymorphisms), and complex events (composite insertion and substitution events) smaller than the length of a short-read sequencing alignment.
+
+        This method avoids one of the core problems with alignment-based variant detection that identical sequences may have multiple possible alignments.
         """
 
         jobs = []
@@ -1206,6 +1209,11 @@ ln -sf {freebayes_output_status_fa_basename} {freebayes_output_fa}""".format(
 
 
     def ncovtools_quickalign(self):
+        """
+        Uses quickalign to provides summary statistics, which can be used to determine the sequencing quality and evolutionary novelty of input genomes (e.g. number of new mutations and indels). 
+
+        It uses ivar consensus as well as freebayes consensus to arrive at the alignment decisions.
+        """
 
         jobs = []
 
@@ -1241,7 +1249,9 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         return jobs
 
     def prepare_table(self):
-
+        """
+        Gathers all analysis data for quast, kraken and other metrics and module details.
+        """
         jobs = []
 
         metrics_directory = os.path.join("metrics", "dna")
@@ -1378,7 +1388,9 @@ echo "Software Versions
         return jobs
 
     def prepare_report_ivar(self):
-
+        """
+        Prepare ivar analysis report.
+        """
         jobs = []
 
         readset_file=os.path.relpath(self.args.readsets.name, self.output_dir)
@@ -1506,6 +1518,9 @@ module load {R_covseqtools}""".format(
         return jobs
 
     def prepare_report_freebayes(self):
+        """
+        Prepare ivar analysis report.
+        """
 
         jobs = []
 
