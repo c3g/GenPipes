@@ -14,7 +14,7 @@ import time
 import random
 import shutil
 import signal
-
+import uuid
 
 from uuid import uuid4
 
@@ -172,7 +172,7 @@ def main():
             # Print a copy of it for the monitoring interface
             portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, type='dirpath')
             if portal_output_dir != '':
-                with open(os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + uuid4().get_hex() + '.json'), 'w') as out_json:
+                with open(os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + str(uuid4().hex) + '.json'), 'w') as out_json:
                     json.dump(current_json, out_json, indent=4)
         finally:
             # Finally unlock the file
