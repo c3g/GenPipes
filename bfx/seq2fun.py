@@ -87,8 +87,7 @@ def ko_pathway_analysis(diff_report, output_prefix,   output_dir):
             ['seq2fun', 'module_R']
         ],
         command="""\
-    #Rscript $R_TOOLS/KOPathawayAnalysis.R \\
-    Rscript /home/pubudu/projects/rrg-bourqueg-ad/pubudu/seq2fun/testing_august_2021/KOPathawayAnalysis.R \\
+    Rscript $R_TOOLS/KOPathawayAnalysis.R \\
       -i {diff_report} \\
       -map {map_list} \\
       -o {output_dir} \\
