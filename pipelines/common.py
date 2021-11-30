@@ -79,7 +79,17 @@ class MUGQICPipeline(Pipeline):
             return None
         server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
         listName = {}
-        for readset in self.readsets:
+
+        # In case of run processing pipelines, self.readsets is actaully a dict of list
+        if isinstance(self.readsets, dict):
+            readset_list = []
+            for r_list in self.readsets.values():
+                readset_list.extend(r_list)
+        # In all other pipelines, elf.readsets is a list
+        else: 
+            readset_list = self.readsets
+
+        for readset in readset_list:
             if readset.sample.name in listName:
                 listName[readset.sample.name]+="."+readset.name
             else:
