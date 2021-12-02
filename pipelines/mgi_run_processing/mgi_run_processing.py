@@ -122,7 +122,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 self._mask = {}
             for lane in self.lanes:
                 self._readsets[lane] = self.load_readsets(lane)
-                if not len(self._readsets[lane]) == 1:
+                if not int(self._index1cycles[lane]) + int(self._index2cycles[lane]) == 0:
                     self._mask[lane] = self.get_mask(lane)
                     self.generate_mgi_lane_sample_sheet(lane)
         return self._readsets
@@ -494,7 +494,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
             unaligned_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane)
             basecall_dir = os.path.join(unaligned_dir, "basecall")
-            #basecall_dir = os.path.join(config.param('basecall', 'basecall_dir', required=True), "basecall") # usually set to the local tmp folder on the compute node
             basecall_outputs = [
                 os.path.join(basecall_dir, self.run_id, "L0" + lane),
                 os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
@@ -807,10 +806,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             log.info("No demultiplexing done on the sequencer... Processing fastq step...")
 
             for lane in self.lanes:
-                if len(self.readsets[lane]) == 1:
-                    log.info("Only one readset on the lane... Skipping fastq step for lane " + lane + "...")
-
-                elif int(self._index1cycles[lane]) + int(self._index2cycles[lane]) == 0:
+                if int(self._index1cycles[lane]) + int(self._index2cycles[lane]) == 0:
                     log.info("No barcode cycles in the lane... Skipping fastq step for lane " + lane + "...")
 
                 else:
@@ -945,10 +941,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
 
-            if self.args.type == 't7':
-                return jobs
-            else:
-                return self.throttle_jobs(jobs)
+        if self.args.type == 't7':
+            return jobs
+        else:
+            return self.throttle_jobs(jobs)
 
     def fastqc(self):
         """
@@ -1018,10 +1014,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
             
-            if self.args.type == 't7':
-                return jobs
-            else:
-                return self.throttle_jobs(jobs)
+        if self.args.type == 't7':
+            return jobs
+        else:
+            return self.throttle_jobs(jobs)
 
     def blast(self):
         """ 
@@ -1182,10 +1178,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
             
-            if self.args.type == 't7':
-                return jobs
-            else:
-                return self.throttle_jobs(jobs)
+        if self.args.type == 't7':
+            return jobs
+        else:
+            return self.throttle_jobs(jobs)
 
     def align(self):
         """
@@ -1212,10 +1208,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
             
-            if self.args.type == 't7':
-                return jobs
-            else:
-                return self.throttle_jobs(jobs)
+        if self.args.type == 't7':
+            return jobs
+        else:
+            return self.throttle_jobs(jobs)
 
     def picard_mark_duplicates(self):
         """
@@ -1247,10 +1243,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
             jobs.extend(lane_jobs)
             
-            if self.args.type == 't7':
-                return jobs
-            else:
-                return self.throttle_jobs(jobs)
+        if self.args.type == 't7':
+            return jobs
+        else:
+            return self.throttle_jobs(jobs)
 
     def metrics(self):
         """
@@ -1299,11 +1295,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_to_report_hash("metrics", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
-            
-            if self.args.type == 't7':
-                return jobs
-            else:
-                return self.throttle_jobs(jobs)
+        
+        if self.args.type == 't7':
+            return jobs
+        else:
+            return self.throttle_jobs(jobs)
 
     def md5(self):
         """
@@ -1394,7 +1390,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
             general_information_file = os.path.join(self.output_dir, "L0" + lane, self.run_id + "." + lane + ".general_information.json")
             if not os.path.exists(os.path.dirname(general_information_file)):
                 os.makedirs(os.path.dirname(general_information_file))
-            log.error(self.report_hash[lane])
             with open(general_information_file, 'w') as out_json:
                 json.dump(self.report_hash[lane], out_json, indent=4)
     
@@ -1869,7 +1864,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.validate_barcodes(lane)
         index_lengths = self.get_smallest_index_length(lane)
         for readset in self.readsets[lane]:
-            for readset_index in readset.indexes:
+            for idx, readset_index in enumerate(readset.indexes):
                 # Barcode sequence should only match with the barcode cycles defined in the mask
                 # so we adjust thw lenght of the index sequences accordingly for the "Sample_Barcode" field
                 if self.is_dual_index[lane]:
@@ -1882,6 +1877,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     sample_barcode = sample_barcode[self.first_index-1:]
 
                 readset_index['BARCODE_SEQUENCE'] = sample_barcode
+                readset.indexes[idx] = readset_index
 
                 csv_dict = {
                     "Sample_ID": readset_index['SAMPLESHEET_NAME'],
