@@ -60,7 +60,8 @@ def deseq2(
         [count_matrix],
         [os.path.join(output_dir, "deseq_results.csv"), os.path.join(output_dir, "dge_results.csv")],
         [
-            ['seq2fun', 'module_R']
+            ['seq2fun', 'module_R'],
+            ['seq2fun', 'module_mugqic_tools'],
         ],
         command="""\
 Rscript $R_TOOLS/deseq2.R \\
@@ -84,7 +85,8 @@ def ko_pathway_analysis(diff_report, output_prefix,   output_dir):
         [diff_report],
         [os.path.join(output_dir, output_prefix + ".txt")],
         [
-            ['seq2fun', 'module_R']
+            ['seq2fun', 'module_R'],
+            ['seq2fun', 'module_mugqic_tools']
         ],
         command="""\
     Rscript $R_TOOLS/KOPathawayAnalysis.R \\
