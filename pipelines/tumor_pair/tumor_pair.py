@@ -4212,7 +4212,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             ]
 
             for key, input_files in inputs.items():
-                for idx, input_file in input_files:
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.sym_link_pair(
                             input_file,
