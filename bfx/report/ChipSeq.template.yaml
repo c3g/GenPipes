@@ -1,34 +1,95 @@
-title: "ChIP-Seq Analysis Report"
+########################################
+# C3G Multiqc GenPipes ChIP-Seq Configuration File
+########################################
 
-intro_text: "This document contains the description of the current MUGQIC ChIP-Seq analysis."
+# This file will be the official main chipseq multiqc main file.
+# This file makes changes to the resulting Multiqc html report and template
+# This file can be called at run time with its absolute path or it can be placed within the analysis directory where it will either be detected automatically or can be called with the relative path.
+# For more info visit the multiqc documentationa: https://multiqc.info/docs
 
+---
+title: "C3G Analysis Report"
+subtitle: "ChIP-Seq analysis using chipseq GenPipes pipeline $VERSION$"
+intro_text: "This document contains the description of the current GenPipes ChIP-Seq analysis.
+The information presented here reflects the current state of the analysis as of $DATE$.
+The different sections are a combination of default MultiQC modules and custom modules."
+report_comment: null
+
+# Setting decimal and thousand display seperators
+read_count_multiplier: 0.000001
+read_count_prefix: 'M'
+read_count_desc: 'millions'
+long_read_count_multiplier: 100
+long_read_count_prefix: 'H'
+long_read_count_desc: 'hundredths'
+base_count_multiplier: 0.000001
+base_count_prefix: 'Mb'
+base_count_desc: 'millions'
+decimalPoint_format: "."
+thousandsSep_format: " "
+
+# Information regarding the storage of the data
+output_fn_name: "chipseq_Analysis_Summary_Report.html"
+data_dir_name: 'multiqc_data'
+plots_dir_name: 'multiqc_plots'
+data_format: 'tsv'
+
+# Adding contact and version information
+report_header_info:
+    - Contact E-mail: 'services@computationalgenomics.ca'
+    - Application Type: 'ChIP-Seq Analysis'
+    - Pipeline version: 'chipseq $VERSION$'
+
+# Set the module order here. To set the description or name for the section or the parent
+#   you must place in under within the module order or section order part. ../graphs/GM12878_chr19.Input_QC_Metrics.png
 module_order:
-  # - c3g_section:
-  #   id: introduction
-  - c3g_section:
-    id: trimming
-  - trimmomatic
-  - c3g_section:
-    id: mark_dup
-  - c3g_section:
-    id: view_filter
-  - c3g_section:
-    id: sequencing_alignment_metrics
-  - picard
-  - c3g_section:
-    id: qc_tag
-  - homer
-  - c3g_section:
-    id: ucsc_tracks
-  - c3g_section:
-    id: peak_calls
-  - c3g_section:
-    id: peaks_annotation
-  - c3g_section:
-    id: N_peaks_motifs_analysis
-  - c3g_section:
-    id: peak_stats_narrow
-  - c3g_section:
-    id: peak_location_stats
-  - c3g_section:
-    id: ihec_metrics
+    - trimming
+    - c3g_content_renderer:
+      id: mark_dup
+    - c3g_content_renderer:
+      id: view_filter
+    - picard:
+      info: "is a set of Java command line tools for manipulating high-throughput sequencing data."
+    - c3g_table_renderer:
+      id: sequencing_alignment_metrics
+    - c3g_content_renderer:
+      id: qc_tag
+    - homer:
+      info: "is a suite of tools for Motif Discovery and next-gen sequencing analysis."
+    - c3g_content_renderer:
+      id: ucsc_tracks
+    - c3g_content_renderer:
+      id: peak_calls
+    - macs2:
+      info: "identifies transcription factor binding sites in ChIP-seq data."
+    - c3g_content_renderer:
+      id: peaks_annotation
+    - c3g_content_renderer:
+      id: N_peaks_motifs_analysis
+    - c3g_table_renderer:
+      id: peak_stats_narrow
+    - c3g_content_renderer:
+      id: peak_location_stats
+    - c3g_table_renderer:
+      id: ihec_metrics
+    - references
+
+references:
+    ref_target_color: '#bff64a'
+
+skip_generalstats: True
+
+# This is helpful in the code (I think for the table and image paths).
+working_dir: 'report'
+
+# The list of multiqc default modules we do not like
+exclude_modules:
+    - samtools
+
+table_color_scale: 'BuGn'
+
+sp:
+    c3g_image_renderer:
+        fn_re: "png|jpeg|jpg"
+    c3g_table_renderer:
+        fn_re: "^.*.[t,c]sv$"

@@ -29,7 +29,7 @@ import re
 import subprocess
 import string
 import sys
-import time
+import time, datetime
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -1376,7 +1376,7 @@ do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
     rsync -rvP {annotation_dir}/$sample {report_dir}/{annotation_dir}/ && \\
-    echo -e "\\n\\n    ----\\n    ####$sample\\n    * [HOMER _De Novo_ Motif Results for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/homerResults.html)\\n\\t* [HOMER Known Motif Results for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/knownResults.html)\\n" >> {report_file}
+    echo -e "\\n\\n    ----\\n    ####$sample\\n    * [HOMER _De Novo_ Motif Results for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/homerResults.html)\\n    * [HOMER Known Motif Results for Sample $sample and Mark $mark_name]({annotation_dir}/$sample/$mark_name/knownResults.html)\\n" >> {report_file}
   done
 done""".format(
                         annotation_dir=self.output_dirs['anno_output_directory'],
@@ -1726,14 +1726,46 @@ sed -e 's@ihec_metrics_merged_table@{ihec_metrics_merged_table}@g' \\
         output = os.path.join(self.output_dirs['report_output_directory'], "multiqc_report")
         log.info(output)
 
-        job = multiqc.run(
-            input_files,
-            output,
-            ini_section='multiqc_report'
-        )
-        job.name = "multiqc_report"  # ".".join([sample.name for sample in self.samples])
+        # job = multiqc.run(
+        #     input_files,
+        #     output,
+        #     ini_section='multiqc_report'
+        # )
+        # job.name = "multiqc_report"  # ".".join([sample.name for sample in self.samples])
 
-        jobs.append(job)
+        report_yaml_dir = os.path.join(self.output_dirs['report_output_directory'], "yaml")
+        report_file = os.path.join(report_yaml_dir, "ChipSeq.template.yaml")
+        now = datetime.datetime.now()
+
+        jobs.append(
+            concat_jobs([
+                Job(
+                    input_files=[],
+                    output_files=[report_file],
+                    name="merge_ihec_metrics_report",
+                    module_entries=[['merge_ihec_metrics_report', 'module_pandoc']],
+                    command="""\
+mkdir -p {report_yaml_dir} && \\
+sed -e 's@$VERSION$@{genpipes_version}@g; s@$DATE$@{date}@g' \\
+{report_template_dir}/{basename_report_file} > {report_file}""".format(
+        report_yaml_dir=report_yaml_dir,
+        genpipes_version=self.version,
+        date=str(now.strftime("%B")) + " " + str(now.strftime("%d")) + ", " + str(now.year),
+        report_template_dir=self.report_template_dir,
+        basename_report_file=os.path.basename(report_file),
+        report_file=report_file
+        ),
+                    report_files=[report_file]
+                    ),
+                multiqc.run(
+                    input_files,
+                    output,
+                    ini_section='multiqc_report'
+                    )
+                ],
+                name="multiqc_report"
+                )
+            )
 
         return jobs
 
