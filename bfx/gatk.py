@@ -686,13 +686,13 @@ def bed2interval_list(
             bed,
             output
         )
-    if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
+    elif config.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
         return picard.bed2interval_list(
             dictionary,
             bed,
             output
         )
-    if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] >= "2":
+    elif config.param('picard_bed2interval_list', 'module_picard').split("/")[2] >= "2":
         return picard2.bed2interval_list(
             dictionary,
             bed,

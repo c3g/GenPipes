@@ -1064,16 +1064,35 @@ END
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
-            [input_bam] = self.select_input_files([
-                [alignment_file_prefix + "sorted.dup.recal.bam"],
-                [alignment_file_prefix + "sorted.dup.bam"],
-                [alignment_file_prefix + "sorted.matefixed.bam"],
-                [alignment_file_prefix + "sorted.realigned.bam"],
-                [alignment_file_prefix + "sorted.bam"],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
-                ])
-
+            [input_bam] = self.select_input_files(
+                [
+                    [alignment_file_prefix + "sorted.dup.recal.bam"],
+                    [alignment_file_prefix + "sorted.dup.bam"],
+                    [alignment_file_prefix + "sorted.matefixed.bam"],
+                    [alignment_file_prefix + "sorted.realigned.bam"],
+                    [alignment_file_prefix + "sorted.bam"],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
+                ]
+            )
+            [input_bai] = self.select_input_files(
+                [
+                    [alignment_file_prefix + "sorted.dup.recal.bam.bai"],
+                    [alignment_file_prefix + "sorted.dup.recal.bai"],
+                    [alignment_file_prefix + "sorted.dup.bam.bai"],
+                    [alignment_file_prefix + "sorted.dup.bai"],
+                    [alignment_file_prefix + "sorted.matefixed.bam.bai"],
+                    [alignment_file_prefix + "sorted.matefixed.bai"],
+                    [alignment_file_prefix + "sorted.realigned.bam.bai"],
+                    [alignment_file_prefix + "sorted.realigned.bai"],
+                    [alignment_file_prefix + "sorted.bam.bai"],
+                    [alignment_file_prefix + "sorted.bai"],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam.bai")],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bai")],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bai")]
+                ]
+            )
             jobs.append(
                 concat_jobs([
                     deliverables.md5sum(
@@ -1088,7 +1107,7 @@ END
                         type="alignment"
                         ),
                     deliverables.sym_link(
-                        re.sub(".bam", ".bai", input_bam),
+                        input_bai,
                         sample,
                         self.output_dir,
                         type="alignment"
