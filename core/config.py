@@ -31,8 +31,6 @@ import io
 
 log = logging.getLogger(__name__)
 
-
-
 class Config(configparser.SafeConfigParser):
 
     # True only for continuous integration testing
@@ -109,14 +107,17 @@ class Config(configparser.SafeConfigParser):
                 pass
 
             from utils import utils
-            if option == self.cluster_walltime and self.has_section(section) \
-                    and self.has_option(section, option):
+            if option == self.cluster_walltime and self.has_section(section) and self.has_option(section, option):
 
                 from_section = self.get(section, option)
                 from_default = self.get('DEFAULT', option)
-
-                if (utils.slurm_time_to_datetime(from_default)
-                        <= utils.slurm_time_to_datetime(from_section)):
+                log.error("section: "+section)
+                log.error("default: "+str(utils.slurm_time_to_datetime(from_default)))
+                log.error("section: "+str(utils.slurm_time_to_datetime(from_section)))
+                log.error("")
+                if not utils.slurm_time_to_datetime(from_section): 
+                    return from_default
+                elif utils.slurm_time_to_datetime(from_default) <= utils.slurm_time_to_datetime(from_section):
                     return from_default
                 else:
                     return from_section

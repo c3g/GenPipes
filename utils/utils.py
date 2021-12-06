@@ -104,6 +104,7 @@ def slurm_time_to_datetime(time):
     time = time.lstrip()
     time = time.lstrip('--time=')
     time = time.lstrip('-l walltime=')  # pbs/torque support
+    time = time.split(' ')[0] # in case of triling options e.g. "-l mem=12GB"
 
     colon = time.count(':')
     dash = time.count('-')
