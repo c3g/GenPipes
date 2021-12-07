@@ -34,10 +34,11 @@ def run(inputs, output, yaml_files_list, ini_section='multiqc_report'):
         ],
         command="""\
 multiqc -f {options} \\
-{yaml_files} \\{input} \\
+{yaml_files} \\
+{input} \\
 -n {output}""".format(
             options=config.param(ini_section, 'options', required=False) if config.param(ini_section, 'options', required=False) else "",
-            yaml_files="".join(["-c " + yaml + "\\\n" + yaml for yaml in yaml_files_list]),
+            yaml_files="".join(["-c " + yaml + " \\\n" for yaml in yaml_files_list]),
             input=" ".join([" \\\n  " + input for input in inputs]),
             output=output,
             )
