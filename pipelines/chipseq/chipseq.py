@@ -1445,25 +1445,25 @@ done""".format(
                     ['annotation_graphs', 'module_pandoc']
                 ],
                 command="""\
-cp /dev/null {annotation_dir}/peak_stats_AllSamples.csv && \\
+cp /dev/null {annotation_dir}/{merged_peak_stats} && \\
 mkdir -p {graphs_dir} && \\
 Rscript $R_TOOLS/chipSeqgenerateAnnotationGraphs.R {readset_file} {output_dir} && \\
 declare -A samples_associative_array=({samples_associative_array}) && \\
 for sample in ${{!samples_associative_array[@]}}
 do
     header=$(head -n 1 {annotation_dir}/$sample/peak_stats.csv)
-    tail -n+2 {annotation_dir}/$sample/peak_stats.csv >> {annotation_dir}/peak_stats_AllSamples.csv
+    tail -n+2 {annotation_dir}/$sample/peak_stats.csv >> {annotation_dir}/{merged_peak_stats}
 done && \\
-sed -i -e "1 i\\\$header" {annotation_dir}/peak_stats_AllSamples.csv && \\
+sed -i -e "1 i\\\$header" {annotation_dir}/{merged_peak_stats} && \\
 mkdir -p {report_dir}/{annotation_dir}/$sample && \\
 mkdir -p {report_yaml_dir} && \\
-cp {annotation_dir}/peak_stats_AllSamples.csv {report_dir}/{annotation_dir}/peak_stats_AllSamples.csv && \\
+cp {annotation_dir}/{merged_peak_stats} {report_dir}/{annotation_dir}/{merged_peak_stats} && \\
 sed -e 's@proximal_distance@{proximal_distance}@g' \\
     -e 's@distal_distance@{distal_distance}@g' \\
     -e 's@distance5d_lower@{distance5d_lower}@g' \\
     -e 's@distance5d_upper@{distance5d_upper}@g' \\
     -e 's@gene_desert_size@{gene_desert_size}@g' \\
-    -e 's@peak_stats_table@{annotation_dir}/peak_stats_AllSamples.csv@g' \\
+    -e 's@peak_stats_table@{annotation_dir}/{merged_peak_stats}@g' \\
     {report_template_dir}/{basename_report_file} > {report_file} && \\
 for sample in ${{!samples_associative_array[@]}}
 do
@@ -1667,7 +1667,7 @@ sed -e 's@ihec_metrics_merged_table@{ihec_metrics_merged_table}@g' \\
     {report_template_dir}/{basename_report_file} > {report_file}""".format(
                     report_yaml_dir=report_yaml_dir,
                     metrics_merged_out=metrics_merged_out,
-                    ihec_metrics_merged_table=metrics_merged,
+                    ihec_metrics_merged_table=os.path.basename(metrics_merged),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file,
@@ -1689,6 +1689,11 @@ sed -e 's@ihec_metrics_merged_table@{ihec_metrics_merged_table}@g' \\
         # yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
         input_files = []
         metrics_output_directory = self.output_dirs['metrics_output_directory']
+        for readset in self.readsets:
+            trim_directory = os.path.join("trim", readset.sample.name, readset.mark_name)
+            trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
+            trim_log = trim_file_prefix + "log"
+            input_files.append(trim_log)
         for sample in self.samples:
             for mark_name in sample.marks:
                 picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.all.metrics.")
@@ -1722,9 +1727,15 @@ sed -e 's@ihec_metrics_merged_table@{ihec_metrics_merged_table}@g' \\
                     os.path.join(homer_prefix, "tagInfo.txt")
                 ]
                 input_files.extend(homer_files)
+        ihec_metrics = os.path.join(self.output_dirs['report_output_directory'], "IHEC_chipseq_metrics_AllSamples.tsv")
+        input_files.append(ihec_metrics)
+        report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "SampleMetrics.tsv")
+        input_files.append(report_metrics_file)
+        merged_peak_stats = os.path.join(self.output_dirs['report_output_directory'], self.output_dirs['anno_output_directory'], "peak_stats_AllSamples.csv")
+        input_files.append(merged_peak_stats)
         # input_files = [os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt") for sample in self.samples]
-        output = os.path.join(self.output_dirs['report_output_directory'], "multiqc_report")
-        log.info(output)
+        output = os.path.join(self.output_dirs['report_output_directory'], "chipseq_multiqc_report")
+        # log.info(output)
 
         # job = multiqc.run(
         #     input_files,
@@ -1735,23 +1746,47 @@ sed -e 's@ihec_metrics_merged_table@{ihec_metrics_merged_table}@g' \\
 
         report_yaml_dir = os.path.join(self.output_dirs['report_output_directory'], "yaml")
         report_file = os.path.join(report_yaml_dir, "ChipSeq.template.yaml")
+        report_intro_file = os.path.join(report_yaml_dir, "ChipSeq.introduction.yaml")
+        report_references_file = os.path.join(report_yaml_dir, "references.yaml")
         now = datetime.datetime.now()
+        yaml_files_list = [
+        report_intro_file,
+        os.path.join(report_yaml_dir, "Illumina.merge_trimmomatic_stats.yaml"),
+        os.path.join(report_yaml_dir, "ChipSeq.sambamba_mark_duplicates.yaml"),
+        os.path.join(report_yaml_dir, "ChipSeq.sambamba_view_filter.yaml"),
+        os.path.join(report_yaml_dir, "ChipSeq.metrics.yaml"),
+        os.path.join(report_yaml_dir, "ChipSeq.qc_metrics.yaml"),
+        os.path.join(report_yaml_dir, "ChipSeq.homer_make_ucsc_file.yaml"),
+        os.path.join(report_yaml_dir, "ChipSeq.macs2_callpeak.yaml"),
+        os.path.join(report_yaml_dir, "ChipSeq.homer_annotate_peaks.yaml"),
+        os.path.join(report_yaml_dir, "ChipSeq.homer_find_motifs_genome.yaml"),
+        os.path.join(report_yaml_dir, "ChipSeq.annotation_graphs.yaml"),
+        os.path.join(report_yaml_dir, "ChipSeq.ihec_metrics.yaml"),
+        report_references_file,
+        report_file
+        ]
 
         jobs.append(
             concat_jobs([
                 Job(
                     input_files=[],
-                    output_files=[report_file],
+                    output_files=[report_file, report_intro_file],
                     name="merge_ihec_metrics_report",
                     module_entries=[['merge_ihec_metrics_report', 'module_pandoc']],
                     command="""\
 mkdir -p {report_yaml_dir} && \\
-sed -e 's@$VERSION$@{genpipes_version}@g; s@$DATE$@{date}@g' \\
+cp {report_template_dir}/{basename_report_intro_file} {report_intro_file} && \\
+cp {report_template_dir}/{basename_report_references_file} {report_references_file} && \\
+sed -e 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' \\
 {report_template_dir}/{basename_report_file} > {report_file}""".format(
         report_yaml_dir=report_yaml_dir,
         genpipes_version=self.version,
         date=str(now.strftime("%B")) + " " + str(now.strftime("%d")) + ", " + str(now.year),
         report_template_dir=self.report_template_dir,
+        basename_report_intro_file=os.path.basename(report_intro_file),
+        report_intro_file=report_intro_file,
+        basename_report_references_file=os.path.basename(report_references_file),
+        report_references_file=report_references_file,
         basename_report_file=os.path.basename(report_file),
         report_file=report_file
         ),
@@ -1760,6 +1795,7 @@ sed -e 's@$VERSION$@{genpipes_version}@g; s@$DATE$@{date}@g' \\
                 multiqc.run(
                     input_files,
                     output,
+                    yaml_files_list,
                     ini_section='multiqc_report'
                     )
                 ],

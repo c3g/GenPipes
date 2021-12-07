@@ -10,9 +10,9 @@
 ---
 title: "C3G Analysis Report"
 subtitle: "ChIP-Seq analysis using chipseq GenPipes pipeline $VERSION$"
-intro_text: "This document contains the description of the current GenPipes ChIP-Seq analysis.
-The information presented here reflects the current state of the analysis as of $DATE$.
-The different sections are a combination of default MultiQC modules and custom modules."
+# intro_text: "This document contains the description of the current GenPipes ChIP-Seq analysis.
+# The information presented here reflects the current state of the analysis as of $DATE$.
+# The different sections are a combination of default MultiQC modules and custom modules."
 report_comment: null
 
 # Setting decimal and thousand display seperators

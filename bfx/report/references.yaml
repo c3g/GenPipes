@@ -14,7 +14,7 @@ software:
   fasttree: http://www.microbesonline.org/fasttree/
   flash: http://ccb.jhu.edu/software/FLASH/
   gatk: https://www.broadinstitute.org/gatk/
-  genpipes: https://bitbucket.org/mugqic/genpipes/src/master/
+  GenPipes: https://bitbucket.org/mugqic/genpipes/src/master/
   gold: http://microbiomeutil.sourceforge.net/
   goseq: http://www.bioconductor.org/packages/release/bioc/html/goseq.html
   hgap: https://github.com/PacificBiosciences/Bioinformatics-Training/wiki/HGAP

@@ -1,0 +1,7 @@
+introduction:
+  id: introduction
+  parent_title: "Introduction"
+  content: |
+    This document contains the description of the current [[GenPipes]] ChIP-Seq analysis. If you would like to publish the results produced by this pipeline, we would appreciate it if you cite [[GenPipes]] in your future manuscript.
+
+    The information presented here reflects the current state of the analysis as of $DATE$. The different sections are a combination of default MultiQC modules and custom modules.
