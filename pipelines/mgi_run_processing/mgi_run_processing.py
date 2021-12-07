@@ -494,56 +494,91 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
             unaligned_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane)
             basecall_dir = os.path.join(unaligned_dir, "basecall")
-            basecall_outputs = [
-                os.path.join(basecall_dir, self.run_id, "L0" + lane),
-                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
-                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_2.fq.gz"),
-                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
-                os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
-                os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv")
-            ]
-            raw_fastq_dir = os.path.join(unaligned_dir, "raw_fastq")
-            raw_fastq_outputs = [
-                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
-                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + "_read_2.fq.gz"),
-                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
-                os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
-                os.path.join(raw_fastq_dir, "summaryTable.csv")
-            ]
 
             lane_config_file = os.path.join(unaligned_dir, self.run_id + "." + lane + ".settings.config")
             lane_basecall_done_file = os.path.join(basecall_dir, "basecall_" + lane + "_done.Success")
 
-            lane_basecall_job = concat_jobs(
-                [
-                    bash.mkdir(basecall_dir),
-                    run_processing_tools.mgi_t7_basecall(
-                        input,
-                        self.flowcell_id,
-                        basecall_outputs,
-                        basecall_dir,
-                        self.json_flag_files[lane],
-                        lane_config_file
-                    ),
-                    bash.touch(lane_basecall_done_file),
-                    bash.ln(
-                        os.path.join(basecall_dir, self.run_id, "L0" + lane),
-                        raw_fastq_dir
+
+            # If demultiplexing is perform while becalling
+            if self.is_demultiplexed:
+                basecall_outputs, postprocessing_jobs = self.generate_basecall_outputs(lane)
+                basecall_outputs.extend(
+                    [
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv")
+                    ]
+                )
+
+                lane_jobs.append(
+                    concat_jobs(
+                        [       
+                            bash.mkdir(basecall_dir),
+                            run_processing_tools.mgi_t7_basecall(
+                                input,
+                                self.flowcell_id,
+                                basecall_outputs,
+                                basecall_dir,
+                                self.json_flag_files[lane],
+                                lane_config_file
+                            )
+                        ],
+                        name="basecall." + self.run_id + "." + lane,
+                        samples=self.samples[lane] 
                     )
-                ],
-                name="basecall." + self.run_id + "." + lane,
-                samples=self.samples[lane] 
-            )
-            lane_basecall_job.output_files.extend(raw_fastq_outputs)
-            lane_jobs.append(lane_basecall_job)
+                )
 
-            for readset in self.readsets[lane]:
-                self.report_inputs[lane]['index'][readset.name] = [os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".summaryTable.csv")]
+                if postprocessing_jobs:
+                    jobs_to_throttle.extend(postprocessing_jobs)
+                else:
+                    log.error("WTF")
 
-            if self.args.type == 't7':
-                lane_jobs.extend(jobs_to_throttle)
             else:
-                lane_jobs.extend(self.throttle_jobs(jobs_to_throttle))
+                basecall_outputs = [
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane),
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_2.fq.gz"),
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv")
+                ]
+
+                raw_fastq_dir = os.path.join(unaligned_dir, "raw_fastq")
+                raw_fastq_outputs = [
+                    os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
+                    os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + "_read_2.fq.gz"),
+                    os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
+                    os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
+                    os.path.join(raw_fastq_dir, "summaryTable.csv")
+                ]
+
+                lane_basecall_job = concat_jobs(
+                    [
+                        bash.mkdir(basecall_dir),
+                        run_processing_tools.mgi_t7_basecall(
+                            input,
+                            self.flowcell_id,
+                            basecall_outputs,
+                            basecall_dir,
+                            self.json_flag_files[lane],
+                            lane_config_file
+                        ),
+                        bash.touch(lane_basecall_done_file),
+                        bash.ln(
+                            os.path.join(basecall_dir, self.run_id, "L0" + lane),
+                            raw_fastq_dir
+                        )
+                    ],
+                    name="basecall." + self.run_id + "." + lane,
+                    samples=self.samples[lane] 
+                )
+                lane_basecall_job.output_files.extend(raw_fastq_outputs)
+                lane_jobs.append(lane_basecall_job)
+
+                for readset in self.readsets[lane]:
+                    self.report_inputs[lane]['index'][readset.name] = [os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".summaryTable.csv")]
+
+            lane_jobs.extend(jobs_to_throttle)
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
         return jobs
@@ -585,7 +620,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 os.path.join(raw_fastq_dir, "summaryTable.csv")
             ]
             rename_job = None
-    
+
             # If demultiplexing was done on the sequencer i.e. MGI adpaters used...
             if self.is_demultiplexed:
                 rename_jobs = []
@@ -593,7 +628,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     os.path.join(raw_fastq_dir, "BarcodeStat.txt"),
                     os.path.join(raw_fastq_dir, "SequenceStat.txt")
                 ])
-    
+
                 # ...then do the renamings from the raw_fastq folder to the Unaligned folder
                 for readset in self.readsets[lane]:
                     output_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, 'Project_' + readset.project_id, 'Sample_' + readset.name)
@@ -1447,7 +1482,13 @@ class MGIRunProcessing(common.MUGQICPipeline):
     
             # Copy the MGI summary HTML report into the report folder
             raw_name_prefix = self.raw_fastq_prefix +  "_L0" + lane
-            summary_report_html = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "raw_fastq", raw_name_prefix + ".summaryReport.html")
+            if self.args.type == "g400":
+                summary_report_html = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "raw_fastq", raw_name_prefix + ".summaryReport.html")
+            elif self.args.type == "t7":
+                summary_report_html = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "basecall", self.run_id, "L0" + lane, raw_name_prefix + ".summaryReport.html")
+            else:
+                _raise(SanitycheckError("Unknown protocol : " + self.args.type))
+
             lane_jobs.append(
                 concat_jobs(
                     copy_fastqc_jobs + [
