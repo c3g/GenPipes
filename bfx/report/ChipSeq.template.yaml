@@ -49,7 +49,7 @@ module_order:
     - c3g_content_renderer:
       id: view_filter
     - picard:
-      info: "is a set of Java command line tools for manipulating high-throughput sequencing data."
+      info: "is a set of Java command line tools for manipulating high-throughput sequencing data. The following metrics are calculated on filtered bams files according to thresholds detailed in the previous section so alignments metrics might display very high rates."
     - c3g_table_renderer:
       id: sequencing_alignment_metrics
     - c3g_content_renderer:
