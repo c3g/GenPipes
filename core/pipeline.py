@@ -472,8 +472,8 @@ pandoc \\
   --toc-depth=6 \\
   --template={self.report_template_dir}/template.html \\
   --css=css/style.css \\
-  --variable title="{title}" \\
-  --filter pandoc-citeproc \\
+  --metadata title="{title}" \\
+  --citeproc \\
   <(pandoc --to=markdown \\
     --template {introduction} \\
     --variable date="{date}" \\
