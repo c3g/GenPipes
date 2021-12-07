@@ -443,8 +443,8 @@ def parse_illumina_raw_readset_files(
                         _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + " Aborting..."))
                     # At this point, inedx_file, adapter_file  protocol_file were succesfully parsed, then exit the loop !
                     break
-            else:
-                _raise(SanitycheckError("Could not find protocol " + line['LibraryProcess'] + " (from event file " + readset_file + ") in protocol library file " + protocol_file + " for readset " + readset.name + " Aborting..."))
+        else:
+            _raise(SanitycheckError("Could not find protocol " + line['LibraryProcess'] + " (from event file " + readset_file + ") in protocol library file " + protocol_file + " for readset " + readset.name + " Aborting..."))
 
         readset._genomic_database = line['Reference']
 
@@ -1308,8 +1308,13 @@ def sub_get_index(
         main_seq_pattern = "grep -A4 '^%s:' %s | grep -E \"^3'|^5'\" | head -n 1 | sed \"s/5'//g\"  | sed \"s/3'//g\" | tr -d \" '\-\" | grep %s"
         actual_seq_pattern = "echo %s | awk -F\"%s\" '{print $%d}' | sed \"%s\" | cut -c %s"
 
-        present = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, "-c " + index1_primer), shell=True, text=True).strip()
-        if present == "1" :
+#        present = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, "-c " + index1_primer), shell=True, text=True).strip()
+        try:
+            present = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, "-c " + index1_primer), shell=True, text=True).strip()
+        except subprocess.CalledProcessError as exc:
+            present = exc.output
+
+        if present == "1":
 
             main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, index1_primer), shell=True, text=True).strip()
 
@@ -1327,14 +1332,14 @@ def sub_get_index(
 
                 if seqtype in ["hiseqx", "hiseq4000", "iSeq", "dnbseqg400", "dnbseqt7"]:
                     actual_index2seq = subprocess.check_output(actual_seq_pattern.replace("| cut -c", "| rev | cut -c") % (main_seq, index2_primer, 1, "s/\[i5c\]/$(echo "+index2seq+" | tr 'ATGC' 'TACG' )/g", str(index2_primeroffset+1)+"-"+str(index2_primeroffset+int(index2cycles))), shell=True, text=True).strip()
-                else :
+                else:
                     actual_index2seq = subprocess.check_output(actual_seq_pattern % (main_seq, index2_primer, 2, "s/\[i5\]/"+index2seq+"/g", str(index2_primeroffset+1)+"-"+str(index2_primeroffset+int(index2cycles))), shell=True, text=True).strip()
 
-        else :
-            indexn1_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N1").replace("_DIGIT_", "1"), shell=True, text=True).strip()
-            indexn1_primeroffset = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N1").replace("_DIGIT_", "2"), shell=True, text=True).strip()
-            indexn2_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N2").replace("_DIGIT_", "1"), shell=True, text=True).strip()
-            indexn2_primeroffset = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N2").replace("_DIGIT_", "2"), shell=True, text=True).strip()
+        else:
+            indexn1_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N1") % (seqtype, index_file, 1), shell=True, text=True).strip()
+            indexn1_primeroffset = int(subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N1") % (seqtype, index_file, 2), shell=True, text=True).strip())
+            indexn2_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N2") % (seqtype, index_file, 1), shell=True, text=True).strip()
+            indexn2_primeroffset = int(subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index N2") % (seqtype, index_file, 2), shell=True, text=True).strip())
 
             main_seq = subprocess.check_output(main_seq_pattern % (readset.library_type, index_file, indexn1_primer), shell=True, text=True).strip()
 

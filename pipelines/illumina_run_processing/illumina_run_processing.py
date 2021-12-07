@@ -141,7 +141,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
 #        self.argparser.add_argument("--flowcell-id", help="Flowcell ID. Default is parsed from the run folder", required=False, dest="flowcell_id")
         self.argparser.add_argument("--raw-fastq-prefix", help="Prefix used to search for the raw fastq from the sequencer. Default <FLOWCELL_ID>_<RUN_ID>", required=False, dest="raw_fastq_prefix")
         self.argparser.add_argument("--lane", help="Lane number (to only process the given lane)", type=int, required=False, dest="lane_number")
-        self.argparser.add_argument("-r", "--readsets", help="Readset file i.e. Clarity event file (mandatory)", type=file, required=False)
+        self.argparser.add_argument("-r", "--readsets", help="Readset file i.e. Clarity event file (mandatory)", type=argparse.FileType('r'), required=False)
         self.argparser.add_argument("-x", help="First index base to use for demultiplexing (inclusive). The index from the sample sheet will be adjusted according to that value.", type=int, required=False, dest="first_index")
         self.argparser.add_argument("-y", help="Last index base to use for demultiplexing (inclusive)", type=int, required=False, dest="last_index")
         self.argparser.add_argument("-m", help="Number of index mistmaches allowed for demultiplexing (default 1). Barcode collisions are always checked.", type=int, required=False, dest="number_of_mismatches")
@@ -174,7 +174,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             if self.lane_number:
                 self._lanes = [lane]
             else:
-                self._lanes = [lane for lane in list(set([line['Position'].split(":")[0] for line in csv.DictReader(open(self.readset_file, 'rb'), delimiter=str(u'\t').encode('utf-8'), quotechar=str(u'"').encode('utf-8'))]))]
+                self._lanes = [lane for lane in list(set([line['Position'].split(":")[0] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))]
             for lane in self._lanes:
                 self.copy_job_inputs[lane] = []
         return self._lanes
@@ -261,7 +261,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                 self._run_id = m.group(2)
             else:
                 log.warn("Unsupported folder name: " + self.run_dir)
-
         return self._run_id
 
     @property
@@ -360,10 +359,31 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         return self._seqtype
 
     @property
-    def umi(self):
-        if not hasattr(self, "umi"):
-            return False
-        return self._umi
+    def year(self):
+        """
+        Get year of the from sample sheet
+        """
+        if not hasattr(self, "_year"):
+            dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))])
+            if len(list(dates)) > 1:
+                _raise(SanitycheckError("More than one date were found in the sample sheet for the run \"" + self._run_id + "\""))
+            else:
+                self._year = list(dates)[0].split("-")[0]
+        return self._year
+ 
+    @property
+    def date(self):
+        """
+        Get whole date of the run from sample sheet
+        """
+        if not hasattr(self, "_date"):
+            dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))])
+            if len(list(dates)) > 1:
+                _raise(SanitycheckError("More than one date were found in the sample sheet for the run \"" + self._run_id + "\""))
+            else:
+                date = list(dates)[0].split("-")
+                self._date = date[0][-2:] + date[1] + date[2]
+        return self._date
 
     @property
     def merge_undetermined(self):
@@ -374,37 +394,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
         if config.param('fastq', 'merge_undetermined', required=False, type='boolean'):
             merge = config.param('fastq', 'merge_undetermined')
         return merge
-
-    @property
-    def bcl2fastq_extra_option(self):
-        if not hasattr(self, "_bcl2fastq_extra_option"):
-            return ""
-        return self._bcl2fastq_extra_option
-
-    @property
-    def index1cycles(self):
-        if not hasattr(self, "_index1cycles"):
-            [self._index1cycles, self._index2cycles] = self.get_indexcycles()
-        return self._index1cycles
-
-    @property
-    def index2cycles(self):
-        if not hasattr(self, "_index2cycles"):
-            [self._index1cycles, self._index2cycles] = self.get_indexcycles()
-        return self._index2cycles
-
-    @property
-    def index_per_readset(self):
-        if not hasattr(self, "_index_per_readset"):
-            return ""
-        # Define in generate_clarity_sample_sheet() 
-        return self._index_per_readset
-
-    @property
-    def seqtype(self):
-        if not hasattr(self, "_seqtype"):
-            self._seqtype = self.get_seqtype()
-        return self._seqtype
 
     @property
     def instrument(self):
@@ -642,11 +631,11 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
             if notification_command_start:
                 notification_command_start = notification_command_start.format(
                     output_dir=self.output_dir,
-                    number_of_mismatches=self.number_of_mismatches,
+#                    number_of_mismatches=self.number_of_mismatches,
                     lane_number=self.lane_number,
-                    mask=self.mask[lane],
-                    technology=config.param('fastq', 'technology'),
-                    run_id=self.run_id
+#                    mask=self.mask[lane],
+#                    technology=config.param('fastq', 'technology'),
+#                    run_id=self.run_id
                 )
                 # Use the same inputs and output of fastq job to send a notification each time the fastq job run
                 job = Job(
@@ -663,8 +652,8 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                 notification_command_end = notification_command_end.format(
                     output_dir=self.output_dir,
                     lane_number=self.lane_number,
-                    technology=config.param('fastq', 'technology'),
-                    run_id=self.run_id
+#                    technology=config.param('fastq', 'technology'),
+#                    run_id=self.run_id
                 )
                 job = Job(
                     fastq_outputs,
@@ -873,7 +862,6 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                         command=command
                     )
                 )
-            )
 
                 # rRNA estimate using silva blast db, using the same subset of reads as the "normal" blast
                 rrna_db = config.param('blast', 'rrna_db', required=False)
@@ -975,11 +963,6 @@ wc -l >> {output}""".format(
         align the reads.
         """
         jobs = []
-        for readset in [readset for readset in self.readsets if readset.bam]:
-            job = readset.aligner.get_alignment_job(readset)
-            job.samples = [readset.sample]
-            jobs.append(job)
-
         for lane in self.lanes:
             lane_jobs = []
 
@@ -1167,26 +1150,26 @@ wc -l >> {output}""".format(
             inputs = self.copy_job_inputs[lane]
 
             # Notification
-            output1 = os.path.join(self.output_dir, "notificationProcessingComplete." + lane + ".out")
-            output2 = os.path.join(self.output_dir, "notificationCopyStart." + lane + ".out")
+#            output1 = os.path.join(self.output_dir, "notificationProcessingComplete." + lane + ".out")
+#            output2 = os.path.join(self.output_dir, "notificationCopyStart." + lane + ".out")
 
-            notification_command = config.param('copy', 'notification_command', required=False)
-            if notification_command:
-                job = Job(
-                    inputs,
-                    [output1, output2],
-                    name="start_copy_notification." + self.run_id + "." + lane,
-                    samples=self.samples[lane]
-                )
-                job.command = notification_command.format(
-                    technology=config.param('copy', 'technology'),
-                    output_dir=self.output_dir,
-                    run_id=self.run_id,
-                    output1=output1,
-                    output2=output2,
-                    lane_number=lane
-                )
-                jobs_to_concat.append(job)
+#            notification_command = config.param('copy', 'notification_command', required=False)
+#            if notification_command:
+#                job = Job(
+#                    inputs,
+#                    [output1, output2],
+#                    name="start_copy_notification." + self.run_id + "." + lane,
+#                    samples=self.samples[lane]
+#                )
+#                job.command = notification_command.format(
+#                    technology=config.param('copy', 'technology'),
+#                    output_dir=self.output_dir,
+#                    run_id=self.run_id,
+#                    output1=output1,
+#                    output2=output2,
+#                    lane_number=lane
+#                )
+#                jobs_to_concat.append(job)
 
             # Actual copy
             output = os.path.join(full_destination_folder, "copyCompleted." + lane + ".out")
@@ -1352,53 +1335,6 @@ wc -l >> {output}""".format(
 
         return jobs
 
-    def report(self):
-        """
-        Generate en JSON file reporting the whole pipeline
-        """
-        jobs = []
-
-        report_dir = os.path.join(self.output_dir, "report")
-        sample_report_dir  = os.path.join(report_dir, "sample_json")
-
-        for readset in self.readsets:
-            output_file = os.path.join(sample_report_dir, readset.name + ".report.json")
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(sample_report_dir),
-                    tools.run_validation_sample_report(
-                        readset,
-                        self.report_inputs,
-                        output_file
-                    )],
-                    name="sample_report." + readset.name + "." + self.run_id + "." + str(readset.lane)
-                )
-            )
-
-        run_validation_report_json = os.path.join(report_dir, self.run_id + "." + str(self.lane_number) + ".run_validation_report.json")
-        general_information_file = os.path.join(self.output_dir, self.run_id + "." + str(self.lane_number) + ".general_information.json")
-        with open(general_information_file, 'w') as out_json:
-            json.dump(self.report_hash, out_json, indent=4)
-
-        run_validation_inputs = []
-        for sample_job in jobs:
-            run_validation_inputs.extend(sample_job.output_files)
-
-        jobs.append(
-            concat_jobs([
-                bash.mkdir(report_dir),
-                tools.run_validation_aggregate_report(
-                    general_information_file,
-                    os.path.join(self.output_dir, "index", "index_per_readset.json"),
-                    run_validation_inputs,
-                    run_validation_report_json
-                )],
-                name="report." + self.run_id + "." + str(self.lane_number)
-            )
-        )
-
-        return jobs
-
     #
     # Utility methods
     #
@@ -1408,19 +1344,6 @@ wc -l >> {output}""".format(
             # we first remove dependencies of the current job, since we will have a dependency on that job
             self.copy_job_inputs[lane] = [item for item in self.copy_job_inputs[lane] if item not in job.input_files]
             self.copy_job_inputs[lane].extend(job.output_files)
-
-    def add_to_report_hash(self, step_name, jobs=[]):
-        report_hash = {
-            "step_name" : step_name,
-            "jobs" : [{
-                "job_name" : job.name,
-                "input_files" : [os.path.relpath(input_file, os.path.join(self.output_dir, "report")) for input_file in job.input_files],
-                "output_files" : [os.path.relpath(output_file, os.path.join(self.output_dir, "report")) for output_file in job.output_files],
-                "command" : job.command,                     
-                "modules" : job.modules
-            } for job in jobs]
-        }
-        self.report_hash["steps"].append(report_hash)
 
     def add_to_report_hash(self, step_name, jobs=[]):
         report_hash = {
@@ -1469,7 +1392,7 @@ wc -l >> {output}""".format(
         if not (instrument_file and os.path.isfile(instrument_file)):
             instrument_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'instrument_list.csv')
 
-        return subprocess.check_output("grep -m1 '"+instrument+"' %s | awk -F',' '{print $3}'" % instrument_file, shell=True).strip()
+        return subprocess.check_output("grep -m1 '"+instrument+"' %s | awk -F',' '{print $3}'" % instrument_file, shell=True, text=True).strip()
 
     def get_instrument(self):
         """
@@ -1593,7 +1516,7 @@ wc -l >> {output}""".format(
             "casavasheet." + lane + ".indexed.csv"
         )
         writer = csv.DictWriter(
-            open(csv_file, 'wb'),
+            open(csv_file, 'w'),
             delimiter=str(','),
             fieldnames=csv_headers
         )
@@ -1703,7 +1626,7 @@ wc -l >> {output}""".format(
             output_dir_noindex = output_dir + ".noindex"
             casava_sample_sheet_noindex = re.sub(".indexed.", ".noindex.", casava_sample_sheet)
             writer = csv.DictWriter(
-                open(casava_sample_sheet_noindex, 'wb'),
+                open(casava_sample_sheet_noindex, 'w'),
                 delimiter=str(','),
                 fieldnames=csv_headers
             )
@@ -2059,7 +1982,7 @@ wc -l >> {output}""".format(
             "PAIRED_END" if self.is_paired_end else "SINGLE_END",
             self.readset_file,
             lane,
-            config.param('DEFAULT', 'genomes_home', type="dirpath"),
+            config.param('DEFAULT', 'genome_root', type="dirpath"),
             self.get_sequencer_minimum_read_length(),
             self.index1cycles,
             self.index2cycles,
@@ -2127,7 +2050,7 @@ def distance(
     """
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
-    return sum(itertools.imap(unicode.__ne__, str1, str2))
+    return sum(map(str.__ne__, str1, str2))
 
 if __name__ == '__main__':
 
