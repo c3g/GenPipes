@@ -1772,7 +1772,7 @@ sed -e 's@ihec_metrics_merged_table@{ihec_metrics_merged_table}@g' \\
                     input_files=[],
                     output_files=[report_file, report_intro_file],
                     name="merge_ihec_metrics_report",
-                    module_entries=["multiqc_report", "module_mugqic_tools"],
+                    module_entries=[["multiqc_report", "module_mugqic_tools"]],
                     command="""\
 mkdir -p {report_yaml_dir} && \\
 cp {report_template_dir}/{basename_report_intro_file} {report_intro_file} && \\
@@ -1791,7 +1791,7 @@ sed -ie 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' {report_file}"
         report_file=report_file,
         trimmomatic_yaml=os.path.join(report_yaml_dir, "Illumina.merge_trimmomatic_stats.yaml")
         ),
-                    # report_files=[report_file]
+                    report_files=[report_file]
                     ),
                 multiqc.run(
                     input_files,
