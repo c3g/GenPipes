@@ -29,8 +29,8 @@ def run(inputs, output, yaml_files_list, ini_section='multiqc_report'):
         inputs,
         [output],
         [
-            [ini_section, 'module_python'],
             [ini_section, 'module_multiqc'],
+            [ini_section, 'module_python'],
         ],
         command="""\
 multiqc -f {options} \\
