@@ -1,6 +1,300 @@
-29 tags, 8766 commits
+30 tags, 8998 commits
 
-HEAD        Tue Nov 9 12:19:43 2021 -0500        0 commits
+HEAD        Thu Dec 9 11:30:35 2021 -0500        0 commits
+
+4.0.0        Thu Dec 9 19:13:55 2021 +0000        232 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      14 commits
+
+       a34c5a1 Merge remote-tracking branch 'origin/dev' into release_4.0.0
+       d2f25eb updated .gitignore
+       c02c96d Merge remote-tracking branch 'origin/dev' into release_4.0.0
+       9485b93 GenPipes - README : update epiqc REAMDE
+       18dc471 Merge remote-tracking branch 'origin/dev' into release_4.0
+       8ac6847 GenPipes - README : Updated READMEs before new release
+       b1e2df0 GenPipes - config : correcting parsing of walltime from config files
+       b83fe9f Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       0865f20 GenPipes - DNASeq : correction of sym_link_final_bam dependencies - fixes Issue #119 and Issue #125
+       85f8054 GenPipes - Tumor Pair : fixed some enumerate loop...
+       5199ee7 GenPipes - Tumor Pair : fixing sym_links steps to avoid duplicate job names
+       0e63d7f GenPipes - DNASeq : fixing .bai dependencies
+       3453cf0 Version bump to 3.6.3-beta
+       d2361a5 Version bump to 3.6.2
+
+  Édouard Henrion <henrione@beluga2.int.ets1.calculquebec.ca>      10 commits
+
+       963a49a GenPipes - python3 : fixes following py2to3 recommandations
+       a227471 GenPipes - Python3 : fixes after last rebase with dev
+       4b5f9bd Merge branch 'genpipes_python3_eh' of bitbucket.org:mugqic/genpipes into genpipes_python3_eh
+       5ca19c5 GenPipes - start switching to python3
+       bfa2a48 GenPipes - start switching to python3
+       e3f7e92 GenPipes - Python3 : fixing file opening in bfx/readset.py
+       7789689 GenPipes - Python3 : fixing conflicts with bfx/readset.py in dev
+       7c41602 GenPipes - start switching to python3
+       978a291 GenPipes - start switching to python3
+       233c108 GenPipes - start switching to python3
+
+  Édouard Henrion <henrione@beluga4.int.ets1.calculquebec.ca>      4 commits
+
+       2601b7f GenPipes - Python3 : removing the shebang from all the bfx scripts
+       a99a2e4 GenPipes - Python3 : removing the shebang from all the bfx scripts
+       c43eb20 Merge branch 'genpipes_python3_eh' of bitbucket.org:mugqic/genpipes into genpipes_python3_eh
+       025c3c2 Merge branch 'genpipes_python3_eh' of bitbucket.org:mugqic/genpipes into genpipes_python3_eh
+
+  Édouard Henrion <henrione@beluga5.int.ets1.calculquebec.ca>      2 commits
+
+       4463bac GenPipes - Config : removed useless debugging messages
+       d47adcf GenPipes - Resources : updated install scripts for fgbio and mugqic_tools
+
+  ehenrion <edouard.henrion@mcgill.ca>      8 commits
+
+       baf52f9 Merged in release_4.0.0 (pull request #285)
+       540e030 Merged in release_4.0 (pull request #284)
+       fe49a83 GenPipes - BFX : corrected typo in gatk4.py
+       bdea57f Merged in tumor_pair_sym_link_fix (pull request #282)
+       f594754 Merged in hotfix_dnaseq (pull request #280)
+       34e54c9 GenPipes - RNASeq : minor typo fixes in README.md
+       eca4475 Merged in genpipes_python3_eh (pull request #270)
+       34608bc Merged in release_3.6.2 (pull request #269)
+
+  Mathieu Bourgey <mathieu.bourgey@mcgill.ca>      1 commits
+
+       b28b4a8 remove recalibrated bam name error from some input jobs
+
+  mathieu bourgey <mathieu.bourgey@mcgill.ca>      1 commits
+
+       2b23422 Merged in dnaseq_fixRecal (pull request #276)
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      8 commits
+
+       73443c7 Making pandoc report working with pandoc version 2.16.1
+       60093e6 Making pandoc report working with pandoc version 2.16.1
+       c6ab31b Merged in Paul-Stretenowich/log_reportpy-edited-online-with-bitbucke-1637772592796 (pull request #277)
+       e869259 log_report.py switching back to py3 and adding Narval as remote
+       0ef01e9 EpiQC - First commit after Rami Coles internship
+       4e55e0f General - Fixing genome installation grep issue
+       06260f0 EpiQC - First commit after Rami Coles internship
+       d458b42 Merge branch 'dev' into epiqc
+
+  pnawarathna <pubudu.nawarathna@mail.mcgill.ca>      9 commits
+
+       4f89f91 copy contents of readset into inputinfo file(have errors)
+       d51b1ce copy contents of readset into inputinfo file(have errors)
+       97bc3da creating inputinfo file after copying original file
+       45c917c epiqc - completed chromimpute development - right before remove design file and modify readset file
+       9500856 epiqc - completed chromimpute development - right before remove design file and modify readset file
+       2bb45e0 [epiqc] - developed up to generatetrain data - need to run through alll histone marks in the inputinfo file
+       3a86f94 copy contents of readset into inputinfo file(have errors)
+       acfcbc0 copy contents of readset into inputinfo file(have errors)
+       7b5b552 creating inputinfo file after copying original file
+
+  P-O Quirion <pierre-olivier.quirion@computationalgenomics.ca>      7 commits
+
+       43f4575 update GIAContainer version
+       9fec333 changing error log to debug in cit config
+       9329e2e add cit options for epiqc
+       10199cc send telemetry downloded file to /dev/null
+       e942d07 fix warning
+       99ec4c9 make log_report.py more robust
+       c30189c update R bioconductor in dnaseq_high_coverage
+
+  pubudumanoj <pubudu.nawarathna@mail.mcgill.ca>      47 commits
+
+       4bee1ca bug fix #121. missing module load mugqic_tools 2.8.2
+       5e8f3da fixed file path issue in seq2fun corrected the mugqic_tools version in epiQC
+       a317b6b corrected a typo
+       7f78005 added the reason to use os.remove in a comment
+       c4721bc addressed Hector's comments - changed seq2fun db path
+       ffd0abe addressed Hector's comments
+       6e2ce1f fixed Issue #118: hicseq hic error in interaction_matrices_Chr (mugqic/genpipes) by adding floor division to places which return floating points where intgers needed
+       c333a3e modified incorrect seq2fun cvmfs db path
+       5e928cf added seq2fun cvmfs db paths
+       0c9418a modified seq2fun db paths
+       1569435 updated readme file
+       22d90bf modified documentation. added extend jobs for differential expression modified ini files for cedar and graham
+       dc4c608 seq2fun pathway_analysis completed
+       de5f87b started pathway analysis-seq2fun
+       e162747 improved seq2fun processing
+       5d6df18 added seq2fun to the function as the final step. working well but needs improvements
+       bdd622d fixed fastq concatenate issue with adding zcat if the file is gz changed wall time for merge_fastq and seq2fun
+       54bf3aa added seq2fun protocol completed merge_fastq partially completed seq2fun function
+       0c2d569 addressed Paul's comments
+       ef8ae36 fixed a bug
+       2e3c742 changed mugqic_tools version to 2.8.3
+       06e458e fixed bugs when transferring to python3
+       fb9093e fixed bug in chromimpute convert corrected uuid issue in job2jason.py
+       0bd6773 fixed an issue for python 3
+       0d1622c updated readme file
+       9e62546 testing whether env varibales are retrievable dynamically
+       ff73039 fixed input files not found error when running the pipeline outside of the project directory
+       78af37b added cit.ini
+       a4dc68c fixed issues in final report added comments
+       ca3dc8a fixed bugs in -o option added IHEC data path
+       0bcde68 modified documentation. added extend jobs for differential expression modified ini files for cedar and graham
+       affd3b0 seq2fun pathway_analysis completed
+       129b56b started pathway analysis-seq2fun
+       7ef4a6f improved seq2fun processing
+       92ac712 added seq2fun to the function as the final step. working well but needs improvements
+       97bdedb fixed fastq concatenate issue with adding zcat if the file is gz changed wall time for merge_fastq and seq2fun
+       2d0359b added seq2fun protocol completed merge_fastq partially completed seq2fun function
+       93811b3 testing whether env varibales are retrievable dynamically
+       72d5f9b fixed input files not found error when running the pipeline outside of the project directory
+       b97891f added cit.ini
+       b29e717 fixed issues in final report added comments
+       cea9f45 fixed bugs in -o option added IHEC data path
+       15c5695 completed all the steps, working pipeline. documentation is 90% completed. might need to do some fix on chromimpute
+       b86e6e5 completed fixing errors-working pipeline
+       d07286d corrected up to epiqc final report
+       9304cba corrected up to epigeek
+       562607a corrected up to global dist after chipseq design changes
+
+  Pubudu Nawarathna Mudiyanselage <pubudu.nawarathna@mail.mcgill.ca>      59 commits
+
+       e837166 Merge branch 'seq2fun_denovo_rnaseq' of bitbucket.org:mugqic/genpipes into seq2fun_denovo_rnaseq
+       5683bc9 Merge branch 'seq2fun_denovo_rnaseq' of bitbucket.org:mugqic/genpipes into seq2fun_denovo_rnaseq
+       faab0ee Addressed Paul's comments
+       b3e8185 addressed Paul's comments
+       4130054 Merge branch 'epiqc' of bitbucket.org:mugqic/genpipes into epiqc
+       0225132 space changes in epiqc.py
+       ca91e09 completed all the steps, working pipeline. documentation is 90% completed. might need to do some fix on chromimpute
+       dbf8254 completed fixing errors-working pipeline
+       fc17d37 General - Fixing genome installation grep issue
+       26837e3 EpiQC - Stable version on abacus. Added utility tools in epiqc directory
+       e3ca2e6 EpiQC - Added epiqc_report in bfx and in main file. Modified chromimpute and bigwiginfo
+       9bda353 EpiQC - Fixed bugs
+       e4faee4 EpiQC - Added jobs for chromimpute in bfx/chromimpute and epiqc.py.
+       1dcd8dd EpiQC - Added bigwig column to readset.py, bigwiginfo checks if there is bigwig column in readset, if not searches for bigwig file chipseq run
+       851b26d added epiqc pipeline, bfx/bigwiginfo.py. bfx/chromimpute.py, bfx/signal_noise.py, bfx/epigeec.py
+       29139a9 General - Fixing genome installation grep issue
+       b95fc32 resolve merge conflicts
+       701f109 resolved merge conflicts
+       d03737e resolve merge conflicts
+       8852d61 resolved merge conflicts
+       5463486 resolved merge conflicts
+       82ff100 resolved merge conflicts
+       d833412 resolve merge coonflicts
+       e047a3e resolved merge conflicts
+       dba6b33 space changes in epiqc.py
+       2fe7046 Merge branch 'epiqc' of bitbucket.org:mugqic/genpipes into epiqc
+       429caf1 General - Fixing genome installation grep issue
+       06113d1 EpiQC - Stable version on abacus. Added utility tools in epiqc directory
+       34d3cc9 EpiQC - Changed how wigSignalNoise.py and epiqc_report.py are called
+       c00875a EpiQC - Metrics thresholds can be modified in base.ini
+       35a6396 EpiQC - Modified epiqc.py and epiqc inis, removed epiqc_report and wigSignalNoise from bfx (adding to mugqic_tools)
+       9e3e1f4 \Added documentation and comments on epiqc.py, bigwiginfo.py, chromimpute.py, epigeec.py and epiqc_report.py
+       698c46f EpiQC - report step now creates a heatmap from the correlation matrix obtained with epigeec
+       2086d5a EpiQC - Created bigwig_to_bedgraph step and seperated chromimpute into 2 steps : chromimpute_train_step and chromimpute_compute_metrics.
+       c2af489 EpiQC - Added epiqc_report in bfx and in main file. Modified chromimpute and bigwiginfo
+       1089984 EpiQC - Fixed bugs
+       bf60df9 EpiQC - Added signal to noise and epigeec steps
+       bced2bd EpiQC - Parallelized chromimpute
+       c1b462a EpiQC - Added jobs for chromimpute in bfx/chromimpute and epiqc.py.
+       4d12401 EpiQC - Added bigwig column to readset.py, bigwiginfo checks if there is bigwig column in readset, if not searches for bigwig file chipseq run
+       0e763c8 added epiqc pipeline, bfx/bigwiginfo.py. bfx/chromimpute.py, bfx/signal_noise.py, bfx/epigeec.py
+       7f8337e [epiqc] - developed up to generatetrain data - need to run through alll histone marks in the inputinfo file
+       2b769bf resolve merge conflicts
+       05b7cd3 resolved merge conflicts
+       2e219fa resolve merge conflicts
+       aaed941 resolved merge conflicts
+       cc0bccf resolved merge conflicts
+       231f626 resolved merge conflicts
+       a7e5a61 resolve merge coonflicts
+       42a741b resolved merge conflicts
+       1e5e8af Merge branch 'epiqc' of https://bitbucket.org/mugqic/genpipes into epiqc
+       6eef5c8 resolve merge conflicts
+       d679a97 resolved merge conflicts
+       eb880f5 resolve merge conflicts
+       06fe31e resolved merge conflicts
+       2296539 resolved merge conflicts
+       0e2c9cd resolved merge conflicts
+       301d2ee resolve merge coonflicts
+       f285a7c resolved merge conflicts
+
+  Pubudu Nawarathna <pubudu.nawarathna@mail.mcgill.ca>      8 commits
+
+       b3194fa Merged in seq2fun_fix_bug121 (pull request #281)
+       ffc9c01 Merged in epiqc_mugqic_tools (pull request #279)
+       a9ac4d6 Merged in epiqc_comments (pull request #278)
+       4bd2b26 Merged in epiqc (pull request #271)
+       c38208b Merged in seq2fun_denovo_rnaseq (pull request #272)
+       e12b111 Merged dev into seq2fun_denovo_rnaseq
+       0df8920 Merged in hic_python3_issue_fix (pull request #275)
+       1d5f2b0 Merged epiqc into epiqc_ss
+
+  rami.coles@mail.mcgill.ca <rcoles@abacus1.ferrier.genome.mcgill.ca>      2 commits
+
+       70f8ec0 EpiQC - report step now creates a heatmap from the correlation matrix obtained with epigeec
+       5feada1 EpiQC - report step now creates a heatmap from the correlation matrix obtained with epigeec
+
+  rami.coles@mail.mcgill.ca <rcoles@abacus2.ferrier.genome.mcgill.ca>      11 commits
+
+       f20a000 Removed .pyc and .DS_Store files, updated epiqc.base.ini and epiqc.py
+       74e2a32 Removed .pyc and .DS_Store files, updated epiqc.base.ini and epiqc.py
+       e911f95 added epiqc pipeline, bfx/bigwiginfo.py. bfx/chromimpute.py, bfx/signal_noise.py, bfx/epigeec.py
+       7a5da00 Removed .pyc and .DS_Store files, updated epiqc.base.ini and epiqc.py
+       bc66beb Removed .pyc and .DS_Store files, updated epiqc.base.ini and epiqc.py
+       d0a7b9d added epiqc pipeline, bfx/bigwiginfo.py. bfx/chromimpute.py, bfx/signal_noise.py, bfx/epigeec.py
+       6695197 Removed .pyc and .DS_Store files, updated epiqc.base.ini and epiqc.py
+       a040d0b added epiqc pipeline, bfx/bigwiginfo.py. bfx/chromimpute.py, bfx/signal_noise.py, bfx/epigeec.py
+       6a5e995 EpiQC - Added bigwig column to readset.py, bigwiginfo checks if there is bigwig column in readset, if not searches for bigwig file chipseq run
+       53c747f Removed .pyc and .DS_Store files, updated epiqc.base.ini and epiqc.py
+       f56d086 added epiqc pipeline, bfx/bigwiginfo.py. bfx/chromimpute.py, bfx/signal_noise.py, bfx/epigeec.py
+
+  rami.coles@mail.mcgill.ca <rcoles@abacus3.ferrier.genome.mcgill.ca>      21 commits
+
+       6901237 Added comments to the utility tools. ihec_json_parser.py creates a readset for epiqc and a list of marks to add in the base.ini file in the marks field of chromimpute section.
+       88c422d EpiQC - Changed how wigSignalNoise.py and epiqc_report.py are called
+       f85d37a EpiQC - Metrics thresholds can be modified in base.ini
+       b146548 EpiQC - Modified epiqc.py and epiqc inis, removed epiqc_report and wigSignalNoise from bfx (adding to mugqic_tools)
+       51b6bdb Added documentation and comments on epiqc.py, bigwiginfo.py, chromimpute.py, epigeec.py and epiqc_report.py
+       9e118e5 EpiQC - Created bigwig_to_bedgraph step and seperated chromimpute into 2 steps : chromimpute_train_step and chromimpute_compute_metrics.
+       a68aad3 EpiQC - Added signal to noise and epigeec steps
+       fe957a6 EpiQC - Parallelized chromimpute
+       ab1425d Added comments to the utility tools. ihec_json_parser.py creates a readset for epiqc and a list of marks to add in the base.ini file in the marks field of chromimpute section.
+       1cbf6d0 Added comments to the utility tools. ihec_json_parser.py creates a readset for epiqc and a list of marks to add in the base.ini file in the marks field of chromimpute section.
+       86c0461 EpiQC - Stable version on abacus. Added utility tools in epiqc directory
+       ef3acde EpiQC - Changed how wigSignalNoise.py and epiqc_report.py are called
+       6425046 EpiQC - Metrics thresholds can be modified in base.ini
+       e9e9f2f EpiQC - Modified epiqc.py and epiqc inis, removed epiqc_report and wigSignalNoise from bfx (adding to mugqic_tools)
+       3ecaebb Added documentation and comments on epiqc.py, bigwiginfo.py, chromimpute.py, epigeec.py and epiqc_report.py
+       2a773e7 EpiQC - Created bigwig_to_bedgraph step and seperated chromimpute into 2 steps : chromimpute_train_step and chromimpute_compute_metrics.
+       c800a67 EpiQC - Added epiqc_report in bfx and in main file. Modified chromimpute and bigwiginfo
+       d3bd3e1 EpiQC - Fixed bugs
+       402b34e EpiQC - Added signal to noise and epigeec steps
+       a664314 EpiQC - Parallelized chromimpute
+       4bf48b9 EpiQC - Added jobs for chromimpute in bfx/chromimpute and epiqc.py.
+
+  Robert Syme <rob.syme@gmail.com>      1 commits
+
+       f8dfff5 Merged in servername-fix-dev (pull request #274)
+
+  Rob Syme <rob.syme@gmail.com>      1 commits
+
+       a76c958 Fix example server name in dev
+
+  Shaloo Shalini <shaloo.shalini@gmail.com>      4 commits
+
+       db1afc3 Merged in ss_mermaid_96 (pull request #247)
+       dab640b Merged dev into ss_mermaid_96
+       6193cda Merged in dev_covseqdoc_ss (pull request #258)
+       6dcc0cb Merged in epiqc_ss (pull request #253)
+
+  shaloo <shalz@hotmail.com>      14 commits
+
+       9e54762 Fixes #101 epiQC pipeline workflow added - both manual as well as mermaid generated
+       4ec66ff Refs #102 removed ChIP-seq pptx link
+       7837688 Fixes #102 issues in README.md for epiqc pipeline
+       e08c73d Refs #103 Paul's feedback in workflow incorporated
+       52ca4d1 Fixes #103 covseq workflow added
+       f356ffe Merge remote-tracking branch 'refs/remotes/origin/dev_covseqdoc_ss' into dev_covseqdoc_ss
+       878fcf5 Refs #103 covseq doc freebayes update
+       8f5625c Typo fix
+       81ee462 Fixes typo Refs #103
+       a62e20b Refs #103 covseq doc freebayes update
+       fb32de5 Fixes #101 epiQC pipeline workflow added - both manual as well as mermaid generated
+       86e5a38 Refs #102 removed ChIP-seq pptx link
+       29ae522 Fixes #102 issues in README.md for epiqc pipeline
+       43501a4 Fixes #96 all GenPipes workflows are now coded as mermaid flowcharts and png generated from them
 
 3.6.2        Thu Nov 11 14:14:18 2021 +0000        28 commits
 
