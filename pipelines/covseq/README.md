@@ -19,7 +19,7 @@ usage: covseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--container {wrapper, singularity} <IMAGE PATH>]
                  [--genpipes_file GENPIPES_FILE] [-r READSETS] [-v]
 
-Version: 3.6.2
+Version: 4.0.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -159,7 +159,7 @@ freebayes_calling
 -----------------
 FreeBayes is a haplotype-based variant detector designed to find small polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels (insertions and deletions), MNPs (multi-nucleotide polymorphisms), and complex events (composite insertion and substitution events) smaller than the length of a short-read sequencing alignment.
 
-This method avoids one of the core problems with alignment-based variant detection— that identical sequences may have multiple possible alignments. See ![FreeBayes details here](https://github.com/freebayes/freebayes).
+This method avoids one of the core problems with alignment-based variant detection that identical sequences may have multiple possible alignments.
 
 ivar_calling
 ------------
@@ -186,29 +186,25 @@ rename_consensus_header_ivar
 Rename reads headers
 
 rename_consensus_header_freebayes
-
 ---------------------------------
 Rename reads headers
 
 ncovtools_quickalign
 --------------------
-
-Uses quickalign to provides summary statistics, which can be used to determine the sequencing quality and evolutionary novelty of input genomes (e.g. number of new mutations and indels).
+Uses quickalign to provides summary statistics, which can be used to determine the sequencing quality and evolutionary novelty of input genomes (e.g. number of new mutations and indels). 
 
 It uses ivar consensus as well as freebayes consensus to arrive at the alignment decisions.
 
 prepare_table
 -------------
-
-Gathers all analysis data for quast, kraken and other metrics and module
- details.
+Gathers all analysis data for quast, kraken and other metrics and module details.
 
 prepare_report_ivar
 -------------------
-
 Prepare ivar analysis report.
 
 prepare_report_freebayes
 ------------------------
+Prepare ivar analysis report.
 
-Prepare freebayes analysis report.
+

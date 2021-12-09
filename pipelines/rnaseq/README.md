@@ -15,7 +15,7 @@ usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--genpipes_file GENPIPES_FILE] [-t {stringtie,cufflinks}]
                  [-d DESIGN] [-r READSETS] [-v]
 
-Version: 3.6.2
+Version: 4.0.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -194,7 +194,7 @@ readset Bam files
 
 bam_hard_clip
 -------------
-Generate a hardclipped version of the bam for the Tuxedo suite which doesn't support this official sam feature.
+Generate a hardclipped version of the bam for the toxedo suite which doesn't support this official sam feature.
 
 rnaseqc
 -------
@@ -219,7 +219,7 @@ Warning: Still in testing.
 
 stringtie_merge
 ---------------
-Merge assemblies into a master transcriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
+Merge assemblies into a master teranscriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
 Warning: still in testing
 
 stringtie_abund
@@ -241,7 +241,7 @@ Merge the results of the analysis in a single csv file.
 cram_output
 -----------
 Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the removable file list
+Using this function will include the orginal final bam file into the  removable file list
 
 cufflinks
 ---------
