@@ -43,6 +43,8 @@ report_header_info:
 # Set the module order here. To set the description or name for the section or the parent
 #   you must place in under within the module order or section order part. ../graphs/GM12878_chr19.Input_QC_Metrics.png
 module_order:
+    - c3g_content_renderer:
+      id: introduction
     - trimming
     - c3g_content_renderer:
       id: mark_dup

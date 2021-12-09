@@ -1772,13 +1772,13 @@ sed -e 's@ihec_metrics_merged_table@{ihec_metrics_merged_table}@g' \\
                     input_files=[],
                     output_files=[report_file, report_intro_file],
                     name="merge_ihec_metrics_report",
-                    module_entries=[],
+                    module_entries=["multiqc_report", module_mugqic_tools],
                     command="""\
 mkdir -p {report_yaml_dir} && \\
 cp {report_template_dir}/{basename_report_intro_file} {report_intro_file} && \\
 cp {report_template_dir}/{basename_report_references_file} {report_references_file} && \\
-sed -e 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' \\
-{report_template_dir}/{basename_report_file} > {report_file}""".format(
+merge_multiqc_yaml.py -t {report_template_dir}/{basename_report_file} -y {trimmomatic_yaml} -o {report_file} && \\
+sed -ie 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' {report_file}""".format(
         report_yaml_dir=report_yaml_dir,
         genpipes_version=self.version,
         date=str(now.strftime("%B")) + " " + str(now.strftime("%d")) + ", " + str(now.year),
@@ -1788,7 +1788,8 @@ sed -e 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' \\
         basename_report_references_file=os.path.basename(report_references_file),
         report_references_file=report_references_file,
         basename_report_file=os.path.basename(report_file),
-        report_file=report_file
+        report_file=report_file,
+        trimmomatic_yaml=os.path.join(report_yaml_dir, "Illumina.merge_trimmomatic_stats.yaml")
         ),
                     report_files=[report_file]
                     ),
