@@ -515,8 +515,7 @@ END
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets],
                 [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
             ]
-            if readset.bam:
-                candidate_readset_bams.append([readset.bam for readset in sample.readsets])
+            candidate_readset_bams.append([readset.bam for readset in sample.readsets if readset.bam])
             readset_bams = self.select_input_files(candidate_readset_bams)
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
@@ -1065,16 +1064,35 @@ END
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
-            [input_bam] = self.select_input_files([
-                [alignment_file_prefix + "sorted.recal.bam"],
-                [alignment_file_prefix + "sorted.dup.bam"],
-                [alignment_file_prefix + "sorted.matefixed.bam"],
-                [alignment_file_prefix + "sorted.realigned.bam"],
-                [alignment_file_prefix + "sorted.bam"],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
-                ])
-
+            [input_bam] = self.select_input_files(
+                [
+                    [alignment_file_prefix + "sorted.dup.recal.bam"],
+                    [alignment_file_prefix + "sorted.dup.bam"],
+                    [alignment_file_prefix + "sorted.matefixed.bam"],
+                    [alignment_file_prefix + "sorted.realigned.bam"],
+                    [alignment_file_prefix + "sorted.bam"],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
+                ]
+            )
+            [input_bai] = self.select_input_files(
+                [
+                    [alignment_file_prefix + "sorted.dup.recal.bam.bai"],
+                    [alignment_file_prefix + "sorted.dup.recal.bai"],
+                    [alignment_file_prefix + "sorted.dup.bam.bai"],
+                    [alignment_file_prefix + "sorted.dup.bai"],
+                    [alignment_file_prefix + "sorted.matefixed.bam.bai"],
+                    [alignment_file_prefix + "sorted.matefixed.bai"],
+                    [alignment_file_prefix + "sorted.realigned.bam.bai"],
+                    [alignment_file_prefix + "sorted.realigned.bai"],
+                    [alignment_file_prefix + "sorted.bam.bai"],
+                    [alignment_file_prefix + "sorted.bai"],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam.bai")],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bai")],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bai")]
+                ]
+            )
             jobs.append(
                 concat_jobs([
                     deliverables.md5sum(
@@ -1089,7 +1107,7 @@ END
                         type="alignment"
                         ),
                     deliverables.sym_link(
-                        re.sub(".bam", ".bai", input_bam),
+                        input_bai,
                         sample,
                         self.output_dir,
                         type="alignment"
@@ -1113,7 +1131,7 @@ END
         ##check the library status
         library = {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample):
+            if not readset.sample in library:
                 library[readset.sample] = "SINGLE_END"
             if readset.run_type == "PAIRED_END":
                 library[readset.sample] = "PAIRED_END"
@@ -1375,7 +1393,7 @@ END
         ##check the library status
         library = {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample) :
+            if not readset.sample in library:
                 library[readset.sample] = "SINGLE_END"
             if readset.run_type == "PAIRED_END":
                 library[readset.sample] = "PAIRED_END"
@@ -1385,7 +1403,7 @@ END
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
@@ -1463,7 +1481,7 @@ END
                 alignment_directory = os.path.join("alignment", sample.name)
                 [input] = self.select_input_files([
                     # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
@@ -1492,7 +1510,7 @@ END
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
@@ -1521,7 +1539,7 @@ END
             alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
@@ -1959,7 +1977,7 @@ END
                     )
             else:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
-                gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
+                gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in range(len(unique_sequences_per_job))]
 
                 gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
@@ -2182,7 +2200,7 @@ END
 
         if nb_haplotype_jobs > 1 and interval_list is None:
             unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
-            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in xrange(len(unique_sequences_per_job))]
+            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in range(len(unique_sequences_per_job))]
 
             gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
 
@@ -2370,7 +2388,7 @@ pandoc \\
             alignment_directory = os.path.join("alignment", sample.name)
 
             [input] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam")],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
@@ -2398,7 +2416,7 @@ pandoc \\
 
             else:
                 for sequence in self.sequence_dictionary:
-                    if sequence['type'] is 'primary':
+                    if sequence['type'] == 'primary':
                         output = os.path.join(mpileup_directory, sample.name + "." + sequence['name'] + ".mpileup.gz")
                         jobs.append(
                             concat_jobs([
@@ -2437,7 +2455,7 @@ pandoc \\
             mpileup_inputs = ""
             if nb_jobs > 1:
                 mpileup_file_prefix = os.path.join("alignment", sample.name, "mpileup", sample.name + ".")
-                mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary if sequence['type'] is 'primary']
+                mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary if sequence['type'] == 'primary']
 
                 gzip_output = mpileup_file_prefix + "mpileup.gz"
                 job = Job(
@@ -2462,7 +2480,7 @@ pandoc \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.recal.bam") for sample in self.samples],
+                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam") for sample in self.samples],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam") for sample in self.samples],
                 [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam") for sample in self.samples],
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam") for sample in self.samples],
@@ -3453,7 +3471,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 ], name="cnvkit_batch.vcf_flt." + sample.name))
                 normal = sample.name
                 
-            if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples'):
+            if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples', type='posint'):
                 jobs.append(concat_jobs([
                     bash.mkdir(cnvkit_dir, remove=True),
                     cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn,
@@ -3736,13 +3754,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.cram_output,
                 self.sym_link_fastq,
                 self.sym_link_final_bam,
-	            self.metrics_ngscheckmate,
-	            self.metrics_verify_bam_id,
-	            self.metrics_vcftools_missing_indiv,
-	            self.metrics_vcftools_depth_indiv,
-	            self.metrics_gatk_sample_fingerprint,
-	            self.metrics_gatk_cluster_fingerprint,
-	            #self.metrics_peddy,
+	        self.metrics_ngscheckmate,
+	        self.metrics_verify_bam_id,
+	        self.metrics_vcftools_missing_indiv,
+                self.metrics_vcftools_depth_indiv,
+                self.metrics_gatk_sample_fingerprint,
+	        self.metrics_gatk_cluster_fingerprint,
+	        #self.metrics_peddy,
             ],
             [
                 self.picard_sam_to_fastq,

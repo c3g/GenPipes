@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
@@ -41,8 +41,10 @@ class JobStat(object):
     REQUEUE = 'Requeue'
     RESTARTS = 'Restarts'
     RUNTIME = 'RunTime'
-    REMOTE = {'beluga': 'beluga.calculcanada.ca',
+    REMOTE = {'narval': 'narval.calculcanada.ca',
+              'beluga': 'beluga.calculcanada.ca',
               'cedar': 'cedar.calculcanada.ca',
+              'narval': 'narval.calculcanada.ca',
               'graham': 'graham.calculcanada.ca'}
 
     # Fields extracted from sacct
@@ -153,8 +155,12 @@ class JobStat(object):
             for k, v in bidon:
                 all_value.setdefault(k, []).append(v)
 
-            fake_pro_epi = [i for i, x in enumerate(all_value[self.JOBID])
-                            if self.jobid == int(x)]
+            try:
+                fake_pro_epi = [i for i, x in enumerate(all_value[self.JOBID])
+                                if self.jobid == int(x)]
+            except KeyError:
+                logger.warning('{} has no jobID log'.format(path))
+                fake_pro_epi = []
 
             if len(fake_pro_epi) == 2:
                 self.output_log_id = list(set(all_value[self.JOBID]))
@@ -282,6 +288,7 @@ def get_report(job_list_tsv=None, remote_hpc=None):
     job_output_path = os.path.dirname(job_list_tsv)
 
     with open(job_list_tsv) as tsvin:
+        jobs = csv.reader(tsvin, delimiter='\t')
         jobs = csv.reader(tsvin, delimiter='\t')
 
         report = []
@@ -418,7 +425,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('job_list_path', help="Path to a GenPipes job list")
     parser.add_argument('--remote', '-r', help="Remote HPC where the job was ran",
-                        choices=['beluga', 'cedar', None],
+                        choices=['beluga', 'cedar', 'narval'],
                         default=None)
     parser.add_argument('--loglevel', help="Standard Python log level",
                         choices=['ERROR', 'WARNING', 'INFO', "CRITICAL"],

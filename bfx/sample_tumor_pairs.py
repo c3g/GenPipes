@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -24,10 +22,9 @@ import csv
 import logging
 import os
 import re
-import ConfigParser
 
 # MUGQIC Modules
-from sample import *
+from .sample import Sample
 
 log = logging.getLogger(__name__)
 
@@ -89,7 +86,7 @@ def parse_tumor_pair_file(tumor_pair_file, samples, profyle=False):
     seen = {}
     dup_normal_check = {}
 
-    pair_csv = csv.reader(open(tumor_pair_file, 'rb'), delimiter=',')
+    pair_csv = csv.reader(open(tumor_pair_file, 'r'), delimiter=',')
     for line in pair_csv:
         normal = samples_dict[line[1]]
 
@@ -102,7 +99,7 @@ def parse_tumor_pair_file(tumor_pair_file, samples, profyle=False):
             seen[normal.name] += 1
     
     log.info("Parse Tumor Pair file " + tumor_pair_file + " ...")
-    pair_csv = csv.reader(open(tumor_pair_file, 'rb'), delimiter=',')
+    pair_csv = csv.reader(open(tumor_pair_file, 'r'), delimiter=',')
     for line in pair_csv:
         sample_name = line[0]
         normal = samples_dict[line[1]]

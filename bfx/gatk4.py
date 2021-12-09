@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -20,13 +18,15 @@
 ################################################################################
 
 # Python Standard Modules
+import re
+import os
 
 # MUGQIC Modules
 import core
-from core.config import *
-from core.job import *
-import gatk
-import picard2
+from core.config import config
+from core.job import Job
+from . import gatk
+from . import picard2
 
 #################
 #GATK4 - Read Data Manipulation

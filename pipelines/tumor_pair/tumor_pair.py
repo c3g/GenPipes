@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
@@ -112,7 +113,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
     def __init__(self, protocol=None):
         self._protocol = protocol
-        self.argparser.add_argument("-p", "--pairs", help="pairs file", type=file)
+        self.argparser.add_argument("-p", "--pairs", help="pairs file", type=argparse.FileType('r'))
         self.argparser.add_argument("--profyle", help="adjust deliverables to PROFYLE folder conventions (Default: False)", action="store_true")
         self.argparser.add_argument("-t", "--type", help="Tumor pair analysis type",choices = ["fastpass", "ensemble", "sv"], default="ensemble")
         super(TumorPair, self).__init__(protocol)
@@ -167,7 +168,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             inputs["Normal"] = [
                 self.select_input_files(
                     [
@@ -206,10 +207,10 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 ][0][0]
             )
             
-            for key, input_files in inputs.iteritems():
-                for read, file in enumerate(input_files):
+            for key, input_files in inputs.items():
+                for read, input_file in enumerate(input_files):
                     symlink_pair_job = deliverables.sym_link_pair(
-                        file,
+                        input_file,
                         tumor_pair,
                         self.output_dir,
                         type="raw_reads",
@@ -253,7 +254,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         if nb_jobs > 50:
             log.warning("Number of realign jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -492,7 +493,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', type='posint')
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -566,7 +567,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -620,7 +621,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
     
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -704,7 +705,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -736,16 +737,16 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam.bai")]
             ])[0])
 
-            for key,input in inputs.iteritems():
-                for sample_bam in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample_bam,
-                            sample_bam + ".md5",
+                            input_file,
+                            input_file + ".md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample_bam,
+                            input_file,
                             tumor_pair,
                             self.output_dir,
                             type="alignment",
@@ -753,14 +754,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample_bam + ".md5",
+                            input_file + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="alignment",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_final_bam.pairs." + tumor_pair.name + "." + key))
+                    ], name="sym_link_final_bam.pairs." + str(idx) + "." + tumor_pair.name + "." + key))
 
         return jobs
 
@@ -773,7 +774,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -831,7 +832,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -863,7 +864,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 
             else:
                 for sequence in self.sequence_dictionary_variant():
-                    if sequence['type'] is 'primary':
+                    if sequence['type'] == 'primary':
                         pair_output = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".mpileup")
     
                         jobs.append(concat_jobs([
@@ -890,7 +891,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
@@ -949,7 +950,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             else:
                 
                 for sequence in self.sequence_dictionary_variant():
-                    if sequence['type'] is 'primary':
+                    if sequence['type'] == 'primary':
                         input_pair = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".mpileup")
     
                         output = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'])
@@ -1004,7 +1005,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
@@ -1063,7 +1064,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             else:
                 all_inputs = [os.path.join(varscan_directory, tumor_pair.name + ".varscan2." + sequence['name'] + ".vcf.gz")
-                              for sequence in self.sequence_dictionary_variant() if sequence['type'] is 'primary']
+                              for sequence in self.sequence_dictionary_variant() if sequence['type'] == 'primary']
 
                 for input_vcf in all_inputs:
                     if not self.is_gz_file(input_vcf):
@@ -1129,7 +1130,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
 
             prefix = os.path.join(pair_directory, tumor_pair.name)
@@ -1182,7 +1183,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
@@ -1240,7 +1241,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
@@ -1276,21 +1277,21 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             inputs["Tumor"] =  [os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel", tumor_pair.name)]
 
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, sample_prefix in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.sym_link_pair(
-                            sample + ".varscan2.vcf.gz",
+                            sample_prefix + ".varscan2.vcf.gz",
                             tumor_pair, self.output_dir,
                             type="snv/panel",
                             sample=key,
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".varscan2.vcf.gz.tbi",
+                            sample_prefix + ".varscan2.vcf.gz.tbi",
                             tumor_pair,
                             self.output_dir,
                             type="snv/panel",
@@ -1298,7 +1299,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".varscan2.somatic.vt.snpeff.vcf.gz",
+                            sample_prefix + ".varscan2.somatic.vt.snpeff.vcf.gz",
                             tumor_pair,
                             self.output_dir,
                             type="snv/panel",
@@ -1306,14 +1307,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".varscan2.somatic.vt.snpeff.vcf.gz.tbi",
+                            sample_prefix + ".varscan2.somatic.vt.snpeff.vcf.gz.tbi",
                             tumor_pair,
                             self.output_dir,
                             type="snv/panel",
                             sample=key,
                             profyle=self.args.profyle),
                         deliverables.sym_link_pair(
-                            sample + ".varscan2.germline.vt.snpeff.vcf.gz",
+                            sample_prefix + ".varscan2.germline.vt.snpeff.vcf.gz",
                             tumor_pair,
                             self.output_dir,
                             type="snv/panel",
@@ -1321,7 +1322,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".varscan2.germline.vt.snpeff.vcf.gz.tbi",
+                            sample_prefix + ".varscan2.germline.vt.snpeff.vcf.gz.tbi",
                             tumor_pair,
                             self.output_dir,
                             type="snv/panel",
@@ -1329,7 +1330,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".somatic.gemini.db",
+                            sample_prefix + ".somatic.gemini.db",
                             tumor_pair,
                             self.output_dir,
                             type="snv/panel",
@@ -1337,13 +1338,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".germline.gemini.db",
+                            sample_prefix + ".germline.gemini.db",
                             tumor_pair, self.output_dir,
                             type="snv/panel",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_panel." + tumor_pair.name + "." + key))
+                    ], name="sym_link_panel." + str(idx) + "." + tumor_pair.name + "." + key))
 
         return jobs
 
@@ -1359,13 +1360,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
         ##check the library status
         library = {}
         for readset in self.readsets:
-            if not library.has_key(readset.sample):
+            if not readset.sample in library:
                 library[readset.sample] = "SINGLE_END"
             if readset.run_type == "PAIRED_END":
                 library[readset.sample] = "PAIRED_END"
 
         jobs = []
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
@@ -1519,7 +1520,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
@@ -1606,7 +1607,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
     
         jobs = []
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
@@ -1712,7 +1713,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         metrics_directory = os.path.join(self.output_dir, "metrics", "dna")
         input_dep = []
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             input_dep = []
             inputs = []
             if tumor_pair.multiple_normal == 1:
@@ -1771,20 +1772,21 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             inputs["Tumor"] = [os.path.join(self.output_dir, "metrics", "dna", tumor_pair.name + ".multiqc.html")]
 
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, report_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.sym_link_pair(
-                            sample, tumor_pair,
+                            report_file,
+                            tumor_pair,
                             self.output_dir,
                             type="metrics",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_fastq.report." + tumor_pair.name + "." + key))
+                    ], name="sym_link_fastq.report." + str(idx) + "." + tumor_pair.name + "." + key))
 
         return jobs
 
@@ -1795,7 +1797,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -1857,7 +1859,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             else:
                 
                 for sequence in self.sequence_dictionary_variant():
-                    if sequence['type'] is 'primary':
+                    if sequence['type'] == 'primary':
                         pair_output = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".mpileup")
 
                         jobs.append(
@@ -1893,7 +1895,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
             output = os.path.join(varscan_directory, tumor_pair.name)
@@ -1955,7 +1957,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             else:
 
                 for sequence in self.sequence_dictionary_variant():
-                    if sequence['type'] is 'primary':
+                    if sequence['type'] == 'primary':
                         input_pair = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".mpileup")
 
                         output = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'])
@@ -2013,7 +2015,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
@@ -2028,7 +2030,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             else:
                 all_inputs = [os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".varscan2.vcf.gz")
-                              for sequence in self.sequence_dictionary_variant() if sequence['type'] is 'primary']
+                              for sequence in self.sequence_dictionary_variant() if sequence['type'] == 'primary']
 
             for input_vcf in all_inputs:
                 if not self.is_gz_file(input_vcf):
@@ -2190,7 +2192,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         if nb_jobs > 50:
             log.warning("Number of mutect jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -2325,7 +2327,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         nb_jobs = config.param('gatk_mutect2', 'nb_jobs', type='posint')
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             mutect_directory = os.path.join(pair_directory, "rawMuTect2")
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
@@ -2541,7 +2543,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if (tumor_pair.multiple_normal == 1):
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -2695,7 +2697,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if (tumor_pair.multiple_normal == 1):
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -2920,7 +2922,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         #         ], name="vardict_paired.create_splitjobs")
         #     )
             
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -3043,7 +3045,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         nb_jobs = config.param('vardict_paired', 'nb_jobs', type='posint')
         use_bed = config.param('vardict_paired', 'use_bed', type='boolean', required=True)
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             vardict_directory = os.path.join(pair_directory, "rawVardict")
             output_tmp = os.path.abspath(os.path.join(pair_directory, tumor_pair.name + ".vardict.tmp.vcf.gz"))
@@ -3197,7 +3199,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
         ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             paired_ensemble_directory = os.path.join(ensemble_directory, tumor_pair.name)
             input_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
 
@@ -3237,7 +3239,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
         ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             paired_ensemble_directory = os.path.join(ensemble_directory, tumor_pair.name)
             input_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
 
@@ -3288,7 +3290,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         if nb_jobs > 50:
             log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if (tumor_pair.multiple_normal == 1):
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -3370,7 +3372,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         if nb_jobs > 50:
             log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if (tumor_pair.multiple_normal == 1):
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -3449,7 +3451,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', type='posint')
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
             output_somatic = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
             if nb_jobs > 1:
@@ -3485,7 +3487,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', type='posint')
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
             output_germline = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
             
@@ -3525,7 +3527,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         if not os.path.exists(ensemble_directory):
             os.makedirs(ensemble_directory)
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
             if not os.path.exists(paired_directory):
                 os.makedirs(paired_directory)
@@ -3567,7 +3569,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
 
             input_germline = os.path.join(paired_directory, tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
@@ -3611,7 +3613,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
             input_vcf = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.snpeff.vcf.gz")
             output_vcf = os.path.join(paired_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.snpeff.dbnsfp.vcf")
@@ -3644,7 +3646,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
     
         ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
     
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
             input_vcf = os.path.join(paired_directory, tumor_pair.name + ".ensemble.germline.vt.annot.snpeff.vcf.gz")
             output_vcf = os.path.join(paired_directory,
@@ -3676,7 +3678,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         gemini_module = config.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
             gemini_prefix = os.path.join(paired_directory, tumor_pair.name)
 
@@ -3706,7 +3708,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         gemini_module = config.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
             gemini_prefix = os.path.join(paired_directory, tumor_pair.name)
 
@@ -3728,19 +3730,19 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             inputs["Tumor"] =  [os.path.join(self.output_dir,"pairedVariants", "ensemble", tumor_pair.name, tumor_pair.name)]
 
-            for key,input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, sample_prefix in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample + ".ensemble.somatic.vt.annot.vcf.gz",
-                            sample + ".ensemble.somatic.vt.annot.vcf.gz.md5",
+                            sample_prefix + ".ensemble.somatic.vt.annot.vcf.gz",
+                            sample_prefix + ".ensemble.somatic.vt.annot.vcf.gz.md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".ensemble.somatic.vt.annot.vcf.gz.md5",
+                            sample_prefix + ".ensemble.somatic.vt.annot.vcf.gz.md5",
                             tumor_pair,
                             self.output_dir,
                             type="snv/ensemble",
@@ -3748,7 +3750,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".ensemble.somatic.vt.annot.vcf.gz",
+                            sample_prefix + ".ensemble.somatic.vt.annot.vcf.gz",
                             tumor_pair,
                             self.output_dir,
                             type="snv/ensemble",
@@ -3756,7 +3758,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".ensemble.somatic.vt.annot.vcf.gz.tbi",
+                            sample_prefix + ".ensemble.somatic.vt.annot.vcf.gz.tbi",
                             tumor_pair,
                             self.output_dir,
                             type="snv/ensemble",
@@ -3764,19 +3766,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.md5sum(
-                            sample + ".ensemble.germline.vt.annot.vcf.gz",
-                            sample + ".ensemble.germline.vt.annot.vcf.gz.md5",
+                            sample_prefix + ".ensemble.germline.vt.annot.vcf.gz",
+                            sample_prefix + ".ensemble.germline.vt.annot.vcf.gz.md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".ensemble.germline.vt.annot.vcf.gz.md5",
-                            tumor_pair, self.output_dir,
-                            type="snv/ensemble",
-                            sample=key,
-                            profyle=self.args.profyle
-                        ),
-                        deliverables.sym_link_pair(
-                            sample + ".ensemble.germline.vt.annot.vcf.gz",
+                            sample_prefix + ".ensemble.germline.vt.annot.vcf.gz.md5",
                             tumor_pair,
                             self.output_dir,
                             type="snv/ensemble",
@@ -3784,14 +3779,22 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".ensemble.germline.vt.annot.vcf.gz.tbi",
+                            sample_prefix + ".ensemble.germline.vt.annot.vcf.gz",
                             tumor_pair,
                             self.output_dir,
                             type="snv/ensemble",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_ensemble." + tumor_pair.name + "." + key))
+                        deliverables.sym_link_pair(
+                            sample_prefix + ".ensemble.germline.vt.annot.vcf.gz.tbi",
+                            tumor_pair,
+                            self.output_dir,
+                            type="snv/ensemble",
+                            sample=key,
+                            profyle=self.args.profyle
+                        ),
+                    ], name="sym_link_ensemble." + str(idx) + "." + tumor_pair.name + "." + key))
 
         return jobs
 
@@ -3804,7 +3807,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
         input_merged_vcfs = [
-            os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.itervalues()]
+            os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.values()]
         output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.vcf.gz")
 
         if len(input_merged_vcfs) == 1:
@@ -3845,7 +3848,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
         input_merged_vcfs = [os.path.join(ensemble_directory, tumor_pair.name,
                                           tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz") for tumor_pair in
-                             self.tumor_pairs.itervalues()]
+                             self.tumor_pairs.values()]
         output = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.vcf.gz")
 
         if len(input_merged_vcfs) == 1:
@@ -3945,7 +3948,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         cancer_pair_filename = os.path.join('cancer_snpeff.tsv')
         cancer_pair = open(cancer_pair_filename, 'w')
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             cancer_pair.write(tumor_pair.normal.name + "\t" + tumor_pair.tumor.name + "\n")
 
         jobs.append(concat_jobs([
@@ -4059,7 +4062,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
         nb_jobs = config.param('sequenza', 'nb_jobs', type='posint')
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -4127,7 +4130,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 
             else:
                 for sequence in self.sequence_dictionary_variant():
-                    if sequence['type'] is 'primary':
+                    if sequence['type'] == 'primary':
                         
                         jobs.append(concat_jobs([
                             bash.mkdir(
@@ -4149,7 +4152,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
                 seqz_outputs = [rawOutput + "binned.seqz." + sequence['name'] + ".gz"
                                for sequence in self.sequence_dictionary_variant() if
-                               sequence['type'] is 'primary']
+                               sequence['type'] == 'primary']
 
                 jobs.append(concat_jobs([
                     bash.mkdir(
@@ -4198,26 +4201,28 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
-            inputs["Tumor"] = [os.path.join(pair_directory, "sequenza", tumor_pair.name + "_chromosome_view.pdf"),
-                               os.path.join(pair_directory, "sequenza", tumor_pair.name + "_genome_view.pdf"),
-                               os.path.join(pair_directory, "sequenza", tumor_pair.name + "_CN_bars.pdf"),
-                               os.path.join(pair_directory, "sequenza", tumor_pair.name + "_CP_contours.pdf"),
-                               os.path.join(pair_directory, "sequenza", tumor_pair.name + "_ploidy_celularity.tsv")]
- #                              os.path.join(pair_directory, "sequenza", tumor_pair.name + ".annotated.TumS.filteredSV.annotate.txt")]
+            inputs["Tumor"] = [
+                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_chromosome_view.pdf"),
+                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_genome_view.pdf"),
+                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_CN_bars.pdf"),
+                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_CP_contours.pdf"),
+                os.path.join(pair_directory, "sequenza", tumor_pair.name + "_ploidy_celularity.tsv")
+            ]
 
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.sym_link_pair(
-                            sample, tumor_pair,
+                            input_file,
+                            tumor_pair,
                             self.output_dir,
                             type="sv/cnv",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link.sequenza." + tumor_pair.name + "." + key))
+                    ], name="sym_link.sequenza." + str(idx) + "." + tumor_pair.name + "." + key))
 
         return jobs
 
@@ -4230,7 +4235,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -4322,7 +4327,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -4382,7 +4387,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
     def delly_sv_annotation(self):
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join("SVariants", tumor_pair.name)
             final_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name, tumor_pair.name)
             delly_directory = os.path.join(pair_directory, "rawDelly")
@@ -4487,21 +4492,23 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
-            inputs["Tumor"] = [pair_directory + ".delly.somatic.snpeff.annot.vcf",
-                               pair_directory + ".delly.somatic.prioritize.tsv"]
+            inputs["Tumor"] = [
+                pair_directory + ".delly.somatic.snpeff.annot.vcf",
+                pair_directory + ".delly.somatic.prioritize.tsv"
+            ]
 
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample,
-                            sample + ".md5",
+                            input_file,
+                            input_file + ".md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".md5",
+                            input_file + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="sv",
@@ -4509,31 +4516,33 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample,
+                            input_file,
                             tumor_pair,
                             self.output_dir,
                             type="sv",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_delly.somatic." + tumor_pair.name + "." + key))
+                    ], name="sym_link_delly.somatic." + str(idx) + "." + tumor_pair.name + "." + key))
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
-            inputs["Tumor"] = [pair_directory + ".delly.germline.snpeff.annot.vcf",
-                               pair_directory + ".delly.germline.prioritize.tsv"]
+            inputs["Tumor"] = [
+                pair_directory + ".delly.germline.snpeff.annot.vcf",
+                pair_directory + ".delly.germline.prioritize.tsv"
+            ]
 
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample,
-                            sample + ".md5",
+                            input_file,
+                            input_file + ".md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".md5",
+                            input_file + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="sv",
@@ -4541,14 +4550,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample,
+                            input_file,
                             tumor_pair,
                             self.output_dir,
                             type="sv",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_delly.germline." + tumor_pair.name + "." + key))
+                    ], name="sym_link_delly.germline." + str(idx) + "." + tumor_pair.name + "." + key))
 
         return jobs
     
@@ -4565,7 +4574,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -4667,7 +4676,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
 
             jobs.append(concat_jobs([
@@ -4712,21 +4721,23 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
-            inputs["Tumor"] = [os.path.join(pair_directory + ".manta.somatic.snpeff.annot.vcf"),
-                               pair_directory + ".manta.somatic.prioritize.tsv"]
+            inputs["Tumor"] = [
+                pair_directory + ".manta.somatic.snpeff.annot.vcf",
+                pair_directory + ".manta.somatic.prioritize.tsv"
+            ]
 
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample,
-                            sample + ".md5",
+                            input_file,
+                            input_file + ".md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".md5",
+                            input_file + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="sv",
@@ -4734,31 +4745,33 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample,
+                            input_file,
                             tumor_pair,
                             self.output_dir,
                             type="sv",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_manta.somatic." + tumor_pair.name + "." + key))
+                    ], name="sym_link_manta.somatic." + str(idx) + "." + tumor_pair.name + "." + key))
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
-            inputs["Tumor"] = [os.path.join(pair_directory + ".manta.germline.snpeff.annot.vcf"),
-                               pair_directory + ".manta.germline.prioritize.tsv"]
+            inputs["Tumor"] = [
+                pair_directory + ".manta.germline.snpeff.annot.vcf",
+                pair_directory + ".manta.germline.prioritize.tsv"
+            ]
 
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample,
-                            sample + ".md5",
+                            input_file,
+                            input_file + ".md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".md5",
+                            input_file + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="sv",
@@ -4766,14 +4779,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample,
+                            input_file,
                             tumor_pair,
                             self.output_dir,
                             type="sv",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_manta.germline." + tumor_pair.name + "." + key))
+                    ], name="sym_link_manta.germline." + str(idx) + "." + tumor_pair.name + "." + key))
 
         return jobs
 
@@ -4786,7 +4799,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -4955,7 +4968,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name)
             prefix = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
             
@@ -5032,21 +5045,23 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
-            inputs["Tumor"] = [os.path.join(pair_directory + ".lumpy.somatic.snpeff.annot.vcf"),
-                               os.path.join(pair_directory + ".lumpy.somatic.prioritize.tsv")]
+            inputs["Tumor"] = [
+                pair_directory + ".lumpy.somatic.snpeff.annot.vcf",
+                pair_directory + ".lumpy.somatic.prioritize.tsv"
+            ]
 
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample,
-                            sample + ".md5",
+                            input_file,
+                            input_file + ".md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".md5",
+                            input_file + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="sv",
@@ -5054,31 +5069,33 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample,
+                            input_file,
                             tumor_pair,
                             self.output_dir,
                             type="sv",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_lumpy.somatic." + tumor_pair.name + "." + key))
+                    ], name="sym_link_lumpy.somatic." + str(idx) + "." + tumor_pair.name + "." + key))
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
-            inputs["Tumor"] = [os.path.join(pair_directory + ".lumpy.germline.snpeff.annot.vcf"),
-                               os.path.join(pair_directory + ".lumpy.germline.prioritize.tsv")]
+            inputs["Tumor"] = [
+                pair_directory + ".lumpy.germline.snpeff.annot.vcf",
+                pair_directory + ".lumpy.germline.prioritize.tsv"
+            ]
         
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample,
-                            sample + ".md5",
+                            input_file,
+                            input_file + ".md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".md5",
+                            input_file + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="sv",
@@ -5086,14 +5103,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample,
+                            input_file,
                             tumor_pair,
                             self.output_dir,
                             type="sv",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_lumpy.germline." + tumor_pair.name + "." + key))
+                    ], name="sym_link_lumpy.germline." + str(idx) + "." + tumor_pair.name + "." + key))
 
         return jobs
 
@@ -5107,7 +5124,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -5195,7 +5212,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name)
             
             genotyped_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.merged.genotyped.vcf.gz")
@@ -5267,21 +5284,23 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
-            inputs["Tumor"] = [os.path.join(pair_directory + ".wham.somatic.snpeff.annot.vcf"),
-                               os.path.join(pair_directory + ".wham.somatic.prioritize.tsv")]
+            inputs["Tumor"] = [
+                pair_directory + ".wham.somatic.snpeff.annot.vcf",
+                pair_directory + ".wham.somatic.prioritize.tsv"
+            ]
             
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample,
-                            sample + ".md5",
+                            input_file,
+                            input_file + ".md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".md5",
+                            input_file + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="sv",
@@ -5289,30 +5308,32 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample,
+                            input_file,
                             tumor_pair,
                             self.output_dir,
                             type="sv",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_wham.somatic." + tumor_pair.name + "." + key))
+                    ], name="sym_link_wham.somatic." + str(idx) + "." + tumor_pair.name + "." + key))
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
-            inputs["Tumor"] = [os.path.join(pair_directory + ".wham.germline.snpeff.annot.vcf"),
-                               os.path.join(pair_directory + ".wham.germline.prioritize.tsv")]
+            inputs["Tumor"] = [
+                pair_directory + ".wham.germline.snpeff.annot.vcf",
+                pair_directory + ".wham.germline.prioritize.tsv"
+            ]
 
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample,
-                            sample + ".md5",
+                            input_file,
+                            input_file + ".md5",
                             self.output_dir),
                         deliverables.sym_link_pair(
-                            sample + ".md5",
+                            input_file + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="sv",
@@ -5320,14 +5341,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample,
+                            input_file,
                             tumor_pair,
                             self.output_dir,
                             type="sv",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_wham.germline." + tumor_pair.name + "." + key))
+                    ], name="sym_link_wham.germline." + str(idx) + "." + tumor_pair.name + "." + key))
 
         return jobs
 
@@ -5339,7 +5360,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -5496,7 +5517,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name, tumor_pair.name)
 
             jobs.append(concat_jobs([
@@ -5516,20 +5537,20 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
     
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name, tumor_pair.name)
             inputs["Tumor"] = [pair_directory + ".cnvkit.snpeff.annot.vcf"]
         
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample,
-                            sample + ".md5",
+                            input_file,
+                            input_file + ".md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".md5",
+                            input_file + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="sv",
@@ -5537,14 +5558,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample,
+                            input_file,
                             tumor_pair,
                             self.output_dir,
                             type="sv",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_cnvkit.somatic." + tumor_pair.name + "." + key))
+                    ], name="sym_link_cnvkit.somatic." + str(idx) + "." + tumor_pair.name + "." + key))
 
         return jobs
      
@@ -5554,7 +5575,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir, "SVariants", tumor_pair.name)
             ensemble_directory = os.path.join("SVariants", "ensemble", tumor_pair.name)
 
@@ -5620,7 +5641,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
     
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join("SVariants", tumor_pair.name)
             ensemble_directory = os.path.join("SVariants", "ensemble", tumor_pair.name)
         
@@ -5689,7 +5710,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             ensemble_directory = os.path.join("SVariants", "ensemble", tumor_pair.name)
 
             jobs.append(concat_jobs([
@@ -5709,20 +5730,20 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
     
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.abspath(os.path.join("SVariants", "ensemble", tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [pair_directory + ".metasv.snpeff.annot.vcf"]
         
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample,
-                            sample + ".md5",
+                            input_file,
+                            input_file + ".md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".md5",
+                            input_file + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="sv",
@@ -5730,14 +5751,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample,
+                            input_file,
                             tumor_pair,
                             self.output_dir,
                             type="sv",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_metasv." + tumor_pair.name + "." + key))
+                    ], name="sym_link_metasv." + str(idx) + "." + tumor_pair.name + "." + key))
                     
         return jobs
 
@@ -5752,7 +5773,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         window_size = config.param('scones', 'window', required=True)
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -5846,7 +5867,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -5911,7 +5932,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join("SVariants", tumor_pair.name, tumor_pair.name)
 
             jobs.append(concat_jobs([
@@ -5969,21 +5990,23 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
-            inputs["Tumor"] = [pair_directory + ".svaba.somatic.snpeff.annot.vcf",
-                               pair_directory + ".svaba.somatic.prioritize.tsv"]
+            inputs["Tumor"] = [
+                pair_directory + ".svaba.somatic.snpeff.annot.vcf",
+                pair_directory + ".svaba.somatic.prioritize.tsv"
+            ]
                                
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_file):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample,
-                            sample + ".md5",
+                            input_file,
+                            input_file + ".md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".md5",
+                            input_file + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="sv",
@@ -5991,31 +6014,33 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample,
+                            input_file,
                             tumor_pair,
                             self.output_dir,
                             type="sv",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_svaba.somatic." + tumor_pair.name + "." + key))
+                    ], name="sym_link_svaba.somatic." + str(idx) + "." + tumor_pair.name + "." + key))
 
         inputs = dict()
-        for tumor_pair in self.tumor_pairs.itervalues():
+        for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.abspath(os.path.join("SVariants", tumor_pair.name, tumor_pair.name))
-            inputs["Tumor"] = [pair_directory + ".svaba.germline.sv.snpeff.annot.vcf",
-                               pair_directory + ".svaba.germline.prioritize.tsv"]
+            inputs["Tumor"] = [
+                pair_directory + ".svaba.germline.sv.snpeff.annot.vcf",
+                pair_directory + ".svaba.germline.prioritize.tsv"
+            ]
 
-            for key, input in inputs.iteritems():
-                for sample in input:
+            for key, input_files in inputs.items():
+                for idx, input_file in enumerate(input_files):
                     jobs.append(concat_jobs([
                         deliverables.md5sum(
-                            sample,
-                            sample + ".md5",
+                            input_file,
+                            input_file + ".md5",
                             self.output_dir
                         ),
                         deliverables.sym_link_pair(
-                            sample + ".md5",
+                            input_file + ".md5",
                             tumor_pair,
                             self.output_dir,
                             type="sv",
@@ -6023,14 +6048,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             profyle=self.args.profyle
                         ),
                         deliverables.sym_link_pair(
-                            sample,
+                            input_file,
                             tumor_pair,
                             self.output_dir,
                             type="sv",
                             sample=key,
                             profyle=self.args.profyle
                         ),
-                    ], name="sym_link_svaba.germline." + tumor_pair.name + "." + key))
+                    ], name="sym_link_svaba.germline." + str(idx) + "." + tumor_pair.name + "." + key))
 
         return jobs
 

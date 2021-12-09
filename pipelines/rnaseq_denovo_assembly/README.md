@@ -4,11 +4,16 @@
 RNA-Seq De Novo Assembly Pipeline
 =================================
 
-The standard MUGQIC RNA-Seq De Novo Assembly pipeline uses the [Trinity](http://trinityrnaseq.sourceforge.net/)
-software suite to reconstruct transcriptomes from RNA-Seq data without using any reference genome or transcriptome.
+The standard Genpipes RNA-Seq De Novo Assembly pipeline now has two protocols
+to use either [Trinity](http://trinityrnaseq.sourceforge.net/)
+software suite to reconstruct transcriptomes from RNA-Seq data or Seq2Fun software suite to generate several
+informative outputs including gene abundance tables, pathway and species hit tables which
+are required for the [Networkanalyst] (https://www.networkanalyst.ca/home.xhtml). Only RNA-Seq data is used for
+both of the protocols and any reference genome or transcriptome is not required.
 
-First, reads are trimmed with [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic)
-and normalized in order to reduce memory requirement and decrease assembly runtime, using the Trinity
+The trinity De Novo Assembly pipeline, selected using the "-t trinity" parameter starts by trimming reads
+with [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+Then reads are normalized in order to reduce memory requirement and decrease assembly runtime, using the Trinity
 normalization utility inspired by the [Diginorm](http://arxiv.org/abs/1203.4802) algorithm.
 
 Then, the transcriptome is assembled on normalized reads using the Trinity assembler. Trinity creates
@@ -57,6 +62,9 @@ for download directly through the report. The report includes also the main refe
 methods used during the analysis, together with the full list of parameters that have been passed
 to the pipeline main script.
 
+The Seq2Fun De Novo Assembly pipeline, selected using the "-t seq2fun" parameter directly starts with Seq2Fun
+software suit from fastq files.
+
 
 Usage
 -----
@@ -70,10 +78,11 @@ usage: rnaseq_denovo_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                  [-l {debug,info,warning,error,critical}]
                                  [--sanity-check]
                                  [--container {wrapper, singularity} <IMAGE PATH>]
-                                 [--genpipes_file GENPIPES_FILE] [-d DESIGN]
+                                 [--genpipes_file GENPIPES_FILE]
+                                 [-t {trinity,seq2fun}] [-d DESIGN]
                                  [-r READSETS] [-v]
 
-Version: 3.6.2
+Version: 4.0.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -116,6 +125,8 @@ optional arguments:
                         process the data, or said otherwise, this command will
                         "run the Genpipes pipeline". Will be redirected to
                         stdout if the option is not provided.
+  -t {trinity,seq2fun}, --type {trinity,seq2fun}
+                        Type of pipeline (default trinity)
   -d DESIGN, --design DESIGN
                         design file
   -r READSETS, --readsets READSETS
@@ -123,11 +134,14 @@ optional arguments:
   -v, --version         show the version information and exit
 
 Steps:
-```
-![rnaseq_denovo_assembly workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly.png)
-```
 ------
+
+----
+```
+![rnaseq_denovo_assembly trinity workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly_trinity.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly_trinity.png)
+```
+trinity:
 1- picard_sam_to_fastq
 2- trimmomatic
 3- merge_trimmomatic_stats
@@ -151,6 +165,17 @@ Steps:
 21- filter_annotated_components
 22- gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered
 23- differential_expression_filtered
+----
+```
+![rnaseq_denovo_assembly seq2fun workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly_seq2fun.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_denovo_assembly_seq2fun.png)
+```
+seq2fun:
+1- picard_sam_to_fastq
+2- merge_fastq
+3- seq2fun
+4- differential_expression_seq2fun
+5- pathway_enrichment_seq2fun
 
 ```
 picard_sam_to_fastq
@@ -259,5 +284,43 @@ Exploratory analysis using the gqSeqUtils R package using a subset of filtered t
 differential_expression_filtered
 --------------------------------
 Differential Expression and GOSEQ analysis based on filtered transcripts and genes
+
+merge_fastq
+-----------
+this step is performed to merge fastq files if multiple readset files for one sample is present
+
+This step takes as input files:
+
+1. FASTQ files from the readset file if available
+2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
+seq2fun
+-------
+seq2fun
+
+This step takes as input files:
+
+1. FASTQ files from the readset file if available
+2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
+This step perform seq2fun analysis and generates output files including KO abundance table and KO mapped fastq files
+(https://www.seq2fun.ca/manual.xhtml#sect4) and (https://www.seq2fun.ca/manual.xhtml#sect20)
+
+For each contrast different folders and all the files for that particular contrast are
+generated. Therefore, only pairwise comparisons are possible
+(treatment and controls will be added according to the 1 and 2 in the design file)
+
+differential_expression_seq2fun
+-------------------------------
+Performs differential gene expression analysis using [DESEQ2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
+Merge the results of the analysis in a single csv file.
+
+pathway_enrichment_seq2fun
+--------------------------
+
+seq2fun pathway analysis using fgsea (https://bioconductor.org/packages/release/bioc/html/fgsea.html)
+ and user provide universal pathway list as KEGG map ID. The differential KO expression results obtained
+ from edgeR will be using as the input for the pathway enrichment analysis
+
 
 

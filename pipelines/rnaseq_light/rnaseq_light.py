@@ -132,7 +132,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         job_name_genes="kallisto_count_matrix.genes"
         data_type_genes="genes"
         job=tools.r_create_kallisto_count_matrix(input_abundance_files_genes, output_dir, data_type_genes, job_name_genes)
-        job.samples = [readset.sample]
+        job.samples = self.samples
         jobs.append(job)
 
         report_dir = os.path.join(self.output_dir, "report")

@@ -46,6 +46,7 @@ from bfx import trinotate
 from bfx import blast
 from bfx import exonerate
 from bfx import bash_cmd as bash
+from bfx import seq2fun
 
 from pipelines import common
 from pipelines.rnaseq import rnaseq
@@ -58,11 +59,16 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
     RNA-Seq De Novo Assembly Pipeline
     =================================
 
-    The standard MUGQIC RNA-Seq De Novo Assembly pipeline uses the [Trinity](http://trinityrnaseq.sourceforge.net/)
-    software suite to reconstruct transcriptomes from RNA-Seq data without using any reference genome or transcriptome.
+    The standard Genpipes RNA-Seq De Novo Assembly pipeline now has two protocols
+    to use either [Trinity](http://trinityrnaseq.sourceforge.net/)
+    software suite to reconstruct transcriptomes from RNA-Seq data or Seq2Fun software suite to generate several
+    informative outputs including gene abundance tables, pathway and species hit tables which
+    are required for the [Networkanalyst] (https://www.networkanalyst.ca/home.xhtml). Only RNA-Seq data is used for
+    both of the protocols and any reference genome or transcriptome is not required.
 
-    First, reads are trimmed with [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic)
-    and normalized in order to reduce memory requirement and decrease assembly runtime, using the Trinity
+    The trinity De Novo Assembly pipeline, selected using the "-t trinity" parameter starts by trimming reads
+    with [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
+    Then reads are normalized in order to reduce memory requirement and decrease assembly runtime, using the Trinity
     normalization utility inspired by the [Diginorm](http://arxiv.org/abs/1203.4802) algorithm.
 
     Then, the transcriptome is assembled on normalized reads using the Trinity assembler. Trinity creates
@@ -110,11 +116,16 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
     for download directly through the report. The report includes also the main references of the software and
     methods used during the analysis, together with the full list of parameters that have been passed
     to the pipeline main script.
+
+    The Seq2Fun De Novo Assembly pipeline, selected using the "-t seq2fun" parameter directly starts with Seq2Fun
+    software suit from fastq files.
     """
 
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
+        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default trinity)",
+                                    choices=["trinity", "seq2fun"], default="trinity")
         super(RnaSeqDeNovoAssembly, self).__init__(protocol)
 
 
@@ -807,7 +818,7 @@ pandoc --to=markdown \\
         edger_job.output_files = [os.path.join(output_directory, item, contrast.name, "edger_results.csv") for contrast in self.contrasts]
 
         # Perform DESeq
-        deseq_job = differential_expression.deseq(os.path.relpath(self.args.design.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
+        deseq_job = differential_expression.deseq2(os.path.relpath(self.args.design.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
         deseq_job.output_files = [os.path.join(output_directory, item, contrast.name, "dge_results.csv") for contrast in self.contrasts]
 
         jobs.append(
@@ -981,9 +992,579 @@ pandoc --to=markdown \\
 
         return jobs
 
+    def merge_fastq(self):
+
+        """
+                this step is performed to merge fastq files if multiple readset files for one sample is present
+
+                This step takes as input files:
+
+                1. FASTQ files from the readset file if available
+                2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+        """
+
+        jobs = []
+        output_directory = "merge_fastq"
+        samples_to_merge = []
+        merge_fastq_job = []
+        #check whether a sample has more than one readsets. if so take the sample name in to a list
+        for sample in self.samples:
+            if len(sample.readsets) > 1:
+                samples_to_merge.append(sample.name)
+
+        # Then loop through those sample names and merge fastqs from read1 and read2
+        for merge_sample in samples_to_merge:
+            merge_readsets_fastq1 = []
+            merge_readsets_fastq2 = []
+
+            for readset in self.readsets:
+                if merge_sample == readset.sample.name:
+                    #check whether the current sample name match with an item in the sample names list
+                    #if so then we know curent sample has a readset. then we need to add all the readsets in to a list
+
+                    if readset.run_type == "PAIRED_END":
+                        merge_readsets_fastq1.append(readset.fastq1)
+                        merge_readsets_fastq2.append(readset.fastq2)
+
+                        if readset.bam:
+                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads", readset.sample.name,
+                                                            readset.name + ".pair1.fastq.gz")
+                            candidate_fastq2 = os.path.join(self.output_dir, "raw_reads", readset.sample.name,
+                                                            readset.name + ".pair2.fastq.gz")
+                            merge_readsets_fastq1.append(candidate_fastq1)
+                            merge_readsets_fastq2.append(candidate_fastq2)
+
+                    elif readset.run_type == "SINGLE_END":
+                        merge_readsets_fastq1.append(readset.fastq1)
+
+                        if readset.bam:
+                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads", readset.sample.name,
+                                                            readset.name + ".pair1.fastq.gz")
+                            merge_readsets_fastq1.append(candidate_fastq1)
+                    else:
+                        _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                        "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+            # if readset is paired end then two jobs will be created for the read pairs
+            # if readset is single end then one job will be created for the forward read
+            if(merge_readsets_fastq2):
+                #job to merge double reads
+                merge_fastq = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory, merge_sample)),
+                                        Job(input_files=merge_readsets_fastq1,
+                                            output_files=[os.path.join(output_directory, merge_sample,
+                                                                      merge_sample + "_merged.pair1.fastq.gz")],
+                                           command="""if (file {input1} | grep -q compressed ) ; then
+ln -nsf {input1} {temp_out1}
+else
+gzip -c {input1} > {temp_out1} 
+fi &&
+if (file {input2} | grep -q compressed ) ; then
+ln -nsf {input2} {temp_out2}
+else 
+gzip -c {input2} > {temp_out2}
+fi &&
+zcat  {temp_out1} {temp_out2} > {output} &&
+rm {temp_out1} &&
+rm {temp_out2}""".format(
+                                               input1 = merge_readsets_fastq1[0],
+                                               input2 = merge_readsets_fastq1[1],
+                                               temp_out1 = os.path.join(output_directory, merge_sample, merge_sample + "_temp1.read1.fastq.gz"),
+                                               temp_out2= os.path.join(output_directory, merge_sample,
+                                                                      merge_sample + "_temp2.read1.fastq.gz"),
+                                               output = os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair1.fastq.gz")
+                                           )),
+
+                                           Job(input_files=merge_readsets_fastq2,
+                                               output_files=[os.path.join(output_directory, merge_sample,
+                                                                    merge_sample + "_merged.pair2.fastq.gz")],
+                                           command="""if (file {input1} | grep -q compressed ) ; then
+ln -nsf {input1} {temp_out1}
+else
+gzip -c {input1} > {temp_out1} 
+fi &&
+if (file {input2} | grep -q compressed ) ; then
+ln -nsf {input2} {temp_out2}
+else 
+gzip -c {input2} > {temp_out2}
+fi &&
+zcat  {temp_out1} {temp_out2} > {output} &&
+rm {temp_out1} &&
+rm {temp_out2}""".format(
+                                               input1 = merge_readsets_fastq2[0],
+                                               input2 = merge_readsets_fastq2[1],
+                                               temp_out1 = os.path.join(output_directory, merge_sample, merge_sample + "_temp1.read2.fastq.gz"),
+                                               temp_out2=os.path.join(output_directory, merge_sample,
+                                                                      merge_sample + "_temp2.read2.fastq.gz"),
+                                               output = os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair2.fastq.gz")
+                                           ))
+                                           ])
+            else:
+                #jobs to merge single reads
+                merge_fastq = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory, merge_sample)),
+                                        Job(input_files=merge_readsets_fastq1,
+                                            output_files=[os.path.join(output_directory, merge_sample,
+                                                                      merge_sample + "_merged.pair1.fastq.gz")],
+                                           command="""if (file {input1} | grep -q compressed ) ; then
+ln -nsf {input1} {temp_out1}
+else
+gzip -c {input1} > {temp_out1} 
+fi &&
+if (file {input2} | grep -q compressed ) ; then
+ln -nsf {input2} {temp_out2}
+else 
+gzip -c {input2} > {temp_out2}
+fi &&
+zcat  {temp_out1} {temp_out2} > {output} &&
+rm {temp_out1} &&
+rm {temp_out2}""".format(
+                                               input1 = merge_readsets_fastq1[0],
+                                               input2 = merge_readsets_fastq1[1],
+                                               temp_out1 = os.path.join(output_directory, merge_sample, merge_sample + "_temp1.read1.fastq.gz"),
+                                               temp_out2= os.path.join(output_directory, merge_sample,
+                                                                      merge_sample + "_temp2.read1.fastq.gz"),
+                                               output = os.path.join(output_directory, merge_sample, merge_sample + "_merged.pair1.fastq.gz")
+                                           ))
+                                           ])
+
+            merge_fastq_job.append(merge_fastq)
+            merge_fastq_jobs = concat_jobs(merge_fastq_job)
+
+        #if there is no multiple readsets for any sample, an empty job will be created.
+        if len(samples_to_merge) != 0:
+            job = concat_jobs([merge_fastq_jobs])
+            job.samples = self.samples
+            job.name = "merge_fastq"
+            jobs.append(job)
+        return jobs
+
+    def seq2fun(self):
+        """
+        seq2fun
+
+        This step takes as input files:
+
+        1. FASTQ files from the readset file if available
+        2. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
+        This step perform seq2fun analysis and generates output files including KO abundance table and KO mapped fastq files
+        (https://www.seq2fun.ca/manual.xhtml#sect4) and (https://www.seq2fun.ca/manual.xhtml#sect20)
+
+        For each contrast different folders and all the files for that particular contrast are
+        generated. Therefore, only pairwise comparisons are possible
+        (treatment and controls will be added according to the 1 and 2 in the design file)
+        """
+        jobs = []
+        samples_to_merge = []
+        merge_fastq_job = []
+        output_directory = "seq2fun"
+        # check whether a sample has more than one readsets. if so take the sample name in to a list
+        #these samples will already have merged fastq and we need to use them for the seq2fun
+
+        merge_fastq_dir = "merge_fastq"
+        write_line_control_jobs = []
+        write_line_treatment_jobs = []
+        folder_jobs = []
+        seq2fun_input_files = []
+        seq2fun_output_samples = []
+
+        #First we need to create sample table for seq2fun. Since there can be redundancy, at the end we need to remove
+        #duplicate rows. If a merged fastq file is there, the path for the merged  fastq file will be added.
+
+        for contrast in self.contrasts:
+
+            output_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.temp.txt")
+            folder_job = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory, contrast.name)),
+            Job(command="touch " + output_file_contrast)])
+            folder_jobs.append(folder_job)
+            create_folder_jobs = concat_jobs(folder_jobs)
+
+            for control in contrast.controls:
+
+                for sample in self.samples:
+                    if control.name == sample.name:
+
+                        for readset in self.readsets:
+                            if sample.name == readset.sample.name:
+                                if readset.run_type == "PAIRED_END":
+                                    if len(sample.readsets) > 1:
+                                        #get merged fastq link
+                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
+                                                     sample.name + "_merged.pair1.fastq.gz")
+                                        candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name,
+                                                                        sample.name + "_merged.pair2.fastq.gz")
+
+                                    else:
+                                        candidate_fastq1 = readset.fastq1
+                                        candidate_fastq2  = readset.fastq2
+                                        if readset.bam:
+                                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
+                                                                            readset.sample.name,
+                                                                            readset.name + ".pair1.fastq.gz")
+                                            candidate_fastq2 = os.path.join(self.output_dir, "raw_reads",
+                                                                            readset.sample.name,
+                                                                            readset.name + ".pair2.fastq.gz")
+
+                                    seq2fun_input_files.append(candidate_fastq1)
+                                    seq2fun_input_files.append(candidate_fastq2)
+                                    seq2fun_output_samples.append(sample.name)
+                                    write_line_job = Job(
+                                        input_files= [candidate_fastq1, candidate_fastq2],
+                                            command="""echo -e "{sample}\t{fastq1}\t{fastq2}\tcontrol" >> {file}""".format(
+                                                sample=os.path.join(output_directory, contrast.name, sample.name),
+                                                file=output_file_contrast,
+                                                fastq1=candidate_fastq1,
+                                                fastq2=candidate_fastq2
+                                            )
+                                        )
+                                    write_line_control_jobs.append(write_line_job)
+                                    sample_table_contrast_jobs = concat_jobs(write_line_control_jobs)
+                                elif readset.run_type == "SINGLE_END":
+                                    if len(sample.readsets) > 1:
+                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
+                                                                        sample.name + "merged.pair1.fastq.gz")
+                                    else:
+                                        candidate_fastq1 = readset.fastq1
+                                        if readset.bam:
+                                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
+                                                                            readset.sample.name,
+                                                                            readset.name + ".pair1.fastq.gz")
+
+                                    seq2fun_input_files.append(candidate_fastq1)
+                                    seq2fun_output_samples.append(sample.name)
+                                    write_line_job = Job(
+                                        input_files=[candidate_fastq1],
+                                            command="""echo -e "{sample}\t{fastq1}\tcontrol" >> {file}""".format(
+                                                sample=os.path.join(output_directory, contrast.name, sample.name),
+                                                file=output_file_contrast,
+                                                fastq1=candidate_fastq1
+                                            )
+
+                                        )
+                                    write_line_control_jobs.append(write_line_job)
+                                    sample_table_contrast_jobs = concat_jobs(write_line_control_jobs)
+        for contrast in self.contrasts:
+            #####treatments
+            output_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.temp.txt")
+            for treatment in contrast.treatments:
+
+                for sample in self.samples:
+                    if treatment.name == sample.name:
+
+                        for readset in self.readsets:
+                            if sample.name == readset.sample.name:
+                                if readset.run_type == "PAIRED_END":
+                                    if len(sample.readsets) > 1:
+
+                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
+                                                                        sample.name + "_merged.pair1.fastq.gz")
+                                        candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name,
+                                                                        sample.name + "_merged.pair2.fastq.gz")
+
+                                    else:
+                                        candidate_fastq1 = readset.fastq1
+                                        candidate_fastq2 = readset.fastq2
+                                        if readset.bam:
+                                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
+                                                                            readset.sample.name,
+                                                                            readset.name + ".pair1.fastq.gz")
+                                            candidate_fastq2 = os.path.join(self.output_dir, "raw_reads",
+                                                                            readset.sample.name,
+                                                                            readset.name + ".pair2.fastq.gz")
+
+                                    seq2fun_input_files.append(candidate_fastq1)
+                                    seq2fun_input_files.append(candidate_fastq2)
+                                    seq2fun_output_samples.append(sample.name)
+                                    write_line_job = Job(
+                                        input_files=[candidate_fastq1, candidate_fastq2],
+                                        command="""echo -e "{sample}\t{fastq1}\t{fastq2}\ttreatment" >> {file}""".format(
+                                            sample=os.path.join(output_directory, contrast.name, sample.name),
+                                            file= output_file_contrast,
+                                            fastq1=candidate_fastq1,
+                                            fastq2=candidate_fastq2
+                                        )
+                                    )
+                                    write_line_treatment_jobs.append(write_line_job)
+                                    sample_table_treatment_jobs = concat_jobs(write_line_treatment_jobs)
+                                elif readset.run_type == "SINGLE_END":
+                                    if len(sample.readsets) > 1:
+                                        candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
+                                                                        sample.name + "merged.pair1.fastq.gz")
+                                    else:
+                                        candidate_fastq1 = readset.fastq1
+                                        if readset.bam:
+                                            candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
+                                                                            readset.sample.name,
+                                                                            readset.name + ".pair1.fastq.gz")
+                                    seq2fun_input_files.append(candidate_fastq1)
+                                    seq2fun_output_samples.append(sample.name)
+                                    write_line_job = Job(
+                                        input_files=[candidate_fastq1],
+                                        command="""echo -e "{sample}\t{fastq1}\ttreatment" >> {file}""".format(
+                                            sample=os.path.join(output_directory, contrast.name, sample.name),
+                                            file=output_file_contrast,
+                                            fastq1=candidate_fastq1
+                                        )
+
+                                    )
+                                    write_line_treatment_jobs.append(write_line_job)
+                                    sample_table_treatment_jobs = concat_jobs(write_line_treatment_jobs)
+
+
+
+        seq2fun_jobs = []
+        ##remove duplicate lines in the sample table and execute seq2fun
+
+        for contrast in self.contrasts:
+            seq2fun_outputs =[]
+            output_dir = os.path.join(output_directory, contrast.name)
+            profiling = (config.param('seq2fun', 'profiling'))
+            seq2fun_outputs.append(output_dir + "/All_sample_KO_abundance_table.txt")
+            if "--profiling" == profiling:
+                seq2fun_outputs.append(output_dir + "/All_sample_KO_abundance_table_submit2networkanalyst.txt")
+                seq2fun_outputs.append(output_dir + "/All_sample_pathway_table.txt")
+                seq2fun_outputs.append(output_dir + "/All_samples.html")
+                seq2fun_outputs.append(output_dir + "/All_sample_species_table.txt")
+
+
+            input_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.temp.txt")
+            output_file_contrast = os.path.join(output_directory, contrast.name, contrast.name + "_sample_table.txt")
+            remove_duplicates = concat_jobs([Job(
+                output_files= [output_file_contrast],
+                command="""sort -u {input_file} > {output_file}""".format(
+                    input_file=input_file_contrast,
+                    output_file=output_file_contrast
+                )
+
+            ),Job(
+                command="""rm {temp_file}""".format(
+                    temp_file=input_file_contrast
+
+                )
+
+            ),
+            seq2fun.processing(seq2fun_input_files, seq2fun_outputs, output_file_contrast, profiling)
+            ])
+            seq2fun_jobs.append(remove_duplicates)
+            seq2fun_jobs = concat_jobs(seq2fun_jobs)
+
+
+
+        job = concat_jobs([create_folder_jobs,sample_table_contrast_jobs, sample_table_treatment_jobs, seq2fun_jobs])
+        job.samples = self.samples
+        job.name = "seq2fun.processing"
+        jobs.append(job)
+        return jobs
+
+
+    def seq2fun_count_matrix(self):
+        """
+        This step (only runs when running differential expression) creates common sample table that will be used in
+        differential expression. The original seq2fun sample table and KO abundance table
+        cannot be used in this case as differential expression needs all the samples together.
+        The design file is directly used to find the contrasts.
+
+        """
+
+        jobs =[]
+        merge_fastq_dir = "merge_fastq"
+        seq2fun_input_files = []
+        output_directory = "seq2fun/count_matrix"
+        write_line_jobs = []
+        output_sample_temp_file = os.path.join(output_directory,  "common_sample_table.temp.txt")
+        output_sample_file = os.path.join(output_directory, "common_sample_table.txt")
+
+        folder_job = concat_jobs([Job(command="mkdir -p " + os.path.join(output_directory)),
+                                  Job(command="touch " + output_sample_temp_file)])
+
+        for sample in self.samples:
+                for readset in self.readsets:
+                    if sample.name == readset.sample.name:
+                        if readset.run_type == "PAIRED_END":
+                            if len(sample.readsets) > 1:
+
+                                candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
+                                                                sample.name + "_merged.pair1.fastq.gz")
+                                candidate_fastq2 = os.path.join(merge_fastq_dir, sample.name,
+                                                                sample.name + "_merged.pair2.fastq.gz")
+
+                            else:
+                                candidate_fastq1 = readset.fastq1
+                                candidate_fastq2 = readset.fastq2
+                                if readset.bam:
+                                    candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
+                                                                    readset.sample.name,
+                                                                    readset.name + ".pair1.fastq.gz")
+                                    candidate_fastq2 = os.path.join(self.output_dir, "raw_reads",
+                                                                    readset.sample.name,
+                                                                    readset.name + ".pair2.fastq.gz")
+
+                            seq2fun_input_files.append(candidate_fastq1)
+                            seq2fun_input_files.append(candidate_fastq2)
+                            write_line_job = Job(
+                                input_files=[candidate_fastq1, candidate_fastq2],
+                                command="""echo -e "{sample}\t{fastq1}\t{fastq2}\tcontrol" >> {file}""".format(
+                                    sample=os.path.join(output_directory, sample.name),
+                                    file=output_sample_temp_file,
+                                    fastq1=candidate_fastq1,
+                                    fastq2=candidate_fastq2
+                                )
+                            )
+                            write_line_jobs.append(write_line_job)
+                            sample_table_contrast_jobs = concat_jobs(write_line_jobs)
+                        elif readset.run_type == "SINGLE_END":
+                            if len(sample.readsets) > 1:
+                                candidate_fastq1 = os.path.join(merge_fastq_dir, sample.name,
+                                                                sample.name + "merged.pair1.fastq.gz")
+                            else:
+                                candidate_fastq1 = readset.fastq1
+                                if readset.bam:
+                                    candidate_fastq1 = os.path.join(self.output_dir, "raw_reads",
+                                                                    readset.sample.name,
+                                                                    readset.name + ".pair1.fastq.gz")
+
+                            seq2fun_input_files.append(candidate_fastq1)
+                            write_line_job = Job(
+                                input_files=[candidate_fastq1],
+                                command="""echo -e "{sample}\t{fastq1}\tcontrol" >> {file}""".format(
+                                    sample=os.path.join(output_directory, sample.name),
+                                    file=output_sample_temp_file,
+                                    fastq1=candidate_fastq1
+                                )
+
+                            )
+                            write_line_jobs.append(write_line_job)
+                            sample_table_contrast_jobs = concat_jobs(write_line_jobs)
+
+        seq2fun_jobs = []
+        ##remove duplicates and execute seq2fun
+        seq2fun_outputs = []
+        profiling = ""
+        seq2fun_outputs.append(output_directory + "/All_sample_KO_abundance_table.txt")
+
+        remove_duplicates = concat_jobs([
+            Job(
+            output_files=[output_sample_file],
+            command="""sort -u {input_file} > {output_file}""".format(
+                input_file=output_sample_temp_file,
+                output_file=output_sample_file
+            )
+        ),
+            Job(
+            command="""rm {temp_file}""".format(
+                temp_file=output_sample_temp_file
+            )
+        ),
+            seq2fun.processing(seq2fun_input_files, seq2fun_outputs, output_sample_file, profiling)
+        ])
+        seq2fun_jobs.append(remove_duplicates)
+        seq2fun_jobs = concat_jobs(seq2fun_jobs)
+
+
+        job = concat_jobs(
+            [folder_job, sample_table_contrast_jobs, seq2fun_jobs])
+        job.samples = self.samples
+        job.name = "seq2fun.count_matrix"
+        jobs.append(job)
+        return jobs
+
+    def differential_expression_seq2fun(self):
+        """
+        Performs differential gene expression analysis using [DESEQ2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
+        Merge the results of the analysis in a single csv file.
+        """
+        jobs = []
+        output_directory = "differential_expression/seq2fun"
+        count_matrix_temp = os.path.join("seq2fun", "count_matrix", "All_sample_KO_abundance_table.txt")
+        count_matrix = os.path.join("seq2fun", "count_matrix", "count_matrix.csv")
+        prepare_matrix_job = Job(output_files=[count_matrix],
+                                 input_files=[count_matrix_temp],
+            command="""awk 'BEGIN{{FS=OFS="\t"}} NF--' {input} | awk '{{if(NR!=2){{print $0}} }}' | awk -v OFS="\t" '{{ print $1,$0}}' > {output}""".format(
+                input = count_matrix_temp,
+                output = count_matrix
+            )
+        )
+        # If --design <design_file> option is missing, self.contrasts call will raise an Exception
+        if self.contrasts:
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+
+        #check whether design file has any contrast with no replicates. If so deseq2 cannot handle it and analysis should be
+        #skipped
+        no_replicates = False
+
+        #check whether the replicates are there in a contrast. If replicates are not found this step will be skipped
+        for contrast in self.contrasts:
+            if len(contrast.treatments) < 2:
+                no_replicates = True
+            elif len(contrast.controls) < 2 :
+                no_replicates = True
+
+        if no_replicates == False:
+            edger_job = differential_expression.edger(design_file, count_matrix, output_directory)
+            edger_job.input_files = [design_file, count_matrix]
+            edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
+            edger_job.samples = self.samples
+
+            deseq_job = seq2fun.deseq2(design_file, count_matrix, output_directory)
+            deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
+
+
+            deseq_job.samples = self.samples
+            report_jobs = []
+            for contrast in self.contrasts:
+                report_job = Job(input_files = [os.path.join(output_directory, contrast.name, "dge_results.csv")],
+                             output_files = [os.path.join("report", "differential_expression", "seq2fun", contrast.name, "dge_results.csv")],
+                command = ("""mkdir -p {output_folder} && rm -f {output_file} && cp {input_file} {output_file}""").format(
+                input_file = os.path.join(output_directory, contrast.name, "dge_results.csv"),
+                output_file=os.path.join("report", "differential_expression", "seq2fun", contrast.name, "dge_results.csv"),
+                output_folder = os.path.join("report", "differential_expression", "seq2fun", contrast.name)
+                        ) )
+                report_jobs.append(report_job)
+                report_matrix_job = concat_jobs(report_jobs)
+            jobs.extend(self.seq2fun_count_matrix())
+            jobs.extend([concat_jobs([
+                Job(command="mkdir -p " + output_directory),
+                prepare_matrix_job,
+                edger_job,
+                deseq_job,
+                report_matrix_job
+            ], name="differential_expression.seq2fun")])
+            return jobs
+        else:
+            log.info("remove all the contrasts without replicates and re-run the pipeline")
+            return []
+
+    def pathway_enrichment_seq2fun(self):
+
+        """
+
+        seq2fun pathway analysis using fgsea (https://bioconductor.org/packages/release/bioc/html/fgsea.html)
+         and user provide universal pathway list as KEGG map ID. The differential KO expression results obtained
+         from edgeR will be using as the input for the pathway enrichment analysis
+
+        """
+        jobs = []
+        output_prefix = "seq2fun_ko_pathway"
+        DGE_output_directory=  "differential_expression/seq2fun"
+        profiling = (config.param('seq2fun', 'profiling'))
+        if "--profiling" == profiling:
+            for contrast in self.contrasts:
+                output_file = os.path.join(DGE_output_directory, contrast.name, "edger_results.csv")
+                #html_file = os.path.join("seq2fun", contrast.name, "All_samples.html")
+                output_dir = os.path.join("seq2fun_pathway", contrast.name)
+                mkdir_job = Job(command="mkdir -p " + output_dir)
+                pathway_job = seq2fun.ko_pathway_analysis(output_file, output_prefix,  output_dir)
+                job = concat_jobs([mkdir_job, pathway_job])
+                job.name = "seq2fun_pathway." + contrast.name
+                job.samples = self.samples
+                jobs.append(job)
+        else:
+            log.info("You should first run seq2fun with profiling on to conduct the pathway enrichment analysis... skipping")
+        return jobs
+
+
     @property
     def steps(self):
         return [
+            [
             self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
@@ -1006,7 +1587,16 @@ pandoc --to=markdown \\
             self.differential_expression,
             self.filter_annotated_components,
             self.gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered,
-            self.differential_expression_filtered,
+            self.differential_expression_filtered
+                ],
+            [
+                self.picard_sam_to_fastq,
+                self.merge_fastq,
+                self.seq2fun,
+                self.differential_expression_seq2fun,
+                self.pathway_enrichment_seq2fun
+
+             ]
         ]
 
 if __name__ == '__main__':
@@ -1014,4 +1604,4 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        RnaSeqDeNovoAssembly()
+        RnaSeqDeNovoAssembly(protocol=['trinity', 'seq2fun'])

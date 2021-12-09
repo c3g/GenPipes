@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
@@ -57,7 +58,7 @@ class AmpliconSeq(common.Illumina):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-t", "--type", help = "AmpliconSeq analysis type", choices = ["qiime", "dada2"], default="dada2")
-        self.argparser.add_argument("-d", "--design", help="design file", type=file)
+        self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
         super(AmpliconSeq, self).__init__(protocol)
 
     def trimmomatic16S(self):

@@ -80,7 +80,7 @@ MUGQIC pipelines and compatible Python version are already installed as modules 
 To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
-module load mugqic/python/2.7.14
+module load mugqic/python/3.8.5
 module load mugqic/genpipes/<latest_version>
 ```
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
