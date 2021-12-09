@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -55,10 +53,10 @@ def split_by_size(sequence_dictionary, nbSplits, variant=False):
 
     total_genome = 0
     for sequence in sequence_dictionary:
-        if variant and sequence['type'] is 'alt':
+        if variant and sequence['type'] == 'alt':
             altsToExclude.append(sequence['name'])
             
-        if variant and sequence['type'] is not 'alt':
+        if variant and sequence['type'] != 'alt':
             total_genome += sequence['length']
             
         else:

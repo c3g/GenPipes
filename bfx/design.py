@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -27,7 +25,7 @@ import re
 
 # MUGQIC Modules
 from core.config import _raise, SanitycheckError
-from sample import *
+from .sample import *
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +63,7 @@ class Contrast(object):
 
 
 def parse_chipseq_design_file(design_file, samples):
-    design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
+    design_csv = csv.DictReader(open(design_file, 'r'), delimiter='\t')
     # Skip first column which is Sample
     contrasts = [Contrast(name) for name in design_csv.fieldnames[2:]]
 
@@ -105,7 +103,7 @@ def parse_chipseq_design_file(design_file, samples):
 
 def parse_design_file(design_file, samples):
 
-    design_csv = csv.DictReader(open(design_file, 'rb'), delimiter='\t')
+    design_csv = csv.DictReader(open(design_file, 'r'), delimiter='\t')
 
     # Skip first column which is Sample
     contrasts = [Contrast(name) for name in design_csv.fieldnames[1:]]

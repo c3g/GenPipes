@@ -28,7 +28,7 @@ usage: dnaseq_high_coverage.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                [--genpipes_file GENPIPES_FILE] [-r READSETS]
                                [-v]
 
-Version: 3.6.2
+Version: 4.0.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

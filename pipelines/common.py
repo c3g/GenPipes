@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import os
 import re
@@ -78,7 +79,7 @@ class MUGQICPipeline(Pipeline):
         server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
         listName = {}
         for readset in self.readsets:
-            if listName.has_key(readset.sample.name) :
+            if readset.sample.name in listName:
                 listName[readset.sample.name]+="."+readset.name
             else:
                 listName[readset.sample.name]=readset.sample.name+"."+readset.name
@@ -111,7 +112,7 @@ class MUGQICPipeline(Pipeline):
 {separator_line}
 LOG_MD5=$(echo $USER-'{uniqueIdentifier}' | md5sum | awk '{{ print $1 }}')
 if test -t 1; then ncolors=$(tput colors); if test -n "$ncolors" && test $ncolors -ge 8; then bold="$(tput bold)"; normal="$(tput sgr0)"; yellow="$(tput setaf 3)"; fi; fi
-wget --quiet '{server}.example.com?{request}&md5=$LOG_MD5' || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to mugqic.hpc.mcgill.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
+wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to mugqic.hpc.mcgill.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, uniqueIdentifier=uniqueIdentifier))
 
     def submit_jobs(self):
@@ -126,7 +127,7 @@ class Illumina(MUGQICPipeline):
 
     def __init__(self, protocol):
         self._protocol=protocol
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file)
+        self.argparser.add_argument("-r", "--readsets", help="readset file", type=argparse.FileType('r'))
         super(Illumina, self).__init__(protocol)
 
     @property
@@ -294,7 +295,7 @@ class Illumina(MUGQICPipeline):
 >Prefix/2
 {sequence2}
 END
-`""".format(adapter_fasta=adapter_fasta, sequence1=readset.adapter2.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1], sequence2=readset.adapter1.translate(string.maketrans("ACGTacgt","TGCAtgca"))[::-1]))
+`""".format(adapter_fasta=adapter_fasta, sequence1=readset.adapter2.translate(str.maketrans("ACGTacgt","TGCAtgca"))[::-1], sequence2=readset.adapter1.translate(str.maketrans("ACGTacgt","TGCAtgca"))[::-1]))
                     else:
                         _raise(SanitycheckError("Error: missing adapter1 and/or adapter2 for PAIRED_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
                 elif readset.run_type == "SINGLE_END":

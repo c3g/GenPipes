@@ -20,7 +20,7 @@ usage: ampliconseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                       [--genpipes_file GENPIPES_FILE] [-t {qiime,dada2}]
                       [-d DESIGN] [-r READSETS] [-v]
 
-Version: 3.6.2
+Version: 4.0.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

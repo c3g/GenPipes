@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -21,13 +19,15 @@
 
 # Python Standard Modules
 import re
+import os
 
 # MUGQIC Modules
-from core.job import *
-import core.config
-import gatk4
-import picard
-import picard2
+import core
+from core.job import Job
+from core.config import config
+from . import gatk4
+from . import picard
+from . import picard2
 
 config = core.config.config
 
@@ -686,13 +686,13 @@ def bed2interval_list(
             bed,
             output
         )
-    if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
+    elif config.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
         return picard.bed2interval_list(
             dictionary,
             bed,
             output
         )
-    if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] >= "2":
+    elif config.param('picard_bed2interval_list', 'module_picard').split("/")[2] >= "2":
         return picard2.bed2interval_list(
             dictionary,
             bed,
