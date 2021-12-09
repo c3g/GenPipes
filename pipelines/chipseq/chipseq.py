@@ -1772,7 +1772,7 @@ sed -e 's@ihec_metrics_merged_table@{ihec_metrics_merged_table}@g' \\
                     input_files=[],
                     output_files=[report_file, report_intro_file],
                     name="merge_ihec_metrics_report",
-                    module_entries=["multiqc_report", module_mugqic_tools],
+                    module_entries=["multiqc_report", "module_mugqic_tools"],
                     command="""\
 mkdir -p {report_yaml_dir} && \\
 cp {report_template_dir}/{basename_report_intro_file} {report_intro_file} && \\
