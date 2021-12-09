@@ -1791,7 +1791,7 @@ sed -ie 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' {report_file}"
         report_file=report_file,
         trimmomatic_yaml=os.path.join(report_yaml_dir, "Illumina.merge_trimmomatic_stats.yaml")
         ),
-                    report_files=[report_file]
+                    # report_files=[report_file]
                     ),
                 multiqc.run(
                     input_files,
