@@ -1,6 +1,6 @@
 trimming:
   trimmomatic:
-    # info: "is perfoming trimming and cliping."
+    info: "is perfoming trimming and cliping."
     extra: |
       Reads are trimmed from the 3' end to have a phred score of at least <b>trailing_min_quality</b>. Illumina sequencing adapters are removed from the reads, and all reads are required to have a length of at least <b>min_length</b> bp.
       <br>Trimming Statistics per Readset table (<a href='readset_merge_trim_stats'>download full table</a>).

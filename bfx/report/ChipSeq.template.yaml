@@ -36,48 +36,48 @@ data_format: 'tsv'
 
 # Adding contact and version information
 report_header_info:
-    - Contact E-mail: 'services@computationalgenomics.ca'
-    - Application Type: 'ChIP-Seq Analysis'
-    - Pipeline version: 'chipseq $VERSION$'
+  - Contact E-mail: 'services@computationalgenomics.ca'
+  - Application Type: 'ChIP-Seq Analysis'
+  - Pipeline version: 'chipseq $VERSION$'
 
 # Set the module order here. To set the description or name for the section or the parent
 #   you must place in under within the module order or section order part. ../graphs/GM12878_chr19.Input_QC_Metrics.png
 module_order:
-    - c3g_content_renderer:
-      id: introduction
-    - trimming
-    - c3g_content_renderer:
-      id: mark_dup
-    - c3g_content_renderer:
-      id: view_filter
-    - picard:
-      info: "is a set of Java command line tools for manipulating high-throughput sequencing data. The following metrics are calculated on filtered bams files according to thresholds detailed in the previous section so alignments metrics might display very high rates."
-    - c3g_table_renderer:
-      id: sequencing_alignment_metrics
-    - c3g_content_renderer:
-      id: qc_tag
-    - homer:
-      info: "is a suite of tools for Motif Discovery and next-gen sequencing analysis."
-    - c3g_content_renderer:
-      id: ucsc_tracks
-    - c3g_content_renderer:
-      id: peak_calls
-    - macs2:
-      info: "identifies transcription factor binding sites in ChIP-seq data."
-    - c3g_content_renderer:
-      id: peaks_annotation
-    - c3g_content_renderer:
-      id: N_peaks_motifs_analysis
-    - c3g_table_renderer:
-      id: peak_stats_narrow
-    - c3g_content_renderer:
-      id: peak_location_stats
-    - c3g_table_renderer:
-      id: ihec_metrics
-    - references
+  - c3g_content_renderer:
+    id: introduction
+  - trimming
+  - c3g_content_renderer:
+    id: mark_dup
+  - c3g_content_renderer:
+    id: view_filter
+  - picard:
+    info: "is a set of Java command line tools for manipulating high-throughput sequencing data. The following metrics are calculated on filtered bams files according to thresholds detailed in the previous section so alignments metrics might display very high rates."
+  - c3g_table_renderer:
+    id: sequencing_alignment_metrics
+  - c3g_content_renderer:
+    id: qc_tag
+  - homer:
+    info: "is a suite of tools for Motif Discovery and next-gen sequencing analysis."
+  - c3g_content_renderer:
+    id: ucsc_tracks
+  - c3g_content_renderer:
+    id: peak_calls
+  - macs2:
+    info: "identifies transcription factor binding sites in ChIP-seq data."
+  - c3g_content_renderer:
+    id: peaks_annotation
+  - c3g_content_renderer:
+    id: N_peaks_motifs_analysis
+  - c3g_table_renderer:
+    id: peak_stats_narrow
+  - c3g_content_renderer:
+    id: peak_location_stats
+  - c3g_table_renderer:
+    id: ihec_metrics
+  - references
 
 references:
-    ref_target_color: '#bff64a'
+  ref_target_color: '#bff64a'
 
 skip_generalstats: True
 
@@ -86,12 +86,12 @@ working_dir: 'report'
 
 # The list of multiqc default modules we do not like
 exclude_modules:
-    - samtools
+  - samtools
 
 table_color_scale: 'BuGn'
 
 sp:
-    c3g_image_renderer:
-        fn_re: "png|jpeg|jpg"
-    c3g_table_renderer:
-        fn_re: "^.*.[t,c]sv$"
+  c3g_image_renderer:
+    fn_re: "png|jpeg|jpg"
+  c3g_table_renderer:
+    fn_re: "^.*.[t,c]sv$"
