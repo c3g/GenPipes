@@ -117,8 +117,14 @@ class Pipeline(object):
             config._filepath = os.path.abspath(config_trace.name)
 
         self._output_dir = os.path.abspath(self.args.output_dir)
-        self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config, container=self.args.container,
-                                           genpipes_file=self.args.genpipes_file)
+        self._job_output_dir = os.path.join(self.output_dir, "job_output")
+
+        self._scheduler = create_scheduler(
+            self.args.job_scheduler,
+            self.args.config,
+            container=self.args.container,
+            genpipes_file=self.args.genpipes_file
+        )
 
         self._json = True
         if self.args.no_json:
@@ -254,6 +260,10 @@ class Pipeline(object):
         return self._output_dir
 
     @property
+    def job_output_dir(self):
+        return self._job_output_dir
+
+    @property
     def report_template_dir(self):
         return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "bfx", "report")
 
@@ -382,7 +392,7 @@ class Pipeline(object):
 
                 # Job .done file name contains the command checksum.
                 # Thus, if the command is modified, the job is not up-to-date anymore.
-                job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command_with_modules.encode('utf-8')).hexdigest() + ".mugqic.done")
+                job.done = os.path.join(self.job_output_dir, step.name, job.name + "." + hashlib.md5(job.command_with_modules.encode('utf-8')).hexdigest() + ".mugqic.done")
                 job.output_dir = self.output_dir
                 job.dependency_jobs = self.dependency_jobs(job)
 
