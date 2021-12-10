@@ -245,7 +245,7 @@ set -eu -o pipefail
         if pipeline.jobs:
             self.genpipes_file.write("""
 OUTPUT_DIR={pipeline.output_dir}
-JOB_OUTPUT_DIR=$OUTPUT_DIR/job_output
+JOB_OUTPUT_DIR={pipeline.job_output_dir}
 TIMESTAMP=`date +%FT%H.%M.%S`
 JOB_LIST=$JOB_OUTPUT_DIR/{pipeline.__class__.__name__}_job_list_$TIMESTAMP
 export CONFIG_FILES="{config_files}"
@@ -716,7 +716,7 @@ class DaemonScheduler(Scheduler):
                             'cluster_submit_cmd': config.param(job.name.split(".")[0], 'cluster_submit_cmd'),
                             'cluster_other_arg': config.param(job.name.split(".")[0], 'cluster_other_arg'),
                             'cluster_work_dir_arg': config.param(job.name.split(".")[0], 'cluster_work_dir_arg') + " " + pipeline.output_dir,
-                            'cluster_output_dir_arg': config.param(job.name.split(".")[0], 'cluster_output_dir_arg') + " " + os.path.join(pipeline.output_dir, "job_output", step.name, job.name + ".o"),
+                            'cluster_output_dir_arg': config.param(job.name.split(".")[0], 'cluster_output_dir_arg') + " " + os.path.join(pipeline.job_output_dir, step.name, job.name + ".o"),
                             'cluster_job_name_arg': config.param(job.name.split(".")[0], 'cluster_job_name_arg') + " " + job.name,
                             'cluster_walltime': config.param(job.name.split(".")[0], 'cluster_walltime'),
                             'cluster_queue': config.param(job.name.split(".")[0], 'cluster_queue'),
