@@ -197,8 +197,8 @@ class ChipSeq(common.Illumina):
 {sequence2}
 END
 `""".format(adapter_fasta=adapter_fasta,
-            sequence1=readset.adapter2.translate(string.maketrans("ACGTacgt", "TGCAtgca"))[::-1],
-            sequence2=readset.adapter1.translate(string.maketrans("ACGTacgt", "TGCAtgca"))[::-1]))
+            sequence1=readset.adapter2.translate(str.maketrans("ACGTacgt", "TGCAtgca"))[::-1],
+            sequence2=readset.adapter1.translate(str.maketrans("ACGTacgt", "TGCAtgca"))[::-1]))
                     else:
                         _raise(SanitycheckError(
                             "Error: missing adapter1 and/or adapter2 for PAIRED_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
@@ -2366,6 +2366,7 @@ done""".format(
                 self.annotation_graphs,
                 # self.ihec_preprocess_files,
                 self.run_spp,
+                self.differential_binding,
                 self.ihec_metrics,
                 self.multiqc_report,
                 self.cram_output]
