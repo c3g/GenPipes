@@ -1602,22 +1602,22 @@ done""".format(
 
                         bam_list.append(input_file_list)
 
-                for control in contrast.treatments:
-                    control_sample_name, control_mark_name = control.split("-.-")
+                for treatment in contrast.treatments:
+                    treatment_sample_name, treatment_mark_name = treatment.split("-.-")
                     for sample in self.samples:
                         input_file_list = [
                             os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
                                          sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
                             mark_name, mark_type in sample.marks.items() if
-                            mark_type == "I" and sample.name == control_sample_name]
+                            mark_type == "I" and sample.name == treatment_sample_name]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
                             os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
                                          sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
                             mark_name, mark_type in sample.marks.items() if
-                            mark_type != "I" and sample.name == control_sample_name and mark_name ==
-                            control_mark_name]
+                            mark_type != "I" and sample.name == treatment_sample_name and mark_name ==
+                            treatment_mark_name]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
@@ -1626,8 +1626,8 @@ done""".format(
                             #os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." +
                             #                         self.mark_type_conversion[mark_type] + "Peak") for
                             mark_name, mark_type in sample.marks.items() if
-                            mark_type != "I" and sample.name == control_sample_name and mark_name ==
-                            control_mark_name]
+                            mark_type != "I" and sample.name == treatment_sample_name and mark_name ==
+                            treatment_mark_name]
 
                         bam_list.append(input_file_list)
                 bam_list = filter(None, bam_list)
