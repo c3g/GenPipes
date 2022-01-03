@@ -907,7 +907,7 @@ pandoc \\
 
     def methylkit_differential_analysis(self):
         """
-        Run methylKit to get DMCs & DMRs for different designeds comparisons
+        Run methylKit to get DMCs & DMRs for different design comparisons
         """
 
         jobs = []
@@ -955,6 +955,7 @@ pandoc \\
             self.bis_snp,
             self.filter_snp_cpg,
             self.prepare_methylkit,         # step 15
+           # self.methylkit_differential_analysis,
             self.cram_output,
         ]
 
