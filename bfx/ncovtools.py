@@ -48,7 +48,7 @@ def run_ncovtools(output_filtered_bam,
 module purge && \\
 module load {ncovtools} && \\
 echo "Preparing to run ncov_tools..." && \\
-ln -s {reference_genome} {ncovtools_directory}/{reference_genome_file} && \\
+ln -sf {reference_genome} {ncovtools_directory}/{reference_genome_file} && \\
 NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg|neg" {readset_file} | awk '{{pwet=pwet", ""\\""$1"\\""}} END {{print substr(pwet,2)}}') && \\
 echo "data_root: data
 platform: \\"{platform}\\"
