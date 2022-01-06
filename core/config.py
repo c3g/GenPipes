@@ -111,9 +111,9 @@ class Config(configparser.SafeConfigParser):
 
                 from_section = self.get(section, option)
                 from_default = self.get('DEFAULT', option)
-                if not utils.slurm_time_to_datetime(from_section):
+                if not utils.time_to_datetime(from_section):
                     return from_default
-                elif utils.slurm_time_to_datetime(from_default) <= utils.slurm_time_to_datetime(from_section):
+                elif utils.time_to_datetime(from_default) <= utils.time_to_datetime(from_section):
                     return from_default
                 else:
                     return from_section
