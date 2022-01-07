@@ -276,10 +276,10 @@ class PBSScheduler(Scheduler):
     def walltime(self, job_name_prefix):
         walltime = self.config.param(job_name_prefix, 'cluster_walltime')
         # force the DD-HH:MM[:00] format to HH:MM[:00]
-        time = utils.time_to_datetime(walltime)
-        sec = time.seconds % 60
-        minutes = ((time.seconds - sec) / 60) % 60
-        hours = (time.seconds - sec - 60 * minutes) / 3600 + time.days * 24
+        time = int(utils.time_to_datetime(walltime))
+        sec = int(time.seconds % 60)
+        minutes = int(((time.seconds - sec) / 60) % 60)
+        hours = int((time.seconds - sec - 60 * minutes) / 3600 + time.days * 24)
         return '-l walltime={:02d}:{:02d}:{:02d}'.format(hours, minutes, sec)
 
     def submit(self, pipeline):
