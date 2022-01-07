@@ -497,7 +497,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
             lane_config_file = os.path.join(unaligned_dir, self.run_id + "." + lane + ".settings.config")
 
-            # If demultiplexing is perform while becalling
+            # If demultiplexing is perform while basecalling
             if self.is_demultiplexed:
                 basecall_outputs, postprocessing_jobs = self.generate_basecall_outputs(lane)
                 basecall_outputs.extend(
@@ -583,12 +583,15 @@ class MGIRunProcessing(common.MUGQICPipeline):
             jobs.extend(lane_jobs)
 
             lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "basecall." + self.run_id + "." + lane + ".done")
+            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
             lane_done_file_job = concat_jobs(
                 [
                     bash.mkdir(os.path.dirname(lane_basecall_done_file)),
                     bash.touch(lane_basecall_done_file)
                 ],
                 name="basecall.checkpoint." + self.run_id + "." + lane,
+                input_dependency=lane_jobs_outputs,
+                output_dependency=[lane_basecall_done_file],
                 samples=self.samples[lane]
             )
             jobs.append(lane_done_file_job)
@@ -828,15 +831,19 @@ class MGIRunProcessing(common.MUGQICPipeline):
             jobs.extend(lane_jobs)
 
             lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "index." + self.run_id + "." + lane + ".done")
-            lane_done_file_job = concat_jobs(
-                [
-                    bash.mkdir(os.path.dirname(lane_basecall_done_file)),
-                    bash.touch(lane_basecall_done_file)
-                ],
-                name="index.checkpoint." + self.run_id + "." + lane,
-                samples=self.samples[lane]
-            )
-            jobs.append(lane_done_file_job)
+            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
+            if not len(lane_jobs_outputs) == 0:
+                lane_done_file_job = concat_jobs(
+                    [
+                        bash.mkdir(os.path.dirname(lane_basecall_done_file)),
+                        bash.touch(lane_basecall_done_file)
+                    ],
+                    name="index.checkpoint." + self.run_id + "." + lane,
+                    input_dependency=lane_jobs_outputs,
+                    output_dependency=[lane_basecall_done_file],            
+                    samples=self.samples[lane]
+                )
+                jobs.append(lane_done_file_job)
         return jobs
 
     def fastq(self):
@@ -940,12 +947,15 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     jobs.extend(lane_jobs)
 
                     lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "fastq." + self.run_id + "." + lane + ".done")
+                    lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
                     lane_done_file_job = concat_jobs(
                         [   
                             bash.mkdir(os.path.dirname(lane_basecall_done_file)),
                             bash.touch(lane_basecall_done_file)
                         ],
                         name="fastq.checkpoint." + self.run_id + "." + lane,
+                        input_dependency=lane_jobs_outputs,
+                        output_dependency=[lane_basecall_done_file],
                         samples=self.samples[lane]
                     )
                     jobs.append(lane_done_file_job)
@@ -1012,12 +1022,15 @@ class MGIRunProcessing(common.MUGQICPipeline):
             jobs.extend(lane_jobs)
 
             lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "qc_graphs." + self.run_id + "." + lane + ".done")
+            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
             lane_done_file_job = concat_jobs(
                 [
                     bash.mkdir(os.path.dirname(lane_basecall_done_file)),
                     bash.touch(lane_basecall_done_file)
                 ],
                 name="qc_graphs.checkpoint." + self.run_id + "." + lane,
+                input_dependency=lane_jobs_outputs,
+                output_dependency=[lane_basecall_done_file],
                 samples=self.samples[lane]
             )
             jobs.append(lane_done_file_job)
@@ -1093,12 +1106,15 @@ class MGIRunProcessing(common.MUGQICPipeline):
             jobs.extend(lane_jobs)
 
             lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "fastqc." + self.run_id + "." + lane + ".done")
+            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
             lane_done_file_job = concat_jobs(
                 [
                     bash.mkdir(os.path.dirname(lane_basecall_done_file)),
                     bash.touch(lane_basecall_done_file)
                 ],
                 name="fastqc.checkpoint." + self.run_id + "." + lane,
+                input_dependency=lane_jobs_outputs,
+                output_dependency=[lane_basecall_done_file],
                 samples=self.samples[lane]
             )
             jobs.append(lane_done_file_job)
@@ -1268,12 +1284,15 @@ class MGIRunProcessing(common.MUGQICPipeline):
             jobs.extend(lane_jobs)
 
             lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "blast." + self.run_id + "." + lane + ".done")
+            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
             lane_done_file_job = concat_jobs(
                 [
                     bash.mkdir(os.path.dirname(lane_basecall_done_file)),
                     bash.touch(lane_basecall_done_file)
                 ],
                 name="blast.checkpoint." + self.run_id + "." + lane,
+                input_dependency=lane_jobs_outputs,
+                output_dependency=[lane_basecall_done_file],
                 samples=self.samples[lane]
             )
             jobs.append(lane_done_file_job)
@@ -1309,12 +1328,15 @@ class MGIRunProcessing(common.MUGQICPipeline):
             jobs.extend(lane_jobs)
 
             lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "align." + self.run_id + "." + lane + ".done")
+            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
             lane_done_file_job = concat_jobs(
                 [
                     bash.mkdir(os.path.dirname(lane_basecall_done_file)),
                     bash.touch(lane_basecall_done_file)
                 ],
                 name="align.checkpoint." + self.run_id + "." + lane,
+                input_dependency=lane_jobs_outputs,
+                output_dependency=[lane_basecall_done_file],
                 samples=self.samples[lane]
             )
             jobs.append(lane_done_file_job)
@@ -1355,12 +1377,15 @@ class MGIRunProcessing(common.MUGQICPipeline):
             jobs.extend(lane_jobs)
 
             lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "picard_mark_duplicates." + self.run_id + "." + lane + ".done")
+            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
             lane_done_file_job = concat_jobs(
                 [
                     bash.mkdir(os.path.dirname(lane_basecall_done_file)),
                     bash.touch(lane_basecall_done_file)
                 ],
                 name="picard_mark_duplicates.checkpoint." + self.run_id + "." + lane,
+                input_dependency=lane_jobs_outputs,
+                output_dependency=[lane_basecall_done_file],
                 samples=self.samples[lane]
             )
             jobs.append(lane_done_file_job)
@@ -1419,12 +1444,15 @@ class MGIRunProcessing(common.MUGQICPipeline):
             jobs.extend(lane_jobs)
 
             lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "metrics." + self.run_id + "." + lane + ".done")
+            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
             lane_done_file_job = concat_jobs(
                 [
                     bash.mkdir(os.path.dirname(lane_basecall_done_file)),
                     bash.touch(lane_basecall_done_file)
                 ],
                 name="metrics.checkpoint." + self.run_id + "." + lane,
+                input_dependency=lane_jobs_outputs,
+                output_dependency=[lane_basecall_done_file],
                 samples=self.samples[lane]
             )
             jobs.append(lane_done_file_job)
@@ -1447,37 +1475,41 @@ class MGIRunProcessing(common.MUGQICPipeline):
             lane_jobs = []
             for readset in self.readsets[lane]:
                 current_jobs = [
-                    Job(
-                        [readset.fastq1],
-                        [readset.fastq1 + ".md5"],
-                        command="md5sum -b " + readset.fastq1 + " > " + readset.fastq1 + ".md5"
+                    bash.md5sum(
+                        readset.fastq1,
+                        readset.fastq1 + ".md5",
+                        self.output_dir,
+                        binary=True
                     )
                 ]
     
                 # Second read in paired-end run
                 if readset.fastq2:
                     current_jobs.append(
-                        Job(
-                            [readset.fastq2],
-                            [readset.fastq2 + ".md5"],
-                            command="md5sum -b " + readset.fastq2 + " > " + readset.fastq2 + ".md5"
+                        bash.md5sum(
+                            readset.fastq2,
+                            readset.fastq2 + ".md5",
+                            os.path.dirname(readset.fastq2),
+                            binary=True
                         )
                     )
     
                 # Alignment files
                 if readset.bam:
                     current_jobs.append(
-                        Job(
-                            [readset.bam + ".bam"],
-                            [readset.bam + ".bam.md5"],
-                            command="md5sum -b " + readset.bam + ".bam" + " > " + readset.bam + ".bam.md5"
+                        bash.md5sum(
+                            readset.bam + ".bam",
+                            readset.bam + ".bam.md5",
+                            os.path.dirname(readset.bam),
+                            binary=True
                         )
                     )
                     current_jobs.append(
-                        Job(
-                            [],
-                            [readset.bam + ".bai.md5"],
-                            command="md5sum -b " + readset.bam + ".bai" + " > " + readset.bam + ".bai.md5"
+                        bash.md5sum(
+                            readset.bam + ".bai",
+                            readset.bam + ".bai.md5",
+                            os.path.dirname(readset.bam),
+                            binary=True
                         )
                     )
     
@@ -1500,6 +1532,20 @@ class MGIRunProcessing(common.MUGQICPipeline):
             else:
                 self.add_copy_job_inputs(lane_jobs, lane)
                 jobs.extend(lane_jobs)
+
+            lane_md5_done_file = os.path.join(self.job_output_dir, "checkpoint", "md5." + self.run_id + "." + lane + ".done")
+            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
+            lane_done_file_job = concat_jobs(
+                [
+                    bash.mkdir(os.path.dirname(lane_md5_done_file)),
+                    bash.touch(lane_md5_done_file)
+                ],
+                name="md5.checkpoint." + self.run_id + "." + lane,
+                input_dependency=lane_jobs_outputs,
+                output_dependency=[lane_md5_done_file],
+                samples=self.samples[lane]
+            )
+            jobs.append(lane_done_file_job)
 
         return jobs
 
@@ -1531,14 +1577,17 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 # Build JSON report for each sample
                 output_file = os.path.join(sample_report_dir, readset.name + ".report.json")
                 lane_jobs.append(
-                    concat_jobs([
-                        bash.mkdir(sample_report_dir),
-                        tools.run_validation_sample_report(
-                            readset,
-                            self.report_inputs[lane],
-                            output_file,
-                            general_information_file
-                        )],
+                    concat_jobs(
+                        [
+                            bash.mkdir(sample_report_dir),
+                            tools.run_validation_sample_report(
+                                readset,
+                                self.report_inputs[lane],
+                                output_file,
+                                general_information_file
+                            ),
+                            Job() if self.is_demultiplexed else None
+                        ],
                         name="sample_report." + readset.name + "." + self.run_id + "." + lane
                     )
                 )
@@ -1547,13 +1596,15 @@ class MGIRunProcessing(common.MUGQICPipeline):
             run_validation_report_json = os.path.join(report_dir, self.run_id + "." + lane + ".run_validation_report.json")
             # Aggregate sample reports to build the run validation report
             lane_jobs.append(
-                concat_jobs([
-                    bash.mkdir(report_dir),
-                    tools.run_validation_aggregate_report(
-                        general_information_file,
-                        run_validation_inputs,
-                        run_validation_report_json
-                    )],
+                concat_jobs(
+                    [
+                        bash.mkdir(report_dir),
+                        tools.run_validation_aggregate_report(
+                            general_information_file,
+                            run_validation_inputs,
+                            run_validation_report_json
+                        )
+                    ],
                     name="report." + self.run_id + "." + lane
                 )
             )
@@ -1590,10 +1641,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
             lane_jobs.append(
                 concat_jobs(
                     copy_fastqc_jobs + [
-                    bash.cp(
-                        summary_report_html,
-                        os.path.join(self.output_dir, "L0" + lane, "report")
-                    )],
+                        bash.cp(
+                            summary_report_html,
+                            os.path.join(self.output_dir, "L0" + lane, "report")
+                        )
+                    ],
                     name="report.copy." + self.run_id + "." + lane
                 )
             )
@@ -2037,22 +2089,26 @@ class MGIRunProcessing(common.MUGQICPipeline):
             readset_r1_outputs = []
             readset_r2_outputs = []
             for index in readset.indexes:
-                readset_r1_outputs.append(
-                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.gz")
+                readset_r1_outputs.extend(
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.gz"),
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.fqStat.txt")
                 )
                 if readset.run_type == "PAIRED_END":
                     readset_r2_outputs.append(
-                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.gz")
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.gz"),
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.fqStat.txt")
                     )
 
             # If True, then merge the 'Undetermined' reads
             if self.merge_undetermined[lane]:
                 readset_r1_outputs.append(
-                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.gz")
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.gz"),
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.fqStat.txt")
                 )
                 if readset.run_type == "PAIRED_END":
                     readset_r2_outputs.append(
-                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.gz")
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.gz"),
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.fqStat.txt")
                     )
             # Processing R1 fastq outputs :
             #   convert headers from MGI to Illumina format using zcat and awk
