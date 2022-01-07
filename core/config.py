@@ -176,16 +176,12 @@ class Error(Exception):
 
 
 class SanitycheckError(Error):
-    def __init__(self, *args, **kwargs):
-        super.__init__(*args, **kwargs)
-        self.message = None
-
+    pass
 
 def _raise(error_obj):
     if config.sanity:
         if isinstance(error_obj, SanitycheckError):
-            error_obj.message = ' --- TO FIX --- {}'.format(error_obj.message)
-        log.error(error_obj.message)
+            log.error(error_obj)
     else:
         raise error_obj
 
