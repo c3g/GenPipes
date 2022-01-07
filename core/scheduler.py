@@ -292,7 +292,11 @@ class PBSScheduler(Scheduler):
             mem = re.search("[0-9]+[a-zA-Z]*", mem_str).group()
         except AttributeError:
             return " "
-        return "-l mem={}".format(mem)
+        if 'per' in mem_str and 'cpu' in mem_str:
+            option = '-l pmem='
+        else:
+            option = '-l mem='
+        return "{}{}".format(option, mem)
 
     def submit(self, pipeline):
         self.print_header(pipeline)
@@ -458,7 +462,7 @@ class SlurmScheduler(Scheduler):
         if 'per' in mem_str and 'cpu' in mem_str:
             option = '--mem-per-cpu'
         else:
-            option= '--mem'
+            option = '--mem'
         return "{} {}".format(option, mem)
 
     def submit(self, pipeline):
