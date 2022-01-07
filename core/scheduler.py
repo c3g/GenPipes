@@ -276,7 +276,7 @@ class PBSScheduler(Scheduler):
     def walltime(self, job_name_prefix):
         walltime = self.config.param(job_name_prefix, 'cluster_walltime')
         # force the DD-HH:MM[:00] format to HH:MM[:00]
-        time = int(utils.time_to_datetime(walltime))
+        time = utils.time_to_datetime(walltime)
         sec = int(time.seconds % 60)
         minutes = int(((time.seconds - sec) / 60) % 60)
         hours = int((time.seconds - sec - 60 * minutes) / 3600 + time.days * 24)
