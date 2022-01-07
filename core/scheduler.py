@@ -36,6 +36,7 @@ separator_line = "#" + "-" * 79
 
 logger = logging.getLogger(__name__)
 
+
 def create_scheduler(s_type, config_files, container=None, genpipes_file=None):
     if s_type == "pbs":
         return PBSScheduler(config_files, container=container, genpipes_file=genpipes_file)
@@ -47,6 +48,7 @@ def create_scheduler(s_type, config_files, container=None, genpipes_file=None):
         return SlurmScheduler(config_files, container=container, genpipes_file=genpipes_file)
     else:
         raise Exception("Error: scheduler type \"" + s_type + "\" is invalid!")
+
 
 class Scheduler(object):
     def __init__(self, config_files, container=None, genpipes_file=None, **kwargs):
@@ -66,7 +68,10 @@ class Scheduler(object):
                 st = os.stat(genpipes_file.name)
                 os.chmod(genpipes_file.name, st.st_mode | stat.S_IEXEC | stat.S_IXGRP)
 
-    def walltime(self):
+    def walltime(self, job_name_prefix):
+        raise NotImplementedError
+
+    def memory(self, job_name_prefix):
         raise NotImplementedError
 
     def submit(self, pipeline):
@@ -82,8 +87,8 @@ class Scheduler(object):
 
         if self._host_cvmfs_cache is None:
 
-            self._host_cvmfs_cache = config.param("container", 'host_cvmfs_cache'
-                                                  , required=False, type="string")
+            self._host_cvmfs_cache = config.param("container", 'host_cvmfs_cache',
+                                                  required=False, type="string")
 
             if not self._host_cvmfs_cache:
 
@@ -113,7 +118,7 @@ class Scheduler(object):
             self._bind = config.param("container", 'bind_list', required=False, type='list')
 
             if not self._bind:
-                bind = ['/tmp', '/home']
+                self._bind = ['/tmp', '/home']
         return self._bind
 
     @property
@@ -132,7 +137,6 @@ class Scheduler(object):
                 network = " --network host"
                 user = " --user $UID:$GROUPS"
 
-                mount_point=''
                 return ('docker run --env-file <( env| cut -f1 -d= ) --privileged '
                         '{network} {user} {v_opt} {name} '
                         .format(network=network, user=user, v_opt=v_opt
@@ -148,7 +152,7 @@ class Scheduler(object):
 
             elif self.container.type == 'wrapper':
 
-                return ("{name} ".format(name=self.container.name))
+                return "{name} ".format(name=self.container.name)
         else:
 
             return ""
@@ -282,6 +286,14 @@ class PBSScheduler(Scheduler):
         hours = int((time.seconds - sec - 60 * minutes) / 3600 + time.days * 24)
         return '-l walltime={:02d}:{:02d}:{:02d}'.format(hours, minutes, sec)
 
+    def memory(self, job_name_prefix):
+        mem_str = self.config.param(job_name_prefix, 'cluster_memory', required=False)
+        try:
+            mem = re.search("[0-9]+[a-zA-Z]*", mem_str).group()
+        except AttributeError:
+            return " "
+        return "-l mem={}".format(mem)
+
     def submit(self, pipeline):
         self.print_header(pipeline)
         for step in pipeline.step_range:
@@ -347,6 +359,7 @@ exit \$MUGQIC_STATE" | \\
                         config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
                         config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
                         self.walltime(job_name_prefix) + " " + \
+                        self.memory(job_name_prefix) + " " + \
                         config.param(job_name_prefix, 'cluster_queue') + " " + \
                         config.param(job_name_prefix, 'cluster_cpu')
 
@@ -435,6 +448,19 @@ class SlurmScheduler(Scheduler):
         hours = (time.seconds - sec - 60 * minutes) / 3600 + time.days * 24
         return '--time={:02d}:{:02d}:{:02d}'.format(hours, minutes, sec)
 
+    def memory(self, job_name_prefix):
+        mem_str = self.config.param(job_name_prefix, 'cluster_memory', required=False)
+        try:
+            mem = re.search("[0-9]+[a-zA-Z]*", mem_str).group()
+        except AttributeError:
+            return " "
+
+        if 'per' in mem_str and 'cpu' in mem_str:
+            option = '--mem-per-cpu'
+        else:
+            option= '--mem'
+        return "{} {}".format(option, mem)
+
     def submit(self, pipeline):
         self.print_header(pipeline)
         for step in pipeline.step_range:
@@ -510,6 +536,7 @@ exit \$MUGQIC_STATE" | \\
                         config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
                         config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
                         self.walltime(job_name_prefix) + " " + \
+                        self.memory(job_name_prefix) + " " + \
                         config.param(job_name_prefix, 'cluster_queue') + " " + \
                         config.param(job_name_prefix, 'cluster_cpu')
                     if job.dependency_jobs:
