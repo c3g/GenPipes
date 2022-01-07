@@ -176,7 +176,9 @@ class Error(Exception):
 
 
 class SanitycheckError(Error):
-    pass
+    def __init__(self):
+        super.__init__()
+        self.message = None
 
 
 def _raise(error_obj):
