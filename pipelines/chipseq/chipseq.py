@@ -702,7 +702,6 @@ do
     filtered_supplementarysecondary_reads=`bc <<< $(grep "secondary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
     filtered_reads=`bc <<< $(grep "in total" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* in total .*//')-$filtered_supplementarysecondary_reads`
     filtered_mapped_reads=`bc <<< $(grep "mapped (" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$filtered_supplementarysecondary_reads`
-    filtered_mapped_rate=`echo "scale=4; 100*$filtered_mapped_reads/$filtered_reads" | bc -l`
     filtered_dup_reads=`grep "duplicates" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* duplicates$//'`
     filtered_dup_rate=`echo "scale=4; 100*$filtered_dup_reads/$filtered_mapped_reads" | bc -l`
     filtered_dedup_reads=`echo "$filtered_mapped_reads-$filtered_dup_reads" | bc -l`
@@ -722,10 +721,10 @@ do
     fi
     filtered_mito_reads=$(sambamba view -F "not duplicate" -c $bam_file chrM)
     filtered_mito_rate=$(echo "scale=4; 100*$filtered_mito_reads/$filtered_mapped_reads" | bc -l)
-    echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$mapped_reads\\t$mapped_reads_rate\\t$filtered_reads\\t$filtered_rate\\t$filtered_mapped_reads\\t$filtered_mapped_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate" >> {metrics_file}
+    echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$mapped_reads\\t$mapped_reads_rate\\t$filtered_reads\\t$filtered_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate" >> {metrics_file}
   done
 done && \\
-sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tRemaining Reads after Trimming #\\tRemaining Reads after Trimming %\\tAligned Trimmed Reads #\\tAligned Trimmed Reads %\\tRemaining Reads after Filtering #\\tRemaining Reads after Filtering %\\tAligned Filtered Reads #\\tAligned Filtered Reads %\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads # without Duplicates\\tMitochondrial Reads #\\tMitochondrial Reads %" {metrics_file} && \\
+sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tRemaining Reads after Trimming #\\tRemaining Reads after Trimming %\\tAligned Trimmed Reads #\\tAligned Trimmed Reads %\\tRemaining Reads after Filtering #\\tRemaining Reads after Filtering %\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads # without Duplicates\\tMitochondrial Reads #\\tMitochondrial Reads %" {metrics_file} && \\
 mkdir -p {report_yaml_dir} && \\
 cp {metrics_file} {report_metrics_file} && \\
 sed -e 's@report_metrics_file@{report_metrics_file}@g'\\
