@@ -21,7 +21,6 @@
 
 # Python Standard Modules
 import argparse
-import configparser as ConfigParser
 import glob
 import logging
 import os
@@ -91,43 +90,36 @@ def cleanFiles(x):
         print(i +"is now removed\n")
 
 
-def slurm_time_to_datetime(time):
+def time_to_datetime(time):
     """
-        From slurm doc:
+        From transform time str to delta time:
         Acceptable time formats include "minutes", "minutes:seconds",
         "hours:minutes:seconds", "days-hours",
         "days-hours:minutes" and "days-hours:minutes:seconds"
         In fact it will also work for pbs/torque.
-    :param time: sting from slurm sbatch --time option
+        Note that is strip from the string everithing that is not the time
+    :param time: sting containing a slurm "--time" format substring
     :return: timedelta object
     """
-    time = time.lstrip()
-    time = time.lstrip('--time=')
-    time = time.lstrip('-l walltime=')  # pbs/torque support
-    time = time.split(' ')[0] # in case of triling options e.g. "-l mem=12GB"
 
-    colon = time.count(':')
-    dash = time.count('-')
-    split_t = time.split(':')
-    if len(split_t) == 1:
-        split_d = split_t[0].split('-')
-        if len(split_d) == 2:
-            return datetime.timedelta(days=int(split_d[0]), hours=int(split_d[1]))
-        return datetime.timedelta(minutes=int(split_t[0]))
-    elif len(split_t) == 2:
-        split_d = split_t[0].split('-')
-        if len(split_d) == 2:
-            return datetime.timedelta(days=int(split_d[0]),
-                                      hours=int(split_d[1]), minutes=int(split_t[1]))
-        return datetime.timedelta(hours=int(split_t[0]), minutes=int(split_t[1]))
-    elif len(split_t) == 3:
-        split_d = split_t[0].split('-')
-        if len(split_d) == 2:
-            return datetime.timedelta(days=int(split_d[0]),
-                                      hours=int(split_d[1]),
-                                      minutes=int(split_t[1]), seconds=int(split_t[2]))
-        return datetime.timedelta(hours=int(split_t[0]),
-                                  minutes=int(split_t[1]), seconds=int(split_t[2]))
+    time = re.search("([0-9]+-)?[0-9]+:[0-9]+(:[0-9]+)?", time).group()
+
+    if '-' in time:
+        days, rest = time.split('-')
+        rest = rest.split(':')[0]
+    else:
+        rest = time.split(':')
+        days = 0
+
+    hours = int(rest[0]) + int(days * 24)
+    minutes = int(rest[1])
+
+    if len(rest) > 2:
+        sec = int(rest[2])
+    else:
+        sec = 0
+
+    return datetime.timedelta(hours=hours, minutes=minutes, seconds=sec)
 
 
 def expandvars(path, skip_escaped=False):
