@@ -287,7 +287,7 @@ class PBSScheduler(Scheduler):
         return '-l walltime={:02d}:{:02d}:{:02d}'.format(hours, minutes, sec)
 
     def memory(self, job_name_prefix):
-        mem_str = self.config.param(job_name_prefix, 'cluster_memory', required=False)
+        mem_str = self.config.param(job_name_prefix, 'cluster_mem', required=False)
         try:
             mem = re.search("[0-9]+[a-zA-Z]*", mem_str).group()
         except AttributeError:
@@ -453,7 +453,8 @@ class SlurmScheduler(Scheduler):
         return '--time={:02d}:{:02d}:{:02d}'.format(hours, minutes, sec)
 
     def memory(self, job_name_prefix):
-        mem_str = self.config.param(job_name_prefix, 'cluster_memory', required=False)
+        config_str = 'cluster_mem'
+        mem_str = self.config.param(job_name_prefix, config_str, required=False)
         try:
             mem = re.search("[0-9]+[a-zA-Z]*", mem_str).group()
         except AttributeError:
