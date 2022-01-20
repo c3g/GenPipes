@@ -452,6 +452,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self._report_hash = {}
             for lane in self.lanes:
                 self._report_hash[lane] = {
+                    "version" : "1.0",
                     "run" : self.run_id,
                     "instrument" : self.instrument,
                     "flowcell" : self.flowcell_id,
@@ -1565,7 +1566,9 @@ class MGIRunProcessing(common.MUGQICPipeline):
     
             # Add barcodes info to the report_hash
             self.report_hash[lane]["barcodes"] = dict([(readset.name, readset.indexes) for readset in self.readsets[lane]])
-    
+
+            self.generate_lane_json_report_file(lane) 
+
             general_information_file = os.path.join(self.output_dir, "L0" + lane, self.run_id + "." + lane + ".general_information.json")
             if not os.path.exists(os.path.dirname(general_information_file)):
                 os.makedirs(os.path.dirname(general_information_file))
@@ -2078,6 +2081,67 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     "Sample_Barcode": sample_barcode
                 }
                 writer.writerow(csv_dict)
+
+    def generate_lane_json_report_file(self, lane):
+        """
+        Builds a JSON object containing :
+           - general information about the run
+           - list and description of the pipeline jobs
+           - pipeline metrics organized by step
+        Dump the JSON object into a report file
+        """
+
+        self.report_hash[lane]["total_pf_clusters"] = None
+        self.report_hash[lane]["spread"] = None
+        self.report_hash[lane]["run_validation"] = []
+        for readset in self.readsets[lane]:
+            self.report_hash[lane]["run_validation"].append(
+                {
+                    "project": readset.project_id,
+                    "sample": readset.name,
+                    "index": {
+                        "Barcode": readset.index_name,
+                        "Barcode sequence": ','.join([readset_index['BARCODE_SEQUENCE'] for readset_index in readset.indexes]),
+                        "% on index in lane": None,
+                        "% of the lane": None,
+                        "% Perfect barcode": None,
+                        "% One mismatch barcode": None,
+                        "PF Clusters": None,
+                        "Yield (bases)": None,
+                        "Mean Quality Score": None,
+                        "% >= Q30 bases": None
+                    }, 
+                    "qc": {
+                        "avgQual": None,
+                        "duplicateRate": None
+                    }, 
+                    "sample_tag": None,
+                    "blast": {
+                        "1st_hit": None,
+                        "2nd_hit": None,
+                        "3rd_hit": None
+                    }, 
+                    "alignment": {
+                        "chimeras": None,
+                        "average_aligned_insert_size": None,
+                        "reported_sex": None,
+                        "pf_read_alignment_rate": None,
+                        "Freemix": None,
+                        "inferred_sex": None,
+                        "adapter_dimers": None,
+                        "mean_coverage": None,
+                        "aligned_dup_rate": None,
+                        "sex_concordance": None 
+                    }
+                } 
+            )
+
+        report_dir = os.path.join(self.output_dir, "L0" + lane, "report")
+        run_validation_report_json = os.path.join(report_dir, self.run_id + "." + lane + ".run_validation_report.json")
+        if not os.path.exists(os.path.dirname(run_validation_report_json)):
+             os.makedirs(os.path.dirname(run_validation_report_json))
+        with open(run_validation_report_json, 'w') as out_json:
+            json.dump(self.report_hash[lane], out_json, indent=4)
 
     def generate_basecall_outputs(self, lane):
         basecall_outputs = []
