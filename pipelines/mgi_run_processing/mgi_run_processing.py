@@ -131,8 +131,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
     def samples(self):
         if not hasattr(self, "_samples"):
             self._samples = {}
-        for lane in self.lanes:
-            self._samples[lane] = list(OrderedDict.fromkeys([readset.sample for readset in self.readsets[lane]]))
+            for lane in self.lanes:
+                self._samples[lane] = list(OrderedDict.fromkeys([readset.sample for readset in self.readsets[lane]]))
         return self._samples
             
 
@@ -583,6 +583,10 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
 
+            # metrics to JSON
+            
+
+            # checkpoint file
             lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "basecall." + self.run_id + "." + lane + ".done")
             lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
             lane_done_file_job = concat_jobs(
@@ -1526,7 +1530,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 lane_job = concat_jobs(
                     lane_jobs,
                     name="md5." + self.run_id + "." + lane,
-                    samples=self.readsets[lane]
+                    samples=self.samples[lane]
                 )
                 self.add_copy_job_inputs([lane_job], lane)
                 jobs.append(lane_job)
@@ -1534,6 +1538,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 self.add_copy_job_inputs(lane_jobs, lane)
                 jobs.extend(lane_jobs)
 
+            # checkpoint file
             lane_md5_done_file = os.path.join(self.job_output_dir, "checkpoint", "md5." + self.run_id + "." + lane + ".done")
             lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
             lane_done_file_job = concat_jobs(
@@ -2612,7 +2617,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 self.align,
                 self.picard_mark_duplicates,
                 self.metrics,
-#                self.md5,
+                self.md5,
                 self.report,
                 self.copy,
                 self.final_notification
@@ -2626,7 +2631,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 self.align,
                 self.picard_mark_duplicates,
                 self.metrics,
-#                self.md5,
+                self.md5,
                 self.report,
                 self.copy,
                 self.final_notification
