@@ -139,7 +139,8 @@ touch {target}""".format(
 def md5sum(
     inputs,
     output,
-    check=False
+    check=False,
+    binary=False,
     ):
 
     if not isinstance(inputs, list):
@@ -149,8 +150,9 @@ def md5sum(
         inputs,
         [output],
         command="""\
-md5sum {check}{input}{output}""".format(
+md5sum {check}{binary}{input}{output}""".format(
             check="-c " if check else "",
+            binary="-b " if binary else "",
             input=" ".join(["'"+os.path.abspath(input)+"'" for input in inputs]),
             output=" > " + os.path.abspath(output) if output else ""
         )
