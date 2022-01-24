@@ -3,3 +3,4 @@ resources/container/*
 !resources/container/get_wrapper.sh
 .idea
 .DS_Store
+tmp/
