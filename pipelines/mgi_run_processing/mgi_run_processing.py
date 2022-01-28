@@ -1452,9 +1452,9 @@ class MGIRunProcessing(common.MUGQICPipeline):
             for step in self.step_list:
                 report_step_jobs = []
                 if step.name in self.report_inputs[lane].keys() and self.report_inputs[lane][step.name]:
-                   log.debug("Reporting step " + step.name)
+#                   log.debug("Reporting step " + step.name)
                    if type(self.report_inputs[lane][step.name]) is str:
-                       log.debug("Fetching whole metrics for step " + step.name)
+#                       log.debug("Fetching whole metrics for step " + step.name)
                        report_step_jobs.append(
                            concat_jobs(
                                [
@@ -1472,7 +1472,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                        )
                        log.error(report_step_jobs[0].output_files)
                    elif type(self.report_inputs[lane][step.name]) is dict:
-                       log.debug("Fetching metrics for eah readsets for step " + step.name)
+#                       log.debug("Fetching metrics for eah readsets for step " + step.name)
                        for readset in self.readsets[lane]:
                            report_step_jobs.append(
                                concat_jobs(
@@ -1501,7 +1501,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     step_checkpoint_job_dependencies = [output for job in report_step_jobs for output in job.output_files]
                 else:
                     step_checkpoint_job_dependencies = [output for job in step.jobs for output in job.output_files]
-                log.debug(step.name + " :\n  " + "\n  ".join(step_checkpoint_job_dependencies))    
+#                log.debug(step.name + " :\n  " + "\n  ".join(step_checkpoint_job_dependencies))    
                 lane_jobs.append(
                     concat_jobs(
                         [
@@ -1575,7 +1575,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
             jobs.extend(lane_jobs)
 
-        return self.jobs
+        return jobs
 
     def copy(self):
         """
