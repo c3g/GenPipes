@@ -1470,7 +1470,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                                samples=self.samples[lane]
                            )
                        )
-                       log.error(report_step_jobs[0].output_files)
+#                       log.error(report_step_jobs[0].output_files)
                    elif type(self.report_inputs[lane][step.name]) is dict:
 #                       log.debug("Fetching metrics for eah readsets for step " + step.name)
                        for readset in self.readsets[lane]:
@@ -1501,19 +1501,20 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     step_checkpoint_job_dependencies = [output for job in report_step_jobs for output in job.output_files]
                 else:
                     step_checkpoint_job_dependencies = [output for job in step.jobs for output in job.output_files]
-#                log.debug(step.name + " :\n  " + "\n  ".join(step_checkpoint_job_dependencies))    
-                lane_jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(os.path.dirname(step_checkpoint_file)),
-                            bash.touch(step_checkpoint_file)
-                        ],
-                        name="checkpoint." + step.name + "." + self.run_id + "." + lane,
-                        input_dependency=step_checkpoint_job_dependencies,
-                        output_dependency=[step_checkpoint_file],
-                        samples=self.samples[lane]
+#                log.debug(step.name + " :\n  " + "\n  ".join(step_checkpoint_job_dependencies))
+                if step_checkpoint_job_dependencies:
+                    lane_jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(os.path.dirname(step_checkpoint_file)),
+                                bash.touch(step_checkpoint_file)
+                            ],
+                            name="checkpoint." + step.name + "." + self.run_id + "." + lane,
+                            input_dependency=step_checkpoint_job_dependencies,
+                            output_dependency=[step_checkpoint_file],
+                            samples=self.samples[lane]
+                        )
                     )
-                )
  
             # Copy fastqc HTML files into the report folder
             copy_fastqc_jobs = [
