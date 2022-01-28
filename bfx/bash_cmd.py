@@ -129,7 +129,7 @@ def touch(
 
     return Job(
         [],
-        [],
+        [target],
         command="""\
 touch {target}""".format(
             target=target

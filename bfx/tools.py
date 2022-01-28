@@ -331,6 +331,39 @@ python $PYTHON_TOOLS/convertFastqHeaders.py \\
         removable_files=outputs
     )
 
+def run_processing_metrics_to_json(
+    json_file,
+    step,
+    seq_type,
+    metrics_files,
+    readset=None
+    ):
+
+    if not isinstance(metrics_files, list):
+        metrics_files=[metrics_files]
+
+    return Job(
+        [json_file] + metrics_files,
+        [],
+        [
+            ['metrics_to_json', 'module_mugqic_tools'],
+            ['metrics_to_json', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/runProcessingMetricsToJson.py \\
+  -j {json} \\
+  -s {step} \\
+  -t {seq_type} \\
+  {inputs} \\
+  {readset}""".format(
+            json=json_file,
+            step=step,
+            seq_type=seq_type,
+            inputs="-i " + " -i ".join(metrics_files),
+            readset="-r " + readset if readset else ""
+        )
+    )
+
 def run_validation_sample_report(
     readset,
     report_inputs,

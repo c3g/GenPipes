@@ -470,13 +470,32 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self._report_inputs = {}
             for lane in self.lanes:
                 self._report_inputs[lane] = {
-                    'index': {},
-                    'qc' : {},
+                    'basecall': "",
+                    'index': "",
+                    'fastq': "",
+                    'fastqc': {},
+                    'qc_graphs' : {},
                     'blast' : {},
-                    'align' : {},
-                    'mark_dup' : {}
+                    'picard_mark_duplicates' : {},
+                    'metrics' : {}
                 }
         return self._report_inputs
+
+    @property
+    def report_dir(self):
+        if not hasattr(self, "_report_dir"):
+            self._report_dir = {}
+            for lane in self.lanes:
+                self._report_dir[lane] = os.path.join(self.output_dir, "L0" + lane, "report")
+        return self._report_dir
+
+    @property
+    def run_validation_report_json(self):
+        if not hasattr(self, "_run_validation_report_json"):
+            self._run_validation_report_json = {}
+            for lane in self.lanes:
+                self._run_validation_report_json[lane] = os.path.join(self.report_dir[lane], self.run_id + "." + lane + ".run_validation_report.json")
+        return self._run_validation_report_json
 
     def basecall(self):
         """
@@ -530,9 +549,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 if postprocessing_jobs:
                     jobs_to_throttle.extend(postprocessing_jobs)
 
-# At one point, reporting will need to emcompass the basecalling metrics as well
-#                for readset in self.readsets[lane]:
-#                    self.report_inputs[lane]['index'][readset.name] = [os.path.join(basecall_dir, self.run_id, "L0" + lane + ".summaryTable.csv")]
+                self.report_inputs[lane]['basecall'] = os.path.join(basecall_dir, self.run_id, "L0" + lane)
 
             else:
                 basecall_outputs = [
@@ -575,31 +592,9 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 lane_basecall_job.output_files.extend(raw_fastq_outputs)
                 lane_jobs.append(lane_basecall_job)
 
-# At one point, reporting will need to emcompass the basecalling metrics as well
-#                for readset in self.readsets[lane]:
-#                    self.report_inputs[lane]['index'][readset.name] = [os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".summaryTable.csv")]
-
             lane_jobs.extend(jobs_to_throttle)
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
-
-            # metrics to JSON
-            
-
-            # checkpoint file
-            lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "basecall." + self.run_id + "." + lane + ".done")
-            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
-            lane_done_file_job = concat_jobs(
-                [
-                    bash.mkdir(os.path.dirname(lane_basecall_done_file)),
-                    bash.touch(lane_basecall_done_file)
-                ],
-                name="basecall.checkpoint." + self.run_id + "." + lane,
-                input_dependency=lane_jobs_outputs,
-                output_dependency=[lane_basecall_done_file],
-                samples=self.samples[lane]
-            )
-            jobs.append(lane_done_file_job)
 
         return jobs
 
@@ -835,20 +830,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
 
-            lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "index." + self.run_id + "." + lane + ".done")
-            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
-            if not len(lane_jobs_outputs) == 0:
-                lane_done_file_job = concat_jobs(
-                    [
-                        bash.mkdir(os.path.dirname(lane_basecall_done_file)),
-                        bash.touch(lane_basecall_done_file)
-                    ],
-                    name="index.checkpoint." + self.run_id + "." + lane,
-                    input_dependency=lane_jobs_outputs,
-                    output_dependency=[lane_basecall_done_file],            
-                    samples=self.samples[lane]
-                )
-                jobs.append(lane_done_file_job)
         return jobs
 
     def fastq(self):
@@ -941,8 +922,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     if postprocessing_jobs:
                         jobs_to_throttle.extend(postprocessing_jobs)
 
-                    for readset in self.readsets[lane]:
-                        self.report_inputs[lane]['index'][readset.name] = [metrics_file]
+                    self.report_inputs[lane]['fastq'] = metrics_file
    
                     if self.args.type == 't7':
                         lane_jobs.extend(jobs_to_throttle)
@@ -951,19 +931,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     self.add_copy_job_inputs(lane_jobs, lane)
                     jobs.extend(lane_jobs)
 
-                    lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "fastq." + self.run_id + "." + lane + ".done")
-                    lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
-                    lane_done_file_job = concat_jobs(
-                        [   
-                            bash.mkdir(os.path.dirname(lane_basecall_done_file)),
-                            bash.touch(lane_basecall_done_file)
-                        ],
-                        name="fastq.checkpoint." + self.run_id + "." + lane,
-                        input_dependency=lane_jobs_outputs,
-                        output_dependency=[lane_basecall_done_file],
-                        samples=self.samples[lane]
-                    )
-                    jobs.append(lane_done_file_job)
         return jobs
 
     def qc_graphs(self):
@@ -997,11 +964,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
                             region_name,
                             output_dir
                     )],
-                    name="qc." + readset.name + ".qc." + self.run_id + "." + lane,
+                    name="qc_graphs." + readset.name + ".qc." + self.run_id + "." + lane,
                     samples=[readset.sample]
                 ))
-                self.report_inputs[lane]['qc'][readset.name] = os.path.join(output_dir, "mpsQC_" + region_name + "_stats.xml")
-   
+                self.report_inputs[lane]['qc_graphs'][readset.name] = os.path.join(output_dir, "mpsQC_" + region_name + "_stats.xml")
+
                 if not self.is_demultiplexed:
                     if readset.index_fastq1:
                         # Also process the fastq of the indexes
@@ -1017,7 +984,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                                         output_dir + "_index"
                                     )
                                 ],
-                                name="qc." + readset.name + ".qc_index." + self.run_id + "." + lane,
+                                name="qc_graphs." + readset.name + ".qc_index." + self.run_id + "." + lane,
                                 samples=[readset.sample]
                             )
                         )
@@ -1025,20 +992,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_to_report_hash("qc_graphs", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
-
-            lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "qc_graphs." + self.run_id + "." + lane + ".done")
-            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
-            lane_done_file_job = concat_jobs(
-                [
-                    bash.mkdir(os.path.dirname(lane_basecall_done_file)),
-                    bash.touch(lane_basecall_done_file)
-                ],
-                name="qc_graphs.checkpoint." + self.run_id + "." + lane,
-                input_dependency=lane_jobs_outputs,
-                output_dependency=[lane_basecall_done_file],
-                samples=self.samples[lane]
-            )
-            jobs.append(lane_done_file_job)
 
         if self.args.type == 't7':
             return jobs
@@ -1080,7 +1033,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         input2 = None
                         unzip = True
                         if not len(self.readsets[lane]) == 1 and not self.is_demultiplexed:
-                            self.report_inputs[lane]['index'][readset.name].append(outputs[0])
+                            self.report_inputs[lane]['fastqc'][readset.name] = outputs[0]
                     elif input1 == readset.fastq2:
                         job_suffix = "R2."
                         input2 = None
@@ -1105,25 +1058,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         name="fastqc." + readset.name + "_" + job_suffix + "." + self.run_id + "." + lane,
                         samples=[readset.sample]
                     ))
-    
+   
             self.add_to_report_hash("fastqc", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
 
-            lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "fastqc." + self.run_id + "." + lane + ".done")
-            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
-            lane_done_file_job = concat_jobs(
-                [
-                    bash.mkdir(os.path.dirname(lane_basecall_done_file)),
-                    bash.touch(lane_basecall_done_file)
-                ],
-                name="fastqc.checkpoint." + self.run_id + "." + lane,
-                input_dependency=lane_jobs_outputs,
-                output_dependency=[lane_basecall_done_file],
-                samples=self.samples[lane]
-            )
-            jobs.append(lane_done_file_job)
-            
         if self.args.type == 't7':
             return jobs
         else:
@@ -1283,25 +1222,11 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     samples = [readset.sample]
                 )
                 lane_jobs.append(job)
-    
+
             self.add_to_report_hash("blast", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
 
-            lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "blast." + self.run_id + "." + lane + ".done")
-            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
-            lane_done_file_job = concat_jobs(
-                [
-                    bash.mkdir(os.path.dirname(lane_basecall_done_file)),
-                    bash.touch(lane_basecall_done_file)
-                ],
-                name="blast.checkpoint." + self.run_id + "." + lane,
-                input_dependency=lane_jobs_outputs,
-                output_dependency=[lane_basecall_done_file],
-                samples=self.samples[lane]
-            )
-            jobs.append(lane_done_file_job)
-            
         if self.args.type == 't7':
             return jobs
         else:
@@ -1332,20 +1257,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
 
-            lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "align." + self.run_id + "." + lane + ".done")
-            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
-            lane_done_file_job = concat_jobs(
-                [
-                    bash.mkdir(os.path.dirname(lane_basecall_done_file)),
-                    bash.touch(lane_basecall_done_file)
-                ],
-                name="align.checkpoint." + self.run_id + "." + lane,
-                input_dependency=lane_jobs_outputs,
-                output_dependency=[lane_basecall_done_file],
-                samples=self.samples[lane]
-            )
-            jobs.append(lane_done_file_job)
-            
         if self.args.type == 't7':
             return jobs
         else:
@@ -1365,7 +1276,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 input = input_file_prefix + "bam"
                 output = input_file_prefix + "dup.bam"
                 metrics_file = input_file_prefix + "dup.metrics"
-                self.report_inputs[lane]['mark_dup'][readset.name] = metrics_file
+                self.report_inputs[lane]['picard_mark_duplicates'][readset.name] = metrics_file
     
                 job = picard.mark_duplicates(
                     [input],
@@ -1375,26 +1286,12 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 job.name = "picard_mark_duplicates." + readset.name + ".dup." + self.run_id + "." + lane
                 job.samples = [readset.sample]
                 lane_jobs.append(job)
-    
+
             self.add_to_report_hash("picard_mark_duplicates", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
 
             jobs.extend(lane_jobs)
 
-            lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "picard_mark_duplicates." + self.run_id + "." + lane + ".done")
-            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
-            lane_done_file_job = concat_jobs(
-                [
-                    bash.mkdir(os.path.dirname(lane_basecall_done_file)),
-                    bash.touch(lane_basecall_done_file)
-                ],
-                name="picard_mark_duplicates.checkpoint." + self.run_id + "." + lane,
-                input_dependency=lane_jobs_outputs,
-                output_dependency=[lane_basecall_done_file],
-                samples=self.samples[lane]
-            )
-            jobs.append(lane_done_file_job)
-            
         if self.args.type == 't7':
             return jobs
         else:
@@ -1429,39 +1326,25 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 lane_jobs.extend(job_list)
     
                 if readset.is_rna:
-                    self.report_inputs[lane]['align'][readset.name] = [
+                    self.report_inputs[lane]['metrics'][readset.name] = [
                         readset.bam + '.metrics.alignment_summary_metrics',
                         readset.bam + '.metrics.insert_size_metrics',
                         os.path.join(os.path.dirname(readset.bam), readset.sample.name + "." + readset.library + '.rnaseqc.sorted.dup.metrics.tsv'),
+                        readset.bam + ".metrics.verifyBamId.tsv",
                         readset.bam + '.metrics.rRNA.tsv'
                     ]
                 else:
-                    self.report_inputs[lane]['align'][readset.name] = [
+                    self.report_inputs[lane]['metrics'][readset.name] = [
                         readset.bam + '.metrics.alignment_summary_metrics',
                         readset.bam + '.metrics.insert_size_metrics',
-                        readset.bam + ".dup.metrics",
                         readset.bam + ".metrics.verifyBamId.tsv",
                         readset.bam + ".metrics.targetCoverage.txt"
                     ]
-    
+
             self.add_to_report_hash("metrics", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
 
-            lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "metrics." + self.run_id + "." + lane + ".done")
-            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
-            lane_done_file_job = concat_jobs(
-                [
-                    bash.mkdir(os.path.dirname(lane_basecall_done_file)),
-                    bash.touch(lane_basecall_done_file)
-                ],
-                name="metrics.checkpoint." + self.run_id + "." + lane,
-                input_dependency=lane_jobs_outputs,
-                output_dependency=[lane_basecall_done_file],
-                samples=self.samples[lane]
-            )
-            jobs.append(lane_done_file_job)
-        
         if self.args.type == 't7':
             return jobs
         else:
@@ -1538,21 +1421,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 self.add_copy_job_inputs(lane_jobs, lane)
                 jobs.extend(lane_jobs)
 
-            # checkpoint file
-            lane_md5_done_file = os.path.join(self.job_output_dir, "checkpoint", "md5." + self.run_id + "." + lane + ".done")
-            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
-            lane_done_file_job = concat_jobs(
-                [
-                    bash.mkdir(os.path.dirname(lane_md5_done_file)),
-                    bash.touch(lane_md5_done_file)
-                ],
-                name="md5.checkpoint." + self.run_id + "." + lane,
-                input_dependency=lane_jobs_outputs,
-                output_dependency=[lane_md5_done_file],
-                samples=self.samples[lane]
-            )
-            jobs.append(lane_done_file_job)
-
         return jobs
 
     def report(self):
@@ -1579,44 +1447,74 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 os.makedirs(os.path.dirname(general_information_file))
             with open(general_information_file, 'w') as out_json:
                 json.dump(self.report_hash[lane], out_json, indent=4)
-    
-            # Build JSON report for each sample
-            for readset in self.readsets[lane]:
-                # Build JSON report for each sample
-                output_file = os.path.join(sample_report_dir, readset.name + ".report.json")
+   
+            # metrics to JSON
+            for step in self.step_list:
+                report_step_jobs = []
+                if step.name in self.report_inputs[lane].keys() and self.report_inputs[lane][step.name]:
+                   log.debug("Reporting step " + step.name)
+                   if type(self.report_inputs[lane][step.name]) is str:
+                       log.debug("Fetching whole metrics for step " + step.name)
+                       report_step_jobs.append(
+                           concat_jobs(
+                               [
+                                   tools.run_processing_metrics_to_json(
+                                       self.run_validation_report_json[lane],
+                                       step.name,
+                                       self.args.type,
+                                       self.report_inputs[lane][step.name]
+                                   ),
+                                   bash.touch(os.path.join(self.job_output_dir, "checkpoint", step.name + "." + self.run_id + "." + lane + ".reportUpdated"))
+                               ],
+                               name="report." + step.name + "." + self.run_id + "." + lane,
+                               samples=self.samples[lane]
+                           )
+                       )
+                       log.error(report_step_jobs[0].output_files)
+                   elif type(self.report_inputs[lane][step.name]) is dict:
+                       log.debug("Fetching metrics for eah readsets for step " + step.name)
+                       for readset in self.readsets[lane]:
+                           report_step_jobs.append(
+                               concat_jobs(
+                                   [
+                                       tools.run_processing_metrics_to_json(
+                                           self.run_validation_report_json[lane],
+                                           step.name,
+                                           self.args.type,
+                                           self.report_inputs[lane][step.name][readset.name],
+                                           readset.name
+                                       ),
+                                       bash.touch(os.path.join(self.job_output_dir, "checkpoint", step.name + "." + readset.name + "." + self.run_id + "." + lane + ".reportUpdated"))
+                                   ],
+                                   name="report." + step.name + "." + readset.name + "." + self.run_id + "." + lane,
+                                   samples=self.samples[lane]
+                               )
+                           )
+                   else:
+                       _raise(SanitycheckError("Unknown metrics type : " + type(self.report_inputs[lane][step.name]) + " for step '" + step.name + "'"))
+
+                   lane_jobs.extend(report_step_jobs)
+
+                # checkpoint file
+                step_checkpoint_file = os.path.join(self.job_output_dir, "checkpoint", step.name + "." + self.run_id + "." + lane + ".done")
+                if report_step_jobs:
+                    step_checkpoint_job_dependencies = [output for job in report_step_jobs for output in job.output_files]
+                else:
+                    step_checkpoint_job_dependencies = [output for job in step.jobs for output in job.output_files]
+                log.debug(step.name + " :\n  " + "\n  ".join(step_checkpoint_job_dependencies))    
                 lane_jobs.append(
                     concat_jobs(
                         [
-                            bash.mkdir(sample_report_dir),
-                            tools.run_validation_sample_report(
-                                readset,
-                                self.report_inputs[lane],
-                                output_file,
-                                general_information_file
-                            ),
-                            Job() if self.is_demultiplexed else None
+                            bash.mkdir(os.path.dirname(step_checkpoint_file)),
+                            bash.touch(step_checkpoint_file)
                         ],
-                        name="sample_report." + readset.name + "." + self.run_id + "." + lane
+                        name="checkpoint." + step.name + "." + self.run_id + "." + lane,
+                        input_dependency=step_checkpoint_job_dependencies,
+                        output_dependency=[step_checkpoint_file],
+                        samples=self.samples[lane]
                     )
                 )
-                run_validation_inputs.append(output_file)
-    
-            run_validation_report_json = os.path.join(report_dir, self.run_id + "." + lane + ".run_validation_report.json")
-            # Aggregate sample reports to build the run validation report
-            lane_jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(report_dir),
-                        tools.run_validation_aggregate_report(
-                            general_information_file,
-                            run_validation_inputs,
-                            run_validation_report_json
-                        )
-                    ],
-                    name="report." + self.run_id + "." + lane
-                )
-            )
-    
+ 
             # Copy fastqc HTML files into the report folder
             copy_fastqc_jobs = [
                 bash.mkdir(os.path.join(self.output_dir, "L0" + lane, "report", "fastqc"))
@@ -1636,7 +1534,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 )
             )
             copy_fastqc_jobs[0].output_files.append(os.path.join(self.output_dir, "L0" + lane, "report", "fastqc"))
-    
+
             # Copy the MGI summary HTML report into the report folder
             raw_name_prefix = self.raw_fastq_prefix +  "_L0" + lane
             if self.args.type == "g400":
@@ -1662,7 +1560,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             zip_output = os.path.join(self.output_dir, "L0" + lane, "report", self.run_id + "_" + self.flowcell_id + "_L00" + lane + "_report.zip")
             zip_job = bash.zip(
                 [
-                    run_validation_report_json,
+                    self.run_validation_report_json[lane],
                     os.path.join(self.output_dir, "L0" + lane, "report", "fastqc"),
                     summary_report_html
                 ],
@@ -1677,7 +1575,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
 
             jobs.extend(lane_jobs)
 
-        return self.throttle_jobs(jobs)
+        return self.jobs
 
     def copy(self):
         """
@@ -2129,7 +2027,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     "alignment": {
                         "chimeras": None,
                         "average_aligned_insert_size": None,
-                        "reported_sex": None,
+                        "reported_sex": readset.gender,
                         "pf_read_alignment_rate": None,
                         "Freemix": None,
                         "inferred_sex": None,
@@ -2142,10 +2040,9 @@ class MGIRunProcessing(common.MUGQICPipeline):
             )
 
         report_dir = os.path.join(self.output_dir, "L0" + lane, "report")
-        run_validation_report_json = os.path.join(report_dir, self.run_id + "." + lane + ".run_validation_report.json")
-        if not os.path.exists(os.path.dirname(run_validation_report_json)):
-             os.makedirs(os.path.dirname(run_validation_report_json))
-        with open(run_validation_report_json, 'w') as out_json:
+        if not os.path.exists(os.path.dirname(self.run_validation_report_json[lane])):
+             os.makedirs(os.path.dirname(self.run_validation_report_json[lane]))
+        with open(self.run_validation_report_json[lane], 'w') as out_json:
             json.dump(self.report_hash[lane], out_json, indent=4)
 
     def generate_basecall_outputs(self, lane):
