@@ -514,11 +514,11 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                             os.path.join(self.output_dir, "index", "L00" + lane, "Reports", "html", self.flowcell_id, "all/all/all/lane.html"),
                             os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_stats.html")
                         ),
-                        tools.edit_index_stats(
-                            os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_per_readset.json"),
-                            os.path.join(self.output_dir, "index", "L00" + lane, "Stats", "Stats.json"),
-                            os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_stats.json")
-                        )
+#                        tools.edit_index_stats(
+#                            os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_per_readset.json"),
+#                            os.path.join(self.output_dir, "index", "L00" + lane, "Stats", "Stats.json"),
+#                            os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_stats.json")
+#                        )
                     ],
                     name="bcl2fastq_index." + self.run_id + "." + lane,
                     samples=self.samples[lane],
@@ -538,11 +538,7 @@ class IlluminaRunProcessing(common.MUGQICPipeline):
                 lane_jobs.append(idx_val_job)
 
                 self.add_to_report_hash("index", lane_jobs)
-                for readset in self.readsets[lane]:
-                    self.report_inputs[lane]['index'][readset.name] = [
-                        os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_stats.json"),
-                        os.path.join(self.output_dir, "index", self.run_id + "_" + lane + ".index_per_readset.json")
-                    ]
+                self.report_inputs[lane]['index'] = os.path.join(self.output_dir, "index", "L00" + lane, "Stats", "Stats.json")
                 self.add_copy_job_inputs(lane_jobs, lane)
                 jobs.extend(lane_jobs)
 
