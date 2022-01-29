@@ -43,6 +43,7 @@ from core.job import Job, concat_jobs, pipe_jobs
 from bfx.readset import parse_mgi_raw_readset_files
 from bfx import bvatools
 from bfx import picard
+from bfx import fastp
 from bfx import fastqc
 from bfx import tools
 from bfx import run_processing_tools
@@ -1067,6 +1068,44 @@ class MGIRunProcessing(common.MUGQICPipeline):
             return jobs
         else:
             return self.throttle_jobs(jobs)
+
+    def fastp(self):
+        """
+        Generate basic QC metrics.
+        """
+        jobs = []
+
+        for lane in self.lanes:
+            lane_jobs = []
+            for readset in self.readsets[lane]:
+                output_json_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.sample.name + ".fastp.json")
+                output_html_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.sample.name + ".fastp.html    ")
+                lane_jobs.append(
+                    concat_jobs([
+                        bash.mkdir(os.path.dirname(output_json_path), remove=True),
+                        fastp.fastp_basic_qc(readset.fastq1, readset.fastq2, output_json_path, output_html_path),
+                    ],
+                    name="fastp." + readset.name + self.run_id + "." + lane,
+                    samples=[readset.sample]
+                    )
+                )
+            self.add_to_report_hash("fastp", lane, lane_jobs)
+            jobs.extend(lane_jobs)
+
+            lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "fastp." + self.run_id + "." + lane + ".done")
+            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
+            lane_done_file_job = concat_jobs(
+                [
+                    bash.mkdir(os.path.dirname(lane_basecall_done_file)),
+                    bash.touch(lane_basecall_done_file)
+                ],
+                name="fastp.checkpoint." + self.run_id + "." + lane,
+                input_dependency=lane_jobs_outputs,
+                output_dependency=[lane_basecall_done_file],
+                samples=self.samples[lane]
+            )
+            jobs.append(lane_done_file_job)
+        return jobs
 
     def blast(self):
         """
@@ -2505,6 +2544,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             [
                 self.index,
                 self.fastq,
+                self.fastp,
                 self.qc_graphs,
                 self.fastqc,
                 self.blast,
@@ -2521,6 +2561,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 self.fastq,
                 self.qc_graphs,
                 self.fastqc,
+                self.fastp,
                 self.blast,
                 self.align,
                 self.picard_mark_duplicates,
