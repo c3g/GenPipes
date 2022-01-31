@@ -70,7 +70,7 @@ class Nanopore(common.MUGQICPipeline):
 
     def __init__(self, protocol=None):
         self._protocol = protocol
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=file)
+        self.argparser.add_argument("-r", "--readsets", help="readset file", type=argparse.FileType('r'))
         self.argparser.add_argument("-t", "--type", help="Type of CoVSeQ analysis,basecalling on/off (default without basecalling)",
                                     choices=["default", "basecalling"], default="default")
         super(Nanopore, self).__init__(protocol)
