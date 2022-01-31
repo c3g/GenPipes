@@ -4,3 +4,4 @@ resources/container/*
 .idea
 .DS_Store
 .gitignore
+tmp/
