@@ -38,14 +38,6 @@ class Sample(object):
 
         self._marks = {}
 
-        # self._run = ""
-        # self._flowcell = ""
-        # self._library = ""
-        # self._summary_file = ""
-        # self._fastq_files = ""
-        # self._fast5_files = ""
-        # self._analysis_name = ""
-
     def show(self):
         print("Sample -- name: " + self._name + ", readsets: " +
             ", ".join([readset.name for readset in self._readsets]))

@@ -35,10 +35,6 @@ def minimap2_ont(read_fastq_dir,
     :return: a job for nanopore alignment
     """
 
-    # out_sam = os.path.join(output_directory, "Aligned.out.sam")
-    # out_bam = os.path.join(output_directory, readset_name + ".sorted.bam")
-    # out_bai = os.path.join(output_directory, readset_name + ".sorted.bai")
-
     return Job(
         [read_fastq_dir],
         [out_sam],
