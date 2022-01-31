@@ -1078,8 +1078,8 @@ class MGIRunProcessing(common.MUGQICPipeline):
         for lane in self.lanes:
             lane_jobs = []
             for readset in self.readsets[lane]:
-                output_json_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.sample.name + "_" + readset.library + ".fastp.json")
-                output_html_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.sample.name + "_" + readset.library + ".fastp.html")
+                output_json_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.name + ".fastp.json")
+                output_html_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.name + ".fastp.html")
                 lane_jobs.append(
                     concat_jobs([
                         bash.mkdir(os.path.dirname(output_json_path), remove=True),
@@ -1091,20 +1091,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 )
             self.add_to_report_hash("fastp", lane, lane_jobs)
             jobs.extend(lane_jobs)
-
-            lane_basecall_done_file = os.path.join(self.job_output_dir, "checkpoint", "fastp." + self.run_id + "." + lane + ".done")
-            lane_jobs_outputs = [output for job in lane_jobs for output in job.output_files]
-            lane_done_file_job = concat_jobs(
-                [
-                    bash.mkdir(os.path.dirname(lane_basecall_done_file)),
-                    bash.touch(lane_basecall_done_file)
-                ],
-                name="fastp.checkpoint." + self.run_id + "." + lane,
-                input_dependency=lane_jobs_outputs,
-                output_dependency=[lane_basecall_done_file],
-                samples=self.samples[lane]
-            )
-            jobs.append(lane_done_file_job)
         return jobs
 
     def blast(self):
