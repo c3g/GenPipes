@@ -37,8 +37,8 @@ def fastp_basic_qc(input1, input2, output_json_path, output_html_path=None, over
     output_files = filter(None, [output_json_path, output_html_path])
 
     return Job(
-        input_files = inputs,
-        output_files = output_files,
+        inputs,
+        output_files,
         module_entries = [['fastp', 'module_fastp']],
         command = "fastp {rds1} {rds2} {cpus} {json} {html}".format(
             rds1 = "\\\n    --in1 "    + input1,
