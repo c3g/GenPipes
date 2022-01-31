@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -54,11 +54,7 @@ def ln(
     link,
     out_dir=None
     ):
-
-    if out_dir:
-        target_file = os.path.join(out_dir, target_file)
-        link = os.path.join(out_dir, link)
-
+    
     folder = os.path.dirname(link)
     return Job(
         [target_file],
@@ -68,8 +64,8 @@ ln -s -f \\
   {target_file} \\
   {link}""".format(
             #target_file=os.path.relpath(target_file, folder),
-            target_file=target_file,
-            link=link,
+            target_file=os.path.join(out_dir, target_file),
+            link=os.path.join(out_dir, link),
             folder=folder
         ),
         removable_files=[link]
