@@ -1078,14 +1078,14 @@ class MGIRunProcessing(common.MUGQICPipeline):
         for lane in self.lanes:
             lane_jobs = []
             for readset in self.readsets[lane]:
-                output_json_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.sample.name + ".fastp.json")
-                output_html_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.sample.name + ".fastp.html    ")
+                output_json_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.sample.name + "_" + readset.library + ".fastp.json")
+                output_html_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.sample.name + "_" + readset.library + ".fastp.html")
                 lane_jobs.append(
                     concat_jobs([
                         bash.mkdir(os.path.dirname(output_json_path), remove=True),
                         fastp.fastp_basic_qc(readset.fastq1, readset.fastq2, output_json_path, output_html_path),
                     ],
-                    name="fastp." + readset.name + self.run_id + "." + lane,
+                    name="fastp." + readset.name + "." + self.run_id + "." + lane,
                     samples=[readset.sample]
                     )
                 )
