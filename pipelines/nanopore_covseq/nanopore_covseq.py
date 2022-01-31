@@ -58,9 +58,9 @@ from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
 
-class Nanopore(common.MUGQICPipeline):
+class NanoporeCoVSeq(common.MUGQICPipeline):
     """
-    Nanopore CoVSeQ Pipeline
+    Nanopore CoVSeq Pipeline
     ==============
 
 
@@ -73,7 +73,7 @@ class Nanopore(common.MUGQICPipeline):
         self.argparser.add_argument("-r", "--readsets", help="readset file", type=argparse.FileType('r'))
         self.argparser.add_argument("-t", "--type", help="Type of CoVSeQ analysis,basecalling on/off (default without basecalling)",
                                     choices=["default", "basecalling"], default="default")
-        super(Nanopore, self).__init__(protocol)
+        super(NanoporeCoVSeq, self).__init__(protocol)
 
     @property
     def readsets(self):
@@ -947,4 +947,4 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        Nanopore(protocol=['default', 'basecalling'])
+        NanoporeCoVSeq(protocol=['default', 'basecalling'])
