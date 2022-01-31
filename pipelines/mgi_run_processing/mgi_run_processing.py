@@ -1366,7 +1366,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     bash.md5sum(
                         readset.fastq1,
                         readset.fastq1 + ".md5",
-                        self.output_dir,
                         binary=True
                     )
                 ]
@@ -1377,7 +1376,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         bash.md5sum(
                             readset.fastq2,
                             readset.fastq2 + ".md5",
-                            os.path.dirname(readset.fastq2),
                             binary=True
                         )
                     )
@@ -1388,7 +1386,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         bash.md5sum(
                             readset.bam + ".bam",
                             readset.bam + ".bam.md5",
-                            os.path.dirname(readset.bam),
                             binary=True
                         )
                     )
@@ -1396,7 +1393,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         bash.md5sum(
                             readset.bam + ".bai",
                             readset.bam + ".bai.md5",
-                            os.path.dirname(readset.bam),
                             binary=True
                         )
                     )
