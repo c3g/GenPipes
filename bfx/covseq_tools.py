@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -40,6 +40,25 @@ def covid_collect_metrics(readset_file, covid_collect_metrics_inputs, ini_sectio
 echo "Collecting metrics..." && \\
 covid_collect_metrics.sh -r {readset_file}""".format(
     readset_file=readset_file
+    )
+                )
+
+def covid_collect_nanopore_metrics(sample_name, consensus, fq_stats, pickle, output, ini_section='covseq_metrics'):
+
+    return Job(
+                input_files=[consensus, fq_stats, pickle],
+                output_files=[output],
+                module_entries=[
+                    [ini_section, 'module_python'],
+                    [ini_section, 'module_CoVSeQ_tools']
+                ],
+                command="""\\
+covid_collect_nanopore_metrics.py -s {sample_name} -c {consensus} -fqs {fq_stats} -pk {pickle} -o {output}""".format(
+    sample_name=sample_name,
+    consensus=consensus,
+    fq_stats=fq_stats,
+    pickle=pickle,
+    output=output
     )
                 )
 

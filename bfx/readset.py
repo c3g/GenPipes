@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -26,7 +26,8 @@ import re
 
 # MUGQIC Modules
 from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner 
-from .sample import Sample
+from .sample import Sample, NanoporeSample
+from core.config import config
 
 log = logging.getLogger(__name__)
 
@@ -563,6 +564,10 @@ class NanoporeReadset(Readset):
     def fast5_files(self):
         return self._fast5_files
 
+    @property
+    def analysis_name(self):
+        return self._analysis_name
+
 
 def parse_nanopore_readset_file(nanopore_readset_file):
     readsets = []
@@ -575,10 +580,11 @@ def parse_nanopore_readset_file(nanopore_readset_file):
         sample_names = [sample.name for sample in samples]
         if sample_name in sample_names:
             # Sample already exists
-            sample = samples[sample_names.index(sample_name)]
+            _raise(SanitycheckError("Sample Error: Sample name \"" + sample_name + "\" already exists!"))
+            # sample = samples[sample_names.index(sample_name)]
         else:
             # Create new sample
-            sample = Sample(sample_name)
+            sample = NanoporeSample(sample_name)
             samples.append(sample)
 
         # Create readset and add it to sample
@@ -598,15 +604,24 @@ def parse_nanopore_readset_file(nanopore_readset_file):
 
         readset._sample = Sample(sample_name)
         readset._run = line.get('Run', None)
+        sample._run = readset._run
         readset._flowcell = line.get('Flowcell', None)
+        sample._flowcell = readset._flowcell
         readset._library = line.get('Library', None)
+        sample._library = readset._library
         readset._summary_file = line['Summary'] if line.get('Summary', None) else []
+        sample._summary_file = readset._summary_file
         readset._fastq_files = line['FASTQ'] if line.get('FASTQ', None) else []
+        sample._fastq_files = readset._fastq_files
         readset._fast5_files = line['FAST5'] if line.get('FAST5', None) else []
+        sample._fast5_files = readset._fast5_files
+        readset._analysis_name = line.get('AnalysisName', None)
+        sample._analysis_name = readset._analysis_name
+        sample._barcode = line.get('Barcode', None)
 
         readsets.append(readset)
         sample.add_readset(readset)
 
-    log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
+    # log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets

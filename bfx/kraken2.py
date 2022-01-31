@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -59,21 +59,20 @@ def kraken2(input1, input2, prefix, other_options=config.param('kraken2', 'other
 
         command="""\
 kraken2 \\
-  {other_options} \\
+  {other_options} {paired} \\
   {nthread} \\
   {database} \\
-  {paired} \\
   {unclassified_output} \\
   {classified_output} \\
   {output} \\
   {report} \\
   {inputs}""".format(
       other_options=other_options,
+      paired="--paired" if input2 else "",
       nthread="--threads " + nthread,
       database="--db " + database,
-      unclassified_output="--unclassified-out " + unclassified_output_paired if input2 else unclassified_output,
-      classified_output="--classified-out " + classified_output_paired if input2 else classified_output,
-      paired="--paired" if input2 else "",
+      unclassified_output="--unclassified-out " + (unclassified_output_paired if input2 else unclassified_output),
+      classified_output="--classified-out " + (classified_output_paired if input2 else classified_output),
       output="--output " + output,
       report="--report " + report,
       inputs=" \\\n  ".join(inputs)

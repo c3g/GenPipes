@@ -51,7 +51,7 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a validsingularity
+                        Run inside a container providing a valid singularity
                         image path
   --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
                         Command file output path. This is the command used to
@@ -69,7 +69,7 @@ Steps:
 
 ----
 ```
-![dnaseq mugqic workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mugqic.resized.png)
+![dnaseq mugqic workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mugqic.png)
 [download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mugqic.png)
 ```
 mugqic:
@@ -112,7 +112,7 @@ mugqic:
 37- metrics_gatk_cluster_fingerprint
 ----
 ```
-![dnaseq mpileup workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mpileup.resized.png)
+![dnaseq mpileup workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mpileup.png)
 [download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mpileup.png)
 ```
 mpileup:
@@ -148,10 +148,44 @@ mpileup:
 30- sym_link_final_bam
 ----
 ```
-![dnaseq light workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_light.resized.png)
+![dnaseq light workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_light.png)
 [download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_light.png)
 ```
 light:
+1- picard_sam_to_fastq
+2- skewer_trimming
+3- bwa_mem_sambamba_sort_sam
+4- sambamba_merge_sam_files
+5- gatk_indel_realigner
+6- sambamba_merge_realigned
+7- sambamba_mark_duplicates
+8- metrics_dna_picard_metrics
+9- metrics_dna_sample_qualimap
+10- metrics_dna_sambamba_flagstat
+11- metrics_dna_fastqc
+12- picard_calculate_hs_metrics
+13- gatk_callable_loci
+14- extract_common_snp_freq
+15- baf_plot
+16- gatk_haplotype_caller
+17- merge_and_call_individual_gvcf
+18- combine_gvcf
+19- merge_and_call_combined_gvcf
+20- variant_recalibrator
+21- haplotype_caller_decompose_and_normalize
+22- haplotype_caller_flag_mappability
+23- haplotype_caller_snp_id_annotation
+24- haplotype_caller_snp_effect
+25- haplotype_caller_dbnsfp_annotation
+26- haplotype_caller_gemini_annotations
+27- run_multiqc
+28- cram_output
+----
+```
+![dnaseq sv workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_sv.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_sv.png)
+```
+sv:
 1- picard_sam_to_fastq
 2- skewer_trimming
 3- bwa_mem_sambamba_sort_sam
@@ -182,41 +216,11 @@ light:
 28- haplotype_caller_gemini_annotations
 29- run_multiqc
 30- cram_output
-----
-```
-![dnaseq sv workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_sv.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_sv.png)
-```
-sv:
-1- picard_sam_to_fastq
-2- skewer_trimming
-3- bwa_mem_sambamba_sort_sam
-4- sambamba_merge_sam_files
-5- gatk_indel_realigner
-6- sambamba_merge_realigned
-7- picard_mark_duplicates
-8- recalibration
-9- gatk_haplotype_caller
-10- merge_and_call_individual_gvcf
-11- metrics_dna_picard_metrics
-12- delly_call_filter
-13- delly_sv_annotation
-14- manta_sv_calls
-15- manta_sv_annotation
-16- lumpy_paired_sv
-17- lumpy_sv_annotation
-18- wham_call_sv
-19- wham_sv_annotation
-20- cnvkit_batch
-21- cnvkit_sv_annotation
-22- run_breakseq2
-23- ensemble_metasv
-24- metasv_sv_annotation
 
 ```
 picard_sam_to_fastq
 -------------------
-Convert SAM/BAM files from the input readset file into FASTQ format
+Converts SAM/BAM files from the input readset file into FASTQ format
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
 skewer_trimming
@@ -334,12 +338,16 @@ and other function annotations).
 
 haplotype_caller_gemini_annotations
 -----------------------------------
+
 metrics_dna_picard_metrics
 --------------------------
+
 metrics_dna_sample_qualimap
 ---------------------------
+
 metrics_dna_fastqc
 ------------------
+
 picard_calculate_hs_metrics
 ---------------------------
 Compute on target percent of hybridisation based capture.
@@ -349,8 +357,8 @@ metrics
 Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:
 Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads,
 Median, mean and standard deviation of insert sizes of reads after alignment, percentage of bases
-covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads)
-whole genome or targeted percentage of bases covered at X reads (%_bases_above_50 means the % of exons
+covered at X reads (%\_bases_above_50 means the % of exons bases which have at least 50 reads)
+whole genome or targeted percentage of bases covered at X reads (%\_bases_above_50 means the % of exons
 bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
 for easy visualization of coverage in the IGV browser.
 
@@ -368,6 +376,7 @@ Plots DepthRatio and B allele frequency of previously extracted alleles.
 
 run_multiqc
 -----------
+
 cram_output
 -----------
 Generate long term storage version of the final alignment files in CRAM format
@@ -376,10 +385,20 @@ Using this function will include the orginal final bam file into the  removable 
 sym_link_fastq
 --------------
 
-:return:
-
 sym_link_final_bam
 ------------------
+
+metrics_ngscheckmate
+--------------------
+NGSCheckMate is a software package for identifying next generation sequencing (NGS) data files from the same individual.
+It analyzes various types of NGS data files including (but not limited to) whole genome sequencing (WGS), whole exome
+sequencing (WES), RNA-seq, ChIP-seq, and targeted sequencing of various depths. Data types can be mixed (e.g. WES and
+RNA-seq, or RNA-seq and ChIP-seq). It takes BAM (reads aligned to the genome), VCF (variants) or FASTQ (unaligned reads)
+files as input. NGSCheckMate uses depth-dependent correlation models of allele fractions of known single-nucleotide
+polymorphisms (SNPs) to identify samples from the same individual.
+input: file containing all vcfs in project
+output:
+
 metrics_ngscheckmate
 --------------------
 NGSCheckMate is a software package for identifying next generation sequencing (NGS) data files from the same individual.
@@ -447,6 +466,7 @@ for all samples in the experiment.
 
 mpileup_decompose_and_normalize
 -------------------------------
+
 mpileup_flag_mappability
 ------------------------
 Mappability annotation applied to mpileup vcf.
@@ -476,6 +496,7 @@ and other function annotations).
 
 mpileup_gemini_annotations
 --------------------------
+
 mpileup_metrics_vcf_stats
 -------------------------
 Metrics SNV applied to mpileup caller vcf.
@@ -486,6 +507,7 @@ summary of allele frequencies, codon changes, amino acid changes, changes per ch
 
 metrics_dna_sambamba_flagstat
 -----------------------------
+
 delly_call_filter
 -----------------
 Delly2 is an integrated structural variant prediction method that can
@@ -499,6 +521,7 @@ Returns:bcf file
 
 delly_sv_annotation
 -------------------
+
 manta_sv_calls
 --------------
 Manta calls structural variants (SVs) and indels from mapped paired-end sequencing reads. It is optimized for
@@ -511,15 +534,19 @@ Returns:Manta accepts input read mappings from BAM or CRAM files and reports all
 
 manta_sv_annotation
 -------------------
+
 lumpy_paired_sv
 ---------------
 A probabilistic framework for structural variant discovery.
 Lumpy traditional with paired ends and split reads on tumor normal pair.
 Returns:bams.
 
+metrics_dna_sambamba_flagstat
+-----------------------------
 
 lumpy_sv_annotation
 -------------------
+
 wham_call_sv
 ------------
 Wham (Whole-genome Alignment Metrics) to provide a single, integrated framework for both structural variant
@@ -530,11 +557,13 @@ Returns:vcf.
 
 wham_sv_annotation
 ------------------
+
 cnvkit_batch
 ------------
 
 cnvkit_sv_annotation
 --------------------
+
 run_breakseq2
 -------------
 BreakSeq2: Ultrafast and accurate nucleotide-resolution analysis of structural variants
@@ -546,4 +575,3 @@ ensemble_metasv
 
 metasv_sv_annotation
 --------------------
-
