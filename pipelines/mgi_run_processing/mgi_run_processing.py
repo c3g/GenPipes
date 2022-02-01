@@ -27,6 +27,7 @@ import os
 import re
 import sys
 import subprocess
+import shutil
 import xml.etree.ElementTree as Xml
 import math
 import csv
@@ -281,7 +282,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         if not hasattr(self, "_year"):
             dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))])
             if len(list(dates)) > 1:
-                _raise(SanitycheckError("More than one date were found in the sample sheet for the run \"" + self._run_id + "\""))
+                _raise(SanitycheckError("More than one date were found in the sample sheet for the run \"" + self.run_id + "\""))
             else:
                 self._year = list(dates)[0].split("-")[0]
         return self._year
@@ -294,7 +295,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         if not hasattr(self, "_date"):
             dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))])
             if len(list(dates)) > 1:
-                _raise(SanitycheckError("More than one date were found in the sample sheet for the run \"" + self._run_id + "\""))
+                _raise(SanitycheckError("More than one date were found in the sample sheet for the run \"" + self.run_id + "\""))
             else:
                 date = list(dates)[0].split("-")
                 self._date = date[0][-2:] + date[1] + date[2]
@@ -428,10 +429,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
         if not hasattr(self, "_json_flag_files"):
             self._json_flag_files = {}
             for lane in self.lanes:
-                for filename in os.listdir(os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"))):
-                    if re.match(self.run_id + "_" + lane + "_20" + self.date + ".+json", filename):
-                        log.info("json flag selected : " + os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"), filename))
-                        self._json_flag_files[lane] = os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"), filename)
+                self._json_flag_files[lane] = self.generate_mgi_t7_flag_file(lane)
         return self._json_flag_files
 
     @property
@@ -1473,9 +1471,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
             for step in self.step_list:
                 report_step_jobs = []
                 if step.name in self.report_inputs[lane].keys() and self.report_inputs[lane][step.name]:
-#                   log.debug("Reporting step " + step.name)
                    if type(self.report_inputs[lane][step.name]) is str:
-#                       log.debug("Fetching whole metrics for step " + step.name)
                        report_step_jobs.append(
                            concat_jobs(
                                [
@@ -1491,9 +1487,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                                samples=self.samples[lane]
                            )
                        )
-#                       log.error(report_step_jobs[0].output_files)
                    elif type(self.report_inputs[lane][step.name]) is dict:
-#                       log.debug("Fetching metrics for eah readsets for step " + step.name)
                        for readset in self.readsets[lane]:
                            report_step_jobs.append(
                                concat_jobs(
@@ -1522,7 +1516,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                     step_checkpoint_job_dependencies = [output for job in report_step_jobs for output in job.output_files]
                 else:
                     step_checkpoint_job_dependencies = [output for job in step.jobs for output in job.output_files]
-#                log.debug(step.name + " :\n  " + "\n  ".join(step_checkpoint_job_dependencies))
                 if step_checkpoint_job_dependencies:
                     lane_jobs.append(
                         concat_jobs(
@@ -1951,6 +1944,45 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         mask += str(remaining_base_count) + 'S'
             index_read_count += 1
         return mask
+
+    def generate_mgi_t7_flag_file(self, lane):
+        """
+        Copy the flag file output from the sequencer and, if necessary (i.e. t7 fast-mode) insert the barcode information
+        """
+
+        json_flag_file = os.path.join(
+            self.output_dir,
+            "L0" + lane,
+            "flag." + lane + ".json"
+        )
+
+        raw_flag_file = ""
+        for filename in os.listdir(os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"))):
+            if re.match(self.run_id + "_" + lane + "_.+json", filename):
+                raw_flag_file = os.path.join(config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath"), filename)
+                break
+        else:
+            _raise(SanitycheckError("Could not find any proper JSON flag file in " + config.param('basecall', 'mgi_t7_flag', required=True, type="dirpath") + " for RUN " + self.run_id))  # + "\nSearching for " + self.run_id + "_" + lane + ".+json"))
+
+        if self.is_demultiplexed:
+            # get the barcode names & sequences to add in the JSON flag file
+            all_indexes = {}
+            for readset in self.readsets[lane]:
+                all_indexes[readset.index_name] = readset.index
+            with open(raw_flag_file, 'r') as json_fh:
+                json_flag_content = json.load(json_fh)
+            if self.is_dual_index[lane]:
+                json_flag_content['speciesBarcodes'] = dict([(index_name, index_seq['INDEX2']+index_seq['INDEX1']) for index_name, index_seq in all_indexes.items()])
+            else:
+                json_flag_content['speciesBarcodes'] = dict([(index_name, index_seq['INDEX1']) for index_name, index_seq in all_indexes.items()])
+            with open(json_flag_file, 'w') as out_json_fh:
+                json.dump(json_flag_content, out_json_fh, indent=4)
+
+        else:
+            shutil.copy(raw_flag_file, json_flag_file)
+
+        log.info("JSON FLAG file for lane " + lane + " : " + json_flag_file)
+        return json_flag_file
 
     def generate_mgi_lane_sample_sheet(self, lane):
         """
