@@ -60,9 +60,9 @@ from core.config import config
 log = logging.getLogger(__name__)
 
 
-class CoVSeQ(dnaseq.DnaSeqRaw):
+class CoVSeq(dnaseq.DnaSeqRaw):
     """
-    CoVSeQ Pipeline
+    CoVSeq Pipeline
     ================
 
     pwet
@@ -71,7 +71,7 @@ class CoVSeQ(dnaseq.DnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        super(CoVSeQ, self).__init__(protocol)
+        super(CoVSeq, self).__init__(protocol)
 
 
     def host_reads_removal(self):
@@ -1675,4 +1675,4 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        CoVSeQ()
+        CoVSeq()
