@@ -332,7 +332,7 @@ python $PYTHON_TOOLS/combineDemuxFastqsMetrics.py \\
             metrics_folder=metrics_folder,
             metrics_file=metrics_file,
             fastq1=R1_fastq,
-            fastq2=R2_fastq,	
+            fastq2=R2_fastq,
             read_structure=mask,
             sample_sheet=sample_sheet,
             output_dir=os.path.dirname(metrics_file)
