@@ -72,6 +72,42 @@ class Scheduler(object):
     def memory(self, job_name_prefix):
         raise NotImplementedError
 
+    def cpu(self, job_name_prefix):
+        cpu_str = self.config.param(job_name_prefix, 'cluster_cpu', required=True)
+        try:
+            if "ppn" in cpu_str or '-c' in cpu_str:
+                # to be back compatible
+               cpu =  re.search("(ppn=|-c\s)([0-9]+)",cpu_str).groups()[1]
+            else:
+                cpu = re.search("[0-9]+", cpu_str).group()
+        except AttributeError:
+            raise ValueError('"{}" is not a valid entry for "cluster_cpu"'.format(cpu_str))
+        return cpu
+
+    def node(self, job_name_prefix):
+        node_str = self.config.param(job_name_prefix, 'cluster_node', required=False)
+
+        cpu_str = None
+        if not node_str:
+            cpu_str = self.config.param(job_name_prefix, 'cluster_cpu', required=False)
+        if cpu_str:
+            try:
+                if "ppn" in cpu_str or '-c' in cpu_str:
+                    # to be back compatible
+                   cpu =  re.search("(nodes=|-N\s*)([0-9]+)",cpu_str).groups()[1]
+                else:
+                    cpu = re.search("[0-9]+", cpu_str).group()
+            except AttributeError:
+                raise ValueError('"{}" is not a valid entry for "cluster_cpu"'.format(cpu_str))
+            return cpu
+
+        try:
+            return re.search("[0-9]+", cpu_str).group()
+        except AttributeError:
+            return 1
+
+
+
     def submit(self, pipeline):
         # Needs to be defined in scheduler child class
         raise NotImplementedError
@@ -290,11 +326,21 @@ class PBSScheduler(Scheduler):
             mem = re.search("[0-9]+[a-zA-Z]*", mem_str).group()
         except AttributeError:
             return " "
+
         if 'per' in mem_str and 'cpu' in mem_str:
             option = '-l pmem='
         else:
             option = '-l mem='
         return "{}{}".format(option, mem)
+
+    def cpu(self, job_name_prefix):
+        cpu = super().cpu(job_name_prefix)
+
+        return "-l ppn={}".format(cpu)
+
+    def node(self, job_name_prefix):
+        node = super().node(job_name_prefix)
+        return "-l nodes={}".format(node)
 
     def submit(self, pipeline):
         self.print_header(pipeline)
@@ -362,8 +408,10 @@ exit \$MUGQIC_STATE" | \\
                         config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
                         self.walltime(job_name_prefix) + " " + \
                         self.memory(job_name_prefix) + " " + \
-                        config.param(job_name_prefix, 'cluster_queue') + " " + \
-                        config.param(job_name_prefix, 'cluster_cpu')
+                        self.cpu(job_name_prefix) + " " + \
+                        self.node(job_name_prefix) + " " + \
+                        config.param(job_name_prefix, 'cluster_queue') + " "
+                        # config.param(job_name_prefix, 'cluster_cpu')
 
                     if job.dependency_jobs:
                         cmd += " " + config.param(job_name_prefix, 'cluster_dependency_arg') + "$JOB_DEPENDENCIES"
@@ -464,6 +512,14 @@ class SlurmScheduler(Scheduler):
             option = '--mem'
         return "{} {}".format(option, mem)
 
+    def cpu(self, job_name_prefix):
+        cpu = super().cpu(job_name_prefix)
+        return '-c {}'.format(cpu)
+
+    def node(self, job_name_prefix):
+        node = super().node(job_name_prefix)
+        return '-N {}'.format(node)
+
     def submit(self, pipeline):
         self.print_header(pipeline)
         for step in pipeline.step_range:
@@ -540,8 +596,10 @@ exit \$MUGQIC_STATE" | \\
                         config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
                         self.walltime(job_name_prefix) + " " + \
                         self.memory(job_name_prefix) + " " + \
-                        config.param(job_name_prefix, 'cluster_queue') + " " + \
-                        config.param(job_name_prefix, 'cluster_cpu')
+                        self.cpu(job_name_prefix) + " " + \
+                        self.node(job_name_prefix) + " " + \
+                        config.param(job_name_prefix, 'cluster_queue') + " "
+
                     if job.dependency_jobs:
                         cmd += " " + config.param(job_name_prefix, 'cluster_dependency_arg') + "$JOB_DEPENDENCIES"
                     cmd += " " + config.param(job_name_prefix, 'cluster_submit_cmd_suffix')
