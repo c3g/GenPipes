@@ -2369,6 +2369,18 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 samples=self.samples[lane]
             )
         )
+
+        unaligned_r1 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz")
+        unexpected_barcode_counts = re.sub(".fastq.gz", ".counts.txt", unaligned_r1)
+        demuxfastqs_outputs.append(unexpected_barcode_counts)
+        postprocessing_jobs.append(
+            run_processing_tools.fastq_unexpected_count(
+                unaligned_r1,
+                unexpected_barcode_counts,
+                name="fastq_countbarcodes.R1.unmatched." + self.run_id + "." + lane,
+            )
+        )
+
         if self.is_paired_end[lane]:
             unmatched_R2_fastq = os.path.join(output_dir, "tmp", "unmatched_R2.fastq.gz")
             if unmatched_R2_fastq not in demuxfastqs_outputs:

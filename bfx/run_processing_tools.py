@@ -221,6 +221,14 @@ java -Djava.io.tmpdir={tmp_dir} \\
         removable_files=[os.path.dirname(metrics_file)]
     )
 
+def fastq_unexpected_count(index_fastq, output_path, name):
+    return Job(
+        [index_fastq],
+        [output_path],
+        name=name,
+        command="zcat {} | awk 'NR%4==2' | sort | uniq -c | sort -nr > {}".format(index_fastq, output_path)
+    )
+
 def demux_fastqs_by_chunk(
     sample_sheet,
     mismatches,
