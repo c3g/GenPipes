@@ -57,6 +57,7 @@ def ln(
     
     if out_dir:
         target_file = os.path.join(out_dir, target_file)
+        link = os.path.join(out_dir, link)
 
     return Job(
         [target_file],
@@ -65,8 +66,8 @@ def ln(
 ln -s -f \\
   {target_file} \\
   {link}""".format(
-            target_file=os.path.join(out_dir, target_file) if out_dir else target_file,
-            link=os.path.join(out_dir, link) if out_dir else link,
+            target_file=target_file,
+            link=link,
         ),
         removable_files=[link]
     )
