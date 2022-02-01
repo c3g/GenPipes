@@ -862,7 +862,6 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 else:
                     lane_jobs = []
                     jobs_to_throttle = []
-                    lane_fastq_done_file = os.path.join(self.job_output_dir, "checkpoint", "fastq." + self.run_id + "." + lane + ".done")
 
                     input_fastq_dir = os.path.join(self.output_dir, "L0" + lane, "Unaligned." + lane, "raw_fastq")
                     raw_name_prefix = self.raw_fastq_prefix +  "_L0" + lane
