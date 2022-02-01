@@ -25,10 +25,12 @@ from core.config import *
 from core.job import *
 
 
-def minimap2_ont(read_fastq_dir,
-                 read_group,
-                 out_sam=None,
-                 ini_section='minimap2_ont'):
+def minimap2_ont(
+    read_fastq_dir,
+    read_group,
+    out_sam=None,
+    ini_section='minimap2_ont'
+    ):
     """
     Align nanopore reads to a reference using minimap2.
 
@@ -40,7 +42,12 @@ def minimap2_ont(read_fastq_dir,
         [out_sam],
         [[ini_section, "module_minimap2"]],
         command="""\
-minimap2 -ax {minimap_preset} -R {read_group} {other_options} {genome_fasta} {read_fastq_dir}/*.fastq*{out_sam}""".format(
+minimap2 \\
+  -ax {minimap_preset} \\
+  -R {read_group} \\
+  {other_options} \\
+  {genome_fasta} \\
+  {read_fastq_dir}/*.fastq*{out_sam}""".format(
             minimap_preset=config.param(ini_section, 'preset'),
             read_group=read_group,
             other_options=config.param(ini_section, 'minimap2_other_options', required=False),
