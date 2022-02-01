@@ -141,9 +141,6 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
                 name="guppy_basecall"
             )
         )
-        # job = guppy.guppy_basecalling(reads_fast5_dir, fastq_directory)
-
-        # job.name = "guppy_basecall"
 
         fastq_directory = os.path.join("basecall")
 
@@ -193,9 +190,6 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
             )
         )
 
-        # job = guppy.guppy_demultiplex(fastq_directory, sequencing_summary, demux_fastq_directory)
-        # job.name = "guppy_demultiplex"
-
         return jobs
 
     def pycoqc(self):
@@ -242,9 +236,6 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
         demux_fastq_directory = os.path.join("demultiplex")
 
         for sample in self.samples:
-            # if not sample.barcode:
-            #     _raise(SanitycheckError("Error: Sample \"" + sample.name + "\" doesn't have a barcode associated!"))
-            # exit()
             host_removal_directory = os.path.join("host_removal", sample.name)
             reads_fastq_dir = os.path.join(demux_fastq_directory, sample.barcode)
             sample_bam = os.path.join(host_removal_directory, sample.name + ".hybrid.sorted.bam")
@@ -319,7 +310,6 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
                 demux_fastq_directory = sample.fastq_files
             else:
                 _raise(SanitycheckError("Error: FASTQ files not available for sample \"" + sample.name + "\"!"))
-                # exit()
 
             host_removal_directory = os.path.join("host_removal", sample.name)
             reads_fastq_dir = os.path.join(demux_fastq_directory, sample.barcode)
@@ -432,20 +422,13 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
         """
         Runs artic nanopolish pipeline on all samples.
         """
-        # run_name = self.run_name
-        # normalize_depth = config.param('artic_nanopolish', 'normalise', required=True)
-        # analysis_name = "_".join([run_name, "nanopolish", normalize_depth])
-
-        # demux_fastq_directory = os.path.join("demultiplex")
 
         jobs = []
 
         for sample in self.samples:
 
-            # output_directory = os.path.join("analysis", analysis_name, sample.name)
             artic_nanopolish_directory = os.path.join("artic_nanopolish", sample.name)
             reads_fastq_dir = os.path.join("host_removal", sample.name)
-            # reads_fastq_dir = os.path.join(host_removal_directory, sample.name + ".host_removed.fastq.gz")
             variant_directory = os.path.join("variant", sample.name)
             variant_filename = sample.name + ".pass.vcf.gz"
             variant = os.path.join(variant_directory, variant_filename)
@@ -455,14 +438,11 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
             variant_index = os.path.join(variant_directory, variant_index_filename)
             variant_index_artic = os.path.join(artic_nanopolish_directory, variant_index_filename)
             variant_index_link = os.path.join("..", "..", artic_nanopolish_directory, variant_index_filename)
-            # variant_link = os.path.join(variant_directory, sample.name + ".pass.vcf.gz")
-            # variant_link_index = os.path.join(variant_directory, sample.name + ".pass.vcf.gz.tbi")
             consensus_directory = os.path.join("consensus", sample.name)
             consensus_filename = sample.name + ".consensus.fasta"
             consensus = os.path.join(consensus_directory, consensus_filename)
             consensus_artic = os.path.join(artic_nanopolish_directory, consensus_filename)
             consensus_link = os.path.join("..", "..", artic_nanopolish_directory, consensus_filename)
-            # consensus_link = os.path.join(variant_directory, sample.name + ".consensus.fasta")
 
             alignment_directory = os.path.join("alignment", sample.name)
             # bam before primer trimming
@@ -477,24 +457,13 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
             primer_trimmed_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")
             primer_trimmed_bam_artic = os.path.join(artic_nanopolish_directory,
                                                     sample.name + ".primertrimmed.rg.sorted.bam")
-            # primer_trimmed_bam_link = os.path.join("..", "..", artic_nanopolish_directory, sample.name + ".primertrimmed.rg.sorted.bam")
             primer_trimmed_bam_index = os.path.join(alignment_directory,
                                                     sample.name + ".sorted.filtered.primerTrim.bam.bai")
-            # primer_trimmed_bam_index_artic = os.path.join(artic_nanopolish_directory, sample.name + ".primertrimmed.rg.sorted.bam.bai")
-            # primer_trimmed_bam_index_link = os.path.join("..", "..", artic_nanopolish_directory, sample.name + ".primertrimmed.rg.sorted.bam.bai")
 
             if sample.summary_file:
                 sequencing_summary = sample.summary_file
             else:
                 sequencing_summary = os.path.join("basecall", "sequencing_summary.txt")
-            # else:
-            #     _raise(SanitycheckError("Error: FASTQ files not available for sample \"" + sample.name + "\"!"))
-            # exit()
-
-            # if sample.fast5_files:
-            #     reads_fast5_dir = sample.fast5_files
-            # else:
-            #     _raise(SanitycheckError("Error: FAST5 file not available for sample \"" + sample.name + "\"!"))
 
             jobs.append(
                 concat_jobs([
@@ -519,7 +488,6 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
                             consensus=consensus
                         )
                     ),
-                    # bash.ln(consensus, os.path.join("..", "..", os.path.basename(consensus))),
                     bash.mkdir(variant_directory),
                     Job(
                         input_files=[variant_artic],
@@ -635,7 +603,6 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
                 ],
                     name="snpeff_annotate." + sample.name,
                     samples=[sample]
-                    # removable_files=[output_vcf]
                 )
             )
 
@@ -703,8 +670,6 @@ echo "pass_reads" $(grep -c "^@" {pass_fq}) >> {fq_stats} """.format(
             consensus_directory = os.path.join("consensus", sample.name)
             output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics")
             consensus = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
-            # freebayes_output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics_freebayes")
-            # freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.fasta"
 
             jobs.append(
                 concat_jobs([
