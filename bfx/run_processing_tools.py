@@ -22,7 +22,6 @@
 # Python Standard Modules
 import sys
 import os
-import re
 
 # MUGQIC Modules
 from core.config import config
