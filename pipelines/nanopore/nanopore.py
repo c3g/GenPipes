@@ -158,6 +158,7 @@ class Nanopore(common.MUGQICPipeline):
                 [
                     pipe_jobs(
                         [
+                            bash.mkdir(os.path.dirname(out_bam)),
                             minimap2.minimap2_ont(
                                 reads_fastq_dir,
                                 read_group,
