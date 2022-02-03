@@ -856,20 +856,7 @@ fi""".format(
                     ncovtools_directory,
                     ncovtools_config,
                     self.output_dir
-                ),
-                Job(input_files=[],
-                    output_files=[],
-                    module_entries=[
-                        ['prepare_report', 'module_R'],
-                        ['prepare_report', 'module_CoVSeQ_tools']
-                    ],
-                    command="""\\
-module purge && \\
-module load {R_covseqtools}""".format(
-                        R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report',
-                                                                                                      'module_CoVSeQ_tools'),
-                        output_dir=self.output_dir)
-                    ),
+                )
             ],
                 name="prepare_report." + self.run_name
             )
