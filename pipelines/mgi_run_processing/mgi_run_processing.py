@@ -1032,7 +1032,7 @@ class MGIRunProcessing(common.MUGQICPipeline):
                         input2 = None
                         unzip = True
                         if not len(self.readsets[lane]) == 1 and not self.is_demultiplexed:
-                            self.report_inputs[lane]['fastqc'][readset.name] = outputs[0]
+                            self.report_inputs[lane]['fastqc'][readset.name] = outputs[2]
                     elif input1 == readset.fastq2:
                         job_suffix = "R2."
                         input2 = None
