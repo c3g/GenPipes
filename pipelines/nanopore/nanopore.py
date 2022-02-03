@@ -207,10 +207,21 @@ class Nanopore(common.MUGQICPipeline):
             align_directory = os.path.join("alignment", readset.sample.name, readset.name)
             in_bam = os.path.join(align_directory, readset.name + ".sorted.bam")
 
-            job = pycoqc.pycoqc(readset.name, in_summary, pycoqc_directory, in_bam)
-            job.name = "pycoqc." + readset.name
-            job.samples = [readset.sample]
-            jobs.append(job)
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(pycoqc_directory),
+                    pycoqc.pycoqc(
+                        readset_name=readset.name,
+                        input_summary=in_summary,
+                        output_directory=pycoqc_directory,
+                        input_barcode=None,
+                        input_bam=in_bam
+                        )
+                ],
+                    name="pycoqc." + readset.name,
+                    samples=[readset.sample]
+                )
+            )
 
         return jobs
 
