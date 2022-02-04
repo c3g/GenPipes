@@ -2370,14 +2370,14 @@ class MGIRunProcessing(common.MUGQICPipeline):
             )
         )
 
-        unaligned_r1 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz")
-        unexpected_barcode_counts = re.sub(".fastq.gz", ".counts.txt", unaligned_r1)
-        demuxfastqs_outputs.append(unexpected_barcode_counts)
+        unaligned_i1 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
+        unexpected_barcode_counts_i1 = re.sub(".fastq.gz", ".counts.txt", unaligned_i1)
+        demuxfastqs_outputs.append(unexpected_barcode_counts_i1)
         postprocessing_jobs.append(
             run_processing_tools.fastq_unexpected_count(
-                unaligned_r1,
-                unexpected_barcode_counts,
-                name="fastq_countbarcodes.R1.unmatched." + self.run_id + "." + lane,
+                unaligned_i1,
+                unexpected_barcode_counts_i1,
+                name="fastq_countbarcodes.I1.unmatched." + self.run_id + "." + lane,
             )
         )
 
@@ -2390,7 +2390,18 @@ class MGIRunProcessing(common.MUGQICPipeline):
                 os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
             ]
             if self.is_dual_index[lane]:
-                outputs.append(os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz"))
+                unaligned_i2 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
+                outputs.append(unaligned_i2)
+                unexpected_barcode_counts_i2 = re.sub(".fastq.gz", ".counts.txt", unaligned_i2)
+                demuxfastqs_outputs.append(unexpected_barcode_counts_i2)
+                postprocessing_jobs.append(
+                    run_processing_tools.fastq_unexpected_count(
+                        unaligned_i2,
+                        unexpected_barcode_counts_i2,
+                        name="fastq_countbarcodes.I2.unmatched." + self.run_id + "." + lane,
+                    )
+                )
+
             postprocessing_jobs.append(
                 pipe_jobs(
                     [
