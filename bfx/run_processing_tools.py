@@ -395,6 +395,7 @@ bcl2fastq \\
 
 def mgi_t7_basecall(
     input,
+    run_dir,
     flowcell_id,
     fastq_outputs,
     output_dir,
@@ -436,7 +437,7 @@ client_linux \\
     -I {config_file}""".format(
             mem=config.param(ini_section, 'mem'),
             thread=config.param(ini_section, 'thread'),
-            workspace=config.param(ini_section, 'mgi_t7_workspace'),
+            workspace=os.path.dirname(run_dir),
             fastq=output_dir,
             config_template=os.path.expandvars(config.param(ini_section, 'mgi_t7_config_template')),
             config_file=lane_config_file,
