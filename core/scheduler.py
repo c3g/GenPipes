@@ -85,6 +85,8 @@ class Scheduler(object):
         return cpu
 
     def node(self, job_name_prefix):
+        # code run on 1 node by default
+        node = 1
         node_str = self.config.param(job_name_prefix, 'cluster_node', required=False)
 
         cpu_str = None
@@ -94,17 +96,17 @@ class Scheduler(object):
             try:
                 if "ppn" in cpu_str or '-c' in cpu_str:
                     # to be back compatible
-                   cpu =  re.search("(nodes=|-N\s*)([0-9]+)",cpu_str).groups()[1]
+                   node = re.search("(nodes=|-N\s*)([0-9]+)",cpu_str).groups()[1]
                 else:
-                    cpu = re.search("[0-9]+", cpu_str).group()
+                    node = re.search("[0-9]+", cpu_str).group()
             except AttributeError:
                 raise ValueError('"{}" is not a valid entry for "cluster_cpu"'.format(cpu_str))
-            return cpu
+            return node
 
         try:
-            return re.search("[0-9]+", cpu_str).group()
+            return re.search("[0-9]+", node_str).group()
         except AttributeError:
-            return 1
+            return node
 
 
 
@@ -327,7 +329,7 @@ class PBSScheduler(Scheduler):
         except AttributeError:
             return " "
 
-        if 'per' in mem_str and 'cpu' in mem_str:
+        if 'per' in mem_str.lower() and 'cpu' in mem_str.lower():
             option = '-l pmem='
         else:
             option = '-l mem='
@@ -506,7 +508,7 @@ class SlurmScheduler(Scheduler):
         except AttributeError:
             return " "
 
-        if 'per' in mem_str and 'cpu' in mem_str:
+        if 'per' in mem_str.lower() and 'cpu' in mem_str.lower():
             option = '--mem-per-cpu'
         else:
             option = '--mem'
