@@ -1270,37 +1270,23 @@ class MGIRunProcessing(common.RunProcessing):
             )
         )
 
-        unaligned_i1 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
-        unexpected_barcode_counts_i1 = re.sub(".fastq.gz", ".counts.txt", unaligned_i1)
-        demuxfastqs_outputs.append(unexpected_barcode_counts_i1)
-        postprocessing_jobs.append(
-            run_processing_tools.fastq_unexpected_count(
-                unaligned_i1,
-                unexpected_barcode_counts_i1,
-                name="fastq_countbarcodes.I1.unmatched." + self.run_id + "." + lane,
-            )
-        )
-
         if self.is_paired_end[lane]:
             unmatched_R2_fastq = os.path.join(output_dir, "tmp", "unmatched_R2.fastq.gz")
+            unaligned_i1 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
+            unaligned_i2 = ""
             if unmatched_R2_fastq not in demuxfastqs_outputs:
                 demuxfastqs_outputs.append(unmatched_R2_fastq)
             outputs = [
                 os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
-                os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
+                unaligned_i1
             ]
+            unexpected_barcode_counts_i1 = re.sub(".fastq.gz", ".counts.txt", unaligned_i1)
+            demuxfastqs_outputs.append(unexpected_barcode_counts_i1)
             if self.is_dual_index[lane]:
                 unaligned_i2 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
                 outputs.append(unaligned_i2)
                 unexpected_barcode_counts_i2 = re.sub(".fastq.gz", ".counts.txt", unaligned_i2)
                 demuxfastqs_outputs.append(unexpected_barcode_counts_i2)
-                postprocessing_jobs.append(
-                    run_processing_tools.fastq_unexpected_count(
-                        unaligned_i2,
-                        unexpected_barcode_counts_i2,
-                        name="fastq_countbarcodes.I2.unmatched." + self.run_id + "." + lane,
-                    )
-                )
 
             postprocessing_jobs.append(
                 pipe_jobs(
@@ -1321,6 +1307,22 @@ class MGIRunProcessing(common.RunProcessing):
                     samples=self.samples[lane]
                 )
             )
+            if unaligned_i1:
+                postprocessing_jobs.append(
+                    run_processing_tools.fastq_unexpected_count(
+                        unaligned_i1,
+                        unexpected_barcode_counts_i1,
+                        name="fastq_countbarcodes.I1.unmatched." + self.run_id + "." + lane,
+                    )
+                )
+            if unaligned_i2: 
+                postprocessing_jobs.append(
+                    run_processing_tools.fastq_unexpected_count(
+                        unaligned_i2,
+                        unexpected_barcode_counts_i2,
+                        name="fastq_countbarcodes.I2.unmatched." + self.run_id + "." + lane,
+                    )
+                )
 
         return demuxfastqs_outputs, postprocessing_jobs
 
