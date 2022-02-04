@@ -365,7 +365,7 @@ def parse_illumina_raw_readset_files(
     GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
 
     # Parsing Clarity event file
-    log.info("Parse Clarity Illumina event file " + readset_file + " ...")
+    log.info("Parsiing Clarity Illumina event file " + readset_file + " for readset in lane " + lane + "...")
 
     readset_csv = csv.DictReader(open(readset_file, 'r'), delimiter='\t', quotechar='"')
 
