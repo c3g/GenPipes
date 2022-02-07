@@ -1,13 +1,12 @@
 [TOC]
 
 
-CoVSeQ Nanopore Pipeline
+Nanopore CoVSeq Pipeline
 ==============
-The SOP for Nanopore data is based on the ARTIC SARS-CoV2 pipeline using nanopolish. Their full documentation is found [here](https://artic.network/ncov-2019/ncov2019-bioinformatics-sop.html).
 
-The protocol was closely followed with the majority of changes, involving technical adaptations to be able to run in a High Performance Computing environment where the usage Conda is not advisable. In summary, if basecalling protocol is selected, the pipeline will do basecalling using Guppy (GPU) and demultiplexing. Then, for all samples, the pipeline will do de-hosting, run the `artic-nanopolish` wrapper which performs alignment to the SARS-CoV2 reference (using `minimap2`), variant calling (using `nanopolish`), and consensus generation (using `artic_mask` + `bcftools consensus`). Finally, custom scripts and `ncov_tools` are run to report on quality metrics. 
 
-*Important note*: the pipeline is set up to use ARTIC v3 amplicon scheme as a default. If ARTIC v4 is required, use the appropriate `.ini` file. For all other amplicon schemes, add the appropriate primer and amplicon bed files and use a custom `.ini` for processing. 
+For information on the structure and contents of the Nanopore readset file, please consult [here](
+https://bitbucket.org/mugqic/genpipes/src/master/#markdown-header-nanopore).
 
 
 Usage
@@ -16,16 +15,17 @@ Usage
 #!text
 
 usage: nanopore_covseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
-                   [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
-                   [--no-json] [--report] [--clean]
-                   [-l {debug,info,warning,error,critical}] [--sanity-check]
-                   [-t {default,basecalling}]
-                   [--container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}]
-                   [-r READSETS] [-v]
+                          [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
+                          [--no-json] [--report] [--clean]
+                          [-l {debug,info,warning,error,critical}]
+                          [--sanity-check]
+                          [--container {wrapper, singularity} <IMAGE PATH>]
+                          [--genpipes_file GENPIPES_FILE] [-r READSETS]
+                          [-t {default,basecalling}] [-v]
 
-Version: 4.0.0
+Version: 4.1.0
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/mugqic_pipelines/
+For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
@@ -44,99 +44,123 @@ optional arguments:
   --no-json             do not create JSON file per analysed sample to track
                         the analysis status (default: false i.e. JSON file
                         will be created)
+  --report              create 'pandoc' command to merge all job markdown
+                        report files in the given step range into HTML, if
+                        they exist; if --report is set, --job-scheduler,
+                        --force, --clean options and job up-to-date status are
+                        ignored (default: false)
   --clean               create 'rm' commands for all job removable files in
                         the given step range, if they exist; if --clean is
                         set, --job-scheduler, --force options and job up-to-
                         date status are ignored (default: false)
   -l {debug,info,warning,error,critical}, --log {debug,info,warning,error,critical}
                         log level (default: info)
-  -t {stringtie,cufflinks}, --type {stringtie,cufflinks} CoVSeQ analysis type
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
-  --container {docker, singularity} {<CONTAINER PATH>, <CONTAINER NAME>}
-                        run pipeline inside a container providing a container
-                        image path or accessible docker/singularity hub path
+  --container {wrapper, singularity} <IMAGE PATH>
+                        Run inside a container providing a validsingularity
+                        image path
+  --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
+                        Command file output path. This is the command used to
+                        process the data, or said otherwise, this command will
+                        "run the Genpipes pipeline". Will be redirected to
+                        stdout if the option is not provided.
   -r READSETS, --readsets READSETS
                         readset file
+  -t {default,basecalling}, --type {default,basecalling}
+                        Type of CoVSeQ analysis,basecalling on/off (default
+                        without basecalling)
   -v, --version         show the version information and exit
 
 Steps:
 ------
 
----
+----
+```
+![nanopore_covseq default workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_nanopore_covseq_default.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_nanopore_covseq_default.png)
+```
 default:
-1- host_reads_removal,
-2- kraken_analysis,
-3- artic_nanopolish,
-4- wub_metrics,
-5- covseq_metrics,
-6- snpeff_annotate,
-7- quast_consensus_metrics,
-8- rename_consensus_header,
+1- host_reads_removal
+2- kraken_analysis
+3- artic_nanopolish
+4- wub_metrics
+5- covseq_metrics
+6- snpeff_annotate
+7- quast_consensus_metrics
+8- rename_consensus_header
 9- prepare_report
-
----
+----
+```
+![nanopore_covseq basecalling workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_nanopore_covseq_basecalling.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_nanopore_covseq_basecalling.png)
+```
 basecalling:
-1- guppy_basecall,
-2- guppy_demultiplex,
-3- pycoqc,
-4- host_reads_removal,
-5- kraken_analysis,
-6- artic_nanopolish,
-7- wub_metrics,
-8- covseq_metrics,
-9- snpeff_annotate,
-10- quast_consensus_metrics,
-11- rename_consensus_header,
+1- guppy_basecall
+2- guppy_demultiplex
+3- pycoqc
+4- host_reads_removal_dependency
+5- kraken_analysis
+6- artic_nanopolish
+7- wub_metrics
+8- covseq_metrics
+9- snpeff_annotate
+10- quast_consensus_metrics
+11- rename_consensus_header
 12- prepare_report
 
 ```
-
-guppy_basecall
--------
-Use the Oxford Nanopore basecaller Guppy to basecall raw FAST5 files and produce FASTQ files. Basecalling model `dna_r9.4.1_450bps_hac.cfg` is used by default. 
-
-guppy_demultiplex
--------
-Use the Ofxord Nanopore basecaller Guppy to demultiplex FASTQ files based on their barcode. Barcode arrangement `barcode_arrs_nb96.cfg` is used by default. **Important** the parameter `--require_barcodes_both_ends` is set by default. 
-
-pycoqc
--------
-If basecalling and demultiplexing were performed, a `pycoQC` interactive report is produced to aid with the run QC. 
-
 host_reads_removal
--------
-Using a mapping approach with a hybrid GRCh38 + SARS-CoV2 genome, reads that map to the Human Genome are removed from the analysis. A "de-hosted" FASTQ is produced. 
+------------------
+Runs minimap2 on a hybrid genome to remove potential host reads
 
 kraken_analysis
--------
-Additionally, `kraken2` is used to produce a report on the raw data, which can be used to detect additional host contamination. 
+---------------
+kraken
 
 artic_nanopolish
--------
-The `artic nanopolish` pipeline is used to produce consensus sequences and VCFs. Since `nanopolish` is used, this step requires both FAST5 and FASTQ files.
+----------------
+Runs artic nanopolish pipeline on all samples.
 
 wub_metrics
--------
-Alignment metrics are calculated using the tool `wub`. 
+-----------
+Generate WUB metrics on bam file
 
 covseq_metrics
--------
-Using all previous metrics calculated so far, a table is produced with a summary of all metrics for each individual sample. 
+--------------
 
 snpeff_annotate
--------
-The VCF produced by `artic_nanopolish` is annotated using `SnpEff`. 
+---------------
+Consensus annotation with SnpEff
 
 quast_consensus_metrics
--------
-Consensus metrics are calculated using the tool `QUAST`
+-----------------------
+Generate QUAST metrics on consensus
 
 rename_consensus_header
--------
-A final consensus sequence is produced, with the appropriate header and naming convention based on genome completeness. 
+-----------------------
+Rename reads headers
 
 prepare_report
--------
-Using `ncov_tools` and additional R scripts, final reports are produced for all samples in the run, including basic QC plots as well as a preliminary lineage assignment (as a part of `ncov_tools`). 
+--------------
+guppy_basecall
+--------------
+Use guppy to perform basecalling on raw FAST5 files
+
+
+guppy_demultiplex
+-----------------
+Use guppy to perform demultiplexing on raw FASTQ read files
+
+
+pycoqc
+------
+Use pycoQC to produce an interactive quality report based on the summary file and
+alignment outputs.
+
+host_reads_removal_dependency
+-----------------------------
+Runs minimap2 on a hybrid genome to remove potential host reads
+
+
