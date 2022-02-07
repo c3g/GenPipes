@@ -1,6 +1,115 @@
-30 tags, 8998 commits
+31 tags, 9075 commits
 
-HEAD        Thu Dec 9 11:30:35 2021 -0500        0 commits
+HEAD        Mon Feb 7 15:14:57 2022 -0500        0 commits
+
+4.1.0        Mon Feb 7 21:39:25 2022 +0000        77 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      11 commits
+
+       d00f24a GenPipes - Release : creation of the release branch
+       03e6919 Merge remote-tracking branch 'origin/dev' into release_4.1
+       185575e Correcting typo in READMEs
+       ebc18e3 GenPipes - Release : updating READMEs and VERSION
+       30e05e5 GenPipes - Nanopore : correcting minimap2 step
+       7fb2d7c GenPipes - BFX : cleaning bash_cmp.py a bit
+       f7538c5 GenPipes - Nanopore : fixing minimap2 and dependencies + allowing duplicate samples (if no duplicate readset) in the readset file
+       0728713 GenPipes - Utils : renaming of  to
+       cf7b0c6 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       1da114b adding .gitignore to .gitignore...
+       880fbf4 Version bump to 4.0.0
+
+  ehenrion <edouard.henrion@mcgill.ca>      7 commits
+
+       e503967 Merged in release_4.1 (pull request #302)
+       8fe012c GenPipes - AmpiconSeq : updating resources for dada2 in cedar.ini
+       8a0ea55 GenPipes - BFX : fixing "ln" in bash_cmd.py
+       44a9dec Merged in fix_nanopore_eh (pull request #298)
+       44ddf6b Merged in ehenrion/genpipes-chipseq-bashini-edited-with-u-1642626170885 (pull request #292)
+       0f84b78 GenPipes - ChIP-Seq : bash.ini edited with updated versions of software, fixing Issue #127
+       6c8219d Merged in release_4.0.0 (pull request #286)
+
+  jgalvez <jose.hector.galvez@computationalgenomics.ca>      1 commits
+
+       e0c9f5f Full squash of covseq_ont branch
+
+  José Héctor Gálvez López <hgalvez@beluga3.int.ets1.calculquebec.ca>      5 commits
+
+       2841e22 Final correction to the reference genome symlink
+       323b5d2 Corrected issue with the reference genome link command
+       35ad8b7 Added compatibility to ARTIC primer versions 4 and 4.1
+       3f3fd3f Update version of ncov_tools to 1.8
+       8bb76cd Added changes to the ini files to allow for ARTIC V4 schemes (and any potential future schemes).
+
+  José Héctor Gálvez López <jose.hector.galvez@computationalgenomics.ca>      2 commits
+
+       fa5b71b Merged in covseq_v4 (pull request #287)
+       ce25055 Added force option to reference symlink creation to avoid crash when re-running report.
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      10 commits
+
+       8915d42 Merged in covseq_nanopore (pull request #300)
+       a242cd1 nanopore - Cit update - Updating cit ini
+       6ab0488 nanopore - pycoqc - Fixing step to match with new bfx
+       1f4b630 covseq_nanopore - Cit update - Updating cit ini
+       803b08a covseq_nanopore - Cit update - Updating cit ini + removing module load in report
+       34e981c Merged in covseq_nanopore (pull request #299)
+       eaa85d8 covseq_nanopore - Cit - Code cleaning and cit.ini addition
+       9786971 covseq_nanopore - Cit update - Updating cit ini
+       9726784 covseq_nanopore - General - Renaming covseq and nanopore_covseq class for consistency
+       fff0c8b covseq_nanopore - General - Fixing argparse type
+
+  Pierre-Olivier Quirion <pierre-olivier.quirion@computationalgenomics.ca>      5 commits
+
+       6eddc14 Using cit magic for walltime
+       c84a3b4 Merged in cpu_scheduler_agnostic (pull request #294)
+       f73f008 Full squash of covseq_ont branch
+       0670278 Merged in config_formater (pull request #289)
+       f0047ac Merged in watchdog (pull request #290)
+
+  P-O Quirion <pierre-olivier.quirion@computationalgenomics.ca>      30 commits
+
+       2c5f270 Add mkdir in FFPE steps
+       2860a3b cpu_str to node_str in scheduler class
+       4205247 update cit.ini
+       d67a799 update nanopore cit.ini
+       2c679b9 make cluster_cpu scheduler agnostic
+       5694384 x on tumor_pair.py
+       13bd411 get symlink back in tumor pair
+       b919a3e get bash_cmd back to old self
+       9d722c2 fix regressions
+       7d068c2 ad tmp to gitignore
+       5c19819 update perl in tumor pair
+       19aaf71 cluster_memmory -> cluster_mem
+       88a70bc tweak tumor pair extra ini
+       3fe6b0b missing int casting
+       ce9a2e8 pmem for pbs/torque
+       f3c406d cleanup sanitycheck log
+       4357a19 SanitycheckError args and kargs
+       fe6b300 add .message to SanitycheckError
+       ddc1401 add cluster_mem to ini option
+       e0aec1b force int on walltime read
+       87f84cd force int on walltime read
+       220b6e0 slurm to time_to_datetime
+       853ee6f fix hicseq ini
+       07f2b77 walltime method from slurm
+       ad88e69 time delta for pbs walltime
+       1227182 update utile time delta
+       2f679b7 update utile time delta
+       2fe4ab3 update utile for torque
+       88abd41 add walltime format for pbs
+       333c32a rename monitor.sh to watchdog
+
+  pubudumanoj <pubudu.nawarathna@mail.mcgill.ca>      5 commits
+
+       80e3e4d chipseq diffbind pca plot update
+       dc0680a methylseq methylkit min cpg issue fix
+       f87dde2 testing updates to DiffBind.R in mugqic_tools
+       acaaa65 modified differential expression variable names to something meaningful
+       da9bf66 fixed issue #129 added differential binding to the atacseq protocol
+
+  Pubudu Nawarathna <pubudu.nawarathna@mail.mcgill.ca>      1 commits
+
+       5919bcf Merged in chipseq_atac_diffbind (pull request #288)
 
 4.0.0        Thu Dec 9 19:13:55 2021 +0000        232 commits
 
@@ -7950,7 +8059,7 @@ covid_1.0        Mon Aug 3 19:56:47 2020 -0400        781 commits
 
        e84abf3 picard version 1.125 module
 
-  François Lefebvre <lefebvrf@gmail.com>      3 commits
+  François Lefebvre <lefebvrf@gmail.com>      3 commits
 
        4ae7aff tophat and bowtie2 according to template install script
        35e4743 Minor changes to deploy script
