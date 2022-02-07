@@ -15,7 +15,7 @@ usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--genpipes_file GENPIPES_FILE]
                  [-t {mugqic,mpileup,light,sv}] [-r READSETS] [-v]
 
-Version: 4.0.0
+Version: 4.1.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -51,7 +51,7 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a validsingularity
+                        Run inside a container providing a valid singularity
                         image path
   --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
                         Command file output path. This is the command used to

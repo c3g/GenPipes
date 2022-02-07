@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -33,14 +33,16 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 import utils.utils
 from core.config import config, SanitycheckError, _raise
-from core.job import Job, concat_jobs
+from core.job import Job, concat_jobs, pipe_jobs
 from bfx.readset import parse_nanopore_readset_file
 from pipelines import common
 from bfx import minimap2
+from bfx import sambamba
 from bfx import svim
 from bfx import pycoqc
 from bfx import tools
 from bfx import gatk4
+from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
 
@@ -137,6 +139,8 @@ class Nanopore(common.MUGQICPipeline):
         for readset in self.readsets:
 
             alignment_directory = os.path.join("alignment", readset.sample.name, readset.name)
+            out_bam = os.path.join(alignment_directory, readset.name + ".sorted.bam")
+            out_bai = re.sub("\.bam$", ".bam.bai", out_bam)
 
             if readset.fastq_files:
                 reads_fastq_dir = readset.fastq_files
@@ -150,10 +154,36 @@ class Nanopore(common.MUGQICPipeline):
                          ("\\tPU:run" + readset.run if readset.run else "") + \
                          "\\tPL:Nanopore" + \
                          "'"
-
-            job = minimap2.minimap2_ont(readset.name, reads_fastq_dir, alignment_directory, read_group)
-            job.name = "minimap2_align." + readset.name
-            job.samples = [readset.sample]
+            job = concat_jobs(
+                [
+                    pipe_jobs(
+                        [
+                            bash.mkdir(os.path.dirname(out_bam)),
+                            minimap2.minimap2_ont(
+                                reads_fastq_dir,
+                                read_group,
+                                ini_section= "minimap2_align"
+                            ),
+                            sambamba.view(
+                                "/dev/stdin",
+                                None,
+                                options="-S -f bam"
+                            ),
+                            sambamba.sort(
+                                "/dev/stdin",
+                                out_bam,
+                                tmp_dir=config.param('minimap2_align', 'tmp_dir', required=True),
+                            )
+                        ]
+                    ),
+                    sambamba.index(
+                        out_bam,
+                        out_bai,
+                    )
+                ],
+                name="minimap2_align." + readset.name,
+                samples=[readset.sample]
+            )
             jobs.append(job)
 
         return jobs
@@ -177,10 +207,21 @@ class Nanopore(common.MUGQICPipeline):
             align_directory = os.path.join("alignment", readset.sample.name, readset.name)
             in_bam = os.path.join(align_directory, readset.name + ".sorted.bam")
 
-            job = pycoqc.pycoqc(readset.name, in_summary, pycoqc_directory, in_bam)
-            job.name = "pycoqc." + readset.name
-            job.samples = [readset.sample]
-            jobs.append(job)
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(pycoqc_directory),
+                    pycoqc.pycoqc(
+                        readset_name=readset.name,
+                        input_summary=in_summary,
+                        output_directory=pycoqc_directory,
+                        input_barcode=None,
+                        input_bam=in_bam
+                        )
+                ],
+                    name="pycoqc." + readset.name,
+                    samples=[readset.sample]
+                )
+            )
 
         return jobs
 
@@ -200,48 +241,47 @@ class Nanopore(common.MUGQICPipeline):
 
             # Find input readset BAMs first from previous minimap2_align job,
             readset_bams = self.select_input_files([
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
-                 for readset in sample.readsets]
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
             ])
 
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            mkdir_job = Job(command="mkdir -p " + os.path.dirname(sample_bam), samples=[sample])
+            mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
 
                 readset_bam = readset_bams[0]
 
-                if os.path.isabs(readset_bam):
-                    target_readset_bam = readset_bam
-                else:
-                    target_readset_bam = os.path.relpath(readset_bam, alignment_directory)
+                readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
+                sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
 
-                readset_index = re.sub("\.bam$", ".bai", readset_bam)
-                target_readset_index = re.sub("\.bam$", ".bai", target_readset_bam)
-                sample_index = re.sub("\.bam$", ".bai", sample_bam)
-
-                job = concat_jobs([
-                    mkdir_job,
-                    Job([readset_bam],
-                        [sample_bam],
-                        command="ln -s -f " + target_readset_bam + " " + sample_bam,
-                        removable_files=[sample_bam]),
-                    Job([readset_index],
-                        [sample_index],
-                        command="ln -s -f " + target_readset_index + " " + sample_index + " && sleep 180",
-                        removable_files=[sample_index])
-                ], name="symlink_readset_sample_bam." + sample.name)
+                job = concat_jobs(
+                    [
+                        mkdir_job,
+                        bash.ln(
+                            readset_bam,
+                            sample_bam
+                        ),
+                        bash.ln(
+                            readset_index,
+                            sample_index
+                        )
+                    ],
+                    name="symlink_readset_sample_bam." + sample.name,
+                    samples=[sample],
+                )
                 job.samples = [sample]
 
             elif len(sample.readsets) > 1:
 
-                job = concat_jobs([
-                    mkdir_job,
-                    gatk4.merge_sam_files(readset_bams, sample_bam)
-                ])
-                job.samples = [sample]
-                job.name = "picard_merge_sam_files." + sample.name
+                job = concat_jobs(
+                    [
+                        mkdir_job,
+                        gatk4.merge_sam_files(readset_bams, sample_bam)
+                    ],
+                    samples=[sample],
+                    name="picard_merge_sam_files." + sample.name
+                )
 
             jobs.append(job)
 

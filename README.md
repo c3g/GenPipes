@@ -80,7 +80,7 @@ MUGQIC pipelines and compatible Python version are already installed as modules 
 To use them by default, add in your *$HOME/.bash_profile*:
 ```
 #!bash
-module load mugqic/python/3.8.5
+module load mugqic/python/3.9.1
 module load mugqic/genpipes/<latest_version>
 ```
 (find out the latest version with: "`module avail 2>&1 | grep mugqic/genpipes`").
@@ -324,6 +324,7 @@ For more information about a specific pipeline, visit:
 ### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/ampliconseq/)
 ### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/)
 ### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore/)
+### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore_covseq/)
 ### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/)
 ### [Cov-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/covseq/)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -115,7 +115,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         self._protocol = protocol
         self.argparser.add_argument("-p", "--pairs", help="pairs file", type=argparse.FileType('r'))
         self.argparser.add_argument("--profyle", help="adjust deliverables to PROFYLE folder conventions (Default: False)", action="store_true")
-        self.argparser.add_argument("-t", "--type", help="Tumor pair analysis type",choices = ["fastpass", "ensemble", "sv"], default="ensemble")
+        self.argparser.add_argument("-t", "--type", help="Tumor pair analysis type", choices = ["fastpass", "ensemble", "sv"], default="ensemble")
         super(TumorPair, self).__init__(protocol)
 
 
@@ -1395,14 +1395,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             ])
             # log.info(input)
-            mkdir_job = bash.mkdir(
+            mkdir_job_normal = bash.mkdir(
                 normal_picard_directory,
                 remove=True
             )
 
             jobs.append(
                 concat_jobs([
-                    mkdir_job,
+                    mkdir_job_normal,
                     gatk4.collect_multiple_metrics(
                         normal_input,
                         os.path.join(normal_picard_directory, tumor_pair.normal.name + ".all.metrics"),
@@ -1416,7 +1416,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             jobs.append(
                 concat_jobs([
-                    mkdir_job,
+                    mkdir_job_normal,
                     gatk4.collect_oxog_metrics(
                         normal_input,
                         os.path.join(normal_picard_directory, tumor_pair.normal.name + ".oxog_metrics.txt")
@@ -1429,7 +1429,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         
             jobs.append(
                 concat_jobs([
-                    mkdir_job,
+                    mkdir_job_normal,
                     gatk4.collect_gcbias_metrics(
                         normal_input,
                         os.path.join(normal_picard_directory, tumor_pair.normal.name + ".qcbias_metrics.txt"),
@@ -1442,14 +1442,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 )
             )
             # log.info(input)
-            mkdir_job = bash.mkdir(
+            mkdir_job_tumor = bash.mkdir(
                 tumor_picard_directory,
                 remove=True
             )
 
             jobs.append(
                 concat_jobs([
-                    mkdir_job,
+                    mkdir_job_tumor,
                     gatk4.collect_multiple_metrics(
                         tumor_input,
                         os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".all.metrics"),
@@ -1463,7 +1463,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             jobs.append(
                 concat_jobs([
-                    mkdir_job,
+                    mkdir_job_tumor,
                     gatk4.collect_oxog_metrics(
                         tumor_input,
                         os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".oxog_metrics.txt")
@@ -1476,7 +1476,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             jobs.append(
                 concat_jobs([
-                    mkdir_job,
+                    mkdir_job_tumor,
                     gatk4.collect_gcbias_metrics(
                         tumor_input,
                         os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".qcbias_metrics.txt"),
@@ -1491,6 +1491,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             if ffpe == True:
                 jobs.append(concat_jobs([
+                    mkdir_job_normal,
                     gatk4.collect_sequencing_artifacts_metrics(
                         normal_input,
                         os.path.join(normal_picard_directory, tumor_pair.normal.name)
@@ -1501,6 +1502,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 )
                 )
                 jobs.append(concat_jobs([
+                    mkdir_job_tumor,
                     gatk4.collect_sequencing_artifacts_metrics(
                         tumor_input,
                         os.path.join(tumor_picard_directory, tumor_pair.tumor.name)
@@ -6184,4 +6186,4 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        TumorPair(protocol=['fastpass','ensemble','sv'])
+        TumorPair(protocol=['fastpass', 'ensemble', 'sv'])

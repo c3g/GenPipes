@@ -7950,7 +7950,7 @@ covid_1.0        Mon Aug 3 19:56:47 2020 -0400        781 commits
 
        e84abf3 picard version 1.125 module
 
-  François Lefebvre <lefebvrf@gmail.com>      3 commits
+  François Lefebvre <lefebvrf@gmail.com>      3 commits
 
        4ae7aff tophat and bowtie2 according to template install script
        35e4743 Minor changes to deploy script

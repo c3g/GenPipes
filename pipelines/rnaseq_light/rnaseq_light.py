@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -136,7 +136,6 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         jobs.append(job)
 
         report_dir = os.path.join(self.output_dir, "report")
-
         #copy tx2genes file
         jobs.append(
             concat_jobs(
