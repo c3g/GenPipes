@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -111,9 +109,9 @@ class Config(configparser.SafeConfigParser):
 
                 from_section = self.get(section, option)
                 from_default = self.get('DEFAULT', option)
-                if not utils.slurm_time_to_datetime(from_section):
+                if not utils.time_to_datetime(from_section):
                     return from_default
-                elif utils.slurm_time_to_datetime(from_default) <= utils.slurm_time_to_datetime(from_section):
+                elif utils.time_to_datetime(from_default) <= utils.time_to_datetime(from_section):
                     return from_default
                 else:
                     return from_section
@@ -167,19 +165,23 @@ class Config(configparser.SafeConfigParser):
         else:
             return ""
 
+    @staticmethod
+    def config_error(message=''):
+        _raise(SanitycheckError(message))
+
 class Error(Exception):
     pass
+
 
 class SanitycheckError(Error):
     pass
 
-def _raise(object):
+def _raise(error_obj):
     if config.sanity:
-        if isinstance(object, SanitycheckError):
-            object.message = ' --- TO FIX --- {}'.format(object.message)
-        log.error(object.message)
+        if isinstance(error_obj, SanitycheckError):
+            log.error(error_obj)
     else:
-        raise object
+        raise error_obj
 
 # Global config object used throughout the whole pipeline
 config = Config()

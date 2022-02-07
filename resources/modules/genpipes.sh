@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=genpipes
-VERSION=4.0.0
+VERSION=4.1.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://bitbucket.org/mugqic/genpipes/downloads/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -32,8 +32,11 @@ prepend-path    PATH                  \$root/pipelines/covseq
 prepend-path    PATH                  \$root/pipelines/chipseq
 prepend-path    PATH                  \$root/pipelines/dnaseq
 prepend-path    PATH                  \$root/pipelines/dnaseq_high_coverage
+prepend-path    PATH                  \$root/pipelines/epiqc
+prepend-path    PATH                  \$root/pipelines/hicseq
 prepend-path    PATH                  \$root/pipelines/methylseq
 prepend-path    PATH                  \$root/pipelines/nanopore
+prepend-path    PATH                  \$root/pipelines/nanopore_covseq
 prepend-path    PATH                  \$root/pipelines/rnaseq
 prepend-path    PATH                  \$root/pipelines/rnaseq_denovo_assembly
 prepend-path    PATH                  \$root/pipelines/rnaseq_light

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -197,8 +197,8 @@ class ChipSeq(common.Illumina):
 {sequence2}
 END
 `""".format(adapter_fasta=adapter_fasta,
-            sequence1=readset.adapter2.translate(string.maketrans("ACGTacgt", "TGCAtgca"))[::-1],
-            sequence2=readset.adapter1.translate(string.maketrans("ACGTacgt", "TGCAtgca"))[::-1]))
+            sequence1=readset.adapter2.translate(str.maketrans("ACGTacgt", "TGCAtgca"))[::-1],
+            sequence2=readset.adapter1.translate(str.maketrans("ACGTacgt", "TGCAtgca"))[::-1]))
                     else:
                         _raise(SanitycheckError(
                             "Error: missing adapter1 and/or adapter2 for PAIRED_END readset \"" + readset.name + "\", or missing adapter_fasta parameter in config file!"))
@@ -1602,22 +1602,22 @@ done""".format(
 
                         bam_list.append(input_file_list)
 
-                for control in contrast.treatments:
-                    control_sample_name, control_mark_name = control.split("-.-")
+                for treatment in contrast.treatments:
+                    treatment_sample_name, treatment_mark_name = treatment.split("-.-")
                     for sample in self.samples:
                         input_file_list = [
                             os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
                                          sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
                             mark_name, mark_type in sample.marks.items() if
-                            mark_type == "I" and sample.name == control_sample_name]
+                            mark_type == "I" and sample.name == treatment_sample_name]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
                             os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
                                          sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
                             mark_name, mark_type in sample.marks.items() if
-                            mark_type != "I" and sample.name == control_sample_name and mark_name ==
-                            control_mark_name]
+                            mark_type != "I" and sample.name == treatment_sample_name and mark_name ==
+                            treatment_mark_name]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
@@ -1626,8 +1626,8 @@ done""".format(
                             #os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." +
                             #                         self.mark_type_conversion[mark_type] + "Peak") for
                             mark_name, mark_type in sample.marks.items() if
-                            mark_type != "I" and sample.name == control_sample_name and mark_name ==
-                            control_mark_name]
+                            mark_type != "I" and sample.name == treatment_sample_name and mark_name ==
+                            treatment_mark_name]
 
                         bam_list.append(input_file_list)
                 bam_list = filter(None, bam_list)
@@ -2366,6 +2366,7 @@ done""".format(
                 self.annotation_graphs,
                 # self.ihec_preprocess_files,
                 self.run_spp,
+                self.differential_binding,
                 self.ihec_metrics,
                 self.multiqc_report,
                 self.cram_output]

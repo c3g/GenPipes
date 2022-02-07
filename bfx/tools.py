@@ -1,6 +1,5 @@
-
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -888,6 +887,7 @@ bedops --not-element-of \\
     )
 
 def prepare_methylkit(input, output):
+    cutoff=config.param('prepare_methylkit', 'min_CpG', required=True)
     return Job(
         [input],
         [output],
@@ -898,10 +898,11 @@ def prepare_methylkit(input, output):
 echo -e \"chrBase\tchr\tbase\tstrand\tcoverage\tfreqC\tfreqT\" \\
   > {output} && \\
 cat {input} | \\
-awk -F"\t" '$11>=5 {{print $1"."$2"\t"$1"\t"$2"\tF\t"$11"\t"$12"\t"(100-$12)}}' \\
+awk -F"\t" '$11>={cutoff} {{print $1"."$2"\t"$1"\t"$2"\tF\t"$11"\t"$12"\t"(100-$12)}}' \\
   >> {output}""".format(
             input=input,
-            output=output
+            output=output,
+            cutoff=int(cutoff)
         )
     )
 

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -344,9 +344,9 @@ samtools view -F4 {options} -c \\
 
 def bam2fq(input_bam, output_pair1, output_pair2, output_other, output_single, ini_section='samtools_bam2fq'):
     if output_pair2:  # Paired end reads
-        outputs = [output_pair1, output_pair2]
+        outputs = [output_pair1, output_pair2, output_other, output_single]
     else:   # Single end reads
-        outputs = [output_pair1]
+        outputs = [output_other]
 
     return Job(
         [input_bam],
@@ -355,19 +355,16 @@ def bam2fq(input_bam, output_pair1, output_pair2, output_other, output_single, i
             ['samtools', 'module_samtools'],
         ],
         command="""\
-samtools bam2fq {nthread} \\
-  {other_options} \\
-  {output_pair1} \\
-  {output_pair2} \\
-  {output_other} \\
-  {output_single} \\
+samtools bam2fq {other_options} \\
+  {nthread} \\
+  {output_pair1}{output_pair2}{output_single}{output_other} \\
   {input_bam}""".format(
-      nthread="-@ " + config.param(ini_section, 'samtools_bam2fq_threads', required=False),
       other_options=config.param(ini_section, 'samtools_bam2fq_other_options', required=False),
-      output_pair1="-1 " + output_pair1,
-      output_pair2="-2 " + output_pair2 if output_pair2 else "",
-      output_other="-0 " + output_other,
-      output_single="-s " + output_single,
+      nthread="-@ " + config.param(ini_section, 'samtools_bam2fq_threads', required=False),
+      output_pair1="-1 " + output_pair1 if output_pair2 else "",
+      output_pair2=" -2 " + output_pair2 if output_pair2 else "",
+      output_single=" -s " + output_single if output_pair2 else "",
+      output_other=" -0 " + output_other,
       input_bam=input_bam
       )
         )

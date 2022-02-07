@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -51,6 +51,10 @@ class Sample(object):
         return self._marks
 
     @property
+    def analysis_name(self):
+        return self._analysis_name
+
+    @property
     def readsets(self):
         return self._readsets
 
@@ -72,3 +76,38 @@ class Sample(object):
     def add_mark(self, mark_name, mark_type):
         if mark_name not in self.marks:
             self.marks[mark_name] = mark_type
+
+
+class NanoporeSample(Sample):
+    """docstring for NanoporeSample"""
+    @property
+    def run(self):
+        return self._run
+
+    @property
+    def flowcell(self):
+        return self._flowcell
+
+    @property
+    def library(self):
+        return self._library
+
+    @property
+    def summary_file(self):
+        return self._summary_file
+
+    @property
+    def fastq_files(self):
+        return self._fastq_files
+
+    @property
+    def fast5_files(self):
+        return self._fast5_files
+
+    @property
+    def analysis_name(self):
+        return self._analysis_name
+
+    @property
+    def barcode(self):
+        return self._barcode
