@@ -42,7 +42,8 @@ import utils.utils
 from pipelines import common
 
 from bfx import bwa
-from bfx import gq_seq_utils
+from bfx import differential_binding
+from bfx import fastp
 from bfx import homer
 from bfx import macs2
 from bfx import multiqc
@@ -52,8 +53,6 @@ from bfx import samtools
 from bfx import tools
 from bfx import trimmomatic
 from bfx import ucsc
-from bfx import differential_binding
-# from pipelines.dnaseq import dnaseq
 
 from bfx import bash_cmd as bash
 
