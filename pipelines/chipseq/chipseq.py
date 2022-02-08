@@ -158,6 +158,35 @@ class ChipSeq(common.Illumina):
         # HOMER and MACS2 mappable genome size (without repetitive features) is about 80 % of total size
         return sum([int(chromosome[1]) for chromosome in genome_index]) * 0.8
 
+    def fastp(self):
+        """
+        Generate basic QC metrics.
+        """
+        jobs = []
+
+        metrics_output_directory = self.output_dirs['metrics_output_directory']
+
+        for readset in self.readsets:
+            output_json_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.name + ".fastp.json")
+            output_html_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.name + ".fastp.html")
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(os.path.join(metrics_output_directory, readset.sample.name, readset.mark_name)),
+                    fastp.fastp_basic_qc(
+                        input1=readset.fastq1,
+                        input2=readset.fastq2,
+                        output_json_path=output_json_path,
+                        output_html_path=output_html_path,
+                        overrepresentation_analysis=True
+                        ),
+                ],
+                name="fastp." + readset.name,
+                samples=[readset.sample]
+                )
+            )
+
+        return jobs
+
     def trimmomatic(self):
         """
         Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
@@ -1836,6 +1865,7 @@ sed -ie 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' {report_file}"
         return [
             [
                 self.picard_sam_to_fastq,
+                self.fastp,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.mapping_bwa_mem_sambamba,
@@ -1863,6 +1893,7 @@ sed -ie 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' {report_file}"
                 self.cram_output],
             [
                 self.picard_sam_to_fastq,
+                self.fastp,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.mapping_bwa_mem_sambamba,
