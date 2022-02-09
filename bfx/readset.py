@@ -365,7 +365,7 @@ def parse_illumina_raw_readset_files(
     GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
 
     # Parsing Clarity event file
-    log.info("Parsiing Clarity Illumina event file " + readset_file + " for readset in lane " + lane + "...")
+    log.info("Parsing Clarity event file " + readset_file + " for readset in lane " + lane + "...")
 
     readset_csv = csv.DictReader(open(readset_file, 'r'), delimiter='\t', quotechar='"')
 
@@ -798,7 +798,6 @@ def parse_mgi_raw_readset_files(
     run_type,
     seqtype,
     run,
-    flowcell,
     lane,
     read1cycles,
     read2cycles,
@@ -811,8 +810,8 @@ def parse_mgi_raw_readset_files(
     samples = []
     GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
 
-    # Parsing MGI readset sheet
-    log.info("Parsing Clarity event file " + readset_file + " ...")
+    # Parsing Clarity event file
+    log.info("Parsing Clarity event file " + readset_file + " for readset in lane " + lane + "...")
     readset_csv = csv.DictReader(open(readset_file, 'r'), delimiter='\t', quotechar='"')
     for line in readset_csv:
 
@@ -827,9 +826,8 @@ def parse_mgi_raw_readset_files(
         index_csv = csv.reader(open(index_file, 'r'), delimiter=',', quotechar='"')
 
         current_lane = line['Position'].split(":")[0]
-        current_flowcell = line['ContainerName']
 
-        if int(current_lane) != int(lane) or current_flowcell != flowcell:
+        if int(current_lane) != int(lane):
             continue
 
         sample_name = line['SampleName']
@@ -885,7 +883,7 @@ def parse_mgi_raw_readset_files(
         readset._protocol = line['LibraryProcess']
         readset._library_source = line['Library Kit Name']
         readset._run = run
-        readset._flow_cell = flowcell
+        readset._flow_cell = line['ContainerName']
         readset._lane = current_lane
         readset._sample_number = str(len(readsets) + 1)
         readset._quality_offset = 33
