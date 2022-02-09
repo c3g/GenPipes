@@ -3459,7 +3459,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             if nb_jobs > 1:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
                 vcfs_to_merge = [os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot." + str(idx) +".vcf.gz")
-                                  for idx in xrange(len(unique_sequences_per_job))]
+                                  for idx in range(len(unique_sequences_per_job))]
                 
                 vcfs_to_merge.append(os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot.others.vcf.gz"))
                 
@@ -3496,7 +3496,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             if nb_jobs > 1:
                 unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
                 vcfs_to_merge = [os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation", tumor_pair.name + ".ensemble.germline.vt.annot." + str(idx) + ".vcf.gz")
-                                 for idx in xrange(len(unique_sequences_per_job))]
+                                 for idx in range(len(unique_sequences_per_job))]
 
                 vcfs_to_merge.append(os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot.others.vcf.gz"))
         
