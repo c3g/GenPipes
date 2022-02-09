@@ -85,6 +85,7 @@ def bcl2fastq(
     demultiplex=False,
     mismatches=None,
     mask=None,
+    ini_section='fastq'
     ):
 
     if demultiplex:
@@ -99,7 +100,7 @@ def bcl2fastq(
         [input],
         fastq_outputs,
         [
-            ['fastq', 'module_bcl_to_fastq']
+            [ini_section, 'module_bcl_to_fastq']
         ],
         command="""\
 bcl2fastq \\
@@ -116,7 +117,7 @@ bcl2fastq \\
             tiles="s_" + str(lane),
             sample_sheet=sample_sheet,
             demultiplex_parameters=demultiplex_parameters if demultiplex_parameters else "",
-            other_options=config.param('fastq', 'other_options'),
+            other_options=config.param(ini_section, 'other_options'),
             extra_option=extra_option
         )
     )
