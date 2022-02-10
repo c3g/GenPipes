@@ -1345,7 +1345,7 @@ class RunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
 
-        if hasattr(self.args, 'type') and self.args.type == 't7':
+        if self.args.type == 'mgit7':
             return jobs
         else:
             return self.throttle_jobs(jobs)
@@ -1415,7 +1415,7 @@ class RunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
 
-        if hasattr(self.args, 'type') and self.args.type == 't7':
+        if self.args.type == 'mgit7':
             return jobs
         else:
             return self.throttle_jobs(jobs)
@@ -1602,7 +1602,7 @@ class RunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
 
-        if hasattr(self.args, 'type') and self.args.type == 't7':
+        if self.args.type == 'mgit7':
             return jobs
         else:
             return self.throttle_jobs(jobs)
@@ -1667,7 +1667,7 @@ class RunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
 
-        if hasattr(self.args, 'type') and self.args.type == 't7':
+        if self.args.type == 'mgit7':
             return jobs
         else:
             return self.throttle_jobs(jobs)
@@ -1702,7 +1702,7 @@ class RunProcessing(common.MUGQICPipeline):
 
             jobs.extend(lane_jobs)
 
-        if hasattr(self.args, 'type') and self.args.type == 't7':
+        if self.args.type == 'mgit7':
             return jobs
         else:
             return self.throttle_jobs(jobs)
@@ -1755,7 +1755,7 @@ class RunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
 
-        if hasattr(self.args, 'type') and self.args.type == 't7':
+        if self.args.type == 'mgit7':
             return jobs
         else:
             return self.throttle_jobs(jobs)

@@ -39,8 +39,8 @@ perl -pi -e 'undef $/; s#----\n(\w*):\n#----\n```\n![hicseq $1 workflow diagram]
 # For Tumor Pair pipeline, produce a regular README until Rob's branch is merge to master : will then contain 3 tumor pair protocols for which we alraedy have workflow diagrams ready.
 pipelines/tumor_pair/tumor_pair.py --help > pipelines/tumor_pair/README.md
 
-# For Illumina pipeline, just produce a regular README, without diagram
-pipelines/illumina_run_processing/illumina_run_processing.py --help > pipelines/illumina_run_processing/README.md
+# For Run Processing pipeline, just produce a regular README, without diagram
+pipelines/run_processing/run_processing.py --help > pipelines/run_processing/README.md
 
 # For MGI pipeline, just produce a regular README, without diagram
 pipelines/mgi_run_processing/mgi_run_processing.py --help > pipelines/mgi_run_processing/README.md
