@@ -226,7 +226,7 @@ class Pipeline(object):
                                                                 "are available on the system (default: false)",
                                          action="store_true")
             self._argparser.add_argument("--container", nargs=2,
-                                         help="Run inside a container providing a valid"
+                                         help="Run inside a container providing a valid "
                                          "singularity image path", action=ValidateContainer,
                                           metavar=("{wrapper, singularity}",
                                                    "<IMAGE PATH>"))
