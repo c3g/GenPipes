@@ -607,7 +607,7 @@ cp {report_template_dir}/{basename_report_file} {report_file}""".format(
                         sambamba.view(
                             input_bam=input_bam,
                             output_bam=output_bam,
-                            options=config.param('sambamba_filtering', 'sambamba_filtering_other_options', required=False)
+                            options=config.param('sambamba_filtering', 'options', required=False)
                             ),
                         sambamba.index(
                             output_bam,
