@@ -34,7 +34,7 @@ usage: epiqc.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                 [--container {wrapper, singularity} <IMAGE PATH>]
                 [--genpipes_file GENPIPES_FILE] [-r READSETS] [-v]
 
-Version: 4.1.0
+Version: 4.1.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

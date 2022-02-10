@@ -326,7 +326,7 @@ For more information about a specific pipeline, visit:
 ### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore/)
 ### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/)
 ### [CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/covseq/)
-### [Nanopore CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore_covseq/)
+### [Nanopore_CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore_covseq/)
 
 Readset File
 ------------
@@ -402,7 +402,7 @@ Example:
     sampleB	readset3	G_01_1	118603200	150000	path/to/readset3.bas.h5	path/to/readset3.1.bax.h5,path/to/readset3.2.bax.h5,path/to/readset3.3.bax.h5
     sampleB	readset4	G_01_2	104239488	150000	path/to/readset4.bas.h5	path/to/readset4.1.bax.h5,path/to/readset4.2.bax.h5,path/to/readset4.3.bax.h5
 
-### Nanopore, Nanopore Cov-Seq
+### Nanopore, Nanopre CoV-Seq
 
 * Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; mandatory; 
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
