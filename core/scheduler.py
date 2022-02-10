@@ -339,7 +339,7 @@ class PBSScheduler(Scheduler):
         cpu = super().cpu(job_name_prefix)
         node = super().node(job_name_prefix)
 
-        return "-l nodes:{}:ppn={}".format(node, cpu)
+        return "-l nodes={}:ppn={}".format(node, cpu)
 
     def submit(self, pipeline):
         self.print_header(pipeline)
