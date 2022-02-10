@@ -440,7 +440,7 @@ client_linux \\
             thread=config.param(ini_section, 'thread'),
             workspace=os.path.dirname(run_dir),
             fastq=output_dir,
-            config_template=os.path.expandvars(config.param(ini_section, 'mgi_t7_config_template')),
+            config_template=os.path.expandvars(config.param(ini_section, 'mgi_t7_config_template', type='filepath')),
             config_file=lane_config_file,
             target_dir=os.path.dirname(lane_config_file),
             fcid=flowcell_id,
