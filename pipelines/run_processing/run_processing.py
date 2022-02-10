@@ -300,7 +300,15 @@ class RunProcessing(common.MUGQICPipeline):
         if not hasattr(self, "_json_flag_files"):
             self._json_flag_files = {}
             for lane in self.lanes:
-                self._json_flag_files[lane] = self.generate_mgi_t7_flag_file(lane)
+                json_flag_file = os.path.join(self.output_dir, "flag." + lane + ".json")
+                for filename in os.listdir(self.raw_flag_dir):
+                    if re.match(self.run_id + "_" + lane + "_.+json", filename):
+                        shutil.copy(os.path.join(self.raw_flag_dir, filename), json_flag_file)
+                        self._json_flag_files[lane] = json_flag_file
+                        log.info("JSON FLAG file for lane " + lane + " : " + json_flag_file)
+                        break
+                else:
+                    _raise(SanitycheckError("Could not find any proper JSON flag file in " + self.raw_flag_dir + " for RUN " + self.run_id))
         return self._json_flag_files
 
     @property
@@ -622,14 +630,18 @@ class RunProcessing(common.MUGQICPipeline):
 
             # If demultiplexing is perform while basecalling
             if self.args.splitbarcode_demux:
+                # Add the barcodes in the JSON flag file
+                self.edit_mgi_t7_flag_file(lane)
+                
                 basecall_outputs, postprocessing_jobs = self.generate_basecall_outputs(lane)
                 basecall_outputs.extend(
-                    [    
+                    [
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane),    
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv")
-                    ]    
-                )    
+                    ]
+                )
 
                 lane_jobs.append(
                     concat_jobs(
@@ -637,6 +649,7 @@ class RunProcessing(common.MUGQICPipeline):
                             bash.mkdir(basecall_dir),
                             run_processing_tools.mgi_t7_basecall(
                                 input,
+                                self.run_dir,
                                 self.flowcell_id,
                                 basecall_outputs,
                                 basecall_dir,
@@ -2536,41 +2549,29 @@ class RunProcessing(common.MUGQICPipeline):
             index_read_count += 1
         return mask
 
-    def generate_mgi_t7_flag_file(self, lane):
+    def edit_mgi_t7_flag_file(self, lane):
         """
-        Copy the flag file output from the sequencer and if necessary (i.e. t7 fast-mode) insert the barcode information
+        insert the barcode information in the flag file output from the sequencer
         This Flag file is used to call splitBarcode
         """
 
-        json_flag_file = os.path.join(self.output_dir, "flag." + lane + ".json")
+        json_flag_file = self.json_flag_files[lane]
 
-        raw_flag_file = ""
-        for filename in os.listdir(self.raw_flag_dir):
-            if re.match(self.run_id + "_" + lane + "_.+json", filename):
-                raw_flag_file = os.path.join(self.raw_flag_dir, filename)
-                break
+        # get the barcode names & sequences to add in the JSON flag file
+        all_indexes = {}
+        for readset in self.readsets[lane]:
+            for index in readset.indexes:
+                all_indexes[index['INDEX_NAME']] = index
+        with open(json_flag_file, 'r') as json_fh:
+            json_flag_content = json.load(json_fh)
+        if self.is_dual_index[lane]:
+            json_flag_content['speciesBarcodes'] = dict([(index_name, index_dict['INDEX2']+index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
         else:
-            _raise(SanitycheckError("Could not find any proper JSON flag file in " + self.raw_flag_dir + " for RUN " + self.run_id))  # + "\nSearching for " + self.run_id + "_" + lane + ".+json"))
+            json_flag_content['speciesBarcodes'] = dict([(index_name, index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
+        with open(json_flag_file, 'w') as out_json_fh:
+            json.dump(json_flag_content, out_json_fh, indent=4)
 
-        if self.args.splitbarcode_demux:
-            # get the barcode names & sequences to add in the JSON flag file
-            all_indexes = {}
-            for readset in self.readsets[lane]:
-                all_indexes[readset.index_name] = readset.index
-            with open(raw_flag_file, 'r') as json_fh:
-                json_flag_content = json.load(json_fh)
-            if self.is_dual_index[lane]:
-                json_flag_content['speciesBarcodes'] = dict([(index_name, index_seq['INDEX2']+index_seq['INDEX1']) for index_name, index_seq in all_indexes.items()])
-            else:
-                json_flag_content['speciesBarcodes'] = dict([(index_name, index_seq['INDEX1']) for index_name, index_seq in all_indexes.items()])
-            with open(json_flag_file, 'w') as out_json_fh:
-                json.dump(json_flag_content, out_json_fh, indent=4)
-
-        else:
-            shutil.copy(raw_flag_file, json_flag_file)
-
-        log.info("JSON FLAG file for lane " + lane + " : " + json_flag_file)
-        return json_flag_file
+        log.info("BARCODES added in FLAG file : " + json_flag_file)
 
     def generate_lane_sample_sheet(self, lane):
         if self.args.type == 'illumina':
@@ -2872,27 +2873,27 @@ class RunProcessing(common.MUGQICPipeline):
             readset_r1_outputs = []
             readset_r2_outputs = []
             for index in readset.indexes:
-                readset_r1_outputs.extend(
+                readset_r1_outputs.extend([
                     os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.gz"),
                     os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.fqStat.txt")
-                )
+                ])
                 if readset.run_type == "PAIRED_END":
-                    readset_r2_outputs.append(
+                    readset_r2_outputs.extend([
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.gz"),
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.fqStat.txt")
-                    )
+                    ])
 
             # If True, then merge the 'Undetermined' reads
             if self.merge_undetermined[lane]:
-                readset_r1_outputs.append(
+                readset_r1_outputs.extend([
                     os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.gz"),
                     os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.fqStat.txt")
-                )
+                ])
                 if readset.run_type == "PAIRED_END":
-                    readset_r2_outputs.append(
+                    readset_r2_outputs.extend([
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.gz"),
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.fqStat.txt")
-                    )
+                    ])
             # Processing R1 fastq outputs :
             #   convert headers from MGI to Illumina format using zcat and awk
             basecall_outputs.extend(readset_r1_outputs)
