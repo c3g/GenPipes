@@ -337,12 +337,9 @@ class PBSScheduler(Scheduler):
 
     def cpu(self, job_name_prefix):
         cpu = super().cpu(job_name_prefix)
-
-        return "-l ppn={}".format(cpu)
-
-    def node(self, job_name_prefix):
         node = super().node(job_name_prefix)
-        return "-l nodes={}".format(node)
+
+        return "-l nodes:{}:ppn={}".format(node, cpu)
 
     def submit(self, pipeline):
         self.print_header(pipeline)
@@ -411,7 +408,6 @@ exit \$MUGQIC_STATE" | \\
                         self.walltime(job_name_prefix) + " " + \
                         self.memory(job_name_prefix) + " " + \
                         self.cpu(job_name_prefix) + " " + \
-                        self.node(job_name_prefix) + " " + \
                         config.param(job_name_prefix, 'cluster_queue') + " "
                         # config.param(job_name_prefix, 'cluster_cpu')
 
