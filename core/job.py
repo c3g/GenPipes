@@ -204,7 +204,7 @@ class Job(object):
         return True
 
 # Create a new job by concatenating a list of jobs together
-def concat_jobs(jobs, name="", samples=[], removable_files = []):
+def concat_jobs(jobs, name="", samples=[], removable_files=[]):
 
     # Merge all input/output/report/removable files and modules
     input_files = []

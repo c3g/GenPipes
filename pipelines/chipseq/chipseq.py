@@ -783,13 +783,13 @@ sed -e 's@report_metrics_file@{report_metrics_file}@g'\\
         basename_report_file=os.path.basename(report_file),
         report_file=report_file
     ),
+                    report_files=[report_file]
+                    )
+                ],
+                    name="metrics_report",  # ".".join([sample.name for sample in self.samples]),
+                    samples=self.samples,
+                    removable_files=[report_metrics_file]
                 )
-            ],
-            name="metrics_report",  # ".".join([sample.name for sample in self.samples]),
-            samples=self.samples,
-            removable_files=[report_metrics_file],
-            report_files=[report_file]
-            )
         )
 
         return jobs
