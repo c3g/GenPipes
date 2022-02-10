@@ -1,6 +1,31 @@
-31 tags, 9075 commits
+32 tags, 9092 commits
 
-HEAD        Mon Feb 7 15:14:57 2022 -0500        0 commits
+HEAD        Thu Feb 10 10:10:45 2022 -0500        0 commits
+
+4.1.1        Thu Feb 10 15:12:29 2022 +0000        17 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      10 commits
+
+       dc3ff3c Merge remote-tracking branch 'origin/dev' into release_4.1.1
+       d2a5407 minor README uedit, again...
+       3cd7d34 Merge remote-tracking branch 'origin/dev' into release_4.1.1
+       21ee999 Another minor correction in the README...
+       549f6dc Merge remote-tracking branch 'origin/dev' into release_4.1.1
+       bbc6156 Updating READMEs before release
+       150f4a0 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       77e0698 Adding missing space in container help message
+       be59560 GenPipes - prep for minor release
+       11b8ec2 Version bump to Release 4.1.0
+
+  ehenrion <edouard.henrion@mcgill.ca>      7 commits
+
+       aeccdc3 Merged in release_4.1.1 (pull request #305)
+       c756a50 GenPipes - Tumor Pair : Replacing "xrange" calls by "range" calls to resolve Python3-compatibility issues
+       95f8ce8 README.md edited online with Bitbucket
+       691b2fd Merged in release_4.1 (pull request #304)
+       0204b7c README.md edited online with Bitbucket
+       ea152c3 corrected typo in README.md for Nanopore_covseq
+       ae1c04a Merged in release_4.1 (pull request #303)
 
 4.1.0        Mon Feb 7 21:39:25 2022 +0000        77 commits
 
