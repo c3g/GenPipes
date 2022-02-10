@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -120,57 +118,6 @@ bcl2fastq \\
             other_options=config.param(ini_section, 'other_options'),
             extra_option=extra_option
         )
-    )
-
-def fastqmultx(
-    barcode_file,
-    mismatches,
-    outputs,
-    R1_fastq,
-    I1_fastq,
-    R2_fastq,
-    I2_fastq=None
-    ):
-
-    metrics_file = outputs[0]
-    output_dir = os.path.dirname(metrics_file)
-    return Job(
-        [
-            R1_fastq,
-            I1_fastq,
-            R2_fastq,
-            I2_fastq if I2_fastq else None
-        ],
-        outputs,
-        [
-            ['fastq', 'module_fastq_multx']
-        ],
-        command="""\
-fastq-multx \\
-  -B {barcode} \\
-  -m {mismatches} \\
-  {input_I1} \\
-  {input_I2} \\
-  {input_R1} \\
-  {input_R2} \\
-  {output_I1_fake} \\
-  {output_I2_fake} \\
-  {output_R1} \\
-  {output_R2} \\
-  > {stdout_metrics}""".format(
-            barcode=barcode_file,
-            mismatches=mismatches,
-            input_I1=I1_fastq,
-            input_I2=I2_fastq if I2_fastq else "",
-            input_R1=R1_fastq,
-            input_R2=R2_fastq,
-            output_I1_fake="-o n/a",
-            output_I2_fake="-o n/a" if I2_fastq else "",
-            output_R1="-o " + os.path.join(output_dir, "%_R1.fastq"),
-            output_R2="-o " + os.path.join(output_dir, "%_R2.fastq"),
-            stdout_metrics=metrics_file
-        ),
-        removable_files=outputs+[output_dir]
     )
 
 def demux_fastqs(
