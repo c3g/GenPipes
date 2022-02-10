@@ -32,7 +32,7 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [--genpipes_file GENPIPES_FILE] [-d DESIGN]
                   [-t {chipseq,atacseq}] [-r READSETS] [-v]
 
-Version: 4.1.0
+Version: 4.1.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -68,7 +68,7 @@ optional arguments:
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
   --container {wrapper, singularity} <IMAGE PATH>
-                        Run inside a container providing a valid singularity
+                        Run inside a container providing a validsingularity
                         image path
   --genpipes_file GENPIPES_FILE, -g GENPIPES_FILE
                         Command file output path. This is the command used to
