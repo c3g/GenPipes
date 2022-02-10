@@ -326,7 +326,7 @@ For more information about a specific pipeline, visit:
 ### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore/)
 ### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/)
 ### [CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/covseq/)
-### [Nanopore_CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore_covseq/)
+### [Nanopore CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore_covseq/)
 
 Readset File
 ------------
