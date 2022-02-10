@@ -42,6 +42,7 @@ import utils.utils
 from pipelines import common
 
 from bfx import bwa
+from bfx import deeptools
 from bfx import differential_binding
 from bfx import fastp
 from bfx import homer
@@ -99,7 +100,6 @@ class ChipSeq(common.Illumina):
                 'tracks_output_directory': 'tracks',
                 'macs_output_directory': 'peak_call',
                 'anno_output_directory': 'annotation',
-                'ihecA_output_directory': 'ihec_alignment',
                 'ihecM_output_directory': 'ihec_metrics',
                 'dba_output_directory': 'differential_binding'
                 }
@@ -588,7 +588,7 @@ cp {report_template_dir}/{basename_report_file} {report_file}""".format(
 
         return jobs
 
-    def sambamba_view_filter(self):
+    def sambamba_filtering(self):
         """
         Filter out unmapped reads and low quality reads [Sambamba](http://www.htslib.org/).
         """
@@ -605,40 +605,38 @@ cp {report_template_dir}/{basename_report_file} {report_file}""".format(
                     concat_jobs([
                         bash.mkdir(os.path.dirname(output_bam)),
                         sambamba.view(
-                            input_bam,
-                            output_bam,
-                            """-t {threads} -f bam -F \"not unmapped and not failed_quality_control and mapping_quality >= {min_mapq}\"""".format(
-                                threads=config.param('sambamba_view_filter', 'threads'),
-                                min_mapq=config.param('sambamba_view_filter', 'min_mapq'))
-                        ),
+                            input_bam=input_bam,
+                            output_bam=output_bam,
+                            options=config.param('sambamba_filtering', 'sambamba_filtering_other_options', required=False)
+                            ),
                         sambamba.index(
                             output_bam,
                             output_bam_index
                         )
                     ],
-                        name="sambamba_view_filter." + sample.name + "." + mark_name,
+                        name="sambamba_filtering." + sample.name + "." + mark_name,
                         samples=[sample]
                     )
                 )
         report_yaml_dir = os.path.join(self.output_dirs['report_output_directory'], "yaml")
-        report_file = os.path.join(report_yaml_dir, "ChipSeq.sambamba_view_filter.yaml")
+        report_file = os.path.join(report_yaml_dir, "ChipSeq.sambamba_filtering.yaml")
         jobs.append(
             Job(
                 [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for sample in self.samples for mark_name in sample.marks],
                 [report_file],
-                [['sambamba_view_filter', 'module_pandoc']],
+                [['sambamba_filtering', 'module_pandoc']],
                 command="""\
 mkdir -p {report_yaml_dir} && \\
 sed -e 's@min_mapq@{min_mapq}@g' \\
     {report_template_dir}/{basename_report_file} > {report_file}""".format(
                     report_yaml_dir=report_yaml_dir,
-                    min_mapq=config.param('sambamba_view_filter', 'min_mapq', type='int'),
+                    min_mapq=config.param('sambamba_filtering', 'min_mapq', type='int'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="sambamba_view_filter_report"#".".join([sample.name for sample in self.samples])
+                name="sambamba_filtering_report"#".".join([sample.name for sample in self.samples])
                 )
         )
 
@@ -659,10 +657,11 @@ sed -e 's@min_mapq@{min_mapq}@g' \\
 
         for sample in self.samples:
             samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
-            for mark_name in sample.marks:
+            for mark_name, mark_type in sample.marks.items():
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 raw_bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.bam")
                 bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
 
                 jobs.append(
                     concat_jobs([
@@ -692,6 +691,17 @@ sed -e 's@min_mapq@{min_mapq}@g' \\
                         name="metrics_flagstat." + sample.name + "." + mark_name
                     )
                 )
+                # jobs.append(
+                #     deeptools.plotfingerprint(
+                #         chip_bam,
+                #         input_bam,
+                #         sample_name,
+                #         input_name,
+                #         chip_name,
+                #         chip_type,
+                #         output_dir
+                #         )
+                #     )
                 inputs_report.extend(
                     (
                         os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(raw_bam_file))),
@@ -706,16 +716,17 @@ sed -e 's@min_mapq@{min_mapq}@g' \\
         report_yaml_dir = os.path.join(self.output_dirs['report_output_directory'], "yaml")
         report_file = os.path.join(report_yaml_dir, "ChipSeq.metrics.yaml")
         jobs.append(
-            Job(
-                inputs_report,
-                [report_metrics_file],
-                [['metrics', 'module_pandoc']],
-                # Retrieve number of aligned and duplicate reads from sample flagstat files
-                # Merge trimming stats per sample with aligned and duplicate stats using ugly awk
-                # Format merge stats into markdown table using ugly awk (knitr may do this better)
-                command="""\
-module load {sambamba} && \\
-mkdir -p {metrics_dir}
+            concat_jobs([
+                bash.mkdir(metrics_output_directory),
+                Job(
+                    inputs_report,
+                    [report_metrics_file],
+                    [['metrics', 'module_pandoc'],
+                    ['metrics', 'module_sambamba']],
+                    # Retrieve number of aligned and duplicate reads from sample flagstat files
+                    # Merge trimming stats per sample with aligned and duplicate stats using ugly awk
+                    # Format merge stats into markdown table using ugly awk (knitr may do this better)
+                    command="""\
 cp /dev/null {metrics_file} && \\
 declare -A samples_associative_array=({samples_associative_array}) && \\
 for sample in ${{!samples_associative_array[@]}}
@@ -724,7 +735,6 @@ do
   do
     raw_flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.flagstat
     filtered_flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.filtered.flagstat
-    bam_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.filtered.bam
     raw_supplementarysecondary_reads=`bc <<< $(grep "secondary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
     mapped_reads=`bc <<< $(grep "mapped (" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$raw_supplementarysecondary_reads`
     filtered_supplementarysecondary_reads=`bc <<< $(grep "secondary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
@@ -733,6 +743,9 @@ do
     filtered_dup_reads=`grep "duplicates" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* duplicates$//'`
     filtered_dup_rate=`echo "scale=4; 100*$filtered_dup_reads/$filtered_mapped_reads" | bc -l`
     filtered_dedup_reads=`echo "$filtered_mapped_reads-$filtered_dup_reads" | bc -l`
+    number_peaks=$(wc -l {chip_bed} | cut -f 1 -d " ")
+    reads_under_peaks=`sambamba view -F "not duplicate" -c -L {chip_bed} {bam_file}`
+    frip=`echo "scale=4; $reads_under_peaks/$filtered_dedup_reads" | bc -l`
     if [[ -s {trim_metrics_file} ]]
       then
         raw_reads=$(grep -P "${{sample}}\\t${{mark_name}}" {trim_metrics_file} | cut -f 3)
@@ -747,34 +760,37 @@ do
         raw_trimmed_rate="NULL"
         filtered_rate=`echo "scale=4; 100*$filtered_reads/$raw_reads" | bc -l`
     fi
-    filtered_mito_reads=$(sambamba view -F "not duplicate" -c $bam_file chrM)
+    filtered_mito_reads=$(sambamba view -F "not duplicate" -c {bam_file} chrM)
     filtered_mito_rate=$(echo "scale=4; 100*$filtered_mito_reads/$filtered_mapped_reads" | bc -l)
-    echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$mapped_reads\\t$mapped_reads_rate\\t$filtered_reads\\t$filtered_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate" >> {metrics_file}
+    echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$mapped_reads\\t$mapped_reads_rate\\t$filtered_reads\\t$filtered_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate\\t$number_peaks\\t$frip" >> {metrics_file}
   done
 done && \\
-sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tRemaining Reads after Trimming #\\tRemaining Reads after Trimming %\\tAligned Trimmed Reads #\\tAligned Trimmed Reads %\\tRemaining Reads after Filtering #\\tRemaining Reads after Filtering %\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads # without Duplicates\\tMitochondrial Reads #\\tMitochondrial Reads %" {metrics_file} && \\
+sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tRemaining Reads after Trimming #\\tRemaining Reads after Trimming %\\tAligned Trimmed Reads #\\tAligned Trimmed Reads %\\tRemaining Reads after Filtering #\\tRemaining Reads after Filtering %\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads # without Duplicates\\tMitochondrial Reads #\\tMitochondrial Reads %\\tPeaks #\\tFRiP" {metrics_file} && \\
 mkdir -p {report_yaml_dir} && \\
 cp {metrics_file} {report_metrics_file} && \\
 sed -e 's@report_metrics_file@{report_metrics_file}@g'\\
     {report_template_dir}/{basename_report_file} > {report_file}""".format(
-                    sambamba=config.param('DEFAULT', 'module_sambamba'),
-                    metrics_dir=metrics_output_directory,
-                    metrics_file=metrics_file,
-                    samples_associative_array=" ".join(samples_associative_array),
-                    alignment_dir=self.output_dirs['alignment_output_directory'],
-                    trim_metrics_file=trim_metrics_file,
-                    report_yaml_dir=report_yaml_dir,
-                    report_metrics_file=report_metrics_file,
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file
-                ),
-                name="metrics_report",  # ".".join([sample.name for sample in self.samples]),
-                samples=self.samples,
-                removable_files=[report_metrics_file],
-                report_files=[report_file]
-            )
+        metrics_dir=metrics_output_directory,
+        chip_bed=chip_bed,
+        bam_file=bam_file,
+        metrics_file=metrics_file,
+        samples_associative_array=" ".join(samples_associative_array),
+        alignment_dir=self.output_dirs['alignment_output_directory'],
+        trim_metrics_file=trim_metrics_file,
+        report_yaml_dir=report_yaml_dir,
+        report_metrics_file=report_metrics_file,
+        report_template_dir=self.report_template_dir,
+        basename_report_file=os.path.basename(report_file),
+        report_file=report_file
+    ),
+                    name="metrics_report",  # ".".join([sample.name for sample in self.samples]),
+                    samples=self.samples,
+                    removable_files=[report_metrics_file],
+                    report_files=[report_file]
+                )
+            ])
         )
+
         return jobs
 
     def homer_make_tag_directory(self):
@@ -1780,7 +1796,7 @@ sed -e 's@ihec_metrics_merged_table@{ihec_metrics_merged_table}@g' \\
         report_intro_file,
         os.path.join(report_yaml_dir, "Illumina.merge_trimmomatic_stats.yaml"),
         os.path.join(report_yaml_dir, "ChipSeq.sambamba_mark_duplicates.yaml"),
-        os.path.join(report_yaml_dir, "ChipSeq.sambamba_view_filter.yaml"),
+        os.path.join(report_yaml_dir, "ChipSeq.sambamba_filtering.yaml"),
         os.path.join(report_yaml_dir, "ChipSeq.metrics.yaml"),
         os.path.join(report_yaml_dir, "ChipSeq.qc_metrics.yaml"),
         os.path.join(report_yaml_dir, "ChipSeq.homer_make_ucsc_file.yaml"),
@@ -1875,7 +1891,7 @@ sed -ie 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' {report_file}"
                 self.sambamba_merge_bam_files,
                 # self.samtools_view_filter,
                 self.sambamba_mark_duplicates,
-                self.sambamba_view_filter,
+                self.sambamba_filtering,
                 # self.picard_mark_duplicates,
                 self.metrics,
                 self.homer_make_tag_directory,
@@ -1903,7 +1919,7 @@ sed -ie 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' {report_file}"
                 self.sambamba_merge_bam_files,
                 # self.samtools_view_filter,
                 self.sambamba_mark_duplicates,
-                self.sambamba_view_filter,
+                self.sambamba_filtering,
                 # self.picard_mark_duplicates,
                 self.metrics,
                 self.homer_make_tag_directory,
