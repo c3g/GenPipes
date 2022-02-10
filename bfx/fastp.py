@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -17,15 +17,9 @@
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-# Python Standard Modules
-import configparser
-import logging
-import os
-import re
-
 # MUGQIC Modules
 from core.config import config
-from core.job import Job, concat_jobs
+from core.job import Job
 
 def fastp_basic_qc(input1, input2, output_json_path, output_html_path=None, overrepresentation_analysis=True):
     if input2:
@@ -33,19 +27,21 @@ def fastp_basic_qc(input1, input2, output_json_path, output_html_path=None, over
     else:
         inputs = [input1]
 
-    num_threads = config.param('fastp', 'threads', required=False, type='posint')
-    output_files = filter(None, [output_json_path, output_html_path])
+    output_files = [output_json_path, output_html_path]
 
     return Job(
         inputs,
         output_files,
-        module_entries = [['fastp', 'module_fastp']],
-        command = "fastp {rds1} {rds2} {cpus} {json} {html}".format(
-            rds1 = "\\\n    --in1 "    + input1,
-            rds2 = "\\\n    --in2 "    + input2 if input2 else "",
-            orep = "\\\n    --overrepresentation_analysis" if overrepresentation_analysis else "",
-            cpus = "\\\n    --thread " + str(num_threads) if num_threads else "",
-            json = "\\\n    --json "   + output_json_path if output_json_path else "",
-            html = "\\\n    --html "   + output_html_path if output_html_path else "",
-            )
+        module_entries=[['fastp', 'module_fastp']],
+        command="""\\\
+fastp --in1 {rds1}{rds2}{orep} \\
+    --thread {cpus} \\
+    --json {json}{html}""".format(
+    rds1=input1,
+    rds2=" --in2 " + input2 if input2 else "",
+    orep=" --overrepresentation_analysis " if overrepresentation_analysis else "",
+    cpus=config.param('fastp', 'threads', required=False, type='posint'),
+    json=output_json_path,
+    html=" --html " + output_html_path if output_html_path else ""
+    )
         )
