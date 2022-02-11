@@ -733,6 +733,7 @@ for sample in ${{!samples_associative_array[@]}}
 do
   for mark_name in ${{samples_associative_array[$sample]}}
   do
+    bam_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.filtered.bam
     raw_flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.flagstat
     filtered_flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.filtered.flagstat
     raw_supplementarysecondary_reads=`bc <<< $(grep "secondary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
@@ -743,9 +744,17 @@ do
     filtered_dup_reads=`grep "duplicates" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* duplicates$//'`
     filtered_dup_rate=`echo "scale=4; 100*$filtered_dup_reads/$filtered_mapped_reads" | bc -l`
     filtered_dedup_reads=`echo "$filtered_mapped_reads-$filtered_dup_reads" | bc -l`
-    number_peaks=$(wc -l {chip_bed} | cut -f 1 -d " ")
-    reads_under_peaks=`sambamba view -F "not duplicate" -c -L {chip_bed} {bam_file}`
-    frip=`echo "scale=4; $reads_under_peaks/$filtered_dedup_reads" | bc -l`
+    if [[ "${{mark_name,,}}" != "input"  ]]
+      then
+        chip_bed=`ls -1 peak_call/$sample/$mark_name/$sample.${{mark_name}}_peaks.*Peak.bed`
+        number_peaks=$(wc -l $chip_bed | cut -f 1 -d " ")
+        reads_under_peaks=`sambamba view -F "not duplicate" -c -L $chip_bed $bam_file`
+        frip=`echo "scale=4; $reads_under_peaks/$filtered_dedup_reads" | bc -l`
+      else
+        number_peaks="NA"
+        reads_under_peaks="NA"
+        frip="NA"
+    fi
     if [[ -s {trim_metrics_file} ]]
       then
         raw_reads=$(grep -P "${{sample}}\\t${{mark_name}}" {trim_metrics_file} | cut -f 3)
@@ -760,7 +769,7 @@ do
         raw_trimmed_rate="NULL"
         filtered_rate=`echo "scale=4; 100*$filtered_reads/$raw_reads" | bc -l`
     fi
-    filtered_mito_reads=$(sambamba view -F "not duplicate" -c {bam_file} chrM)
+    filtered_mito_reads=$(sambamba view -F "not duplicate" -c $bam_file chrM)
     filtered_mito_rate=$(echo "scale=4; 100*$filtered_mito_reads/$filtered_mapped_reads" | bc -l)
     echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$mapped_reads\\t$mapped_reads_rate\\t$filtered_reads\\t$filtered_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate\\t$number_peaks\\t$frip" >> {metrics_file}
   done
@@ -771,8 +780,6 @@ cp {metrics_file} {report_metrics_file} && \\
 sed -e 's@report_metrics_file@{report_metrics_file}@g'\\
     {report_template_dir}/{basename_report_file} > {report_file}""".format(
         metrics_dir=metrics_output_directory,
-        chip_bed=chip_bed,
-        bam_file=bam_file,
         metrics_file=metrics_file,
         samples_associative_array=" ".join(samples_associative_array),
         alignment_dir=self.output_dirs['alignment_output_directory'],
