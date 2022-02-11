@@ -107,18 +107,6 @@ class Scheduler(object):
             raise ValueError('"{}" is not a valid entry for "cluster_cpu"'.format(cpu_str))
         return cpu
 
-    def gpu(self, job_name_prefix):
-        cpu_str = self.config.param(job_name_prefix, 'cluster_cpu', required=True)
-        try:
-            if "gpus" in cpu_str or '-g' in cpu_str:
-                # to be back compatible
-                gpu =  re.search("(gpus=|-g\s)([0-9]+)",cpu_str).groups()[1]
-            else:
-                gpu = re.search("[0-9]+", cpu_str).group()
-        except AttributeError:
-            raise ValueError('"{}" is not a valid entry for "cluster_cpu"'.format(cpu_str))
-        return gpu
-
     def node(self, job_name_prefix):
         # code run on 1 node by default
         node = 1
