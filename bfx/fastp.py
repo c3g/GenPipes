@@ -33,7 +33,7 @@ def fastp_basic_qc(input1, input2, output_json_path, output_html_path=None, over
         inputs,
         output_files,
         module_entries=[['fastp', 'module_fastp']],
-        command="""\\\
+        command="""\
 fastp --in1 {rds1}{rds2}{orep} \\
     --thread {cpus} \\
     --json {json}{html}""".format(

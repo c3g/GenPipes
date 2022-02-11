@@ -164,14 +164,13 @@ class ChipSeq(common.Illumina):
         """
         jobs = []
 
-        metrics_output_directory = self.output_dirs['metrics_output_directory']
-
         for readset in self.readsets:
-            output_json_path = os.path.join(metrics_output_directory, readset.sample.name, readset.mark_name, "fastp", readset.name + ".fastp.json")
-            output_html_path = os.path.join(metrics_output_directory, readset.sample.name, readset.mark_name, "fastp", readset.name + ".fastp.html")
+            fastp_metrics_output_directory = os.path.join(self.output_dirs['metrics_output_directory'], readset.sample.name, readset.mark_name, "fastp")
+            output_json_path = os.path.join(fastp_metrics_output_directory, readset.name + ".fastp.json")
+            output_html_path = os.path.join(fastp_metrics_output_directory, readset.name + ".fastp.html")
             jobs.append(
                 concat_jobs([
-                    bash.mkdir(os.path.join(metrics_output_directory, readset.sample.name, readset.mark_name)),
+                    bash.mkdir(fastp_metrics_output_directory),
                     fastp.fastp_basic_qc(
                         input1=readset.fastq1,
                         input2=readset.fastq2,
