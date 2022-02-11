@@ -2497,14 +2497,16 @@ class RunProcessing(common.MUGQICPipeline):
         # get the barcode names & sequences to add in the JSON flag file
         all_indexes = {}
         for readset in self.readsets[lane]:
-            for index in readset.indexes:
-                all_indexes[index['INDEX_NAME']] = index
+            for index_dict in readset.index:
+                all_indexes[readset.index_name] = index_dict
         with open(json_flag_file, 'r') as json_fh:
             json_flag_content = json.load(json_fh)
         if self.is_dual_index[lane]:
             json_flag_content['speciesBarcodes'] = dict([(index_name, index_dict['INDEX2']+index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
         else:
             json_flag_content['speciesBarcodes'] = dict([(index_name, index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
+        json_flag_content['barcodeStartPos'] = json_flag_content['TotalCycle'] - json_flag_content['barcodeLength'] + 1
+        json_flag_content['SpeciesMismatch'] = 1
         with open(json_flag_file, 'w') as out_json_fh:
             json.dump(json_flag_content, out_json_fh, indent=4)
 

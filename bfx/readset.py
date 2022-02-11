@@ -517,17 +517,13 @@ def parse_illumina_raw_readset_files(
                         break
                 else:
                     _raise(SanitycheckError("Could not get proper Read Cycles from " + bioinfo_file))
-                readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles))
+                readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles), "Illumina")
             else:
-                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder)
+                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder, "Illumina")
 
             aligner_reference_index = readset.aligner.get_reference_index(readset)
             annotation_files = readset.aligner.get_annotation_files()
-            reference_file = os.path.join(
-                current_genome_folder,
-                "genome",
-                folder_name + ".fa"
-            )
+            reference_file = readset.aligner.get_reference_file()
             if reference_file and os.path.isfile(reference_file):
                 if aligner_reference_index and (os.path.isfile(aligner_reference_index) or os.path.isdir(aligner_reference_index)):
                     readset._aligner_reference_index = aligner_reference_index
@@ -939,17 +935,13 @@ def parse_mgi_raw_readset_files(
                     nb_cycles = read2cycles
                 else:
                     nb_cycles = read1cycles
-                readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles))
+                readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(nb_cycles), "MGI")
             else:
-                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder)
+                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder, "MGI")
 
-            aligner_reference_index = readset.aligner.get_reference_index(readset)
+            aligner_reference_index = readset.aligner.get_reference_index()
             annotation_files = readset.aligner.get_annotation_files()
-            reference_file = os.path.join(
-                current_genome_folder,
-                "genome",
-                folder_name + ".fa"
-            )
+            reference_file = readset.aligner.get_reference_file()
             if reference_file and os.path.isfile(reference_file):
                 if aligner_reference_index and (os.path.isfile(aligner_reference_index) or os.path.isdir(aligner_reference_index)):
                     readset._aligner_reference_index = aligner_reference_index
