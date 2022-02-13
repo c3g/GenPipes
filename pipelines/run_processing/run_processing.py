@@ -2506,7 +2506,8 @@ class RunProcessing(common.MUGQICPipeline):
         else:
             json_flag_content['speciesBarcodes'] = dict([(index_name, index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
         json_flag_content['barcodeStartPos'] = json_flag_content['TotalCycle'] - json_flag_content['barcodeLength'] + 1
-        json_flag_content['SpeciesMismatch'] = 1
+        json_flag_content['SpeciesMismatch'] = self.number_of_mismatches()
+
         with open(json_flag_file, 'w') as out_json_fh:
             json.dump(json_flag_content, out_json_fh, indent=4)
 
