@@ -303,7 +303,8 @@ class RunProcessing(common.MUGQICPipeline):
                 json_flag_file = os.path.join(self.output_dir, "flag." + lane + ".json")
                 for filename in os.listdir(self.raw_flag_dir):
                     if re.match(self.run_id + "_" + lane + "_.+json", filename):
-                        shutil.copy(os.path.join(self.raw_flag_dir, filename), json_flag_file)
+                        if not os.path.exists(json_flag_file):
+                            shutil.copy(os.path.join(self.raw_flag_dir, filename), json_flag_file)
                         self._json_flag_files[lane] = json_flag_file
                         log.info("JSON FLAG file for lane " + lane + " : " + json_flag_file)
                         break
@@ -2506,7 +2507,7 @@ class RunProcessing(common.MUGQICPipeline):
         else:
             json_flag_content['speciesBarcodes'] = dict([(index_name, index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
         json_flag_content['barcodeStartPos'] = json_flag_content['TotalCycle'] - json_flag_content['barcodeLength'] + 1
-        json_flag_content['SpeciesMismatch'] = self.number_of_mismatches()
+        json_flag_content['SpeciesMismatch'] = self.number_of_mismatches
 
         with open(json_flag_file, 'w') as out_json_fh:
             json.dump(json_flag_content, out_json_fh, indent=4)
