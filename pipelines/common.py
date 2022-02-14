@@ -25,7 +25,6 @@ import logging
 import os
 import re
 import socket
-import string
 import sys
 import collections
 
@@ -40,16 +39,16 @@ from bfx.design import parse_design_file
 from bfx.readset import parse_illumina_readset_file
 from bfx.sample_tumor_pairs import *
 
-from bfx import metrics
+from bfx import bash_cmd as bash
 from bfx import bvatools
-from bfx import verify_bam_id
+from bfx import fastp
 from bfx import picard
+from bfx import rmarkdown
+from bfx import samtools
 from bfx import trimmomatic
 from bfx import variantBam
-from bfx import samtools
-from bfx import rmarkdown
-from bfx import jsonator
-from bfx import bash_cmd as bash
+from bfx import verify_bam_id
+
 
 log = logging.getLogger(__name__)
 
@@ -558,5 +557,34 @@ pandoc \\
             job.removable_files = input_bam
 
             jobs.append(job)
+
+        return jobs
+
+    def fastp(self):
+        """
+        For calculating metrics on fastq files. https://github.com/OpenGene/fastp
+        """
+
+        jobs = []
+
+        for readset in self.readsets:
+            fastp_metrics_output_directory = os.path.join("metrics", readset.sample.name, "fastp")
+            output_json_path = os.path.join(fastp_metrics_output_directory, readset.name + ".fastp.json")
+            output_html_path = os.path.join(fastp_metrics_output_directory, readset.name + ".fastp.html")
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(fastp_metrics_output_directory),
+                    fastp.fastp_basic_qc(
+                        input1=readset.fastq1,
+                        input2=readset.fastq2,
+                        output_json_path=output_json_path,
+                        output_html_path=output_html_path,
+                        overrepresentation_analysis=True
+                        ),
+                ],
+                name="fastp." + readset.name,
+                samples=[readset.sample]
+                )
+            )
 
         return jobs
