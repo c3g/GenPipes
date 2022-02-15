@@ -757,11 +757,11 @@ do
         frip="NA"
     fi
     crosscor_file={metrics_dir}/${{sample}}/${{mark_name}}/run_spp/${{sample}}.${{mark_name}}.crosscor
-    nsc=$(grep $crosscor_file | cut -f 9)
+    nsc=$(cut -f 9 $crosscor_file)
     nsc=`echo "scale=2; $nsc_chip/1" | bc -l`
-    rsc=$(grep $crosscor_file | cut -f 10)
+    rsc=$(cut -f 10 $crosscor_file)
     rsc=`echo "scale=2; $rsc_chip/1" | bc -l`
-    quality_num=$(grep $crosscor_file | cut -f 11)
+    quality_num=$(cut -f 11 $crosscor_file)
     if [[ "$quality_num" == "-2" ]]
       then
         quality=veryLow
