@@ -758,9 +758,9 @@ do
     fi
     crosscor_file={metrics_dir}/${{sample}}/${{mark_name}}/run_spp/${{sample}}.${{mark_name}}.crosscor
     nsc=$(cut -f 9 $crosscor_file)
-    nsc=`echo "scale=2; $nsc_chip/1" | bc -l`
+    nsc=`echo "scale=2; $nsc/1" | bc -l`
     rsc=$(cut -f 10 $crosscor_file)
-    rsc=`echo "scale=2; $rsc_chip/1" | bc -l`
+    rsc=`echo "scale=2; $rsc/1" | bc -l`
     quality_num=$(cut -f 11 $crosscor_file)
     if [[ "$quality_num" == "-2" ]]
       then
