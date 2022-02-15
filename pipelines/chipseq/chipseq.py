@@ -1615,7 +1615,7 @@ Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -t
 
         jobs.append(
             Job(
-                [os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".crosscor") for sample in self.samples for mark_name, mark_type in sample.marks.items()],
+                [os.path.join(metrics_output_directory, sample.name, mark_name, "run_spp", sample.name + "." + mark_name + ".crosscor") for sample in self.samples for mark_name, mark_type in sample.marks.items()],
                 [os.path.join(metrics_output_directory, "Sample.crosscor")],
                 [],
                 command="""\
