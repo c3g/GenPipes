@@ -660,7 +660,8 @@ sed -e 's@min_mapq@{min_mapq}@g' \\
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 raw_bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.bam")
                 bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
-                chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
+                run_spp_file = os.path.join(metrics_output_directory, sample.name, mark_name, "run_spp", sample.name + "." + mark_name + ".crosscor")
+                # chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
 
                 jobs.append(
                     concat_jobs([
@@ -705,7 +706,8 @@ sed -e 's@min_mapq@{min_mapq}@g' \\
                     (
                         os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(raw_bam_file))),
                         os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(bam_file))),
-                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam"),
+                        run_spp_file
                         )
                     )
 
@@ -754,6 +756,28 @@ do
         reads_under_peaks="NA"
         frip="NA"
     fi
+    crosscor_file={metrics_dir}/${{sample}}/${{mark_name}}/run_spp/${{sample}}.${{mark_name}}.crosscor
+    nsc=$(grep $crosscor_file | cut -f 9)
+    nsc=`echo "scale=2; $nsc_chip/1" | bc -l`
+    rsc=$(grep $crosscor_file | cut -f 10)
+    rsc=`echo "scale=2; $rsc_chip/1" | bc -l`
+    quality_num=$(grep $crosscor_file | cut -f 11)
+    if [[ "$quality_num" == "-2" ]]
+      then
+        quality=veryLow
+    elif [[ "$quality_num" == "-1" ]]
+      then
+        quality=Low
+    elif [[ "$quality_num" == "0" ]]
+      then
+        quality=Medium
+    elif [[ "$quality_num" == "1" ]]
+      then
+        quality=High
+    elif [[ "$quality_num" == "2" ]]
+      then
+        quality=veryHigh
+    fi
     if [[ -s {trim_metrics_file} ]]
       then
         raw_reads=$(grep -P "${{sample}}\\t${{mark_name}}" {trim_metrics_file} | cut -f 3)
@@ -770,10 +794,10 @@ do
     fi
     filtered_mito_reads=$(sambamba view -F "not duplicate" -c $bam_file chrM)
     filtered_mito_rate=$(echo "scale=4; 100*$filtered_mito_reads/$filtered_mapped_reads" | bc -l)
-    echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$mapped_reads\\t$mapped_reads_rate\\t$filtered_reads\\t$filtered_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate\\t$number_peaks\\t$frip" >> {metrics_file}
+    echo -e "$sample\\t$mark_name\\t$raw_reads\\t$raw_trimmed_reads\\t$raw_trimmed_rate\\t$mapped_reads\\t$mapped_reads_rate\\t$filtered_reads\\t$filtered_rate\\t$filtered_dup_reads\\t$filtered_dup_rate\\t$filtered_dedup_reads\\t$filtered_mito_reads\\t$filtered_mito_rate\\t$number_peaks\\t$frip\\t$nsc\\t$rsc\\t$quality" >> {metrics_file}
   done
 done && \\
-sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tRemaining Reads after Trimming #\\tRemaining Reads after Trimming %\\tAligned Trimmed Reads #\\tAligned Trimmed Reads %\\tRemaining Reads after Filtering #\\tRemaining Reads after Filtering %\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads # without Duplicates\\tMitochondrial Reads #\\tMitochondrial Reads %\\tPeaks #\\tFRiP" {metrics_file} && \\
+sed -i -e "1 i\\Sample\\tMark Name\\tRaw Reads #\\tRemaining Reads after Trimming #\\tRemaining Reads after Trimming %\\tAligned Trimmed Reads #\\tAligned Trimmed Reads %\\tRemaining Reads after Filtering #\\tRemaining Reads after Filtering %\\tDuplicate Reads #\\tDuplicate Reads %\\tFinal Aligned Reads # without Duplicates\\tMitochondrial Reads #\\tMitochondrial Reads %\\tPeaks #\\tFRiP\\tNSC\\tRSC\\tQuality" {metrics_file} && \\
 mkdir -p {report_yaml_dir} && \\
 cp {metrics_file} {report_metrics_file} && \\
 sed -e 's@report_metrics_file@{report_metrics_file}@g'\\
@@ -1553,15 +1577,17 @@ done""".format(
 
     def run_spp(self):
         """
-        runs spp to estimate NSC and RSC ENCODE metrics. For more information: https://github.com/kundajelab/phantompeakqualtools
+        runs spp to estimate NSC and RSC ENCODE metrics. For more information: https://github.com/crazyhottommy/phantompeakqualtools
         """
         jobs = []
+
+        metrics_output_directory = self.output_dirs['metrics_output_directory']
 
         for sample in self.samples:
             for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 sample_merge_mdup_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
-                output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, mark_name)
+                output_dir = os.path.join(metrics_output_directory, sample.name, mark_name, "run_spp")
                 output = os.path.join(output_dir, sample.name + "." + mark_name + ".crosscor")
 
                 jobs.append(
@@ -1589,17 +1615,18 @@ Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -t
 
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".crosscor") for sample in self.samples for mark_name, mark_type in sample.marks.items()],
-                [os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, sample.name + ".crosscor") for sample in self.samples],
+                [os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".crosscor") for sample in self.samples for mark_name, mark_type in sample.marks.items()],
+                [os.path.join(metrics_output_directory, "Sample.crosscor")],
                 [],
                 command="""\
 declare -A samples_associative_array=({samples_associative_array}) && \\
 for sample in ${{!samples_associative_array[@]}}
 do
-  echo -e "Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag)" > ihec_metrics/${{sample}}/${{sample}}.crosscor
+  echo -e "Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag" > metrics/Sample.crosscor
   for mark_name in ${{samples_associative_array[$sample]}}
   do
-    cat ihec_metrics/${{sample}}/${{mark_name}}/${{sample}}.${{mark_name}}.crosscor >> ihec_metrics/${{sample}}/${{sample}}.crosscor
+    crosscor_file=metrics/${{sample}}/${{mark_name}}/run_spp/${{sample}}.${{mark_name}}.crosscor
+    cat $crosscor_file >> metrics/Sample.crosscor
   done
 done""".format(
     samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples])
@@ -1900,6 +1927,7 @@ sed -ie 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' {report_file}"
                 self.sambamba_mark_duplicates,
                 self.sambamba_filtering,
                 # self.picard_mark_duplicates,
+                self.run_spp,
                 self.metrics,
                 self.homer_make_tag_directory,
                 self.qc_metrics,
@@ -1909,9 +1937,8 @@ sed -ie 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' {report_file}"
                 self.homer_find_motifs_genome,
                 self.annotation_graphs,
                 # self.ihec_preprocess_files,
-                self.run_spp,
                 self.differential_binding,
-                self.ihec_metrics,
+                # self.ihec_metrics,
                 self.multiqc_report,
                 self.cram_output],
             [
@@ -1928,6 +1955,7 @@ sed -ie 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' {report_file}"
                 self.sambamba_mark_duplicates,
                 self.sambamba_filtering,
                 # self.picard_mark_duplicates,
+                self.run_spp,
                 self.metrics,
                 self.homer_make_tag_directory,
                 self.qc_metrics,
@@ -1937,9 +1965,8 @@ sed -ie 's@\$VERSION\$@{genpipes_version}@g; s@\$DATE\$@{date}@g' {report_file}"
                 self.homer_find_motifs_genome,
                 self.annotation_graphs,
                 # self.ihec_preprocess_files,
-                self.run_spp,
                 self.differential_binding,
-                self.ihec_metrics,
+                # self.ihec_metrics,
                 self.multiqc_report,
                 self.cram_output]
         ]
