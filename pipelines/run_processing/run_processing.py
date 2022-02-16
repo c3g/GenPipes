@@ -1796,7 +1796,6 @@ class RunProcessing(common.MUGQICPipeline):
             for step in self.step_list:
                 report_step_jobs = []
                 if step.name in self.report_inputs[lane].keys() and self.report_inputs[lane][step.name]:
-                   pipeline = self.args.type if hasattr(self.args, 'type') else 'illumina'
                    if type(self.report_inputs[lane][step.name]) is str:
                        report_step_jobs.append(
                            concat_jobs(
@@ -1804,7 +1803,7 @@ class RunProcessing(common.MUGQICPipeline):
                                    tools.run_processing_metrics_to_json(
                                        self.run_validation_report_json[lane],
                                        step.name,
-                                       pipeline,
+                                       self.args.type,
                                        self.report_inputs[lane][step.name]
                                    ),
                                    bash.touch(os.path.join(self.job_output_dir, "checkpoint", step.name + "." + self.run_id + "." + lane + ".reportUpdated"))
@@ -1821,7 +1820,7 @@ class RunProcessing(common.MUGQICPipeline):
                                        tools.run_processing_metrics_to_json(
                                            self.run_validation_report_json[lane],
                                            step.name,
-                                           pipeline,
+                                           self.args.type,
                                            self.report_inputs[lane][step.name][readset.name],
                                            readset.name
                                        ),
