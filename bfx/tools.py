@@ -279,7 +279,7 @@ python $PYTHON_TOOLS/runProcessingIndexValidation.py \\
 def run_processing_metrics_to_json(
     json_file,
     step,
-    seq_type,
+    platform,
     metrics_files,
     readset=None
     ):
@@ -298,12 +298,12 @@ def run_processing_metrics_to_json(
 python $PYTHON_TOOLS/runProcessingMetricsToJson.py \\
   -j {json} \\
   -s {step} \\
-  -t {seq_type} \\
+  -p {platform} \\
   {inputs} \\
   {readset}""".format(
             json=json_file,
             step=step,
-            seq_type=seq_type,
+            platform=platform,
             inputs="-i " + " -i ".join(metrics_files),
             readset="-r " + readset if readset else ""
         )
