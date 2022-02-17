@@ -1,16 +1,20 @@
-33 tags, 9104 commits
+33 tags, 9107 commits
 
-HEAD        Thu Feb 17 10:32:35 2022 -0500        0 commits
+HEAD        Thu Feb 17 12:37:24 2022 -0500        0 commits
 
-4.1.2        Thu Feb 17 15:46:31 2022 +0000        12 commits
+4.1.2        Thu Feb 17 17:40:12 2022 +0000        17 commits
 
-  Edouard Henrion <edouard.henrion@mcgill.ca>      2 commits
+  Edouard Henrion <edouard.henrion@mcgill.ca>      4 commits
 
+       7997ec5 Merge remote-tracking branch 'origin/dev' into release_4.1.2
+       c83a283 Version bump to 4.1.2
        dd9f185 Updating pipeline READMEs before release
        4bcda97 Version bump to 4.1.1
 
-  ehenrion <edouard.henrion@mcgill.ca>      3 commits
+  ehenrion <edouard.henrion@mcgill.ca>      5 commits
 
+       e5a64db Merged in release_4.1.2 (pull request #313)
+       99b40bf Merged in release_4.1.2 (pull request #312)
        dc6f51e Merged in release_4.1.2 (pull request #311)
        7dd399f GenPipes - Scheduler : Correcting cluster_cpu parsing for PBS
        7a2aa6d Merged in release_4.1.1 (pull request #306)
@@ -24,8 +28,9 @@ HEAD        Thu Feb 17 10:32:35 2022 -0500        0 commits
 
        4d43f87 Merged in patch_4.1.2 (pull request #309)
 
-  P-O Quirion <pierre-olivier.quirion@computationalgenomics.ca>      4 commits
+  P-O Quirion <pierre-olivier.quirion@computationalgenomics.ca>      5 commits
 
+       9895146 remove cluster_submit_cmd from slurm and pbs ini
        df8c9ba fix hic ini
        f45fdba remode empty quotes
        a955e74 cleanup queue
