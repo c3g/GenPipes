@@ -1,6 +1,35 @@
-32 tags, 9092 commits
+33 tags, 9104 commits
 
-HEAD        Thu Feb 10 10:10:45 2022 -0500        0 commits
+HEAD        Thu Feb 17 10:32:35 2022 -0500        0 commits
+
+4.1.2        Thu Feb 17 15:46:31 2022 +0000        12 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      2 commits
+
+       dd9f185 Updating pipeline READMEs before release
+       4bcda97 Version bump to 4.1.1
+
+  ehenrion <edouard.henrion@mcgill.ca>      3 commits
+
+       dc6f51e Merged in release_4.1.2 (pull request #311)
+       7dd399f GenPipes - Scheduler : Correcting cluster_cpu parsing for PBS
+       7a2aa6d Merged in release_4.1.1 (pull request #306)
+
+  José Héctor Gálvez López <jose.hector.galvez@computationalgenomics.ca>      2 commits
+
+       c07382b Merged in ont_covseq_report_ini (pull request #308)
+       46e25d1 Adjustment to the `prepare_report` step resources in the base ini file, to try to prevent this job getting stuck in the queue.
+
+  Pierre-Olivier Quirion <pierre-olivier.quirion@computationalgenomics.ca>      1 commits
+
+       4d43f87 Merged in patch_4.1.2 (pull request #309)
+
+  P-O Quirion <pierre-olivier.quirion@computationalgenomics.ca>      4 commits
+
+       df8c9ba fix hic ini
+       f45fdba remode empty quotes
+       a955e74 cleanup queue
+       4417552 PBS gets nodes and ppn together
 
 4.1.1        Thu Feb 10 15:12:29 2022 +0000        17 commits
 
