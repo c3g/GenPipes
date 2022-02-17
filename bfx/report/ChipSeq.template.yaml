@@ -10,9 +10,9 @@
 ---
 title: "C3G Analysis Report"
 subtitle: "ChIP-Seq analysis using chipseq GenPipes pipeline $VERSION$"
-# intro_text: "This document contains the description of the current GenPipes ChIP-Seq analysis.
-# The information presented here reflects the current state of the analysis as of $DATE$.
-# The different sections are a combination of default MultiQC modules and custom modules."
+intro_text: "This document contains the description of the current GenPipes ChIP-Seq analysis.
+The information presented here reflects the current state of the analysis as of $DATE$.
+The different sections are a combination of default MultiQC modules and custom modules."
 report_comment: null
 
 # Setting decimal and thousand display seperators
@@ -43,14 +43,14 @@ report_header_info:
 # Set the module order here. To set the description or name for the section or the parent
 # you must place in under within the module order or section order part. ../graphs/GM12878_chr19.Input_QC_Metrics.png
 module_order:
-  - c3g_content_renderer:
-      id: introduction
+  # - c3g_content_renderer:
+  #     id: introduction
   - fastp
   - trimming
-  - c3g_content_renderer:
-      id: mark_dup
-  - c3g_content_renderer:
-      id: view_filter
+  # - c3g_content_renderer:
+  #     id: mark_dup
+  # - c3g_content_renderer:
+  #     id: view_filter
   # - picard:
   #     info: "is a set of Java command line tools for manipulating high-throughput sequencing data. The following metrics are calculated on filtered bams files according to thresholds detailed in the previous section so alignments metrics might display very high rates."
   - c3g_table_renderer:
@@ -73,8 +73,8 @@ module_order:
       id: peak_stats_narrow
   - c3g_content_renderer:
       id: peak_location_stats
-  - c3g_table_renderer:
-      id: ihec_metrics
+  # - c3g_table_renderer:
+  #     id: ihec_metrics
   # - references
 
 show_analysis_paths: False
@@ -92,6 +92,9 @@ working_dir: 'report'
 exclude_modules:
   - samtools
   - picard
+
+remove_sections:
+  - fastp-duprates
 
 # table_color_scale: 'BuGn'
 

@@ -1770,7 +1770,9 @@ sed -e 's@ihec_metrics_merged_table@{ihec_metrics_merged_table}@g' \\
             trim_directory = os.path.join("trim", readset.sample.name, readset.mark_name)
             trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
             trim_log = trim_file_prefix + "log"
-            input_files.append(trim_log)
+            fastp_metrics_directory = os.path.join(metrics_output_directory, readset.sample.name, readset.mark_name, "fastp")
+            fastp_json = os.path.join(fastp_metrics_directory, readset.name + ".fastp.json")
+            input_files.extend([trim_log, fastp_json])
         for sample in self.samples:
             for mark_name in sample.marks:
                 picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.all.metrics.")
@@ -1804,8 +1806,8 @@ sed -e 's@ihec_metrics_merged_table@{ihec_metrics_merged_table}@g' \\
                     os.path.join(homer_prefix, "tagInfo.txt")
                 ]
                 input_files.extend(homer_files)
-        ihec_metrics = os.path.join(self.output_dirs['report_output_directory'], "IHEC_chipseq_metrics_AllSamples.tsv")
-        input_files.append(ihec_metrics)
+        # ihec_metrics = os.path.join(self.output_dirs['report_output_directory'], "IHEC_chipseq_metrics_AllSamples.tsv")
+        # input_files.append(ihec_metrics)
         report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "SampleMetrics.tsv")
         input_files.append(report_metrics_file)
         merged_peak_stats = os.path.join(self.output_dirs['report_output_directory'], self.output_dirs['anno_output_directory'], "peak_stats_AllSamples.csv")
@@ -1838,7 +1840,6 @@ sed -e 's@ihec_metrics_merged_table@{ihec_metrics_merged_table}@g' \\
         os.path.join(report_yaml_dir, "ChipSeq.homer_annotate_peaks.yaml"),
         os.path.join(report_yaml_dir, "ChipSeq.homer_find_motifs_genome.yaml"),
         os.path.join(report_yaml_dir, "ChipSeq.annotation_graphs.yaml"),
-        os.path.join(report_yaml_dir, "ChipSeq.ihec_metrics.yaml"),
         report_references_file,
         report_file
         ]
