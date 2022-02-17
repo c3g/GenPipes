@@ -57,6 +57,7 @@ class Scheduler(object):
         self._host_cvmfs_cache = None
         self._cvmfs_cache = None
         self._bind = None
+        self._submit_cmd = None
         if genpipes_file is None:
             self.genpipes_file = sys.stdout
         else:
@@ -65,6 +66,10 @@ class Scheduler(object):
                 # make sure it is user and group executable
                 st = os.stat(genpipes_file.name)
                 os.chmod(genpipes_file.name, st.st_mode | stat.S_IEXEC | stat.S_IXGRP)
+
+    @property
+    def submit_cmd(self):
+        return self._submit_cmd
 
     def walltime(self, job_name_prefix):
         raise NotImplementedError
@@ -311,6 +316,7 @@ class PBSScheduler(Scheduler):
         self.name = 'PBS/TORQUE'
         # should be fed in the arguments but hey lets do that first.
         self.config = config
+        self._submit_cmd = 'qsub'
 
 
     def walltime(self, job_name_prefix):
@@ -400,7 +406,7 @@ exit \$MUGQIC_STATE" | \\
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
                     job_name_prefix = job.name.split(".")[0]
                     cmd += \
-                        config.param(job_name_prefix, 'cluster_submit_cmd') + " " + \
+                        self.submit_cmd + " " + \
                         config.param(job_name_prefix, 'cluster_other_arg') + " " + \
                         config.param(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
                         config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
@@ -409,7 +415,6 @@ exit \$MUGQIC_STATE" | \\
                         self.memory(job_name_prefix) + " " + \
                         self.cpu(job_name_prefix) + " " + \
                         config.param(job_name_prefix, 'cluster_queue') + " "
-                        # config.param(job_name_prefix, 'cluster_cpu')
 
                     if job.dependency_jobs:
                         cmd += " " + config.param(job_name_prefix, 'cluster_dependency_arg') + "$JOB_DEPENDENCIES"
@@ -486,6 +491,7 @@ class SlurmScheduler(Scheduler):
         super(SlurmScheduler, self).__init__(*args, **kwargs)
         self.name = 'SLURM'
         self.config = config
+        self._submit_cmd = 'sbatch'
 
     def walltime(self, job_name_prefix):
         walltime = self.config.param(job_name_prefix, 'cluster_walltime')
@@ -587,7 +593,7 @@ exit \$MUGQIC_STATE" | \\
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
                     job_name_prefix = job.name.split(".")[0]
                     cmd += \
-                        config.param(job_name_prefix, 'cluster_submit_cmd') + " " + \
+                        self.submit_cmd + " " + \
                         config.param(job_name_prefix, 'cluster_other_arg') + " " + \
                         config.param(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
                         config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \

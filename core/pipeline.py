@@ -45,6 +45,7 @@ from bfx import jsonator
 log = logging.getLogger(__name__)
 
 class Pipeline(object):
+
     def __init__(self):
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self._args = self.argparser.parse_args()
