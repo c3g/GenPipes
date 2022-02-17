@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=genpipes
-VERSION=4.1.1
+VERSION=4.1.2
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://bitbucket.org/mugqic/genpipes/downloads/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION

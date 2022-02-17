@@ -82,7 +82,7 @@ usage: rnaseq_denovo_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                  [-t {trinity,seq2fun}] [-d DESIGN]
                                  [-r READSETS] [-v]
 
-Version: 4.1.1
+Version: 4.1.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
