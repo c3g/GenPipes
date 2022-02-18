@@ -572,7 +572,19 @@ class RunProcessing(common.MUGQICPipeline):
                     "seqtype" : self.seqtype,
                     "sequencing_method" : "PAIRED_END" if self.is_paired_end[lane] else "SINGLE_END",
                     "steps" : [],
-                    "barcodes" : {}
+                    "readsets" : dict([
+                        (
+                            readset.name,
+                            {
+                                "sample_name": readset.sample.name,
+                                "barcodes": readset.indexes,
+                                "fastq_1": readset.fastq1,
+                                "fastq_2": readset.fastq2 if self.is_paired_end[lane] else None,
+                                "bam": readset.bam + ".bam" if readset.bam else None,
+                                "bai": readset.bam + ".bai" if readset.bam else None
+                            }
+                        ) for readset in self.readsets[lane]
+                    ])
                 }
         return self._report_hash
 
@@ -611,9 +623,10 @@ class RunProcessing(common.MUGQICPipeline):
 
     def basecall(self):
         """  
-        Use write_fastq software from MGI to perfor the base calling.
+        Use write_fastq software from MGI to perform the base calling.
         Takes the raw .cal files from the sequencer and produces fastq files.
-        Demultiplexing while doing the basecalling is still under testings...
+        Demultiplexing with MGI splitBarcode while doing the basecalling can
+        be perform if requested with --splitbarcode-demux
         """
 
         jobs = [] 
@@ -829,6 +842,7 @@ class RunProcessing(common.MUGQICPipeline):
     def fastq(self):
         """
         For Illumina
+
             Launch fastq generation from Illumina raw data using BCL2FASTQ conversion
             software.
 
@@ -843,11 +857,13 @@ class RunProcessing(common.MUGQICPipeline):
             fastq generation with the calculated mask.
 
         For MGI-G400
+
             First copy all the files of the lane from the sequencer deposit folder
             to the processing folder, into "raw_fastq".
             Then, perform demultplexing of the reads with fgbio DemuxFastqs
 
         For MGI-T7
+
             Perform demultiplexing of the reads with fgbio DemuxFastqs
             (skipped with --splitbarcode-demux)
         """
@@ -1769,7 +1785,8 @@ class RunProcessing(common.MUGQICPipeline):
 
     def report(self):
         """
-        Generate a JSON file reporting the whole pipeline
+        Generate a JSON file reporting the whole pipeline.
+        The jobs of this step actually update the JSON report as the pipeline is running
         """
         jobs = []
 
@@ -1777,12 +1794,6 @@ class RunProcessing(common.MUGQICPipeline):
             lane_jobs = []
 
             report_dir = os.path.join(self.output_dir, "report")
-            sample_report_dir  = os.path.join(report_dir, "sample_json")
-
-            run_validation_inputs = []
-
-            # Add barcodes info to the report_hash
-            self.report_hash[lane]["barcodes"] = dict([(readset.name, readset.indexes) for readset in self.readsets[lane]])
 
             self.generate_lane_json_report_file(lane)
 
@@ -1863,7 +1874,7 @@ class RunProcessing(common.MUGQICPipeline):
 
     def copy(self):
         """
-        Copy the whole processing foler to where they can be serve or loaded into a LIMS
+        Copy the whole processing folder to where they can be serve or loaded into a LIMS
         """
         jobs_to_concat = []
 
@@ -1994,7 +2005,7 @@ class RunProcessing(common.MUGQICPipeline):
 
     def final_notification(self):
         """
-        Writes a simple '.done' file when all pipeline is done processing
+        Writes a simple '.done' file when the whole pipeline is over
         """
         jobs = []
 
