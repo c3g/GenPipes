@@ -23,7 +23,7 @@
 from core.config import *
 from core.job import *
 
-def callpeak (options, genome_size, treatment_files, control_files, output_prefix_name, output, other_options="", ini_section='macs2_callpeak'):
+def callpeak (options, genome_size, treatment_files, control_files, output_prefix_name, output, ini_section='macs2_callpeak'):
 
     return Job(
             treatment_files + control_files,
@@ -41,7 +41,7 @@ macs2 callpeak {options} {other_options} \\
   --name {output_prefix_name} \\
   >& {output_prefix_name}.diag.macs.out""".format(
                 options=options,
-                other_options=other_options,
+                other_options=config.param(ini_section, 'other_options'),
                 tmp_dir=config.param(ini_section, "tmp_dir"),
                 genome_size=genome_size,
                 treatment_files=" \\\n  ".join(treatment_files),

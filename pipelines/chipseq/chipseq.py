@@ -1290,18 +1290,18 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                     output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
 
                     if mark_type == "B":  # Broad region
-                        other_options = "--broad --nomodel"
+                        options += " --broad --nomodel"
                     else:  # Narrow region
                         if input_file:
-                            other_options = "--nomodel"
+                            options += " --nomodel"
                         else:
-                            other_options = "--fix-bimodal"
+                            options += " --fix-bimodal"
 
-                    other_options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param(
+                    options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param(
                         'macs2_callpeak', 'shift') else ""
-                    other_options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param(
+                    options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param(
                         'macs2_callpeak', 'extsize') else ""
-                    other_options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param(
+                    options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param(
                         'macs2_callpeak', 'pvalue') else ""
                     output = []
                     output.append(os.path.join(output_dir,
@@ -1325,8 +1325,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                                 mark_file,
                                 input_file,
                                 output_prefix_name,
-                                output,
-                                other_options
+                                output
                             )
                         ],
                             name="macs2_callpeak." + sample.name + "." + mark_name,
@@ -1453,12 +1452,12 @@ done""".format(
                     output.append(os.path.join(output_dir,
                                  sample.name + "." + mark_name + "_peaks.xls"))
                     # other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
-                    other_options = "--nomodel --call-summits"
-                    other_options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param(
+                    options + = " --nomodel --call-summits"
+                    options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param(
                         'macs2_callpeak', 'shift') else " --shift -75 "
-                    other_options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param(
+                    options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param(
                         'macs2_callpeak', 'extsize') else " --extsize 150 "
-                    other_options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param(
+                    options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param(
                         'macs2_callpeak', 'pvalue') else " -p 0.01 "
 
                     jobs.append(
@@ -1470,8 +1469,7 @@ done""".format(
                                 mark_file,
                                 input_file,
                                 output_prefix_name,
-                                output,
-                                other_options
+                                output
                             )
                         ],
                             name="macs2_callpeak." + sample.name + "." + mark_name,
