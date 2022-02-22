@@ -564,7 +564,7 @@ class RunProcessing(common.MUGQICPipeline):
             self._report_hash = {}
             for lane in self.lanes:
                 self._report_hash[lane] = {
-                    "version" : "1.0",
+                    "version" : "2.0",
                     "run" : self.run_id,
                     "instrument" : self.instrument,
                     "flowcell" : self.flowcell_id,
@@ -653,7 +653,9 @@ class RunProcessing(common.MUGQICPipeline):
                         os.path.join(basecall_dir, self.run_id, "L0" + lane),    
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
-                        os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv")
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv"),
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, "SequenceStat.txt"),
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, "BarcodeStat.txt")
                     ]
                 )
 
@@ -679,7 +681,7 @@ class RunProcessing(common.MUGQICPipeline):
                 if postprocessing_jobs:
                     jobs_to_throttle.extend(postprocessing_jobs)
 
-                self.report_inputs[lane]['basecall'] = os.path.join(basecall_dir, self.run_id, "L0" + lane)
+                self.report_inputs[lane]['basecall'] = os.path.join(basecall_dir, self.run_id, "L0" + lane, "SequenceStat.txt")
 
             else:
                 basecall_outputs = [
