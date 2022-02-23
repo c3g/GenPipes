@@ -1151,6 +1151,7 @@ class RunProcessing(common.MUGQICPipeline):
                                     ),
                                     bash.touch(copy_done_file)
                                 ],
+                                input_dependency=[os.path.join(self.run_dir, "L0" + lane, ".")],
                                 output_dependency=copy_job_output_dependency + [re.sub(os.path.dirname(self.bioinfo_files[lane]), raw_fastq_dir, self.bioinfo_files[lane]), copy_done_file],
                                 name=ini_section + ".copy_raw." + self.run_id + "." + lane,
                                 samples=self.samples[lane]
@@ -1167,7 +1168,6 @@ class RunProcessing(common.MUGQICPipeline):
 
                         self.add_to_report_hash("index", lane, lane_jobs)
                         self.add_copy_job_inputs(lane_jobs, lane)
-                        jobs.extend(lane_jobs)
 
                     jobs_to_throttle = []
 
