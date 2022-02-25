@@ -1850,10 +1850,10 @@ class RunProcessing(common.MUGQICPipeline):
 
                 # checkpoint file
                 step_checkpoint_file = os.path.join(self.job_output_dir, "checkpoint", step.name + "." + self.run_id + "." + lane + ".done")
-                if report_step_jobs:
-                    step_checkpoint_job_dependencies = [output for job in report_step_jobs for output in job.output_files]
-                else:
-                    step_checkpoint_job_dependencies = [output for job in step.jobs for output in job.output_files]
+#                if report_step_jobs:
+#                    step_checkpoint_job_dependencies = [output for job in report_step_jobs for output in job.output_files]
+#                else:
+                step_checkpoint_job_dependencies = [output for job in step.jobs for output in job.output_files]
                 if step_checkpoint_job_dependencies:
                     lane_jobs.append(
                         concat_jobs(
