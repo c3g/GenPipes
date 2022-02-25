@@ -646,7 +646,7 @@ class RunProcessing(common.MUGQICPipeline):
             if self.args.splitbarcode_demux:
                 # Add the barcodes in the JSON flag file
                 self.edit_mgi_t7_flag_file(lane)
-                
+
                 basecall_outputs, postprocessing_jobs = self.generate_basecall_outputs(lane)
                 basecall_outputs.extend(
                     [

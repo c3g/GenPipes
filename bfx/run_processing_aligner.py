@@ -37,6 +37,9 @@ from bfx import cellranger
 from bfx import tools
 from bfx import bash_cmd as bash
 
+import logging
+log = logging.getLogger(__name__)
+
 class RunProcessingAligner(object):
     def __init__(self, output_dir, genome_folder, platform):
         self._output_dir = output_dir
@@ -95,9 +98,13 @@ class RunProcessingAligner(object):
         if type == "RNA":
             if len(readset.annotation_files) > 3 and os.path.isfile(readset.annotation_files[3]):
                 known_variants_annotated = readset.annotation_files[3]
+            else:
+                return jobs
         else:
             if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
                 known_variants_annotated = readset.annotation_files[0]
+            else:
+                return jobs
 
         known_variants_annotated_filtered = known_variants_annotated
 
@@ -349,7 +356,7 @@ class RNARunProcessingAligner(RunProcessingAligner):
     def get_metrics_jobs(self, readset):
         jobs = []
         jobs += self.verify_bam_id(readset, "RNA") + self._rnaseqc(readset) + self._picard_rna_metrics(readset) + \
-                self._estimate_ribosomal_rna(readset)
+                self._estimate_ribosomal_rna(readset, self.platform)
         return jobs
 
     @staticmethod
@@ -435,7 +442,7 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
         return jobs
 
     @staticmethod
-    def _estimate_ribosomal_rna(readset):
+    def _estimate_ribosomal_rna(readset, platform):
         """
         Use bwa mem to align reads on the rRNA reference fasta and count the number of read mapped
         The filtered reads are aligned to a reference fasta file of ribosomal sequence. The alignment is done per
@@ -456,7 +463,7 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
                     bwa.mem(
                         "/dev/stdin",
                         None,
-                        read_group=RunProcessingAligner.get_rg_tag(readset, self.platform, 'bwa_mem_rRNA'),
+                        read_group=RunProcessingAligner.get_rg_tag(readset, platform, 'bwa_mem_rRNA'),
                         ref=readset.annotation_files[1],
                         ini_section='bwa_mem_rRNA'
                     ),
@@ -483,8 +490,8 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
         return jobs
 
 class StarRunProcessingAligner(RNARunProcessingAligner):
-    def __init__(self, output_dir, genome_folder, nb_cycles):
-        super(StarRunProcessingAligner, self).__init__(output_dir, genome_folder)
+    def __init__(self, output_dir, genome_folder, nb_cycles, platform):
+        super(StarRunProcessingAligner, self).__init__(output_dir, genome_folder, platform)
         self._nb_cycles = nb_cycles
 
     @property
