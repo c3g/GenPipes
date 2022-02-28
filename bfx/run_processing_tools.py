@@ -169,6 +169,51 @@ java -Djava.io.tmpdir={tmp_dir} \\
         removable_files=[os.path.dirname(metrics_file)]
     )
 
+def demux_fastqs_single_end(
+    sample_sheet,
+    mismatches,
+    mask,
+    outputs,
+    metrics_file,
+    R1_fastq,
+    ini_section='fastq'
+    ):
+
+    return Job(
+        [ R1_fastq ],
+        outputs + [metrics_file],
+        [
+            [ini_section, 'module_java'],
+            [ini_section, 'module_fgbio']
+        ],
+        command="""\
+java -Djava.io.tmpdir={tmp_dir} \\
+  {java_other_options} \\
+  -Xmx{ram} \\
+  -jar $FGBIO_JAR DemuxFastqs \\
+  --threads {threads} \\
+  --max-mismatches {mismatches} \\
+  --metrics {metrics_file} \\
+  --inputs {inputs} \\
+  --read-structures {read_structure} \\
+  --metadata {sample_sheet} \\
+  --output {output_dir} \\
+  --output-type fastq \\
+  --include-all-bases-in-fastqs true""".format(
+            tmp_dir=config.param(ini_section, 'tmp_dir'),
+            java_other_options=config.param(ini_section, 'java_other_options'),
+            ram=config.param(ini_section, 'ram'),
+            threads=config.param(ini_section, 'threads'),
+            mismatches=mismatches,
+            metrics_file=metrics_file,
+            inputs=R1_fastq,
+            read_structure=mask,
+            sample_sheet=sample_sheet,
+            output_dir=os.path.dirname(metrics_file)
+        ),
+        removable_files=[os.path.dirname(metrics_file)]
+    )
+
 def fastq_unexpected_count(index_fastq, output_path, name):
     return Job(
         [index_fastq],
