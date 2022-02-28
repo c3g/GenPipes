@@ -41,7 +41,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
-from core.job import Job, concat_jobs, pipe_jobs 
+from core.job import Job, concat_jobs, pipe_jobs
 
 from bfx.readset import parse_illumina_raw_readset_files, parse_mgi_raw_readset_files
 from bfx import bvatools
@@ -57,7 +57,7 @@ from pipelines import common
 log = logging.getLogger(__name__)
 
 class RunInfoRead(object):
-    """ 
+    """
     Model of a read from the Illumina sequencer.
     Those attributes can be found in the RunInfo.xml file.
     """
@@ -170,7 +170,7 @@ class RunProcessing(common.MUGQICPipeline):
         if not hasattr(self, "_readsets"):
             self._readsets = {}
             if not hasattr(self, "_mask"):
-                self._mask = {} 
+                self._mask = {}
             for lane in self.lanes:
                 self._readsets[lane] = self.load_readsets(lane)
                 if not int(self.index1cycles[lane]) + int(self.index2cycles[lane]) == 0:
@@ -181,7 +181,7 @@ class RunProcessing(common.MUGQICPipeline):
     @property
     def samples(self):
         if not hasattr(self, "_samples"):
-            self._samples = {} 
+            self._samples = {}
             for lane in self.lanes:
                 self._samples[lane] = list(OrderedDict.fromkeys([readset.sample for readset in self.readsets[lane]]))
         return self._samples
@@ -235,16 +235,16 @@ class RunProcessing(common.MUGQICPipeline):
 
     @property
     def flowcell_id(self):
-        """  
+        """
         The flow cell ID from the readset file
         """
         if not hasattr(self, "_flowcell_id"):
-            self._flowcell_id = "" 
+            self._flowcell_id = ""
             for lane in self.lanes:
                 fc_set = set([readset.flow_cell for readset in self.readsets[lane] if readset.flow_cell])
                 if len(fc_set) == 0:
                     _raise(SanitycheckError("Error: no flowcell id could be found in the readset objects for lane '" + lane + "'..."))
-                if len(fc_set) > 1: 
+                if len(fc_set) > 1:
                     _raise(SanitycheckError("Error: more than one flowcell id found in the readset objects for lane '" + lane + "'..."))
                 fc_id = list(fc_set)[0]
                 if not self._flowcell_id:
@@ -346,10 +346,10 @@ class RunProcessing(common.MUGQICPipeline):
     @property
     def is_paired_end(self):
         if not hasattr(self, "_is_paired_end"):
-            self._is_paired_end = {} 
+            self._is_paired_end = {}
             for lane in self.lanes:
                 if self.read2cycles[lane]:
-                    self._is_paired_end[lane] = True 
+                    self._is_paired_end[lane] = True
                 else:
                     self._is_paired_end[lane] = False
         return self._is_paired_end
@@ -357,7 +357,7 @@ class RunProcessing(common.MUGQICPipeline):
     @property
     def read1cycles(self):
         if not hasattr(self, "_read1cycles"):
-            self._read1cycles = {} 
+            self._read1cycles = {}
             for lane in self.lanes:
                 self._read1cycles[lane] = self.get_read1cycles(lane)
         return self._read1cycles
@@ -365,7 +365,7 @@ class RunProcessing(common.MUGQICPipeline):
     @property
     def read2cycles(self):
         if not hasattr(self, "_read2cycles"):
-            self._read2cycles = {} 
+            self._read2cycles = {}
             for lane in self.lanes:
                 self._read2cycles[lane] = self.get_read2cycles(lane)
         return self._read2cycles
@@ -373,18 +373,18 @@ class RunProcessing(common.MUGQICPipeline):
     @property
     def is_dual_index(self):
         if not hasattr(self, "_is_dual_index"):
-            self._is_dual_index = {} 
+            self._is_dual_index = {}
             for lane in self.lanes:
-                if self.index2cycles[lane] == "0": 
+                if self.index2cycles[lane] == "0":
                     self._is_dual_index[lane] = False
                 else:
-                    self._is_dual_index[lane] = True 
+                    self._is_dual_index[lane] = True
         return self._is_dual_index
 
     @property
     def index1cycles(self):
         if not hasattr(self, "_index1cycles"):
-            self._index1cycles = {} 
+            self._index1cycles = {}
             for lane in self.lanes:
                 self._index1cycles[lane] = self.get_index1cycles(lane)
         return self._index1cycles
@@ -392,7 +392,7 @@ class RunProcessing(common.MUGQICPipeline):
     @property
     def index2cycles(self):
         if not hasattr(self, "_index2cycles"):
-            self._index2cycles = {} 
+            self._index2cycles = {}
             for lane in self.lanes:
                 self._index2cycles[lane] = self.get_index2cycles(lane)
         return self._index2cycles
@@ -413,7 +413,7 @@ class RunProcessing(common.MUGQICPipeline):
     def index_per_readset(self):
         if not hasattr(self, "_index_per_readset"):
             return ""
-        # Define in generate_clarity_sample_sheet() 
+        # Define in generate_clarity_sample_sheet()
         return self._index_per_readset
 
     @property
@@ -509,7 +509,7 @@ class RunProcessing(common.MUGQICPipeline):
     @property
     def sequencer_run_id(self):
         if not hasattr(self, "_sequencer_run_id"):
-            sequencer_run_id = "" 
+            sequencer_run_id = ""
             for lane in self.lanes:
                 lane_sequencer_run_id = self.get_sequencer_run_id(lane)
                 if sequencer_run_id and sequencer_run_id != lane_sequencer_run_id:
@@ -619,21 +619,21 @@ class RunProcessing(common.MUGQICPipeline):
             self._run_validation_report_json = {}
             for lane in self.lanes:
                 self._run_validation_report_json[lane] = os.path.join(self.report_dir[lane], self.run_id + "." + lane + ".run_validation_report.json")
-        return self._run_validation_report_json    
+        return self._run_validation_report_json
 
     def basecall(self):
-        """  
+        """
         Use write_fastq software from MGI to perform the base calling.
         Takes the raw .cal files from the sequencer and produces fastq files.
         Demultiplexing with MGI splitBarcode while doing the basecalling can
         be perform if requested with --splitbarcode-demux
         """
 
-        jobs = [] 
+        jobs = []
 
         for lane in self.lanes:
-            lane_jobs = [] 
-            jobs_to_throttle = [] 
+            lane_jobs = []
+            jobs_to_throttle = []
 
             input = self.readset_file
 
@@ -650,7 +650,7 @@ class RunProcessing(common.MUGQICPipeline):
                 basecall_outputs, postprocessing_jobs = self.generate_basecall_outputs(lane)
                 basecall_outputs.extend(
                     [
-                        os.path.join(basecall_dir, self.run_id, "L0" + lane),    
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane),
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv"),
@@ -661,7 +661,7 @@ class RunProcessing(common.MUGQICPipeline):
 
                 lane_jobs.append(
                     concat_jobs(
-                        [    
+                        [
                             bash.mkdir(basecall_dir),
                             run_processing_tools.mgi_t7_basecall(
                                 input,
@@ -987,7 +987,7 @@ class RunProcessing(common.MUGQICPipeline):
                 )
                 job = Job(
                     fastq_outputs,
-                    ["notificationFastqEnd." + lane + ".out"], 
+                    ["notificationFastqEnd." + lane + ".out"],
                     command=notification_command_end,
                     name="fastq_notification_end." + self.run_id + "." + lane,
                     samples=self.samples[lane]
@@ -1023,7 +1023,7 @@ class RunProcessing(common.MUGQICPipeline):
 
             for lane in self.lanes:
 
-                if int(self.index1cycles[lane]) + int(self.index2cycles[lane]) == 0 and len(self.readsets[lane]) > 1: 
+                if int(self.index1cycles[lane]) + int(self.index2cycles[lane]) == 0 and len(self.readsets[lane]) > 1:
                      err_msg = "LANE SETTING ERROR :\n"
                      err_msg += "Unable to demultiplex " + str(len(self.readsets[lane])) + " samples : No barcode in fastq files...\n(in "
                      err_msg += self.run_dir + ")"
@@ -1038,7 +1038,7 @@ class RunProcessing(common.MUGQICPipeline):
 
                     if ini_section == 'fastq_g400':
                         # For MGI G400 runs, raw reads are in non demultiplexed fatq files
-                        # Here is all the prep to copy the lane folder from the sequencer deposit folder into raw_fastq_dir 
+                        # Here is all the prep to copy the lane folder from the sequencer deposit folder into raw_fastq_dir
                         unaligned_dir = os.path.join(self.output_dir, "Unaligned." + lane)
                         raw_fastq_dir = os.path.join(unaligned_dir, "raw_fastq")
                         copy_done_file = os.path.join(raw_fastq_dir, "copy_done.Success")
@@ -1961,20 +1961,20 @@ class RunProcessing(common.MUGQICPipeline):
 
     # Obsolete...
     def end_copy_notification(self):
-        """  
+        """
         Send an optional notification to notify that the copy is finished.
 
         The command used is in the configuration file. This step is skipped when no
         command is provided.
         """
-        jobs = [] 
+        jobs = []
 
         full_destination_folder = os.path.join(
             config.param('copy', 'destination_folder', type="dirpath"),
             self.seq_category,
             self.year,
             os.path.basename(self.run_dir) + "-" + self.seqtype
-        )    
+        )
 
         for lane in self.lanes:
             input = os.path.join(full_destination_folder, "copyCompleted." + lane + ".out")
@@ -1982,11 +1982,11 @@ class RunProcessing(common.MUGQICPipeline):
 
             notification_command = config.param('end_copy_notification', 'notification_command', required=False)
             if notification_command:
-                job = Job( 
+                job = Job(
                     [input],
                     [output],
-                    name="end_copy_notification." + self.run_id + "." + lane 
-                )    
+                    name="end_copy_notification." + self.run_id + "." + lane
+                )
                 job.command = notification_command.format(
                     technology=config.param('end_copy_notification', 'technology'),
                     output_dir=self.output_dir,
@@ -1994,7 +1994,7 @@ class RunProcessing(common.MUGQICPipeline):
                     run_id=self.run_id,
                     output=output,
                     lane_number=lane
-                )    
+                )
                 job.samples = self.samples[lane]
                 jobs.append(job)
 
@@ -2002,8 +2002,8 @@ class RunProcessing(common.MUGQICPipeline):
             jobs,
             name="end_copy_notification." + self.run_id,
             samples=self.samples[lane]
-        )    
-        return jobs 
+        )
+        return jobs
 
     def final_notification(self):
         """
@@ -2096,7 +2096,7 @@ class RunProcessing(common.MUGQICPipeline):
             _raise(SanitycheckError("Unknown protocol : " + self.args.type))
 
     def get_illumina_readcycles(self):
-        """  
+        """
         Returns the number of cycles for each reads of the run.
         """
         for read in [read for read in self.read_infos if not read.is_index]:
@@ -2150,7 +2150,7 @@ class RunProcessing(common.MUGQICPipeline):
             _raise(SanitycheckError("Unknown protocol : " + self.args.type))
 
     def get_illumina_indexcycles(self):
-        """  
+        """
         Returns the number of cycles for each reads of the run.
         """
         for read in [read for read in self.read_infos if read.is_index]:
@@ -2174,7 +2174,7 @@ class RunProcessing(common.MUGQICPipeline):
 
     # Obsolete...
     def has_single_index(self, lane):
-        """ 
+        """
         Returns True when there is at least one sample on the lane that doesn't use double-indexing or we only have
         one read of indexes.
         """
@@ -2351,24 +2351,24 @@ class RunProcessing(common.MUGQICPipeline):
             self.mgi_validate_barcodes(lane)
 
     def illumina_validate_barcodes(self, lane):
-        """  
+        """
         Validate all index sequences against each other to ensure they aren't in collision according to the chosen
         number of mismatches parameter.
         """
         min_allowed_distance = (2 * self.number_of_mismatches) + 1
 
-        validated_indexes = [] 
-        collisions = [] 
+        validated_indexes = []
+        collisions = []
 
         for readset in self.readsets[lane]:
             current_index = readset.index.replace('-', '')
 
             for candidate_index in validated_indexes:
                 if distance(current_index, candidate_index) < min_allowed_distance:
-                    collisions.append("'" + current_index + "' and '" + candidate_index + "'") 
+                    collisions.append("'" + current_index + "' and '" + candidate_index + "'")
             validated_indexes.append(current_index)
 
-        if len(collisions) > 0: 
+        if len(collisions) > 0:
             _raise(SanitycheckError("Barcode collisions: " + ";".join(collisions)))
 
     def mgi_validate_barcodes(self, lane):
@@ -2469,7 +2469,10 @@ class RunProcessing(common.MUGQICPipeline):
         if self.is_dual_index[lane]:
             index_cycles.insert(0, int(self.index2cycles[lane]))
 
-        mask = self.read1cycles[lane] + 'T ' + self.read2cycles[lane] + 'T'
+        mask = self.read1cycles[lane] + 'T'
+        if self.read2cycles[lane] != '0':
+            mask += ' ' + self.read2cycles[lane] + 'T'
+
         for idx_nb_cycles in index_cycles:
             if idx_nb_cycles >= index_lengths[index_read_count]:
                 if index_lengths[index_read_count] == 0 or self.last_index <= nb_total_index_base_used:
@@ -2642,12 +2645,12 @@ class RunProcessing(common.MUGQICPipeline):
                     sample_barcode = readset_index['INDEX1'][0:index_lengths[0]]
                 if self.last_index < len(sample_barcode):
                     sample_barcode = sample_barcode[0:self.last_index]
-                if self.first_index > 1: 
+                if self.first_index > 1:
                     sample_barcode = sample_barcode[self.first_index-1:]
 
                 readset_index['BARCODE_SEQUENCE'] = sample_barcode
                 readset.indexes[idx] = readset_index
- 
+
                 csv_dict = {
                     "FCID": readset.flow_cell,
                     "Lane": lane,
@@ -3412,7 +3415,7 @@ class RunProcessing(common.MUGQICPipeline):
                         name="fastq_countbarcodes.I1.unmatched." + self.run_id + "." + lane,
                     )
                 )
-            if unaligned_i2: 
+            if unaligned_i2:
                 postprocessing_jobs.append(
                     run_processing_tools.fastq_unexpected_count(
                         unaligned_i2,
@@ -3641,4 +3644,4 @@ if __name__ == '__main__':
         utils.utils.container_wrapper_argparse(argv)
     else:
         RunProcessing(protocol=['illumina', 'mgig400', 'mgit7'])
- 
+
