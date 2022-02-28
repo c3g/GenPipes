@@ -613,11 +613,17 @@ class MGIReadset(Readset):
 
     @property
     def adapter1(self):
-        return self._adapter1
+        if not hasattr(self, "_adapter1"):
+            return None
+        else:
+            return self._adapter1
 
     @property
     def adapter2(self):
-        return self._adapter2
+        if not hasattr(self, "_adapter2"):
+            return None
+        else:
+            return self._adapter2
 
     @property
     def primer1(self):
