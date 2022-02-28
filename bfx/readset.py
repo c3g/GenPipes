@@ -29,7 +29,7 @@ import subprocess
 from Bio.Seq import Seq
 
 # MUGQIC Modules
-from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner 
+from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner
 from .sample import Sample, NanoporeSample
 from core.config import config, _raise, SanitycheckError
 
@@ -131,7 +131,7 @@ class IlluminaReadset(Readset):
             return None
         else:
             return self._adapter2
-    
+
     @property
     def primer1(self):
         if not hasattr(self, "_primer1"):
@@ -201,7 +201,7 @@ def parse_illumina_readset_file(illumina_readset_file):
             # Create new sample
             sample = Sample(sample_name)
             samples.append(sample)
-        
+
         # Create readset and add it to sample
         readset = IlluminaReadset(line['Readset'], line['RunType'])
 
@@ -462,7 +462,7 @@ def parse_illumina_raw_readset_files(
         readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
 
         readset._beds = line['Capture REF_BED'].split(";")[1:] if line['Capture REF_BED'] and line['Capture REF_BED'] != "N/A" else []
-        
+
         fastq_file_pattern = os.path.join(
             output_dir,
             "Unaligned." + readset.lane,
@@ -557,7 +557,7 @@ def parse_illumina_raw_readset_files(
     return readsets
 
 class MGIReadset(Readset):
-    
+
     def __init__(self, name, run_type):
         super(MGIReadset, self).__init__(name)
 
@@ -853,7 +853,7 @@ def parse_mgi_raw_readset_files(
                             break
                     else:
                          _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
-                index_from_lims = [{'INDEX1':index1, 'INDEX2':index2}] 
+                index_from_lims = [{'INDEX1':index1, 'INDEX2':index2}]
             # Single-index (pooled or not)
             else:
                 key = readset.index_name
