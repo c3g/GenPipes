@@ -3314,6 +3314,11 @@ class RunProcessing(common.MUGQICPipeline):
             # Processing R1 fastq outputs :
             #   convert headers from MGI to Illumina format using zcat and awk
             demuxfastqs_outputs.extend(readset_r1_outputs)
+            outputs = [readset.fastq1]
+            if not self.is_paired_end[lane]:
+                outputs.append(readset.index_fastq1)
+                if self.is_dual_index[lane]:
+                     outputs.append(readset.index_fastq2)
             postprocessing_jobs.append(
                 concat_jobs(
                     [
@@ -3328,25 +3333,26 @@ class RunProcessing(common.MUGQICPipeline):
                                 bash.awk(
                                     None,
                                     None,
-                                    self.awk_read_1_processing_command()
+                                    self.awk_read_1_processing_command(readset, lane)
                                 ),
                                 bash.gzip(
                                     None,
                                     readset.fastq1
-                                )
+                                ) if self.is_paired_end[lane] else None
                             ]
                         )
                     ],
+                    output_dependency=outputs,
                     name="fastq_convert.R1." + readset.name + "." + self.run_id + "." + lane,
                     samples=self.samples[lane]
                 )
             )
 
-            # Processing "raw R2" fastq (also contains barcode sequences) :
-            #   convert headers from MGI to Illumina format
-            #   while extracting I1 and I2 to build clean R2, I1 and R2 fastq
-            #   using zcat and awk
             if readset.run_type == "PAIRED_END":
+                # Processing "raw R2" fastq (also contains barcode sequences) :
+                #   convert headers from MGI to Illumina format
+                #   while extracting I1 and I2 to build clean R2, I1 and R2 fastq
+                #   using zcat and awk
                 demuxfastqs_outputs.extend(readset_r2_outputs)
                 outputs = [readset.fastq2, readset.index_fastq1]
                 if self.is_dual_index[lane]:
@@ -3375,10 +3381,21 @@ class RunProcessing(common.MUGQICPipeline):
                         samples=self.samples[lane]
                     )
                 )
+
         # Process undetermined reads fastq files
         unmatched_R1_fastq = os.path.join(output_dir, "tmp", "unmatched_R1.fastq.gz")
         if unmatched_R1_fastq not in demuxfastqs_outputs:
             demuxfastqs_outputs.append(unmatched_R1_fastq)
+        outputs = [os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz")]
+        if not self.is_paired_end[lane]:
+            unaligned_i1 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
+            unexpected_barcode_counts_i1 = re.sub(".fastq.gz", ".counts.txt", unaligned_i1)
+            unaligned_i2 = ""
+            outputs.append(unaligned1)
+            if self.is_dual_index[lane]:
+                unaligned_i2 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
+                unexpected_barcode_counts_i2 = re.sub(".fastq.gz", ".counts.txt", unaligned_i2)
+                outputs.append(unaligned_i2)
         postprocessing_jobs.append(
             pipe_jobs(
                 [
@@ -3390,12 +3407,12 @@ class RunProcessing(common.MUGQICPipeline):
                     bash.awk(
                         None,
                         None,
-                        self.awk_read_1_processing_command()
+                        self.awk_read_1_processing_command(readset, lane)
                     ),
                     bash.gzip(
                         None,
                         os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz")
-                    )
+                    ) if self.is_paired_end[lane] else None
                 ],
                 name= "fastq_convert.R1.unmatched." + self.run_id + "." + lane,
                 samples=self.samples[lane]
@@ -3413,12 +3430,12 @@ class RunProcessing(common.MUGQICPipeline):
                 unaligned_i1
             ]
             unexpected_barcode_counts_i1 = re.sub(".fastq.gz", ".counts.txt", unaligned_i1)
-            demuxfastqs_outputs.append(unexpected_barcode_counts_i1)
+#            demuxfastqs_outputs.append(unexpected_barcode_counts_i1)
             if self.is_dual_index[lane]:
                 unaligned_i2 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
                 outputs.append(unaligned_i2)
                 unexpected_barcode_counts_i2 = re.sub(".fastq.gz", ".counts.txt", unaligned_i2)
-                demuxfastqs_outputs.append(unexpected_barcode_counts_i2)
+#                demuxfastqs_outputs.append(unexpected_barcode_counts_i2)
 
             postprocessing_jobs.append(
                 pipe_jobs(
@@ -3439,41 +3456,98 @@ class RunProcessing(common.MUGQICPipeline):
                     samples=self.samples[lane]
                 )
             )
-            if unaligned_i1:
-                postprocessing_jobs.append(
-                    run_processing_tools.fastq_unexpected_count(
-                        unaligned_i1,
-                        unexpected_barcode_counts_i1,
-                        name="fastq_countbarcodes.I1.unmatched." + self.run_id + "." + lane,
-                    )
+        if unaligned_i1:
+            postprocessing_jobs.append(
+                run_processing_tools.fastq_unexpected_count(
+                    unaligned_i1,
+                    unexpected_barcode_counts_i1,
+                    name="fastq_countbarcodes.I1.unmatched." + self.run_id + "." + lane,
                 )
-            if unaligned_i2:
-                postprocessing_jobs.append(
-                    run_processing_tools.fastq_unexpected_count(
-                        unaligned_i2,
-                        unexpected_barcode_counts_i2,
-                        name="fastq_countbarcodes.I2.unmatched." + self.run_id + "." + lane,
-                    )
+            )
+        if unaligned_i2:
+            postprocessing_jobs.append(
+                run_processing_tools.fastq_unexpected_count(
+                    unaligned_i2,
+                    unexpected_barcode_counts_i2,
+                    name="fastq_countbarcodes.I2.unmatched." + self.run_id + "." + lane,
                 )
+            )
 
         return demuxfastqs_outputs, postprocessing_jobs
 
-    def awk_read_1_processing_command(self):
+    def awk_read_1_processing_command(self, readset, lane):
         """
         Returns a string serving as instructions for awk.
         This produces the command to convert the header of R1 fastq file from MGI to Illumina format
+        For single-end libraies, the built command also extracts I1 (and I2 if exists) sequence from the R1 fastq,
+        creating R1 (without barcode sequences) I1 (and I2) fastq files from R1 fastq file.
         """
-        return """-v inst=\"{instrument}\" -v run=\"{run}\" 'match($0, /@({flowcell})L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):?([ACTGN-]+)?\/([0-9]{{1}})/, head_items) {{
+        if self.is_paired_end[lane]:
+            return """-v inst=\"{instrument}\" -v run=\"{run}\" 'match($0, /@({flowcell})L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):?([ACTGN-]+)?\/([0-9]{{1}})/, head_items) {{
  gsub("^0*", "", head_items[3])
  gsub("^0*", "", head_items[4])
  gsub("^0*", "", head_items[5])
  print "@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:" head_items[6]
  next
 }} 1'""".format(
-            instrument=self.instrument,
-            run=self.run_number,
-            flowcell=self.flowcell_id
-        )
+                instrument=self.instrument,
+                run=self.run_number,
+                flowcell=self.flowcell_id
+            )
+        else:
+            if self.is_dual_index[lane]:
+                return """-v inst=\"{instrument}\" -v run=\"{run}\" -v read_len=\"{read_len}\" -v barcode1_len=\"{barcode1_len}\" -v barcode2_len=\"{barcode2_len}\" '{{
+ header=$0
+ getline seq
+ getline sep
+ getline qual
+ match(header, /@({flowcell})L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):?([ACTGN-]+)?\/([0-9]{{1}})/, head_items)
+ gsub("^0*", "", head_items[3]); gsub("^0*", "", head_items[4]); gsub("^0*", "", head_items[5])
+ header="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:" head_items[6]
+ r1_seq=substr(seq,1,read_len)
+ i1_seq=substr(seq,read_len+barcode2_len+1,barcode1_len)
+ i2_seq=substr(seq,read_len+1,barcode2_len)
+ r1_qual=substr(qual,1,read_len)
+ i1_qual=substr(qual,read_len+barcode2_len+1,barcode1_len)
+ i2_qual=substr(qual,read_len+1,barcode2_len)
+ print header "\\n" r1_seq "\\n" sep "\\n" r1_qual | "gzip > {r1_out}"
+ print header "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
+ print header "\\n" i2_seq "\\n" sep "\\n" i2_qual | "gzip > {i2_out}"
+}}'""".format(
+                    instrument=self.instrument,
+                    run=self.run_number,
+                    read_len=self.read2cycles[lane],
+                    barcode1_len=self.index1cycles[lane],
+                    barcode2_len=self.index2cycles[lane],
+                    flowcell=self.flowcell_id,
+                    r1_out=readset.fastq1 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz"),
+                    i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz"),
+                    i2_out=readset.index_fastq2 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
+                )
+            else:
+                return """-v inst=\"{instrument}\" -v run=\"{run}\" -v read_len=\"{read_len}\" -v barcode_len=\"{barcode_len}\" '{{
+ header=$0
+ getline seq
+ getline sep
+ getline qual
+ match(header, /@({flowcell})L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):?([ACTGN]+)?\/([0-9]{{1}})/, head_items)
+ gsub("^0*", "", head_items[3]); gsub("^0*", "", head_items[4]); gsub("^0*", "", head_items[5])
+ header="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:" head_items[6]
+ r1_seq=substr(seq,1,read_len)
+ i1_seq=substr(seq,read_len+1,barcode_len)
+ r1_qual=substr(qual,1,read_len)
+ i1_qual=substr(qual,read_len+1,barcode_len)
+ print header "\\n" r1_seq "\\n" sep "\\n" r1_qual | "gzip > {r2_out}"
+ print header "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
+}}'""".format(
+                    instrument=self.instrument,
+                    run=self.run_number,
+                    read_len=self.read2cycles[lane],
+                    barcode_len=self.index1cycles[lane],
+                    flowcell=self.flowcell_id,
+                    r1_out=readset.fastq1 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz"),
+                    i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
+                )
 
     def awk_read_2_processing_command(self, readset, lane):
         """
