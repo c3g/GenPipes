@@ -3391,7 +3391,7 @@ class RunProcessing(common.MUGQICPipeline):
             unaligned_i1 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
             unexpected_barcode_counts_i1 = re.sub(".fastq.gz", ".counts.txt", unaligned_i1)
             unaligned_i2 = ""
-            outputs.append(unaligned1)
+            outputs.append(unaligned_i1)
             if self.is_dual_index[lane]:
                 unaligned_i2 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
                 unexpected_barcode_counts_i2 = re.sub(".fastq.gz", ".counts.txt", unaligned_i2)
@@ -3414,6 +3414,7 @@ class RunProcessing(common.MUGQICPipeline):
                         os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz")
                     ) if self.is_paired_end[lane] else None
                 ],
+                output_dependency=outputs,
                 name= "fastq_convert.R1.unmatched." + self.run_id + "." + lane,
                 samples=self.samples[lane]
             )
@@ -3505,11 +3506,11 @@ class RunProcessing(common.MUGQICPipeline):
  gsub("^0*", "", head_items[3]); gsub("^0*", "", head_items[4]); gsub("^0*", "", head_items[5])
  header="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:" head_items[6]
  r1_seq=substr(seq,1,read_len)
- i1_seq=substr(seq,read_len+barcode2_len+1,barcode1_len)
- i2_seq=substr(seq,read_len+1,barcode2_len)
+ i1_seq=substr(seq,read_len+1,barcode1_len)
+ i2_seq=substr(seq,read_len+barcode1_len+1,barcode2_len)
  r1_qual=substr(qual,1,read_len)
- i1_qual=substr(qual,read_len+barcode2_len+1,barcode1_len)
- i2_qual=substr(qual,read_len+1,barcode2_len)
+ i1_qual=substr(qual,read_len+1,barcode1_len)
+ i2_qual=substr(qual,read_len+barcode1_len+1,barcode2_len)
  print header "\\n" r1_seq "\\n" sep "\\n" r1_qual | "gzip > {r1_out}"
  print header "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
  print header "\\n" i2_seq "\\n" sep "\\n" i2_qual | "gzip > {i2_out}"
@@ -3537,7 +3538,7 @@ class RunProcessing(common.MUGQICPipeline):
  i1_seq=substr(seq,read_len+1,barcode_len)
  r1_qual=substr(qual,1,read_len)
  i1_qual=substr(qual,read_len+1,barcode_len)
- print header "\\n" r1_seq "\\n" sep "\\n" r1_qual | "gzip > {r2_out}"
+ print header "\\n" r1_seq "\\n" sep "\\n" r1_qual | "gzip > {r1_out}"
  print header "\\n" i1_seq "\\n" sep "\\n" i1_qual | "gzip > {i1_out}"
 }}'""".format(
                     instrument=self.instrument,

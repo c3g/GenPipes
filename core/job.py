@@ -237,6 +237,8 @@ def concat_jobs(jobs, name="", input_dependency=[], output_dependency=[], sample
 # Create a new job by piping a list of jobs together
 def pipe_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=[], removable_files = []):
 
+    # Remove 'None' jobs from the job list, may happened in the case of conditional jobs
+    jobs = [job for job in jobs if job]
     job = Job(jobs[0].input_files, jobs[-1].output_files, name=name)
 
     # Merge all report/removable files and modules
