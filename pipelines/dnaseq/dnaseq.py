@@ -3079,7 +3079,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             pair_directory = os.path.join("SVariants", sample.name)
             delly_directory = os.path.join(pair_directory, "rawDelly")
 
-            input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+            [input] = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
                                              [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
                                              [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
 
