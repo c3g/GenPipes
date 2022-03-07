@@ -1845,6 +1845,7 @@ class RunProcessing(common.MUGQICPipeline):
                        report_step_jobs.append(
                            concat_jobs(
                                [
+                                   bash.mkdir(os.path.join(self.job_output_dir, "checkpoint")),
                                    tools.run_processing_metrics_to_json(
                                        self.run_validation_report_json[lane],
                                        step.name,
@@ -1862,6 +1863,7 @@ class RunProcessing(common.MUGQICPipeline):
                            report_step_jobs.append(
                                concat_jobs(
                                    [
+                                       bash.mkdir(os.path.join(self.job_output_dir, "checkpoint")),
                                        tools.run_processing_metrics_to_json(
                                            self.run_validation_report_json[lane],
                                            step.name,
