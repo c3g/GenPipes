@@ -201,7 +201,7 @@ def dict2beds(dictionary,beds):
 dict2BEDs.py \\
   --dict {dictionary} \\
   --beds {beds}""".format(
-            dictionary=dictionary if dictionary else config.param('dict2beds', 'genome_dictionary', type='filepath'),
+            dictionary=dictionary if dictionary else config.param('dict2beds', 'genome_dictionary', param_type='filepath'),
             beds=' '.join(beds)
         )
     )
@@ -297,7 +297,7 @@ bed2IntervalList.pl \\
   --dict {dictionary} \\
   --bed {bed} \\
   > {output}""".format(
-            dictionary=config.param('bed2interval_list', 'genome_dictionary', type='filepath'),
+            dictionary=config.param('bed2interval_list', 'genome_dictionary', param_type='filepath'),
             bed=bed,
             output=output
         )
@@ -593,8 +593,8 @@ IHEC_rnaseq_metrics.sh \\
             input_bam=input_bam,
             input_name=input_name,
             input_picard_dup=input_picard_dup,
-            intergenic_bed=config.param('IHEC_rnaseq_metrics', 'intergenic_bed', type='filepath', required=True),
-            rrna_bed=config.param('IHEC_rnaseq_metrics', 'ribo_rna_bed', type='filepath', required=True),
+            intergenic_bed=config.param('IHEC_rnaseq_metrics', 'intergenic_bed', param_type='filepath', required=True),
+            rrna_bed=config.param('IHEC_rnaseq_metrics', 'ribo_rna_bed', param_type='filepath', required=True),
             output_dir=output_dir
         )
     )
@@ -646,7 +646,7 @@ IHEC_chipseq_metrics_max.sh \\
             chip_bam=chip_bam,
             chip_type=chip_type,
             chip_name=chip_name,
-            threads=config.param('IHEC_chipseq_metrics', 'thread', type='int') if config.param('IHEC_chipseq_metrics', 'thread', type='int', required=False) else 1,
+            threads=config.param('IHEC_chipseq_metrics', 'thread', param_type='int') if config.param('IHEC_chipseq_metrics', 'thread', param_type='int', required=False) else 1,
             chip_bed=chip_bed,
             output_dir=output_dir,
             assembly=assembly

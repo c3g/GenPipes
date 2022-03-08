@@ -54,7 +54,7 @@ genomeCoverageBed {other_options} -bg -split -scale $scalefactor \\
   > {output_bed_graph}""".format(
             samtools_options=samtools_options,
             input_bam=input_bam,
-            chromosome_size=config.param('bedtools_graph', 'chromosome_size', type='filepath'),
+            chromosome_size=config.param('bedtools_graph', 'chromosome_size', param_type='filepath'),
             other_options=config.param('bedtools_graph', 'other_options', required=False),
             output_bed_graph=output_bed_graph
         )

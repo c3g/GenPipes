@@ -63,14 +63,14 @@ def align(
         removable_files=[os.path.join(output_directory, bam_name)]
     )
     ## Get param from config file
-    num_threads = config.param('star_align', 'threads', type='int')
+    num_threads = config.param('star_align', 'threads', param_type='int')
     ram_limit = config.param('star_align', 'ram')
     max_ram = int(utils.number_symbol_converter(ram_limit))
     io_limit = config.param('star_align', 'io_buffer')
     io_max = int(utils.number_symbol_converter(io_limit))
     stranded = config.param('star_align', 'strand_info')
     wig_prefix = config.param('star_align', 'wig_prefix')
-    chimere_segment_min = config.param('star_align','chimere_segment_min', type='int', required=False)
+    chimere_segment_min = config.param('star_align','chimere_segment_min', param_type='int', required=False)
     ## Wiggle information
     if create_wiggle_track:
         wig_cmd = "--outWigType wiggle read1_5p"
@@ -147,7 +147,7 @@ STAR --runMode alignReads \\
 def index(
     genome_index_folder,
     junction_file,
-    gtf = config.param('star_align', 'gtf', type='filepath', required=False),
+    gtf = config.param('star_align', 'gtf', param_type='filepath', required=False),
     ):
     #STAR --runMode genomeGenerate --genomeDir $odir --genomeFastaFiles $genome --runThreadN $runThreadN --limitGenomeGenerateRAM $limitGenomeGenerateRAM --sjdbOverhang $sjdbOverhang  --sjdbFileChrStartEnd "
 
@@ -159,13 +159,13 @@ def index(
     )
 
     ## get param from config filepath
-    reference_fasta = config.param('star_index', 'genome_fasta', type='filepath')
-    num_threads = config.param('star_index', 'threads', type='int')
+    reference_fasta = config.param('star_index', 'genome_fasta', param_type='filepath')
+    num_threads = config.param('star_index', 'threads', param_type='int')
     ram_limit = config.param('star_index', 'ram')
     max_ram = int(utils.number_symbol_converter(ram_limit))
     io_limit = config.param('star_index', 'io_buffer')
     io_max = int(utils.number_symbol_converter(io_limit))
-    read_size = config.param('star_index', 'star_cycle_number', type='posint')
+    read_size = config.param('star_index', 'star_cycle_number', param_type='posint')
     other_options = config.param('star_index', 'other_options', required=False)
      
     job.command = """\

@@ -155,7 +155,7 @@ class ChipSeq(common.Illumina):
         return self._contrast
 
     def mappable_genome_size(self):
-        genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', type='filepath') + ".fai", 'r'), delimiter='\t')
+        genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
         # 2nd column of genome index contains chromosome length
         # HOMER and MACS2 mappable genome size (without repetitive features) is about 80 % of total size
         return sum([int(chromosome[1]) for chromosome in genome_index]) * 0.8
@@ -182,7 +182,7 @@ class ChipSeq(common.Illumina):
             trim_log = trim_file_prefix + "log"
 
             # Use adapter FASTA in config file if any, else create it from readset file
-            adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, type='filepath')
+            adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
             adapter_job = None
             if not adapter_fasta:
                 adapter_fasta = trim_file_prefix + "adapters.fa"
@@ -348,8 +348,8 @@ pandoc \\
   --variable trim_readset_table="$trim_readset_table_md" \\
   --to markdown \\
   > {report_file}""".format(
-                    trailing_min_quality=config.param('trimmomatic', 'trailing_min_quality', type='int'),
-                    min_length=config.param('trimmomatic', 'min_length', type='posint'),
+                    trailing_min_quality=config.param('trimmomatic', 'trailing_min_quality', param_type='int'),
+                    min_length=config.param('trimmomatic', 'min_length', param_type='posint'),
                     read_type=read_type,
                     report_template_dir=self.report_template_dir,
                     readset_merge_trim_stats=readset_merge_trim_stats,
@@ -825,7 +825,7 @@ pandoc --to=markdown \\
   --variable min_mapq="{min_mapq}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    min_mapq=config.param('sambamba_view_filter', 'min_mapq', type='int'),
+                    min_mapq=config.param('sambamba_view_filter', 'min_mapq', param_type='int'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file,
@@ -1697,15 +1697,15 @@ done""".format(
                                         annotation_file=annotation_file,
                                         output_prefix=output_prefix,
                                         proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance',
-                                                                       type='int'),
+                                                                       param_type='int'),
                                         distal_distance=config.param('homer_annotate_peaks', 'distal_distance',
-                                                                     type='int'),
+                                                                     param_type='int'),
                                         distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower',
-                                                                      type='int'),
+                                                                      param_type='int'),
                                         distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper',
-                                                                      type='int'),
+                                                                      param_type='int'),
                                         gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size',
-                                                                      type='int')
+                                                                      param_type='int')
                                     ),
                                     removable_files=[
                                         os.path.join(self.output_dirs['anno_output_directory'], sample.name,
@@ -1782,7 +1782,7 @@ done""".format(
                                     peak_file,
                                     self.ucsc_genome,
                                     output_dir,
-                                    config.param('homer_find_motifs_genome', 'threads', type='posint')
+                                    config.param('homer_find_motifs_genome', 'threads', param_type='posint')
                                 )
                             ],
                                 name="homer_find_motifs_genome." + sample.name + "." + mark_name,
@@ -1936,11 +1936,11 @@ done""".format(
                         # samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
                         samples_associative_array=" ".join(samples_associative_array),
                         # contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
-                        proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', type='int') / -1000,
-                        distal_distance=config.param('homer_annotate_peaks', 'distal_distance', type='int') / -1000,
-                        distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', type='int') / -1000,
-                        distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', type='int') / -1000,
-                        gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', type='int') / 1000,
+                        proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', param_type='int') / -1000,
+                        distal_distance=config.param('homer_annotate_peaks', 'distal_distance', param_type='int') / -1000,
+                        distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', param_type='int') / -1000,
+                        distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', param_type='int') / -1000,
+                        gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', param_type='int') / 1000,
                         report_template_dir=self.report_template_dir,
                         basename_report_file=os.path.basename(report_file),
                         report_file=report_file,

@@ -39,7 +39,7 @@ vardict \\
   -N {tumor_name} \\
   -b "{paired_samples}" \\
   {vardict_options}{region}{output}""".format(
-        reference_fasta=config.param('vardict_paired', 'genome_fasta', type='filepath'),
+        reference_fasta=config.param('vardict_paired', 'genome_fasta', param_type='filepath'),
         tumor_name=tumor_name,
         paired_samples=input_tumor + "|" + input_normal,
         vardict_options=config.param('vardict_paired', 'vardict_options'),
@@ -66,7 +66,7 @@ java {java_other_options} -Djava.io.tmpdir={tmp_dir} -Xms768m -Xmx{ram} -classpa
   -b "{paired_samples}" \\
   {vardict_options}{region}{output}""".format(
         tmp_dir=config.param('vardict_paired', 'tmp_dir'),
-        reference_fasta=config.param('vardict_paired', 'genome_fasta', type='filepath'),
+        reference_fasta=config.param('vardict_paired', 'genome_fasta', param_type='filepath'),
         tumor_name=tumor_name,
         paired_samples=input_tumor + "|" + input_normal,
         java_other_options=config.param('vardict_paired', 'java_other_options'),
@@ -125,7 +125,7 @@ def dict2beds(dictionary,beds):
 dict2BEDs.py \\
   --dict {dictionary} \\
   --beds {beds} {dict2bed_options}""".format(
-        dictionary=dictionary if dictionary else config.param('DEFAULT', 'genome_dictionary', type='filepath'),
+        dictionary=dictionary if dictionary else config.param('DEFAULT', 'genome_dictionary', param_type='filepath'),
         beds=' '.join(beds),
         dict2bed_options=config.param('vardict_paired', 'dict2bed_options')
         )

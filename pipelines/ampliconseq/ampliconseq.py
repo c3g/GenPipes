@@ -81,7 +81,7 @@ class AmpliconSeq(common.Illumina):
             trim_log = trim_file_prefix + "log"
 
             # Use adapter FASTA in config file if any, else create it from readset file
-            adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, type='filepath')
+            adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
             adapter_job = None
             if not adapter_fasta:
                 adapter_fasta = trim_file_prefix + "adapters.fa"
@@ -365,8 +365,8 @@ pandoc --to=markdown \\
   --variable merge_readset_table="$merge_readset_table_md" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    min_overlap=config.param('flash', 'min_overlap', type='int'),
-                    max_overlap=config.param('flash', 'max_overlap', type='int'),
+                    min_overlap=config.param('flash', 'min_overlap', param_type='int'),
+                    max_overlap=config.param('flash', 'max_overlap', param_type='int'),
                     read_type="Paired",
                     report_template_dir=self.report_template_dir,
                     readset_merge_flash_stats=readset_merge_flash_stats,

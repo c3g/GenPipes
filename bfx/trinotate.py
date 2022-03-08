@@ -57,9 +57,9 @@ TransDecoder.Predict \\
                 other_options=config.param('transdecoder', 'other_options', required=False),
                 transcripts=os.path.relpath(trinity_fasta, transdecoder_directory),
                 transdecoder_subdirectory=transdecoder_subdirectory,
-                swissprot_db=config.param('transdecoder', 'swissprot_db', type='prefixpath'),
-                pfam_db=config.param('transdecoder', 'pfam_db', type='filepath'),
-                cpu=config.param('transdecoder', 'cpu', type='posint')
+                swissprot_db=config.param('transdecoder', 'swissprot_db', param_type='prefixpath'),
+                pfam_db=config.param('transdecoder', 'pfam_db', param_type='filepath'),
+                cpu=config.param('transdecoder', 'cpu', param_type='posint')
             )
         ),
         Job(command="cd " + os.path.join("..", "..")),
@@ -77,9 +77,9 @@ hmmscan --cpu {cpu} \\
 --domtblout {transdecoder_pfam} \\
 {pfam_db} \\
 {transdecoder_fasta}""".format(
-                cpu=config.param('hmmer', 'cpu', type='posint'),
+                cpu=config.param('hmmer', 'cpu', param_type='posint'),
                 transdecoder_pfam=transdecoder_pfam,
-                pfam_db=config.param('hmmer', 'pfam_db', type='filepath'),
+                pfam_db=config.param('hmmer', 'pfam_db', param_type='filepath'),
                 transdecoder_fasta=transdecoder_fasta
             )
         ),

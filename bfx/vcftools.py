@@ -37,7 +37,7 @@ vcf-annotate \\
   -c CHROM,FROM,TO,INFO/MIL \\
   -a {annotations} \\
   {input}{output}""".format(
-        annotations=config.param('annotate_mappability', 'genome_mappability_bed_indexed', type='filepath'),
+        annotations=config.param('annotate_mappability', 'genome_mappability_bed_indexed', param_type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
         ),
