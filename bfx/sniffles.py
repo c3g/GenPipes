@@ -25,29 +25,28 @@ from core.config import *
 from core.job import *
 
 
-def svim_ont(input_bam, output_directory):
+def sniffles_ont(input_bam, output_directory):
     """
-    Create a SVIM SV calling job for nanopore reads.
+    Create a sniffles SV calling job for nanopore reads.
 
-    :return: a job for nanopore SV calling with SVIM
+    :return: a job for nanopore SV calling with sniffles
     """
 
-    genome_fasta = config.param('DEFAULT', 'genome_fasta', required=True)
-
-    min_mapq = config.param('svim', 'min_map_qual')
+    out_vcf = os.path.join(output_directory, "sniffles_structural_variants.vcf")
 
     return Job(
         [input_bam],
-        [os.path.join(output_directory, "svim_structural_variants.vcf")],
-        [["svim", "module_svim"]],
+        [os.path.join(output_directory, "sniffles_structural_variants.vcf")],
+        [["sniffles", "module_sniffles"]],
         command="""\
 mkdir -p {output_directory} && \\
-svim alignment --min_mapq {min_mapq} {other_options} {output_directory} {input_bam} {genome_fasta}
+sniffles {other_options} \\
+    --input {input_bam} \\
+    --vcf {out_vcf}
         """.format(
             output_directory=output_directory,
-            min_mapq=min_mapq,
-            other_options=config.param('svim', 'other_options', required=False),
+            other_options=config.param('sniffles', 'other_options', required=False),
             input_bam=input_bam,
-            genome_fasta=genome_fasta
+            out_vcf=out_vcf
         )
     )

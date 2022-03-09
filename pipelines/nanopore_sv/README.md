@@ -1,14 +1,14 @@
 [TOC]
 
 
-Nanopore Pipeline
+Nanopore SV Pipeline
 ==============
 
-The Nanopore is used to analyse long reads produced by the Oxford Nanopore Technologies (ONT) sequencers.
-Currently, the pipeline uses minimap2 to align reads to the reference genome. Additionally, it produces
-a QC report that includes an interactive dashboard with data from the basecalling summary file as well
-as the alignment. A step aligning random reads to the NCBI nt database and reporting the species of the
-highest hits is also done as QC.
+The Nanopore SV is used to analyse long reads produced by the Oxford Nanopore Technologies (ONT) 
+sequencers and call structural variants (SVs). Currently, the pipeline uses minimap2 to align reads to
+the reference genome. Additionally, it produces a QC report that includes an interactive dashboard with 
+data from the basecalling summary file as well as the alignment. A step aligning random reads to the NCBI 
+nt database and reporting the species of the highest hits is also done as QC.
 
 Once the QC and alignments have been produced, Picard is used to merge readsets coming from the same
 sample. Finally, SVIM is used to detect Structural Variants (SV) including deletions, insertions and
@@ -100,6 +100,8 @@ Steps:
 3- pycoqc
 4- picard_merge_sam_files
 5- svim
+6- cuteSV
+7- sniffles
 
 ```
 blastqc

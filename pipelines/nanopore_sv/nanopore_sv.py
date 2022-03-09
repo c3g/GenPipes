@@ -39,6 +39,8 @@ from pipelines import common
 from bfx import minimap2
 from bfx import sambamba
 from bfx import svim
+from bfx import cuteSV
+from bfx import sniffles
 from bfx import pycoqc
 from bfx import tools
 from bfx import gatk4
@@ -48,14 +50,14 @@ log = logging.getLogger(__name__)
 
 class Nanopore(common.MUGQICPipeline):
     """
-    Nanopore Pipeline
+    Nanopore SV Pipeline
     ==============
 
-    The Nanopore is used to analyse long reads produced by the Oxford Nanopore Technologies (ONT) sequencers.
-    Currently, the pipeline uses minimap2 to align reads to the reference genome. Additionally, it produces
-    a QC report that includes an interactive dashboard with data from the basecalling summary file as well
-    as the alignment. A step aligning random reads to the NCBI nt database and reporting the species of the
-    highest hits is also done as QC.
+    The Nanopore is used to analyse long reads produced by the Oxford Nanopore Technologies (ONT)
+    sequencers and cal structural variants (SVs). Currently, the pipeline uses minimap2 to align reads
+    to the reference genome. Additionally, it produces a QC report that includes an interactive dashboard
+    with data from the basecalling summary file as well as the alignment. A step aligning random reads to
+    the NCBI nt database and reporting the species of the highest hits is also done as QC.
 
     Once the QC and alignments have been produced, Picard is used to merge readsets coming from the same
     sample. Finally, SVIM is used to detect Structural Variants (SV) including deletions, insertions and
@@ -96,16 +98,6 @@ class Nanopore(common.MUGQICPipeline):
         if not hasattr(self, "_samples"):
             self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
         return self._samples
-
-    def guppy(self):
-        """
-        Use the Guppy basecaller to perform basecalling on all raw fast5 files.
-        Uses the 'flip-flop' basecalling model by default.
-        IN DEVELOPMENT
-        """
-        jobs = []
-
-        return jobs
 
     def blastqc(self):
         """
@@ -307,6 +299,46 @@ class Nanopore(common.MUGQICPipeline):
 
         return jobs
 
+    def cuteSV(self): 
+        """
+        Use cuteSV to perform SV calling on each sample
+        """
+        jobs = []
+
+        for sample in self.samples:
+
+            align_directory = os.path.join("alignment", sample.name)
+            in_bam = os.path.join(align_directory, sample.name + ".sorted.bam")
+
+            cuteSV_directory = os.path.join("cuteSV", sample.name)
+
+            job = cuteSV.cuteSV_ont(in_bam, sample.name, cuteSV_directory)
+            job.name = "cuteSV." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
+
+        return jobs
+
+    def sniffles(self):
+        """
+        Use sniffles to perform SV calling on each sample
+        """
+        jobs = []
+
+        for sample in self.samples:
+
+            align_directory = os.path.join("alignment", sample.name)
+            in_bam = os.path.join(align_directory, sample.name + ".sorted.bam")
+
+            sniffles_directory = os.path.join("sniffles", sample.name)
+
+            job = sniffles.sniffles_ont(in_bam, sniffles_directory)
+            job.name = "sniffles." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
+
+        return jobs
+
     @property
     def steps(self):
         return [
@@ -314,7 +346,10 @@ class Nanopore(common.MUGQICPipeline):
             self.minimap2_align,
             self.pycoqc,
             self.picard_merge_sam_files,
-            self.svim
+            self.svim,
+            self.cuteSV,
+            self.sniffles,
+
         ]
 
 
