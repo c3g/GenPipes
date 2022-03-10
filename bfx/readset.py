@@ -541,9 +541,13 @@ def parse_nanopore_readset_file(nanopore_readset_file):
     for line in readset_csv:
         sample_name = line['Sample']
         sample_names = [sample.name for sample in samples]
-        # Create new sample
-        sample = NanoporeSample(sample_name)
-        samples.append(sample)
+        if sample_name in sample_names:
+            # Sample already exists
+            sample = samples[sample_names.index(sample_name)]
+        else:
+            # Create new sample
+            sample = NanoporeSample(sample_name)
+            samples.append(sample)
 
         # Create readset and add it to sample
         readset = NanoporeReadset(line['Readset'])

@@ -98,7 +98,7 @@ Steps:
 1- blastqc
 2- minimap2_align
 3- pycoqc
-4- picard_merge_sam_files
+4- sambamba_merge_sam_files
 5- svim
 6- cuteSV
 7- sniffles
@@ -119,10 +119,10 @@ pycoqc
 Use pycoQC to produce an interactive quality report based on the summary file and
 alignment outputs.
 
-picard_merge_sam_files
+sambamba_merge_sam_files
 ----------------------
 BAM readset files are merged into one file per sample.
-Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+Merge is done using sambamba
 
 This step takes as input files:
 Aligned and sorted BAM output files from previous minimap2_align step
@@ -131,4 +131,11 @@ svim
 ----
 Use SVIM to perform SV calling on each sample.
 
+cuteSV
+------
+Use cuteSV to perform SV calling on each sample.
+
+sniffles
+--------
+Use sniffles to perform SV calling on each sample.
 

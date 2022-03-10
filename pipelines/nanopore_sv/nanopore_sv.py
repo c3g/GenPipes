@@ -217,66 +217,68 @@ class Nanopore(common.MUGQICPipeline):
 
         return jobs
 
-    def picard_merge_sam_files(self):
+    def sambamba_merge_sam_files(self):
         """
-        BAM readset files are merged into one file per sample.
-        Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+        BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
 
         This step takes as input files:
-        Aligned and sorted BAM output files from previous minimap2_align step
+
+        1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
+        2. Else, BAM files from the readset file
         """
+
         jobs = []
-
         for sample in self.samples:
-
             alignment_directory = os.path.join("alignment", sample.name)
-
-            # Find input readset BAMs first from previous minimap2_align job,
-            readset_bams = self.select_input_files([
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
-            ])
-
+            candidate_readset_bams = [
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in
+                 sample.readsets]
+            ]
+            readset_bams = self.select_input_files(candidate_readset_bams)
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
-
                 readset_bam = readset_bams[0]
-
                 readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
                 sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
 
-                job = concat_jobs(
-                    [
-                        mkdir_job,
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(
+                            os.path.dirname(sample_bam)
+                        ),
                         bash.ln(
                             readset_bam,
-                            sample_bam
+                            sample_bam,
+                            self.output_dir
                         ),
                         bash.ln(
                             readset_index,
-                            sample_index
+                            sample_index,
+                            self.output_dir
                         )
                     ],
-                    name="symlink_readset_sample_bam." + sample.name,
-                    samples=[sample],
+                        name="symlink_readset_sample_bam." + sample.name,
+                        samples=[sample]
+                    )
                 )
-                job.samples = [sample]
 
             elif len(sample.readsets) > 1:
-
-                job = concat_jobs(
-                    [
-                        mkdir_job,
-                        gatk4.merge_sam_files(readset_bams, sample_bam)
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(
+                            os.path.dirname(sample_bam)
+                        ),
+                        sambamba.merge(
+                            readset_bams,
+                            sample_bam
+                        )
                     ],
-                    samples=[sample],
-                    name="picard_merge_sam_files." + sample.name
+                        name="sambamba_merge_sam_files." + sample.name,
+                        samples=[sample]
+                    )
                 )
-
-            jobs.append(job)
-
         return jobs
 
     def svim(self):
@@ -345,7 +347,7 @@ class Nanopore(common.MUGQICPipeline):
             self.blastqc,
             self.minimap2_align,
             self.pycoqc,
-            self.picard_merge_sam_files,
+            self.sambamba_merge_sam_files,
             self.svim,
             self.cuteSV,
             self.sniffles,
