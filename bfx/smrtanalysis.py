@@ -60,13 +60,13 @@ filterm4.py {outfile} > {outfile_filtered} 2> {outfile_filtered}.log'""".format(
             infile=infile,
             infile_long=infile_long,
             outfile=outfile,
-            m=config.param('smrtanalysis_blasr', 'm', type='int'),
-            threads=config.param('smrtanalysis_blasr', 'threads', type='posint'),
-            bestn=config.param('smrtanalysis_blasr', 'bestn', type='int'),
-            n_candidates=config.param('smrtanalysis_blasr', 'n_candidates', type='int'),
-            min_read_length=config.param('smrtanalysis_blasr', 'min_read_length', type='int'),
-            max_score=config.param('smrtanalysis_blasr', 'max_score', type='int'),
-            max_lcp_length=config.param('smrtanalysis_blasr', 'max_lcp_length', type='int'),
+            m=config.param('smrtanalysis_blasr', 'm', param_type='int'),
+            threads=config.param('smrtanalysis_blasr', 'threads', param_type='posint'),
+            bestn=config.param('smrtanalysis_blasr', 'bestn', param_type='int'),
+            n_candidates=config.param('smrtanalysis_blasr', 'n_candidates', param_type='int'),
+            min_read_length=config.param('smrtanalysis_blasr', 'min_read_length', param_type='int'),
+            max_score=config.param('smrtanalysis_blasr', 'max_score', param_type='int'),
+            max_lcp_length=config.param('smrtanalysis_blasr', 'max_lcp_length', param_type='int'),
             sam=" \\\n  -sam" if sam else "",
             outfile_fofn=outfile_fofn,
             outfile_filtered=outfile_filtered
@@ -250,7 +250,7 @@ m4topre.py \\
             infile=infile,
             allm4=allm4,
             subreads=subreads,
-            bestn=config.param('smrtanalysis_m4topre', 'bestn', type='int'),
+            bestn=config.param('smrtanalysis_m4topre', 'bestn', param_type='int'),
             outfile=outfile
     ))
 
@@ -294,7 +294,7 @@ pbalign \\
             ref_upload=ref_upload,
             cmph5=cmph5,
             tmp_dir=temp_dir,
-            threads=config.param('smrtanalysis_pbalign', 'threads', type='posint'),
+            threads=config.param('smrtanalysis_pbalign', 'threads', param_type='posint'),
             control_regions_fofn=control_regions_fofn
     ))
 
@@ -317,7 +317,7 @@ pbdagcon -a -j {threads} \\
   > {outfile}' && \\
 awk '{{if ($0~/>/) {{sub(/>/,"@",$0);print;}} else {{l=length($0);q=""; while (l--) {{q=q "9"}}printf("%s\\n+\\n%s\\n",$0,q)}}}}' {outfile} \\
   > {outfile_fastq}""".format(
-            threads=config.param('smrtanalysis_pbdagcon', 'threads', type='posint'),
+            threads=config.param('smrtanalysis_pbdagcon', 'threads', param_type='posint'),
             infile=infile,
             outfile=outfile,
             outfile_fastq=outfile_fastq
@@ -368,7 +368,7 @@ pbutgcns_wf.sh'""".format(
             outdir=outdir,
             tmp_dir=temp_dir,
             prefix=prefix,
-            threads=config.param('smrtanalysis_pbutgcns', 'threads', type='posint'),
+            threads=config.param('smrtanalysis_pbutgcns', 'threads', param_type='posint'),
             outfile=outfile
     ))
 
@@ -525,8 +525,8 @@ variantCaller.py \\
 gunzip -c \\
   {outfile_fasta} \\
   > {outfile_fasta_uncompressed}""".format(
-            protocol=config.param('smrtanalysis_variant_caller', 'protocol', type='dirpath'),
-            threads=config.param('smrtanalysis_variant_caller', 'threads', type='posint'),
+            protocol=config.param('smrtanalysis_variant_caller', 'protocol', param_type='dirpath'),
+            threads=config.param('smrtanalysis_variant_caller', 'threads', param_type='posint'),
             algorithm=config.param('smrtanalysis_variant_caller', 'algorithm'),
             cmph5=cmph5,
             ref_fasta=ref_fasta,

@@ -34,7 +34,7 @@ def resolve_readset_coverage_bed(readset):
                 return None
         else:
             # Add filepath validation
-            coverage_target = config.param('bvatools_depth_of_coverage', 'coverage_targets', type='filepath')
+            coverage_target = config.param('bvatools_depth_of_coverage', 'coverage_targets', param_type='filepath')
             return coverage_target
     else:
         return None
@@ -42,7 +42,7 @@ def resolve_readset_coverage_bed(readset):
 # If per RG != 0 is given there will be multiple outputs, so output is a prefix
 # If per RG == 0 or undef, output is an actual file.
 def basefreq(input, output, positions, per_rg):
-    threads = config.param('bvatools_basefreq', 'threads', type='int')
+    threads = config.param('bvatools_basefreq', 'threads', param_type='int')
 
     return Job(
         [input, positions],
@@ -86,8 +86,8 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
         java_other_options=config.param('bvatools_depth_of_coverage', 'java_other_options'),
         ram=config.param('bvatools_depth_of_coverage', 'ram'),
         other_options=other_options,
-        threads=config.param('bvatools_depth_of_coverage', 'threads', type='posint'),
-        reference_genome=reference_genome if reference_genome else config.param('bvatools_depth_of_coverage', 'genome_fasta', type='filepath'),
+        threads=config.param('bvatools_depth_of_coverage', 'threads', param_type='posint'),
+        reference_genome=reference_genome if reference_genome else config.param('bvatools_depth_of_coverage', 'genome_fasta', param_type='filepath'),
         intervals=" \\\n  --intervals " + coverage_bed if coverage_bed else "",
         input=input,
         output=output
@@ -170,7 +170,7 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
         java_other_options=config.param('bvatools_ratiobaf', 'java_other_options'),
         ram=config.param('bvatools_ratiobaf', 'ram'),
         other_options=config.param('bvatools_ratiobaf', 'other_options', required=False),
-        reference_dictionary=config.param('bvatools_ratiobaf', 'genome_dictionary', type='filepath'),
+        reference_dictionary=config.param('bvatools_ratiobaf', 'genome_dictionary', param_type='filepath'),
         positions=positions,
         basefreq=basefreq,
         output_prefix=output_prefix
@@ -178,7 +178,7 @@ java {java_other_options} -Xmx{ram} -jar $BVATOOLS_JAR \\
     )
 
 def readsqc(read1, read2, type, region_name, output_directory):
-    threads = config.param('bvatools_readsqc', 'threads', type='int', required=False)
+    threads = config.param('bvatools_readsqc', 'threads', param_type='int', required=False)
 
     return Job(
         [read1, read2],

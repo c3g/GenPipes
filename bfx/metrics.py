@@ -63,11 +63,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR
             tmp_dir=config.param('rnaseqc', 'tmp_dir'),
             java_other_options=config.param('rnaseqc', 'java_other_options'),
             ram=config.param('rnaseqc', 'ram'),
-            number_top_transcripts=config.param('rnaseqc', 'number_top_transcript', type='int'),
+            number_top_transcripts=config.param('rnaseqc', 'number_top_transcript', param_type='int'),
             output_directory=output_directory,
-            reference_genome_fasta=reference if reference else config.param('rnaseqc', 'genome_fasta', type='filepath'),
+            reference_genome_fasta=reference if reference else config.param('rnaseqc', 'genome_fasta', param_type='filepath'),
             sample_file=sample_file,
-            gtf_file=gtf_file if gtf_file else config.param('rnaseqc', 'gtf', type='filepath'),
+            gtf_file=gtf_file if gtf_file else config.param('rnaseqc', 'gtf', param_type='filepath'),
             other_options=" \\\n  " + config.param('rnaseqc', 'other_options', required=False) if config.param('rnaseqc', 'other_options', required=False) else "",
             single_end=" \\\n  -singleEnd" if is_single_end else "",
             ribosomal_interval_file=" \\\n  -rRNA " + ribosomal_interval_file if ribosomal_interval_file else "\\\n  -BWArRNA dummy_rRNA.fa"
@@ -96,7 +96,7 @@ zip -r {saturation_directory}.zip {saturation_directory}""".format(
             gene_size_file=gene_size_file,
             rpkm_directory=rpkm_directory,
             saturation_directory=saturation_directory,
-            threads=config.param('rpkm_saturation', 'threads', type='posint'),
+            threads=config.param('rpkm_saturation', 'threads', param_type='posint'),
             other_options=config.param('rpkm_saturation', 'other_options', required=False)
         ),
         removable_files=[saturation_directory]
@@ -134,7 +134,7 @@ python $PYTHON_TOOLS/vcfStats.py \\
   -o {output} \\
   -f {list}""".format(
             input=input,
-            dictionary=config.param('vcf_stats', 'genome_dictionary', type='filepath'),
+            dictionary=config.param('vcf_stats', 'genome_dictionary', param_type='filepath'),
             output=output,
             list=list
         )

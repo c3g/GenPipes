@@ -36,8 +36,8 @@ def tophat(
     rg_center=""
     ):
 
-    gtf = config.param('tophat', 'gtf', required=False, type='filepath')
-    transcriptome_bowtie_index = config.param('tophat', 'transcriptome_bowtie_index', required=False, type='prefixpath')
+    gtf = config.param('tophat', 'gtf', required=False, param_type='filepath')
+    transcriptome_bowtie_index = config.param('tophat', 'transcriptome_bowtie_index', required=False, param_type='prefixpath')
 
     return Job(
         [reads1, reads2],
@@ -73,7 +73,7 @@ tophat {other_options}{gtf}{transcriptome_index} \\
         library_type=config.param('DEFAULT', 'strand_info'),
         output_directory=output_directory,
         num_threads=config.param('tophat', 'threads'),
-        bowtie_index=config.param('tophat', 'genome_bowtie_index', type='prefixpath'),
+        bowtie_index=config.param('tophat', 'genome_bowtie_index', param_type='prefixpath'),
         reads1=reads1,
         reads2=" \\\n  " + reads2 if reads2 else ""
         )

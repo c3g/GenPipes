@@ -409,7 +409,7 @@ mkdir -p \\
         # ini file
         # otherwise get all chrs information from dictionary file and creates the chromosome length file
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = config.param('chromimpute_preprocess', 'chromosomes').split(",")
@@ -443,7 +443,7 @@ mkdir -p \\
         chrs = config.param('chromimpute_preprocess', 'chromosomes')
 
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             all_chrs = genome.chr_names_conv(genome_dict)
         else:
             all_chrs = config.param('chromimpute_preprocess', 'chromosomes').split(",")

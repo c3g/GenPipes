@@ -57,8 +57,8 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         """
             Run Kallisto on fastq files for a fast esimate of abundance.
         """
-        transcriptome_file = config.param('kallisto', 'transcriptome_idx', type="filepath")
-        tx2genes_file = config.param('kallisto', 'transcript2genes', type="filepath")
+        transcriptome_file = config.param('kallisto', 'transcriptome_idx', param_type="filepath")
+        tx2genes_file = config.param('kallisto', 'transcript2genes', param_type="filepath")
         bootstraps = config.param('kallisto', 'bootstraps')
         other_param = config.param('kallisto', 'other_options', required=False)
 
@@ -148,7 +148,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
 cp \\
   {tx2genes_file} \\
   {report_dir}""".format(
-                            tx2genes_file=config.param('kallisto', 'transcript2genes', type="filepath"),
+                            tx2genes_file=config.param('kallisto', 'transcript2genes', param_type="filepath"),
                             report_dir=report_dir
                         )
                     )
@@ -191,7 +191,7 @@ cp \\
             Job(command="mkdir -p exploratory"),
             gq_seq_utils.exploratory_analysis_rnaseq_light(
                 abundance_file,
-                config.param('gq_seq_utils_exploratory_analysis_rnaseq_light', 'genes', type='filepath'),
+                config.param('gq_seq_utils_exploratory_analysis_rnaseq_light', 'genes', param_type='filepath'),
                 "exploratory"
             )
         ], name="gq_seq_utils_exploratory_analysis_rnaseq_light", samples=self.samples))

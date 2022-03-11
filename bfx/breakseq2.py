@@ -41,8 +41,8 @@ run_breakseq2.py {options} --bwa bwa --samtools samtools \\
     --work {output}""".format(
             options=config.param('run_breakseq2','options'),
             threads=config.param('run_breakseq2','threads'),
-            genome=config.param('run_breakseq2','genome_fasta',type='filepath'),
-	        gff=config.param('run_breakseq2','gff',type='filepath'),
+            genome=config.param('run_breakseq2','genome_fasta', param_type='filepath'),
+	        gff=config.param('run_breakseq2','gff', param_type='filepath'),
 	        output=output_dir,
 	        input=input,
 	        sample=sample_name,

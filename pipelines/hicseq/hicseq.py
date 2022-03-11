@@ -297,7 +297,7 @@ class HicSeq(common.Illumina):
         res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
 
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = chrs.split(",")
@@ -366,7 +366,7 @@ class HicSeq(common.Illumina):
         #run a loop for each resolution type and for each sample pair
         #compare each chromosome in the selected sample pair
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = [x.strip() for x in chrs.split(",")]
@@ -494,7 +494,7 @@ class HicSeq(common.Illumina):
             jobs.append(job_fend)
 
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = [x.strip() for x in chrs.split(",")]
@@ -646,7 +646,7 @@ class HicSeq(common.Illumina):
         res_chr = config.param('identify_TADs', 'resolution_TADs').split(",")
 
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = chrs.split(",")
@@ -695,7 +695,7 @@ class HicSeq(common.Illumina):
         res = config.param('identify_TADs', 'resolution_TADs').split(",")[0]
 
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', type='filepath'))
+            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = chrs.split(",")

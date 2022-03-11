@@ -57,7 +57,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
         ram=config.param('purple', 'ram'),
         threads=config.param('purple', 'threads'),
         gc_profile=config.param('purple', 'gc_profile'),
-        reference_sequence=config.param('purple', 'genome_fasta', type='filepath'),
+        reference_sequence=config.param('purple', 'genome_fasta', param_type='filepath'),
         reference=normal_name,
         tumor=tumor_name,
         amber=amber,

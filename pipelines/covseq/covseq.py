@@ -782,7 +782,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                         bcftools.norm(
                             file,
                             None,
-                            "-f " + config.param("DEFAULT", 'genome_fasta', type='filepath'),
+                            "-f " + config.param("DEFAULT", 'genome_fasta', param_type='filepath'),
                             ini_section='freebayes_call_variants'
                             ),
                         htslib.bgzip_tabix(
@@ -944,7 +944,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                     bcftools.consensus(
                         input_ambiguous_norm,
                         output_ambiguous_fasta,
-                        "-f " + config.param("DEFAULT", 'genome_fasta', type='filepath') + " -I "
+                        "-f " + config.param("DEFAULT", 'genome_fasta', param_type='filepath') + " -I "
                         ),
                     pipe_jobs([
                         bcftools.consensus(

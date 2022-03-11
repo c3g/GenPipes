@@ -118,12 +118,12 @@ class DnaSeqRaw(common.Illumina):
     @property
     def sequence_dictionary(self):
         if not hasattr(self, "_sequence_dictionary"):
-            self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', type='filepath'), variant=True)
+            self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
         return self._sequence_dictionary
 
     def sequence_dictionary_variant(self):
         if not hasattr(self, "_sequence_dictionary_variant"):
-            self._sequence_dictionary_variant = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', type='filepath'), variant=True)
+            self._sequence_dictionary_variant = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
         return self._sequence_dictionary_variant
 
     def generate_approximate_windows(self, nb_jobs):
@@ -248,7 +248,7 @@ END
             output_dir = os.path.join("trim", readset.sample.name)
             trim_file_prefix = os.path.join(output_dir, readset.name)
 
-            adapter_file = config.param('skewer_trimming', 'adapter_file', required=False, type='filepath')
+            adapter_file = config.param('skewer_trimming', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
             if not adapter_file:
@@ -645,7 +645,7 @@ END
 
         jobs = []
 
-        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', type='posint')
+        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of realign jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -768,7 +768,7 @@ END
 
         jobs = []
 
-        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', type='posint')
+        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
@@ -1221,7 +1221,7 @@ END
             ])
             output = os.path.join(qualimap_directory, "genome_results.txt")
 
-            use_bed = config.param('dna_sample_qualimap', 'use_bed', type='boolean', required=True)
+            use_bed = config.param('dna_sample_qualimap', 'use_bed', param_type='boolean', required=True)
 
             options = None
             if use_bed:
@@ -1305,7 +1305,7 @@ END
             file = re.sub(".bam", "", os.path.basename(input))
             output = os.path.join(fastqc_directory, file + "_fastqc.zip")
 
-            adapter_file = config.param('fastqc', 'adapter_file', required=False, type='filepath')
+            adapter_file = config.param('fastqc', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
             if not adapter_file:
@@ -1549,7 +1549,7 @@ END
             job = bvatools.basefreq(
                 input,
                 alignment_file_prefix+"commonSNPs.alleleFreq.csv",
-                config.param('extract_common_snp_freq', 'common_snp_positions', type='filepath'),
+                config.param('extract_common_snp_freq', 'common_snp_positions', param_type='filepath'),
                 0
             )
             job.name = "extract_common_snp_freq." + sample.name
@@ -1571,7 +1571,7 @@ END
             job = bvatools.ratiobaf(
                 alignment_file_prefix+"commonSNPs.alleleFreq.csv",
                 alignment_file_prefix+"ratioBAF",
-                config.param('baf_plot', 'common_snp_positions', type='filepath')
+                config.param('baf_plot', 'common_snp_positions', param_type='filepath')
             )
             job.name = "baf_plot." + sample.name
             job.samples = [sample]
@@ -1842,7 +1842,7 @@ END
 
         jobs = []
 
-        nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_jobs', type='posint')
+        nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
         if nb_haplotype_jobs > 50:
             log.warning("Number of haplotype jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -1938,7 +1938,7 @@ END
         """
 
         jobs = []
-        nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_jobs', type='posint')
+        nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
@@ -2006,8 +2006,8 @@ END
         """
 
         jobs = []
-        nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', type='posint')
-        nb_maxbatches_jobs = config.param('gatk_combine_gvcf', 'nb_batch', type='posint')
+        nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', param_type='posint')
+        nb_maxbatches_jobs = config.param('gatk_combine_gvcf', 'nb_batch', param_type='posint')
         
         interval_list = None
 
@@ -2187,7 +2187,7 @@ END
         """
 
         jobs = []
-        nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', type='posint')
+        nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', param_type='posint')
         haplotype_file_prefix = os.path.join("variants", "allSamples")
         output_haplotype = os.path.join("variants", "allSamples.hc.g.vcf.gz")
         output_haplotype_genotyped = os.path.join("variants", "allSamples.hc.vcf.gz")
@@ -2381,7 +2381,7 @@ pandoc \\
         """
 
         jobs = []
-        nb_jobs = config.param('rawmpileup', 'nb_jobs', type='posint')
+        nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
         
         for sample in self.samples:
             mpileup_directory = os.path.join("alignment", sample.name, "mpileup")
@@ -2448,7 +2448,7 @@ pandoc \\
         """
 
         jobs = []
-        nb_jobs = config.param('rawmpileup', 'nb_jobs', type='posint')
+        nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
         
         for sample in self.samples:
             mpileup_file_prefix = ""
@@ -2486,7 +2486,7 @@ pandoc \\
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam") for sample in self.samples],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam") for sample in self.samples]
             ])
-            nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', type='posint')
+            nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', param_type='posint')
             output_directory = "variants/rawBCF"
 
             mkdir_job = bash.mkdir(output_directory)
@@ -2546,7 +2546,7 @@ pandoc \\
         """
 
         jobs = []
-        nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', type='posint')
+        nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', param_type='posint')
         
         output_file_prefix = "variants/allSamples.merged."
 
@@ -3471,7 +3471,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 ], name="cnvkit_batch.vcf_flt." + sample.name))
                 normal = sample.name
                 
-            if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples', type='posint'):
+            if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples', param_type='posint'):
                 jobs.append(concat_jobs([
                     bash.mkdir(cnvkit_dir, remove=True),
                     cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn,

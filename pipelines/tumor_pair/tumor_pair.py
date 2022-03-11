@@ -132,7 +132,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
     def sequence_dictionary_variant(self):
         if not hasattr(self, "_sequence_dictionary_variant"):
             self._sequence_dictionary_variant = parse_sequence_dictionary_file(
-                config.param('DEFAULT', 'genome_dictionary', type='filepath'),
+                config.param('DEFAULT', 'genome_dictionary', param_type='filepath'),
                 variant=True
             )
         return self._sequence_dictionary_variant
@@ -250,7 +250,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', type='posint')
+        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of realign jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -491,7 +491,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', type='posint')
+        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', param_type='posint')
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
@@ -841,7 +841,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             pair_directory = os.path.join(self.output_dir,"pairedVariants", tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
-            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', type='posint')
+            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
             bedfile = config.param('rawmpileup_panel', 'panel')
 
             if nb_jobs == 1:
@@ -895,7 +895,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
-            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', type='posint')
+            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
 
             if nb_jobs == 1:
                 input_pair = os.path.join(varscan_directory, tumor_pair.name + ".mpileup")
@@ -1009,7 +1009,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
-            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', type='posint')
+            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
 
             if nb_jobs == 1:
                 jobs.append(concat_jobs([
@@ -1355,7 +1355,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         [Picard](https://broadinstitute.github.io/picard/picard-metric-definitions.html)
         """
     
-        ffpe = config.param('picard_collect_sequencing_artifacts_metrics', 'FFPE', type='boolean')
+        ffpe = config.param('picard_collect_sequencing_artifacts_metrics', 'FFPE', param_type='boolean')
 
         ##check the library status
         library = {}
@@ -1554,7 +1554,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             ])
 
             tumor_output = os.path.join(tumor_qualimap_directory, "genome_results.txt")
-            use_bed = config.param('dna_sample_qualimap', 'use_bed', type='boolean', required=True)
+            use_bed = config.param('dna_sample_qualimap', 'use_bed', param_type='boolean', required=True)
         
             options = None
             if use_bed:
@@ -1645,7 +1645,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             tumor_file = re.sub(".bam", "", os.path.basename(tumor_input))
             tumor_output = os.path.join(tumor_fastqc_directory, tumor_file + "_fastqc.zip")
         
-            adapter_file = config.param('fastqc', 'adapter_file', required=False, type='filepath')
+            adapter_file = config.param('fastqc', 'adapter_file', required=False, param_type='filepath')
             normal_adapter_job = None
             tumor_adapter_job = None
         
@@ -1830,7 +1830,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
             ])
 
-            nb_jobs = config.param('rawmpileup', 'nb_jobs', type='posint')
+            nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
             if nb_jobs > 50:
                 log.warning(
                     "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
@@ -1902,7 +1902,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
             output = os.path.join(varscan_directory, tumor_pair.name)
 
-            nb_jobs = config.param('rawmpileup', 'nb_jobs', type='posint')
+            nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
             if nb_jobs > 50:
                 log.warning(
                     "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
@@ -2021,7 +2021,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
-            nb_jobs = config.param('rawmpileup', 'nb_jobs', type='posint')
+            nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
             if nb_jobs > 50:
                 log.warning(
                     "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
@@ -2190,7 +2190,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         created_interval_lists = []
         
-        nb_jobs = config.param('gatk_mutect2', 'nb_jobs', type='posint')
+        nb_jobs = config.param('gatk_mutect2', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of mutect jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -2327,7 +2327,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        nb_jobs = config.param('gatk_mutect2', 'nb_jobs', type='posint')
+        nb_jobs = config.param('gatk_mutect2', 'nb_jobs', param_type='posint')
 
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
@@ -2838,12 +2838,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
         ##TO DO - the BED system needs to be revisted !! 
         jobs = []
 
-        nb_jobs = config.param('vardict_paired', 'nb_jobs', type='posint')
+        nb_jobs = config.param('vardict_paired', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of vardict jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
-        use_bed = config.param('vardict_paired', 'use_bed', type='boolean', required=True)
-        genome_dictionary = config.param('DEFAULT', 'genome_dictionary', type='filepath')
+        use_bed = config.param('vardict_paired', 'use_bed', param_type='boolean', required=True)
+        genome_dictionary = config.param('DEFAULT', 'genome_dictionary', param_type='filepath')
 
         interval_list = []
 
@@ -3044,8 +3044,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
-        nb_jobs = config.param('vardict_paired', 'nb_jobs', type='posint')
-        use_bed = config.param('vardict_paired', 'use_bed', type='boolean', required=True)
+        nb_jobs = config.param('vardict_paired', 'nb_jobs', param_type='posint')
+        use_bed = config.param('vardict_paired', 'use_bed', param_type='boolean', required=True)
 
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
@@ -3288,7 +3288,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
 
-        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', type='posint')
+        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -3370,7 +3370,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
 
-        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', type='posint')
+        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -3451,7 +3451,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
 
-        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', type='posint')
+        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
 
         for tumor_pair in self.tumor_pairs.values():
             annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
@@ -3487,7 +3487,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
 
-        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', type='posint')
+        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
 
         for tumor_pair in self.tumor_pairs.values():
             annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
@@ -4063,7 +4063,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         """
         jobs = []
-        nb_jobs = config.param('sequenza', 'nb_jobs', type='posint')
+        nb_jobs = config.param('sequenza', 'nb_jobs', param_type='posint')
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join("alignment", tumor_pair.normal.name, tumor_pair.name)

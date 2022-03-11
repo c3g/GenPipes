@@ -55,7 +55,7 @@ run_metasv.py {options} \\
   {isize_sd}""".format(
         options=config.param('metasv_ensemble','options'),
         threads=config.param('metasv_ensemble','threads'),
-        genome=config.param('metasv_ensemble','genome_fasta',type='filepath'),        
+        genome=config.param('metasv_ensemble','genome_fasta', param_type='filepath'),
         lumpy=lumpy,
         manta=manta,
         wham="--wham_vcf " + wham if wham else "",

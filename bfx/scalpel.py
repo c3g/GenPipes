@@ -41,7 +41,7 @@ scalpel-discovery --somatic \\
   --dir {outputDir} \\
   --numprocs {cores_per_job} \\
   --bed {bed}""".format(
-        reference_sequence=config.param('scalpel', 'genome_fasta', type='filepath'),
+        reference_sequence=config.param('scalpel', 'genome_fasta', param_type='filepath'),
         inputNormal=inputNormal,
         inputTumor=inputTumor,
         outputDir=outputDir,
@@ -67,7 +67,7 @@ scalpel-discovery --somatic --two-pass \\
   --dir {outputDir} \\
   --numprocs {cores_per_job} \\
   --bed {bed}""".format(
-        reference_sequence=config.param('scalpel', 'genome_fasta', type='filepath'),
+        reference_sequence=config.param('scalpel', 'genome_fasta', param_type='filepath'),
         inputNormal=inputNormal,
         inputTumor=inputTumor,
         outputDir=outputDir,

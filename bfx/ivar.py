@@ -47,8 +47,8 @@ ivar trim -i {input_bam} \\
   {other_options}""".format(
             input_bam=input_bam,
             prefix=prefix,
-            bed_file="-b " + config.param('ivar_trim_primers', 'bed_primers', type='filepath') if config.param('ivar_trim_primers', 'bed_primers') else "",
-            primer_pair="-f " + config.param('ivar_trim_primers', 'tsv_primer_pair', type='filepath') if config.param('ivar_trim_primers', 'tsv_primer_pair') else "",
+            bed_file="-b " + config.param('ivar_trim_primers', 'bed_primers', param_type='filepath') if config.param('ivar_trim_primers', 'bed_primers') else "",
+            primer_pair="-f " + config.param('ivar_trim_primers', 'tsv_primer_pair', param_type='filepath') if config.param('ivar_trim_primers', 'tsv_primer_pair') else "",
             other_options=config.param('ivar_trim_primers', 'other_options')
             ),
         )
@@ -71,8 +71,8 @@ ivar variants -p {prefix} \\
   {gff_file} \\
   {other_options}""".format(
             prefix=prefix,
-            reference_genome=config.param('ivar_call_variants', 'genome_fasta', type='filepath'),
-            gff_file="-g " + config.param('ivar_call_variants', 'gff_orf', type='filepath') if config.param('ivar_call_variants', 'gff_orf') else "",
+            reference_genome=config.param('ivar_call_variants', 'genome_fasta', param_type='filepath'),
+            gff_file="-g " + config.param('ivar_call_variants', 'gff_orf', param_type='filepath') if config.param('ivar_call_variants', 'gff_orf') else "",
             other_options=config.param('ivar_call_variants', 'other_options')
             ),
         )

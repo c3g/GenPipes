@@ -281,7 +281,7 @@ class Illumina(MUGQICPipeline):
             trim_log = trim_file_prefix + "log"
 
             # Use adapter FASTA in config file if any, else create it from readset file
-            adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, type='filepath')
+            adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
             adapter_job = None
             if not adapter_fasta:
                 adapter_fasta = trim_file_prefix + "adapters.fa"
@@ -428,8 +428,8 @@ pandoc \\
   --variable trim_readset_table="$trim_readset_table_md" \\
   --to markdown \\
   > {report_file}""".format(
-                    trailing_min_quality=config.param('trimmomatic', 'trailing_min_quality', type='int'),
-                    min_length=config.param('trimmomatic', 'min_length', type='posint'),
+                    trailing_min_quality=config.param('trimmomatic', 'trailing_min_quality', param_type='int'),
+                    min_length=config.param('trimmomatic', 'min_length', param_type='posint'),
                     read_type=read_type,
                     report_template_dir=self.report_template_dir,
                     readset_merge_trim_stats=readset_merge_trim_stats,

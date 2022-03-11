@@ -79,7 +79,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             output=output,
             intervals=intervals,
             baits=baits_intervals if baits_intervals != "" else intervals,
-            reference_sequence=reference_sequence if reference_sequence else config.param('picard_calculate_hs_metrics', 'genome_fasta', type='filepath')
+            reference_sequence=reference_sequence if reference_sequence else config.param('picard_calculate_hs_metrics', 'genome_fasta', param_type='filepath')
             )
         )
 
@@ -126,10 +126,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             tmp_dir=config.param('picard_collect_multiple_metrics', 'tmp_dir'),
             java_other_options=config.param('picard_collect_multiple_metrics', 'java_other_options'),
             ram=config.param('picard_collect_multiple_metrics', 'ram'),
-            reference_sequence=reference_sequence if reference_sequence else config.param('picard_collect_multiple_metrics', 'genome_fasta', type='filepath'),
+            reference_sequence=reference_sequence if reference_sequence else config.param('picard_collect_multiple_metrics', 'genome_fasta', param_type='filepath'),
             input=input,
             output=output,
-            max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', type='int')
+            max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
             )
         )
 
@@ -157,7 +157,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             ram=config.param('picard_fix_mate_information', 'ram'),
             input=input,
             output=output,
-            max_records_in_ram=config.param('picard_fix_mate_information', 'max_records_in_ram', type='int')
+            max_records_in_ram=config.param('picard_fix_mate_information', 'max_records_in_ram', param_type='int')
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
@@ -191,7 +191,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
             output=output,
             metrics_file=metrics_file,
-            max_records_in_ram=config.param('picard_mark_duplicates', 'max_records_in_ram', type='int'),
+            max_records_in_ram=config.param('picard_mark_duplicates', 'max_records_in_ram', param_type='int'),
             other_options= config.param('picard_mark_duplicates', 'other_options',required = False) if config.param('picard_mark_duplicates', 'other_options',required = False) else ""
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
@@ -223,7 +223,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
         ram=config.param('picard_merge_sam_files', 'ram'),
         inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
         output=output,
-        max_records_in_ram=config.param('picard_merge_sam_files', 'max_records_in_ram', type='int')
+        max_records_in_ram=config.param('picard_merge_sam_files', 'max_records_in_ram', param_type='int')
         ),
         removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output)]
     )
@@ -254,8 +254,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             ram=config.param('picard_reorder_sam', 'ram'),
             input=input,
             output=output,
-            reference=config.param('picard_reorder_sam', 'genome_fasta', type='filepath'),
-            max_records_in_ram=config.param('picard_reorder_sam', 'max_records_in_ram', type='int')
+            reference=config.param('picard_reorder_sam', 'genome_fasta', param_type='filepath'),
+            max_records_in_ram=config.param('picard_reorder_sam', 'max_records_in_ram', param_type='int')
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output)]
         )
@@ -316,7 +316,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             input=input,
             output=output,
             sort_order=sort_order,
-            max_records_in_ram=config.param(ini_section, 'max_records_in_ram', type='int')
+            max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None]
         )
@@ -348,7 +348,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             ram=config.param(ini_section, 'ram'),
             inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
             output=output,
-            seq_dict=config.param(ini_section, 'genome_dictionary', type='filepath')
+            seq_dict=config.param(ini_section, 'genome_dictionary', param_type='filepath')
             )
         )
 
@@ -384,9 +384,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             output=output,
             ref_flat=annotation_flat if annotation_flat else config.param('picard_collect_rna_metrics', 'annotation_flat'),
             strand_specificity=config.param('picard_collect_rna_metrics', 'strand_info'),
-            min_length=config.param('picard_collect_rna_metrics', 'minimum_length', type='int'),
+            min_length=config.param('picard_collect_rna_metrics', 'minimum_length', param_type='int'),
             reference=reference_sequence if reference_sequence else config.param('picard_collect_rna_metrics', 'genome_fasta'),
-            max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', type='int')
+            max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', param_type='int')
             )
         )
 
@@ -460,7 +460,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             tmp_dir=config.param('picard_bed2interval_list', 'tmp_dir'),
             java_other_options=config.param('picard_bed2interval_list', 'java_other_options'),
             ram=config.param('picard_bed2interval_list', 'ram'),
-            dictionary=dictionary if dictionary else config.param('picard_bed2interval_list', 'genome_dictionary', type='filepath'),
+            dictionary=dictionary if dictionary else config.param('picard_bed2interval_list', 'genome_dictionary', param_type='filepath'),
             bed=bed,
             output=output
             )

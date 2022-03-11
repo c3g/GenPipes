@@ -46,7 +46,7 @@ run_gatk_pileup_for_sample.py -t {tmp_dir} \\
   -O {output} {other_options}""".format(
         tmp_dir=config.param('conpair_concordance_contamination', 'tmp_dir'),
         ram=config.param('conpair_concordance_contamination', 'ram'),
-        reference_sequence=config.param('conpair_concordance_contamination', 'genome_fasta', type='filepath'),
+        reference_sequence=config.param('conpair_concordance_contamination', 'genome_fasta', param_type='filepath'),
         markers=config.param('conpair_concordance_contamination', 'markers_bed'),
         input=input_bam,
         other_options=" \\\n  " + config.param('conpair_concordance_contamination', 'other_options', required= False) if config.param('conpair_concordance_contamination', 'other_options', required= False) else "",

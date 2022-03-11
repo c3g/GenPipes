@@ -37,7 +37,7 @@ sequenza-utils \\
     {input} \\
     | gzip > \\
     {out}""".format(
-        input=config.param('samtools_mpileup','genome_fasta',type='filepath'),
+        input=config.param('samtools_mpileup','genome_fasta', param_type='filepath'),
         out=output,
         window=config.param('sequenza','window_length')
     ),
@@ -86,7 +86,7 @@ sequenza-utils \\
     --output {out}""".format(
         chr="\\\n    --chromosome " + chr if chr else "",
         gen=genome,
-        reference_sequence=config.param('sequenza', 'genome_fasta', type='filepath'),
+        reference_sequence=config.param('sequenza', 'genome_fasta', param_type='filepath'),
         normal=normal,
         tumor=tumor,
         pileup_options=config.param('sequenza','pileup_options'),
@@ -180,12 +180,12 @@ sequenza_filterAnnotCNV.sh \\
     {output_basename} \\
     {tmp_basename} """.format(
              scones_calls_filtered=calls_filtered,
-             excluded_regions=config.param('scones_annotate', 'excluded_regions_bed', type='filepath', required=True),
-             genes=config.param('scones_annotate', 'genes_bed', type='filepath', required=True),
-             DGV=config.param('scones_annotate', 'dgv_bed', type='filepath', required=True),
-             microsat=config.param('scones_annotate', 'microsat_bed', type='filepath', required=True),
-             repeatMasker=config.param('scones_annotate', 'repeat_masker_bed', type='filepath', required=True),
-             AutosomeSize=config.param('scones_annotate', 'autosome_size_file', type='filepath', required=True),
+             excluded_regions=config.param('scones_annotate', 'excluded_regions_bed', param_type='filepath', required=True),
+             genes=config.param('scones_annotate', 'genes_bed', param_type='filepath', required=True),
+             DGV=config.param('scones_annotate', 'dgv_bed', param_type='filepath', required=True),
+             microsat=config.param('scones_annotate', 'microsat_bed', param_type='filepath', required=True),
+             repeatMasker=config.param('scones_annotate', 'repeat_masker_bed', param_type='filepath', required=True),
+             AutosomeSize=config.param('scones_annotate', 'autosome_size_file', param_type='filepath', required=True),
              output_basename=output_basename,
              tmp_basename=tmp_basename
          )

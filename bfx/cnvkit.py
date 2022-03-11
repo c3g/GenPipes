@@ -60,9 +60,9 @@ cnvkit.py batch {options} \\
   {tumor_bam}""".format(
         options=config.param('cnvkit_batch','batch_options'),
         threads=config.param('cnvkit_batch','threads'),
-        genome=config.param('cnvkit_batch','genome_fasta',type='filepath'),
-        access=config.param('cnvkit_batch','access',type='filepath'),
-        annotate=config.param('cnvkit_batch','refFlat',type='filepath'),
+        genome=config.param('cnvkit_batch','genome_fasta', param_type='filepath'),
+        access=config.param('cnvkit_batch','access', param_type='filepath'),
+        annotate=config.param('cnvkit_batch','refFlat', param_type='filepath'),
         reference="--reference " + reference if reference else "",            
         target_bed="--targets " + target_bed if target_bed else "",
         output_cnn="--output-reference " + output_cnn if output_cnn else "",

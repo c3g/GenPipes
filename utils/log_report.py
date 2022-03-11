@@ -20,6 +20,7 @@
 ################################################################################
 
 import argparse
+import collections
 import csv
 import datetime
 import logging
@@ -41,7 +42,7 @@ class JobStat(object):
     REQUEUE = 'Requeue'
     RESTARTS = 'Restarts'
     RUNTIME = 'RunTime'
-    REMOTE = {'narval': 'narval.calculcanada.ca',
+    REMOTE_LIST = {'narval': 'narval.calculcanada.ca',
               'beluga': 'beluga.calculcanada.ca',
               'cedar': 'cedar.calculcanada.ca',
               'narval': 'narval.calculcanada.ca',
@@ -53,6 +54,9 @@ class JobStat(object):
     SELAPSEDRAW = 'ElapsedRaw'
 
     COMPLETED = 'COMPLETED'
+
+    registery = {}
+    _REMOTE = None
 
     def __init__(self, step_output_file, jobid=None, dependency=None, name=None,
                  parsed_after_header=50, remote_hpc=None):
@@ -74,11 +78,12 @@ class JobStat(object):
         self._sacct_stop = None
         self._parsed_after_header = parsed_after_header
         self._mugqic_exit_status = None
-        self._remote = remote_hpc
+        self.set_remote(remote_hpc)
         self._slurm_state = None
         self._sub_id = None
         self.log_missing = None
         self._elapsed_sec = None
+        self._sacct_val = None
         if os.path.isfile(self._path):
             self.log_missing = False
             self.fill_from_file(self._path)
@@ -86,32 +91,54 @@ class JobStat(object):
             self.log_missing = True
             logger.warning('{} output path is missing'.format(self._path))
 
-        self.get_job_status()
+        self.registery[self.jobid] = self
+        # self.get_job_status()
+
 
     def __str__(self):
 
         return '{} {} {} {} {} {} {}'.format(self.jobid, self.output_log_id, self.name, self.n_cpu,
                                              self.mem, self.runtime_job, self.log_file_exit_status)
 
+    @classmethod
+    def get_remote(cls):
+        return cls._REMOTE
+
+    @classmethod
+    def set_remote(cls, remote_hpc):
+        cls._REMOTE = remote_hpc
+
     @property
     def path(self):
         return os.path.realpath(self._path)
 
-    def sacct(self, jobid):
+    @classmethod
+    def sacct(cls, jobid):
         cmd = ["sacct", "--format=ALL", "-P", "--delimiter", "^", "-j", str(jobid)]
-        if self._remote:
-            cmd = ['ssh', '-o', "StrictHostKeyChecking no", self.REMOTE[self._remote]] + cmd
-        raw_output = subprocess.check_output(cmd).decode("utf-8")
+        if cls.get_remote() is not None:
+            cmd = ['ssh', '-o', "StrictHostKeyChecking no", cls.REMOTE_LIST[cls.get_remote()]] + cmd
+        return subprocess.check_output(cmd).decode("utf-8")
+
+    @classmethod
+    def set_all_status(cls):
+        ids = ','.join([str(i) for i in cls.registery.keys()])
+        raw_output = cls.sacct(ids)
         lines = raw_output.rstrip().splitlines()
         keys = lines[0].strip().split("^")
-        steps = [line.strip().split("^") for line in lines[1:]]
-        acct = dict(zip(keys, zip(*steps)))
-        return acct
+        job_i = [i for i, k in enumerate(keys) if k == cls.SJOBID][0]
+        bidon = collections.defaultdict(list)
+        for line in lines[1:]:
+            slurm_steps = line.strip().split("^")
+            job_id = slurm_steps[job_i].split('.')[0]
+            bidon[job_id].append(slurm_steps)
+        for job_id, steps in bidon.items():
+            acct = dict(zip(keys, zip(*steps)))
+            cls.registery[int(job_id)].set_job_status(acct)
 
-    def get_job_status(self):
-        all_acct = self.sacct(self.jobid)
-        self._slurm_state = all_acct[self.SSTATE]
-        self._sub_id = all_acct[self.SJOBID]
+    def set_job_status(self, sacct_val):
+        self._sacct_val = sacct_val
+        self._slurm_state = sacct_val[self.SSTATE]
+        self._sub_id = sacct_val[self.SJOBID]
 
         if all([s == self.COMPLETED for s in self._slurm_state]):
             self.completed = True
@@ -119,19 +146,19 @@ class JobStat(object):
             self.completed = False
             logger.error('The job {} has a {} slurm state '.format(self.jobid, self._slurm_state))
 
-        self._elapsed_sec = [int(t) if t is not None else 0 for t in all_acct[self.SELAPSEDRAW]]
+        self._elapsed_sec = [int(t) if t is not None else 0 for t in sacct_val[self.SELAPSEDRAW]]
 
     @property
     def slurm_state(self):
         return dict(zip(self._sub_id, self._slurm_state))
 
-    def fill_from_file(self, path):
+    def fill_from_file(self, log_file_path):
         # parse stdout and get all the prologue and epilogues values
         to_parse = False
         n = 0
         lines_to_parse = []
-        if os.path.isfile(path):  # Make sure the file exists
-            for line in open(path):
+        if os.path.isfile(log_file_path):  # Make sure the file exists
+            for line in open(log_file_path):
 
                 if "SLURM FAKE PROLOGUE" in line:
                     n = 0
@@ -159,7 +186,7 @@ class JobStat(object):
                 fake_pro_epi = [i for i, x in enumerate(all_value[self.JOBID])
                                 if self.jobid == int(x)]
             except KeyError:
-                logger.warning('{} has no jobID log'.format(path))
+                logger.warning('{} has no jobID log'.format(log_file_path))
                 fake_pro_epi = []
 
             if len(fake_pro_epi) == 2:
@@ -183,7 +210,7 @@ class JobStat(object):
                 # Just put prologue in it
                 pro = fake_pro_epi[0]
                 epi = pro
-                logger.error('No epilogue in log file {}'.format(path))
+                logger.error('No epilogue in log file {}'.format(log_file_path))
             else:
                 pro = None
                 epi = None
@@ -298,7 +325,7 @@ def get_report(job_list_tsv=None, remote_hpc=None):
             report.append(JobStat(step_output_file=os.path.join(job_output_path, job[3]),
                                   name=job[1], jobid=job[0], dependency=job[2],
                                   remote_hpc=remote_hpc))
-
+        JobStat.set_all_status()
     return report
 
 
