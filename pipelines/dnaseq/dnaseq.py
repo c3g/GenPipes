@@ -786,7 +786,8 @@ END
 
                 job = sambamba.merge(
                     inputs,
-                    merged_realigned_bam
+                    merged_realigned_bam,
+                    "sambamba_merge_realigned"
                 )
                 job.name = "sambamba_merge_realigned." + sample.name
                 job.samples = [sample]
