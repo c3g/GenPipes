@@ -36,7 +36,8 @@ def run_ncovtools(output_filtered_bam,
     ncovtools_directory,
     ncovtools_config,
     output_dir,
-    ini_section='prepare_report'):
+    ini_section='prepare_report',
+    job_scheduler=None):
 
     return Job(
                 input_files=[output_filtered_bam, output_primer_trimmed_bam, output_consensus, output_variants],
@@ -68,10 +69,10 @@ primer_prefix: \\"{primer_prefix}\\"
 assign_lineages: true" > {ncovtools_config} && \\
 echo "Running ncov_tools..." && \\
 cd {ncovtools_directory} && \\
-snakemake --unlock --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE
-snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all
-snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary
-snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis
+{cpulimit}snakemake --unlock --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE
+{cpulimit}snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all
+{cpulimit}snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary
+{cpulimit}snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis
 cd {output_dir} && \\
 module purge""".format(
     ncovtools=config.param(ini_section, 'module_ncovtools'),
@@ -90,6 +91,7 @@ module purge""".format(
     variants_pattern_extension=re.sub(r"^.*?\.", ".", output_variants),
     metadata=os.path.basename(metadata),
     primer_prefix=config.param(ini_section, 'primer_prefix'),
+    cpulimit="cpulimit -i -l " + config.param(ini_section, 'nb_threads') if job_scheduler == "pbs" else "",
     ncovtools_config=ncovtools_config,
     ncovtools_config_local=os.path.basename(ncovtools_config),
     nb_threads=config.param(ini_section, 'nb_threads'),
