@@ -36,12 +36,12 @@ delly call {options} \\
     -g {genome}     \\
     {genotype_file} \\
     {input_pair}""".format(
-            options=config.param('delly_call_filter','options'),
-            threads=config.param('delly_call_filter','threads'),
+            options=global_config_parser.param('delly_call_filter', 'options'),
+            threads=global_config_parser.param('delly_call_filter', 'threads'),
             sv_type=sv_type,
-            exclude_list="\\\n    -x " + config.param('delly_call_filter','exclude_list') if config.param('delly_call_filter','exclude_list') else "",
+            exclude_list="\\\n    -x " + global_config_parser.param('delly_call_filter', 'exclude_list') if global_config_parser.param('delly_call_filter', 'exclude_list') else "",
             output=output,
-            genome=config.param('delly_call_filter','genome_fasta', param_type='filepath'),
+            genome=global_config_parser.param('delly_call_filter', 'genome_fasta', param_type='filepath'),
             genotype_file="-v " + genotype_file if genotype_file else "",
             input_pair="".join(" \\\n " + sample for sample in input_pair)
         )
@@ -85,7 +85,7 @@ delly merge {options} \\
     -t {sv_type}    \\
     -o {output}     \\
     {input_bcfs}""".format(
-            options=config.param('delly_merge_germline','options') if config.param('delly_merge_germline','options') else "",
+            options=global_config_parser.param('delly_merge_germline', 'options') if global_config_parser.param('delly_merge_germline', 'options') else "",
             sv_type=sv_type,
             output=output,
             input_bcfs="".join(" \\\n " + bcf for bcf in input_bcfs)

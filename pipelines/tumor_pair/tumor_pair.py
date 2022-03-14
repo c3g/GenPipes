@@ -31,7 +31,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config
+from core.config import global_config_parser
 from core.job import Job, concat_jobs, pipe_jobs
 from bfx.sample_tumor_pairs import parse_tumor_pair_file
 from bfx.sequence_dictionary import split_by_size, parse_sequence_dictionary_file
@@ -113,12 +113,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
     -p pairs : format - patient_name,normal_sample_name,tumor_sample_name 
     """
 
-    def __init__(self, protocol=None):
+    def __init__(self, *args, protocol='ensemble', pairs_file=None, profyle=None, **kwargs):
         self._protocol = protocol
-        self.argparser.add_argument("-p", "--pairs", help="pairs file", type=argparse.FileType('r'))
-        self.argparser.add_argument("--profyle", help="adjust deliverables to PROFYLE folder conventions (Default: False)", action="store_true")
-        self.argparser.add_argument("-t", "--type", help="Tumor pair analysis type", choices = ["fastpass", "ensemble", "sv"], default="ensemble")
-        super(TumorPair, self).__init__(protocol)
+        self.pairs = pairs_file
+        self.profyle = profyle
+        super(TumorPair, self).__init__(*args, **kwargs)
 
     @property
     def output_dirs(self):
@@ -130,20 +129,30 @@ class TumorPair(dnaseq.DnaSeqRaw):
         }
         return dirs
 
+    @classmethod
+    def argparser(cls, argparser):
+        super().argparser(argparser)
+        cls._argparser.add_argument("-p", "--pairs", help="pairs file", type=argparse.FileType('r'))
+        cls._argparser.add_argument("--profyle", help=("adjust deliverables to PROFYLE folder conventions "
+                                                       "(Default: False)"), action="store_true")
+        cls._argparser.add_argument("-t", "--type", help="Tumor pair analysis type", dest='protocol',
+                                    choices=["fastpass", "ensemble", "sv"], default="ensemble")
+
+        return cls._argparser
     @property
     def tumor_pairs(self):
         if not hasattr(self, "_tumor_pairs"):
             self._tumor_pairs = parse_tumor_pair_file(
-                self.args.pairs.name,
+                self.pairs.name,
                 self.samples,
-                self.args.profyle
+                self.profyle
             )
         return self._tumor_pairs
 
     def sequence_dictionary_variant(self):
         if not hasattr(self, "_sequence_dictionary_variant"):
             self._sequence_dictionary_variant = parse_sequence_dictionary_file(
-                config.param('DEFAULT', 'genome_dictionary', param_type='filepath'),
+                global_config_parser.param('DEFAULT', 'genome_dictionary', param_type='filepath'),
                 variant=True
             )
         return self._sequence_dictionary_variant
@@ -226,7 +235,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         self.output_dir,
                         type="raw_reads",
                         sample=key,
-                        profyle=self.args.profyle
+                        profyle=self.profyle
                     )
                     dir_name, file_name = os.path.split(symlink_pair_job.output_files[0])
                     # do not compute md5sum in the readset input directory
@@ -261,7 +270,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('gatk_indel_realigner', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of realign jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -500,7 +509,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('gatk_indel_realigner', 'nb_jobs', param_type='posint')
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
@@ -599,8 +608,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
             job = sambamba.markdup(
                 normal_input,
                 normal_output,
-                config.param('sambamba_mark_duplicates', 'tmp_dir'),
-                other_options=config.param('sambamba_mark_duplicates', 'options')
+                global_config_parser.param('sambamba_mark_duplicates', 'tmp_dir'),
+                other_options=global_config_parser.param('sambamba_mark_duplicates', 'options')
             )
             job.name = "sambamba_mark_duplicates." + tumor_pair.name + "." + tumor_pair.normal.name
             #job.samples = [tumor_pair.normal]
@@ -609,8 +618,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
             job = sambamba.markdup(
                 tumor_input,
                 tumor_output,
-                config.param('sambamba_mark_duplicates', 'tmp_dir'),
-                other_options=config.param('sambamba_mark_duplicates', 'options')
+                global_config_parser.param('sambamba_mark_duplicates', 'tmp_dir'),
+                other_options=global_config_parser.param('sambamba_mark_duplicates', 'options')
             )
             job.name = "sambamba_mark_duplicates." + tumor_pair.name + "." + tumor_pair.tumor.name
             #job.samples = [tumor_pair.tumor]
@@ -760,7 +769,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="alignment",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                         deliverables.sym_link_pair(
                             input_file + ".md5",
@@ -768,7 +777,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="alignment",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                     ], name="sym_link_final_bam.pairs." + str(idx) + "." + tumor_pair.name + "." + key))
 
@@ -850,8 +859,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
-            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
-            bedfile = config.param('rawmpileup_panel', 'panel')
+            nb_jobs = global_config_parser.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
+            bedfile = global_config_parser.param('rawmpileup_panel', 'panel')
 
             if nb_jobs == 1:
                 input_pair = os.path.join(varscan_directory, tumor_pair.name + ".mpileup")
@@ -865,7 +874,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam"),
                          os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
                         input_pair,
-                        config.param('rawmpileup_panel', 'mpileup_other_options'),
+                        global_config_parser.param('rawmpileup_panel', 'mpileup_other_options'),
                         regionFile=bedfile
                     ),
                     ], name="rawmpileup_panel." + tumor_pair.name + ".all")
@@ -885,7 +894,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam"),
                                  os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
                                 pair_output,
-                                config.param('rawmpileup_panel', 'mpileup_other_options'),
+                                global_config_parser.param('rawmpileup_panel', 'mpileup_other_options'),
                                 region=sequence['name'],
                                 regionFile=bedfile
                             ),
@@ -904,7 +913,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
-            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
+            nb_jobs = global_config_parser.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
 
             if nb_jobs == 1:
                 input_pair = os.path.join(varscan_directory, tumor_pair.name + ".mpileup")
@@ -922,7 +931,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     varscan.somatic(
                         input_pair,
                         output,
-                        config.param('varscan2_somatic_panel', 'other_options'),
+                        global_config_parser.param('varscan2_somatic_panel', 'other_options'),
                         output_vcf_dep=output_vcf_gz,
                         output_snp_dep=output_snp,
                         output_indel_dep=output_indel
@@ -975,7 +984,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             varscan.somatic(
                                 input_pair,
                                 output,
-                                config.param('varscan2_somatic_panel', 'other_options'),
+                                global_config_parser.param('varscan2_somatic_panel', 'other_options'),
                                 output_vcf_dep=output_vcf_gz,
                                 output_snp_dep=output_snp,
                                 output_indel_dep=output_indel
@@ -1018,7 +1027,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
-            nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
+            nb_jobs = global_config_parser.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
 
             if nb_jobs == 1:
                 jobs.append(concat_jobs([
@@ -1054,20 +1063,20 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     bcftools.view(
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
-                        config.param('merge_varscan2', 'somatic_filter_options')
+                        global_config_parser.param('merge_varscan2', 'somatic_filter_options')
                     ),
                     htslib.tabix(
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
-                        config.param('merge_varscan2', 'tabix_options', required=False)
+                        global_config_parser.param('merge_varscan2', 'tabix_options', required=False)
                     ),
                     bcftools.view(
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
-                        config.param('merge_varscan2', 'germline_filter_options')
+                        global_config_parser.param('merge_varscan2', 'germline_filter_options')
                     ),
                     htslib.tabix(
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
-                        config.param('merge_varscan2', 'tabix_options', required=False)
+                        global_config_parser.param('merge_varscan2', 'tabix_options', required=False)
                     ),
                 ], name = "merge_varscan2." + tumor_pair.name))
 
@@ -1111,20 +1120,20 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     bcftools.view(
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
-                        config.param('merge_varscan2', 'somatic_filter_options')
+                        global_config_parser.param('merge_varscan2', 'somatic_filter_options')
                     ),
                     htslib.tabix(
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
-                        config.param('merge_varscan2', 'tabix_options', required=False)
+                        global_config_parser.param('merge_varscan2', 'tabix_options', required=False)
                     ),
                     bcftools.view(
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
-                        config.param('merge_varscan2', 'germline_filter_options')
+                        global_config_parser.param('merge_varscan2', 'germline_filter_options')
                     ),
                     htslib.tabix(
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
-                        config.param('merge_varscan2', 'tabix_options', required=False)
+                        global_config_parser.param('merge_varscan2', 'tabix_options', required=False)
                     ),
                 ], name="merge_varscan2." + tumor_pair.name))
 
@@ -1218,7 +1227,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     input_somatic,
                     output_somatic,
                     cancer_sample_file=cancer_pair_filename,
-                    options=config.param('compute_cancer_effects_somatic', 'options')
+                    options=global_config_parser.param('compute_cancer_effects_somatic', 'options')
                 ),
                 htslib.bgzip_tabix(
                     output_somatic,
@@ -1232,7 +1241,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     input_germline,
                     output_germline,
                     cancer_sample_file=cancer_pair_filename,
-                    options=config.param('compute_cancer_effects_germline', 'options')
+                    options=global_config_parser.param('compute_cancer_effects_germline', 'options')
                 ),
                 htslib.bgzip_tabix(
                     output_germline,
@@ -1257,7 +1266,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             if not os.path.exists(varscan_directory):
                 os.makedirs(varscan_directory)
 
-            temp_dir = config.param('DEFAULT', 'tmp_dir')
+            temp_dir = global_config_parser.param('DEFAULT', 'tmp_dir')
             gemini_prefix = os.path.join(pair_directory, tumor_pair.name)
 
             jobs.append(concat_jobs([
@@ -1297,7 +1306,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             tumor_pair, self.output_dir,
                             type="snv/panel",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                         deliverables.sym_link_pair(
                             sample_prefix + ".varscan2.vcf.gz.tbi",
@@ -1305,7 +1314,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="snv/panel",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                         deliverables.sym_link_pair(
                             sample_prefix + ".varscan2.somatic.vt.snpeff.vcf.gz",
@@ -1313,7 +1322,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="snv/panel",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                         deliverables.sym_link_pair(
                             sample_prefix + ".varscan2.somatic.vt.snpeff.vcf.gz.tbi",
@@ -1321,14 +1330,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="snv/panel",
                             sample=key,
-                            profyle=self.args.profyle),
+                            profyle=self.profyle),
                         deliverables.sym_link_pair(
                             sample_prefix + ".varscan2.germline.vt.snpeff.vcf.gz",
                             tumor_pair,
                             self.output_dir,
                             type="snv/panel",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                         deliverables.sym_link_pair(
                             sample_prefix + ".varscan2.germline.vt.snpeff.vcf.gz.tbi",
@@ -1336,7 +1345,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="snv/panel",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                         deliverables.sym_link_pair(
                             sample_prefix + ".somatic.gemini.db",
@@ -1344,14 +1353,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="snv/panel",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                         deliverables.sym_link_pair(
                             sample_prefix + ".germline.gemini.db",
                             tumor_pair, self.output_dir,
                             type="snv/panel",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                     ], name="sym_link_panel." + str(idx) + "." + tumor_pair.name + "." + key))
 
@@ -1364,7 +1373,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         [Picard](https://broadinstitute.github.io/picard/picard-metric-definitions.html)
         """
     
-        ffpe = config.param('picard_collect_sequencing_artifacts_metrics', 'FFPE', param_type='boolean')
+        ffpe = global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'FFPE', param_type='boolean')
 
         ##check the library status
         library = {}
@@ -1563,15 +1572,15 @@ class TumorPair(dnaseq.DnaSeqRaw):
             ])
 
             tumor_output = os.path.join(tumor_qualimap_directory, "genome_results.txt")
-            use_bed = config.param('dna_sample_qualimap', 'use_bed', param_type='boolean', required=True)
+            use_bed = global_config_parser.param('dna_sample_qualimap', 'use_bed', param_type='boolean', required=True)
         
             options = None
             if use_bed:
                 bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
-                options = config.param('dna_sample_qualimap', 'qualimap_options') + " --feature-file " + bed
+                options = global_config_parser.param('dna_sample_qualimap', 'qualimap_options') + " --feature-file " + bed
         
             else:
-                options = config.param('dna_sample_qualimap', 'qualimap_options')
+                options = global_config_parser.param('dna_sample_qualimap', 'qualimap_options')
         
             jobs.append(
                 concat_jobs([
@@ -1654,7 +1663,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             tumor_file = re.sub(".bam", "", os.path.basename(tumor_input))
             tumor_output = os.path.join(tumor_fastqc_directory, tumor_file + "_fastqc.zip")
         
-            adapter_file = config.param('fastqc', 'adapter_file', required=False, param_type='filepath')
+            adapter_file = global_config_parser.param('fastqc', 'adapter_file', required=False, param_type='filepath')
             normal_adapter_job = None
             tumor_adapter_job = None
         
@@ -1795,7 +1804,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="metrics",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                     ], name="sym_link_fastq.report." + str(idx) + "." + tumor_pair.name + "." + key))
 
@@ -1839,7 +1848,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
             ])
 
-            nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
+            nb_jobs = global_config_parser.param('rawmpileup', 'nb_jobs', param_type='posint')
             if nb_jobs > 50:
                 log.warning(
                     "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
@@ -1859,7 +1868,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     input_tumor[0]
                                 ],
                                 pair_output,
-                                config.param('rawmpileup', 'mpileup_other_options'),
+                                global_config_parser.param('rawmpileup', 'mpileup_other_options'),
                                 regionFile=bed_file
                             )
                         ],
@@ -1886,7 +1895,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                             input_tumor[0]
                                         ],
                                         pair_output,
-                                        config.param('rawmpileup', 'mpileup_other_options'),
+                                        global_config_parser.param('rawmpileup', 'mpileup_other_options'),
                                         region=sequence['name'],
                                         regionFile=bed_file
                                     )
@@ -1911,7 +1920,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
             output = os.path.join(varscan_directory, tumor_pair.name)
 
-            nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
+            nb_jobs = global_config_parser.param('rawmpileup', 'nb_jobs', param_type='posint')
             if nb_jobs > 50:
                 log.warning(
                     "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
@@ -1932,7 +1941,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     varscan.somatic(
                         input_pair,
                         output,
-                        config.param('varscan2_somatic', 'other_options'),
+                        global_config_parser.param('varscan2_somatic', 'other_options'),
                         output_vcf_dep=output_vcf,
                         output_snp_dep=output_snp,
                         output_indel_dep=output_indel
@@ -1985,7 +1994,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             varscan.somatic(
                                 input_pair,
                                 output,
-                                config.param('varscan2_somatic', 'other_options'),
+                                global_config_parser.param('varscan2_somatic', 'other_options'),
                                 output_vcf_dep=output_vcf,
                                 output_snp_dep=output_snp,
                                 output_indel_dep=output_indel
@@ -2030,7 +2039,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
-            nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
+            nb_jobs = global_config_parser.param('rawmpileup', 'nb_jobs', param_type='posint')
             if nb_jobs > 50:
                 log.warning(
                     "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
@@ -2100,7 +2109,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         bcftools.view(
                             all_output_vt,
                             None,
-                            config.param('varscan2_readcount_fpfilter', 'somatic_filter_options')
+                            global_config_parser.param('varscan2_readcount_fpfilter', 'somatic_filter_options')
                         ),
                         htslib.bgzip_tabix(
                             None,
@@ -2111,12 +2120,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         bcftools.view(
                             all_output_vt,
                             None,
-                            config.param('varscan2_readcount_fpfilter', 'germline_filter_options')
+                            global_config_parser.param('varscan2_readcount_fpfilter', 'germline_filter_options')
                         ),
                         bcftools.view(
                             None,
                             None,
-                            config.param('varscan2_readcount_fpfilter', 'genotype_filter_options')
+                            global_config_parser.param('varscan2_readcount_fpfilter', 'genotype_filter_options')
                         ),
                         htslib.bgzip_tabix(
                             None,
@@ -2173,7 +2182,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     bcftools.view(
                         all_output_vt,
                         None,
-                        config.param('varscan2_readcount_fpfilter', 'somatic_filter_options')
+                        global_config_parser.param('varscan2_readcount_fpfilter', 'somatic_filter_options')
                     ),
                     htslib.bgzip_tabix(
                         None,
@@ -2184,12 +2193,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     bcftools.view(
                         all_output_vt,
                         None,
-                        config.param('varscan2_readcount_fpfilter', 'germline_filter_options')
+                        global_config_parser.param('varscan2_readcount_fpfilter', 'germline_filter_options')
                     ),
                     bcftools.view(
                         None,
                         None,
-                        config.param('varscan2_readcount_fpfilter', 'genotype_filter_options')
+                        global_config_parser.param('varscan2_readcount_fpfilter', 'genotype_filter_options')
                     ),
                     htslib.bgzip_tabix(
                         None,
@@ -2209,7 +2218,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         created_interval_lists = []
         
-        nb_jobs = config.param('gatk_mutect2', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('gatk_mutect2', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of mutect jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -2346,7 +2355,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        nb_jobs = config.param('gatk_mutect2', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('gatk_mutect2', 'nb_jobs', param_type='posint')
 
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
@@ -2358,7 +2367,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             output_somatic_vt = os.path.join(pair_directory, tumor_pair.name + ".mutect2.somatic.vt.vcf.gz")
 
             if nb_jobs == 1:
-                if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
+                if global_config_parser.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
                     jobs.append(concat_jobs([
                         Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
                         gatk4.learn_read_orientation_model(
@@ -2390,7 +2399,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             bcftools.view(
                                 output_vt_gz,
                                 None,
-                                config.param('merge_filter_mutect2', 'filter_options')
+                                global_config_parser.param('merge_filter_mutect2', 'filter_options')
                             ),
                             htslib.bgzip_tabix(
                                 None,
@@ -2444,7 +2453,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     if not self.is_gz_file(input_vcf):
                         stderr.write("Incomplete mutect2 vcf: %s\n" % input_vcf)
 
-                if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
+                if global_config_parser.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
 
                     output_stats = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz.stats")
                     stats = []
@@ -2499,7 +2508,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             bcftools.view(
                                 output_vt_gz,
                                 None,
-                                config.param('merge_filter_mutect2', 'filter_options')
+                                global_config_parser.param('merge_filter_mutect2', 'filter_options')
                             ),
                             htslib.bgzip_tabix(
                                 None,
@@ -2515,7 +2524,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             bcftools.concat(
                                 inputs,
                                 None,
-                                config.param('merge_filter_mutect2', 'bcftools_options')
+                                global_config_parser.param('merge_filter_mutect2', 'bcftools_options')
                             ),
                             Job(
                                 [None],
@@ -2544,7 +2553,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             bcftools.view(
                                 output_vt_gz,
                                 None,
-                                config.param('merge_filter_mutect2', 'filter_options')
+                                global_config_parser.param('merge_filter_mutect2', 'filter_options')
                             ),
                             htslib.bgzip_tabix(
                                 None,
@@ -2625,7 +2634,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 )
 
             else:
-                bed_file=config.param('strelka2_paired_somatic', 'bed_file')
+                bed_file=global_config_parser.param('strelka2_paired_somatic', 'bed_file')
 
             output_dep = [
                 os.path.join(somatic_dir, "results/variants/somatic.snvs.vcf.gz"),
@@ -2697,7 +2706,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         bcftools.view(
                             output_prefix + ".strelka2.somatic.gt.vcf.gz",
                             output_prefix + ".strelka2.somatic.vt.vcf.gz",
-                            config.param('strelka2_paired_somatic', 'filter_options')
+                            global_config_parser.param('strelka2_paired_somatic', 'filter_options')
                         )
                     ],
                     name="strelka2_paired_somatic.filter." + tumor_pair.name
@@ -2773,7 +2782,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 )
             
             else:
-                bed_file = config.param('strelka2_paired_germline', 'bed_file')
+                bed_file = global_config_parser.param('strelka2_paired_germline', 'bed_file')
                 
             output_dep = [os.path.join(germline_dir, "results/variants/variants.vcf.gz")]
         
@@ -2832,7 +2841,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         bcftools.view(
                             output_prefix + ".strelka2.germline.gt.vcf.gz",
                             output_prefix + ".strelka2.germline.vt.vcf.gz",
-                            config.param('strelka2_paired_germline', 'filter_options')
+                            global_config_parser.param('strelka2_paired_germline', 'filter_options')
                         )
                     ],
                     name="strelka2_paired_germline.filter." + tumor_pair.name
@@ -2859,7 +2868,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         bcftools.split(
                             os.path.join(pair_directory, tumor_pair.name + ".strelka2.germline.vt.vcf.gz"),
                             pair_directory,
-                            config.param('strelka2_paired_germline_snpeff', 'split_options'),
+                            global_config_parser.param('strelka2_paired_germline_snpeff', 'split_options'),
                         ),
                     ],name="strelka2_paired_germline_snpeff.split." + tumor_pair.name,
                     input_dependency=[
@@ -2878,7 +2887,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         snpeff.compute_effects(
                             os.path.join(pair_directory, tumor_pair.normal.name + ".vcf.gz"),
                             os.path.join(pair_directory, tumor_pair.normal.name + ".snpeff.vcf"),
-                            options=config.param('strelka2_paired_germline_snpeff', 'options')
+                            options=global_config_parser.param('strelka2_paired_germline_snpeff', 'options')
                         ),
                         htslib.bgzip_tabix(
                             os.path.join(pair_directory, tumor_pair.normal.name + ".snpeff.vcf"),
@@ -2894,7 +2903,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         snpeff.compute_effects(
                             os.path.join(pair_directory, tumor_pair.tumor.name + ".vcf.gz"),
                             os.path.join(pair_directory, tumor_pair.tumor.name + ".snpeff.vcf"),
-                            options=config.param('strelka2_paired_germline_snpeff', 'options')
+                            options=global_config_parser.param('strelka2_paired_germline_snpeff', 'options')
                         ),
                         htslib.bgzip_tabix(
                             os.path.join(pair_directory, tumor_pair.tumor.name + ".snpeff.vcf"),
@@ -2915,12 +2924,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
         ##TO DO - the BED system needs to be revisted !! 
         jobs = []
 
-        nb_jobs = config.param('vardict_paired', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('vardict_paired', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of vardict jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
-        use_bed = config.param('vardict_paired', 'use_bed', param_type='boolean', required=True)
-        genome_dictionary = config.param('DEFAULT', 'genome_dictionary', param_type='filepath')
+        use_bed = global_config_parser.param('vardict_paired', 'use_bed', param_type='boolean', required=True)
+        genome_dictionary = global_config_parser.param('DEFAULT', 'genome_dictionary', param_type='filepath')
 
         interval_list = []
 
@@ -2950,14 +2959,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     os.path.join(splitjobs_dir,
                                  "exome",
                                  "interval_list",
-                                 config.param('vardict_paired', 'assembly') + ".interval_list"
+                                 global_config_parser.param('vardict_paired', 'assembly') + ".interval_list"
                                  )
                 ),
                 gatk4.splitInterval(
                     os.path.join(splitjobs_dir,
                                  "exome",
                                  "interval_list",
-                                 config.param('vardict_paired', 'assembly') + ".interval_list"
+                                 global_config_parser.param('vardict_paired', 'assembly') + ".interval_list"
                                  ),
                     os.path.join(splitjobs_dir, "exome", "interval_list"),
                     nb_jobs,
@@ -2979,11 +2988,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
         #             remove=True
         #         ),
         #         picard2.scatterIntervalsByNs(
-        #             config.param('vardict_paired', 'genome_fasta', type='filepath'),
+        #             global_config_parser.param('vardict_paired', 'genome_fasta', param_type='filepath'),
         #             os.path.join(splitjobs_dir,
         #                          "wgs",
         #                          "interval_list",
-        #                          config.param('vardict_paired', 'assembly') + ".interval_list"
+        #                          global_config_parser.param('vardict_paired', 'assembly') + ".interval_list"
         #                          ),
         #             options="OUTPUT_TYPE=ACGT"
         #         ),
@@ -2991,7 +3000,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         #             os.path.join(splitjobs_dir,
         #                          "wgs",
         #                          "interval_list",
-        #                          config.param('vardict_paired', 'assembly') + ".interval_list"
+        #                          global_config_parser.param('vardict_paired', 'assembly') + ".interval_list"
         #                          ),
         #             os.path.join(splitjobs_dir,
         #                          "wgs",
@@ -3121,8 +3130,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
-        nb_jobs = config.param('vardict_paired', 'nb_jobs', param_type='posint')
-        use_bed = config.param('vardict_paired', 'use_bed', param_type='boolean', required=True)
+        nb_jobs = global_config_parser.param('vardict_paired', 'nb_jobs', param_type='posint')
+        use_bed = global_config_parser.param('vardict_paired', 'use_bed', param_type='boolean', required=True)
 
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
@@ -3176,7 +3185,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         bcftools.view(
                             output_vt,
                             None,
-                            config.param('merge_filter_paired_vardict', 'somatic_filter_options')
+                            global_config_parser.param('merge_filter_paired_vardict', 'somatic_filter_options')
                         ),
                         htslib.bgzip_tabix(
                             None,
@@ -3187,12 +3196,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         bcftools.view(
                             output_vt,
                             None,
-                            config.param('merge_filter_paired_vardict', 'germline_filter_options')
+                            global_config_parser.param('merge_filter_paired_vardict', 'germline_filter_options')
                         ),
                         bcftools.view(
                             None,
                             None,
-                            config.param('merge_filter_paired_vardict', 'genotype_filter_options')
+                            global_config_parser.param('merge_filter_paired_vardict', 'genotype_filter_options')
                         ),
                         htslib.bgzip_tabix(
                             None,
@@ -3251,7 +3260,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         bcftools.view(
                             output_vt,
                             None,
-                            config.param('merge_filter_paired_vardict', 'somatic_filter_options')
+                            global_config_parser.param('merge_filter_paired_vardict', 'somatic_filter_options')
                         ),
                         htslib.bgzip_tabix(
                             None,
@@ -3262,12 +3271,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         bcftools.view(
                             output_vt,
                             None,
-                            config.param('merge_filter_paired_vardict', 'germline_filter_options')
+                            global_config_parser.param('merge_filter_paired_vardict', 'germline_filter_options')
                         ),
                         bcftools.view(
                             None,
                             None,
-                            config.param('merge_filter_paired_vardict', 'genotype_filter_options')
+                            global_config_parser.param('merge_filter_paired_vardict', 'genotype_filter_options')
                         ),
                         htslib.bgzip_tabix(
                             None,
@@ -3312,7 +3321,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 bcbio_variation_recall.ensemble(
                     inputs_somatic,
                     output_ensemble,
-                    config.param('bcbio_ensemble_somatic', 'options')
+                    global_config_parser.param('bcbio_ensemble_somatic', 'options')
                 ),
             ], name="bcbio_ensemble_somatic." + tumor_pair.name))
 
@@ -3359,7 +3368,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 bcbio_variation_recall.ensemble(
                     inputs_germline,
                     output_ensemble,
-                    config.param('bcbio_ensemble_germline', 'options')
+                    global_config_parser.param('bcbio_ensemble_germline', 'options')
                 ),
             ], name="bcbio_ensemble_germline." + tumor_pair.name))
 
@@ -3374,7 +3383,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
 
-        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -3404,7 +3413,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         input_tumor,
                         input_somatic_variants,
                         output_somatic_variants,
-                        config.param('gatk_variant_annotator_somatic', 'other_options')
+                        global_config_parser.param('gatk_variant_annotator_somatic', 'other_options')
                     ),
                 ], name="gatk_variant_annotator_somatic." + tumor_pair.name))
                 
@@ -3423,7 +3432,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             input_tumor,
                             input_somatic_variants,
                             output_somatic_variants,
-                            config.param('gatk_variant_annotator_somatic', 'other_options'),
+                            global_config_parser.param('gatk_variant_annotator_somatic', 'other_options'),
                             intervals=sequences
                         ),
                     ], name="gatk_variant_annotator_somatic." + str(idx) + "." + tumor_pair.name))
@@ -3440,7 +3449,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         input_tumor,
                         input_somatic_variants,
                         output_somatic_variants,
-                        config.param('gatk_variant_annotator_somatic', 'other_options'),
+                        global_config_parser.param('gatk_variant_annotator_somatic', 'other_options'),
                         exclude_intervals=unique_sequences_per_job_others
                     ),
                 ], name="gatk_variant_annotator_somatic.others." + tumor_pair.name))
@@ -3456,7 +3465,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
 
-        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -3486,7 +3495,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         input_tumor,
                         input_germline_variants,
                         output_germline_variants,
-                        config.param('gatk_variant_annotator_germline', 'other_options'),
+                        global_config_parser.param('gatk_variant_annotator_germline', 'other_options'),
                     ),
                 ], name="gatk_variant_annotator_germline." + tumor_pair.name))
     
@@ -3505,7 +3514,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             input_tumor,
                             input_germline_variants,
                             output_germline_variants,
-                            config.param('gatk_variant_annotator_germline', 'other_options'),
+                            global_config_parser.param('gatk_variant_annotator_germline', 'other_options'),
                             intervals=sequences
                         ),
                     ], name="gatk_variant_annotator_germline." + str(idx) + "." + tumor_pair.name))
@@ -3522,7 +3531,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         input_tumor,
                         input_germline_variants,
                         output_germline_variants,
-                        config.param('gatk_variant_annotator_germline', 'other_options'),
+                        global_config_parser.param('gatk_variant_annotator_germline', 'other_options'),
                         exclude_intervals=unique_sequences_per_job_others
                     ),
                 ], name="gatk_variant_annotator_germline.others." + tumor_pair.name))
@@ -3537,7 +3546,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
 
-        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
 
         for tumor_pair in self.tumor_pairs.values():
             annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
@@ -3573,7 +3582,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
 
-        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
 
         for tumor_pair in self.tumor_pairs.values():
             annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
@@ -3632,7 +3641,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 tools.format2pcgr(
                     input,
                     output_2caller,
-                    config.param('filter_ensemble', 'call_filter'),
+                    global_config_parser.param('filter_ensemble', 'call_filter'),
                     "germline",
                     tumor_pair.tumor.name,
                 ),
@@ -3640,7 +3649,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     bcftools.view(
                         output_2caller,
                         None,
-                        filter_options=config.param('filter_ensemble', 'germline_filter_options'),
+                        filter_options=global_config_parser.param('filter_ensemble', 'germline_filter_options'),
                     ),
                     bcftools.view(
                         None,
@@ -3726,14 +3735,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 tools.format2pcgr(
                     input,
                     output_2caller,
-                    config.param('filter_ensemble', 'call_filter'),
+                    global_config_parser.param('filter_ensemble', 'call_filter'),
                     "somatic",
                     tumor_pair.tumor.name,
                 ),
                 bcftools.view(
                     output_2caller,
                     output_filter,
-                    filter_options=config.param('filter_ensemble', 'somatic_filter_options'),
+                    filter_options=global_config_parser.param('filter_ensemble', 'somatic_filter_options'),
                 ),
                 htslib.tabix(
                     output_filter,
@@ -3755,7 +3764,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             self.output_dirs['paired_variants_directory'],
             "ensemble"
         )
-        assembly = config.param('report_pcgr', 'assembly')
+        assembly = global_config_parser.param('report_pcgr', 'assembly')
 
         for tumor_pair in self.tumor_pairs.values():
             cpsr_directory = os.path.join(
@@ -3870,7 +3879,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     input_somatic,
                     output_somatic,
                     cancer_sample_file=cancer_pair_filename,
-                                       options=config.param('compute_cancer_effects_somatic', 'options')
+                                       options=global_config_parser.param('compute_cancer_effects_somatic', 'options')
                 ),
                 htslib.bgzip_tabix(
                     output_somatic,
@@ -3910,7 +3919,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 snpeff.compute_effects(
                     input_germline,
                     output_germline,
-                    options=config.param('compute_cancer_effects_germline', 'options')
+                    options=global_config_parser.param('compute_cancer_effects_germline', 'options')
                 ),
                 htslib.bgzip_tabix(
                     output_germline,
@@ -3997,7 +4006,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
-        gemini_module = config.param("DEFAULT", 'module_gemini').split(".")
+        gemini_module = global_config_parser.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
         for tumor_pair in self.tumor_pairs.values():
@@ -4027,7 +4036,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
-        gemini_module = config.param("DEFAULT", 'module_gemini').split(".")
+        gemini_module = global_config_parser.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
         for tumor_pair in self.tumor_pairs.values():
@@ -4069,7 +4078,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="snv/ensemble",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                         deliverables.sym_link_pair(
                             sample_prefix + ".ensemble.somatic.vt.annot.vcf.gz",
@@ -4077,7 +4086,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="snv/ensemble",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                         deliverables.sym_link_pair(
                             sample_prefix + ".ensemble.somatic.vt.annot.vcf.gz.tbi",
@@ -4085,7 +4094,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="snv/ensemble",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                         deliverables.md5sum(
                             sample_prefix + ".ensemble.germline.vt.annot.vcf.gz",
@@ -4098,7 +4107,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="snv/ensemble",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                         deliverables.sym_link_pair(
                             sample_prefix + ".ensemble.germline.vt.annot.vcf.gz",
@@ -4106,7 +4115,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="snv/ensemble",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                         deliverables.sym_link_pair(
                             sample_prefix + ".ensemble.germline.vt.annot.vcf.gz.tbi",
@@ -4114,7 +4123,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             self.output_dir,
                             type="snv/ensemble",
                             sample=key,
-                            profyle=self.args.profyle
+                            profyle=self.profyle
                         ),
                     ], name="sym_link_ensemble." + str(idx) + "." + tumor_pair.name + "." + key))
 
@@ -4312,7 +4321,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
         for tumor_pair in self.tumor_pairs.values():
             cancer_pair.write(tumor_pair.normal.name + "\t" + tumor_pair.tumor.name + "\n")
             sample_list.extend([tumor_pair.normal, tumor_pair.tumor])
-
         jobs.append(
             concat_jobs(
                 [
@@ -4324,7 +4332,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         input,
                         output,
                         cancer_sample_file=cancer_pair_filename,
-                        options=config.param('compute_cancer_effects_somatic', 'options')
+                        options=global_config_parser.param('compute_cancer_effects_somatic', 'options')
                     ),
                     htslib.bgzip_tabix(
                         output,
@@ -4335,7 +4343,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 samples=sample_list
             )
         )
-
         return jobs
 
     def all_pairs_compute_effects_germline(self):
@@ -4352,7 +4359,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
         input = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.vcf.gz")
         output = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.snpeff.vcf")
         output_gz = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.snpeff.vcf.gz")
-
         sample_list = []
         for tumor_pair in self.tumor_pairs.values():
             sample_list.extend([tumor_pair.normal, tumor_pair.tumor])
@@ -4367,7 +4373,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     snpeff.compute_effects(
                         input,
                         output,
-                        options=config.param('compute_cancer_effects_germline', 'options')
+                        options=global_config_parser.param('compute_cancer_effects_germline', 'options')
                     ),
                     htslib.bgzip_tabix(
                         output,
@@ -4378,7 +4384,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 samples=sample_list
             )
         )
-
         return jobs
 
     def gemini_annotations_somatic(self):
@@ -4459,7 +4464,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         """
         jobs = []
-        nb_jobs = config.param('sequenza', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('sequenza', 'nb_jobs', param_type='posint')
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
@@ -4496,7 +4501,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             sequenza.bam2seqz(
                                 inputNormal[0],
                                 inputTumor[0],
-                                config.param('sequenza', 'gc_file'),
+                                global_config_parser.param('sequenza', 'gc_file'),
                                 rawOutput + "all.seqz.gz",
                                 None
                             ),
@@ -4551,7 +4556,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     sequenza.bam2seqz(
                                         inputNormal[0],
                                         inputTumor[0],
-                                        config.param('sequenza', 'gc_file'),
+                                        global_config_parser.param('sequenza', 'gc_file'),
                                         rawOutput + "seqz." + sequence['name'] + ".gz",
                                         sequence['name']
                                     ),
@@ -4647,14 +4652,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv/cnv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 )
                             ],
                             name="sym_link.sequenza." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
                         )
                     )
-
         return jobs
 
     def purple(self):
@@ -4803,7 +4807,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             inputs = [inputTumor, inputNormal]
 
-            SV_types = config.param('delly_call_filter', 'sv_types_options').split(",")
+            SV_types = global_config_parser.param('delly_call_filter', 'sv_types_options').split(",")
 
             for sv_type in SV_types:
                 output_bcf = os.path.join(delly_directory, tumor_pair.name + ".delly." + str(sv_type) + ".bcf")
@@ -4825,7 +4829,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 bcftools.view(
                                     output_bcf,
                                     None,
-                                    config.param('delly_call_filter_somatic', 'bcftools_options')
+                                    global_config_parser.param('delly_call_filter_somatic', 'bcftools_options')
                                 ),
                                 htslib.bgzip_tabix(
                                     None,
@@ -4850,7 +4854,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             output_vcf = os.path.join(delly_directory, tumor_pair.name + ".delly.merge.sort.vcf.gz")
             output_flt_vcf = os.path.join(pair_directory, tumor_pair.name + ".delly.merge.sort.flt.vcf.gz")
             
-            SV_types = config.param('delly_call_filter', 'sv_types_options').split(",")
+            SV_types = global_config_parser.param('delly_call_filter', 'sv_types_options').split(",")
 
             inputBCF = []
             for sv_type in SV_types:
@@ -4993,7 +4997,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     input_file,
@@ -5001,7 +5005,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                             ],
                             name="sym_link_delly.somatic." + str(idx) + "." + tumor_pair.name + "." + key,
@@ -5033,7 +5037,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     input_file,
@@ -5041,7 +5045,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                             ],
                             name="sym_link_delly.germline." + str(idx) + "." + tumor_pair.name + "." + key,
@@ -5244,7 +5248,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     input_file,
@@ -5252,7 +5256,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 )
                             ],
                             name="sym_link_manta.somatic." + str(idx) + "." + tumor_pair.name + "." + key,
@@ -5284,7 +5288,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     input_file,
@@ -5292,7 +5296,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 )
                             ],
                             name="sym_link_manta.germline." + str(idx) + "." + tumor_pair.name + "." + key,
@@ -5354,7 +5358,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     "/dev/stdin",
                                     discordants_normal,
                                     lumpy_directory,
-                                    config.param('extract_discordant_reads', 'sambamba_options')
+                                    global_config_parser.param('extract_discordant_reads', 'sambamba_options')
                                 )
                             ]
                         ),
@@ -5369,7 +5373,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     "/dev/stdin",
                                     discordants_tumor,
                                     lumpy_directory,
-                                    config.param('extract_discordant_reads', 'sambamba_options')
+                                    global_config_parser.param('extract_discordant_reads', 'sambamba_options')
                                 )
                             ]
                         )
@@ -5408,7 +5412,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     "/dev/stdin",
                                     splitters_normal,
                                     lumpy_directory,
-                                    config.param('extract_split_reads', 'sambamba_options')
+                                    global_config_parser.param('extract_split_reads', 'sambamba_options')
                                 ),
                             ]
                         ),
@@ -5434,7 +5438,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     "/dev/stdin",
                                     splitters_tumor,
                                     lumpy_directory,
-                                    config.param('extract_split_reads', 'options')
+                                    global_config_parser.param('extract_split_reads', 'options')
                                 )
                             ]
                         )
@@ -5483,7 +5487,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 bcftools.annotate(
                                     None,
                                     None,
-                                    config.param('lumpy_paired_sv_calls', 'header_options')
+                                    global_config_parser.param('lumpy_paired_sv_calls', 'header_options')
                                 ),
                                 vt.sort(
                                     "-",
@@ -5636,7 +5640,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     input_file,
@@ -5644,7 +5648,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                             ],
                             name="sym_link_lumpy.somatic." + str(idx) + "." + tumor_pair.name + "." + key,
@@ -5676,7 +5680,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     input_file,
@@ -5684,14 +5688,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                             ],
                             name="sym_link_lumpy.germline." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
                         )
                     )
-
         return jobs
 
     def wham_call_sv(self):
@@ -5770,7 +5773,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 bcftools.annotate(
                                     None,
                                     None,
-                                    config.param('wham_call_sv', 'header_options')
+                                    global_config_parser.param('wham_call_sv', 'header_options')
                                 ),
                                 vt.sort(
                                     "-",
@@ -5920,7 +5923,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     input_file,
@@ -5928,14 +5931,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                             ],
                             name="sym_link_wham.somatic." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
                         )
                     )
-
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name)
@@ -5959,7 +5961,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     input_file,
@@ -5967,7 +5969,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                             ],
                             name="sym_link_wham.germline." + str(idx) + "." + tumor_pair.name + "." + key,
@@ -6192,7 +6194,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     input_file,
@@ -6200,14 +6202,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                             ],
                             name="sym_link_cnvkit.somatic." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
                         )
                     )
-
         return jobs
      
     def ensemble_metasv_somatic(self):
@@ -6250,14 +6251,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             bcftools.view(
                                 gatk_vcf,
                                 gatk_pass,
-                                config.param('metasv_ensemble', 'filter_somatic_options')
+                                global_config_parser.param('metasv_ensemble', 'filter_somatic_options')
                             ),
                         ],
                         name="metasv_ensemble.ensemble_pass." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor]
                     )
                 )
-            
+
             jobs.append(
                 concat_jobs(
                     [
@@ -6329,14 +6330,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             bcftools.view(
                                 gatk_vcf,
                                 gatk_pass,
-                                config.param('metasv_ensemble', 'filter_germline_options')
+                                global_config_parser.param('metasv_ensemble', 'filter_germline_options')
                             ),
                         ],
                         name="metasv_ensemble.ensemble_pass." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor]
                     )
                 )
-        
+
             jobs.append(
                 concat_jobs(
                     [
@@ -6417,7 +6418,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     input_file,
@@ -6425,14 +6426,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                             ],
                             name="sym_link_metasv." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
                         )
                     )
-                    
         return jobs
 
     def scones(self):
@@ -6443,7 +6443,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         the best final model (number of sub-signal) needs to be manually evaluated using the log ratio graphical representation.
 
         """
-        window_size = config.param('scones', 'window', required=True)
+        window_size = global_config_parser.param('scones', 'window', required=True)
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
@@ -6470,8 +6470,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             output_scones_basename = os.path.join(scones_directory,
                                                   tumor_pair.normal.name + ".bin" + window_size + "_SCoNEs")
-            scones_best_model_basename = output_scones_basename + "_Model_" + config.param('scones', 'best_model',
-                                                                                           required=True)
+            scones_best_model_basename = output_scones_basename + "_Model_" + global_config_parser.param('scones', 'best_model',
+                                                                                                         required=True)
             scones_calls_file = scones_best_model_basename + "_CNVcalls.txt"
             scones_filtered_file = scones_best_model_basename + "_CNVcalls.filtered.tsv"
             scones_annotate_basename = scones_best_model_basename + "_CNVcalls.filtered.anotated"
@@ -6722,7 +6722,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     input_file,
@@ -6730,7 +6730,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                             ],
                             name="sym_link_svaba.somatic." + str(idx) + "." + tumor_pair.name + "." + key,
@@ -6762,7 +6762,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                                 deliverables.sym_link_pair(
                                     input_file,
@@ -6770,20 +6770,22 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     self.output_dir,
                                     type="sv",
                                     sample=key,
-                                    profyle=self.args.profyle
+                                    profyle=self.profyle
                                 ),
                             ],
                             name="sym_link_svaba.germline." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
                         )
                     )
-
         return jobs
 
     @property
-    def steps(self):
-        return [
-            [
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+        return {
+            'fastpass': [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
@@ -6809,7 +6811,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 self.sym_link_fastq_pair,
                 self.sym_link_panel,
             ],
-            [
+            'ensemble': [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
@@ -6852,7 +6854,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 self.sym_link_report,
                 self.sym_link_ensemble,
             ],
-            [
+            'sv': [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
@@ -6890,12 +6892,59 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 self.sym_link_cnvkit,
                 #self.sym_link_svaba
             ]
-        ]
+        }
 
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if Genpipes must be ran inside a container
+    utils.container_wrapper_argparse(__file__, argv)
+    # Build help
+    epilog = TumorPair.process_help(argv)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        conflict_handler='resolve', epilog=epilog)
+
+    # populate the parser
+    parser = TumorPair.argparser(parser)
+
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+    # Specific pipeline options
+    protocol = parsed_args.protocol
+    profyle = parsed_args.profyle
+    pairs_file = parsed_args.pairs
+
+    pipeline = TumorPair(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                         clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                         design_file=design_file, no_json=no_json, container=container,
+                         protocol=protocol, profyle=profyle, pairs_file = pairs_file)
+
+    pipeline.submit_jobs()
 
 if __name__ == '__main__':
-    argv = sys.argv
-    if '--wrap' in argv:
-        utils.utils.container_wrapper_argparse(argv)
-    else:
-        TumorPair(protocol=['fastpass', 'ensemble', 'sv'])
+    main()

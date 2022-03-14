@@ -37,10 +37,10 @@ epigeec to_hdf5 \\
   {chromsizes} \\
   {resolution} \\
   {output}""".format(
-            file_type = config.param('epigeec', 'file_type'),
+            file_type = global_config_parser.param('epigeec', 'file_type'),
             signal_file = signal_file,
-            chromsizes = config.param('epigeec', 'chromosome_size'),
-            resolution = config.param('epigeec', 'resolution'),
+            chromsizes = global_config_parser.param('epigeec', 'chromosome_size'),
+            resolution = global_config_parser.param('epigeec', 'resolution'),
             output = output_path
         )
     )
@@ -61,10 +61,10 @@ epigeec filter \\
   {output_file} \\
   `if [[ "{select}" != "" ]]; then echo "-s {select}"; fi; if [[ "{exclude}" != "" ]]; then echo "-e {exclude}" ;fi`""".format(
         hdf5_file = hdf5_file,
-        chromsizes = config.param('epigeec', 'chromosome_size'),
+        chromsizes = global_config_parser.param('epigeec', 'chromosome_size'),
         output_file = filtered_output,
-        select = config.param('epigeec', 'select'),
-        exclude = config.param('epigeec', 'exclude')
+        select = global_config_parser.param('epigeec', 'select'),
+        exclude = global_config_parser.param('epigeec', 'exclude')
         )
     )
 
@@ -81,7 +81,7 @@ epigeec correlate \\
   {chromsizes} \\
   {outMatrix}""".format(
         hdf5_list = hdf5_list,
-        chromsizes = config.param('epigeec', 'chromosome_size'),
+        chromsizes = global_config_parser.param('epigeec', 'chromosome_size'),
         outMatrix = correlation_matrix
         )
     )

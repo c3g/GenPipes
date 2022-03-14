@@ -37,8 +37,8 @@ variant \\
   --reference {reference_fasta} \\
   --output {output}""".format(
         input=input,
-        options=config.param('samtools_cram_output', 'variantBam_options'),
-        reference_fasta=config.param('samtools_cram_output', 'genome_fasta', param_type='filepath'),
+        options=global_config_parser.param('samtools_cram_output', 'variantBam_options'),
+        reference_fasta=global_config_parser.param('samtools_cram_output', 'genome_fasta', param_type='filepath'),
         region=" \\\n  " + region if region else "",
         exclude_region=" \\\n  " + exclude_region if exclude_region else "",
         output=output

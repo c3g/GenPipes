@@ -32,7 +32,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 # MUGQIC Modules
 import utils.utils
-from core.config import config, SanitycheckError, _raise
+from core.config import global_config_parser, SanitycheckError, _raise
 from core.job import Job, concat_jobs, pipe_jobs
 from bfx.readset import parse_nanopore_readset_file
 from pipelines import common
@@ -46,7 +46,7 @@ from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
 
-class Nanopore(common.MUGQICPipeline):
+class Nanopore(common.Nanopore):
     """
     Nanopore Pipeline
     ==============
@@ -77,25 +77,10 @@ class Nanopore(common.MUGQICPipeline):
     https://bitbucket.org/mugqic/genpipes/src/master/#markdown-header-nanopore).
     """
 
-    def __init__(self, protocol=None):
-        self._protocol = protocol
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=argparse.FileType('r'))
-        super(Nanopore, self).__init__(protocol)
-
-    @property
-    def readsets(self):
-        if not hasattr(self, "_readsets"):
-            if self.args.readsets:
-                self._readsets = parse_nanopore_readset_file(self.args.readsets.name)
-            else:
-                self.argparser.error("argument -r/--readsets is required!")
-        return self._readsets
-
-    @property
-    def samples(self):
-        if not hasattr(self, "_samples"):
-            self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
-        return self._samples
+    def __init__(self, *args, protocol=None, **kwargs):
+        if protocol is None:
+            self._protocol = 'default'
+        super(Nanopore, self).__init__(*args, **kwargs)
 
     def guppy(self):
         """
@@ -172,7 +157,7 @@ class Nanopore(common.MUGQICPipeline):
                             sambamba.sort(
                                 "/dev/stdin",
                                 out_bam,
-                                tmp_dir=config.param('minimap2_align', 'tmp_dir', required=True),
+                                tmp_dir=global_config_parser.param('minimap2_align', 'tmp_dir', required=True),
                             )
                         ]
                     ),
@@ -308,19 +293,63 @@ class Nanopore(common.MUGQICPipeline):
         return jobs
 
     @property
-    def steps(self):
-        return [
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+        return { 'default': [
             self.blastqc,
             self.minimap2_align,
             self.pycoqc,
             self.picard_merge_sam_files,
             self.svim
-        ]
+        ]}
 
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if Genpipes must be ran inside a container
+    utils.container_wrapper_argparse(__file__, argv)
+    # Build help
+    epilog = Nanopore.process_help(argv)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        conflict_handler='resolve', epilog=epilog)
+
+    # populate the parser
+    parser = Nanopore.argparser(parser)
+
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+    pipeline = Nanopore(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                         clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                         design_file=design_file, no_json=no_json, container=container)
+
+    pipeline.submit_jobs()
 
 if __name__ == '__main__':
-    argv = sys.argv
-    if '--wrap' in argv:
-        utils.utils.container_wrapper_argparse(argv)
-    else:
-        Nanopore()
+    main()

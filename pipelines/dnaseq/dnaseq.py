@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import math
 import os
@@ -30,11 +31,11 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config, _raise, SanitycheckError
+from core.config import global_config_parser, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 from pipelines import common
 from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
-import utils.utils
+import utils
 
 from bfx import adapters
 from bfx import bvatools
@@ -110,10 +111,9 @@ class DnaSeqRaw(common.Illumina):
     is more information about DNA-Seq pipeline that you may find interesting.
     """
 
-    def __init__(self, protocol=None):
-        self._protocol = protocol
+    def __init__(self, *args, **kwargs):
         # Add pipeline specific arguments
-        super(DnaSeqRaw, self).__init__(protocol)
+        super(DnaSeqRaw, self).__init__(*args, **kwargs)
 
     @property
     def output_dirs(self):
@@ -126,12 +126,12 @@ class DnaSeqRaw(common.Illumina):
     @property
     def sequence_dictionary(self):
         if not hasattr(self, "_sequence_dictionary"):
-            self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
+            self._sequence_dictionary = parse_sequence_dictionary_file(global_config_parser.param('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
         return self._sequence_dictionary
 
     def sequence_dictionary_variant(self):
         if not hasattr(self, "_sequence_dictionary_variant"):
-            self._sequence_dictionary_variant = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
+            self._sequence_dictionary_variant = parse_sequence_dictionary_file(global_config_parser.param('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
         return self._sequence_dictionary_variant
 
     def generate_approximate_windows(self, nb_jobs):
@@ -256,7 +256,7 @@ END
             output_dir = os.path.join("trim", readset.sample.name)
             trim_file_prefix = os.path.join(output_dir, readset.name)
 
-            adapter_file = config.param('skewer_trimming', 'adapter_file', required=False, param_type='filepath')
+            adapter_file = global_config_parser.param('skewer_trimming', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
             if not adapter_file:
@@ -402,10 +402,10 @@ END
                                 "\\tID:" + readset.name + \
                                 "\\tSM:" + readset.sample.name + \
                                 "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
-                                #("\\tPU:" + readset.name) + \
-                                ("\\tPU:" + readset.sample.name + "." + readset.run + "." + readset.lane if readset.sample.name and readset.run and readset.lane else "") + \
-                                ("\\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
-                                ("\\tPL:" + config.param('bwa_mem', 'sequencing_technology') if config.param('bwa_mem', 'sequencing_technology', required=False) else "Illumina") + \
+                                       #("\\tPU:" + readset.name) + \
+                                       ("\\tPU:" + readset.sample.name + "." + readset.run + "." + readset.lane if readset.sample.name and readset.run and readset.lane else "") + \
+                                       ("\\tCN:" + global_config_parser.param('bwa_mem', 'sequencing_center') if global_config_parser.param('bwa_mem', 'sequencing_center', required=False) else "") + \
+                                       ("\\tPL:" + global_config_parser.param('bwa_mem', 'sequencing_technology') if global_config_parser.param('bwa_mem', 'sequencing_technology', required=False) else "Illumina") + \
                                 "'"
                                 ),
                         sambamba.view(
@@ -416,8 +416,8 @@ END
                         sambamba.sort(
                             "/dev/stdin",
                             readset_bam,
-                            tmp_dir=config.param('sambamba_sort_sam', 'tmp_dir', required=True),
-                            other_options=config.param('sambamba_sort_sam', 'options', required=True),
+                            tmp_dir=global_config_parser.param('sambamba_sort_sam', 'tmp_dir', required=True),
+                            other_options=global_config_parser.param('sambamba_sort_sam', 'options', required=True),
                             )
                         ]),
                     sambamba.index(
@@ -484,10 +484,10 @@ END
                                     "\tID:" + readset.name + \
                                     "\tSM:" + readset.sample.name + \
                                     "\tLB:" + (readset.library if readset.library else readset.sample.name) + \
-                                    ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                                    ("\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem','sequencing_center', required=False) else "") + \
+                                   ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                                   ("\tCN:" + global_config_parser.param('bwa_mem', 'sequencing_center') if global_config_parser.param('bwa_mem', 'sequencing_center', required=False) else "") + \
                                     "\tPL:Illumina" + \
-                                    "'"
+                                   "'"
                     ),
                     bwakit.bwa_postalt("/dev/stdin", "/dev/stdout"),
                     picard2.sort_sam(
@@ -653,7 +653,7 @@ END
 
         jobs = []
 
-        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('gatk_indel_realigner', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of realign jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -776,7 +776,7 @@ END
 
         jobs = []
 
-        nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('gatk_indel_realigner', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
@@ -831,7 +831,7 @@ END
                     sambamba.sort(
                         "/dev/stdin",
                         output_bam,
-                        config.param('sambamba_sort_sam', 'tmp_dir', required=True)
+                        global_config_parser.param('sambamba_sort_sam', 'tmp_dir', required=True)
                         )
                     ],
                     name="fix_mate_by_coordinate." + sample.name,
@@ -866,18 +866,18 @@ END
                     sambamba.sort(
                         input,
                         "/dev/stdout",
-                        config.param('sambamba_sort_sam', 'tmp_dir', required=True),
+                        global_config_parser.param('sambamba_sort_sam', 'tmp_dir', required=True),
                         sort_by_name=True
                         ),
                     samtools.fixmate(
                         "/dev/stdin",
                         None,
-                        config.param('fix_mate_by_coordinate_samtools', 'options')
+                        global_config_parser.param('fix_mate_by_coordinate_samtools', 'options')
                         ),
                     sambamba.sort(
                         "/dev/stdin",
                         output_bam,
-                        config.param('sambamba_sort_sam', 'tmp_dir', required=True)
+                        global_config_parser.param('sambamba_sort_sam', 'tmp_dir', required=True)
                         )
                     ],
                     name="fix_mate_by_coordinate_samtools." + sample.name,
@@ -1230,15 +1230,15 @@ END
             ])
             output = os.path.join(qualimap_directory, "genome_results.txt")
 
-            use_bed = config.param('dna_sample_qualimap', 'use_bed', param_type='boolean', required=True)
+            use_bed = global_config_parser.param('dna_sample_qualimap', 'use_bed', param_type='boolean', required=True)
 
             options = None
             if use_bed:
                 bed = self.samples[0].readsets[0].beds[0]
-                options = config.param('dna_sample_qualimap', 'qualimap_options') + " --feature-file " + bed
+                options = global_config_parser.param('dna_sample_qualimap', 'qualimap_options') + " --feature-file " + bed
 
             else:
-                options = config.param('dna_sample_qualimap', 'qualimap_options')
+                options = global_config_parser.param('dna_sample_qualimap', 'qualimap_options')
 
             jobs.append(
                 concat_jobs([
@@ -1286,7 +1286,7 @@ END
                     sambamba.flagstat(
                         input,
                         output,
-                        config.param('dna_sambamba_flagstat', 'flagstat_options')
+                        global_config_parser.param('dna_sambamba_flagstat', 'flagstat_options')
                         )
                     ],
                     name="dna_sambamba_flagstat." + sample.name,
@@ -1314,7 +1314,7 @@ END
             file = re.sub(".bam", "", os.path.basename(input))
             output = os.path.join(fastqc_directory, file + "_fastqc.zip")
 
-            adapter_file = config.param('fastqc', 'adapter_file', required=False, param_type='filepath')
+            adapter_file = global_config_parser.param('fastqc', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
             if not adapter_file:
@@ -1449,7 +1449,7 @@ END
                 bvatools.resolve_readset_coverage_bed(
                     sample.readsets[0]
                 ),
-                other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
+                other_options=global_config_parser.param('bvatools_depth_of_coverage', 'other_options', required=False)
             )
             job.name = "bvatools_depth_of_coverage." + sample.name
             job.samples = [sample]
@@ -1558,7 +1558,7 @@ END
             job = bvatools.basefreq(
                 input,
                 alignment_file_prefix+"commonSNPs.alleleFreq.csv",
-                config.param('extract_common_snp_freq', 'common_snp_positions', param_type='filepath'),
+                global_config_parser.param('extract_common_snp_freq', 'common_snp_positions', param_type='filepath'),
                 0
             )
             job.name = "extract_common_snp_freq." + sample.name
@@ -1580,7 +1580,7 @@ END
             job = bvatools.ratiobaf(
                 alignment_file_prefix+"commonSNPs.alleleFreq.csv",
                 alignment_file_prefix+"ratioBAF",
-                config.param('baf_plot', 'common_snp_positions', param_type='filepath')
+                global_config_parser.param('baf_plot', 'common_snp_positions', param_type='filepath')
             )
             job.name = "baf_plot." + sample.name
             job.samples = [sample]
@@ -1851,7 +1851,7 @@ END
 
         jobs = []
 
-        nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
+        nb_haplotype_jobs = global_config_parser.param('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
         if nb_haplotype_jobs > 50:
             log.warning("Number of haplotype jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -1947,7 +1947,7 @@ END
         """
 
         jobs = []
-        nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
+        nb_haplotype_jobs = global_config_parser.param('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
@@ -1977,7 +1977,7 @@ END
                         gatk4.genotype_gvcf(
                             output_haplotype_file_prefix + ".hc.g.vcf.gz",
                             output_haplotype_file_prefix + ".hc.vcf.gz",
-                            config.param('gatk_genotype_gvcf', 'options')
+                            global_config_parser.param('gatk_genotype_gvcf', 'options')
                             )
                         ],
                         name="merge_and_call_individual_gvcf.call." + sample.name,
@@ -2001,7 +2001,7 @@ END
                 job = gatk4.genotype_gvcf(
                     output_haplotype_file_prefix + ".hc.g.vcf.gz",
                     output_haplotype_file_prefix + ".hc.vcf.gz",
-                    config.param('gatk_genotype_gvcf', 'options')
+                    global_config_parser.param('gatk_genotype_gvcf', 'options')
                     )
                 job.name = "merge_and_call_individual_gvcf.call." + sample.name
                 job.samples = [sample]
@@ -2015,8 +2015,8 @@ END
         """
 
         jobs = []
-        nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', param_type='posint')
-        nb_maxbatches_jobs = config.param('gatk_combine_gvcf', 'nb_batch', param_type='posint')
+        nb_haplotype_jobs = global_config_parser.param('gatk_combine_gvcf', 'nb_haplotype', param_type='posint')
+        nb_maxbatches_jobs = global_config_parser.param('gatk_combine_gvcf', 'nb_batch', param_type='posint')
         
         interval_list = None
 
@@ -2196,7 +2196,7 @@ END
         """
 
         jobs = []
-        nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', param_type='posint')
+        nb_haplotype_jobs = global_config_parser.param('gatk_combine_gvcf', 'nb_haplotype', param_type='posint')
         haplotype_file_prefix = os.path.join("variants", "allSamples")
         output_haplotype = os.path.join("variants", "allSamples.hc.g.vcf.gz")
         output_haplotype_genotyped = os.path.join("variants", "allSamples.hc.vcf.gz")
@@ -2224,7 +2224,7 @@ END
         job = gatk4.genotype_gvcf(
             output_haplotype,
             output_haplotype_genotyped,
-            config.param('gatk_genotype_gvcf', 'options')
+            global_config_parser.param('gatk_genotype_gvcf', 'options')
         )
         job.name = "merge_and_call_combined_gvcf.call.AllSample"
         job.samples = self.samples
@@ -2255,8 +2255,8 @@ END
 
         #generate the recalibration tranche files
         output_directory = "variants"
-        recal_snps_other_options = config.param('variant_recalibrator', 'tranch_other_options_snps')
-        recal_indels_other_options = config.param('variant_recalibrator', 'tranch_other_options_indels')
+        recal_snps_other_options = global_config_parser.param('variant_recalibrator', 'tranch_other_options_snps')
+        recal_indels_other_options = global_config_parser.param('variant_recalibrator', 'tranch_other_options_indels')
         variant_recal_snps_prefix = os.path.join(output_directory, "allSamples.hc.snps")
         variant_recal_indels_prefix = os.path.join(output_directory, "allSamples.hc.indels")
 
@@ -2287,8 +2287,8 @@ END
             )
 
         #aply the recalibration
-        apply_snps_other_options = config.param('variant_recalibrator', 'apply_other_options_snps')
-        apply_indels_other_options = config.param('variant_recalibrator', 'apply_other_options_indels')
+        apply_snps_other_options = global_config_parser.param('variant_recalibrator', 'apply_other_options_snps')
+        apply_indels_other_options = global_config_parser.param('variant_recalibrator', 'apply_other_options_indels')
         variant_apply_snps_prefix = os.path.join(output_directory, "allSamples.hc.snps")
         variant_apply_indels_prefix = os.path.join(output_directory, "allSamples.hc.indels")
 
@@ -2390,7 +2390,7 @@ pandoc \\
         """
 
         jobs = []
-        nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('rawmpileup', 'nb_jobs', param_type='posint')
         
         for sample in self.samples:
             mpileup_directory = os.path.join("alignment", sample.name, "mpileup")
@@ -2412,7 +2412,7 @@ pandoc \\
                         samtools.mpileup(
                             input,
                             None,
-                            other_options=config.param('rawmpileup', 'mpileup_other_options'),
+                            other_options=global_config_parser.param('rawmpileup', 'mpileup_other_options'),
                             region=None,
                             regionFile=None,
                         ),
@@ -2434,7 +2434,7 @@ pandoc \\
                                     samtools.mpileup(
                                         input,
                                         None,
-                                        other_options=config.param('rawmpileup', 'mpileup_other_options'),
+                                        other_options=global_config_parser.param('rawmpileup', 'mpileup_other_options'),
                                         region=sequence['name'],
                                         regionFile=None,
                                         ),
@@ -2457,7 +2457,7 @@ pandoc \\
         """
 
         jobs = []
-        nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('rawmpileup', 'nb_jobs', param_type='posint')
         
         for sample in self.samples:
             mpileup_file_prefix = ""
@@ -2495,7 +2495,7 @@ pandoc \\
                 [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam") for sample in self.samples],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam") for sample in self.samples]
             ])
-            nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', param_type='posint')
+            nb_jobs = global_config_parser.param('snp_and_indel_bcf', 'approximate_nb_jobs', param_type='posint')
             output_directory = "variants/rawBCF"
 
             mkdir_job = bash.mkdir(output_directory)
@@ -2508,12 +2508,12 @@ pandoc \\
                             bcftools.mpileup(
                                 input,
                                 None,
-                                config.param('snp_and_indel_bcf', 'mpileup_other_options')
+                                global_config_parser.param('snp_and_indel_bcf', 'mpileup_other_options')
                                 ),
                             bcftools.call(
                                 "-",
                                 os.path.join(output_directory, "allSamples.bcf"),
-                                config.param('snp_and_indel_bcf', 'bcftools_other_options')
+                                global_config_parser.param('snp_and_indel_bcf', 'bcftools_other_options')
                                 )
                             ])
                         ],
@@ -2530,13 +2530,13 @@ pandoc \\
                                 bcftools.mpileup(
                                     input,
                                     None,
-                                    config.param('snp_and_indel_bcf', 'mpileup_other_options'),
+                                    global_config_parser.param('snp_and_indel_bcf', 'mpileup_other_options'),
                                     region
                                     ),
                                 bcftools.call(
                                     "-",
                                     os.path.join(output_directory, "allSamples." + region + ".bcf"),
-                                    config.param('snp_and_indel_bcf', 'bcftools_other_options')
+                                    global_config_parser.param('snp_and_indel_bcf', 'bcftools_other_options')
                                     )
                                 ])
                             ],
@@ -2555,7 +2555,7 @@ pandoc \\
         """
 
         jobs = []
-        nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('snp_and_indel_bcf', 'approximate_nb_jobs', param_type='posint')
         
         output_file_prefix = "variants/allSamples.merged."
 
@@ -2775,7 +2775,7 @@ pandoc \\
                 snpeff.compute_effects(
                     input_vcf,
                     snpeff_file,
-                    options=config.param('compute_effects', 'options', required=False)
+                    options=global_config_parser.param('compute_effects', 'options', required=False)
                 ),
                 htslib.bgzip_tabix(
                     snpeff_file,
@@ -2901,7 +2901,7 @@ pandoc \\
 
     def haplotype_caller_gemini_annotations(self):
         
-        tmp_dir = config.param('DEFAULT', 'tmp_dir')
+        tmp_dir = global_config_parser.param('DEFAULT', 'tmp_dir')
         job = self.gemini_annotations(
             "variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff.dbnsfp.vcf.gz",
             "variants/allSamples.gemini.db",
@@ -2912,7 +2912,7 @@ pandoc \\
 
     def mpileup_gemini_annotations(self):
     
-        tmp_dir = config.param('DEFAULT', 'tmp_dir')
+        tmp_dir = global_config_parser.param('DEFAULT', 'tmp_dir')
         job = self.gemini_annotations(
             "variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf.gz",
             "variants/allSamples.gemini.db",
@@ -3092,7 +3092,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                              [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
                                              [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
 
-            SV_types = config.param('delly_call_filter', 'sv_types_options').split(",")
+            SV_types = global_config_parser.param('delly_call_filter', 'sv_types_options').split(",")
 
             for sv_type in SV_types:
                 output_bcf = os.path.join(delly_directory, sample.name + ".delly." + str(sv_type) + ".bcf")
@@ -3112,7 +3112,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         bcftools.view(
                             output_bcf,
                             None,
-                            config.param('delly_call_filter_germline', 'bcftools_options')
+                            global_config_parser.param('delly_call_filter_germline', 'bcftools_options')
                         ),
                         htslib.bgzip_tabix(
                             None,
@@ -3134,7 +3134,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             output_vcf = os.path.join(delly_directory, sample.name + ".delly.merge.sort.vcf.gz")
             germline_vcf = os.path.join(directory, sample.name + ".delly.germline.vcf.gz")
         
-            SV_types = config.param('delly_call_filter', 'sv_types_options').split(",")
+            SV_types = global_config_parser.param('delly_call_filter', 'sv_types_options').split(",")
         
             inputBCF = []
             for sv_type in SV_types:
@@ -3194,7 +3194,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         bed_file = None
         for sample in self.samples:
             pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", sample.name))
-            #tmp_directory = os.path.join(str(config.param("manta_sv", 'tmp_dir')), "SVariants", sample.name)
+            #tmp_directory = os.path.join(str(global_config_parser.param("manta_sv", 'tmp_dir')), "SVariants", sample.name)
             manta_directory = os.path.join(pair_directory, "rawManta")
             output_prefix = os.path.join(pair_directory, sample.name)
 
@@ -3298,7 +3298,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         "/dev/stdin",
                         discordants_normal,
                         lumpy_directory,
-                        config.param('extract_discordant_reads', 'sambamba_options')
+                        global_config_parser.param('extract_discordant_reads', 'sambamba_options')
                     ),
                 ]),
             ], name="extract_discordant_reads." + sample.name))
@@ -3326,7 +3326,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         "/dev/stdin",
                         splitters_normal,
                         lumpy_directory,
-                        config.param('extract_split_reads', 'sambamba_options')
+                        global_config_parser.param('extract_split_reads', 'sambamba_options')
                     ),
                 ]),
             ], name="extract_split_reads." + sample.name))
@@ -3340,7 +3340,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             jobs.append(concat_jobs([
                 pipe_jobs([
                     Job([gzip_vcf], [None], command="zcat " + gzip_vcf + " | grep -v \"^##contig\""),
-                    bcftools.annotate(None, None, config.param('lumpy_paired_sv_calls', 'header_options')),
+                    bcftools.annotate(None, None, global_config_parser.param('lumpy_paired_sv_calls', 'header_options')),
                     vt.sort("-", os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"), "-m full"),
                 ]),
                 svtyper.genotyper(None, inputNormal, os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"), genotype_vcf),
@@ -3405,7 +3405,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 bash.mkdir(wham_directory, remove=True),
                 pipe_jobs([
                     Job([merge_vcf], [None], command="cat " + merge_vcf + " | grep -v \"^##contig\""),
-                    bcftools.annotate(None, None, config.param('wham_call_sv', 'header_options')),
+                    bcftools.annotate(None, None, global_config_parser.param('wham_call_sv', 'header_options')),
                     vt.sort("-", os.path.join(pair_directory, sample.name + ".wham.sorted.vcf"), "-m full"),
                 ]),
                 pipe_jobs([
@@ -3480,7 +3480,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 ], name="cnvkit_batch.vcf_flt." + sample.name))
                 normal = sample.name
                 
-            if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples', param_type='posint'):
+            if len(self.samples) > global_config_parser.param('cnvkit_batch', 'min_background_samples', param_type='posint'):
                 jobs.append(concat_jobs([
                     bash.mkdir(cnvkit_dir, remove=True),
                     cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn,
@@ -3573,7 +3573,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 bash.mkdir(output_dir, remove=True),
                 breakseq2.run(input, sample.name, output_dir),
                 pipe_jobs([
-                    bcftools.view(output, None, config.param('run_breakseq2', 'bcftools_options')),
+                    bcftools.view(output, None, global_config_parser.param('run_breakseq2', 'bcftools_options')),
                     htslib.bgzip_tabix(None, final_vcf),
                 ]),
             ], name="run_breakseq2." + sample.name))
@@ -3627,7 +3627,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 	                bcftools.view(
                         gatk_vcf,
                         gatk_pass,
-                        config.param('metasv_ensemble', 'filter_pass_options')
+                        global_config_parser.param('metasv_ensemble', 'filter_pass_options')
                     ),
                     htslib.tabix(
                         gatk_pass
@@ -3727,17 +3727,18 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
 
     @property
-    def steps(self):
-        return [
-            [
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+        return {
+            'mugqic': [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
-                #self.bwakit_picard_sort_sam,
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                #self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.gatk_haplotype_caller,
@@ -3763,22 +3764,19 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.cram_output,
                 self.sym_link_fastq,
                 self.sym_link_final_bam,
-	        self.metrics_ngscheckmate,
-	        self.metrics_verify_bam_id,
-	        self.metrics_vcftools_missing_indiv,
+                self.metrics_ngscheckmate,
+                self.metrics_verify_bam_id,
+                self.metrics_vcftools_missing_indiv,
                 self.metrics_vcftools_depth_indiv,
                 self.metrics_gatk_sample_fingerprint,
-	        self.metrics_gatk_cluster_fingerprint,
-	        #self.metrics_peddy,
-            ],
-            [
+                self.metrics_gatk_cluster_fingerprint],
+            'mpileup': [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                #self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.rawmpileup,
@@ -3800,12 +3798,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.gatk_callable_loci,
                 self.extract_common_snp_freq,
                 self.baf_plot,
-                #self.mpileup_metrics_snv_graph_metrics,
                 self.run_multiqc,
                 self.sym_link_fastq,
                 self.sym_link_final_bam
             ],
-            [
+            'light': [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
@@ -3837,7 +3834,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.run_multiqc,
                 self.cram_output
             ],
-            [
+            'sv': [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
@@ -3860,23 +3857,72 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.cnvkit_batch,
                 self.cnvkit_sv_annotation,
                 self.run_breakseq2,
-	            self.ensemble_metasv,
+                self.ensemble_metasv,
                 self.metasv_sv_annotation,
-                #self.svaba_assemble,
-                #self.svaba_sv_annotation
-            ],
-        ]
+            ]
+        }
+
 
 class DnaSeq(DnaSeqRaw):
-    def __init__(self, protocol=None):
+    def __init__(self, *args, protocol="mugqic", **kwargs):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light", "sv"], default="mugqic")
-        super(DnaSeq, self).__init__(protocol)
+        super(DnaSeq, self).__init__(*args, **kwargs)
+
+    @classmethod
+    def argparser(cls, argparser):
+        super().argparser(argparser)
+        cls._argparser.add_argument("-t", "--type", help="DNAseq analysis type", dest='protocol',
+                                    choices=["mugqic", "mpileup", "light", "sv"], default="mugqic")
+        return cls._argparser
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if Genpipes must be ran inside a container
+    utils.container_wrapper_argparse(__file__, argv)
+    # Build help
+    epilog = DnaSeq.process_help(argv)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        conflict_handler='resolve', epilog=epilog)
+
+    # populate the parser
+    parser = DnaSeq.argparser(parser)
+
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+    # Pipeline config
+    config_files = parsed_args.config
+    # Genpipes Config
+
+    # Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    protocol = parsed_args.protocol
+    design_file = parsed_args.design_file
+
+
+    pipeline = DnaSeq(config_files, genpipes_file=genpipes_file,steps=steps,readsets_file=readset_file,
+                      clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                      protocol=protocol, design_file=design_file, no_json=no_json, container=container)
+
+    pipeline.submit_jobs()
 
 if __name__ == '__main__':
-    argv = sys.argv
-    if '--wrap' in argv:
-        utils.utils.container_wrapper_argparse(argv)
-    else:
-        DnaSeq(protocol=['mugqic', 'mpileup', "light", "sv"])
+    main()

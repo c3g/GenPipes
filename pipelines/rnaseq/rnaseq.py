@@ -34,7 +34,7 @@ import subprocess
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config, _raise, SanitycheckError
+from core.config import global_config_parser, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 import utils.utils
 
@@ -97,16 +97,14 @@ class RnaSeqRaw(common.Illumina):
     """
 
     def __init__(self, protocol=None):
-        self._protocol=protocol
-        # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
+        self._protocol = protocol
         super(RnaSeqRaw, self).__init__(protocol)
 
     def star_genome_length(self):
         """
         Calculation for setting genomeSAindexNbases for STAR index
         """
-        genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
+        genome_index = csv.reader(open(global_config_parser.param('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
 
         return int(min(14, math.log2(sum([int(chromosome[1]) for chromosome in genome_index])) / 2 - 1))
 
@@ -153,8 +151,8 @@ class RnaSeqRaw(common.Illumina):
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
-            rg_platform = config.param('star_align', 'platform', required=False)
-            rg_center = config.param('star_align', 'sequencing_center', required=False)
+            rg_platform = global_config_parser.param('star_align', 'platform', required=False)
+            rg_center = global_config_parser.param('star_align', 'sequencing_center', required=False)
 
             job = star.align(
                 reads1=fastq1,
@@ -212,8 +210,8 @@ class RnaSeqRaw(common.Illumina):
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
-            rg_platform = config.param('star_align', 'platform', required=False)
-            rg_center = config.param('star_align', 'sequencing_center', required=False)
+            rg_platform = global_config_parser.param('star_align', 'platform', required=False)
+            rg_center = global_config_parser.param('star_align', 'sequencing_center', required=False)
 
             job = star.align(
                 reads1=fastq1,
@@ -261,8 +259,8 @@ pandoc --to=markdown \\
   --variable assembly="{assembly}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    scientific_name=config.param('star', 'scientific_name'),
-                    assembly=config.param('star', 'assembly'),
+                    scientific_name=global_config_parser.param('star', 'scientific_name'),
+                    assembly=global_config_parser.param('star', 'assembly'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
@@ -378,7 +376,7 @@ awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/
         input_bams = [sample_row[1] for sample_row in sample_rows]
         output_directory = os.path.join("metrics", "rnaseqRep")
         # Use GTF with transcript_id only otherwise RNASeQC fails
-        gtf_transcript_id = config.param('rnaseqc', 'gtf_transcript_id', param_type='filepath')
+        gtf_transcript_id = global_config_parser.param('rnaseqc', 'gtf_transcript_id', param_type='filepath')
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory, removable_files=[output_directory], samples=self.samples),
@@ -386,7 +384,7 @@ awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/
 echo "Sample\tBamFile\tNote
 {sample_rows}" \\
   > {sample_file}""".format(sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]), sample_file=sample_file)),
-            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id, reference=config.param('rnaseqc', 'genome_fasta', param_type='filepath'), ribosomal_interval_file=config.param('rnaseqc', 'ribosomal_fasta', param_type='filepath')),
+            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id, reference=global_config_parser.param('rnaseqc', 'genome_fasta', param_type='filepath'), ribosomal_interval_file=global_config_parser.param('rnaseqc', 'ribosomal_fasta', param_type='filepath')),
             Job([], [output_directory + ".zip"], command="zip -r {output_directory}.zip {output_directory}".format(output_directory=output_directory))
         ], name="rnaseqc"))
 
@@ -456,7 +454,7 @@ pandoc \\
         """
 
         jobs = []
-        reference_file = config.param('picard_rna_metrics', 'genome_fasta', param_type='filepath')
+        reference_file = global_config_parser.param('picard_rna_metrics', 'genome_fasta', param_type='filepath')
         for sample in self.samples:
                 alignment_file = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
                 output_directory = os.path.join("metrics", sample.name)
@@ -501,12 +499,12 @@ pandoc \\
                         read_group="'@RG" + \
                             "\tID:" + readset.name + \
                             "\tSM:" + readset.sample.name + \
-                            ("\tLB:" + readset.library if readset.library else "") + \
-                            ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                            ("\tCN:" + config.param('bwa_mem_rRNA', 'sequencing_center') if config.param('bwa_mem_rRNA', 'sequencing_center', required=False) else "") + \
+                                   ("\tLB:" + readset.library if readset.library else "") + \
+                                   ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                                   ("\tCN:" + global_config_parser.param('bwa_mem_rRNA', 'sequencing_center') if global_config_parser.param('bwa_mem_rRNA', 'sequencing_center', required=False) else "") + \
                             "\tPL:Illumina" + \
                             "'",
-                        ref=config.param('bwa_mem_rRNA', 'ribosomal_fasta'),
+                        ref=global_config_parser.param('bwa_mem_rRNA', 'ribosomal_fasta'),
                         ini_section='bwa_mem_rRNA'
                     ),
                     picard.sort_sam(
@@ -518,7 +516,7 @@ pandoc \\
                 ]),
                 tools.py_rrnaBAMcount (
                     bam=readset_metrics_bam,
-                    gtf=config.param('bwa_mem_rRNA', 'gtf'),
+                    gtf=global_config_parser.param('bwa_mem_rRNA', 'gtf'),
                     output=os.path.join(output_folder,readset.name+"rRNA.stats.tsv"),
                     typ="transcript")], name="bwa_mem_rRNA." + readset.name )
 
@@ -549,7 +547,7 @@ pandoc \\
             bed_graph_prefix = os.path.join("tracks", sample.name, sample.name)
             big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
 
-            if (config.param('DEFAULT', 'strand_info') != 'fr-unstranded') and library[sample] == "PAIRED_END":
+            if (global_config_parser.param('DEFAULT', 'strand_info') != 'fr-unstranded') and library[sample] == "PAIRED_END":
                 input_bam_f1 = bam_file_prefix + "tmp1.forward.bam"
                 input_bam_f2 = bam_file_prefix + "tmp2.forward.bam"
                 input_bam_r1 = bam_file_prefix + "tmp1.reverse.bam"
@@ -624,7 +622,7 @@ pandoc \\
 
             # Count reads
             output_count = os.path.join("raw_counts", sample.name + ".readcounts.csv")
-            stranded = "no" if config.param('DEFAULT', 'strand_info') == "fr-unstranded" else "reverse"
+            stranded = "no" if global_config_parser.param('DEFAULT', 'strand_info') == "fr-unstranded" else "reverse"
             job = concat_jobs([
                 Job(command="mkdir -p raw_counts"),
                 pipe_jobs([
@@ -634,9 +632,9 @@ pandoc \\
                         ),
                         htseq.htseq_count(
                         "-",
-                        config.param('htseq_count', 'gtf', param_type='filepath'),
+                        global_config_parser.param('htseq_count', 'gtf', param_type='filepath'),
                         output_count,
-                        config.param('htseq_count', 'options'),
+                        global_config_parser.param('htseq_count', 'options'),
                         stranded
                         )
                 ])
@@ -677,7 +675,7 @@ do
 done && \\
 echo -e $HEAD | cat - {output_directory}/tmpMatrix.txt | tr ' ' '\\t' > {output_matrix} && \\
 rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
-            reference_gtf=config.param('raw_counts_metrics', 'gtf', param_type='filepath'),
+            reference_gtf=global_config_parser.param('raw_counts_metrics', 'gtf', param_type='filepath'),
             output_directory=output_directory,
             read_count_files=" \\\n  ".join(read_count_files),
             output_matrix=output_matrix
@@ -695,7 +693,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         wiggle_directory = os.path.join("tracks", "bigWig")
         wiggle_archive = "tracks.zip"
-        if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
+        if global_config_parser.param('DEFAULT', 'strand_info') != 'fr-unstranded':
             wiggle_files = []
             for sample in self.samples:
                 if library[sample] == "PAIRED_END":
@@ -706,7 +704,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         # RPKM and Saturation
         count_file = os.path.join("DGE", "rawCountMatrix.csv")
-        gene_size_file = config.param('rpkm_saturation', 'gene_size', param_type='filepath')
+        gene_size_file = global_config_parser.param('rpkm_saturation', 'gene_size', param_type='filepath')
         rpkm_directory = "raw_counts"
         saturation_directory = os.path.join("metrics", "saturation")
 
@@ -754,8 +752,7 @@ pandoc --to=markdown \\
         """
         jobs = []
 
-        gtf = config.param('stringtie','gtf', param_type='filepath')
-
+        gtf = global_config_parser.param('stringtie', 'gtf', param_type='filepath')
         for sample in self.samples:
             input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
             output_directory = os.path.join("stringtie", sample.name)
@@ -776,7 +773,7 @@ pandoc --to=markdown \\
         output_directory = os.path.join("stringtie", "AllSamples")
         sample_file = os.path.join("stringtie", "stringtie-merge.samples.txt")
         input_gtfs = [os.path.join("stringtie", sample.name, "transcripts.gtf") for sample in self.samples]
-        gtf = config.param('stringtie','gtf', param_type='filepath')
+        gtf = global_config_parser.param('stringtie', 'gtf', param_type='filepath')
 
 
         job = concat_jobs([
@@ -824,7 +821,7 @@ END
         # Perform ballgown on each design contrast
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         if self.contrasts:
-            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+            design_file = os.path.relpath(self.design_file.name, self.output_dir)
         output_directory = "ballgown"
         input_abund = [os.path.join("stringtie", sample.name, "abundance.tab") for sample in self.samples]
 
@@ -843,8 +840,7 @@ END
 
         jobs = []
 
-        gtf = config.param('cufflinks','gtf', param_type='filepath')
-
+        gtf = global_config_parser.param('cufflinks', 'gtf', param_type='filepath')
         for sample in self.samples:
             input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
             output_directory = os.path.join("cufflinks", sample.name)
@@ -866,7 +862,7 @@ END
         output_directory = os.path.join("cufflinks", "AllSamples")
         sample_file = os.path.join("cufflinks", "cuffmerge.samples.txt")
         input_gtfs = [os.path.join("cufflinks", sample.name, "transcripts.gtf") for sample in self.samples]
-        gtf = config.param('cuffmerge','gtf', param_type='filepath')
+        gtf = global_config_parser.param('cuffmerge', 'gtf', param_type='filepath')
 
 
         job = concat_jobs([
@@ -1001,7 +997,7 @@ END
             gq_seq_utils.exploratory_analysis_rnaseq(
                 os.path.join("DGE", "rawCountMatrix.csv"),
                 "cuffnorm",
-                config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', param_type='filepath'),
+                global_config_parser.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', param_type='filepath'),
                 "exploratory"
             )
         ], name="gq_seq_utils_exploratory_analysis_rnaseq"))
@@ -1053,7 +1049,7 @@ cp \\
 
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         if self.contrasts:
-            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+            design_file = os.path.relpath(self.design_file.name, self.output_dir)
         output_directory = "DGE"
         count_matrix = os.path.join(output_directory, "rawCountMatrix.csv")
 
@@ -1083,7 +1079,7 @@ cp \\
             # goseq for differential gene expression results
             job = differential_expression.goseq(
                 os.path.join("DGE", contrast.name, "dge_results.csv"),
-                config.param("differential_expression_goseq", "dge_input_columns"),
+                global_config_parser.param("differential_expression_goseq", "dge_input_columns"),
                 os.path.join("DGE", contrast.name, "gene_ontology_results.csv")
             )
             job.name = "differential_expression_goseq.dge." + contrast.name
@@ -1137,10 +1133,10 @@ do
     echo -e "\\nNo FDR adjusted GO enrichment was significant (p-value too high) based on the differentially expressed gene results for this design.\\n" >> {report_file}
   fi
 done""".format(
-                    design_file=os.path.abspath(self.args.design.name),
+                    design_file=os.path.abspath(self.design_file.name),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
-                    adj_pvalue_threshold=config.param('differential_expression_goseq','other_options').split(" ")[1],
+                    adj_pvalue_threshold=global_config_parser.param('differential_expression_goseq', 'other_options').split(" ")[1],
                     report_file=report_file,
                     contrasts=" ".join([contrast.name for contrast in self.contrasts])
                 ),
@@ -1156,14 +1152,30 @@ done""".format(
         Generate IHEC's standard metrics.
         """
 
-        genome = config.param('ihec_metrics', 'assembly')
+        genome = global_config_parser.param('ihec_metrics', 'assembly')
 
         return [metrics.ihec_metrics_rnaseq(genome)]
 
 
+class RnaSeq(RnaSeqRaw):
+    def __init__(self,*args, protocol=None, **kwargs):
+        self._protocol = protocol
+        # Add pipeline specific arguments
+        super().__init__(*args, **kwargs)
+
+    @classmethod
+    def argparser(cls, argparser):
+        super().argparser(argparser)
+        cls._argparser.add_argument("-t", "--type", help="RNAseq analysis type", dest='protocol',
+                                    choices=["stringtie","cufflinks"], default="stringtie")
+        return cls._argparser
+
     @property
-    def steps(self):
-        return [
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+        return { "stringtie":
             [self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
@@ -1184,7 +1196,7 @@ done""".format(
             self.ballgown,
             self.differential_expression,
             self.cram_output
-            ],
+            ], "cufflinks":
             [self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
@@ -1211,17 +1223,55 @@ done""".format(
             self.ihec_metrics,
             self.cram_output
             ]
-        ]
-class RnaSeq(RnaSeqRaw):
-    def __init__(self, protocol=None):
-        self._protocol = protocol
-        # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="RNAseq analysis type", choices=["stringtie","cufflinks"], default="stringtie")
-        super(RnaSeq, self).__init__(protocol)
+                 }
+
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if Genpipes must be ran inside a container
+    utils.container_wrapper_argparse(__file__, argv)
+    # Build help
+    epilog = RnaSeq.process_help(argv)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        conflict_handler='resolve', epilog=epilog)
+
+    # populate the parser
+    parser = RnaSeq.argparser(parser)
+
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+    protocol = parsed_args.protocol
+
+    pipeline = RnaSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                              clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                              design_file=design_file, no_json=no_json, container=container,
+                              protocol=protocol)
+
+    pipeline.submit_jobs()
 
 if __name__ == '__main__':
-    argv = sys.argv
-    if '--wrap' in argv:
-        utils.utils.container_wrapper_argparse(argv)
-    else:
-        RnaSeq(protocol=['stringtie','cufflinks'])
+    main()

@@ -47,8 +47,8 @@ def uchime(
   --nonchimeras {filter_fasta} \\
   --threads {threads_number}""".format(
         cat_sequence_fasta=cat_sequence_fasta,
-        database=config.param('uchime', 'chimera_database'),
-        threads_number=config.param('uchime', 'threads'),
+        database=global_config_parser.param('uchime', 'chimera_database'),
+        threads_number=global_config_parser.param('uchime', 'threads'),
         filter_fasta=filter_fasta
         ),
         removable_files=[filter_fasta]

@@ -52,12 +52,12 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
   -circos circos \\
   -somatic_vcf {somatic_snv} \\
   -output_dir {output_dir}""".format(
-        tmp_dir=config.param('purple', 'tmp_dir'),
-        java_other_options=config.param('purple', 'java_other_options'),
-        ram=config.param('purple', 'ram'),
-        threads=config.param('purple', 'threads'),
-        gc_profile=config.param('purple', 'gc_profile'),
-        reference_sequence=config.param('purple', 'genome_fasta', param_type='filepath'),
+        tmp_dir=global_config_parser.param('purple', 'tmp_dir'),
+        java_other_options=global_config_parser.param('purple', 'java_other_options'),
+        ram=global_config_parser.param('purple', 'ram'),
+        threads=global_config_parser.param('purple', 'threads'),
+        gc_profile=global_config_parser.param('purple', 'gc_profile'),
+        reference_sequence=global_config_parser.param('purple', 'genome_fasta', param_type='filepath'),
         reference=normal_name,
         tumor=tumor_name,
         amber=amber,
@@ -81,9 +81,9 @@ def strelka2_convert(input, output):
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $PURPLE_JAR com.hartwig.hmftools.purple.tools.AnnotateStrelkaWithAllelicDepth \\
   -in {input} \\
   -out {output}""".format(
-        tmp_dir=config.param('purple', 'tmp_dir'),
-        java_other_options=config.param('purple', 'java_other_options'),
-        ram=config.param('purple', 'ram'),
+        tmp_dir=global_config_parser.param('purple', 'tmp_dir'),
+        java_other_options=global_config_parser.param('purple', 'java_other_options'),
+        ram=global_config_parser.param('purple', 'ram'),
         input=input,
         output=output,
         )

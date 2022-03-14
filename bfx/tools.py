@@ -22,7 +22,7 @@ import os
 import re
 
 # MUGQIC Modules
-from core.config import config
+from core.config import global_config_parser
 from core.job import Job
 
 ## functions for awk tools ##
@@ -201,7 +201,7 @@ def dict2beds(dictionary,beds):
 python3 $PYTHON_TOOLS/dict2BEDs.py \\
   --dict {dictionary} \\
   --beds {beds}""".format(
-            dictionary=dictionary if dictionary else config.param('dict2beds', 'genome_dictionary', param_type='filepath'),
+            dictionary=dictionary if dictionary else global_config_parser.param('dict2beds', 'genome_dictionary', param_type='filepath'),
             beds=' '.join(beds)
         )
     )
@@ -321,7 +321,7 @@ bed2IntervalList.pl \\
   --dict {dictionary} \\
   --bed {bed} \\
   > {output}""".format(
-            dictionary=config.param('bed2interval_list', 'genome_dictionary', param_type='filepath'),
+            dictionary=global_config_parser.param('bed2interval_list', 'genome_dictionary', param_type='filepath'),
             bed=bed,
             output=output
         )
@@ -585,10 +585,10 @@ R --no-save '--args \\
   {other_options}' \\
   < $R_TOOLS/methylKit.R""".format(
             design_file=design_file,
-            genome=config.param('methylkit_differential_analysis', 'assembly'),
+            genome=global_config_parser.param('methylkit_differential_analysis', 'assembly'),
             output_folder=output_dir,
             input_suffix=suffix,
-            other_options=config.param('methylkit_differential_analysis', 'other_options')
+            other_options=global_config_parser.param('methylkit_differential_analysis', 'other_options')
         )
     )
 
@@ -617,8 +617,8 @@ IHEC_rnaseq_metrics.sh \\
             input_bam=input_bam,
             input_name=input_name,
             input_picard_dup=input_picard_dup,
-            intergenic_bed=config.param('IHEC_rnaseq_metrics', 'intergenic_bed', param_type='filepath', required=True),
-            rrna_bed=config.param('IHEC_rnaseq_metrics', 'ribo_rna_bed', param_type='filepath', required=True),
+            intergenic_bed=global_config_parser.param('IHEC_rnaseq_metrics', 'intergenic_bed', param_type='filepath', required=True),
+            rrna_bed=global_config_parser.param('IHEC_rnaseq_metrics', 'ribo_rna_bed', param_type='filepath', required=True),
             output_dir=output_dir
         )
     )
@@ -670,12 +670,14 @@ IHEC_chipseq_metrics_max.sh \\
             chip_bam=chip_bam,
             chip_type=chip_type,
             chip_name=chip_name,
-            threads=config.param('IHEC_chipseq_metrics', 'thread', param_type='int'),
+            threads=global_config_parser.param('IHEC_chipseq_metrics', 'thread', param_type='int')
+            if global_config_parser.param('IHEC_chipseq_metrics', 'thread', param_type='int', required=False) else 1,
             chip_bed=chip_bed,
             output_dir=output_dir,
             assembly=assembly
         ),
-        removable_files=[output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bam, output_dedup_chip_bai, output_dedup_input_bam, output_dedup_input_bai, output_flagstats]
+        removable_files=[output_fingerprints, output_fingerprints_png, output_dedup_chip_bam, output_dedup_chip_bam,
+                         output_dedup_chip_bai, output_dedup_input_bam, output_dedup_input_bai, output_flagstats]
     )
 
 def sh_fastq_readname_edit(
@@ -903,15 +905,15 @@ bedops --not-element-of \\
   {filter_sorted_bed} \\
   > {output}""". format(
             input=input,
-            sorted_bed=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(input)+".tmp.sorted.bed"),
-            filter_file=config.param('filter_snp_cpg', 'known_variants'),
-            filter_sorted_bed=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(config.param('filter_snp_cpg', 'known_variants'))+".tmp.sorted.bed"),
+            sorted_bed=os.path.join(global_config_parser.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(input) + ".tmp.sorted.bed"),
+            filter_file=global_config_parser.param('filter_snp_cpg', 'known_variants'),
+            filter_sorted_bed=os.path.join(global_config_parser.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(global_config_parser.param('filter_snp_cpg', 'known_variants')) + ".tmp.sorted.bed"),
             output=output
         )
     )
 
 def prepare_methylkit(input, output):
-    cutoff=config.param('prepare_methylkit', 'min_CpG', required=True)
+    cutoff=global_config_parser.param('prepare_methylkit', 'min_CpG', required=True)
     return Job(
         [input],
         [output],

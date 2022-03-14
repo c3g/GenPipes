@@ -32,7 +32,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config, _raise, SanitycheckError
+from core.config import global_config_parser, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 import utils.utils
 
@@ -121,13 +121,17 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
     software suit from fastq files.
     """
 
-    def __init__(self, protocol=None):
+    def __init__(self, *args, protocol=None, **kwargs):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default trinity)",
-                                    choices=["trinity", "seq2fun"], default="trinity")
-        super(RnaSeqDeNovoAssembly, self).__init__(protocol)
+        super(RnaSeqDeNovoAssembly, self).__init__(*args, **kwargs)
 
+    @classmethod
+    def argparser(cls, argparser):
+        super().argparser(argparser)
+        cls._argparser.add_argument("-t", "--type", help="RNAseq analysis type", dest='protocol',
+                                    choices=["trinity", "seq2fun"], default="trinity")
+        return cls._argparser
 
     def insilico_read_normalization_readsets(self):
         """
@@ -153,9 +157,9 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
                 left_or_single_reads,
                 right_reads,
                 "fq",
-                config.param('insilico_read_normalization_readsets', 'jellyfish_memory'),
+                global_config_parser.param('insilico_read_normalization_readsets', 'jellyfish_memory'),
                 normalization_directory,
-                config.param('insilico_read_normalization_readsets', 'cpu', required=False, param_type='int')
+                global_config_parser.param('insilico_read_normalization_readsets', 'cpu', required=False, param_type='int')
             )
 
             job.name = "insilico_read_normalization_readsets." + readset.name
@@ -189,9 +193,9 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
             left_or_single_reads,
             right_reads,
             "fq",
-            config.param('insilico_read_normalization_all', 'jellyfish_memory'),
+            global_config_parser.param('insilico_read_normalization_all', 'jellyfish_memory'),
             normalization_directory_all,
-            config.param('insilico_read_normalization_all', 'cpu', required=False, param_type='int')
+            global_config_parser.param('insilico_read_normalization_all', 'cpu', required=False, param_type='int')
         )
 
         job.name = "insilico_read_normalization_all"
@@ -305,7 +309,7 @@ pandoc --to=markdown \\
         trinity_fasta = os.path.join(trinity_directory, "Trinity.fasta")
         trinity_fasta_for_blast = os.path.join(trinity_directory, "Trinity.fa")
         trinity_chunks_directory = os.path.join(trinity_directory, "Trinity.fasta_chunks")
-        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
+        num_fasta_chunks = global_config_parser.param('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
 
         return [concat_jobs([
             Job(command="rm -rf " + trinity_chunks_directory),
@@ -322,11 +326,11 @@ pandoc --to=markdown \\
         jobs = []
         trinity_chunks_directory = os.path.join("trinity_out_dir", "Trinity.fasta_chunks")
         blast_directory = "blast"
-        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
+        num_fasta_chunks = global_config_parser.param('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
         program = "blastx"
-        swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
-        uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
-        cpu = config.param('blastx_trinity_uniprot', 'cpu')
+        swissprot_db = global_config_parser.param("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
+        uniref_db = global_config_parser.param("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
+        cpu = global_config_parser.param('blastx_trinity_uniprot', 'cpu')
 
         # (Removed blast on uniref_db since it's too long)
         for db in [swissprot_db]:
@@ -354,11 +358,11 @@ pandoc --to=markdown \\
 
         jobs = []
         blast_directory = "blast"
-        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
+        num_fasta_chunks = global_config_parser.param('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
         program = "blastx"
         blast_prefix = os.path.join(blast_directory, program + "_Trinity_")
-        swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
-        uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
+        swissprot_db = global_config_parser.param("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
+        uniref_db = global_config_parser.param("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
 
         # (Removed blast on uniref_db since it's too long)
         for db in [swissprot_db]:
@@ -453,7 +457,7 @@ pandoc --to=markdown \\
 
         blast_directory = os.path.join("trinotate", "blastp")
         transdecoder_fasta = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
-        db = config.param("blastp_transdecoder_uniprot", "swissprot_db", param_type='prefixpath')
+        db = global_config_parser.param("blastp_transdecoder_uniprot", "swissprot_db", param_type='prefixpath')
 
         jobs = trinotate.blastp_transdecoder_uniprot(blast_directory, transdecoder_fasta, db)
         for job in jobs:
@@ -496,7 +500,7 @@ pandoc --to=markdown \\
         """
         jobs = []
 
-        swissprot_db = os.path.basename(config.param("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath'))
+        swissprot_db = os.path.basename(global_config_parser.param("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath'))
         transdecoder_pep = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
 
         job = trinotate.trinotate(
@@ -601,9 +605,9 @@ pandoc --to=markdown \\
         # Parse Trinotate results to obtain blast, go annotation and a filtered set of contigs
         isoforms_lengths = os.path.join(output_directory, "isoforms.lengths.tsv")
         trinotate_annotation_report = os.path.join("trinotate", "trinotate_annotation_report.tsv")
-        gene_id_column = "#gene_id" if not config.param('trinotate', 'gene_column', required=False) else config.param('trinotate', 'gene_column', required=False)
-        transcript_id_column = "transcript_id" if not config.param('trinotate', 'transcript_column', required=False) else config.param('trinotate', 'gene_column', required=False)
-        trinotate_filters = None if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
+        gene_id_column = "#gene_id" if not global_config_parser.param('trinotate', 'gene_column', required=False) else global_config_parser.param('trinotate', 'gene_column', required=False)
+        transcript_id_column = "transcript_id" if not global_config_parser.param('trinotate', 'transcript_column', required=False) else global_config_parser.param('trinotate', 'gene_column', required=False)
+        trinotate_filters = None if not global_config_parser.param('filter_annotated_components', 'filters_trinotate', required=False) else global_config_parser.param('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
 
         job = tools.py_parseTrinotateOutput(
             trinotate_annotation_report,
@@ -712,7 +716,7 @@ pandoc --to=markdown \\
     report_template_dir=self.report_template_dir,
     basename_report_file=os.path.basename(report_file),
     report_file=report_file,
-    filter_string="" if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False)
+    filter_string="" if not global_config_parser.param('filter_annotated_components', 'filters_trinotate', required=False) else global_config_parser.param('filter_annotated_components', 'filters_trinotate', required=False)
     ),
                 name="filter_annotated_components_report",
                 report_files=[report_file],
@@ -798,10 +802,10 @@ pandoc --to=markdown \\
         """
         jobs = []
         # Parameters from ini file
-        gene_id_column = "#gene_id" if not config.param('trinotate', 'gene_column', required=False) else config.param('trinotate', 'gene_column', required=False)
-        transcript_id_column = "transcript_id" if not config.param('trinotate', 'transcript_column', required=False) else config.param('trinotate', 'gene_column', required=False)
-        trinotate_filters = None if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
-        trinotate_columns_to_exclude = None if not config.param('differential_expression', 'trinotate_columns_to_exclude', required=False) else config.param('differential_expression', 'trinotate_columns_to_exclude', required=False)
+        gene_id_column = "#gene_id" if not global_config_parser.param('trinotate', 'gene_column', required=False) else global_config_parser.param('trinotate', 'gene_column', required=False)
+        transcript_id_column = "transcript_id" if not global_config_parser.param('trinotate', 'transcript_column', required=False) else global_config_parser.param('trinotate', 'gene_column', required=False)
+        trinotate_filters = None if not global_config_parser.param('filter_annotated_components', 'filters_trinotate', required=False) else global_config_parser.param('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
+        trinotate_columns_to_exclude = None if not global_config_parser.param('differential_expression', 'trinotate_columns_to_exclude', required=False) else global_config_parser.param('differential_expression', 'trinotate_columns_to_exclude', required=False)
 
         # mkdir
         mkdir_job = Job(
@@ -814,11 +818,11 @@ pandoc --to=markdown \\
         matrix = os.path.join(output_directory, item + ".counts.matrix")
 
         # Perform edgeR
-        edger_job = differential_expression.edger(os.path.relpath(self.args.design.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
+        edger_job = differential_expression.edger(os.path.relpath(self.design_file.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
         edger_job.output_files = [os.path.join(output_directory, item, contrast.name, "edger_results.csv") for contrast in self.contrasts]
 
         # Perform DESeq
-        deseq_job = differential_expression.deseq2(os.path.relpath(self.args.design.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
+        deseq_job = differential_expression.deseq2(os.path.relpath(self.design_file.name, self.output_dir), matrix + ".symbol", os.path.join(output_directory, item))
         deseq_job.output_files = [os.path.join(output_directory, item, contrast.name, "dge_results.csv") for contrast in self.contrasts]
 
         jobs.append(
@@ -832,7 +836,7 @@ pandoc --to=markdown \\
             # Prepare GOseq job
             goseq_job = differential_expression.goseq(
                 os.path.join(output_directory, item, contrast.name, "dge_trinotate_results.csv"),
-                config.param("differential_expression", "dge_input_columns"),
+                global_config_parser.param("differential_expression", "dge_input_columns"),
                 os.path.join(output_directory, item, contrast.name, "gene_ontology_results.csv"),
                 os.path.join(output_directory, item +".lengths.tsv.noheader.tsv"),
                 trinotate_annotation_report + "." + item + "_go.tsv"
@@ -894,7 +898,7 @@ pandoc --to=markdown \\
                 render_output_dir='report',
                 module_section='report',
                 prerun_r='design_file="' +
-                         os.path.relpath(self.args.design.name, self.output_dir) +
+                         os.path.relpath(self.design_file.name, self.output_dir) +
                          '"; report_dir="' +
                          report_dir +
                          '"; source_dir="' +
@@ -922,7 +926,7 @@ pandoc --to=markdown \\
         trinotate_annotation_report_filtered_header["isoforms"] = trinotate_annotation_report + ".isoforms_filtered_header.tsv"
         trinotate_annotation_report_filtered_header["genes"] = trinotate_annotation_report + ".genes_filtered_header.tsv"
         counts_ids = {'genes':"Genes", 'isoforms':"Isoforms"}
-        trinotate_filters = None if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
+        trinotate_filters = None if not global_config_parser.param('filter_annotated_components', 'filters_trinotate', required=False) else global_config_parser.param('filter_annotated_components', 'filters_trinotate', required=False).split("\n")
         source_directory = "differential_expression"
 
         # Create the files containing filtered isoforms and genes with headers
@@ -1316,7 +1320,7 @@ rm {temp_out2}""".format(
         for contrast in self.contrasts:
             seq2fun_outputs =[]
             output_dir = os.path.join(output_directory, contrast.name)
-            profiling = (config.param('seq2fun', 'profiling'))
+            profiling = (global_config_parser.param('seq2fun', 'profiling'))
             seq2fun_outputs.append(output_dir + "/All_sample_KO_abundance_table.txt")
             if "--profiling" == profiling:
                 seq2fun_outputs.append(output_dir + "/All_sample_KO_abundance_table_submit2networkanalyst.txt")
@@ -1484,7 +1488,7 @@ rm {temp_out2}""".format(
         )
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         if self.contrasts:
-            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+            design_file = os.path.relpath(self.design_file.name, self.output_dir)
 
         #check whether design file has any contrast with no replicates. If so deseq2 cannot handle it and analysis should be
         #skipped
@@ -1544,7 +1548,7 @@ rm {temp_out2}""".format(
         jobs = []
         output_prefix = "seq2fun_ko_pathway"
         DGE_output_directory=  "differential_expression/seq2fun"
-        profiling = (config.param('seq2fun', 'profiling'))
+        profiling = (global_config_parser.param('seq2fun', 'profiling'))
         if "--profiling" == profiling:
             for contrast in self.contrasts:
                 output_file = os.path.join(DGE_output_directory, contrast.name, "edger_results.csv")
@@ -1562,8 +1566,11 @@ rm {temp_out2}""".format(
 
 
     @property
-    def steps(self):
-        return [
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+        return { "trinity":
             [
             self.picard_sam_to_fastq,
             self.trimmomatic,
@@ -1588,20 +1595,62 @@ rm {temp_out2}""".format(
             self.filter_annotated_components,
             self.gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered,
             self.differential_expression_filtered
-                ],
+            ], "seq2fun":
             [
-                self.picard_sam_to_fastq,
-                self.merge_fastq,
-                self.seq2fun,
-                self.differential_expression_seq2fun,
-                self.pathway_enrichment_seq2fun
-
+            self.picard_sam_to_fastq,
+            self.merge_fastq,
+            self.seq2fun,
+            self.differential_expression_seq2fun,
+            self.pathway_enrichment_seq2fun
              ]
-        ]
+        }
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if Genpipes must be ran inside a container
+    utils.container_wrapper_argparse(__file__, argv)
+    # Build help
+    epilog = RnaSeqDeNovoAssembly.process_help(argv)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        conflict_handler='resolve', epilog=epilog)
+
+    # populate the parser
+    parser = RnaSeqDeNovoAssembly.argparser(parser)
+
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+    protocol = parsed_args.protocol
+
+    pipeline = RnaSeqDeNovoAssembly(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                                    clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                                    design_file=design_file, no_json=no_json, container=container,
+                                    protocol=protocol)
+
+    pipeline.submit_jobs()
 
 if __name__ == '__main__':
-    argv = sys.argv
-    if '--wrap' in argv:
-        utils.utils.container_wrapper_argparse(argv)
-    else:
-        RnaSeqDeNovoAssembly(protocol=['trinity', 'seq2fun'])
+    main()

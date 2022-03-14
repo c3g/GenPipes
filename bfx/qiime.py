@@ -57,8 +57,8 @@ $QIIME_HOME/split_libraries_fastq.py \\
   --barcode_type 'not-barcoded'""".format(
         input_files=','.join(input_fastq),
         sample_name=','.join(input_name),
-        sequence_max_n=config.param('qiime_catenate', 'sequence_max_n'),
-        phred_offset=config.param('qiime_catenate', 'phred_offset'),
+        sequence_max_n=global_config_parser.param('qiime_catenate', 'sequence_max_n'),
+        phred_offset=global_config_parser.param('qiime_catenate', 'phred_offset'),
         dir_output="catenate/",
         ),
         removable_files=[catenate_fasta]
@@ -92,9 +92,9 @@ $QIIME_HOME/pick_otus.py \\
   -o {output_directory}""".format(
         input_without_chimer=input_without_chimer,
         method='usearch61_ref',
-        reference_seqs_fp=config.param('qiime_otu_picking', 'reference_seqs_fp'),
-        similarity_treshold=config.param('qiime_otu_picking', 'similarity'),
-        threads_number=config.param('qiime_otu_picking', 'threads'),
+        reference_seqs_fp=global_config_parser.param('qiime_otu_picking', 'reference_seqs_fp'),
+        similarity_treshold=global_config_parser.param('qiime_otu_picking', 'similarity'),
+        threads_number=global_config_parser.param('qiime_otu_picking', 'threads'),
         output_directory=output_directory
         ),
         removable_files=[otu_file]
@@ -127,9 +127,9 @@ $QIIME_HOME/pick_otus.py \\
   -o {output_directory}""".format(
         input_without_chimer=input_without_chimer,
         method='usearch61_ref',
-        reference_seqs_fp=config.param('qiime_otu_picking', 'reference_seqs_fp'),
-        similarity_treshold=config.param('qiime_otu_picking', 'similarity'),
-        threads_number=config.param('qiime_otu_picking', 'threads'),
+        reference_seqs_fp=global_config_parser.param('qiime_otu_picking', 'reference_seqs_fp'),
+        similarity_treshold=global_config_parser.param('qiime_otu_picking', 'similarity'),
+        threads_number=global_config_parser.param('qiime_otu_picking', 'threads'),
         output_directory=output_directory
         ),
         removable_files=[otu_file]
@@ -161,8 +161,8 @@ $QIIME_HOME/pick_otus.py \\
   -o {output_directory}""".format(
         input_without_chimer=input_without_chimer,
         method='usearch61',
-        similarity_treshold=config.param('qiime_otu_picking', 'similarity'),
-        threads_number=config.param('qiime_otu_picking', 'threads'),
+        similarity_treshold=global_config_parser.param('qiime_otu_picking', 'similarity'),
+        threads_number=global_config_parser.param('qiime_otu_picking', 'threads'),
         output_directory=output_directory
         ),
         removable_files=[output_otus]
@@ -192,7 +192,7 @@ $QIIME_HOME/pick_rep_set.py \\
   -o {otu_rep_file}""".format(
         otu_file=otu_file,
         filter_fasta=filter_fasta,
-        method=config.param('qiime_rep_picking', 'rep_set_picking_method'),
+        method=global_config_parser.param('qiime_rep_picking', 'rep_set_picking_method'),
         otu_rep_file=otu_rep_file
         ),
         removable_files=[otu_rep_file]
@@ -223,9 +223,9 @@ $QIIME_HOME/parallel_assign_taxonomy_uclust.py \\
   -t {taxonomy_otus} \\
   -o {output_directory}""".format(
         otu_rep_picking_fasta=otu_rep_picking_fasta,
-        threads_number=config.param('qiime_otu_assigning', 'threads'),
-        database_otus=config.param('qiime_otu_assigning', 'reference_seqs_fp'),
-        taxonomy_otus=config.param('qiime_otu_assigning', 'id_to_taxonomy_fp'),
+        threads_number=global_config_parser.param('qiime_otu_assigning', 'threads'),
+        database_otus=global_config_parser.param('qiime_otu_assigning', 'reference_seqs_fp'),
+        taxonomy_otus=global_config_parser.param('qiime_otu_assigning', 'id_to_taxonomy_fp'),
         output_directory=output_directory
         ),
         removable_files=[tax_assign_file]
@@ -283,7 +283,7 @@ $QIIME_HOME/parallel_align_seqs_pynast.py \\
   --jobs_to_start {threads_number} \\
   -o {output_directory}""".format(
         otu_rep_picking_fasta=otu_rep_picking_fasta,
-        threads_number=config.param('qiime_otu_alignment', 'threads'),
+        threads_number=global_config_parser.param('qiime_otu_alignment', 'threads'),
         output_directory=output_directory
         ),
         removable_files=[align_seq_fasta]
@@ -367,9 +367,9 @@ $QIIME_HOME/multiple_rarefactions.py \\
   -n 3 \\
   --output_path {rarefied_otu_directory}""".format(
         otus_input=otus_input[0],
-        multiple_rarefaction_min=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_min'),
-        multiple_rarefaction_max=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'),
-        multiple_rarefaction_step=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_step'),
+        multiple_rarefaction_min=global_config_parser.param('qiime_multiple_rarefaction', 'multiple_rarefaction_min'),
+        multiple_rarefaction_max=global_config_parser.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max'),
+        multiple_rarefaction_step=global_config_parser.param('qiime_multiple_rarefaction', 'multiple_rarefaction_step'),
         rarefied_otu_directory=rarefied_otu_directory
         ),
         removable_files=[rarefied_otu_directory]
@@ -488,7 +488,7 @@ $QIIME_HOME/single_rarefaction.py \\
   -d {depth}""".format(
         table_otu=table_otu,
         otu_normalized_table=otu_normalized_table,
-        depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth')
+        depth=global_config_parser.param('qiime_single_rarefaction', 'single_rarefaction_depth')
         ),
         removable_files=[otu_normalized_table]
     )

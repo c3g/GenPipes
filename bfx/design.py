@@ -63,7 +63,11 @@ class Contrast(object):
 
 
 def parse_chipseq_design_file(design_file, samples):
-    design_csv = csv.DictReader(open(design_file, 'r'), delimiter='\t')
+
+    if isinstance(design_file, str):
+        design_file = open(design_file, 'r')
+
+    design_csv = csv.DictReader(design_file, delimiter='\t')
     # Skip first column which is Sample
     contrasts = [Contrast(name) for name in design_csv.fieldnames[2:]]
 
@@ -78,7 +82,7 @@ def parse_chipseq_design_file(design_file, samples):
            sample = matching_samples[0]
 
         else:
-            _raise(SanitycheckError("Error: Sample " + sample_name + " and MarkName " + mark_name + " in design file " +
+            _raise(SanitycheckError("Error: Sample " + sample_name + " and MarkName " + markname + " in design file " +
                                     design_file + " not found in pipeline samples!"))
         for contrast in contrasts:
             sample_contrast_type = line[contrast.name]
@@ -90,8 +94,8 @@ def parse_chipseq_design_file(design_file, samples):
             elif sample_contrast_type == "2":
                 contrast.treatments.append(sample)
             else:
-                _raise(SanitycheckError("Error: invalid value for sample " + sample_name + " and MarkName " + mark_name
-                                        + " and contrast " + contrast.name + " in design file " + design_file +
+                _raise(SanitycheckError("Error: invalid value for sample " + sample_name + " and MarkName " + markname
+                                        + " and contrast " + contrast.name + " in design file " + design_file.name +
                                         " (should be '1' for control, '2' for treatment, '0' or '' to be ignored)!"))
     for contrast in contrasts:
         log.info("Contrast " + contrast.name + " (controls: " + str(len(contrast.controls)) + ", treatments: "
@@ -103,7 +107,10 @@ def parse_chipseq_design_file(design_file, samples):
 
 def parse_design_file(design_file, samples):
 
-    design_csv = csv.DictReader(open(design_file, 'r'), delimiter='\t')
+    if isinstance(design_file, str):
+        design_file = open(design_file, 'r')
+
+    design_csv = csv.DictReader(design_file, delimiter='\t')
 
     # Skip first column which is Sample
     contrasts = [Contrast(name) for name in design_csv.fieldnames[1:]]
@@ -128,7 +135,9 @@ def parse_design_file(design_file, samples):
             elif sample_contrast_type == "2":
                 contrast.treatments.append(sample)
             else:
-                _raise(SanitycheckError("Error: invalid value for sample " + sample_name + " and contrast " + contrast.name + " in design file " + design_file + " (should be '1' for control, '2' for treatment, '0' or '' to be ignored)!"))
+                _raise(SanitycheckError("Error: invalid value for sample " + sample_name + " and contrast "
+                                        + contrast.name + " in design file " + design_file.name +
+                                        "(should be '1' for control, '2' for treatment, '0' or '' to be ignored)!"))
 
     for contrast in contrasts:
         log.info("Contrast " + contrast.name + " (controls: " + str(len(contrast.controls)) + ", treatments: " + str(len(contrast.treatments)) + ") created")

@@ -48,13 +48,13 @@ bismark -q \\
   {input2} \\
   --output_dir {output_directory} \\
   --temp_dir {tmp_dir}""".format(
-            other_options=config.param('bismark_align', 'other_options'),
-            min_insert_size_PE=("-X " + config.param('bismark_align', 'min_insert_size_PE')) if input2 else "",
-            genome_directory=config.param('bismark_align', 'bismark_assembly_dir'),
+            other_options=global_config_parser.param('bismark_align', 'other_options'),
+            min_insert_size_PE=("-X " + global_config_parser.param('bismark_align', 'min_insert_size_PE')) if input2 else "",
+            genome_directory=global_config_parser.param('bismark_align', 'bismark_assembly_dir'),
             input1="-1 "+input1 if input2 else input1,
             input2="-2 "+input2 if input2 else "",
             output_directory=output_directory,
-            tmp_dir=config.param('bismark_align', 'tmp_dir')
+            tmp_dir=global_config_parser.param('bismark_align', 'tmp_dir')
         )
     )
 
@@ -75,7 +75,7 @@ deduplicate_bismark \\
   {library} \\
   {other_options} \\
   {input}""".format(
-            other_options=config.param('bismark_dedup', 'other_options'),
+            other_options=global_config_parser.param('bismark_dedup', 'other_options'),
             library="-p" if library_type=="PAIRED_END" else "-s",
             input=input
         ),
@@ -98,7 +98,7 @@ bismark_methylation_extractor \\
   {other_options} \\
   --output {output_directory} \\
   {input}""".format(
-            other_options=config.param('bismark_methyl_call', 'other_options'),
+            other_options=global_config_parser.param('bismark_methyl_call', 'other_options'),
             library="-p" if library_type=="PAIRED_END" else "-s",
             input=input,
             output_directory=os.path.dirname(outputs[0])
@@ -129,7 +129,7 @@ bismark2bedGraph \\
             inputs="".join([" \\\n  " + input for input in inputs]),
             output=output_prefixe + ".bedGraph.gz",
             directory=output_directory,
-            other_options=config.param('bismark_bed_graph', 'other_options')
+            other_options=global_config_parser.param('bismark_bed_graph', 'other_options')
         )
     )
 
@@ -147,6 +147,6 @@ coverage2cytosine \\
   {input}""".format(
             input=input,
             output=output,
-            other_options=config.param('bismark_coverage2cytosine', 'other_options')
+            other_options=global_config_parser.param('bismark_coverage2cytosine', 'other_options')
         )
     )

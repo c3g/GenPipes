@@ -27,9 +27,9 @@ from core.job import *
 
 
 def processing( input_files, output_file, sample_file, profiling):
-    genemap = config.param('seq2fun', 'genemap')
-    tfmi = config.param('seq2fun', 'tfmi')
-    other_options = config.param('seq2fun', 'other_options')
+    genemap = global_config_parser.param('seq2fun', 'genemap')
+    tfmi = global_config_parser.param('seq2fun', 'tfmi')
+    other_options = global_config_parser.param('seq2fun', 'other_options')
     return Job(
         input_files,
         output_file,
@@ -52,7 +52,7 @@ def deseq2(
     output_dir
     ):
 
-    localfit = "-l" if config.param('differential_expression_deseq', 'localfit') else ""
+    localfit = "-l" if global_config_parser.param('differential_expression_deseq', 'localfit') else ""
 
     return  Job(
         [count_matrix],
@@ -75,10 +75,10 @@ Rscript $R_TOOLS/deseq2.R \\
 
 
 def ko_pathway_analysis(diff_report, output_prefix,   output_dir):
-    fdr = config.param('seq2fun_pathway', 'fdr')
-    rds_file = config.param('seq2fun_pathway', 'rds')
-    map_list = config.param('seq2fun_pathway', 'user_pathway_list')
-    kegg_all = config.param('seq2fun_pathway', 'kegg_all')
+    fdr = global_config_parser.param('seq2fun_pathway', 'fdr')
+    rds_file = global_config_parser.param('seq2fun_pathway', 'rds')
+    map_list = global_config_parser.param('seq2fun_pathway', 'user_pathway_list')
+    kegg_all = global_config_parser.param('seq2fun_pathway', 'kegg_all')
     return Job(
         [diff_report],
         [os.path.join(output_dir, output_prefix + ".txt")],

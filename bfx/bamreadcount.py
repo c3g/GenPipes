@@ -38,8 +38,8 @@ $BAMREADCOUNT_BIN/bam-readcount {options} \\
   {input} \\
   -l {bed} \\
   {output}""".format(
-        options=config.param('varscan2_readcount_fpfilter', 'readcount_options'),
-        reference_sequence=config.param('varscan2_readcount_fpfilter', 'genome_fasta', param_type='filepath'),
+        options=global_config_parser.param('varscan2_readcount_fpfilter', 'readcount_options'),
+        reference_sequence=global_config_parser.param('varscan2_readcount_fpfilter', 'genome_fasta', param_type='filepath'),
         input=input,
         bed=bed,
         output="> " + output if output else ""

@@ -22,15 +22,15 @@ import re
 import json
 
 # MUGQIC Modules
-from core.config import config
+from core.config import global_config_parser
 
 # Start creating the json dump for the passed sample
 def create(pipeline, sample):
     jsonator_version = "1.0.1"
 
     # Retrieve the project name fome the config file, if not specified then use the parent folder name of where the pipeline has been launched
-    if config.param("DEFAULT", 'project_name', required=False):
-        project_name = config.param("DEFAULT", 'project_name', required=False)
+    if global_config_parser.param("DEFAULT", 'project_name', required=False):
+        project_name = global_config_parser.param("DEFAULT", 'project_name', required=False)
     else:
         project_name = os.path.basename(pipeline.output_dir)
 
@@ -38,48 +38,48 @@ def create(pipeline, sample):
     general_info = {}
     if pipeline.__class__.__name__ == "AmpliconSeq":
         general_info = {
-            'amplicon_type' : config.param("DEFAULT", 'amplicon_type'),
-            'db_name' : config.param("DEFAULT", 'db_name'),
-            'db_version' : config.param("DEFAULT", 'db_version'),
-            'similarity_threshold' : config.param("DEFAULT", 'similarity_threshold')
+            'amplicon_type' : global_config_parser.param("DEFAULT", 'amplicon_type'),
+            'db_name' : global_config_parser.param("DEFAULT", 'db_name'),
+            'db_version' : global_config_parser.param("DEFAULT", 'db_version'),
+            'similarity_threshold' : global_config_parser.param("DEFAULT", 'similarity_threshold')
         }
     elif pipeline.__class__.__name__ == "PacBioAssembly":
         general_info = {
-            'library_type' : config.param("DEFAULT", 'library_type'),
-            'blast_db' : config.param("DEFAULT", 'blast_db')
+            'library_type' : global_config_parser.param("DEFAULT", 'library_type'),
+            'blast_db' : global_config_parser.param("DEFAULT", 'blast_db')
         }
     elif pipeline.__class__.__name__ == "Nanopore":
         general_info = {
-            'instrument': config.param("DEFAULT", 'instrument_type'),
-            'blast_db': config.param("DEFAULT", 'blast_db')
+            'instrument': global_config_parser.param("DEFAULT", 'instrument_type'),
+            'blast_db': global_config_parser.param("DEFAULT", 'blast_db')
         }
     elif pipeline.__class__.__name__ == "RnaSeqDeNovoAssembly":
         general_info = {
-            'swissprot_db' : config.param("DEFAULT", 'swissprot_db'),
-            'uniref_db' : config.param("DEFAULT", 'uniref_db'),
-            'pfam_db' : config.param("DEFAULT", 'pfam_db')
+            'swissprot_db' : global_config_parser.param("DEFAULT", 'swissprot_db'),
+            'uniref_db' : global_config_parser.param("DEFAULT", 'uniref_db'),
+            'pfam_db' : global_config_parser.param("DEFAULT", 'pfam_db')
         }
     elif pipeline.__class__.__name__ == "IlluminaRunProcessing":
         general_info = {
-            'analysed_species' : config.param("DEFAULT", 'scientific_name'),
-            'assembly_used' : config.param("DEFAULT", 'assembly'),
-            'assembly_source' : config.param("DEFAULT", 'source')
+            'analysed_species' : global_config_parser.param("DEFAULT", 'scientific_name'),
+            'assembly_used' : global_config_parser.param("DEFAULT", 'assembly'),
+            'assembly_source' : global_config_parser.param("DEFAULT", 'source')
         }
     else :
         general_info = {
-            'analysed_species' : config.param("DEFAULT", 'scientific_name'),
-            'assembly_used' : config.param("DEFAULT", 'assembly'),
-            'assembly_source' : config.param("DEFAULT", 'source')
+            'analysed_species' : global_config_parser.param("DEFAULT", 'scientific_name'),
+            'assembly_used' : global_config_parser.param("DEFAULT", 'assembly'),
+            'assembly_source' : global_config_parser.param("DEFAULT", 'source')
         }
-    if config.param("DEFAULT", 'dbsnp_version', required=False) : general_info['dbsnp_version'] = config.param("DEFAULT", 'dbsnp_version', required=False)
-    general_info['server'] = config.param("DEFAULT", 'cluster_server', required=True)
+    if global_config_parser.param("DEFAULT", 'dbsnp_version', required=False) : general_info['dbsnp_version'] = global_config_parser.param("DEFAULT", 'dbsnp_version', required=False)
+    general_info['server'] = global_config_parser.param("DEFAULT", 'cluster_server', required=True)
     general_info['analysis_folder'] = pipeline.output_dir + "/"
 
     # Prepare the software hash by first retrieving all unique module version values in config files
     # assuming that all module key names start with "module_"
     modules = []
-    for section in config.sections():
-        for name, value in config.items(section):
+    for section in global_config_parser.sections():
+        for name, value in global_config_parser.items(section):
             if re.search("^module_", name) and value not in modules:
                 modules.append(value)
 
@@ -178,7 +178,7 @@ def create(pipeline, sample):
                     'step': []
                 }
             }
-        for step in pipeline.step_range:
+        for step in pipeline.step_to_execute:
             # First verify if the step is meant to be "jsonified"
             jsonify_step = False
             for job in step.jobs:
@@ -227,7 +227,7 @@ def create(pipeline, sample):
         # Finally check if the requested steps/jobs are already in the JSON :
         #   if so  : update them with the current information
         #   if not : add them to the json object
-        for step in pipeline.step_range:
+        for step in pipeline.step_to_execute:
             # First make sure the step is meant to be "jsonified"
             jsonify_step = False
             if step.jobs:

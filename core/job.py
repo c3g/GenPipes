@@ -25,14 +25,16 @@ import os
 import sys
 
 # MUGQIC Modules
-from .config import config
+from .config import global_config_parser
 
 log = logging.getLogger(__name__)
 
 class Job(object):
 
+
     def __init__(self, input_files=[], output_files=[], module_entries=[],
-                 name="", command="", report_files=[], multiqc_files=[], removable_files=[], samples=[]):
+                 name="", command="", report_files=[], multiqc_files=[],
+                 removable_files=[], samples=[]):
         # Remove undefined input/output/removable files if any
         self._input_files = [_f for _f in input_files if _f]
         self._output_files = [_f for _f in output_files if _f]
@@ -41,7 +43,8 @@ class Job(object):
         self._removable_files = [_f for _f in removable_files if _f]
 
         # Retrieve modules from config, removing duplicates but keeping the order
-        self._modules = list(OrderedDict.fromkeys([config.param(section, option) for section, option in module_entries]))
+        self._modules = list(OrderedDict.fromkeys([global_config_parser.param(section, option)
+                                                               for section, option in module_entries]))
 
         self._name = name
         self._command = command

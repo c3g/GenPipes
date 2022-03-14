@@ -35,7 +35,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 # MUGQIC Modules
 import utils.utils
-from core.config import config, SanitycheckError, _raise
+from core.config import global_config_parser, SanitycheckError, _raise
 from core.job import Job, concat_jobs, pipe_jobs
 from bfx.readset import parse_nanopore_readset_file
 from pipelines import common
@@ -58,7 +58,7 @@ from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
 
-class NanoporeCoVSeq(common.MUGQICPipeline):
+class NanoporeCoVSeq(common.Nanopore):
     """
     Nanopore CoVSeq Pipeline
     ==============
@@ -68,25 +68,22 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
     https://bitbucket.org/mugqic/genpipes/src/master/#markdown-header-nanopore).
     """
 
-    def __init__(self, protocol=None):
+    def __init__(self, *args, protocol=None, **kwargs ):
         self._protocol = protocol
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=argparse.FileType('r'))
-        self.argparser.add_argument("-t", "--type", help="Type of CoVSeQ analysis,basecalling on/off (default without basecalling)",
-                                    choices=["default", "basecalling"], default="default")
-        super(NanoporeCoVSeq, self).__init__(protocol)
+        super(NanoporeCoVSeq, self).__init__(*args, **kwargs)
 
-    @property
-    def readsets(self):
-        if not hasattr(self, "_readsets"):
-            if self.args.readsets:
-                self._readsets = parse_nanopore_readset_file(self.args.readsets.name)
-            else:
-                self.argparser.error("argument -r/--readsets is required!")
-        return self._readsets
+    @classmethod
+    def argparser(cls, argparser):
+        super().argparser(argparser)
+        cls._argparser.add_argument("-t", "--type",
+                                    help="Type of CoVSeQ analysis,basecalling on/off (default without basecalling)",
+                                    choices=["default", "basecalling"], default="default", dest='protocol')
+
+        return cls._argparser
 
     @property
     def samples(self):
-        if not hasattr(self, "_samples"):
+        if self._samples is None:
             self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
             reads_fast5_dir = []
             for sample in self.samples:
@@ -104,7 +101,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
     @property
     def run_name(self):
         if not hasattr(self, "_run_name"):
-            self._run_name = config.param('DEFAULT', 'run_name', required=True)
+            self._run_name = global_config_parser.param('DEFAULT', 'run_name', required=True)
         return self._run_name
 
     def guppy_basecall(self):
@@ -115,7 +112,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
         jobs = []
 
         reads_fast5_dir = []
-        transfer = bool(distutils.util.strtobool(config.param('guppy_basecall', 'transfer_to_tmp')))
+        transfer = bool(distutils.util.strtobool(global_config_parser.param('guppy_basecall', 'transfer_to_tmp')))
 
         for sample in self.samples:
             reads_fast5_dir.append(sample.fast5_files)
@@ -161,7 +158,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
 
         demux_fastq_directory = os.path.join("demultiplex")
 
-        transfer = bool(distutils.util.strtobool(config.param('guppy_demultiplex', 'transfer_to_tmp')))
+        transfer = bool(distutils.util.strtobool(global_config_parser.param('guppy_demultiplex', 'transfer_to_tmp')))
 
         demux_barcode_dir = []
         for sample in self.samples:
@@ -265,20 +262,20 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
                         sambamba.sort(
                             "/dev/stdin",
                             sample_bam,
-                            tmp_dir=config.param('host_reads_removal', 'tmp_dir', required=True),
-                            other_options=config.param('host_reads_removal', 'sambamba_sort_other_options',
-                                                       required=False)
+                            tmp_dir=global_config_parser.param('host_reads_removal', 'tmp_dir', required=True),
+                            other_options=global_config_parser.param('host_reads_removal', 'sambamba_sort_other_options',
+                                                                     required=False)
                         )
                     ]),
                     sambamba.view(
                         sample_bam,
                         sample_bam_host_removed_sorted,
-                        options=config.param('host_reads_removal', 'sambamba_view_other_options')
+                        options=global_config_parser.param('host_reads_removal', 'sambamba_view_other_options')
                     ),
                     sambamba.index(
                         sample_bam_host_removed_sorted,
                         sample_bam_host_removed_sorted_index,
-                        other_options=config.param('host_reads_removal', 'sambamba_index_other_options', required=False)
+                        other_options=global_config_parser.param('host_reads_removal', 'sambamba_index_other_options', required=False)
                     ),
                     samtools.bam2fq(
                         input_bam=sample_bam_host_removed_sorted,
@@ -340,20 +337,20 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
                         sambamba.sort(
                             "/dev/stdin",
                             sample_bam,
-                            tmp_dir=config.param('host_reads_removal', 'tmp_dir', required=True),
-                            other_options=config.param('host_reads_removal', 'sambamba_sort_other_options',
-                                                       required=False)
+                            tmp_dir=global_config_parser.param('host_reads_removal', 'tmp_dir', required=True),
+                            other_options=global_config_parser.param('host_reads_removal', 'sambamba_sort_other_options',
+                                                                     required=False)
                         )
                     ]),
                     sambamba.view(
                         sample_bam,
                         sample_bam_host_removed_sorted,
-                        options=config.param('host_reads_removal', 'sambamba_view_other_options')
+                        options=global_config_parser.param('host_reads_removal', 'sambamba_view_other_options')
                     ),
                     sambamba.index(
                         sample_bam_host_removed_sorted,
                         sample_bam_host_removed_sorted_index,
-                        other_options=config.param('host_reads_removal', 'sambamba_index_other_options', required=False)
+                        other_options=global_config_parser.param('host_reads_removal', 'sambamba_index_other_options', required=False)
                     ),
                     samtools.bam2fq(
                         input_bam=sample_bam_host_removed_sorted,
@@ -394,9 +391,9 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
                         fastq1,
                         fastq2,
                         kraken_out_prefix,
-                        other_options=config.param('kraken_analysis', 'kraken2_other_options'),
-                        nthread=config.param('kraken_analysis', 'kraken2_threads'),
-                        database=config.param('kraken_analysis', 'kraken2_database')
+                        other_options=global_config_parser.param('kraken_analysis', 'kraken2_other_options'),
+                        nthread=global_config_parser.param('kraken_analysis', 'kraken2_threads'),
+                        database=global_config_parser.param('kraken_analysis', 'kraken2_database')
                     ),
                     Job(
                         input_files=unclassified_output + classified_output,
@@ -406,7 +403,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
                         ],
                         command="""pigz -k -f -p {nthreads} {input_files}""".format(
                             input_files=" ".join(unclassified_output + classified_output),
-                            nthreads=config.param('kraken_analysis', 'pigz_threads')
+                            nthreads=global_config_parser.param('kraken_analysis', 'pigz_threads')
                         )
                     )
                 ],
@@ -531,7 +528,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
                         sambamba.sort(
                             "/dev/stdin",
                             primer_trimmed_bam,
-                            tmp_dir=config.param('artic_nanopolish', 'tmp_dir', required=True)
+                            tmp_dir=global_config_parser.param('artic_nanopolish', 'tmp_dir', required=True)
                         )
                     ]),
                     sambamba.index(
@@ -702,7 +699,7 @@ echo "pass_reads" $(grep -c "^@" {pass_fq}) >> {fq_stats} """.format(
             output_status_fa = os.path.join(consensus_directory,
                                             """{sample_name}.consensus.{technology}.{status}.fasta""".format(
                                                 sample_name=sample.name,
-                                                technology=config.param('rename_consensus_header',
+                                                technology=global_config_parser.param('rename_consensus_header',
                                                                         'sequencing_technology', required=False),
                                                 status="${STATUS}"))
 
@@ -734,12 +731,12 @@ export STATUS""".format(
                         output_files=[output_status_fa],
                         command="""\\
 awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:{assemb_method}|snv_call_method:{snv_call_method}"; next}}{{print}}' < {input_fa} > {output_status_fa}""".format(
-                            country=config.param('rename_consensus_header', 'country', required=False),
-                            province=config.param('rename_consensus_header', 'province', required=False),
-                            year=config.param('rename_consensus_header', 'year', required=False),
-                            seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
-                            assemb_method=config.param('rename_consensus_header', 'assemb_method', required=False),
-                            snv_call_method=config.param('rename_consensus_header', 'snv_call_method', required=False),
+                            country=global_config_parser.param('rename_consensus_header', 'country', required=False),
+                            province=global_config_parser.param('rename_consensus_header', 'province', required=False),
+                            year=global_config_parser.param('rename_consensus_header', 'year', required=False),
+                            seq_method=global_config_parser.param('rename_consensus_header', 'seq_method', required=False),
+                            assemb_method=global_config_parser.param('rename_consensus_header', 'assemb_method', required=False),
+                            snv_call_method=global_config_parser.param('rename_consensus_header', 'snv_call_method', required=False),
                             sample=sample.name,
                             input_fa=input_fa,
                             output_status_fa=output_status_fa
@@ -757,7 +754,7 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
 
         jobs = []
 
-        readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
+        readset_file = os.path.relpath(self.readsets_file.name, self.output_dir)
         readset_file_report = "report.readset.tsv"
 
         software_version = os.path.join("report", "software_versions.csv")
@@ -771,8 +768,8 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
         modules = []
         # Retrieve all unique module version values in config files
         # assuming that all module key names start with "module_"
-        for section in config.sections():
-            for name, value in config.items(section):
+        for section in global_config_parser.sections():
+            for name, value in global_config_parser.items(section):
                 if re.search("^module_", name) and value not in modules:
                     modules.append(value)
 
@@ -855,7 +852,7 @@ fi""".format(
                     metadata,
                     ncovtools_directory,
                     ncovtools_config,
-                    self.output_dir
+                    self.output_dir,
                 )
             ],
                 name="prepare_report." + self.run_name
@@ -864,10 +861,13 @@ fi""".format(
 
         return jobs
 
-
     @property
-    def steps(self):
-        return [
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+        return {
+            'default':
             [
                 self.host_reads_removal,
                 self.kraken_analysis,
@@ -878,7 +878,7 @@ fi""".format(
                 self.quast_consensus_metrics,
                 self.rename_consensus_header,
                 self.prepare_report],
-            [
+            'basecalling': [
                 self.guppy_basecall,
                 self.guppy_demultiplex,
                 self.pycoqc,
@@ -891,12 +891,55 @@ fi""".format(
                 self.quast_consensus_metrics,
                 self.rename_consensus_header,
                 self.prepare_report],
-        ]
+        }
 
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if Genpipes must be ran inside a container
+    utils.container_wrapper_argparse(__file__, argv)
+    # Build help
+    epilog = NanoporeCoVSeq.process_help(argv)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        conflict_handler='resolve', epilog=epilog)
+
+    # populate the parser
+    parser = NanoporeCoVSeq.argparser(parser)
+
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+    protocol = parsed_args.protocol
+
+    pipeline = NanoporeCoVSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                              clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                              design_file=design_file, no_json=no_json, container=container,
+                              protocol=protocol)
+
+    pipeline.submit_jobs()
 
 if __name__ == '__main__':
-    argv = sys.argv
-    if '--wrap' in argv:
-        utils.utils.container_wrapper_argparse(argv)
-    else:
-        NanoporeCoVSeq(protocol=['default', 'basecalling'])
+    main()

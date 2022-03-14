@@ -39,9 +39,9 @@ python $PYTHON_TOOLS/epiqc_report.py \\
 -bc2 {medium_alert_bases_covered} \\
 -o {output_file}""".format(
             bigwiginfo_file=bigwiginfo_file,
-            chromCount=config.param('epiqc_report', 'chromcount_threshold'),
-            low_alert_bases_covered=config.param('epiqc_report', 'low_alert_bases_covered'),
-            medium_alert_bases_covered=config.param('epiqc_report', 'medium_alert_bases_covered'),
+            chromCount=global_config_parser.param('epiqc_report', 'chromcount_threshold'),
+            low_alert_bases_covered=global_config_parser.param('epiqc_report', 'low_alert_bases_covered'),
+            medium_alert_bases_covered=global_config_parser.param('epiqc_report', 'medium_alert_bases_covered'),
             output_file=output_file)
     )
 def signal_to_noise_report(signal_noise_file, report_file, chr_name):
@@ -60,11 +60,11 @@ python $PYTHON_TOOLS/epiqc_report.py \\
 -st2 {signal_noise_threshold_L} \\
 -o {output_file}""".format(
                             signal_noise_file=signal_noise_file,
-                            percent1=config.param('signal_noise', 'percent1'),
-                            percent2=config.param('signal_noise', 'percent2'),
+                            percent1=global_config_parser.param('signal_noise', 'percent1'),
+                            percent2=global_config_parser.param('signal_noise', 'percent2'),
                             chromosome =chr_name,
-                            signal_noise_threshold_M=config.param('epiqc_report', 'signal_noise_threshold_M'),
-                            signal_noise_threshold_L=config.param('epiqc_report', 'signal_noise_threshold_L'),
+                            signal_noise_threshold_M=global_config_parser.param('epiqc_report', 'signal_noise_threshold_M'),
+                            signal_noise_threshold_L=global_config_parser.param('epiqc_report', 'signal_noise_threshold_L'),
                             output_file=report_file))
 
 def chromimpute_report(eval_file, report_file):
@@ -82,10 +82,10 @@ python $PYTHON_TOOLS/epiqc_report.py \\
 -ct2 {chromimpute_threshold_L} \\
 -o {output_file}""".format(
                             eval_file=eval_file,
-                            percent1=config.param('chromimpute_eval', 'percent1'),
-                            percent2=config.param('chromimpute_eval', 'percent2'),
-                            chromimpute_threshold_M=config.param('epiqc_report', 'chromimpute_threshold_M'),
-                            chromimpute_threshold_L=config.param('epiqc_report', 'chromimpute_threshold_L'),
+                            percent1=global_config_parser.param('chromimpute_eval', 'percent1'),
+                            percent2=global_config_parser.param('chromimpute_eval', 'percent2'),
+                            chromimpute_threshold_M=global_config_parser.param('epiqc_report', 'chromimpute_threshold_M'),
+                            chromimpute_threshold_L=global_config_parser.param('epiqc_report', 'chromimpute_threshold_L'),
                             output_file=report_file))
 
 

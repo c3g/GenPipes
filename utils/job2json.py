@@ -106,7 +106,7 @@ def main():
     step_name, job_name, job_log, job_done, json_files, config_files, user, status = getarg(sys.argv)
 
     #print config_files
-    config.parse_files(config_files)
+    global_config_parser.parse_files(config_files)
 
 
     for jfile in json_files.split(","):
@@ -170,7 +170,7 @@ def main():
             out_json.close()
 
             # Print a copy of it for the monitoring interface
-            portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
+            portal_output_dir = global_config_parser.param('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
             if portal_output_dir != '':
                 with open(os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + str(uuid4().hex) + '.json'), 'w') as out_json:
                     json.dump(current_json, out_json, indent=4)

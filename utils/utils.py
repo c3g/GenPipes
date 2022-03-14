@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 ################################################################################
 # Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
@@ -37,6 +35,18 @@ from core.config import *
 from core.job import *
 
 log = logging.getLogger(__name__)
+
+
+def set_logger(log_level, sanity_check = False):
+
+    min_level = getattr(logging, log_level.upper())
+    if sanity_check:
+        level = max(logging.WARNING, min_level)
+        logging.basicConfig(stream=sys.stdout, level=level, format='%(message)s')
+        log.warning("Sanity Check Report :")
+    else:
+        logging.basicConfig(level=min_level)
+
 
 def number_symbol_converter(x):
     dico={}
@@ -134,45 +144,41 @@ def expandvars(path, skip_escaped=False):
     return re.sub(reVar, replace_var, path)
 
 
-def container_wrapper_argparse(argv):
+def container_wrapper_argparse(script, argv):
     """
         This method start the pipeline inside de system put in place by the genpipe_in_a_container
-        cvmfs/container wrapper.
+        cvmfs/container wrapper if --wrap is present in the argv.
 
     Args:
-        argv: Any valid Genpipes option plus --wrap.
-    Returns: Return code of the subprocess
+        script: the tool that was called
+        argv: Any valid Genpipes option.
+    Returns: Return code of the subprocess or None if not --wrap option in the argv
 
     """
 
-    help = False
-    if '-h' in argv:
-        try:
-            argv.remove('-h')
-        except ValueError:
-            pass
-        help = True
+    if '--wrap' in argv:
 
-    script_dir_current = os.path.dirname(os.path.realpath(__file__))
-    parser = argparse.ArgumentParser(conflict_handler='resolve')
-    parser.add_argument('--wrap', type=str, help="Path to the genpipe cvmfs wrapper script.\n"
-                                                 "Default is genpipes/ressources/container/bin/container_wrapper.sh",
-                        nargs='?')
-    args, argv = parser.parse_known_args(argv)
-    if args.wrap is None:
-        genpipes_home = '/'.join(script_dir_current.split('/')[:-1])
-        default_wrapper = '{}/resources/container/bin/container_wrapper.sh'.format(genpipes_home)
-        args.wrap = default_wrapper
+        script_dir_current = os.path.dirname(os.path.realpath(__file__))
+        parser = argparse.ArgumentParser(conflict_handler='resolve')
+        parser.add_argument('--wrap', type=str, help="Path to the genpipe cvmfs wrapper script.\n"
+                                                     "Default is "
+                                                     "genpipes/ressources/container/bin/container_wrapper.sh",
+                            nargs='?')
+        parsed, argv = parser.parse_known_args(argv)
+        if parsed.wrap is None:
+            genpipes_home = '/'.join(script_dir_current.split('/')[:-1])
+            default_wrapper = '{}/resources/container/bin/container_wrapper.sh'.format(genpipes_home)
+            parsed.wrap = default_wrapper
 
-    wrap_option = ['--container', 'wrapper', args.wrap]
+        wrap_option = ['--container', 'wrapper', parsed.wrap]
 
-    if (args.wrap and 'batch' in argv) and '--no-json' not in argv:
-        parser.error("--wrap and -j batch requires --no-json")
+        if ('batch' in argv) and '--no-json' not in argv:
+            parser.error('Combining --wrap  and -j "batch" options requires --no-json')
 
-    sys.stderr.write('wrapping\n')
-    # call in the wrapper
-    if help:
-        argv.append('--help')
-    sys.stderr.write('{} {} {}'.format(args.wrap, ' '.join(argv), ' '.join(wrap_option)))
-    return subprocess.call([args.wrap] + argv + wrap_option)
-
+        sys.stderr.write('wrapping\n')
+        sys.stderr.write('{} {} {} {}\n'.format(parsed.wrap, script, ' '.join(argv), ' '.join(wrap_option)))
+        # Running the pipeline inside the container
+        ret_code = subprocess.call([parsed.wrap,  script] + argv + wrap_option)
+        sys.exit(ret_code)
+    else:
+        return None

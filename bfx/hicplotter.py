@@ -47,7 +47,7 @@ mv {fileNamePlot} {newFileNamePlot}""".format(
             fileNameRN=fileNameRN,
             name=sample_name,
             output_dir=output_dir,
-            hmc=config.param('interaction_matrices_Chr', 'hmc'),
+            hmc=global_config_parser.param('interaction_matrices_Chr', 'hmc'),
             fileNamePlot=fileNamePlot,
             newFileNamePlot=newFileNamePlot
         ),
@@ -77,7 +77,7 @@ HiCPlotter.py \\
             fileNameRN=fileNameRN,
             name=sample_name, 
             output_dir=output_dir,
-            hmc=config.param('interaction_matrices_Chr', 'hmc')
+            hmc=global_config_parser.param('interaction_matrices_Chr', 'hmc')
         ),
         name="interaction_matrices_genome.plotting."+sample_name+"_res"+res
     )

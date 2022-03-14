@@ -24,7 +24,7 @@ import os
 
 # MUGQIC Modules
 import core
-from core.config import config
+from core.config import global_config_parser
 from core.job import Job
 from . import gatk
 from . import picard2
@@ -86,7 +86,7 @@ def split_n_cigar_reads(
     interval_list=None
     ):
 
-    if config.param('gatk_split_N_trim', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('gatk_split_N_trim', 'module_gatk').split("/")[2] < "4":
         return gatk.split_n_cigar_reads(
             input,
             output,
@@ -110,11 +110,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
   --out {output}{intervals}{exclude_intervals}""".format(
-            tmp_dir=config.param('gatk_split_N_trim', 'tmp_dir'),
-            java_other_options=config.param('gatk_split_N_trim', 'gatk4_java_options'),
-            ram=config.param('gatk_split_N_trim', 'ram'),
-            other_options=config.param('gatk_split_N_trim', 'other_options', required=False),
-            reference_sequence=config.param('gatk_split_N_trim', 'reference', param_type='filepath'),
+            tmp_dir=global_config_parser.param('gatk_split_N_trim', 'tmp_dir'),
+            java_other_options=global_config_parser.param('gatk_split_N_trim', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_split_N_trim', 'ram'),
+            other_options=global_config_parser.param('gatk_split_N_trim', 'other_options', required=False),
+            reference_sequence=global_config_parser.param('gatk_split_N_trim', 'reference', param_type='filepath'),
             input=input,
             output=output,
             intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
@@ -143,21 +143,21 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --metrics-file {metrics_file} \\
  --spark-master local[{threads}] \\
  --output {output}""".format(
-            tmp_dir=config.param('gatk_mark_duplicates', 'tmp_dir'),
-            java_other_options=config.param('gatk_mark_duplicates', 'gatk4_java_options'),
-            ram=config.param('gatk_mark_duplicates', 'ram'),
+            tmp_dir=global_config_parser.param('gatk_mark_duplicates', 'tmp_dir'),
+            java_other_options=global_config_parser.param('gatk_mark_duplicates', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_mark_duplicates', 'ram'),
             remove_duplicates=remove_duplicates,
             inputs=" \\\n  ".join("--input " + input for input in inputs),
-            threads=config.param('gatk_mark_duplicates', 'threads', param_type='int'),
+            threads=global_config_parser.param('gatk_mark_duplicates', 'threads', param_type='int'),
             output=output,
             metrics_file=metrics_file,
-            max_records_in_ram=config.param('gatk_mark_duplicates', 'max_records_in_ram', param_type='int')
+            max_records_in_ram=global_config_parser.param('gatk_mark_duplicates', 'max_records_in_ram', param_type='int')
         ),
         removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
     )
 
 def base_recalibrator(input, output, intervals=None):
-    if config.param('gatk_base_recalibrator', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('gatk_base_recalibrator', 'module_gatk').split("/")[2] < "4":
         return gatk.base_recalibrator(input, output, intervals)
     else:
         return Job(
@@ -177,17 +177,17 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --known-sites {known_mills} \\
   --spark-master local[{threads}] \\
   --output {output}""".format(
-                tmp_dir=config.param('gatk_base_recalibrator', 'tmp_dir'),
-                java_other_options=config.param('gatk_base_recalibrator', 'gatk4_java_options'),
-                options=config.param('gatk_base_recalibrator', 'options'),
-                ram=config.param('gatk_base_recalibrator', 'ram'),
-                threads=config.param('gatk_base_recalibrator', 'threads', param_type='int'),
+                tmp_dir=global_config_parser.param('gatk_base_recalibrator', 'tmp_dir'),
+                java_other_options=global_config_parser.param('gatk_base_recalibrator', 'gatk4_java_options'),
+                options=global_config_parser.param('gatk_base_recalibrator', 'options'),
+                ram=global_config_parser.param('gatk_base_recalibrator', 'ram'),
+                threads=global_config_parser.param('gatk_base_recalibrator', 'threads', param_type='int'),
                 input=input,
                 intervals=" \\\n  --intervals " + intervals if intervals else "",
-                reference_sequence=config.param('gatk_base_recalibrator', 'genome_fasta', param_type='filepath'),
-                known_dbsnp=config.param('gatk_base_recalibrator', 'known_dbsnp', param_type='filepath'),
-                known_gnomad=config.param('gatk_base_recalibrator', 'known_gnomad', param_type='filepath'),
-                known_mills=config.param('gatk_base_recalibrator', 'known_mills', param_type='filepath'),
+                reference_sequence=global_config_parser.param('gatk_base_recalibrator', 'genome_fasta', param_type='filepath'),
+                known_dbsnp=global_config_parser.param('gatk_base_recalibrator', 'known_dbsnp', param_type='filepath'),
+                known_gnomad=global_config_parser.param('gatk_base_recalibrator', 'known_gnomad', param_type='filepath'),
+                known_mills=global_config_parser.param('gatk_base_recalibrator', 'known_mills', param_type='filepath'),
                 output=output
             ),
             removable_files=[output]
@@ -199,7 +199,7 @@ def apply_bqsr(
     base_quality_score_recalibration
     ):
 
-    if config.param('gatk_apply_bqsr', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('gatk_apply_bqsr', 'module_gatk').split("/")[2] < "4":
         return gatk.print_reads(
             input,
             output,
@@ -224,11 +224,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --bqsr-recal-file {bqsr_file} \\
   --spark-master local[{threads}] \\
   --output {output}""".format(
-            tmp_dir=config.param('gatk_apply_bqsr', 'tmp_dir'),
-            java_other_options=config.param('gatk_apply_bqsr', 'gatk4_java_options'),
-            ram=config.param('gatk_apply_bqsr', 'ram'),
-            options=config.param('gatk_apply_bqsr', 'options'),
-            threads=config.param('gatk_apply_bqsr', 'threads', param_type='int'),
+            tmp_dir=global_config_parser.param('gatk_apply_bqsr', 'tmp_dir'),
+            java_other_options=global_config_parser.param('gatk_apply_bqsr', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_apply_bqsr', 'ram'),
+            options=global_config_parser.param('gatk_apply_bqsr', 'options'),
+            threads=global_config_parser.param('gatk_apply_bqsr', 'threads', param_type='int'),
             input=input,
             bqsr_file=base_quality_score_recalibration,
             output=output,
@@ -241,7 +241,7 @@ def print_reads(
     base_quality_score_recalibration
     ):
 
-    if config.param('print_reads', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('print_reads', 'module_gatk').split("/")[2] < "4":
         return gatk.print_reads(
             input,
             output,
@@ -265,7 +265,7 @@ def cat_variants(
     if not isinstance(variants, list):
         variants = [variants]
 
-    if config.param('gatk_merge_vcfs', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('gatk_merge_vcfs', 'module_gatk').split("/")[2] < "4":
         return picard2.mergeVcfs(
             variants,
             output
@@ -284,11 +284,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --TMP_DIR {tmp_dir} \\
   --REFERENCE_SEQUENCE {reference}{variants} \\
   --OUTPUT {output}""".format(
-                tmp_dir=config.param('gatk_merge_vcfs', 'tmp_dir'),
-                java_other_options=config.param('gatk_merge_vcfs', 'gatk4_java_options'),
-                ram=config.param('gatk_merge_vcfs', 'ram'),
-                options=config.param('gatk_merge_vcfs', 'options'),
-                reference=config.param('gatk_merge_vcfs', 'genome_fasta', param_type='filepath'),
+                tmp_dir=global_config_parser.param('gatk_merge_vcfs', 'tmp_dir'),
+                java_other_options=global_config_parser.param('gatk_merge_vcfs', 'gatk4_java_options'),
+                ram=global_config_parser.param('gatk_merge_vcfs', 'ram'),
+                options=global_config_parser.param('gatk_merge_vcfs', 'options'),
+                reference=global_config_parser.param('gatk_merge_vcfs', 'genome_fasta', param_type='filepath'),
                 variants="".join(" \\\n  --INPUT " + variant for variant in variants),
                 output=output
             )
@@ -310,10 +310,10 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   MergeMutectStats {options} \\
   {stats} \\
   --output {output}""".format(
-                tmp_dir=config.param('gatk_merge_stats', 'tmp_dir'),
-                java_other_options=config.param('gatk_merge_stats', 'gatk4_java_options'),
-                ram=config.param('gatk_merge_stats', 'ram'),
-                options=config.param('gatk_merge_stats', 'options'),
+                tmp_dir=global_config_parser.param('gatk_merge_stats', 'tmp_dir'),
+                java_other_options=global_config_parser.param('gatk_merge_stats', 'gatk4_java_options'),
+                ram=global_config_parser.param('gatk_merge_stats', 'ram'),
+                options=global_config_parser.param('gatk_merge_stats', 'options'),
                 stats="".join(" \\\n  --stats " + stat for stat in stats),
                 output=output
             )
@@ -338,11 +338,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --reference {reference_sequence} \\
   --variant {input} {input_bam} {interval_list} \\
   --output {output}""".format(
-            tmp_dir=config.param('gatk_cnn_score_variantss', 'tmp_dir'),
-            java_other_options=config.param('gatk_cnn_score_variants', 'gatk4_java_options'),
-            ram=config.param('gatk_cnn_score_variants', 'ram'),
-            options=config.param('gatk_cnn_score_variants', 'options'),
-            reference_sequence=config.param('gatk_cnn_score_variants', 'reference', param_type='filepath'),
+            tmp_dir=global_config_parser.param('gatk_cnn_score_variantss', 'tmp_dir'),
+            java_other_options=global_config_parser.param('gatk_cnn_score_variants', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_cnn_score_variants', 'ram'),
+            options=global_config_parser.param('gatk_cnn_score_variants', 'options'),
+            reference_sequence=global_config_parser.param('gatk_cnn_score_variants', 'reference', param_type='filepath'),
             input=input,
             input_bam=" \\\n  --input " + input_bam if input_bam else "",
             interval_list=" \\\n --intervals " + interval_list if interval_list else "",
@@ -369,12 +369,12 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --resource {resource_mills} {interval_list} \\
   --variant {input} \\
   --output {output}""".format(
-            tmp_dir=config.param('gatk_filter_variant_tranches', 'tmp_dir'),
-            java_other_options=config.param('gatk_filter_variant_tranches', 'gatk4_java_options'),
-            ram=config.param('gatk_filter_variant_tranches', 'ram'),
-            options=config.param('gatk_filter_variant_tranches', 'options'),
-            resource_hapmap=config.param('gatk_cnn_score_variants', 'hapmap', param_type='filepath'),
-            resource_mills=config.param('gatk_cnn_score_variants', 'mills', param_type='filepath'),
+            tmp_dir=global_config_parser.param('gatk_filter_variant_tranches', 'tmp_dir'),
+            java_other_options=global_config_parser.param('gatk_filter_variant_tranches', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_filter_variant_tranches', 'ram'),
+            options=global_config_parser.param('gatk_filter_variant_tranches', 'options'),
+            resource_hapmap=global_config_parser.param('gatk_cnn_score_variants', 'hapmap', param_type='filepath'),
+            resource_mills=global_config_parser.param('gatk_cnn_score_variants', 'mills', param_type='filepath'),
             input=input,
             interval_list=" \\\n --intervals " + interval_list if interval_list else "",
             output=output
@@ -461,7 +461,7 @@ def haplotype_caller(
     if not interval_list is None:
        inputs_list.extend([interval_list])
 
-    if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
         return gatk.haplotype_caller(
             inputs,
             output,
@@ -484,12 +484,12 @@ gatk --java-options "{java_other_options} -Xmx{ram}" \\
   --reference {reference_sequence} \\
   --input {input} \\
   --output {output}{interval_padding} {interval_list}{intervals}{exclude_intervals}""".format(
-                tmp_dir=config.param('gatk_haplotype_caller', 'tmp_dir'),
-                java_other_options=config.param('gatk_haplotype_caller', 'gatk4_java_options'),
-                ram=config.param('gatk_haplotype_caller', 'ram'),
-                options=config.param('gatk_haplotype_caller', 'options'),
-                threads=config.param('gatk_haplotype_caller', 'threads'),
-                reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
+                tmp_dir=global_config_parser.param('gatk_haplotype_caller', 'tmp_dir'),
+                java_other_options=global_config_parser.param('gatk_haplotype_caller', 'gatk4_java_options'),
+                ram=global_config_parser.param('gatk_haplotype_caller', 'ram'),
+                options=global_config_parser.param('gatk_haplotype_caller', 'options'),
+                threads=global_config_parser.param('gatk_haplotype_caller', 'threads'),
+                reference_sequence=global_config_parser.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
                 interval_list=" --intervals " + interval_list if interval_list else "",
                 interval_padding=" \\\n --interval-padding " + str(interval_padding)  if interval_padding else "",
                 input=" \\\n  ".join(input for input in inputs),
@@ -504,7 +504,7 @@ def combine_gvcf(inputs, output, intervals=[], exclude_intervals=[]):
     if not isinstance(inputs, list):
         inputs = [inputs]
         
-    if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
         return gatk.combine_gvcf(inputs, output, intervals, exclude_intervals)
     else:
         
@@ -521,11 +521,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --reference {reference_sequence} \\
   {input} \\
   --output {output}{intervals}{exclude_intervals}""".format(
-                tmp_dir=config.param('gatk_combine_gvcf', 'tmp_dir'),
-                java_other_options=config.param('gatk_combine_gvcf', 'gatk4_java_options'),
-                ram=config.param('gatk_combine_gvcf', 'ram'),
-                other_options=config.param('gatk_combine_gvcf', 'other_options', required=False),
-                reference_sequence=config.param('gatk_combine_gvcf', 'genome_fasta', param_type='filepath'),
+                tmp_dir=global_config_parser.param('gatk_combine_gvcf', 'tmp_dir'),
+                java_other_options=global_config_parser.param('gatk_combine_gvcf', 'gatk4_java_options'),
+                ram=global_config_parser.param('gatk_combine_gvcf', 'ram'),
+                other_options=global_config_parser.param('gatk_combine_gvcf', 'other_options', required=False),
+                reference_sequence=global_config_parser.param('gatk_combine_gvcf', 'genome_fasta', param_type='filepath'),
                 input="".join(" \\\n  --variant " + input for input in inputs),
                 output=output,
                 intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
@@ -556,10 +556,10 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   GenomicsDBImport {other_options} \\
   {input} \\
   --output {output}{intervals}""".format(
-                tmp_dir=config.param('gatk_GenomicsDBImport', 'tmp_dir'),
-                java_other_options=config.param('gatk_GenomicsDBImport', 'gatk4_java_options'),
-                ram=config.param('gatk_GenomicsDBImport', 'ram'),
-                other_options=config.param('gatk_GenomicsDBImport', 'other_options', required=False),
+                tmp_dir=global_config_parser.param('gatk_GenomicsDBImport', 'tmp_dir'),
+                java_other_options=global_config_parser.param('gatk_GenomicsDBImport', 'gatk4_java_options'),
+                ram=global_config_parser.param('gatk_GenomicsDBImport', 'ram'),
+                other_options=global_config_parser.param('gatk_GenomicsDBImport', 'other_options', required=False),
                 input="".join(" \\\n  --variant " + input for input in inputs),
                 output=output,
                 intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
@@ -574,7 +574,7 @@ def genotype_gvcf(
     if not isinstance(variants, list):
         variants = [variants]
 
-    if config.param('gatk_genotype_gvcf', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('gatk_genotype_gvcf', 'module_gatk').split("/")[2] < "4":
         return gatk.genotype_gvcf(
             variants,
             output,
@@ -593,11 +593,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   GenotypeGVCFs {options} \\
   --reference {reference_sequence}{variants} \\
   --output {output}""".format(
-            tmp_dir=config.param('gatk_genotype_gvcf', 'tmp_dir'),
-            java_other_options=config.param('gatk_genotype_gvcf', 'gatk4_java_options'),
-            ram=config.param('gatk_genotype_gvcf', 'ram'),
+            tmp_dir=global_config_parser.param('gatk_genotype_gvcf', 'tmp_dir'),
+            java_other_options=global_config_parser.param('gatk_genotype_gvcf', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_genotype_gvcf', 'ram'),
             options=options,
-            reference_sequence=config.param('gatk_genotype_gvcf', 'genome_fasta', param_type='filepath'),
+            reference_sequence=global_config_parser.param('gatk_genotype_gvcf', 'genome_fasta', param_type='filepath'),
             variants="".join(" \\\n  --variant " + variant for variant in variants),
             output=output
         )
@@ -620,7 +620,7 @@ def mutect2(inputNormal,
     else:
         inputs = [inputNormal, inputTumor]
 
-    if config.param('gatk_mutect2', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('gatk_mutect2', 'module_gatk').split("/")[2] < "4":
         return gatk.mutect2(inputNormal,
                             normal_name,
                             inputTumor,
@@ -648,13 +648,13 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --normal-sample {normal_name} \\
   --germline-resource {known_sites} \\
   --output {outputVCF}{interval_list}{intervals}{exclude_intervals}""".format(
-        tmp_dir=config.param('gatk_mutect', 'tmp_dir'),
-        java_other_options=config.param('gatk_mutect2', 'gatk4_java_options'),
-        ram=config.param('gatk_mutect2', 'ram'),
-        options=config.param('gatk_mutect2', 'options'),
-        reference_sequence=config.param('gatk_mutect2', 'genome_fasta', param_type='filepath'),
+        tmp_dir=global_config_parser.param('gatk_mutect', 'tmp_dir'),
+        java_other_options=global_config_parser.param('gatk_mutect2', 'gatk4_java_options'),
+        ram=global_config_parser.param('gatk_mutect2', 'ram'),
+        options=global_config_parser.param('gatk_mutect2', 'options'),
+        reference_sequence=global_config_parser.param('gatk_mutect2', 'genome_fasta', param_type='filepath'),
         read_orientation=read_orientation,
-        known_sites=config.param('gatk_mutect2', 'known_sites', param_type='filepath'),
+        known_sites=global_config_parser.param('gatk_mutect2', 'known_sites', param_type='filepath'),
         inputNormal=inputNormal,
         normal_name=normal_name,
         inputTumor=inputTumor,
@@ -662,7 +662,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
         outputVCF=outputVCF,
         interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-        #pon=" --panel-of-normals " + config.param('gatk_mutect2', 'pon', type='filepath') if config.param('gatk_mutect2', 'pon', type='filepath') else "",
+        #pon=" --panel-of-normals " + global_config_parser.param('gatk_mutect2', 'pon', type='filepath') if global_config_parser.param('gatk_mutect2', 'pon', param_type='filepath') else "",
         exclude_intervals="".join(
             " \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
@@ -689,12 +689,12 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --input {input_bam} \\
   --variant {variants} --intervals {intervals} \\
   --output {output}""".format(
-            tmp_dir=config.param('gatk_get_pileup_summaries', 'tmp_dir'),
-            java_other_options=config.param('gatk_get_pileup_summaries', 'gatk4_java_options'),
-            ram=config.param('gatk_get_pileup_summaries', 'ram'),
-            options=config.param('gatk_get_pileup_summaries', 'options'),
-            variants=config.param('gatk_get_pileup_summaries', 'known_sites', param_type='filepath'),
-            intervals=config.param('gatk_get_pileup_summaries', 'known_intervals', param_type='filepath'),
+            tmp_dir=global_config_parser.param('gatk_get_pileup_summaries', 'tmp_dir'),
+            java_other_options=global_config_parser.param('gatk_get_pileup_summaries', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_get_pileup_summaries', 'ram'),
+            options=global_config_parser.param('gatk_get_pileup_summaries', 'options'),
+            variants=global_config_parser.param('gatk_get_pileup_summaries', 'known_sites', param_type='filepath'),
+            intervals=global_config_parser.param('gatk_get_pileup_summaries', 'known_intervals', param_type='filepath'),
             input_bam=input_bam,
             output=output
         )
@@ -720,10 +720,10 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --input {input} \\
   --output {output} \\
   {normal}{tumor_segment}""".format(
-            tmp_dir=config.param('gatk_calculate_contamination', 'tmp_dir'),
-            java_other_options=config.param('gatk_calculate_contamination', 'gatk4_java_options'),
-            ram=config.param('gatk_calculate_contamination', 'ram'),
-            options=config.param('gatk_calculate_contamination', 'options'),
+            tmp_dir=global_config_parser.param('gatk_calculate_contamination', 'tmp_dir'),
+            java_other_options=global_config_parser.param('gatk_calculate_contamination', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_calculate_contamination', 'ram'),
+            options=global_config_parser.param('gatk_calculate_contamination', 'options'),
             input=input,
             normal=" \\\n --matched-normal " + match_normal if match_normal else "",
             tumor_segment=" \\\n --tumor-segmentation " + tumor_segment if tumor_segment else "",
@@ -748,10 +748,10 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   LearnReadOrientationModel {options} \\
   {input} \\
   --output {output}""".format(
-                tmp_dir=config.param('gatk_learn_read_orientation_model', 'tmp_dir'),
-                java_other_options=config.param('gatk_learn_read_orientation_model', 'gatk4_java_options'),
-                ram=config.param('gatk_learn_read_orientation_model', 'ram'),
-                options=config.param('gatk_learn_read_orientation_model', 'options'),
+                tmp_dir=global_config_parser.param('gatk_learn_read_orientation_model', 'tmp_dir'),
+                java_other_options=global_config_parser.param('gatk_learn_read_orientation_model', 'gatk4_java_options'),
+                ram=global_config_parser.param('gatk_learn_read_orientation_model', 'ram'),
+                options=global_config_parser.param('gatk_learn_read_orientation_model', 'options'),
                 input="".join(" \\\n  --input " + input for input in inputs),
                 output=output
             )
@@ -779,11 +779,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --variant {variants} \\
   {contamination_table} {segment_table} {read_orientation_model} \\
   --output {output}""".format(
-                tmp_dir=config.param('gatk_filter_mutect_calls', 'tmp_dir'),
-                java_other_options=config.param('gatk_filter_mutect_calls', 'gatk4_java_options'),
-                ram=config.param('gatk_filter_mutect_calls', 'ram'),
-                options=config.param('gatk_filter_mutect_calls', 'options'),
-                reference=config.param('gatk_filter_mutect_calls', 'genome_fasta', param_type='filepath'),
+                tmp_dir=global_config_parser.param('gatk_filter_mutect_calls', 'tmp_dir'),
+                java_other_options=global_config_parser.param('gatk_filter_mutect_calls', 'gatk4_java_options'),
+                ram=global_config_parser.param('gatk_filter_mutect_calls', 'ram'),
+                options=global_config_parser.param('gatk_filter_mutect_calls', 'options'),
+                reference=global_config_parser.param('gatk_filter_mutect_calls', 'genome_fasta', param_type='filepath'),
                 variants=variants,
                 contamination_table="  \\\n --contamination-table " + contamination if contamination else "",
                 segment_table="  \\\n --tumor-segmentation " + segment if segment else "",
@@ -802,14 +802,14 @@ def variant_recalibrator(variants,
     if not isinstance(variants, list):
         variants = [variants]
 
-    if config.param('gatk_variant_recalibrator', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('gatk_variant_recalibrator', 'module_gatk').split("/")[2] < "4":
         return gatk.variant_recalibrator(variants, other_options, recal_output, tranches_output,
                                          R_output, small_sample_check=small_sample_check)
     else:
         
         if small_sample_check:
             try:
-                small_sample_option = config.param('gatk_variant_recalibrator', 'small_sample_option')
+                small_sample_option = global_config_parser.param('gatk_variant_recalibrator', 'small_sample_option')
             except core.config.Error:
                 small_sample_option = ''
             else:
@@ -830,11 +830,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   {other_options} \\
   --output {recal_output} \\
   --tranches-file {tranches_output}""".format(
-            tmp_dir=config.param('gatk_variant_recalibrator', 'tmp_dir'),
-            java_other_options=config.param('gatk_variant_recalibrator', 'gatk4_java_options'),
-            ram=config.param('gatk_variant_recalibrator', 'ram'),
-            options=config.param('gatk_variant_recalibrator', 'options'),
-            reference_sequence=config.param('gatk_variant_recalibrator', 'genome_fasta', param_type='filepath'),
+            tmp_dir=global_config_parser.param('gatk_variant_recalibrator', 'tmp_dir'),
+            java_other_options=global_config_parser.param('gatk_variant_recalibrator', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_variant_recalibrator', 'ram'),
+            options=global_config_parser.param('gatk_variant_recalibrator', 'options'),
+            reference_sequence=global_config_parser.param('gatk_variant_recalibrator', 'genome_fasta', param_type='filepath'),
             variants="".join(" \\\n  --variant " + variant for variant in variants),
             other_options=other_options,
             recal_output=recal_output,
@@ -856,7 +856,7 @@ def apply_recalibration(
     apply_recal_output
     ):
 
-    if config.param('gatk_apply_recalibration', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('gatk_apply_recalibration', 'module_gatk').split("/")[2] < "4":
         return gatk.apply_recalibration(
             variants,
             recal_input,
@@ -885,11 +885,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --tranches-file {tranches_input} \\
   --recal-file {recal_input} \\
   --output {output}""".format(
-                tmp_dir=config.param('gatk_apply_recalibration', 'tmp_dir'),
-                java_other_options=config.param('gatk_apply_recalibration', 'gatk4_java_options'),
-                ram=config.param('gatk_apply_recalibration', 'ram'),
-                options=config.param('gatk_apply_recalibration', 'options'),
-                reference_sequence=config.param('gatk_apply_recalibration', 'genome_fasta', param_type='filepath'),
+                tmp_dir=global_config_parser.param('gatk_apply_recalibration', 'tmp_dir'),
+                java_other_options=global_config_parser.param('gatk_apply_recalibration', 'gatk4_java_options'),
+                ram=global_config_parser.param('gatk_apply_recalibration', 'ram'),
+                options=global_config_parser.param('gatk_apply_recalibration', 'options'),
+                reference_sequence=global_config_parser.param('gatk_apply_recalibration', 'genome_fasta', param_type='filepath'),
                 variants=variants,
                 other_options=other_options,
                 recal_input=recal_input,
@@ -928,14 +928,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --bin-length {bin_length} \\
   --padding {padding} \\
   --output {output}""".format(
-            tmp_dir=config.param('gatk_processIntervals', 'tmp_dir'),
-            java_other_options=config.param('gatk_processIntervals', 'gatk4_java_options'),
-            ram=config.param('gatk_processIntervals', 'ram'),
-            options=config.param('gatk_processIntervals', 'options'),
-            reference_sequence=config.param('gatk_processIntervals', 'genome_fasta', param_type='filepath'),
+            tmp_dir=global_config_parser.param('gatk_processIntervals', 'tmp_dir'),
+            java_other_options=global_config_parser.param('gatk_processIntervals', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_processIntervals', 'ram'),
+            options=global_config_parser.param('gatk_processIntervals', 'options'),
+            reference_sequence=global_config_parser.param('gatk_processIntervals', 'genome_fasta', param_type='filepath'),
             intervals=" \\\n --intervals " + intervals if intervals else "",
-            bin_length=config.param('gatk_processIntervals', 'bin-length'),
-            padding=config.param('gatk_processIntervals', 'padding'),
+            bin_length=global_config_parser.param('gatk_processIntervals', 'bin-length'),
+            padding=global_config_parser.param('gatk_processIntervals', 'padding'),
             output=output
         )
     )
@@ -948,7 +948,7 @@ def build_bam_index(
     output
     ):
 
-    if config.param('build_bam_index', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('build_bam_index', 'module_gatk').split("/")[2] < "4":
         return picard2.build_bam_index(
             input,
             output
@@ -968,9 +968,9 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --TMP_DIR {tmp_dir} \\
   --INPUT {input} \\
   --OUTPUT {output} """.format(
-                tmp_dir=config.param('build_bam_index', 'tmp_dir'),
-                java_other_options=config.param('build_bam_index', 'gatk4_java_options'),
-                ram=config.param('build_bam_index', 'ram'),
+                tmp_dir=global_config_parser.param('build_bam_index', 'tmp_dir'),
+                java_other_options=global_config_parser.param('build_bam_index', 'gatk4_java_options'),
+                ram=global_config_parser.param('build_bam_index', 'ram'),
                 input=input,
                 output=output,
         ))
@@ -983,9 +983,9 @@ def calculate_hs_metrics(
     ):
 
     baits_intervals = ""
-    baits_intervals = config.param('picard_calculate_hs_metrics', 'baits_intervals', required=False)
+    baits_intervals = global_config_parser.param('picard_calculate_hs_metrics', 'baits_intervals', required=False)
     
-    if config.param('picard_calculate_hs_metrics', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('picard_calculate_hs_metrics', 'module_gatk').split("/")[2] < "4":
         return picard2.calculate_hs_metrics(
             input,
             output,
@@ -1013,14 +1013,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --BAIT_INTERVALS {baits} \\
  --TARGET_INTERVALS {intervals} \\
  --REFERENCE_SEQUENCE {reference_sequence}""".format(
-                tmp_dir=config.param('picard_calculate_hs_metrics', 'tmp_dir'),
-                java_other_options=config.param('picard_calculate_hs_metrics', 'gatk4_java_options'),
-                ram=config.param('picard_calculate_hs_metrics', 'ram'),
+                tmp_dir=global_config_parser.param('picard_calculate_hs_metrics', 'tmp_dir'),
+                java_other_options=global_config_parser.param('picard_calculate_hs_metrics', 'gatk4_java_options'),
+                ram=global_config_parser.param('picard_calculate_hs_metrics', 'ram'),
                 input=input,
                 output=output,
                 intervals=intervals,
                 baits=baits_intervals if baits_intervals != "" else intervals,
-                reference_sequence=reference_sequence if reference_sequence else config.param('picard_calculate_hs_metrics', 'genome_fasta', param_type='filepath')
+                reference_sequence=reference_sequence if reference_sequence else global_config_parser.param('picard_calculate_hs_metrics', 'genome_fasta', param_type='filepath')
         ))
 
 def collect_multiple_metrics(
@@ -1051,7 +1051,7 @@ def collect_multiple_metrics(
             output + ".quality_distribution.pdf"
         ]
 
-    if config.param('picard_collect_multiple_metrics', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('picard_collect_multiple_metrics', 'module_gatk').split("/")[2] < "4":
         return picard2.collect_multiple_metrics(
             input,
             output,
@@ -1080,13 +1080,13 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --INPUT {input} \\
   --OUTPUT {output} \\
   --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=config.param('picard_collect_multiple_metrics', 'tmp_dir'),
-                java_other_options=config.param('picard_collect_multiple_metrics', 'gatk4_java_options'),
-                ram=config.param('picard_collect_multiple_metrics', 'ram'),
-                reference_sequence=reference_sequence if reference_sequence else config.param('picard_collect_multiple_metrics', 'genome_fasta', param_type='filepath'),
+                tmp_dir=global_config_parser.param('picard_collect_multiple_metrics', 'tmp_dir'),
+                java_other_options=global_config_parser.param('picard_collect_multiple_metrics', 'gatk4_java_options'),
+                ram=global_config_parser.param('picard_collect_multiple_metrics', 'ram'),
+                reference_sequence=reference_sequence if reference_sequence else global_config_parser.param('picard_collect_multiple_metrics', 'genome_fasta', param_type='filepath'),
                 input=input,
                 output=output,
-                max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
+                max_records_in_ram=global_config_parser.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
         ))
 
 def collect_sequencing_artifacts_metrics(
@@ -1098,7 +1098,7 @@ def collect_sequencing_artifacts_metrics(
 
     output_dep = output + ".bait_bias_summary_metrics"
     
-    if config.param('picard_collect_sequencing_artifacts_metrics', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'module_gatk').split("/")[2] < "4":
         return picard2.collect_sequencing_artifacts_metrics(
             input,
             output,
@@ -1123,14 +1123,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --OUTPUT {output} \\
   --REFERENCE_SEQUENCE {reference} \\
   --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-            options=config.param('picard_collect_sequencing_artifacts_metrics', 'options'),
-            tmp_dir=config.param('picard_collect_sequencing_artifacts_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_sequencing_artifacts_metrics', 'gatk4_java_options'),
-            ram=config.param('picard_collect_sequencing_artifacts_metrics', 'ram'),
+            options=global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'options'),
+            tmp_dir=global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'gatk4_java_options'),
+            ram=global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'ram'),
             input=input,
             output=output,
-            reference=reference_sequence if reference_sequence else config.param('picard_collect_sequencing_artifacts_metrics', 'genome_fasta'),
-            max_records_in_ram=config.param('picard_collect_sequencing_artifacts_metrics', 'max_records_in_ram', param_type='int')
+            reference=reference_sequence if reference_sequence else global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'genome_fasta'),
+            max_records_in_ram=global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'max_records_in_ram', param_type='int')
     ))
 
 def convert_sequencing_artifacts_metrics(
@@ -1142,7 +1142,7 @@ def convert_sequencing_artifacts_metrics(
 
     input_dep = input + ".bait_bias_summary_metrics"
     
-    if config.param('picard_convert_sequencing_artifacts_metrics', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('picard_convert_sequencing_artifacts_metrics', 'module_gatk').split("/")[2] < "4":
         return picard2.convert_sequencing_artifacts_metrics(
             input,
             output,
@@ -1166,12 +1166,12 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --INPUT_BASE {input} \\
   --OUTPUT_BASE {output} \\
   --REFERENCE_SEQUENCE {reference}""".format(
-                tmp_dir=config.param('picard_convert_sequencing_artifacts_metrics', 'tmp_dir'),
-                java_other_options=config.param('picard_convert_sequencing_artifacts_metrics', 'gatk4_java_options'),
-                ram=config.param('picard_convert_sequencing_artifacts_metrics', 'ram'),
+                tmp_dir=global_config_parser.param('picard_convert_sequencing_artifacts_metrics', 'tmp_dir'),
+                java_other_options=global_config_parser.param('picard_convert_sequencing_artifacts_metrics', 'gatk4_java_options'),
+                ram=global_config_parser.param('picard_convert_sequencing_artifacts_metrics', 'ram'),
                 input=input,
                 output=output,
-                reference=reference_sequence if reference_sequence else config.param('picard_convert_sequencing_artifacts_metrics', 'genome_fasta'),
+                reference=reference_sequence if reference_sequence else global_config_parser.param('picard_convert_sequencing_artifacts_metrics', 'genome_fasta'),
             )
         )
     
@@ -1182,7 +1182,7 @@ def collect_oxog_metrics(
     reference_sequence=None
     ):
     
-    if config.param('picard_collect_oxog_metrics', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('picard_collect_oxog_metrics', 'module_gatk').split("/")[2] < "4":
         return picard2.collect_oxog_metrics(
             input,
             output,
@@ -1208,14 +1208,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   {dbsnp} \\
   --REFERENCE_SEQUENCE {reference} \\
   --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=config.param('picard_collect_oxog_metrics', 'tmp_dir'),
-                java_other_options=config.param('picard_collect_oxog_metrics', 'gatk4_java_options'),
-                ram=config.param('picard_collect_oxog_metrics', 'ram'),
+                tmp_dir=global_config_parser.param('picard_collect_oxog_metrics', 'tmp_dir'),
+                java_other_options=global_config_parser.param('picard_collect_oxog_metrics', 'gatk4_java_options'),
+                ram=global_config_parser.param('picard_collect_oxog_metrics', 'ram'),
                 input=input,
                 output=output,
-                dbsnp="--DB_SNP " + config.param('picard_collect_oxog_metrics', 'known_variants') if config.param('picard_collect_oxog_metrics', 'known_variants') else "",
-                reference=reference_sequence if reference_sequence else config.param('picard_collect_oxog_metrics', 'genome_fasta'),
-                max_records_in_ram=config.param('picard_collect_oxog_metrics', 'max_records_in_ram', param_type='int')
+                dbsnp="--DB_SNP " + global_config_parser.param('picard_collect_oxog_metrics', 'known_variants') if global_config_parser.param('picard_collect_oxog_metrics', 'known_variants') else "",
+                reference=reference_sequence if reference_sequence else global_config_parser.param('picard_collect_oxog_metrics', 'genome_fasta'),
+                max_records_in_ram=global_config_parser.param('picard_collect_oxog_metrics', 'max_records_in_ram', param_type='int')
         ))
 
 def collect_gcbias_metrics(
@@ -1227,7 +1227,7 @@ def collect_gcbias_metrics(
     reference_sequence=None
     ):
     
-    if config.param('picard_collect_gcbias_metrics', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('picard_collect_gcbias_metrics', 'module_gatk').split("/")[2] < "4":
         return picard2.collect_gcbias_metrics(
             input,
             output,
@@ -1257,16 +1257,16 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --SUMMARY_OUTPUT {summary_file} \\
   --REFERENCE_SEQUENCE {reference} \\
   --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_collect_gcbias_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_gcbias_metrics', 'gatk4_java_options'),
-            ram=config.param('picard_collect_gcbias_metrics', 'ram'),
+            tmp_dir=global_config_parser.param('picard_collect_gcbias_metrics', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_collect_gcbias_metrics', 'gatk4_java_options'),
+            ram=global_config_parser.param('picard_collect_gcbias_metrics', 'ram'),
             input=input,
             output=output,
             chart=chart,
             summary_file=summary_file,
-            reference=reference_sequence if reference_sequence else config.param('picard_collect_gcbias_metrics',
+            reference=reference_sequence if reference_sequence else global_config_parser.param('picard_collect_gcbias_metrics',
                                                                                  'genome_fasta'),
-            max_records_in_ram=config.param('picard_collect_gcbias_metrics', 'max_records_in_ram', param_type='int')
+            max_records_in_ram=global_config_parser.param('picard_collect_gcbias_metrics', 'max_records_in_ram', param_type='int')
         )
     )
 
@@ -1275,7 +1275,7 @@ def fix_mate_information(
     output
     ):
     
-    if config.param('picard_fix_mate_information', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('picard_fix_mate_information', 'module_gatk').split("/")[2] < "4":
         return picard2.fix_mate_information(
             input,
             output
@@ -1296,12 +1296,12 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --INPUT {input} \\
  --OUTPUT {output} \\
  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=config.param('picard_fix_mate_information', 'tmp_dir'),
-                java_other_options=config.param('picard_fix_mate_information', 'gatk4_java_options'),
-                ram=config.param('picard_fix_mate_information', 'ram'),
+                tmp_dir=global_config_parser.param('picard_fix_mate_information', 'tmp_dir'),
+                java_other_options=global_config_parser.param('picard_fix_mate_information', 'gatk4_java_options'),
+                ram=global_config_parser.param('picard_fix_mate_information', 'ram'),
                 input=input,
                 output=output,
-                max_records_in_ram=config.param('picard_fix_mate_information', 'max_records_in_ram', param_type='int')
+                max_records_in_ram=global_config_parser.param('picard_fix_mate_information', 'max_records_in_ram', param_type='int')
             ),
             removable_files=[
                 output,
@@ -1320,7 +1320,7 @@ def picard_mark_duplicates(
     if not isinstance(inputs, list):
         inputs = [inputs]
         
-    if config.param('picard_mark_duplicates', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('picard_mark_duplicates', 'module_gatk').split("/")[2] < "4":
         return picard2.mark_duplicates(
             inputs,
             output,
@@ -1350,14 +1350,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --OUTPUT {output} \\
  --METRICS_FILE {metrics_file} \\
  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=config.param('picard_mark_duplicates', 'tmp_dir'),
-                java_other_options=config.param('picard_mark_duplicates', 'gatk4_java_options'),
-                ram=config.param('picard_mark_duplicates', 'ram'),
+                tmp_dir=global_config_parser.param('picard_mark_duplicates', 'tmp_dir'),
+                java_other_options=global_config_parser.param('picard_mark_duplicates', 'gatk4_java_options'),
+                ram=global_config_parser.param('picard_mark_duplicates', 'ram'),
                 remove_duplicates=remove_duplicates,
                 inputs=" \\\n  ".join("--INPUT " + input for input in inputs),
                 output=output,
                 metrics_file=metrics_file,
-                max_records_in_ram=config.param('picard_mark_duplicates', 'max_records_in_ram', param_type='int')
+                max_records_in_ram=global_config_parser.param('picard_mark_duplicates', 'max_records_in_ram', param_type='int')
             ),
             removable_files=[
                 output,
@@ -1373,7 +1373,7 @@ def mark_duplicates_mate_cigar(inputs,
     if not isinstance(inputs, list):
         inputs = [inputs]
     
-    if config.param('mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] < "4":
         return picard2.mark_duplicates_mate_cigar(inputs,
                                        output,
                                        metrics_file,
@@ -1397,14 +1397,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --OUTPUT {output} \\
  --METRICS_FILE {metrics_file} \\
  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=config.param('mark_duplicates_mate_cigar', 'tmp_dir'),
-                java_other_options=config.param('mark_duplicates_mate_cigar', 'java_other_options'),
-                ram=config.param('mark_duplicates_mate_cigar', 'ram'),
+                tmp_dir=global_config_parser.param('mark_duplicates_mate_cigar', 'tmp_dir'),
+                java_other_options=global_config_parser.param('mark_duplicates_mate_cigar', 'java_other_options'),
+                ram=global_config_parser.param('mark_duplicates_mate_cigar', 'ram'),
                 remove_duplicates=remove_duplicates,
                 inputs=" \\\n  ".join("--INPUT " + input for input in inputs),
                 output=output,
                 metrics_file=metrics_file,
-                max_records_in_ram=config.param('mark_duplicates_mate_cigar', 'max_records_in_ram', param_type='int')
+                max_records_in_ram=global_config_parser.param('mark_duplicates_mate_cigar', 'max_records_in_ram', param_type='int')
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
@@ -1416,7 +1416,7 @@ def picard_mark_duplicates_mate_cigar(inputs,
     if not isinstance(inputs, list):
         inputs = [inputs]
     
-    if config.param('picard_mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('picard_mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] < "4":
         return picard2.mark_duplicates_mate_cigar(inputs,
                                        output,
                                        metrics_file,
@@ -1440,14 +1440,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --OUTPUT {output} \\
  --METRICS_FILE {metrics_file} \\
  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=config.param('picard_mark_duplicates_mate_cigar', 'tmp_dir'),
-                java_other_options=config.param('picard_mark_duplicates_mate_cigar', 'gatk4_java_options'),
-                ram=config.param('picard_mark_duplicates_mate_cigar', 'ram'),
+                tmp_dir=global_config_parser.param('picard_mark_duplicates_mate_cigar', 'tmp_dir'),
+                java_other_options=global_config_parser.param('picard_mark_duplicates_mate_cigar', 'gatk4_java_options'),
+                ram=global_config_parser.param('picard_mark_duplicates_mate_cigar', 'ram'),
                 remove_duplicates=remove_duplicates,
                 inputs=" \\\n  ".join("--INPUT " + input for input in inputs),
                 output=output,
                 metrics_file=metrics_file,
-                max_records_in_ram=config.param('picard_mark_duplicates_mate_cigar', 'max_records_in_ram', param_type='int')
+                max_records_in_ram=global_config_parser.param('picard_mark_duplicates_mate_cigar', 'max_records_in_ram', param_type='int')
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
@@ -1458,7 +1458,7 @@ def merge_sam_files(inputs,
     if not isinstance(inputs, list):
         inputs = [inputs]
 
-    if config.param('picard_merge_sam_files', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('picard_merge_sam_files', 'module_gatk').split("/")[2] < "4":
         return picard2.merge_sam_files(
             inputs,
             output
@@ -1485,12 +1485,12 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  {inputs} \\
  --OUTPUT {output} \\
  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=config.param('picard_merge_sam_files', 'tmp_dir'),
-                java_other_options=config.param('picard_merge_sam_files', 'gatk4_java_options'),
-                ram=config.param('picard_merge_sam_files', 'ram'),
+                tmp_dir=global_config_parser.param('picard_merge_sam_files', 'tmp_dir'),
+                java_other_options=global_config_parser.param('picard_merge_sam_files', 'gatk4_java_options'),
+                ram=global_config_parser.param('picard_merge_sam_files', 'ram'),
                 inputs=" \\\n ".join(["--INPUT " + input for input in inputs]),
                 output=output,
-                max_records_in_ram=config.param('picard_merge_sam_files', 'max_records_in_ram', param_type='int')
+                max_records_in_ram=global_config_parser.param('picard_merge_sam_files', 'max_records_in_ram', param_type='int')
             ),
             removable_files=[
                 output,
@@ -1521,13 +1521,13 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --OUTPUT {output} \\
  --REFERENCE {reference} \\
  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=config.param('picard_reorder_sam', 'tmp_dir'),
-                java_other_options=config.param('picard_reorder_sam', 'gatk4_java_options'),
-                ram=config.param('picard_reorder_sam', 'ram'),
+                tmp_dir=global_config_parser.param('picard_reorder_sam', 'tmp_dir'),
+                java_other_options=global_config_parser.param('picard_reorder_sam', 'gatk4_java_options'),
+                ram=global_config_parser.param('picard_reorder_sam', 'ram'),
                 input=input,
                 output=output,
-                reference=config.param('picard_reorder_sam', 'genome_fasta', param_type='filepath'),
-                max_records_in_ram=config.param('picard_reorder_sam', 'max_records_in_ram', param_type='int')
+                reference=global_config_parser.param('picard_reorder_sam', 'genome_fasta', param_type='filepath'),
+                max_records_in_ram=global_config_parser.param('picard_reorder_sam', 'max_records_in_ram', param_type='int')
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output)]
         )
@@ -1556,9 +1556,9 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --CREATE_MD5_FILE TRUE \\
  --INPUT {input} \\
  --FASTQ {fastq}{second_end_fastq}""".format(
-                tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir'),
-                java_other_options=config.param('picard_sam_to_fastq', 'gatk4_java_options'),
-                ram=config.param('picard_sam_to_fastq', 'ram'),
+                tmp_dir=global_config_parser.param('picard_sam_to_fastq', 'tmp_dir'),
+                java_other_options=global_config_parser.param('picard_sam_to_fastq', 'gatk4_java_options'),
+                ram=global_config_parser.param('picard_sam_to_fastq', 'ram'),
                 input=input,
                 fastq=fastq,
                 second_end_fastq=" \\\n --SECOND_END_FASTQ " + second_end_fastq if second_end_fastq else ""
@@ -1576,7 +1576,7 @@ def sort_sam(
     ini_section='picard_sort_sam'
     ):
     
-    if config.param(ini_section, 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param(ini_section, 'module_gatk').split("/")[2] < "4":
         return picard2.sort_sam(
             input,
             output,
@@ -1605,13 +1605,13 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --OUTPUT {output} \\
   --SORT_ORDER {sort_order} \\
   --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=config.param(ini_section, 'tmp_dir'),
-                java_other_options=config.param(ini_section, 'gatk4_java_options'),
-                ram=config.param(ini_section, 'ram'),
+                tmp_dir=global_config_parser.param(ini_section, 'tmp_dir'),
+                java_other_options=global_config_parser.param(ini_section, 'gatk4_java_options'),
+                ram=global_config_parser.param(ini_section, 'ram'),
                 input=input,
                 output=output,
                 sort_order=sort_order,
-                max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
+                max_records_in_ram=global_config_parser.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
             removable_files=[
                 output,
@@ -1644,12 +1644,12 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  {inputs} \\
  OUTPUT {output} \\
  SEQUENCE_DICTIONARY {seq_dict}""".format(
-                tmp_dir=config.param(ini_section, 'tmp_dir'),
-                java_other_options=config.param(ini_section, 'gatk4_java_options'),
-                ram=config.param(ini_section, 'ram'),
+                tmp_dir=global_config_parser.param(ini_section, 'tmp_dir'),
+                java_other_options=global_config_parser.param(ini_section, 'gatk4_java_options'),
+                ram=global_config_parser.param(ini_section, 'ram'),
                 inputs=" \\\n  ".join(["INPUT " + input for input in inputs]),
                 output=output,
-                seq_dict=config.param(ini_section, 'genome_dictionary', param_type='filepath')
+                seq_dict=global_config_parser.param(ini_section, 'genome_dictionary', param_type='filepath')
             )
         )
 
@@ -1681,16 +1681,16 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --MINIMUM_LENGTH {min_length} \\
  --REFERENCE_SEQUENCE {reference} \\
  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=config.param('picard_collect_rna_metrics', 'tmp_dir'),
-                java_other_options=config.param('picard_collect_rna_metrics', 'gatk4_java_options'),
-                ram=config.param('picard_collect_rna_metrics', 'ram'),
+                tmp_dir=global_config_parser.param('picard_collect_rna_metrics', 'tmp_dir'),
+                java_other_options=global_config_parser.param('picard_collect_rna_metrics', 'gatk4_java_options'),
+                ram=global_config_parser.param('picard_collect_rna_metrics', 'ram'),
                 input=input,
                 output=output,
-                ref_flat=annotation_flat if annotation_flat else config.param('picard_collect_rna_metrics', 'annotation_flat'),
-                strand_specificity=config.param('picard_collect_rna_metrics', 'strand_info'),
-                min_length=config.param('picard_collect_rna_metrics', 'minimum_length', param_type='int'),
-                reference=reference_sequence if reference_sequence else config.param('picard_collect_rna_metrics', 'genome_fasta'),
-                max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', param_type='int')
+                ref_flat=annotation_flat if annotation_flat else global_config_parser.param('picard_collect_rna_metrics', 'annotation_flat'),
+                strand_specificity=global_config_parser.param('picard_collect_rna_metrics', 'strand_info'),
+                min_length=global_config_parser.param('picard_collect_rna_metrics', 'minimum_length', param_type='int'),
+                reference=reference_sequence if reference_sequence else global_config_parser.param('picard_collect_rna_metrics', 'genome_fasta'),
+                max_records_in_ram=global_config_parser.param('picard_collect_rna_metrics', 'max_records_in_ram', param_type='int')
             )
         )
 
@@ -1717,12 +1717,12 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --LOD_THRESHOLD {lod_threshold} \\
   --OUTPUT {output} \\
   --MATRIX_OUTPUT {matrix}""".format(
-                tmp_dir=config.param('gatk_crosscheck_fingerprint', 'tmp_dir'),
-                options=config.param('gatk_crosscheck_fingerprint', 'options'),
-                java_other_options=config.param('gatk_crosscheck_fingerprint', 'gatk4_java_options'),
-                haplotype_database=config.param('gatk_crosscheck_fingerprint', 'haplotype_database'),
-                lod_threshold=config.param('gatk_crosscheck_fingerprint', 'lod_threshold'),
-                ram=config.param('gatk_crosscheck_fingerprint', 'ram'),
+                tmp_dir=global_config_parser.param('gatk_crosscheck_fingerprint', 'tmp_dir'),
+                options=global_config_parser.param('gatk_crosscheck_fingerprint', 'options'),
+                java_other_options=global_config_parser.param('gatk_crosscheck_fingerprint', 'gatk4_java_options'),
+                haplotype_database=global_config_parser.param('gatk_crosscheck_fingerprint', 'haplotype_database'),
+                lod_threshold=global_config_parser.param('gatk_crosscheck_fingerprint', 'lod_threshold'),
+                ram=global_config_parser.param('gatk_crosscheck_fingerprint', 'ram'),
                 inputs=" \\\n  ".join("--INPUT " + str(input) for input in inputs),
                 output=output,
                 matrix=matrix,
@@ -1746,11 +1746,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --INPUT {input} \\
   --LOD_THRESHOLD {lod_threshold} \\
   --OUTPUT {output} """.format(
-                tmp_dir=config.param('gatk_cluster_crosscheck_metrics', 'tmp_dir'),
-                options=config.param('gatk_cluster_crosscheck_metrics', 'options'),
-                java_other_options=config.param('gatk_cluster_crosscheck_metrics', 'gatk4_java_options'),
-                lod_threshold=config.param('gatk_cluster_crosscheck_metrics', 'lod_threshold'),
-                ram=config.param('gatk_cluster_crosscheck_metrics', 'ram'),
+                tmp_dir=global_config_parser.param('gatk_cluster_crosscheck_metrics', 'tmp_dir'),
+                options=global_config_parser.param('gatk_cluster_crosscheck_metrics', 'options'),
+                java_other_options=global_config_parser.param('gatk_cluster_crosscheck_metrics', 'gatk4_java_options'),
+                lod_threshold=global_config_parser.param('gatk_cluster_crosscheck_metrics', 'lod_threshold'),
+                ram=global_config_parser.param('gatk_cluster_crosscheck_metrics', 'ram'),
                 input=input,
                 output=output,
             )
@@ -1762,7 +1762,7 @@ def bed2interval_list(
     output
     ):
 	
-    if config.param('gatk_bed2interval_list', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('gatk_bed2interval_list', 'module_gatk').split("/")[2] < "4":
         return gatk.bed2interval_list(
             dictionary,
             bed,
@@ -1782,10 +1782,10 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --INPUT {bed} \\
   --SEQUENCE_DICTIONARY {dictionary} \\
   --OUTPUT {output}""".format(
-            tmp_dir=config.param('gatk_bed2interval_list', 'tmp_dir'),
-            java_other_options=config.param('gatk_bed2interval_list', 'gatk4_java_options'),
-            ram=config.param('gatk_bed2interval_list', 'ram'),
-            dictionary=dictionary if dictionary else config.param('gatk_bed2interval_list', 'genome_dictionary', param_type='filepath'),
+            tmp_dir=global_config_parser.param('gatk_bed2interval_list', 'tmp_dir'),
+            java_other_options=global_config_parser.param('gatk_bed2interval_list', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_bed2interval_list', 'ram'),
+            dictionary=dictionary if dictionary else global_config_parser.param('gatk_bed2interval_list', 'genome_dictionary', param_type='filepath'),
             bed=bed,
             output=output
             )
@@ -1804,9 +1804,9 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   IntervalListToBed \\
   --INPUT {input} \\
   --OUTPUT {output}""".format(
-            tmp_dir=config.param('gatk_interval_list2bed', 'tmp_dir'),
-            java_other_options=config.param('gatk_interval_list2bed', 'gatk4_java_options'),
-            ram=config.param('gatk_interval_list2bed', 'ram'),
+            tmp_dir=global_config_parser.param('gatk_interval_list2bed', 'tmp_dir'),
+            java_other_options=global_config_parser.param('gatk_interval_list2bed', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_interval_list2bed', 'ram'),
             input=input,
             output=output
             )
@@ -1831,11 +1831,11 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --reference {reference} \\
   --intervals {intervals} \\
   --output {output}""".format(
-            tmp_dir=config.param('gatk_preProcessInterval', 'tmp_dir'),
-            options=options if options else config.param('gatk_preProcessInterval', 'options'),
-            java_other_options=config.param('gatk_preProcessInterval', 'gatk4_java_options'),
-            ram=config.param('gatk_preProcessInterval', 'ram'),
-            reference=reference if reference else config.param('gatk_preProcessInterval', 'genome_fasta', param_type='filepath'),
+            tmp_dir=global_config_parser.param('gatk_preProcessInterval', 'tmp_dir'),
+            options=options if options else global_config_parser.param('gatk_preProcessInterval', 'options'),
+            java_other_options=global_config_parser.param('gatk_preProcessInterval', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_preProcessInterval', 'ram'),
+            reference=reference if reference else global_config_parser.param('gatk_preProcessInterval', 'genome_fasta', param_type='filepath'),
             intervals=intervals,
 #            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
             output=output
@@ -1868,12 +1868,12 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --reference {reference} \\
   --intervals {intervals} \\
   --output {output}""".format(
-            tmp_dir=config.param('gatk_splitInterval', 'tmp_dir'),
-            options=options if options else config.param('gatk_splitInterval', 'options'),
+            tmp_dir=global_config_parser.param('gatk_splitInterval', 'tmp_dir'),
+            options=options if options else global_config_parser.param('gatk_splitInterval', 'options'),
             jobs=jobs,
-            java_other_options=config.param('gatk_splitInterval', 'gatk4_java_options'),
-            ram=config.param('gatk_splitInterval', 'ram'),
-            reference=config.param('gatk_splitInterval', 'genome_fasta', param_type='filepath'),
+            java_other_options=global_config_parser.param('gatk_splitInterval', 'gatk4_java_options'),
+            ram=global_config_parser.param('gatk_splitInterval', 'ram'),
+            reference=global_config_parser.param('gatk_splitInterval', 'genome_fasta', param_type='filepath'),
             intervals=intervals,
 #            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
             output=output

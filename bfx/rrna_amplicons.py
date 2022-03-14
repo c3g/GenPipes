@@ -93,7 +93,7 @@ memtime contamWrapper.pl \\
     outfile_unmatched = outfile_unmatched,
     log = log,
     db = db,
-    num_threads = config.param('duk_wrapper', 'num_threads', param_type='int')
+    num_threads = global_config_parser.param('duk_wrapper', 'num_threads', param_type='int')
     )
     return job
 
@@ -123,9 +123,9 @@ memtime gunzip -c {infile} | duk \\
     log = log,
     ncontam = ncontam,
     contam = contam,
-    k = config.param('duk', 'k', 'int'),
-    s = config.param('duk', 's', 'int'),
-    c = config.param('duk', 'c', 'int'),
+    k = global_config_parser.param('duk', 'k', 'int'),
+    s = global_config_parser.param('duk', 's', 'int'),
+    c = global_config_parser.param('duk', 'c', 'int'),
     ) 
     return job
 
@@ -150,7 +150,7 @@ memtime barcodes.pl \\
   --log {log};""".format(
     infile = infile,
     outfile = outfile,
-    num_threads = config.param( 'barcodes', 'num_threads', 1, 'int'),
+    num_threads = global_config_parser.param('barcodes', 'num_threads', 1, 'int'),
     log = log
     )
     
@@ -177,7 +177,7 @@ memtime removeUnpaired.pl \\
     outfile_paired = outfile_paired,
     outfile_1 = outfile_1,
     outfile_2 = outfile_2,
-    num_threads =  config.param( 'remove_unpaired', 'num_threads', 'int')
+    num_threads =  global_config_parser.param('remove_unpaired', 'num_threads', 'int')
     )
                 
     return job
@@ -203,7 +203,7 @@ memtime splitPairs.pl \\
     infile = infile,
     outfile_1 = outfile_1,
     outfile_2 = outfile_2,
-    num_threads = config.param( 'split_pairs', 'num_threads', 'int')
+    num_threads = global_config_parser.param('split_pairs', 'num_threads', 'int')
     )
                 
     return job
@@ -236,9 +236,9 @@ memtime qscoreSheets.pl \\
         suffix = suffix,
         log = log,
         outfile = outfile,
-        tmp = config.param('default', 'tmpDir', 'dirpath'),
-        phred = config.param('default', 'qual', 'int'),
-        num_threads = config.param('qscore_sheet', 'num_threads', 'int')
+        tmp = global_config_parser.param('default', 'tmpDir', 'dirpath'),
+        phred = global_config_parser.param('default', 'qual', 'int'),
+        num_threads = global_config_parser.param('qscore_sheet', 'num_threads', 'int')
     )
                     
     return job
@@ -351,12 +351,12 @@ memtime flash.pl \\
     infileR2 = infileR2,
     prefix = prefix,
     outdir = outdir,
-    n = config.getparam('flash', 'sampling', 'int'),
-    m = config.getparam('flash', 'minOverlap', 'int'),
-    M = config.getparam('flash', 'maxOverlap', 'int'),
-    x = config.getparam('flash', 'percentMismatch', 'float'),
-    p = config.getparam('flash', 'phred', 'int'),
-    num_threads = config.getparam( 'flash', 'num_threads', 'int')
+    n = global_config_parser.getparam('flash', 'sampling', 'int'),
+    m = global_config_parser.getparam('flash', 'minOverlap', 'int'),
+    M = global_config_parser.getparam('flash', 'maxOverlap', 'int'),
+    x = global_config_parser.getparam('flash', 'percentMismatch', 'float'),
+    p = global_config_parser.getparam('flash', 'phred', 'int'),
+    num_threads = global_config_parser.getparam('flash', 'num_threads', 'int')
     )
     return job
 
@@ -383,7 +383,7 @@ memtime itagsQC.pl \\
   --primer_3_prime {revPrimer} \\
   --length_3_prime {length_3_prime} \\""".format(
         revPrimer = revPrimer,
-        length_3_prime = config.param('itags_QC', 'length3Prime', 'int')
+        length_3_prime = global_config_parser.param('itags_QC', 'length3Prime', 'int')
         )
     
     if(fwdPrimer != "null"):
@@ -391,7 +391,7 @@ memtime itagsQC.pl \\
   --primer_5_prime {fwdPrimer} \\
   --length_5_prime {length_5_prime} \\""".format(
         fwdPrimer = fwdPrimer,
-        length_5_prime = config.param('itags_QC', 'length5Prime', 'int')
+        length_5_prime = global_config_parser.param('itags_QC', 'length5Prime', 'int')
         )
  
     job.command+="""\
@@ -400,9 +400,9 @@ memtime itagsQC.pl \\
   --num_threads {num_threads} \\
   --qual {qual} \\
   --primer_mismatch {primer_mismatch}""".format(
-        num_threads = config.param('itags_QC', 'num_threads', 'int'),
-        qual = config.param('default', 'qual', 'int'),
-        primer_mismatch = config.param('itags_QC', 'primerMismatch', 'int')
+        num_threads = global_config_parser.param('itags_QC', 'num_threads', 'int'),
+        qual = global_config_parser.param('default', 'qual', 'int'),
+        primer_mismatch = global_config_parser.param('itags_QC', 'primerMismatch', 'int')
     )
 
     return job
@@ -430,7 +430,7 @@ memtime  itagsQC.pl
   --primer_3_prime {revPrimer} \\
   --length_3_prime {length_3_prime} \\""".format(
             revPrimer = revPrimer,
-            length_3_prime = config.param('itags_QC', 'length3Prime', 'int') 
+            length_3_prime = global_config_parser.param('itags_QC', 'length3Prime', 'int')
         )
 
     if(fwdPrimer != "null"):
@@ -438,7 +438,7 @@ memtime  itagsQC.pl
   --primer_5_prime {fwdPrimer} \\
   --length_5_prime {length_5_prime} \\""".format(
             fwdPrimer = fwdPrimer,
-            length_5_prime = config.param( 'itags_QC', 'length5Prime', 'int')
+            length_5_prime = global_config_parser.param('itags_QC', 'length5Prime', 'int')
         )
     job.command+="""\
   --qscore_1 {qscore1} \\
@@ -451,16 +451,16 @@ memtime  itagsQC.pl
   --primer_mismatch {primer_mismatch} \\
   --min_length {min_length} \\
   --N {N}""".format(
-        qscore_1 = config.param('itags_QC', 'qscore1', 'int'),
-        qscore_2 = config.param('itags_QC', 'qscore2', 'int'),
+        qscore_1 = global_config_parser.param('itags_QC', 'qscore1', 'int'),
+        qscore_2 = global_config_parser.param('itags_QC', 'qscore2', 'int'),
         outfile = outfile,
         outfile_failed = outfile_failed,
-        num_threads =  config.param('itags_QC', 'num_threads', 'int'),
-        qual = config.param('default', 'qual', 'int'),
-        lq_threshold = config.param('itags_QC', 'lq_threshold', 'int'),
-        primer_mismatch = config.param( 'itags_QC', 'primerMismatch', 'float'),
-        min_length = config.param('itags_QC', 'minlength', 'int'),
-        N = config.param('itags_QC', 'N', 'int')
+        num_threads =  global_config_parser.param('itags_QC', 'num_threads', 'int'),
+        qual = global_config_parser.param('default', 'qual', 'int'),
+        lq_threshold = global_config_parser.param('itags_QC', 'lq_threshold', 'int'),
+        primer_mismatch = global_config_parser.param('itags_QC', 'primerMismatch', 'float'),
+        min_length = global_config_parser.param('itags_QC', 'minlength', 'int'),
+        N = global_config_parser.param('itags_QC', 'N', 'int')
     )
                 
     return job
@@ -559,9 +559,9 @@ memtime clustering1.pl \\
   --num_threads {num_threads}.""".format(
     infile = infile,
     barcodes = barcodes,
-    ref_db =  config.param( 'DB', 'chimeras', 'filepath'),
+    ref_db =  global_config_parser.param('DB', 'chimeras', 'filepath'),
     outdir = outdir,
-    num_threads = config.param( 'clustering', 'num_threads', 1, 'int')
+    num_threads = global_config_parser.param('clustering', 'num_threads', 1, 'int')
     )
 
     return job
@@ -586,10 +586,10 @@ memtime clustering2.pl \\
   --outdir {outdir} \\
   --num_threads {num_threads}""".format(
         infile = infile,
-        ref_db = config.param( 'DB', 'chimeras', 1, 'path'),
+        ref_db = global_config_parser.param('DB', 'chimeras', 1, 'path'),
         barcodes = barcodes,
         outdir = outdir,
-        num_threads = config.param( 'clustering', 'num_threads', 'int')
+        num_threads = global_config_parser.param('clustering', 'num_threads', 'int')
     )
     return job
 
@@ -616,11 +616,11 @@ memtime clustering3.pl \\
   --lowAbunCutOff {lowAbunCutoff} \\
   --num_threads {num_threads}""".format(
     infile = infile,
-    ref_db =  config.param('DB', 'chimeras', 'filepath'),
+    ref_db =  global_config_parser.param('DB', 'chimeras', 'filepath'),
     barcodes = barcodes,
     outdir = outdir,
-    lowAbunCutoff = config.param('clustering', 'lowAbunCutOff', 'int'),
-    num_threads =  config.param('clustering', 'num_threads', 'int')
+    lowAbunCutoff = global_config_parser.param('clustering', 'lowAbunCutOff', 'int'),
+    num_threads =  global_config_parser.param('clustering', 'num_threads', 'int')
     )
     
     return job
@@ -628,11 +628,11 @@ memtime clustering3.pl \\
 def clientReport(iniFilePath, projectPath, pipelineType, reportPath):
         
     pipeline = "pipeline=\"" + pipelineType + "\""
-    titleTMP = config.param('report', 'projectName')
+    titleTMP = global_config_parser.param('report', 'projectName')
     title = "report.title=\"" + titleTMP + "\""
-    authorTMP = config.param('report', 'report.author')
+    authorTMP = global_config_parser.param('report', 'report.author')
     author = "report.author=\"" + authorTMP + "\""
-    contactTMP = config.param('report', 'report.contact')
+    contactTMP = global_config_parser.param('report', 'report.contact')
     contact = "report.contact=\"" + contactTMP + "\""
 
     job = Job(

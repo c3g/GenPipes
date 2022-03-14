@@ -56,8 +56,8 @@ java -jar {juicer} \\
   {input} \\
   {output} \\
   {assembly}""".format(
-            juicer=os.path.expandvars(config.param('create_hic_file', 'JuicerPath')),
-            q=config.param('create_hic_file', 'q'),
+            juicer=os.path.expandvars(global_config_parser.param('create_hic_file', 'JuicerPath')),
+            q=global_config_parser.param('create_hic_file', 'q'),
             input=juicebox_input,
             output=hic_output,
             assembly=assembly

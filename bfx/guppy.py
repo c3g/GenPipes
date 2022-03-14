@@ -43,17 +43,17 @@ def guppy_basecalling(fast5_directory,
     read_fastq_dir = output_directory
     sequencing_summary = os.path.join(output_directory, "sequencing_summary.txt")
 
-    if version.parse(config.param('guppy_basecall', 'module_guppy').split("gpu-")[1]) < version.parse("4.5.2"):
+    if version.parse(global_config_parser.param('guppy_basecall', 'module_guppy').split("gpu-")[1]) < version.parse("4.5.2"):
         qscore_flag = "--qscore_filtering "
     else:
         qscore_flag = ""
 
     if transfer_mode:
-        fast5_directory_tmp = os.path.join(config.param('guppy_basecall', 'tmp_dir', required=True), os.path.basename("".join(fast5_directory)))
+        fast5_directory_tmp = os.path.join(global_config_parser.param('guppy_basecall', 'tmp_dir', required=True), os.path.basename("".join(fast5_directory)))
         transfer_job = "transfer.sh {threads} {fast5_directory} {fast5_directory_tmp} && \\".format(
-            threads=config.param('guppy_basecall', 'transfer_threads') if config.param('guppy_basecall', 'transfer_threads') else "1",
+            threads=global_config_parser.param('guppy_basecall', 'transfer_threads') if global_config_parser.param('guppy_basecall', 'transfer_threads') else "1",
             fast5_directory="".join(fast5_directory),
-            fast5_directory_tmp=config.param('guppy_basecall', 'tmp_dir', required=True)
+            fast5_directory_tmp=global_config_parser.param('guppy_basecall', 'tmp_dir', required=True)
             )
     else:
         transfer_job = "\\"
@@ -78,10 +78,10 @@ guppy_basecaller --input_path {fast5_directory} \\
             transfer_job=transfer_job,
             fast5_directory=fast5_directory_tmp if transfer_mode else "".join(fast5_directory),
             read_fastq_dir=read_fastq_dir,
-            basecall_protocol=config.param('guppy_basecall', 'basecall_protocol', required=True),
+            basecall_protocol=global_config_parser.param('guppy_basecall', 'basecall_protocol', required=True),
             qscore_flag=qscore_flag,
-            min_Q_score=config.param('guppy_basecall', 'min_Q_score', required=True),
-            other_options=config.param('guppy_basecall', 'other_options', required=False),
+            min_Q_score=global_config_parser.param('guppy_basecall', 'min_Q_score', required=True),
+            other_options=global_config_parser.param('guppy_basecall', 'other_options', required=False),
 
         )
     )
@@ -107,11 +107,11 @@ def guppy_demultiplex(fastq_directory,
     barcoding_summary = os.path.join(output_directory, "barcoding_summary.txt")
 
     if transfer_mode:
-        fastq_directory_tmp = os.path.join(config.param('guppy_demultiplex', 'tmp_dir', required=True), os.path.basename(fastq_directory))
+        fastq_directory_tmp = os.path.join(global_config_parser.param('guppy_demultiplex', 'tmp_dir', required=True), os.path.basename(fastq_directory))
         transfer_job = "transfer.sh {threads} {fastq_directory} {fastq_directory_tmp} && \\".format(
-            threads=config.param('guppy_demultiplex', 'transfer_threads') if config.param('guppy_demultiplex', 'transfer_threads') else "1",
+            threads=global_config_parser.param('guppy_demultiplex', 'transfer_threads') if global_config_parser.param('guppy_demultiplex', 'transfer_threads') else "1",
             fastq_directory=fastq_directory,
-            fastq_directory_tmp=config.param('guppy_demultiplex', 'tmp_dir', required=True)
+            fastq_directory_tmp=global_config_parser.param('guppy_demultiplex', 'tmp_dir', required=True)
             )
     else:
         transfer_job = "\\"
@@ -134,8 +134,8 @@ guppy_barcoder --input_path {fastq_directory} \\
             transfer_job=transfer_job,
             fastq_directory=fastq_directory_tmp if transfer_mode else fastq_directory,
             demultiplex_dir=demultiplex_dir,
-            arrangements_files=config.param('guppy_demultiplex', 'arrangements_files', required=True),
-            other_options=config.param('guppy_demultiplex', 'other_options', required=False)
+            arrangements_files=global_config_parser.param('guppy_demultiplex', 'arrangements_files', required=True),
+            other_options=global_config_parser.param('guppy_demultiplex', 'other_options', required=False)
         )
     )
 

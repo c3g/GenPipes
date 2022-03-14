@@ -26,7 +26,7 @@ from core.job import *
 
 log = logging.getLogger(__name__)
 
-def kraken2(input1, input2, prefix, other_options=config.param('kraken2', 'other_options', required=False), nthread=config.param('kraken2', 'threads', required=False), database=config.param('kraken2', 'database', required=False)):
+def kraken2(input1, input2, prefix, other_options=global_config_parser.param('kraken2', 'other_options', required=False), nthread=global_config_parser.param('kraken2', 'threads', required=False), database=global_config_parser.param('kraken2', 'database', required=False)):
     output = prefix + ".kraken2_output"
     report = prefix + ".kraken2_report"
 

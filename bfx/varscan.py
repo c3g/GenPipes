@@ -38,9 +38,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JA
   {input} \\
   --output-vcf 1 \\
   --vcf-sample-list {sampleNames}{output}""".format(
-        tmp_dir=config.param('varscan', 'tmp_dir'),
-        java_other_options=config.param('varscan', 'java_other_options'),
-        ram=config.param('varscan', 'ram'),
+        tmp_dir=global_config_parser.param('varscan', 'tmp_dir'),
+        java_other_options=global_config_parser.param('varscan', 'java_other_options'),
+        ram=global_config_parser.param('varscan', 'ram'),
         other_options=other_options,
         input=" \\\n " + input if input else "",
         sampleNames=sampleNamesFile,
@@ -63,9 +63,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JA
   {output} \\
   {other_options} \\
   --output-vcf 1 --mpileup 1""".format(
-        tmp_dir=config.param('varscan2_somatic', 'tmp_dir'),
-        java_other_options=config.param('varscan2_somatic', 'java_other_options'),
-        ram=config.param('varscan2_somatic', 'ram'),
+        tmp_dir=global_config_parser.param('varscan2_somatic', 'tmp_dir'),
+        java_other_options=global_config_parser.param('varscan2_somatic', 'java_other_options'),
+        ram=global_config_parser.param('varscan2_somatic', 'ram'),
         other_options=other_options,
         input_pair=input_pair,
         output=output,
@@ -87,10 +87,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $VARSCAN2_JA
   {input_readcount} \\
   {options} \\
   {output}""".format(
-        tmp_dir=config.param('varscan2_readcount_fpfilter', 'tmp_dir'),
-        java_other_options=config.param('varscan2_readcount_fpfilter', 'java_other_options'),
-        ram=config.param('varscan2_readcount_fpfilter', 'ram'),
-        options=config.param('varscan2_readcount_fpfilter', 'fpfilter_options'),
+        tmp_dir=global_config_parser.param('varscan2_readcount_fpfilter', 'tmp_dir'),
+        java_other_options=global_config_parser.param('varscan2_readcount_fpfilter', 'java_other_options'),
+        ram=global_config_parser.param('varscan2_readcount_fpfilter', 'ram'),
+        options=global_config_parser.param('varscan2_readcount_fpfilter', 'fpfilter_options'),
         input_vcf=input_vcf,
         input_readcount=input_readcount,
         output="--output-file " + output if output else ""

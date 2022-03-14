@@ -27,7 +27,7 @@ import re
 # MUGQIC Modules
 from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner 
 from .sample import Sample, NanoporeSample
-from core.config import config, _raise, SanitycheckError
+from core.config import global_config_parser, _raise, SanitycheckError
 
 log = logging.getLogger(__name__)
 
@@ -155,6 +155,12 @@ class IlluminaReadset(Readset):
 def parse_illumina_readset_file(illumina_readset_file):
     readsets = []
     samples = []
+
+    if isinstance(illumina_readset_file, str):
+       readset_fp = open(illumina_readset_file, 'r')
+    else:
+        readset_fp = illumina_readset_file
+        illumina_readset_file = readset_fp.name
 
     log.info("Parse Illumina readset file " + illumina_readset_file + " ...")
 
@@ -528,8 +534,13 @@ def parse_nanopore_readset_file(nanopore_readset_file):
     readsets = []
     samples = []
 
-    log.info("Parse Nanopore readset file " + nanopore_readset_file + " ...")
+    if isinstance(nanopore_readset_file, str):
+       readset_fp = open(nanopore_readset_file, 'r')
+    else:
+        readset_fp = nanopore_readset_file
+        nanopore_readset_file = readset_fp.name
 
+    log.info("Parse Nanopore readset file " + nanopore_readset_file + " ...")
     # Check for duplicate readsets in file
     dup_found_message = checkDuplicateReadsets(nanopore_readset_file)
     if dup_found_message:

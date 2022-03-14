@@ -45,9 +45,9 @@ svaba run {options} \\
         -a {name} \\
         -t {tumor} \\
         {normal}""".format(
-            options=config.param('svaba_run', 'options'),
-            ref=config.param('svaba_run', 'ref', param_type='filepath'),
-            dbsnp=config.param('svaba_run', 'dbsnp'),
+            options=global_config_parser.param('svaba_run', 'options'),
+            ref=global_config_parser.param('svaba_run', 'ref', param_type='filepath'),
+            dbsnp=global_config_parser.param('svaba_run', 'dbsnp'),
             bed=" -k " + bed if bed else "",
             name=patient_name,
             normal="-n " + normal if normal else "",

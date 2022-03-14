@@ -41,8 +41,8 @@ macs2 callpeak {options} {other_options} \\
   --name {output_prefix_name} \\
   >& {output_prefix_name}.diag.macs.out""".format(
                 options=options,
-                other_options=config.param(ini_section, 'other_options') if config.param(ini_section, 'other_options') else "",
-                tmp_dir=config.param(ini_section, "tmp_dir"),
+                other_options=global_config_parser.param(ini_section, 'other_options') if global_config_parser.param(ini_section, 'other_options') else "",
+                tmp_dir=global_config_parser.param(ini_section, "tmp_dir"),
                 genome_size=genome_size,
                 treatment_files=" \\\n  ".join(treatment_files),
                 control_files=" \\\n  --control \\\n  " + " \\\n  ".join(control_files) if control_files else " \\\n  --nolambda",

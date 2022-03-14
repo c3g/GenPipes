@@ -50,13 +50,13 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $FGBIO_JAR A
   --fastq {input_umi} \\
   --output {output_bam} \\
   {other_options}""".format(
-            tmp_dir=config.param('fgbio_addumi', 'tmp_dir'),
-            java_other_options=config.param('fgbio_addumi', 'java_other_options'),
-            ram=config.param('fgbio_addumi', 'ram'),
+            tmp_dir=global_config_parser.param('fgbio_addumi', 'tmp_dir'),
+            java_other_options=global_config_parser.param('fgbio_addumi', 'java_other_options'),
+            ram=global_config_parser.param('fgbio_addumi', 'ram'),
             input_bam=input_bam,
             input_umi=input_umi,
             output_bam=output_bam,
-            other_options=config.param('fgbio_addumi', 'other_options') if config.param('fgbio_addumi', 'other_options',required=False) else ""
+            other_options=global_config_parser.param('fgbio_addumi', 'other_options') if global_config_parser.param('fgbio_addumi', 'other_options', required=False) else ""
             ),
         removable_files=[output_bam]
         )
@@ -106,13 +106,13 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $FGBIO_JAR T
   --output {output_bam} \\
   {hard_clip} \\
   {other_options}""".format(
-            tmp_dir=config.param('fgbio_trim_primers', 'tmp_dir'),
-            java_other_options=config.param('fgbio_trim_primers', 'java_other_options'),
-            ram=config.param('fgbio_trim_primers', 'ram'),
+            tmp_dir=global_config_parser.param('fgbio_trim_primers', 'tmp_dir'),
+            java_other_options=global_config_parser.param('fgbio_trim_primers', 'java_other_options'),
+            ram=global_config_parser.param('fgbio_trim_primers', 'ram'),
             input_bam=input_bam,
-            primers=config.param('fgbio_trim_primers', 'primers'),
+            primers=global_config_parser.param('fgbio_trim_primers', 'primers'),
             output_bam=output_bam,
             hard_clip="-H" if hard_clip else "",
-            other_options=config.param('fgbio_trim_primers', 'other_options')
+            other_options=global_config_parser.param('fgbio_trim_primers', 'other_options')
             )
         )

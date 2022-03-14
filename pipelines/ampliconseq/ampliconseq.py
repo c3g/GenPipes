@@ -32,7 +32,7 @@ from os.path import basename
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config, _raise, SanitycheckError
+from core.config import global_config_parser, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 import utils.utils
 
@@ -54,12 +54,17 @@ class AmpliconSeq(common.Illumina):
 
     """
 
-    def __init__(self, protocol=None):
-        self._protocol=protocol
+    def __init__(self, *args, protocol=None, **kwargs):
+        self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help = "AmpliconSeq analysis type", choices = ["qiime", "dada2"], default="dada2")
-        self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
-        super(AmpliconSeq, self).__init__(protocol)
+        super(AmpliconSeq, self).__init__(*args, **kwargs)
+
+    @classmethod
+    def argparser(cls, argparser):
+        super().argparser(argparser)
+        cls._argparser.add_argument("-t", "--type", help = "AmpliconSeq analysis type",
+                                   choices=["qiime", "dada2"], default="dada2", dest='protocol')
+        return cls._argparser
 
     def trimmomatic16S(self):
         """
@@ -81,7 +86,7 @@ class AmpliconSeq(common.Illumina):
             trim_log = trim_file_prefix + "log"
 
             # Use adapter FASTA in config file if any, else create it from readset file
-            adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
+            adapter_fasta = global_config_parser.param('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
             adapter_job = None
             if not adapter_fasta:
                 adapter_fasta = trim_file_prefix + "adapters.fa"
@@ -314,7 +319,7 @@ log_file.seek(0); \\
 merge_stat.append([i.split()[3] for i in log_file if re.search("Percent combined",i)][0][:-1]); \\
 log_file.close(); \\
 print "\t".join(merge_stat)'""".format(
-                module_python=config.param('DEFAULT', 'module_python'),
+                module_python=global_config_parser.param('DEFAULT', 'module_python'),
                 flash_log=flash_log
             )
 
@@ -365,8 +370,8 @@ pandoc --to=markdown \\
   --variable merge_readset_table="$merge_readset_table_md" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    min_overlap=config.param('flash', 'min_overlap', param_type='int'),
-                    max_overlap=config.param('flash', 'max_overlap', param_type='int'),
+                    min_overlap=global_config_parser.param('flash', 'min_overlap', param_type='int'),
+                    max_overlap=global_config_parser.param('flash', 'max_overlap', param_type='int'),
                     read_type="Paired",
                     report_template_dir=self.report_template_dir,
                     readset_merge_flash_stats=readset_merge_flash_stats,
@@ -455,7 +460,7 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
             input_files.append(merge_file_prefix)
             sample_name.append(str(readset.sample.name).replace("_", "."))
 
-        if config.param('qiime_catenate', 'map_file'):
+        if global_config_parser.param('qiime_catenate', 'map_file'):
             job = qiime.catenate(
                 input_files,
                 sample_name,
@@ -540,7 +545,7 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
         ])
 
         # Database
-        if config.param('uchime', 'name') == 'gold':
+        if global_config_parser.param('uchime', 'name') == 'gold':
             chimera_db = 'GOLD'
             chimera_ref = 'gold'
         else:
@@ -623,7 +628,7 @@ pandoc --to=markdown \\
   > {report_file}""".format(
                     read_type="Paired",
                     report_template_dir=self.report_template_dir,
-                    sequence_max_n=config.param('qiime_catenate', 'sequence_max_n'),
+                    sequence_max_n=global_config_parser.param('qiime_catenate', 'sequence_max_n'),
                     chimera_db=chimera_db,
                     chimera_ref=chimera_ref,
                     readset_merge_uchime_stats=readset_merge_uchime_stats,
@@ -646,7 +651,7 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        method = config.param('qiime_otu_picking', 'method')
+        method = global_config_parser.param('qiime_otu_picking', 'method')
         otu_picking_method = "otu_" + method + "_picking"
 
         filter_directory = "catenate_without_chimeras"
@@ -944,11 +949,11 @@ $QIIME_HOME/biom summarize-table \\
 
         report_file = os.path.join("report", "AmpliconSeq.qiime.md")
 
-        if config.param('qiime', 'amplicon_type') == '16S':
+        if global_config_parser.param('qiime', 'amplicon_type') == '16S':
             amp_db = 'Greengenes'
-        elif config.param('qiime', 'amplicon_type') == '18S':
+        elif global_config_parser.param('qiime', 'amplicon_type') == '18S':
             amp_db = 'Silva'
-        elif config.param('qiime', 'amplicon_type') == 'ITS':
+        elif global_config_parser.param('qiime', 'amplicon_type') == 'ITS':
             amp_db = 'UNITE'
         else:
             amp_db = 'Unknown'
@@ -966,8 +971,8 @@ pandoc --to=markdown \\
   --variable amplicon_db="{amplicon_db}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                amplicon_type=config.param('qiime', 'amplicon_type'),
-                similarity=config.param('qiime_otu_picking', 'similarity'),
+                amplicon_type=global_config_parser.param('qiime', 'amplicon_type'),
+                similarity=global_config_parser.param('qiime_otu_picking', 'similarity'),
                 amplicon_db=amp_db,
                 report_template_dir=self.report_template_dir,
                 basename_report_file=os.path.basename(report_file),
@@ -1291,7 +1296,7 @@ pandoc --to=markdown \\
   -s {depth}""".format(
                 stat=chao1_stat,
                 rarefied_stat=chao1_rarefied_stat,
-                depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth')
+                depth=global_config_parser.param('qiime_single_rarefaction', 'single_rarefaction_depth')
             )
         )
 
@@ -1305,7 +1310,7 @@ pandoc --to=markdown \\
   -s {depth}""".format(
                 stat=observed_species_stat,
                 rarefied_stat=observed_species_rarefied_stat,
-                depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth')
+                depth=global_config_parser.param('qiime_single_rarefaction', 'single_rarefaction_depth')
             )
         )
 
@@ -1319,7 +1324,7 @@ pandoc --to=markdown \\
   -s {depth}""".format(
                 stat=shannon_stat,
                 rarefied_stat=shannon_rarefied_stat,
-                depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth')
+                depth=global_config_parser.param('qiime_single_rarefaction', 'single_rarefaction_depth')
             )
         )
 
@@ -1390,7 +1395,7 @@ pandoc --to=markdown \\
   -s {raremax}""".format(
                 stat=chao1_stat,
                 rarefied_stat=chao1_rarefied_stat,
-                raremax=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
+                raremax=global_config_parser.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
             )
         )
 
@@ -1404,7 +1409,7 @@ pandoc --to=markdown \\
   -s {raremax}""".format(
                 stat=observed_species_stat,
                 rarefied_stat=observed_species_rarefied_stat,
-                raremax=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
+                raremax=global_config_parser.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
             )
         )
 
@@ -1418,7 +1423,7 @@ pandoc --to=markdown \\
   -s {raremax}""".format(
                 stat=shannon_stat,
                 rarefied_stat=shannon_rarefied_stat,
-                raremax=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
+                raremax=global_config_parser.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
             )
         )
 
@@ -1458,8 +1463,8 @@ pandoc --to=markdown \\
             alpha_diversity_rarefaction_rarefied_directory = os.path.join(alpha_diversity_rarefaction_directory, method, "merge_samples_rarefied")
             alpha_diversity_rarefaction_file = os.path.join(alpha_diversity_rarefaction_rarefied_directory, "rarefaction_plots.html")
 
-            if config.param('rarefaction_plot', 'map_file'):
-                map_file = config.param('rarefaction_plot', 'map_file')
+            if global_config_parser.param('rarefaction_plot', 'map_file'):
+                map_file = global_config_parser.param('rarefaction_plot', 'map_file')
             else:
                 map_file = "map.txt"
 
@@ -1726,7 +1731,7 @@ $QIIME_HOME/biom convert -i {otu_normalized_table} \\
 
             if method == 'rarefaction':
                 method_title = "from rarefaction"
-                method_link = "These results have been generated after a rarefaction step. All the samples have been rarefied to **" + config.param('qiime_single_rarefaction', 'single_rarefaction_depth') + "** sequences."
+                method_link = "These results have been generated after a rarefaction step. All the samples have been rarefied to **" + global_config_parser.param('qiime_single_rarefaction', 'single_rarefaction_depth') + "** sequences."
             else:
                 method_title = "from CSS normalization"
                 method_link = "These results have been generated after the [CSS]\ [@css] normalization method."
@@ -1815,7 +1820,7 @@ pandoc --to=markdown \\
             dm_euclidean_file = os.path.join(dm_directory, "euclidean_otu_normalized_table.txt")
 
             job = qiime.beta_diversity(
-                config.param('beta_diversity', 'beta_diversity_metric'),
+                global_config_parser.param('beta_diversity', 'beta_diversity_metric'),
                 otu_normalized_table,
                 phylogenetic_tree_file,
                 dm_directory,
@@ -1850,7 +1855,7 @@ pandoc --to=markdown \\
 
         for method in ['css', 'rarefaction']:
 
-            if config.param('pcoa', 'beta_diversity_metric') == 'unifrac':
+            if global_config_parser.param('pcoa', 'beta_diversity_metric') == 'unifrac':
                 dm_unweighted_file = self.select_input_files([os.path.join(beta_directory, method, "dissimilarity_matrix", "unweighted_unifrac_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
                 dm_weighted_file = self.select_input_files([os.path.join(beta_directory, method, "dissimilarity_matrix", "weighted_unifrac_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
                 dm_euclidean_file = ''
@@ -1869,7 +1874,7 @@ pandoc --to=markdown \\
             pcoa_euclidean_file = os.path.join(pcoa_directory, "pcoa_euclidean_otu_normalized_table.txt")
 
             job = qiime.pcoa(
-                config.param('pcoa', 'beta_diversity_metric'),
+                global_config_parser.param('pcoa', 'beta_diversity_metric'),
                 dm_unweighted_file,
                 dm_weighted_file,
                 dm_euclidean_file,
@@ -1905,7 +1910,7 @@ pandoc --to=markdown \\
 
         for method in ['css', 'rarefaction']:
 
-            if config.param('pcoa_plot', 'beta_diversity_metric') == 'unifrac':
+            if global_config_parser.param('pcoa_plot', 'beta_diversity_metric') == 'unifrac':
                 pcoa_unweighted_file = self.select_input_files([os.path.join(beta_directory, method, "principal_coordinates", "pcoa_unweighted_unifrac_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
                 pcoa_weighted_file = self.select_input_files([os.path.join(beta_directory, method, "principal_coordinates", "pcoa_weighted_unifrac_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
                 pcoa_euclidean_file = ''
@@ -1923,12 +1928,12 @@ pandoc --to=markdown \\
             beta_diversity_pcoa_weighted = os.path.join(pcoa_plot_directory, "pcoa_weighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")
             beta_diversity_pcoa_euclidean = os.path.join(pcoa_plot_directory, "pcoa_euclidean_otu_normalized_table_2D_PCoA_plots.html")
 
-            if config.param('pcoa_plot', 'map_file'):
-                map_file = config.param('pcoa_plot', 'map_file')
+            if global_config_parser.param('pcoa_plot', 'map_file'):
+                map_file = global_config_parser.param('pcoa_plot', 'map_file')
             else:
                 map_file = "map.txt"
 
-            if config.param('pcoa_plot', 'beta_diversity_metric') == 'unifrac':
+            if global_config_parser.param('pcoa_plot', 'beta_diversity_metric') == 'unifrac':
 
                 job1 = qiime.pcoa_plot(
                     pcoa_unweighted_file,
@@ -1981,7 +1986,7 @@ pandoc --to=markdown \\
 
         for method in ['css', 'rarefaction']:
 
-            if config.param('plot_to_beta', 'beta_diversity_metric') == 'unifrac':
+            if global_config_parser.param('plot_to_beta', 'beta_diversity_metric') == 'unifrac':
                 beta_diversity_pcoa_unweighted = self.select_input_files([os.path.join(beta_directory, method, "2d_plots", "pcoa_unweighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")] for beta_directory in beta_directories)[0]
                 beta_diversity_pcoa_weighted = self.select_input_files([os.path.join(beta_directory, method, "2d_plots", "pcoa_weighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")] for beta_directory in beta_directories)[0]
 
@@ -2046,10 +2051,7 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
         check for design file (required for PCA plots)
         """
 
-        try:
-            designFile = os.path.relpath(self.args.design.name, self.args.output_dir)
-        except:
-            self.argparser.error("argument -d/--design is required!")
+        design_file_rel_path = os.path.relpath(self.design_file.name, self.output_dir)
 
         jobs = []
 
@@ -2080,13 +2082,13 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
                     Job(
                         [trimmedReadsR1],
                         [left_or_single_reads],
-                        command="ln -nsf " + os.path.abspath(os.path.join(self.args.output_dir, trimmedReadsR1)) + " " + left_or_single_reads,
+                        command="ln -nsf " + os.path.abspath(os.path.join(self.output_dir, trimmedReadsR1)) + " " + left_or_single_reads,
                         samples=[readset.sample]
                     ),
                     Job(
                         [trimmedReadsR2],
                         [right_reads],
-                        command="ln -nsf " + os.path.abspath(os.path.join(self.args.output_dir, trimmedReadsR2)) + " " + right_reads,
+                        command="ln -nsf " + os.path.abspath(os.path.join(self.output_dir, trimmedReadsR2)) + " " + right_reads,
                         samples=[readset.sample]
                     )
                 ]))
@@ -2111,61 +2113,110 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
         jobs.append(concat_jobs(
             [mkdir_job] +
             raw_reads_jobs +
-            [dada2.dada2(dada2_inputs, ampliconLengthFile, lnkRawReadsFolder, designFile, dada2_directory)], name="dada2.run"))
+            [dada2.dada2(dada2_inputs, ampliconLengthFile, lnkRawReadsFolder, design_file_rel_path, dada2_directory)]
+            , name="dada2.run"))
 
         return jobs
 
-
     @property
-    def steps(self):
-        return [
-            [self.trimmomatic16S,
-            self.merge_trimmomatic_stats16S,
-            self.flash_pass1,
-            self.ampliconLengthParser,
-            self.flash_pass2,
-            self.merge_flash_stats,
-            self.catenate,
-            self.uchime,
-            self.merge_uchime_stats,
-            self.otu_picking,
-            self.otu_rep_picking,
-            self.otu_assigning,
-            self.otu_table,
-            self.otu_alignment,
-            self.filter_alignment,
-            self.phylogeny,
-            self.qiime_report,
-            self.multiple_rarefaction,
-            self.alpha_diversity,
-            self.collate_alpha,
-            self.sample_rarefaction_plot,
-            self.qiime_report2,
-            self.single_rarefaction,
-            self.css_normalization,
-            self.rarefaction_plot,
-            self.summarize_taxa,
-            self.plot_taxa,
-            self.plot_heatmap,
-            self.krona,
-            self.plot_to_alpha,
-            self.beta_diversity,
-            self.pcoa,
-            self.pcoa_plot,
-            self.plot_to_beta],
-            [self.trimmomatic16S,
-            self.merge_trimmomatic_stats16S,
-            self.flash_pass1,
-            self.ampliconLengthParser,
-            self.flash_pass2,
-            self.merge_flash_stats,
-            self.asva]
-        ]
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+        return {"qiime":
+                [self.trimmomatic16S,
+                 self.merge_trimmomatic_stats16S,
+                 self.flash_pass1,
+                 self.ampliconLengthParser,
+                 self.flash_pass2,
+                 self.merge_flash_stats,
+                 self.catenate,
+                 self.uchime,
+                 self.merge_uchime_stats,
+                 self.otu_picking,
+                 self.otu_rep_picking,
+                 self.otu_assigning,
+                 self.otu_table,
+                 self.otu_alignment,
+                 self.filter_alignment,
+                 self.phylogeny,
+                 self.qiime_report,
+                 self.multiple_rarefaction,
+                 self.alpha_diversity,
+                 self.collate_alpha,
+                 self.sample_rarefaction_plot,
+                 self.qiime_report2,
+                 self.single_rarefaction,
+                 self.css_normalization,
+                 self.rarefaction_plot,
+                 self.summarize_taxa,
+                 self.plot_taxa,
+                 self.plot_heatmap,
+                 self.krona,
+                 self.plot_to_alpha,
+                 self.beta_diversity,
+                 self.pcoa,
+                 self.pcoa_plot,
+                 self.plot_to_beta],
+                "dada2":
+                [self.trimmomatic16S,
+                 self.merge_trimmomatic_stats16S,
+                 self.flash_pass1,
+                 self.ampliconLengthParser,
+                 self.flash_pass2,
+                 self.merge_flash_stats,
+                 self.asva]
+                }
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if Genpipes must be ran inside a container
+    utils.container_wrapper_argparse(__file__, argv)
+    # Build help
+    epilog = AmpliconSeq.process_help(argv)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        conflict_handler='resolve', epilog=epilog)
+
+    # populate the parser
+    parser = AmpliconSeq.argparser(parser)
+
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+    # Specific pipeline options
+    protocol = parsed_args.protocol
+
+    pipeline = AmpliconSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                           clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                           design_file=design_file, no_json=no_json, container=container,
+                           protocol=protocol)
+
+    pipeline.submit_jobs()
+
 
 if __name__ == '__main__':
-
-    argv = sys.argv
-    if '--wrap' in argv:
-        utils.utils.container_wrapper_argparse(argv)
-    else:
-        AmpliconSeq(protocol=['qiime', 'dada2'])
+    main()

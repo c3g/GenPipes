@@ -39,10 +39,10 @@ vardict \\
   -N {tumor_name} \\
   -b "{paired_samples}" \\
   {vardict_options}{region}{output}""".format(
-        reference_fasta=config.param('vardict_paired', 'genome_fasta', param_type='filepath'),
+        reference_fasta=global_config_parser.param('vardict_paired', 'genome_fasta', param_type='filepath'),
         tumor_name=tumor_name,
         paired_samples=input_tumor + "|" + input_normal,
-        vardict_options=config.param('vardict_paired', 'vardict_options'),
+        vardict_options=global_config_parser.param('vardict_paired', 'vardict_options'),
         region=" \\\n  " + region if region else "",
         output=" \\\n  > " + output if output else ""
         )
@@ -65,14 +65,14 @@ java {java_other_options} -Djava.io.tmpdir={tmp_dir} -Xms768m -Xmx{ram} -classpa
   -N {tumor_name} \\
   -b "{paired_samples}" \\
   {vardict_options}{region}{output}""".format(
-        tmp_dir=config.param('vardict_paired', 'tmp_dir'),
-        reference_fasta=config.param('vardict_paired', 'genome_fasta', param_type='filepath'),
+        tmp_dir=global_config_parser.param('vardict_paired', 'tmp_dir'),
+        reference_fasta=global_config_parser.param('vardict_paired', 'genome_fasta', param_type='filepath'),
         tumor_name=tumor_name,
         paired_samples=input_tumor + "|" + input_normal,
-        java_other_options=config.param('vardict_paired', 'java_other_options'),
-        ram=config.param('vardict_paired', 'ram'),
-        classpath=config.param('vardict_paired', 'classpath'),
-        vardict_options=config.param('vardict_paired', 'vardict_options'),
+        java_other_options=global_config_parser.param('vardict_paired', 'java_other_options'),
+        ram=global_config_parser.param('vardict_paired', 'ram'),
+        classpath=global_config_parser.param('vardict_paired', 'classpath'),
+        vardict_options=global_config_parser.param('vardict_paired', 'vardict_options'),
         region=" \\\n  " + region if region else "",
         output=" \\\n  > " + output if output else ""
         )
@@ -107,7 +107,7 @@ perl $VARDICT_BIN/var2vcf_paired.pl \\
     -N "{pairNames}" \\
     {var2vcf_options}{input}{output}""".format(
         pairNames=tumor_name + "|" + normal_name,
-        var2vcf_options=config.param('vardict_paired', 'var2vcf_options'),
+        var2vcf_options=global_config_parser.param('vardict_paired', 'var2vcf_options'),
         input=" \\\n " + input if input else "",
         output=" \\\n  > " + output if output else ""
         )
@@ -125,9 +125,9 @@ def dict2beds(dictionary,beds):
 dict2BEDs.py \\
   --dict {dictionary} \\
   --beds {beds} {dict2bed_options}""".format(
-        dictionary=dictionary if dictionary else config.param('DEFAULT', 'genome_dictionary', param_type='filepath'),
+        dictionary=dictionary if dictionary else global_config_parser.param('DEFAULT', 'genome_dictionary', param_type='filepath'),
         beds=' '.join(beds),
-        dict2bed_options=config.param('vardict_paired', 'dict2bed_options')
+        dict2bed_options=global_config_parser.param('vardict_paired', 'dict2bed_options')
         )
     )
 

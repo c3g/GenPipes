@@ -50,9 +50,9 @@ Rscript $R_TOOLS/asva.R \\
             rawReadsFolder=rawReadsFolder,
             designFile=designFile,
             output_directory=output_directory,
-            trainset=config.param('database', 'dada2_trainset'),
-            taxonomy=config.param('database', 'dada2_taxonomy'),
-            pool_parameter=config.param('dada2', 'pool_parameter'),
+            trainset=global_config_parser.param('database', 'dada2_trainset'),
+            taxonomy=global_config_parser.param('database', 'dada2_taxonomy'),
+            pool_parameter=global_config_parser.param('dada2', 'pool_parameter'),
             amplicon_length_file=ampliconLengthFile
         ),
         name="dada2.run"

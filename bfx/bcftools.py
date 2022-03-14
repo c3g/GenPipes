@@ -83,7 +83,7 @@ bcftools \\
   {regionFile} \\
   {output}""".format(
         options=options if options else "",
-        reference_fasta=config.param('samtools_mpileup', 'genome_fasta', param_type='filepath'),
+        reference_fasta=global_config_parser.param('samtools_mpileup', 'genome_fasta', param_type='filepath'),
         inputs="".join(" \\\n  " + input for input in inputs),
         regions="-r " + regions if regions else "",
         regionFile="-R " + regionFile if regionFile else "",

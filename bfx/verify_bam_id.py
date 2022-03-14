@@ -37,9 +37,9 @@ verifyBamID \\
   --bam {input_bam} \\
   --out {output_prefix} \\
   {other_options}""".format(
-            input_vcf=config.param('verify_bam_id', 'vcf', param_type='filepath'),
+            input_vcf=global_config_parser.param('verify_bam_id', 'vcf', param_type='filepath'),
             input_bam=input_bam,
             output_prefix=output_prefix,
-            other_options=config.param('verify_bam_id', 'options')
+            other_options=global_config_parser.param('verify_bam_id', 'options')
         )
     )

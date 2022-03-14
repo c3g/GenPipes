@@ -32,7 +32,7 @@ import subprocess
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config, _raise, SanitycheckError
+from core.config import global_config_parser, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 import utils.utils
 
@@ -49,18 +49,21 @@ from pipelines.rnaseq import rnaseq
 log = logging.getLogger(__name__)
 
 class RnaSeqLight(rnaseq.RnaSeqRaw):
-    def __init__(self,protocol=None):
-        self._protocol=protocol
-        super(RnaSeqLight, self).__init__(protocol)
+
+    def __init__(self,*args, protocol=None, **kwargs):
+        if protocol is None:
+            self._protocol = 'default'
+        # Add pipeline specific arguments
+        super().__init__(*args, **kwargs)
 
     def kallisto(self):
         """
             Run Kallisto on fastq files for a fast esimate of abundance.
         """
-        transcriptome_file = config.param('kallisto', 'transcriptome_idx', param_type="filepath")
-        tx2genes_file = config.param('kallisto', 'transcript2genes', param_type="filepath")
-        bootstraps = config.param('kallisto', 'bootstraps')
-        other_param = config.param('kallisto', 'other_options', required=False)
+        transcriptome_file = global_config_parser.param('kallisto', 'transcriptome_idx', param_type="filepath")
+        tx2genes_file = global_config_parser.param('kallisto', 'transcript2genes', param_type="filepath")
+        bootstraps = global_config_parser.param('kallisto', 'bootstraps')
+        other_param = global_config_parser.param('kallisto', 'other_options', required=False)
 
         jobs = []
         for readset in self.readsets:
@@ -94,8 +97,8 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
 
                 job_name = "kallisto." + readset.name
                 output_dir=os.path.join(self.output_dir, "kallisto", readset.sample.name)
-                fragment_length = config.param('kallisto', 'fragment_length')
-                fragment_length_sd = config.param('kallisto', 'fragment_length_sd')
+                fragment_length = global_config_parser.param('kallisto', 'fragment_length')
+                fragment_length_sd = global_config_parser.param('kallisto', 'fragment_length_sd')
                 #warn user to update parameters in ini file?
                 # print("Please make sure to update fragment_length and fragment_length_sd in the ini file!")
                 parameters=" --single -l "+ fragment_length +" -s " + fragment_length_sd
@@ -148,7 +151,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
 cp \\
   {tx2genes_file} \\
   {report_dir}""".format(
-                            tx2genes_file=config.param('kallisto', 'transcript2genes', param_type="filepath"),
+                            tx2genes_file=global_config_parser.param('kallisto', 'transcript2genes', param_type="filepath"),
                             report_dir=report_dir
                         )
                     )
@@ -191,7 +194,7 @@ cp \\
             Job(command="mkdir -p exploratory"),
             gq_seq_utils.exploratory_analysis_rnaseq_light(
                 abundance_file,
-                config.param('gq_seq_utils_exploratory_analysis_rnaseq_light', 'genes', param_type='filepath'),
+                global_config_parser.param('gq_seq_utils_exploratory_analysis_rnaseq_light', 'genes', param_type='filepath'),
                 "exploratory"
             )
         ], name="gq_seq_utils_exploratory_analysis_rnaseq_light", samples=self.samples))
@@ -219,10 +222,10 @@ cp \\
             # If --design <design file> option is missing, self.contrasts call will raise an Exception
 
             if self.contrasts: 
-                    design_file = os.path.relpath(self.args.design.name, self.output_dir)
+                    design_file = os.path.relpath(self.design_file.name, self.output_dir)
             output_directory = "sleuth" 
             count_matrix = os.path.join(self.output_dir, "kallisto", "All_readsets","all_readsets.abundance_genes.csv")
-            tx2gene = config.param('sleuth_differential_expression', 'tx2gene')
+            tx2gene = global_config_parser.param('sleuth_differential_expression', 'tx2gene')
             
             sleuth_job = differential_expression.sleuth(design_file, count_matrix, tx2gene, output_directory)
             sleuth_job.output_files = [os.path.join(output_directory, contrast.name, "results.wt.gene.csv") for contrast in self.contrasts]
@@ -233,11 +236,12 @@ cp \\
                 sleuth_job], name="sleuth_differential_expression")]
 
 
-############
-
     @property
-    def steps(self):
-        return [
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+        return {'default': [
             self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
@@ -245,12 +249,53 @@ cp \\
             self.kallisto_count_matrix,
             self.gq_seq_utils_exploratory_analysis_rnaseq_light,
             self.sleuth_differential_expression
-            ]
+            ]}
+
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if Genpipes must be ran inside a container
+    utils.container_wrapper_argparse(__file__, argv)
+    # Build help
+    epilog = RnaSeqLight.process_help(argv)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        conflict_handler='resolve', epilog=epilog)
+
+    # populate the parser
+    parser = RnaSeqLight.argparser(parser)
+
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+    pipeline = RnaSeqLight(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                              clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                              design_file=design_file, no_json=no_json, container=container)
+
+    pipeline.submit_jobs()
 
 if __name__ == '__main__':
-    argv = sys.argv
-    if '--wrap' in argv:
-        utils.utils.container_wrapper_argparse(argv)
-    else:
-        RnaSeqLight()
-
+    main()

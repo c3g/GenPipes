@@ -41,8 +41,8 @@ shapeit -check {options} \\
   {legend_file} \\
   {sample_file} \\
   --output-log {output_log} ; true""".format(
-        options=config.param('shapeit','check_options'),
-        threads=config.param('shapeit','check_threads'),
+        options=global_config_parser.param('shapeit', 'check_options'),
+        threads=global_config_parser.param('shapeit', 'check_threads'),
         input_vcf=input_vcf,
         genome_map="${SHAPEIT_PATH}/ALL.integrated_phase1_SHAPEIT_16-06-14.nosing/genetic_map_chr" + chr + "_combined_b37.txt",
         hap_file="${SHAPEIT_PATH}/ALL.integrated_phase1_SHAPEIT_16-06-14.nosing/ALL.chr" + chr + ".integrated_phase1_v3.20101123.snps_indels_svs.genotypes.nosing.haplotypes.gz",
@@ -71,8 +71,8 @@ shapeit {options} \\
   --exclude-snp {exclude_snps} \\
   --output-log {output_log} \\
   -O {output}""".format(
-        options=config.param('shapeit','phase_options'),
-        threads=config.param('shapeit','phase_threads'),
+        options=global_config_parser.param('shapeit', 'phase_options'),
+        threads=global_config_parser.param('shapeit', 'phase_threads'),
         input_vcf=input_vcf,
         genome_map="${SHAPEIT_PATH}/ALL.integrated_phase1_SHAPEIT_16-06-14.nosing/genetic_map_chr" + chr + "_combined_b37.txt",
         hap_file="${SHAPEIT_PATH}/ALL.integrated_phase1_SHAPEIT_16-06-14.nosing/ALL.chr" + chr + ".integrated_phase1_v3.20101123.snps_indels_svs.genotypes.nosing.haplotypes.gz",

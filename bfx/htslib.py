@@ -71,7 +71,7 @@ bgzip -cf \\
 tabix -pvcf {output}""".format(
         input=" \\\n " + input if input else "",
         output=output,
-        options=config.param('DEFAULT', 'tabix_options', required=False),
+        options=global_config_parser.param('DEFAULT', 'tabix_options', required=False),
         )
     )
 

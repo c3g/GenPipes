@@ -49,9 +49,9 @@ quast.py {reference} \\
   {features} \\
   {nthread} \\
   {input}""".format(
-      reference="-r " + config.param(ini_section, 'reference_genome', required=False),
-      features="--features " + config.param(ini_section, 'genomic_feature', required=False) if config.param(ini_section, 'genomic_feature', required=False) else "",
-      nthread="--threads " + config.param(ini_section, 'threads', required=False),
+      reference="-r " + global_config_parser.param(ini_section, 'reference_genome', required=False),
+      features="--features " + global_config_parser.param(ini_section, 'genomic_feature', required=False) if global_config_parser.param(ini_section, 'genomic_feature', required=False) else "",
+      nthread="--threads " + global_config_parser.param(ini_section, 'threads', required=False),
       output_dir="--output-dir " + output_dir,
       input=input
       ),

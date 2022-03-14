@@ -47,9 +47,9 @@ ivar trim -i {input_bam} \\
   {other_options}""".format(
             input_bam=input_bam,
             prefix=prefix,
-            bed_file="-b " + config.param('ivar_trim_primers', 'bed_primers', param_type='filepath') if config.param('ivar_trim_primers', 'bed_primers') else "",
-            primer_pair="-f " + config.param('ivar_trim_primers', 'tsv_primer_pair', param_type='filepath') if config.param('ivar_trim_primers', 'tsv_primer_pair') else "",
-            other_options=config.param('ivar_trim_primers', 'other_options')
+            bed_file="-b " + global_config_parser.param('ivar_trim_primers', 'bed_primers', param_type='filepath') if global_config_parser.param('ivar_trim_primers', 'bed_primers') else "",
+            primer_pair="-f " + global_config_parser.param('ivar_trim_primers', 'tsv_primer_pair', param_type='filepath') if global_config_parser.param('ivar_trim_primers', 'tsv_primer_pair') else "",
+            other_options=global_config_parser.param('ivar_trim_primers', 'other_options')
             ),
         )
 
@@ -71,9 +71,9 @@ ivar variants -p {prefix} \\
   {gff_file} \\
   {other_options}""".format(
             prefix=prefix,
-            reference_genome=config.param('ivar_call_variants', 'genome_fasta', param_type='filepath'),
-            gff_file="-g " + config.param('ivar_call_variants', 'gff_orf', param_type='filepath') if config.param('ivar_call_variants', 'gff_orf') else "",
-            other_options=config.param('ivar_call_variants', 'other_options')
+            reference_genome=global_config_parser.param('ivar_call_variants', 'genome_fasta', param_type='filepath'),
+            gff_file="-g " + global_config_parser.param('ivar_call_variants', 'gff_orf', param_type='filepath') if global_config_parser.param('ivar_call_variants', 'gff_orf') else "",
+            other_options=global_config_parser.param('ivar_call_variants', 'other_options')
             ),
         )
 
@@ -92,7 +92,7 @@ def create_consensus(prefix):
         command="""\
 ivar consensus -p {prefix} {other_options}""".format(
             prefix=prefix,
-            other_options=config.param('ivar_create_consensus', 'other_options')
+            other_options=global_config_parser.param('ivar_create_consensus', 'other_options')
             ),
         )
 

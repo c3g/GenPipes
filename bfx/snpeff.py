@@ -43,14 +43,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
   -stats {output_stats_html} \\
   {reference_snpeff_genome} \\
   {input}{output}""".format(
-        tmp_dir=config.param('compute_effects', 'tmp_dir'),
-        java_other_options=config.param('compute_effects', 'java_other_options'),
-        ram=config.param('compute_effects', 'ram'),
+        tmp_dir=global_config_parser.param('compute_effects', 'tmp_dir'),
+        java_other_options=global_config_parser.param('compute_effects', 'java_other_options'),
+        ram=global_config_parser.param('compute_effects', 'ram'),
         options=options if options else "",
         cancer_sample_file="-cancerSamples " + cancer_sample_file if cancer_sample_file else "",
         output_stats=output_stats,
         output_stats_html=output_stats_html,
-        reference_snpeff_genome=config.param('compute_effects', 'snpeff_genome'),
+        reference_snpeff_genome=global_config_parser.param('compute_effects', 'snpeff_genome'),
         input=input,
         output=" \\\n  > " + output if output else ""
         )
@@ -89,10 +89,10 @@ def snpsift_annotate(input, output):
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME/SnpSift.jar annotate \\
   {db_snp} \\
   {input}{output}""".format(
-        tmp_dir=config.param('snpsift_annotate', 'tmp_dir'),
-        java_other_options=config.param('snpsift_annotate', 'java_other_options'),
-        ram=config.param('snpsift_annotate', 'ram'),
-        db_snp=config.param('snpsift_annotate', 'known_variants', param_type='filepath'),
+        tmp_dir=global_config_parser.param('snpsift_annotate', 'tmp_dir'),
+        java_other_options=global_config_parser.param('snpsift_annotate', 'java_other_options'),
+        ram=global_config_parser.param('snpsift_annotate', 'ram'),
+        db_snp=global_config_parser.param('snpsift_annotate', 'known_variants', param_type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
         ),
@@ -111,10 +111,10 @@ def snpsift_dbnsfp(input, output):
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME/SnpSift.jar dbnsfp \\
   -v -db {db_nsfp} \\
   {input}{output}""".format(
-        tmp_dir=config.param('snpsift_dbnsfp', 'tmp_dir'),
-        java_other_options=config.param('snpsift_dbnsfp', 'java_other_options'),
-        ram=config.param('snpsift_dbnsfp', 'ram'),
-        db_nsfp=config.param('snpsift_dbnsfp', 'dbnsfp', param_type='filepath'),
+        tmp_dir=global_config_parser.param('snpsift_dbnsfp', 'tmp_dir'),
+        java_other_options=global_config_parser.param('snpsift_dbnsfp', 'java_other_options'),
+        ram=global_config_parser.param('snpsift_dbnsfp', 'ram'),
+        db_nsfp=global_config_parser.param('snpsift_dbnsfp', 'dbnsfp', param_type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
         )
@@ -131,9 +131,9 @@ def snpsift_intervals_index(input, intervals_file, output=None, job_name="filter
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME/SnpSift.jar intidx \\
     {input} {intervals_file}{output}""".format(
-            tmp_dir=config.param('snpsift_dbnsfp', 'tmp_dir', required=False),
-            java_other_options=config.param('snpsift_dbnsfp', 'java_other_options', required=False),
-            ram=config.param('snpsift_dbnsfp', 'ram', required=False),
+            tmp_dir=global_config_parser.param('snpsift_dbnsfp', 'tmp_dir', required=False),
+            java_other_options=global_config_parser.param('snpsift_dbnsfp', 'java_other_options', required=False),
+            ram=global_config_parser.param('snpsift_dbnsfp', 'ram', required=False),
             input=input,
             intervals_file=intervals_file,
             output=" \\\n  > " + output if output else ""
@@ -161,11 +161,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} \\
   {reference_snpeff_genome} \\
   {input_vcf} > \\
   {output_vcf}""".format(
-            tmp_dir=config.param('snpeff_annotate', 'tmp_dir', required=False),
-            java_other_options=config.param('snpeff_annotate', 'java_other_options', required=False),
-            ram=config.param('snpeff_annotate', 'ram', required=False),
+            tmp_dir=global_config_parser.param('snpeff_annotate', 'tmp_dir', required=False),
+            java_other_options=global_config_parser.param('snpeff_annotate', 'java_other_options', required=False),
+            ram=global_config_parser.param('snpeff_annotate', 'ram', required=False),
             metrics_prefix=metrics_prefix + ".html",
-            reference_snpeff_genome=config.param('snpeff_annotate', 'snpeff_genome'),
+            reference_snpeff_genome=global_config_parser.param('snpeff_annotate', 'snpeff_genome'),
             input_vcf=input_vcf,
             output_vcf=output_vcf
             ),

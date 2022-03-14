@@ -47,7 +47,7 @@ qualimap bamqc {other_options} \\
             output_directory=output_directory,
             other_options=options,
 #            bed="\\\n  --feature-file " + bed if bed else "",
-            ram=config.param(ini_section, 'ram'),
+            ram=global_config_parser.param(ini_section, 'ram'),
         ),
         removable_files=[]
     )
@@ -76,11 +76,11 @@ qualimap rnaseq \\
   --java-mem-size={ram} \\
   {other_options}""".format(
             input_bam=input_bam,
-            gtf=config.param('qualimap', 'gtf', param_type='filepath'),
+            gtf=global_config_parser.param('qualimap', 'gtf', param_type='filepath'),
             output_directory=output_directory,
             output=output,
-            ram=config.param('qualimap', 'ram'),
-            other_options=config.param('qualimap', 'other_options')
+            ram=global_config_parser.param('qualimap', 'ram'),
+            other_options=global_config_parser.param('qualimap', 'other_options')
         ),
         removable_files=[]
     )

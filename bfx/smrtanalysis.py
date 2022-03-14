@@ -22,7 +22,7 @@ import os
 import re
 
 # MUGQIC Modules
-from core.config import config
+from core.config import global_config_parser
 from core.job import Job
 
 def blasr(
@@ -60,13 +60,13 @@ filterm4.py {outfile} > {outfile_filtered} 2> {outfile_filtered}.log'""".format(
             infile=infile,
             infile_long=infile_long,
             outfile=outfile,
-            m=config.param('smrtanalysis_blasr', 'm', param_type='int'),
-            threads=config.param('smrtanalysis_blasr', 'threads', param_type='posint'),
-            bestn=config.param('smrtanalysis_blasr', 'bestn', param_type='int'),
-            n_candidates=config.param('smrtanalysis_blasr', 'n_candidates', param_type='int'),
-            min_read_length=config.param('smrtanalysis_blasr', 'min_read_length', param_type='int'),
-            max_score=config.param('smrtanalysis_blasr', 'max_score', param_type='int'),
-            max_lcp_length=config.param('smrtanalysis_blasr', 'max_lcp_length', param_type='int'),
+            m=global_config_parser.param('smrtanalysis_blasr', 'm', param_type='int'),
+            threads=global_config_parser.param('smrtanalysis_blasr', 'threads', param_type='posint'),
+            bestn=global_config_parser.param('smrtanalysis_blasr', 'bestn', param_type='int'),
+            n_candidates=global_config_parser.param('smrtanalysis_blasr', 'n_candidates', param_type='int'),
+            min_read_length=global_config_parser.param('smrtanalysis_blasr', 'min_read_length', param_type='int'),
+            max_score=global_config_parser.param('smrtanalysis_blasr', 'max_score', param_type='int'),
+            max_lcp_length=global_config_parser.param('smrtanalysis_blasr', 'max_lcp_length', param_type='int'),
             sam=" \\\n  -sam" if sam else "",
             outfile_fofn=outfile_fofn,
             outfile_filtered=outfile_filtered
@@ -121,16 +121,16 @@ fastqToCA \\
 
 def filtering(fofn, input_xml, params_xml, output_dir, log):
 
-    ref_params_xml = config.param('smrtanalysis_filtering', 'filtering_settings')
+    ref_params_xml = global_config_parser.param('smrtanalysis_filtering', 'filtering_settings')
 
     output_prefix = os.path.join(output_dir, "data", "filtered_subreads.")
     input_fofn = os.path.join(output_dir, "input.fofn")
     output_fastq = output_prefix + "fastq"
 
-    white_path = config.param('smrtanalysis_filtering', 'whitelist_path',required=False)
+    white_path = global_config_parser.param('smrtanalysis_filtering', 'whitelist_path', required=False)
 
-    temp_dir = config.param('smrtanalysis_filtering', 'tmp_dir')
-    if (config.param('smrtanalysis_filtering', 'tmp_dir').startswith("$")):
+    temp_dir = global_config_parser.param('smrtanalysis_filtering', 'tmp_dir')
+    if (global_config_parser.param('smrtanalysis_filtering', 'tmp_dir').startswith("$")):
         temp_dir = temp_dir.replace('$', '$SMRT_ORIGUSERENV_')
         temp_dir = temp_dir.replace('{', '')
         temp_dir = temp_dir.replace('}', '')
@@ -164,13 +164,13 @@ prinseq-lite.pl \\
             fofn=fofn,
             input_fofn=input_fofn,
             input_xml=input_xml,
-            min_subread_length=config.param('smrtanalysis_filtering', 'min_subread_length'),
-            min_read_length=config.param('smrtanalysis_filtering', 'min_read_length'),
-            min_qual=config.param('smrtanalysis_filtering', 'min_qual'),
+            min_subread_length=global_config_parser.param('smrtanalysis_filtering', 'min_subread_length'),
+            min_read_length=global_config_parser.param('smrtanalysis_filtering', 'min_read_length'),
+            min_qual=global_config_parser.param('smrtanalysis_filtering', 'min_qual'),
             whitelist_param=' -e "s|<\!-- WHITELISTCOM||g" -e "s|WHITELISTCOM -->||g" -e "s|WHITELISTFILEPATH|'+white_path+'|g"' if white_path != "" else '',
             ref_params_xml=ref_params_xml,
             params_xml=params_xml,
-            threads=config.param('smrtanalysis_filtering', 'threads'),
+            threads=global_config_parser.param('smrtanalysis_filtering', 'threads'),
             tmp_dir=temp_dir,
             output_dir=output_dir,
             log=log,
@@ -250,7 +250,7 @@ m4topre.py \\
             infile=infile,
             allm4=allm4,
             subreads=subreads,
-            bestn=config.param('smrtanalysis_m4topre', 'bestn', param_type='int'),
+            bestn=global_config_parser.param('smrtanalysis_m4topre', 'bestn', param_type='int'),
             outfile=outfile
     ))
 
@@ -267,8 +267,8 @@ def pbalign(
 
     control_regions_fofn = os.path.join(sample_name, "filtering", "data", "filtered_regions.fofn")
 
-    temp_dir = os.path.join(config.param('smrtanalysis_filtering', 'tmp_dir'), sample_cutoff_mer_size_polishing_round)
-    if (config.param('smrtanalysis_pbutgcns', 'tmp_dir').startswith("$")):
+    temp_dir = os.path.join(global_config_parser.param('smrtanalysis_filtering', 'tmp_dir'), sample_cutoff_mer_size_polishing_round)
+    if (global_config_parser.param('smrtanalysis_pbutgcns', 'tmp_dir').startswith("$")):
         temp_dir = temp_dir.replace('$', '$SMRT_ORIGUSERENV_')
         temp_dir = temp_dir.replace('{', '')
         temp_dir = temp_dir.replace('}', '')
@@ -294,7 +294,7 @@ pbalign \\
             ref_upload=ref_upload,
             cmph5=cmph5,
             tmp_dir=temp_dir,
-            threads=config.param('smrtanalysis_pbalign', 'threads', param_type='posint'),
+            threads=global_config_parser.param('smrtanalysis_pbalign', 'threads', param_type='posint'),
             control_regions_fofn=control_regions_fofn
     ))
 
@@ -317,7 +317,7 @@ pbdagcon -a -j {threads} \\
   > {outfile}' && \\
 awk '{{if ($0~/>/) {{sub(/>/,"@",$0);print;}} else {{l=length($0);q=""; while (l--) {{q=q "9"}}printf("%s\\n+\\n%s\\n",$0,q)}}}}' {outfile} \\
   > {outfile_fastq}""".format(
-            threads=config.param('smrtanalysis_pbdagcon', 'threads', param_type='posint'),
+            threads=global_config_parser.param('smrtanalysis_pbdagcon', 'threads', param_type='posint'),
             infile=infile,
             outfile=outfile,
             outfile_fastq=outfile_fastq
@@ -335,8 +335,8 @@ def pbutgcns(assembly_directory, sample_cutoff_mer_size, mer_size_directory):
     prefix = os.path.join(assembly_directory, sample_cutoff_mer_size)
     outdir = os.path.join(assembly_directory, "9-terminator")
 
-    temp_dir = os.path.join(config.param('smrtanalysis_filtering', 'tmp_dir'), sample_cutoff_mer_size)
-    if (config.param('smrtanalysis_pbutgcns', 'tmp_dir').startswith("$")):
+    temp_dir = os.path.join(global_config_parser.param('smrtanalysis_filtering', 'tmp_dir'), sample_cutoff_mer_size)
+    if (global_config_parser.param('smrtanalysis_pbutgcns', 'tmp_dir').startswith("$")):
         temp_dir = temp_dir.replace('$', '$SMRT_ORIGUSERENV_')
         temp_dir = temp_dir.replace('{', '')
         temp_dir = temp_dir.replace('}', '')
@@ -368,7 +368,7 @@ pbutgcns_wf.sh'""".format(
             outdir=outdir,
             tmp_dir=temp_dir,
             prefix=prefix,
-            threads=config.param('smrtanalysis_pbutgcns', 'threads', param_type='posint'),
+            threads=global_config_parser.param('smrtanalysis_pbutgcns', 'threads', param_type='posint'),
             outfile=outfile
     ))
 
@@ -525,9 +525,9 @@ variantCaller.py \\
 gunzip -c \\
   {outfile_fasta} \\
   > {outfile_fasta_uncompressed}""".format(
-            protocol=config.param('smrtanalysis_variant_caller', 'protocol', param_type='dirpath'),
-            threads=config.param('smrtanalysis_variant_caller', 'threads', param_type='posint'),
-            algorithm=config.param('smrtanalysis_variant_caller', 'algorithm'),
+            protocol=global_config_parser.param('smrtanalysis_variant_caller', 'protocol', param_type='dirpath'),
+            threads=global_config_parser.param('smrtanalysis_variant_caller', 'threads', param_type='posint'),
+            algorithm=global_config_parser.param('smrtanalysis_variant_caller', 'algorithm'),
             cmph5=cmph5,
             ref_fasta=ref_fasta,
             outfile_variants=outfile_variants,

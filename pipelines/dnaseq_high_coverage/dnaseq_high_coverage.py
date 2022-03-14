@@ -32,7 +32,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config
+from core.config import global_config_parser
 from core.job import Job, concat_jobs, pipe_jobs
 import utils.utils
 
@@ -66,10 +66,11 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
     don't fare well with the high coverage.
     """
 
-    def __init__(self, protocol=None):
-        self._protocol=protocol
+    def __init__(self,*args, protocol=None, **kwargs):
+        if protocol is None:
+            self._protocol = 'default'
         # Add pipeline specific arguments
-        super(DnaSeqHighCoverage, self).__init__(protocol)
+        super(DnaSeqHighCoverage, self).__init__(*args, **kwargs)
 
     def picard_fixmate(self):
         """
@@ -116,7 +117,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
                 input,
                 input_file_prefix + "coverage.tsv",
                 bvatools.resolve_readset_coverage_bed(sample.readsets[0]),
-                other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
+                other_options=global_config_parser.param('bvatools_depth_of_coverage', 'other_options', required=False)
             )
             job.name = "bvatools_depth_of_coverage." + sample.name
             job.samples = [sample]
@@ -180,7 +181,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        nb_jobs = config.param('varscan', 'nb_jobs', param_type='posint')
+        nb_jobs = global_config_parser.param('varscan', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of VarScan jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -191,7 +192,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         for idx in range(nb_jobs):
             beds.append(os.path.join(varscan_directory, 'chrs.' + str(idx) + '.bed'))
 
-        genome_dictionary = config.param('DEFAULT', 'genome_dictionary', param_type='filepath')
+        genome_dictionary = global_config_parser.param('DEFAULT', 'genome_dictionary', param_type='filepath')
 
         if nb_jobs > 1:
             bedJob = tools.dict2beds(genome_dictionary, beds)
@@ -216,8 +217,8 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
             job = concat_jobs([
                 Job(command="mkdir -p " + varscan_directory, samples=self.samples),
                 pipe_jobs([
-                    samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'), regionFile=bedfile),
-                    varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
+                    samtools.mpileup(bams, None, global_config_parser.param('varscan', 'mpileup_other_options'), regionFile=bedfile),
+                    varscan.mpileupcns(None, None, sampleNamesFile, global_config_parser.param('varscan', 'other_options')),
                     htslib.bgzip_tabix(None, os.path.join(variants_directory, "allSamples.vcf.gz"))
                 ])
             ], name="varscan.single")
@@ -229,8 +230,8 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
             for idx in range(nb_jobs):
                 output_vcf = os.path.join(varscan_directory, "allSamples."+str(idx)+".vcf.gz")
                 varScanJob = pipe_jobs([
-                    samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'), regionFile=beds[idx]),
-                    varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
+                    samtools.mpileup(bams, None, global_config_parser.param('varscan', 'mpileup_other_options'), regionFile=beds[idx]),
+                    varscan.mpileupcns(None, None, sampleNamesFile, global_config_parser.param('varscan', 'other_options')),
                     htslib.bgzip_tabix(None, output_vcf)
                 ], name = "varscan." + str(idx))
                 varScanJob.samples = self.samples
@@ -301,9 +302,9 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         jobs = []
 
         output_directory = "variants"
-        temp_dir = config.param('DEFAULT', 'tmp_dir')
+        temp_dir = global_config_parser.param('DEFAULT', 'tmp_dir')
         gemini_prefix = os.path.join(output_directory, "allSamples")
-        gemini_module=config.param("DEFAULT", 'module_gemini').split(".")
+        gemini_module=global_config_parser.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2],gemini_module[-1]])
 
         jobs.append(concat_jobs([
@@ -314,8 +315,11 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         return jobs
 
     @property
-    def steps(self):
-        return [
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+        return { 'default': [
             self.picard_sam_to_fastq,
             self.skewer_trimming,
             self.bwa_mem_sambamba_sort_sam,
@@ -331,11 +335,54 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
             self.snp_effect,
             self.gemini_annotations,
             self.cram_output
-        ]
+            ] }
+
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if Genpipes must be ran inside a container
+    utils.container_wrapper_argparse(__file__, argv)
+    # Build help
+    epilog = DnaSeqHighCoverage.process_help(argv)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        conflict_handler='resolve', epilog=epilog)
+
+    # populate the parser
+    parser = DnaSeqHighCoverage.argparser(parser)
+
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+
+    pipeline = DnaSeqHighCoverage(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                         clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                         design_file=design_file, no_json=no_json, container=container)
+
+    pipeline.submit_jobs()
 
 if __name__ == '__main__':
-    argv = sys.argv
-    if '--wrap' in argv:
-        utils.utils.container_wrapper_argparse(argv)
-    else:
-        DnaSeqHighCoverage()
+    main()

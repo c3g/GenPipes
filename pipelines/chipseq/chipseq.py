@@ -35,7 +35,7 @@ import time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config, _raise, SanitycheckError
+from core.config import global_config_parser, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 import utils.utils
 
@@ -87,12 +87,17 @@ class ChipSeq(common.Illumina):
     is more information about ChIP-Seq pipeline that you may find interesting.
     """
 
-    def __init__(self, protocol="chipseq"):
-        self._protocol = protocol
+    def __init__(self, *args, protocol="chipseq", **kwargs):
+        self.protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'), required=False)
-        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)", choices=["chipseq", "atacseq"], default="chipseq")
-        super(ChipSeq, self).__init__(protocol)
+        super(ChipSeq, self).__init__(*args, **kwargs)
+
+    @classmethod
+    def argparser(cls, argparser):
+        super().argparser(argparser)
+        cls._argparser.add_argument("-t", "--type", help="Type of pipeline (default chipseq)",
+                                    choices=["chipseq", "atacseq"], default="chipseq", dest='protocol')
+        return cls._argparser
 
     @property
     def output_dirs(self):
@@ -111,6 +116,13 @@ class ChipSeq(common.Illumina):
         return dirs
 
     @property
+    def contrasts(self):
+        if getattr(self, "_contrasts") is None:
+                self._contrasts = parse_chipseq_design_file(self.design_file, self.samples)
+        return self._contrasts
+
+
+    @property
     def mark_type_conversion(self):
         dirs = {'N': 'narrow',
                 'B': 'broad',
@@ -120,31 +132,21 @@ class ChipSeq(common.Illumina):
 
     @property
     def ucsc_genome(self):
-        genome_source = config.param('DEFAULT', 'source')
+        genome_source = global_config_parser.param('DEFAULT', 'source')
         if genome_source == "UCSC":
-            genome = config.param('DEFAULT', 'assembly')
+            genome = global_config_parser.param('DEFAULT', 'assembly')
         else:
-            genome = config.param('DEFAULT', 'assembly_synonyms')
+            genome = global_config_parser.param('DEFAULT', 'assembly_synonyms')
         return genome
 
     @property
     def readsets(self):
-        flag = False
-        if not hasattr(self, "_readsets"):
-            if self.args.readsets:
-                self._readsets = parse_illumina_readset_file(self.args.readsets.name)
-                for readset in self.readsets:
-                    if not readset.mark_name:
-                        _raise(SanitycheckError("Error: missing readset MarkName for " + readset.name))
-                        flag = True
-                    elif not readset.mark_type:
-                        _raise(SanitycheckError("Error: missing readset MarkType for " + readset.name))
-                        flag = True
-                if flag:
-                    exit()
-            else:
-                self.argparser.error("argument -r/--readsets is required!")
-
+        if self._readsets is None:
+            for readset in super().readsets:
+                if not readset.mark_name:
+                    _raise(SanitycheckError("Error: missing readset MarkName for " + readset.name))
+                elif not readset.mark_type:
+                    _raise(SanitycheckError("Error: missing readset MarkType for " + readset.name))
         return self._readsets
 
     @property
@@ -164,7 +166,7 @@ class ChipSeq(common.Illumina):
         return self._sequence_dictionary_variant
 
     def mappable_genome_size(self):
-        genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
+        genome_index = csv.reader(open(global_config_parser.param('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
         # 2nd column of genome index contains chromosome length
         # HOMER and MACS2 mappable genome size (without repetitive features) is about 80 % of total size
         return int(sum([int(chromosome[1]) for chromosome in genome_index]) * config.param('DEFAULT', 'mappable_genome_size', param_type='float', required=True))
@@ -191,7 +193,7 @@ class ChipSeq(common.Illumina):
             trim_log = trim_file_prefix + "log"
 
             # Use adapter FASTA in config file if any, else create it from readset file
-            adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
+            adapter_fasta = global_config_parser.param('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
             adapter_job = None
             if not adapter_fasta:
                 adapter_fasta = trim_file_prefix + "adapters.fa"
@@ -357,8 +359,8 @@ pandoc \\
   --variable trim_readset_table="$trim_readset_table_md" \\
   --to markdown \\
   > {report_file}""".format(
-                    trailing_min_quality=config.param('trimmomatic', 'trailing_min_quality', param_type='int'),
-                    min_length=config.param('trimmomatic', 'min_length', param_type='posint'),
+                    trailing_min_quality=global_config_parser.param('trimmomatic', 'trailing_min_quality', param_type='int'),
+                    min_length=global_config_parser.param('trimmomatic', 'min_length', param_type='posint'),
                     read_type=read_type,
                     report_template_dir=self.report_template_dir,
                     readset_merge_trim_stats=readset_merge_trim_stats,
@@ -431,11 +433,11 @@ pandoc \\
                                        "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
                                        (
                                            "\\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                                       ("\\tCN:" + config.param('mapping_bwa_mem_sambamba',
-                                                                'sequencing_center') if config.param(
+                                       ("\\tCN:" + global_config_parser.param('mapping_bwa_mem_sambamba',
+                                                                'sequencing_center') if global_config_parser.param(
                                            'mapping_bwa_mem_sambamba', 'sequencing_center', required=False) else "") + \
-                                       ("\\tPL:" + config.param('mapping_bwa_mem_sambamba',
-                                                                'sequencing_technology') if config.param(
+                                       ("\\tPL:" + global_config_parser.param('mapping_bwa_mem_sambamba',
+                                                                'sequencing_technology') if global_config_parser.param(
                                            'mapping_bwa_mem_sambamba', 'sequencing_technology',
                                            required=False) else "Illumina") + \
                                        "'",
@@ -444,21 +446,21 @@ pandoc \\
                         sambamba.view(
                             "/dev/stdin",
                             None,
-                            options=config.param('mapping_bwa_mem_sambamba', 'sambamba_view_other_options')
+                            options=global_config_parser.param('mapping_bwa_mem_sambamba', 'sambamba_view_other_options')
                         ),
                         sambamba.sort(
                             "/dev/stdin",
                             readset_bam,
-                            tmp_dir=config.param('mapping_bwa_mem_sambamba', 'tmp_dir', required=True),
-                            other_options=config.param('mapping_bwa_mem_sambamba', 'sambamba_sort_other_options',
-                                                       required=False)
+                            tmp_dir=global_config_parser.param('mapping_bwa_mem_sambamba', 'tmp_dir', required=True),
+                            other_options=global_config_parser.param('mapping_bwa_mem_sambamba', 'sambamba_sort_other_options',
+                                                                     required=False)
                         )
                     ]),
                     sambamba.index(
                         readset_bam,
                         index_bam,
-                        other_options=config.param('mapping_bwa_mem_sambamba', 'sambamba_index_other_options',
-                                                   required=False)
+                        other_options=global_config_parser.param('mapping_bwa_mem_sambamba', 'sambamba_index_other_options',
+                                                                 required=False)
                     )
                 ],
                     name="mapping_bwa_mem_sambamba." + readset.name,
@@ -467,7 +469,6 @@ pandoc \\
             )
 
         return jobs
-
 
     def sambamba_merge_bam_files(self):
         """
@@ -534,7 +535,6 @@ pandoc \\
                     )
         return jobs
 
-
     def sambamba_mark_duplicates(self):
         """
         Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
@@ -557,8 +557,8 @@ pandoc \\
                         sambamba.markdup(
                             input_bam,
                             output_bam,
-                            tmp_dir=config.param('sambamba_mark_duplicates', 'tmp_dir', required=True),
-                            other_options=config.param('sambamba_mark_duplicates', 'other_options', required=False)
+                            tmp_dir=global_config_parser.param('sambamba_mark_duplicates', 'tmp_dir', required=True),
+                            other_options=global_config_parser.param('sambamba_mark_duplicates', 'other_options', required=False)
                         )
                     ],
                         name="sambamba_mark_duplicates." + sample.name + "." + mark_name,
@@ -612,8 +612,8 @@ cp \\
                             input_bam,
                             output_bam,
                             """-t {threads} -f bam -F \"not unmapped and not failed_quality_control and mapping_quality >= {min_mapq}\"""".format(
-                                threads=config.param('sambamba_view_filter', 'threads'),
-                                min_mapq=config.param('sambamba_view_filter', 'min_mapq'))
+                                threads=global_config_parser.param('sambamba_view_filter', 'threads'),
+                                min_mapq=global_config_parser.param('sambamba_view_filter', 'min_mapq'))
                         ),
                         sambamba.index(
                             output_bam,
@@ -639,7 +639,7 @@ pandoc --to=markdown \\
   --variable min_mapq="{min_mapq}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    min_mapq=config.param('sambamba_view_filter', 'min_mapq', param_type='int'),
+                    min_mapq=global_config_parser.param('sambamba_view_filter', 'min_mapq', param_type='int'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file,
@@ -776,7 +776,7 @@ pandoc --to=markdown \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}
 """.format(
-                    sambamba=config.param('DEFAULT', 'module_sambamba'),
+                    sambamba=global_config_parser.param('DEFAULT', 'module_sambamba'),
                     metrics_dir=metrics_output_directory,
                     metrics_file=metrics_file,
                     # samples=" ".join([sample.name for sample in self.samples]),
@@ -809,8 +809,10 @@ pandoc --to=markdown \\
                                               sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
                 output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name,
                                           sample.name + "." + mark_name)
-                other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
-                genome = config.param('homer_make_tag_directory', 'genome', required=False) if config.param('homer_make_tag_directory', 'genome', required=False) else self.ucsc_genome
+                other_options = global_config_parser.param('homer_make_tag_directory', 'other_options', required=False)
+                genome = (global_config_parser.param('homer_make_tag_directory', 'genome', required=False)
+                          if global_config_parser.param('homer_make_tag_directory', 'genome', required=False)
+                          else self.ucsc_genome)
 
                 job = homer.makeTagDir(
                     output_dir,
@@ -831,11 +833,7 @@ pandoc --to=markdown \\
         Sequencing quality metrics as tag count, tag autocorrelation, sequence bias and GC bias are generated.
         """
 
-        # If --design <design_file> option is missing, self.contrasts call will raise an Exception
-        # if self.contrasts:
-        #     design_file = os.path.relpath(self.args.design.name, self.output_dir)
-
-        readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
+        readset_file = os.path.relpath(self.readsets_file.name, self.output_dir)
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.qc_metrics.md")
         output_files = [os.path.join(self.output_dirs['graphs_output_directory'],
@@ -976,7 +974,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                                mark_name, mark_type in sample.marks.items() if mark_type == "I"]
             if len(input_file_list) > 0:
                 if len(input_file_list) > 1:
-                    raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
+                    raise ValueError("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
                 input_file = [input_file_list[0]]
             for mark_name, mark_type in sample.marks.items():
                 if mark_type != "I":
@@ -1001,11 +999,11 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                         else:
                             options += " --fix-bimodal"
 
-                    options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param(
+                    options += " --shift " + global_config_parser.param('macs2_callpeak', 'shift') if global_config_parser.param(
                         'macs2_callpeak', 'shift') else ""
-                    options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param(
+                    options += " --extsize " + global_config_parser.param('macs2_callpeak', 'extsize') if global_config_parser.param(
                         'macs2_callpeak', 'extsize') else ""
-                    options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param(
+                    options += " -p " + global_config_parser.param('macs2_callpeak', 'pvalue') if global_config_parser.param(
                         'macs2_callpeak', 'pvalue') else ""
                     output = []
                     output.append(os.path.join(output_dir,
@@ -1152,11 +1150,11 @@ done""".format(
                                  sample.name + "." + mark_name + "_peaks.xls"))
                     # other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
                     options += " --nomodel --call-summits"
-                    options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param(
+                    options += " --shift " + global_config_parser.param('macs2_callpeak', 'shift') if global_config_parser.param(
                         'macs2_callpeak', 'shift') else " --shift -75 "
-                    options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param(
+                    options += " --extsize " + global_config_parser.param('macs2_callpeak', 'extsize') if global_config_parser.param(
                         'macs2_callpeak', 'extsize') else " --extsize 150 "
-                    options += " -p " + config.param('macs2_callpeak', 'pvalue') if config.param(
+                    options += " -p " + global_config_parser.param('macs2_callpeak', 'pvalue') if global_config_parser.param(
                         'macs2_callpeak', 'pvalue') else " -p 0.01 "
 
                     jobs.append(
@@ -1251,25 +1249,26 @@ done""".format(
         html report will be generated to QC samples and check how well differential binding analysis was performed.
         """
         jobs = []
-        minOverlap = config.param('differential_binding', 'minOverlap')
-        minMembers = config.param('differential_binding', 'minMembers')
-        method = config.param('differential_binding', 'method')
+        minOverlap = global_config_parser.param('differential_binding', 'minOverlap')
+        minMembers = global_config_parser.param('differential_binding', 'minMembers')
+        method = global_config_parser.param('differential_binding', 'method')
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
-        readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
+        readset_file = os.path.relpath(self.readsets_file.name, self.output_dir)
         if self.contrasts:
-            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+            design_file = os.path.relpath(self.design_file.name, self.output_dir)
         else:
             log.info("Comparison column is not defined. Skipping differential binding analysis...")
         mark_list = []
 
-        #if control samples and treatment samples are less than one diff analysis will not be executed
+        # if control samples and treatment samples are less than one diff analysis will not be executed
         for contrast in self.contrasts:
             bam_list = []
             controls_count = len(contrast.controls)
             treatments_count = len(contrast.treatments)
             if controls_count < 2 or treatments_count < 2:
                 log.info(
-                    "At leaset two treatments and  controls should be defined. Skipping differential binding analysis for "+contrast.name +" ...")
+                    "At leaset two treatments and  controls should be defined. "
+                    "Skipping differential binding analysis for "+contrast.name +" ...")
             else:
                 for control in contrast.controls:
                     control_sample_name, control_mark_name = control.split("-.-")
@@ -1364,8 +1363,10 @@ done""".format(
                         output_prefix = os.path.join(output_dir, sample.name + "." + mark_name)
                         annotation_file = output_prefix + ".annotated.csv"
 
-                        genome = config.param('homer_annotate_peaks', 'genome', required=False) if config.param('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
-                        genome_size = config.param('homer_annotate_peaks', 'genome_size', required=False) if config.param('homer_annotate_peaks', 'genome_size', required=False) else self.mappable_genome_size()
+                        genome = global_config_parser.param('homer_annotate_peaks', 'genome', required=False) \
+                            if global_config_parser.param('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
+                        genome_size = global_config_parser.param('homer_annotate_peaks', 'genome_size', required=False) \
+                            if global_config_parser.param('homer_annotate_peaks', 'genome_size', required=False) else self.mappable_genome_size()
 
                         jobs.append(
                             concat_jobs([
@@ -1396,24 +1397,23 @@ done""".format(
       {distance5d_lower},
       {distance5d_upper},
       {gene_desert_size}
-    )'""".format(
-                                        annotation_file=annotation_file,
-                                        output_prefix=output_prefix,
-                                        proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance',
-                                                                       param_type='int'),
-                                        distal_distance=config.param('homer_annotate_peaks', 'distal_distance',
-                                                                     param_type='int'),
-                                        distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower',
-                                                                      param_type='int'),
-                                        distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper',
-                                                                      param_type='int'),
-                                        gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size',
-                                                                      param_type='int')
-                                    ),
-                                    removable_files=[
-                                        os.path.join(self.output_dirs['anno_output_directory'], sample.name,
-                                                     mark_name)],
-                                )
+    )'""".format(annotation_file=annotation_file,
+                 output_prefix=output_prefix,
+                 proximal_distance=global_config_parser.param('homer_annotate_peaks', 'proximal_distance',
+                                                              param_type='int'),
+                 distal_distance=global_config_parser.param('homer_annotate_peaks', 'distal_distance',
+                                                            param_type='int'),
+                 distance5d_lower=global_config_parser.param('homer_annotate_peaks', 'distance5d_lower',
+                                                             param_type='int'),
+                 distance5d_upper=global_config_parser.param('homer_annotate_peaks', 'distance5d_upper',
+                                                             param_type='int'),
+                 gene_desert_size=global_config_parser.param('homer_annotate_peaks', 'gene_desert_size',
+                                                             param_type='int')
+                 ),
+                 removable_files=[
+                     os.path.join(self.output_dirs['anno_output_directory'], sample.name,
+                                  mark_name)],
+             )
                             ],
                                 name="homer_annotate_peaks." + sample.name + "." + mark_name)
                         )
@@ -1478,7 +1478,8 @@ done""".format(
                                                      mark_type] + "Peak")
                         output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
 
-                        genome = config.param('homer_annotate_peaks', 'genome', required=False) if config.param('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
+                        genome = global_config_parser.param('homer_annotate_peaks', 'genome', required=False) \
+                            if global_config_parser.param('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
 
                         jobs.append(
                             concat_jobs([
@@ -1487,7 +1488,7 @@ done""".format(
                                     peak_file,
                                     genome,
                                     output_dir,
-                                    config.param('homer_find_motifs_genome', 'threads', param_type='posint')
+                                    global_config_parser.param('homer_find_motifs_genome', 'threads', param_type='posint')
                                 )
                             ],
                                 name="homer_find_motifs_genome." + sample.name + "." + mark_name,
@@ -1552,11 +1553,7 @@ done""".format(
             the Location of peaks per design.
             """
 
-            # If --design <design_file> option is missing, self.contrasts call will raise an Exception
-            # if self.contrasts:
-            #     design_file = os.path.relpath(self.args.design.name, self.output_dir)
-
-            readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
+            readset_file = os.path.relpath(self.readsets_file.name, self.output_dir)
 
             input_files = []
             output_files = []
@@ -1632,11 +1629,11 @@ done""".format(
                         # samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
                         samples_associative_array=" ".join(samples_associative_array),
                         # contrasts=" ".join([contrast.real_name for contrast in self.contrasts if contrast.type == 'narrow' and contrast.treatments]),
-                        proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', param_type='int') / -1000,
-                        distal_distance=config.param('homer_annotate_peaks', 'distal_distance', param_type='int') / -1000,
-                        distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', param_type='int') / -1000,
-                        distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', param_type='int') / -1000,
-                        gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', param_type='int') / 1000,
+                        proximal_distance=global_config_parser.param('homer_annotate_peaks', 'proximal_distance', param_type='int') / -1000,
+                        distal_distance=global_config_parser.param('homer_annotate_peaks', 'distal_distance', param_type='int') / -1000,
+                        distance5d_lower=global_config_parser.param('homer_annotate_peaks', 'distance5d_lower', param_type='int') / -1000,
+                        distance5d_upper=global_config_parser.param('homer_annotate_peaks', 'distance5d_upper', param_type='int') / -1000,
+                        gene_desert_size=global_config_parser.param('homer_annotate_peaks', 'gene_desert_size', param_type='int') / 1000,
                         report_template_dir=self.report_template_dir,
                         basename_report_file=os.path.basename(report_file),
                         report_file=report_file,
@@ -1684,7 +1681,7 @@ done""".format(
     Rscript $R_TOOLS/run_spp.R -c={sample_merge_mdup_bam} -savp -out={output} -rf -tmpdir={tmp_dir}""".format(
                                     sample_merge_mdup_bam=sample_merge_mdup_bam,
                                     output=output,
-                                    tmp_dir=config.param('run_spp', 'tmp_dir')
+                                    tmp_dir=global_config_parser.param('run_spp', 'tmp_dir')
                                 )
                             )
                         ],
@@ -1752,8 +1749,7 @@ done""".format(
                         output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
                         crosscor_input = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name,
                                                       sample.name + ".crosscor")
-                        genome = config.param('IHEC_chipseq_metrics', 'assembly')
-
+                        genome = global_config_parser.param('IHEC_chipseq_metrics', 'assembly')
                         if not input_file:
                             input_name = "no_input"
                             input_bam = None
@@ -1927,7 +1923,7 @@ done""".format(
                 job = samtools.view(
                     input_bam,
                     output_cram,
-                    options=config.param('samtools_cram_output', 'options'),
+                    options=global_config_parser.param('samtools_cram_output', 'options'),
                     removable=False
                 )
                 job.name = "cram_output." + sample.name + "." + mark_name
@@ -1970,7 +1966,7 @@ done""".format(
                                 haplotype_directory,
                                 remove=True
                     )
-                    interval_padding = config.param('gatk_haplotype_caller', 'interval_padding')
+                    interval_padding = global_config_parser.param('gatk_haplotype_caller', 'interval_padding')
                     jobs.append(
                     concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
@@ -2029,9 +2025,12 @@ done""".format(
         return jobs
 
     @property
-    def steps(self):
-        return [
-            [
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+
+        return {"chipseq": [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
@@ -2055,8 +2054,8 @@ done""".format(
                 self.cram_output,
                 self.gatk_haplotype_caller,
                 self.merge_and_call_individual_gvcf #22
-            ],
-            [
+             ],
+                "atacseq": [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
@@ -2078,15 +2077,58 @@ done""".format(
                 self.multiqc_report,
                 self.cram_output,
                 self.gatk_haplotype_caller,
-                self.merge_and_call_individual_gvcf
-            ]
-        ]
+                self.merge_and_call_individual_gvcf ]
+        }
 
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if Genpipes must be ran inside a container
+    utils.container_wrapper_argparse(__file__, argv)
+    # Build help
+    epilog = ChipSeq.process_help(argv)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        conflict_handler='resolve', epilog=epilog)
+
+    # populate the parser
+    parser = ChipSeq.argparser(parser)
+
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+    # Specific pipeline options
+    protocol = parsed_args.protocol
+
+    pipeline = ChipSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                         clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                         design_file=design_file, no_json=no_json, container=container,
+                         protocol=protocol)
+
+    pipeline.submit_jobs()
 
 if __name__ == '__main__':
-
-    argv = sys.argv
-    if '--wrap' in argv:
-        utils.utils.container_wrapper_argparse(argv)
-    else:
-        ChipSeq(protocol=['chipseq', 'atacseq'])
+    main()

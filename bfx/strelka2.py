@@ -52,8 +52,9 @@ python $STRELKA2_HOME/bin/configureStrelkaSomaticWorkflow.py \\
             workflow=os.path.join(output_dir, "runWorkflow.py"),
             normal=input_normal,
             tumor=input_tumor,
-            genome=config.param('strelka2_paired_somatic','genome_fasta', param_type='filepath'),
-            experiment_type=config.param('strelka2_paired_somatic','experiment_type_option') if config.param('strelka2_paired_somatic','experiment_type_option') else "",
+            genome=global_config_parser.param('strelka2_paired_somatic', 'genome_fasta', param_type='filepath'),
+            experiment_type=global_config_parser.param('strelka2_paired_somatic', 'experiment_type_option')
+            if global_config_parser.param('strelka2_paired_somatic', 'experiment_type_option') else "",
             callRegions="\\\n  --callRegions " + callRegions if callRegions else "",
             mantaIndels="\\\n  --indelCandidates " + mantaIndels if mantaIndels else "",
             output=output_dir
@@ -85,19 +86,21 @@ python $STRELKA2_HOME/bin/configureStrelkaGermlineWorkflow.py \\
   --runDir {output}""".format(
             workflow=os.path.join(output_dir, "runWorkflow.py"),
             normal="".join(" \\\n  --bam " + input for input in input_normal),
-            genome=config.param('strelka2_paired_germline','genome_fasta', param_type='filepath'),
-            experiment_type=config.param('strelka2_paired_germline','experiment_type_option') if config.param('strelka2_paired_germline','experiment_type_option') else "",
+            genome=global_config_parser.param('strelka2_paired_germline', 'genome_fasta', param_type='filepath'),
+            experiment_type=global_config_parser.param('strelka2_paired_germline', 'experiment_type_option')
+            if global_config_parser.param('strelka2_paired_germline', 'experiment_type_option') else "",
             callRegions="\\\n  --callRegions " + callRegions if callRegions else "",
             output=output_dir
         )
     )
+
 
 def run(
     input_dir,
     output_dep=[]
     ):
 
-    ram = config.param('manta_sv', 'ram')
+    ram = global_config_parser.param('manta_sv', 'ram')
     ram_num = re.match('[0-9]+', ram)
     ram_GB = ram_num.group()
     if 'm' in ram.lower():
@@ -120,8 +123,8 @@ python {input_dir}/runWorkflow.py \\
   -g {ram} \\
   --quiet""".format(
             input_dir=input_dir,
-            mode=config.param('strelka2_paired_somatic','option_mode'),
-            nodes=config.param('strelka2_paired_somatic','option_nodes'),
+            mode=global_config_parser.param('strelka2_paired_somatic', 'option_mode'),
+            nodes=global_config_parser.param('strelka2_paired_somatic', 'option_nodes'),
             ram=ram_GB
         )
     )

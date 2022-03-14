@@ -32,7 +32,7 @@ import itertools
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config, _raise, SanitycheckError
+from core.config import global_config_parser, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 import utils.utils
 from bfx.readset import parse_illumina_readset_file
@@ -81,26 +81,25 @@ class MethylSeq(dnaseq.DnaSeqRaw):
 
     @property
     def readsets(self):
-        if not hasattr(self, "_readsets"):
-            if self.args.readsets:
-                self._readsets = parse_illumina_readset_file(self.args.readsets.name)
-                for readset in self._readsets:
-                    if readset._run == "":
-                        _raise(SanitycheckError("Error: no run was provided for readset \"" + readset.name +
-                            "\"... Run has to be provided for all the readsets in order to use this pipeline."))
-                    if readset._lane == "":
-                        _raise(SanitycheckError("Error: no lane provided for readset \"" + readset.name +
-                            "\"... Lane has to be provided for all the readsets in order to use this pipeline."))
-            else:
-                self.argparser.error("argument -r/--readsets is required!")
+        # extra check on readsets
+        for readset in super().readsets:
+            if readset._run == "":
+                _raise(SanitycheckError("Error: no run was provided for readset \"" + readset.name +
+                    "\"... Run has to be provided for all the readsets in order to use this pipeline."))
+            if readset._lane == "":
+                _raise(SanitycheckError("Error: no lane provided for readset \"" + readset.name +
+                    "\"... Lane has to be provided for all the readsets in order to use this pipeline."))
 
         return self._readsets
 
-    def __init__(self, protocol=None):
-        self._protocol=protocol
+    def __init__(self, *args, protocol=None, **kwargs):
+        if protocol is None:
+            self._protocol = 'default'
+        else:
+            self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
-        super(MethylSeq, self).__init__(protocol)
+        super(MethylSeq, self).__init__(*args, **kwargs)
+
 
     def bismark_align(self):
         """
@@ -185,7 +184,7 @@ class MethylSeq(dnaseq.DnaSeqRaw):
                     sambamba.flagstat(
                         output_bam,
                         re.sub(".bam", "_flagstat.txt", output_bam),
-                        config.param('sambamba_flagstat', 'flagstat_options')
+                        global_config_parser.param('sambamba_flagstat', 'flagstat_options')
                     )
                 ], name="sambamba_flagstat." + readset.name, samples=[readset.sample])
             )
@@ -204,8 +203,8 @@ pandoc --to=markdown \\
   --variable assembly="{assembly}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    scientific_name=config.param('bismark_align', 'scientific_name'),
-                    assembly=config.param('bismark_align', 'assembly'),
+                    scientific_name=global_config_parser.param('bismark_align', 'scientific_name'),
+                    assembly=global_config_parser.param('bismark_align', 'assembly'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file
@@ -394,7 +393,7 @@ cp \\
                 input,
                 re.sub("bam", "coverage.tsv", input),
                 coverage_bed,
-                other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
+                other_options=global_config_parser.param('bvatools_depth_of_coverage', 'other_options', required=False)
             )
             job.name = "bvatools_depth_of_coverage." + sample.name
             job.samples = [sample]
@@ -478,7 +477,7 @@ cp \\
                 samtools.view(
                     input,
                     re.sub(".bam", ".filtered_reads.counts.txt", input),
-                    "-c " + config.param('mapping_quality_filter', 'quality_threshold')
+                    "-c " + global_config_parser.param('mapping_quality_filter', 'quality_threshold')
                 )
             ])
             job.name = "mapping_quality_filter." + sample.name
@@ -913,7 +912,7 @@ pandoc \\
         jobs = []
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         if self.contrasts:
-            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+            design_file = os.path.relpath(self.design_file.name, self.output_dir)
 
         input_directory = os.path.join("methylkit", "inputs")
         input_files = []
@@ -938,8 +937,11 @@ pandoc \\
         ], name="methylkit_differential_analysis")]
 
     @property
-    def steps(self):
-        return [
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+        return  { 'default':[
             self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
@@ -957,11 +959,53 @@ pandoc \\
             self.prepare_methylkit,         # step 15
            # self.methylkit_differential_analysis,
             self.cram_output,
-        ]
+        ]}
+
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if Genpipes must be ran inside a container
+    utils.container_wrapper_argparse(__file__, argv)
+    # Build help
+    epilog = MethylSeq.process_help(argv)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        conflict_handler='resolve', epilog=epilog)
+
+    # populate the parser
+    parser = MethylSeq.argparser(parser)
+
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+    pipeline = MethylSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                         clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                         design_file=design_file, no_json=no_json, container=container)
+
+    pipeline.submit_jobs()
 
 if __name__ == '__main__':
-    argv = sys.argv
-    if '--wrap' in argv:
-        utils.utils.container_wrapper_argparse(argv)
-    else:
-        MethylSeq()
+    main()

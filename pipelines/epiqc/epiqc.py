@@ -20,6 +20,7 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
 import logging
 import os
 import sys
@@ -31,7 +32,7 @@ from operator import attrgetter
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
-from core.config import config, _raise, SanitycheckError
+from core.config import global_config_parser, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 
 from pipelines import common
@@ -73,9 +74,12 @@ class EpiQC(common.Illumina):
         https://epigenomesportal.ca/ihec/grid.html?assembly=4&build=2018-10
     """
 
-    def __init__(self, protocol=None):
-        self._protocol = protocol
-        super(EpiQC, self).__init__(protocol)
+    def __init__(self, *args, protocol=None, **kwargs):
+        if protocol is None:
+            self._protocol = 'default'
+        else:
+            self._protocol = protocol
+        super(EpiQC, self).__init__(*args, **kwargs)
 
     @property
     def output_dirs(self):
@@ -128,28 +132,18 @@ class EpiQC(common.Illumina):
 
     @property
     def readsets(self):
-        flag = False
-        if not hasattr(self, "_readsets"):
-            if self.args.readsets:
-                self._readsets = parse_illumina_readset_file(self.args.readsets.name)
-                for readset in self.readsets:
-                    if not readset.mark_name:
-                        _raise(SanitycheckError("Error: missing readset MarkName for " + readset.name))
-                        flag = True
-                    elif not readset.mark_type:
-                        _raise(SanitycheckError("Error: missing readset MarkType for " + readset.name))
-                        flag = True
-                if flag:
-                    exit()
-            else:
-                self.argparser.error("argument -r/--readsets is required!")
-
+        if self._readsets is None:
+            for readset in super().readsets:
+                if not readset.mark_name:
+                    _raise(SanitycheckError("Error: missing readset MarkName for " + readset.name))
+                elif not readset.mark_type:
+                    _raise(SanitycheckError("Error: missing readset MarkType for " + readset.name))
         return self._readsets
 
     @property
     def chromosome_file(self):
         file_name = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'],
-                                      "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
+                                      "_".join((global_config_parser.param('DEFAULT', 'scientific_name'), global_config_parser.param('DEFAULT',
                                                                                                          'assembly'),
                                                 "chrom_sizes.txt")))
         return file_name
@@ -160,19 +154,9 @@ class EpiQC(common.Illumina):
         # Therefore, It is necessary to place the readset file in the ChIP-seq output directory
         #
         #gets the complete path to the readset directory and remove the readset name from the file path
-        path = os.path.relpath(self.args.readsets.name, self.output_dir).replace(os.path.basename(self.args.readsets.name), '')
+        path = os.path.relpath(self.readsets_file.name, self.output_dir).replace(os.path.basename(self.readsets_file.name), '')
 
         return path
-
-#delete later
-    # @property
-    # def contrasts(self):
-    #     flag = False
-    #     if self.args.design:
-    #         self._contrast = parse_chipseq_design_file(self.args.design.name, self.samples)
-    #     else:
-    #         self.argparser.error("argument -d/--design is required!")
-    #     return self._contrast
 
     def parseInputInfoFile(self, inputinfofile):
         """
@@ -322,7 +306,7 @@ mkdir -p \\
         # accordingly call SVMFS or user file
 
         #ihec_inputinfofile = "/home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc_test/test_version2/inputinfofile.txt"
-        ihec_inputinfofile = os.environ[config.param('DEFAULT', 'mugqic_path')] + "/" + config.param('chromimpute',
+        ihec_inputinfofile = os.environ[global_config_parser.param('DEFAULT', 'mugqic_path')] + "/" + global_config_parser.param('chromimpute',
                                                                                                      'IHEC_inputinfo')
 
         #remove inputinfor file if exist
@@ -386,7 +370,7 @@ mkdir -p \\
     ln -s {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
             output_dir=self.output_dirs['chromimpute_output_directory'],
             user_converteddir=self.output_dirs['chromimpute_converted_directory'],
-            ihec_converteddir=config.param('chromimpute', 'IHEC_data') )
+            ihec_converteddir=global_config_parser.param('chromimpute', 'IHEC_data') )
         )
 
 
@@ -403,16 +387,16 @@ mkdir -p \\
             os.makedirs(output_dir)
         #get environment variable to generate the path of the chromosome file. different from usual ini file path.
         #check the ini file
-        chr_sizes = os.environ[config.param('DEFAULT', 'mugqic_path')]+"/"+ config.param('DEFAULT', 'chromosome_size')
-        chrs = config.param('chromimpute_preprocess', 'chromosomes')
+        chr_sizes = os.environ[global_config_parser.param('DEFAULT', 'mugqic_path')] + "/" + global_config_parser.param('DEFAULT', 'chromosome_size')
+        chrs = global_config_parser.param('chromimpute_preprocess', 'chromosomes')
         # get the chromosome from the ini file if one chr specified it gets the chromosome and split the string in the
         # ini file
         # otherwise get all chrs information from dictionary file and creates the chromosome length file
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
+            genome_dict = os.path.expandvars(global_config_parser.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
-            chrs = config.param('chromimpute_preprocess', 'chromosomes').split(",")
+            chrs = global_config_parser.param('chromimpute_preprocess', 'chromosomes').split(",")
 
         chr_sizes_file = self.chromosome_file
 
@@ -440,13 +424,13 @@ mkdir -p \\
         inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
 
         # check ini file whether user has requested specific chromosoems instead All chromosomes. Then change the input folder accordingly
-        chrs = config.param('chromimpute_preprocess', 'chromosomes')
+        chrs = global_config_parser.param('chromimpute_preprocess', 'chromosomes')
 
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
+            genome_dict = os.path.expandvars(global_config_parser.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             all_chrs = genome.chr_names_conv(genome_dict)
         else:
-            all_chrs = config.param('chromimpute_preprocess', 'chromosomes').split(",")
+            all_chrs = global_config_parser.param('chromimpute_preprocess', 'chromosomes').split(",")
 
         input_dir = self.output_dirs['bedgraph_converted_directory']
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'],
@@ -822,8 +806,8 @@ mkdir -p \\
                                   self.output_dirs['chromimpute_apply'])
         chr_sizes_file = self.chromosome_file
 
-        percent1 = config.param('chromimpute_eval', 'percent1')
-        percent2 = config.param('chromimpute_eval', 'percent2')
+        percent1 = global_config_parser.param('chromimpute_eval', 'percent1')
+        percent2 = global_config_parser.param('chromimpute_eval', 'percent2')
         output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs[
             'chromimpute_eval'])
 
@@ -919,8 +903,8 @@ python $PYTHON_TOOLS/signal_noise.py \\
 -p2 {percent2} \\
 -o {output_dir}""".format(
                                     input_file=converted_bedgraph_file,
-                                    percent1=config.param('signal_noise', 'percent1'),
-                                    percent2=config.param('signal_noise', 'percent2'),
+                                    percent1=global_config_parser.param('signal_noise', 'percent1'),
+                                    percent2=global_config_parser.param('signal_noise', 'percent2'),
                                     output_dir=output_file
                                 ))
 
@@ -1044,7 +1028,7 @@ python $PYTHON_TOOLS/signal_noise.py \\
         #check wjether filter files are specified in the ini, if so get the paths
         #paths should be specified as absolute paths
         #if not filter step will be skipped
-        skip_filter_step = config.param('epigeec', 'select') == '' and config.param('epigeec', 'exclude') == ''
+        skip_filter_step = global_config_parser.param('epigeec', 'select') == '' and global_config_parser.param('epigeec', 'exclude') == ''
 
         hdf5_files = []
 
@@ -1054,7 +1038,7 @@ python $PYTHON_TOOLS/signal_noise.py \\
                     if readset.bigwig:  # Check if the readset has a BIGWIG column != None
                         bigwig_file = readset.bigwig
                     else:  # If not, we search for the path from a chipseq pipeline
-                        prefix_path = "/".join(self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
+                        prefix_path = "/".join(self.readsets_file.name.split("/")[:-1])  # Find path to chipseq folder
                         bigwig_file = os.path.join(prefix_path, "tracks", sample.name, readset.mark_name, "bigWig",
                                                    sample.name + "." + readset.mark_name + ".bw")  # Create path to bigwig file
 
@@ -1086,7 +1070,7 @@ python $PYTHON_TOOLS/signal_noise.py \\
 
                     else:  # If not, we search for the path from a chipseq pipeline
                         prefix_path = "/".join(
-                            self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
+                            self.readsets_file.name.split("/")[:-1])  # Find path to chipseq folder
                         bigwig_file = os.path.join(prefix_path, self.chipseq_bigwig['tracks_dir'], sample.name,
                                                    readset.mark_name, self.chipseq_bigwig['bigwig_dir'],
                                                    sample.name + "." + readset.mark_name + self.chipseq_bigwig[
@@ -1236,7 +1220,7 @@ track and input signal track (in bedgraph format).
 
                     else:  # If not, we search for the path from a chipseq pipeline
                         prefix_path = "/".join(
-                            self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
+                            self.readsets_file.name.split("/")[:-1])  # Find path to chipseq folder
                         bigwig_file = os.path.join(prefix_path, self.chipseq_bigwig['tracks_dir'], sample.name,
                                                    readset.mark_name, self.chipseq_bigwig['bigwig_dir'],
                                                    sample.name + "." + readset.mark_name + self.chipseq_bigwig[
@@ -1344,8 +1328,11 @@ fi""".format(
         return jobs
 
     @property
-    def steps(self):
-        return [
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+        return { 'default': [
             self.bigwiginfo,
             self.chromimpute,
             self.signal_to_noise,
@@ -1355,7 +1342,53 @@ fi""".format(
             self.signal_to_noise_report,
             self.epigeec_report,
             self.epiqc_final_report
-        ]
+            ] }
 
-if __name__ == "__main__":
-    EpiQC()
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if Genpipes must be ran inside a container
+    utils.container_wrapper_argparse(__file__, argv)
+    # Build help
+    epilog = EpiQC.process_help(argv)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        conflict_handler='resolve', epilog=epilog)
+
+    # populate the parser
+    parser = EpiQC.argparser(parser)
+
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+
+    pipeline = EpiQC(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                         clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                         design_file=design_file, no_json=no_json, container=container)
+
+    pipeline.submit_jobs()
+
+if __name__ == '__main__':
+    main()

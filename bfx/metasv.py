@@ -53,9 +53,9 @@ run_metasv.py {options} \\
   --outdir {outdir} \\
   {isize_mean} \\
   {isize_sd}""".format(
-        options=config.param('metasv_ensemble','options'),
-        threads=config.param('metasv_ensemble','threads'),
-        genome=config.param('metasv_ensemble','genome_fasta', param_type='filepath'),
+        options=global_config_parser.param('metasv_ensemble', 'options'),
+        threads=global_config_parser.param('metasv_ensemble', 'threads'),
+        genome=global_config_parser.param('metasv_ensemble', 'genome_fasta', type='filepath'),
         lumpy=lumpy,
         manta=manta,
         wham="--wham_vcf " + wham if wham else "",

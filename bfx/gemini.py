@@ -35,7 +35,7 @@ gemini load -v {variants} \\
   {options} \\
   --tempdir {temp} \\
   {output}""".format(
-            options=config.param('gemini_annotations', 'options'),
+            options=global_config_parser.param('gemini_annotations', 'options'),
             variants=variants,
             output=gemini_output,
             temp=tmp_dir
@@ -59,7 +59,7 @@ gemini set_somatic \\
   {options} \\
   {database} > \\
   {output}""".format(
-            options=config.param('set_somatic_and_actionable_mutations', 'set_somatic'),
+            options=global_config_parser.param('set_somatic_and_actionable_mutations', 'set_somatic'),
             ped=ped,
             database=database,
             output=output,

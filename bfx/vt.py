@@ -38,7 +38,7 @@ def decompose_and_normalize_mnps(inputs, vt_output=None):
 zless {input} | sed 's/ID=AD,Number=./ID=AD,Number=R/' | vt decompose -s - | vt normalize -r {reference_sequence} - | sed -e '#0/.#0/0#' \\
         {vt_output}""".format(
         input=" \\\n  ".join(input for input in inputs),
-        reference_sequence=config.param('decompose_and_normalize_mnps', 'genome_fasta', param_type='filepath'),
+        reference_sequence=global_config_parser.param('decompose_and_normalize_mnps', 'genome_fasta', param_type='filepath'),
         vt_output="> " + vt_output if vt_output else " ",
         )
     )

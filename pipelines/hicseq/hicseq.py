@@ -20,18 +20,19 @@
 ################################################################################
 
 # Python Standard Modules
+import argparse
+import itertools
 import logging
 import os
 import re
 import sys
-import itertools
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
 # MUGQIC Modules
 from bfx import bash_cmd as bash
-from core.config import config, SanitycheckError, _raise
+from core.config import global_config_parser, SanitycheckError, _raise
 from core.job import Job, concat_jobs, pipe_jobs
 from pipelines import common
 import utils.utils
@@ -82,11 +83,21 @@ class HicSeq(common.Illumina):
     [Here](<url>) is more information about Hi-C pipeline that you may find interesting.
     """
 
-    def __init__(self, protocol='hic'):
-        self._protocol=protocol
-        self.argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate Hi-C library (default DpnII)", choices = ["DpnII", "HindIII", "NcoI", "MboI", "Arima"], required=True, default="DpnII")
-        self.argparser.add_argument("-t", "--type", help = "Hi-C experiment type (default hic)", choices = ["hic", "capture"], default="hic")
-        super(HicSeq, self).__init__(protocol)
+    def __init__(self,*args, protocol='hic', enzyme="DpnII", **kwargs):
+        self._protocol = protocol
+        self._enzyme = enzyme
+        super(HicSeq, self).__init__(*args, **kwargs)
+
+    @classmethod
+    def argparser(cls, argparser):
+        super().argparser(argparser)
+        cls._argparser.add_argument("-e", "--enzyme", help = "Restriction Enzyme used to generate "
+                                                             "Hi-C library (default DpnII)",
+                                    choices = ["DpnII", "HindIII", "NcoI", "MboI", "Arima"],
+                                    required=True, default="DpnII")
+        cls._argparser.add_argument("-t", "--type", help = "Hi-C experiment type (default hic)",
+                                    choices = ["hic", "capture"], default="hic", dest='protocol')
+        return cls._argparser
 
     @property
     def output_dirs(self):
@@ -108,7 +119,7 @@ class HicSeq(common.Illumina):
 
     @property
     def enzyme(self):
-        return self.args.enzyme
+        return self._enzyme
 
     @property
     def restriction_site(self):
@@ -126,16 +137,16 @@ class HicSeq(common.Illumina):
 
     @property
     def genome(self):
-        genome_source = config.param('DEFAULT', 'source')
+        genome_source = global_config_parser.param('DEFAULT', 'source')
         if genome_source == "UCSC":
-            genome = config.param('DEFAULT', 'assembly')
+            genome = global_config_parser.param('DEFAULT', 'assembly')
         else:
-            genome = config.param('DEFAULT', 'assembly_synonyms')
+            genome = global_config_parser.param('DEFAULT', 'assembly_synonyms')
         return genome
 
     @property
     def genome_digest(self):
-        genome_digest = os.path.expandvars(config.param('hicup_align', "genome_digest_" + self.enzyme))
+        genome_digest = os.path.expandvars(global_config_parser.param('hicup_align', "genome_digest_" + self.enzyme))
         return genome_digest
 
     def fastq_readName_Edit(self):
@@ -264,8 +275,8 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        makeDirTag_hic_other_options=config.param('homer_tag_directory', 'other_options', required=False)
-        PEflag = eval(config.param('homer_tag_directory', 'illuminaPE'))
+        makeDirTag_hic_other_options=global_config_parser.param('homer_tag_directory', 'other_options', required=False)
+        PEflag = eval(global_config_parser.param('homer_tag_directory', 'illuminaPE'))
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -293,11 +304,11 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        chrs = config.param('interaction_matrices_Chr', 'chromosomes')
-        res_chr = config.param('interaction_matrices_Chr', 'resolution_chr').split(",")
+        chrs = global_config_parser.param('interaction_matrices_Chr', 'chromosomes')
+        res_chr = global_config_parser.param('interaction_matrices_Chr', 'resolution_chr').split(",")
 
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
+            genome_dict = os.path.expandvars(global_config_parser.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = chrs.split(",")
@@ -351,13 +362,13 @@ class HicSeq(common.Illumina):
         jobs = []
 
         #Get defined chromosomes, resolution and other paramters from the config (.ini) file
-        chrs = config.param('interaction_matrices_Chr', 'chromosomes')
-        res_chr= [x.strip() for x in config.param('interaction_matrices_Chr', 'resolution_chr').split(",")]
-        bound_width = config.param('reproducibility_scores', 'boundary_width')
-        weights = config.param('reproducibility_scores', 'weights')
-        down_sampling = config.param('reproducibility_scores', 'down_sampling')
-        smooth = config.param('reproducibility_scores', 'h')
-        corr = config.param('reproducibility_scores', 'corr')
+        chrs = global_config_parser.param('interaction_matrices_Chr', 'chromosomes')
+        res_chr= [x.strip() for x in global_config_parser.param('interaction_matrices_Chr', 'resolution_chr').split(",")]
+        bound_width = global_config_parser.param('reproducibility_scores', 'boundary_width')
+        weights = global_config_parser.param('reproducibility_scores', 'weights')
+        down_sampling = global_config_parser.param('reproducibility_scores', 'down_sampling')
+        smooth = global_config_parser.param('reproducibility_scores', 'h')
+        corr = global_config_parser.param('reproducibility_scores', 'corr')
 
 
         #Get the pairwise combinations of each sample (return an object list)
@@ -366,7 +377,7 @@ class HicSeq(common.Illumina):
         #run a loop for each resolution type and for each sample pair
         #compare each chromosome in the selected sample pair
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
+            genome_dict = os.path.expandvars(global_config_parser.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = [x.strip() for x in chrs.split(",")]
@@ -477,9 +488,9 @@ class HicSeq(common.Illumina):
         jobs = []
 
         # Get defined chromosomes and resolution from the config (.ini) file
-        chrs = config.param('interaction_matrices_Chr', 'chromosomes')
-        res_chr= [x.strip() for x in config.param('interaction_matrices_Chr', 'resolution_chr').split(",")]
-        genome_fasta = config.param('DEFAULT', 'genome_fasta')
+        chrs = global_config_parser.param('interaction_matrices_Chr', 'chromosomes')
+        res_chr= [x.strip() for x in global_config_parser.param('interaction_matrices_Chr', 'resolution_chr').split(",")]
+        genome_fasta = global_config_parser.param('DEFAULT', 'genome_fasta')
         chrom_lengths = ".".join((genome_fasta, "fai"))
         output_dir = self.output_dirs['quality_score_output_directory']
         temp_dir="temp"
@@ -494,7 +505,7 @@ class HicSeq(common.Illumina):
             jobs.append(job_fend)
 
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
+            genome_dict = os.path.expandvars(global_config_parser.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = [x.strip() for x in chrs.split(",")]
@@ -535,8 +546,8 @@ class HicSeq(common.Illumina):
         #loop through each sample with same enzyme and one or many resolutions user has specified.
         #user can specify the downsampling value too. If needed the full coverage (all reads), use 0 as the downsampling value
 
-        quasr_res = config.param('quality_scores', 'resolution_chr')
-        quasr_coverage = config.param('quality_scores', 'down_sampling')
+        quasr_res = global_config_parser.param('quality_scores', 'resolution_chr')
+        quasr_coverage = global_config_parser.param('quality_scores', 'down_sampling')
 
         quasr_report_files = []
         quasr_prefix = "quasarqc_res"
@@ -582,7 +593,7 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        res_genome = config.param('interaction_matrices_genome', 'resolution_genome').split(",")
+        res_genome = global_config_parser.param('interaction_matrices_genome', 'resolution_genome').split(",")
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -617,7 +628,7 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        res = config.param('identify_compartments', 'resolution_cmpt')
+        res = global_config_parser.param('identify_compartments', 'resolution_cmpt')
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -642,11 +653,11 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        chrs = config.param('identify_TADs', 'chromosomes')
-        res_chr = config.param('identify_TADs', 'resolution_TADs').split(",")
+        chrs = global_config_parser.param('identify_TADs', 'chromosomes')
+        res_chr = global_config_parser.param('identify_TADs', 'resolution_TADs').split(",")
 
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
+            genome_dict = os.path.expandvars(global_config_parser.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = chrs.split(",")
@@ -691,11 +702,11 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        chrs = config.param('identify_TADs', 'chromosomes')
-        res = config.param('identify_TADs', 'resolution_TADs').split(",")[0]
+        chrs = global_config_parser.param('identify_TADs', 'chromosomes')
+        res = global_config_parser.param('identify_TADs', 'resolution_TADs').split(",")[0]
 
         if chrs == "All":
-            genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
+            genome_dict = os.path.expandvars(global_config_parser.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
             chrs = genome.chr_names_conv(genome_dict)
         else:
             chrs = chrs.split(",")
@@ -729,7 +740,7 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        res = config.param('identify_peaks', 'resolution_pks')
+        res = global_config_parser.param('identify_peaks', 'resolution_pks')
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -781,7 +792,7 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
-        yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
+        yamlFile = os.path.expandvars(global_config_parser.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
         input_files = [os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam") for sample in self.samples]
         job = multiqc.mutliqc_run(yamlFile, input_files)
         job.samples = self.samples
@@ -819,11 +830,11 @@ class HicSeq(common.Illumina):
         ## return 1 baitmap per enzyme/capture array combination
 
         input_rmap = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".sorted.rmap")
-        input_bait = config.param('create_baitmap_file', "baitBed")
+        input_bait = global_config_parser.param('create_baitmap_file', "baitBed")
         sorted_input_bait = re.sub("\.bed", ".sorted.bed", input_bait)
         output_file_name = re.sub("\.bed", "", os.path.basename(input_bait)) + "_" + self.enzyme + ".baitmap"
         output_file = os.path.join(self.output_dirs['chicago_input_files'], output_file_name)
-        annotation = config.param('create_baitmap_file', "annotation")
+        annotation = global_config_parser.param('create_baitmap_file', "annotation")
 
         job = concat_jobs([
             bedops.sort_bed(input_bait, sorted_input_bait),
@@ -841,10 +852,10 @@ class HicSeq(common.Illumina):
         """
 
         rmapfile = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".sorted.rmap")
-        baitmapfile = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme + ".baitmap"))
-        other_options = config.param('create_design_files', 'other_options', required = False)
+        baitmapfile = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", global_config_parser.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme + ".baitmap"))
+        other_options = global_config_parser.param('create_design_files', 'other_options', required = False)
         designDir = self.output_dirs['chicago_input_files']
-        outfilePrefix = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme))
+        outfilePrefix = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", global_config_parser.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme))
         job = chicago.makeDesignFiles(rmapfile, baitmapfile, outfilePrefix, designDir, other_options)
         job.samples = self.samples
 
@@ -857,8 +868,8 @@ class HicSeq(common.Illumina):
 
         jobs = []
         rmapfile = os.path.join(self.output_dirs['chicago_input_files'], self.enzyme + ".sorted.rmap")
-        baitmapfile = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme + ".baitmap"))
-        other_options = config.param('create_input_files', 'other_options', required = False)
+        baitmapfile = os.path.join(self.output_dirs['chicago_input_files'], os.path.basename(re.sub("\.bed$", "", global_config_parser.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme + ".baitmap"))
+        other_options = global_config_parser.param('create_input_files', 'other_options', required = False)
 
         for sample in self.samples:
             name = os.path.join(self.output_dirs['chicago_input_files'], sample.name)
@@ -879,9 +890,9 @@ class HicSeq(common.Illumina):
         jobs = []
         design_dir = self.output_dirs['chicago_input_files']
         output_dir = self.output_dirs['chicago_output_directory']
-        design_file_prefix = os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed"))
+        design_file_prefix = os.path.basename(re.sub("\.bed$", "", global_config_parser.param('create_baitmap_file', "baitBed"))
                                               + "_" + self.enzyme)
-        other_options = config.param('runChicago', 'other_options', required=False)
+        other_options = global_config_parser.param('runChicago', 'other_options', required=False)
 
         for sample in self.samples:
             job = chicago.runChicago(design_dir, sample.name, output_dir, design_file_prefix, other_options)
@@ -900,9 +911,9 @@ class HicSeq(common.Illumina):
         jobs = []
         design_dir = self.output_dirs['chicago_input_files']
         output_dir = self.output_dirs['chicago_output_directory']
-        design_file_prefix = os.path.basename(re.sub("\.bed$", "", config.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme)
-        other_options = config.param('runChicago_featureOverlap', 'other_options', required = False)
-        features_file = config.param('runChicago_featureOverlap', 'features_file', required = True)
+        design_file_prefix = os.path.basename(re.sub("\.bed$", "", global_config_parser.param('create_baitmap_file', "baitBed")) + "_" + self.enzyme)
+        other_options = global_config_parser.param('runChicago_featureOverlap', 'other_options', required = False)
+        features_file = global_config_parser.param('runChicago_featureOverlap', 'features_file', required = True)
 
         if features_file != "None":
             for sample in self.samples:
@@ -922,8 +933,8 @@ class HicSeq(common.Illumina):
         jobs = []
         chicago_output_dir = self.output_dirs['chicago_output_directory']
         intersect_output_dir = self.output_dirs['intersect_ouput_directory']
-        other_options = config.param('bait_intersect', 'other_options', required = False)
-        features_file = config.param('bait_intersect', 'features_file', required = True)
+        other_options = global_config_parser.param('bait_intersect', 'other_options', required = False)
+        features_file = global_config_parser.param('bait_intersect', 'features_file', required = True)
 
         sorted_features_file = os.path.splitext(features_file)[0] + ".sorted.bed"
         output_dir = os.path.join(chicago_output_dir, intersect_output_dir)
@@ -977,8 +988,8 @@ class HicSeq(common.Illumina):
         jobs = []
         chicago_output_dir = self.output_dirs['chicago_output_directory']
         intersect_output_dir = self.output_dirs['intersect_ouput_directory']
-        other_options = config.param('capture_intersect', 'other_options', required = False)
-        features_file = config.param('capture_intersect', 'features_file', required = True)
+        other_options = global_config_parser.param('capture_intersect', 'other_options', required = False)
+        features_file = global_config_parser.param('capture_intersect', 'features_file', required = True)
 
         sorted_features_file = os.path.splitext(features_file)[0] + ".sorted.bed"
         output_dir = os.path.join(chicago_output_dir, intersect_output_dir)
@@ -1020,8 +1031,11 @@ class HicSeq(common.Illumina):
         return jobs
 
     @property
-    def steps(self):
-        return [
+    def step_list(self):
+        return self.protocols()[self._protocol]
+
+    def protocols(self):
+        return { 'hic':
             [self.samtools_bam_sort,
             self.picard_sam_to_fastq,
             self.trimmomatic,
@@ -1041,7 +1055,7 @@ class HicSeq(common.Illumina):
             self.quality_scores,
             self.cram_output,
             self.multiqc_report
-            ],
+            ], 'capture':
             [self.samtools_bam_sort,
             self.picard_sam_to_fastq,
             self.trimmomatic,
@@ -1061,11 +1075,57 @@ class HicSeq(common.Illumina):
             self.multiqc_report,
             self.cram_output
             ]
-        ]
+            }
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Check if Genpipes must be ran inside a container
+    utils.container_wrapper_argparse(__file__, argv)
+    # Build help
+    epilog = HicSeq.process_help(argv)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        conflict_handler='resolve', epilog=epilog)
+
+    # populate the parser
+    parser = HicSeq.argparser(parser)
+
+    parsed_args = parser.parse_args(argv)
+
+    sanity_check = parsed_args.sanity_check
+    loglevel = parsed_args.log
+    utils.set_logger(loglevel, sanity_check=sanity_check)
+
+    # Pipeline config
+    config_files = parsed_args.config
+
+    # Common Pipeline options
+    genpipes_file = parsed_args.genpipes_file
+    container = parsed_args.container
+    clean = parsed_args.clean
+    report = parsed_args.report
+    no_json = parsed_args.no_json
+    force = parsed_args.force
+    job_scheduler = parsed_args.job_scheduler
+    output_dir = parsed_args.output_dir
+    steps = parsed_args.steps
+    readset_file = parsed_args.readsets_file
+    design_file = parsed_args.design_file
+
+    # Specific pipeline options
+    protocol = parsed_args.protocol
+    enzyme = parsed_args.enzyme
+
+    pipeline = HicSeq(config_files, genpipes_file=genpipes_file, steps=steps, readsets_file=readset_file,
+                         clean=clean, report=report, force=force, job_scheduler=job_scheduler, output_dir=output_dir,
+                         design_file=design_file, no_json=no_json, container=container,
+                         protocol=protocol, enzyme=enzyme)
+
+    pipeline.submit_jobs()
 
 if __name__ == '__main__':
-    argv = sys.argv
-    if '--wrap' in argv:
-        utils.utils.container_wrapper_argparse(argv)
-    else:
-        HicSeq(protocol=['hic','capture'])
+    main()

@@ -25,7 +25,7 @@ from core.config import *
 from core.job import *
 
 def mem(in1fastq, in2fastq=None, out_sam=None, read_group=None, ref=None, ini_section='bwa_kit'):
-	other_options = config.param(ini_section, 'other_options', required=False)
+	other_options = global_config_parser.param(ini_section, 'other_options', required=False)
 	out_bam = out_sam + ".aln.bam"
  
 	return Job(
@@ -40,7 +40,7 @@ bash <(run-bwamem {other_options}{read_group} \\
   {in1fastq}{in2fastq}{out_bam})""".format(
         other_options=" \\\n  " + other_options if other_options else "",
         read_group=" \\\n  -R " + read_group if read_group else "",
-        idxbase=ref if ref else config.param(ini_section, 'genome_bwa_index', param_type='filepath'),
+        idxbase=ref if ref else global_config_parser.param(ini_section, 'genome_bwa_index', param_type='filepath'),
         in1fastq=in1fastq,
         in2fastq=" \\\n  " + in2fastq if in2fastq else "",
         out_bam=" \\\n  -o " + out_bam if out_bam else ""
@@ -59,7 +59,7 @@ def bwa_postalt(input, output):
 $BWAKIT_PATH/k8 $BWAKIT_PATH/bwa-postalt.js {alt} \\
 	{input} \\
 	{output}""".format(
-		alt=config.param('bwa_kit', 'genome_bwa_alt_index', param_type='filepath'),
+		alt=global_config_parser.param('bwa_kit', 'genome_bwa_alt_index', param_type='filepath'),
 		input=input if input else "",
 		output=output if output else ""
 		),

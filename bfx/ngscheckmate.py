@@ -40,8 +40,8 @@ python $CHECKMATE_PATH/ncm.py {options} \\
     -bed {bed} \\
     -l {input} \\
     -O {output}""".format(
-            options=config.param('run_checkmate', 'options'),
-	        bed=config.param('run_checkmate','bed', param_type='filepath'),
+            options=global_config_parser.param('run_checkmate', 'options'),
+	        bed=global_config_parser.param('run_checkmate', 'bed', param_type='filepath'),
 	        input=input,
 	        output=output_dir,
         )

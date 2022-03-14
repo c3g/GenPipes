@@ -26,7 +26,7 @@ from core.job import *
 
 def stringtie(input_bam, output_directory, gtf=None, abund=False):
     ## Get param from config file
-    stranded = config.param('stringtie','strand_info')
+    stranded = global_config_parser.param('stringtie', 'strand_info')
 
     ## Check library type for strand information
     if stranded.lower() == "fr-firststrand":
@@ -57,12 +57,12 @@ stringtie -v {other_options} {strd_cmd} {gtf} {abund_cmd} \\
   -o {outgtf} \\
   {input_bam}""".format(
       output_directory=output_directory,
-      other_options=config.param('stringtie', 'other_options', required=False),
+      other_options=global_config_parser.param('stringtie', 'other_options', required=False),
       strd_cmd="\\\n  " + strd_cmd if strd_cmd else " ",
       gtf="\\\n  -G " + gtf if gtf else " ",
       abund_cmd="\\\n  -eB -A " + os.path.join(output_directory, "abundance.tab") if abund else " ",
-      num_threads=config.param('stringtie', 'threads', param_type='posint'),
-      min_length=config.param('stringtie', 'min_length', param_type='posint'),
+      num_threads=global_config_parser.param('stringtie', 'threads', param_type='posint'),
+      min_length=global_config_parser.param('stringtie', 'min_length', param_type='posint'),
       outgtf=os.path.join(output_directory, "transcripts.gtf"), 
       input_bam=input_bam
         )
@@ -80,7 +80,7 @@ stringtie --merge {other_options}{gtf} \\
   -o {outfile} \\
   {gtf_list}""".format(
       output_directory=os.path.dirname(output_prefix),
-      other_options=config.param('stringtie_merge','other_options', required=False),
+      other_options=global_config_parser.param('stringtie_merge', 'other_options', required=False),
       gtf="\\\n -G " + gtf if gtf else "", 
       outfile=os.path.join(output_prefix, "merged.gtf"), 
       gtf_list=gtf_list

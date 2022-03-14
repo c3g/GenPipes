@@ -44,7 +44,7 @@ def lumpyexpress_pair(normal_bam, tumor_bam, output_vcf, spl_normal=[], spl_tumo
         -S {splitter_tumor}{splitter_normal} \\
         -D {discordant_tumor}{discordant_normal} \\
         -K $LUMPY_SCRIPTS/lumpyexpress.config""".format(
-            options=config.param('lumpy_paired_sv_calls','options') if config.param('lumpy_paired_sv_calls','options') else "",
+            options=global_config_parser.param('lumpy_paired_sv_calls', 'options') if global_config_parser.param('lumpy_paired_sv_calls', 'options') else "",
             tumor_bam=tumor_bam + "," if tumor_bam else "",
             normal_bam=normal_bam,
             output_vcf=output_vcf,

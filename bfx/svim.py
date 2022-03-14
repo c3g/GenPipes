@@ -32,9 +32,9 @@ def svim_ont(input_bam, output_directory):
     :return: a job for nanopore SV calling with SVIM
     """
 
-    genome_fasta = config.param('DEFAULT', 'genome_fasta', required=True)
+    genome_fasta = global_config_parser.param('DEFAULT', 'genome_fasta', required=True)
 
-    min_mapq = config.param('svim', 'min_map_qual')
+    min_mapq = global_config_parser.param('svim', 'min_map_qual')
 
     return Job(
         [input_bam],
@@ -46,7 +46,7 @@ svim alignment --min_mapq {min_mapq} {other_options} {output_directory} {input_b
         """.format(
             output_directory=output_directory,
             min_mapq=min_mapq,
-            other_options=config.param('svim', 'other_options', required=False),
+            other_options=global_config_parser.param('svim', 'other_options', required=False),
             input_bam=input_bam,
             genome_fasta=genome_fasta
         )

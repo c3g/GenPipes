@@ -32,7 +32,7 @@ def pycoqc(readset_name, input_summary, output_directory, input_barcode=None, in
     :return: a job for nanopore QC using pycoQC
     """
 
-    min_qual = config.param('pycoqc', 'min_pass_qual')
+    min_qual = global_config_parser.param('pycoqc', 'min_pass_qual')
 
     out_html = os.path.join(output_directory, readset_name + ".html")
     out_json = os.path.join(output_directory, readset_name + ".json")
@@ -50,7 +50,7 @@ pycoQC --verbose {other_options} --summary_file {input_summary}{input_barcode}{i
     --json_outfile {out_json}
         """.format(
             output_directory=output_directory,
-            other_options=config.param('pycoqc', 'other_options', required=False),
+            other_options=global_config_parser.param('pycoqc', 'other_options', required=False),
             input_summary=input_summary,
             input_barcode=" --barcode_file " + input_barcode if input_barcode else "",
             input_bam=" --bam_file " + input_bam if input_bam else "",

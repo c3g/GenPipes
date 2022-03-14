@@ -58,12 +58,12 @@ cnvkit.py batch {options} \\
   --output-dir {outdir} \\
   --normal {normal_bam} \\
   {tumor_bam}""".format(
-        options=config.param('cnvkit_batch','batch_options'),
-        threads=config.param('cnvkit_batch','threads'),
-        genome=config.param('cnvkit_batch','genome_fasta', param_type='filepath'),
-        access=config.param('cnvkit_batch','access', param_type='filepath'),
-        annotate=config.param('cnvkit_batch','refFlat', param_type='filepath'),
-        reference="--reference " + reference if reference else "",            
+        options=global_config_parser.param('cnvkit_batch', 'batch_options'),
+        threads=global_config_parser.param('cnvkit_batch', 'threads'),
+        genome=global_config_parser.param('cnvkit_batch', 'genome_fasta', param_type='filepath'),
+        access=global_config_parser.param('cnvkit_batch', 'access', param_type='filepath'),
+        annotate=global_config_parser.param('cnvkit_batch', 'refFlat', param_type='filepath'),
+        reference="--reference " + reference if reference else "",
         target_bed="--targets " + target_bed if target_bed else "",
         output_cnn="--output-reference " + output_cnn if output_cnn else "",
         outdir=outdir,
@@ -87,7 +87,7 @@ cnvkit.py fix {options} \\
   {reference} \\
   {ref_cnn} \\
   -o {output_cnr}""".format(
-        options=config.param('cnvkit_batch','fix_options'),
+        options=global_config_parser.param('cnvkit_batch', 'fix_options'),
         target_cov=target_cov,
         antitarget_cov=antitarget_cov,
         reference=reference if reference else "",
@@ -108,7 +108,7 @@ def segment(input_cnr, output_cns, vcf=None, sample_id=None, normal_id=None):
 cnvkit.py segment {options} \\
   {input_cnr} {vcf} {sample_id} \\
   -o {output_cns}""".format(
-        options=config.param('cnvkit_batch','segment_options'),
+        options=global_config_parser.param('cnvkit_batch', 'segment_options'),
         input_cnr=input_cnr,
         output_cns=output_cns,
         vcf="--vcf " + vcf if vcf else "",
@@ -129,7 +129,7 @@ def call(input_cns, output_cns):
 cnvkit.py call {options} \\
   {input_cns} \\
   -o {output_cns}""".format(
-        options=config.param('cnvkit_batch','call_options'),
+        options=global_config_parser.param('cnvkit_batch', 'call_options'),
         input_cns=input_cns,
         output_cns=output_cns,
         )
@@ -147,7 +147,7 @@ cnvkit.py export {options} \\
   {sample_id} \\
   {output} \\
   {tumor_cns}""".format(
-        options=config.param('cnvkit_batch','export_options'),
+        options=global_config_parser.param('cnvkit_batch', 'export_options'),
         sample_id="-i " + '"' + sample_id + '"' if sample_id else "",
         output="-o " + output if output else "" ,
         tumor_cns=tumor_cns,
@@ -167,7 +167,7 @@ cnvkit.py metrics {options} \\
   {input_cnr} \\
   -s {input_cns} \\
   -o {output}""".format(
-        options=config.param('cnvkit_batch','metrics_options'),
+        options=global_config_parser.param('cnvkit_batch', 'metrics_options'),
         input_cnr=input_cnr,
         input_cns=input_cns,
         output=output,
@@ -187,7 +187,7 @@ cnvkit.py segmetrics {options} \\
   {input_cnr} \\
   -s {input_cns} \\
   -o {output}""".format(
-        options=config.param('cnvkit_batch','segmetrics_options'),
+        options=global_config_parser.param('cnvkit_batch', 'segmetrics_options'),
         input_cnr=input_cnr,
         input_cns=input_cns,
         output=output,
@@ -208,7 +208,7 @@ def select_background(input_cnr, input_cns, output):
 	  {input_cnr} \\
 	  -s {input_cns} \\
 	  -o {output}""".format(
-            options=config.param('cnvkit_batch', 'metrics_options'),
+            options=global_config_parser.param('cnvkit_batch', 'metrics_options'),
             input_cnr=input_cnr,
             input_cns=input_cns,
             output=output,
@@ -235,7 +235,7 @@ cnvkit.py scatter {options} \\
   {input_cnr} \\
   -s {input_cns} \\
   -o {output} {vcf} {tumor} {normal}""".format(
-        options=config.param('cnvkit_batch','scatter_options'),
+        options=global_config_parser.param('cnvkit_batch', 'scatter_options'),
         input_cnr=input_cnr,
         input_cns=input_cns,
         output=output,
@@ -258,7 +258,7 @@ cnvkit.py diagram {options} \\
   {input_cnr} \\
   -s {input_cns} \\
   -o {output}""".format(
-        options=config.param('cnvkit_batch','diagram_options'),
+        options=global_config_parser.param('cnvkit_batch', 'diagram_options'),
         input_cnr=input_cnr,
         input_cns=input_cns,
         output=output,

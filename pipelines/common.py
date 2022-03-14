@@ -33,11 +33,11 @@ import collections
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
 
 # MUGQIC Modules
-from core.config import config, _raise, SanitycheckError
+from core.config import global_config_parser, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 from core.pipeline import Pipeline
 from bfx.design import parse_design_file
-from bfx.readset import parse_illumina_readset_file
+from bfx.readset import parse_illumina_readset_file, parse_nanopore_readset_file
 from bfx.sample_tumor_pairs import *
 
 from bfx import metrics
@@ -56,22 +56,53 @@ log = logging.getLogger(__name__)
 # Abstract pipeline gathering common features of all MUGQIC pipelines (readsets, samples, remote log, etc.)
 class MUGQICPipeline(Pipeline):
 
-    def __init__(self, protocol):
-        self.version = open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r').read().split('\n')[0]
-        self._protocol = protocol
+    def __init__(self, *args, readsets_file=None, design_file=None, **kwargs):
         # Add pipeline specific arguments
-        self.argparser.description = "Version: " + self.version + "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/"
-        self.argparser.add_argument("-v", "--version", action="version", version="genpipes " + self.version, help="show the version information and exit")
+        self._readsets = None
+        self._contrasts = None
+        self._readsets_file = readsets_file
+        self._design_file = design_file
+        self._samples = None
+        super(MUGQICPipeline, self).__init__(*args, **kwargs)
 
-        super(MUGQICPipeline, self).__init__()
+    @classmethod
+    def argparser(cls, argparser):
+        super().argparser(argparser)
+        cls._argparser.add_argument("-r", "--readsets", dest="readsets_file",
+                                    help="readset file", type=argparse.FileType('r'), required=True)
+        cls._argparser.add_argument("-d", "--design", dest="design_file", help="design file",
+                                    type=argparse.FileType('r'))
+
+        cls._argparser.description = "Version: " + cls.genpipes_version() + \
+                                     "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/"
+        cls._argparser.add_argument("-v", "--version", action="version",
+                                    version="genpipes " + cls.genpipes_version(), help="show the version information and exit")
+        return cls._argparser
+
+    @property
+    def contrasts(self):
+        if getattr(self, "_contrasts") is None:
+                self._contrasts = parse_design_file(self.design_file, self.samples)
+        return self._contrasts
+
+    @property
+    def design_file(self):
+        if self._design_file is None:
+            raise MissingInputError("Design file is required for this pipeline/protocol"
+                                    "look at help for details")
+        return self._design_file
 
     @property
     def readsets(self):
-        return self._readsets
+        raise NotImplementedError
+
+    @property
+    def readsets_file(self):
+        return self._readsets_file
 
     @property
     def samples(self):
-        if not hasattr(self, "_samples"):
+        if self._samples is None:
             self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
         return self._samples
 
@@ -82,9 +113,9 @@ class MUGQICPipeline(Pipeline):
         listName = {}
         for readset in self.readsets:
             if readset.sample.name in listName:
-                listName[readset.sample.name]+="."+readset.name
+                listName[readset.sample.name] +="."+readset.name
             else:
-                listName[readset.sample.name]=readset.sample.name+"."+readset.name
+                listName[readset.sample.name] = readset.sample.name+"."+readset.name
 
         # The unique identifier is computed from:
         # - Pipeline name
@@ -104,11 +135,11 @@ class MUGQICPipeline(Pipeline):
             "hostname=" + hostName,
             "ip=" + serverIP,
             "pipeline=" + pipelineName,
-            "steps=" + ",".join([step.name for step in self.step_range]),
+            "steps=" + ",".join([step.name for step in self.step_to_execute]),
             "samples=" + str(len(self.samples))
         ])
         # that is crazy, to have to rely on the bash interface/arguments that deep in the code.
-        self.args.genpipes_file.write("""
+        self.job_scheduler.write("""
 {separator_line}
 # Call home with pipeline statistics
 {separator_line}
@@ -119,33 +150,39 @@ wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${
 
     def submit_jobs(self):
         super(MUGQICPipeline, self).submit_jobs()
-        if self.jobs and self.args.job_scheduler in ["pbs", "batch", "slurm"]:
+        if self.jobs and self.job_scheduler.name.lower() in ["pbs", "batch", "slurm"]:
             self.mugqic_log()
+
+
+
+
+# Abstract pipeline gathering common features of all Illumina sequencing pipelines (trimming, etc.)
+# Specific steps must be defined in Illumina children pipelines.
+class Nanopore(MUGQICPipeline):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @property
+    def readsets(self):
+        if getattr(self, "_readsets") is None:
+            self._readsets = parse_nanopore_readset_file(self.readsets_file)
+        return self._readsets
 
 
 # Abstract pipeline gathering common features of all Illumina sequencing pipelines (trimming, etc.)
 # Specific steps must be defined in Illumina children pipelines.
 class Illumina(MUGQICPipeline):
 
-    def __init__(self, protocol):
-        self._protocol=protocol
-        self.argparser.add_argument("-r", "--readsets", help="readset file", type=argparse.FileType('r'))
-        super(Illumina, self).__init__(protocol)
+    def __init__(self, *args, **kwargs):
+        super(Illumina, self).__init__(*args, **kwargs)
 
     @property
     def readsets(self):
-        if not hasattr(self, "_readsets"):
-            if self.args.readsets:
-                self._readsets = parse_illumina_readset_file(self.args.readsets.name)
-            else:
-                self.argparser.error("argument -r/--readsets is required!")
+        if getattr(self, "_readsets") is None:
+            self._readsets = parse_illumina_readset_file(self.readsets_file)
         return self._readsets
 
-    @property
-    def samples(self):
-        if not hasattr(self, "_samples"):
-            self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
-        return self._samples
 
     @property
     def run_type(self):
@@ -153,17 +190,10 @@ class Illumina(MUGQICPipeline):
         if len(set(run_types)) == 1 and re.search("^(PAIRED|SINGLE)_END$", run_types[0]):
             return run_types[0]
         else:
-            _raise(SanitycheckError("Error: readset run types " + ",".join(["\"" + run_type + "\"" for run_type in run_types]) +
+            _raise(SanitycheckError("Error: readset run types " + ","
+                                    .join(["\"" + run_type + "\"" for run_type in run_types]) +
             " are invalid (should be all PAIRED_END or all SINGLE_END)!"))
 
-    @property
-    def contrasts(self):
-        if not hasattr(self, "_contrasts"):
-            if self.args.design:
-                self._contrasts = parse_design_file(self.args.design.name, self.samples)
-            else:
-                self.argparser.error("argument -d/--design is required for contrast")
-        return self._contrasts
 
     def samtools_bam_sort(self):
         """
@@ -213,7 +243,6 @@ class Illumina(MUGQICPipeline):
         """
         jobs = []
         analyses_dir = os.path.join("analyses")
-
         for readset in self.readsets:
             # If readset FASTQ files are available, skip this step
             sym_link_job = []
@@ -283,7 +312,7 @@ class Illumina(MUGQICPipeline):
             trim_log = trim_file_prefix + "log"
 
             # Use adapter FASTA in config file if any, else create it from readset file
-            adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
+            adapter_fasta = global_config_parser.param('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
             adapter_job = None
             if not adapter_fasta:
                 adapter_fasta = trim_file_prefix + "adapters.fa"
@@ -430,8 +459,8 @@ pandoc \\
   --variable trim_readset_table="$trim_readset_table_md" \\
   --to markdown \\
   > {report_file}""".format(
-                    trailing_min_quality=config.param('trimmomatic', 'trailing_min_quality', param_type='int'),
-                    min_length=config.param('trimmomatic', 'min_length', param_type='posint'),
+                    trailing_min_quality=global_config_parser.param('trimmomatic', 'trailing_min_quality', param_type='int'),
+                    min_length=global_config_parser.param('trimmomatic', 'min_length', param_type='posint'),
                     read_type=read_type,
                     report_template_dir=self.report_template_dir,
                     readset_merge_trim_stats=readset_merge_trim_stats,
@@ -452,9 +481,9 @@ pandoc \\
         """
 
         # Known variants file
-        population_AF = config.param('verify_bam_id', 'population_AF', required=False)
-        candidate_input_files = [[config.param('verify_bam_id', 'verifyBamID_variants_file', required=False)]]
-        candidate_input_files.append([config.param('verify_bam_id', 'verifyBamID_variants_file', required=False) + ".gz"])
+        population_AF = global_config_parser.param('verify_bam_id', 'population_AF', required=False)
+        candidate_input_files = [[global_config_parser.param('verify_bam_id', 'verifyBamID_variants_file', required=False)]]
+        candidate_input_files.append([global_config_parser.param('verify_bam_id', 'verifyBamID_variants_file', required=False) + ".gz"])
         [known_variants_annotated] = self.select_input_files(candidate_input_files)
         verify_bam_id_directory = "verify_bam_id"
         variants_directory = "variants"
@@ -551,7 +580,7 @@ pandoc \\
                 job = samtools.view(
                     input_bam,
                     output_cram,
-                    options=config.param('samtools_cram_output', 'options'),
+                    options=global_config_parser.param('samtools_cram_output', 'options'),
                     removable=False
                 )
 
@@ -562,3 +591,14 @@ pandoc \\
             jobs.append(job)
 
         return jobs
+
+
+class Error(Exception):
+    """
+    base error for common pipelines class
+    """
+    pass
+
+
+class MissingInputError(Error):
+    pass

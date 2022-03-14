@@ -36,10 +36,10 @@ def compute_tdf(input, output):
   {input} \\
   {output} \\
   {genome}""".format(
-        ram=config.param('igvtools_compute_tdf', 'ram'),
-        option=config.param('igvtools_compute_tdf', 'option'),
+        ram=global_config_parser.param('igvtools_compute_tdf', 'ram'),
+        option=global_config_parser.param('igvtools_compute_tdf', 'option'),
         input=input,
         output=output,
-        genome=config.param('compute_tdf', 'igv_genome', param_type='filepath')
+        genome=global_config_parser.param('compute_tdf', 'igv_genome', param_type='filepath')
         )
     )

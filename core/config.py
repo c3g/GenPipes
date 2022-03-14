@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-
 # Python Standard Modules
 import configparser 
 import glob
@@ -176,12 +175,13 @@ class Error(Exception):
 class SanitycheckError(Error):
     pass
 
+
 def _raise(error_obj):
-    if config.sanity:
+    if Config.sanity:
         if isinstance(error_obj, SanitycheckError):
             log.error(error_obj)
     else:
         raise error_obj
 
 # Global config object used throughout the whole pipeline
-config = Config()
+global_config_parser = Config()

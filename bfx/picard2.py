@@ -21,14 +21,14 @@
 import re
 
 # MUGQIC Modules
-from core.config import config
+from core.config import global_config_parser
 from core.job import Job
 from . import picard
 from . import gatk4
 
 def build_bam_index(input, output):
 
-    if config.param('build_bam_index', 'module_picard').split("/")[2] < "2":
+    if global_config_parser.param('build_bam_index', 'module_picard').split("/")[2] < "2":
         return picard.build_bam_index(input, output)
     else:
         return Job(
@@ -43,9 +43,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  VALIDATION_STRINGENCY=SILENT \\
  INPUT={input} \\
  OUTPUT={output} """.format(
-            tmp_dir=config.param('build_bam_index', 'tmp_dir'),
-            java_other_options=config.param('build_bam_index', 'java_other_options'),
-            ram=config.param('build_bam_index', 'ram'),
+            tmp_dir=global_config_parser.param('build_bam_index', 'tmp_dir'),
+            java_other_options=global_config_parser.param('build_bam_index', 'java_other_options'),
+            ram=global_config_parser.param('build_bam_index', 'ram'),
             input=input,
             output=output,
             )
@@ -54,9 +54,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 def calculate_hs_metrics(input, output, intervals, reference_sequence=None):
 
     baits_intervals = ""
-    baits_intervals = config.param('picard_calculate_hs_metrics', 'baits_intervals', required = False)
+    baits_intervals = global_config_parser.param('picard_calculate_hs_metrics', 'baits_intervals', required = False)
 
-    if config.param('picard_calculate_hs_metrics', 'module_picard').split("/")[2] < "2":
+    if global_config_parser.param('picard_calculate_hs_metrics', 'module_picard').split("/")[2] < "2":
         return picard.calculate_hs_metrics(input, output, intervals, reference_sequence)
     else:
         return Job(
@@ -74,14 +74,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  BAIT_INTERVALS={baits} \\
  TARGET_INTERVALS={intervals} \\
  REFERENCE_SEQUENCE={reference_sequence}""".format(
-            tmp_dir=config.param('picard_calculate_hs_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_calculate_hs_metrics', 'java_other_options'),
-            ram=config.param('picard_calculate_hs_metrics', 'ram'),
+            tmp_dir=global_config_parser.param('picard_calculate_hs_metrics', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_calculate_hs_metrics', 'java_other_options'),
+            ram=global_config_parser.param('picard_calculate_hs_metrics', 'ram'),
             input=input,
             output=output,
             intervals=intervals,
             baits=baits_intervals if baits_intervals != "" else intervals,
-            reference_sequence=reference_sequence if reference_sequence else config.param('picard_calculate_hs_metrics', 'genome_fasta', param_type='filepath')
+            reference_sequence=reference_sequence if reference_sequence else global_config_parser.param('picard_calculate_hs_metrics', 'genome_fasta', param_type='filepath')
             )
         )
 
@@ -108,7 +108,7 @@ def collect_multiple_metrics(input, output, reference_sequence=None, library_typ
          output + ".quality_distribution.pdf"
         ]
 
-    if config.param('picard_collect_multiple_metrics', 'module_picard').split("/")[2] < "2":
+    if global_config_parser.param('picard_collect_multiple_metrics', 'module_picard').split("/")[2] < "2":
         return picard.collect_multiple_metrics(input, output, reference_sequence, library_type)
     
     else:
@@ -129,13 +129,13 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  INPUT={input} \\
  OUTPUT={output} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_collect_multiple_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_multiple_metrics', 'java_other_options'),
-            ram=config.param('picard_collect_multiple_metrics', 'ram'),
-            reference_sequence=reference_sequence if reference_sequence else config.param('picard_collect_multiple_metrics', 'genome_fasta', param_type='filepath'),
+            tmp_dir=global_config_parser.param('picard_collect_multiple_metrics', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_collect_multiple_metrics', 'java_other_options'),
+            ram=global_config_parser.param('picard_collect_multiple_metrics', 'ram'),
+            reference_sequence=reference_sequence if reference_sequence else global_config_parser.param('picard_collect_multiple_metrics', 'genome_fasta', param_type='filepath'),
             input=input,
             output=output,
-            max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
+            max_records_in_ram=global_config_parser.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
             )
         )
 def collect_sequencing_artifacts_metrics(input, output, annotation_flat=None,reference_sequence=None):
@@ -157,14 +157,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  OUTPUT={output} \\
  REFERENCE_SEQUENCE={reference} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            options=config.param('picard_collect_sequencing_artifacts_metrics', 'options'),
-            tmp_dir=config.param('picard_collect_sequencing_artifacts_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_sequencing_artifacts_metrics', 'java_other_options'),
-            ram=config.param('picard_collect_sequencing_artifacts_metrics', 'ram'),
+            options=global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'options'),
+            tmp_dir=global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'java_other_options'),
+            ram=global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'ram'),
             input=input,
             output=output,
-            reference=reference_sequence if reference_sequence else config.param('picard_collect_sequencing_artifacts_metrics', 'genome_fasta'),
-            max_records_in_ram=config.param('picard_collect_sequencing_artifacts_metrics', 'max_records_in_ram', param_type='int')
+            reference=reference_sequence if reference_sequence else global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'genome_fasta'),
+            max_records_in_ram=global_config_parser.param('picard_collect_sequencing_artifacts_metrics', 'max_records_in_ram', param_type='int')
             )
         )
 
@@ -186,12 +186,12 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  INPUT_BASE={input} \\
  OUTPUT_BASE={output} \\
  REFERENCE_SEQUENCE={reference}""".format(
-            tmp_dir=config.param('picard_convert_sequencing_artifacts_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_convert_sequencing_artifacts_metrics', 'java_other_options'),
-            ram=config.param('picard_convert_sequencing_artifacts_metrics', 'ram'),
+            tmp_dir=global_config_parser.param('picard_convert_sequencing_artifacts_metrics', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_convert_sequencing_artifacts_metrics', 'java_other_options'),
+            ram=global_config_parser.param('picard_convert_sequencing_artifacts_metrics', 'ram'),
             input=input,
             output=output,
-            reference=reference_sequence if reference_sequence else config.param('picard_convert_sequencing_artifacts_metrics', 'genome_fasta'),
+            reference=reference_sequence if reference_sequence else global_config_parser.param('picard_convert_sequencing_artifacts_metrics', 'genome_fasta'),
             )
         )
 
@@ -214,14 +214,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  DB_SNP={dbsnp} \\
  REFERENCE_SEQUENCE={reference} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_collect_oxog_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_oxog_metrics', 'java_other_options'),
-            ram=config.param('picard_collect_oxog_metrics', 'ram'),
+            tmp_dir=global_config_parser.param('picard_collect_oxog_metrics', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_collect_oxog_metrics', 'java_other_options'),
+            ram=global_config_parser.param('picard_collect_oxog_metrics', 'ram'),
             input=input,
             output=output,
-            dbsnp=config.param('picard_collect_oxog_metrics', 'known_variants'),
-            reference=reference_sequence if reference_sequence else config.param('picard_collect_oxog_metrics', 'genome_fasta'),
-            max_records_in_ram=config.param('picard_collect_oxog_metrics', 'max_records_in_ram', param_type='int')
+            dbsnp=global_config_parser.param('picard_collect_oxog_metrics', 'known_variants'),
+            reference=reference_sequence if reference_sequence else global_config_parser.param('picard_collect_oxog_metrics', 'genome_fasta'),
+            max_records_in_ram=global_config_parser.param('picard_collect_oxog_metrics', 'max_records_in_ram', param_type='int')
             )
         )
 
@@ -245,21 +245,21 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  SUMMARY_OUTPUT={summary_file} \\
  REFERENCE_SEQUENCE={reference} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_collect_gcbias_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_gcbias_metrics', 'java_other_options'),
-            ram=config.param('picard_collect_gcbias_metrics', 'ram'),
+            tmp_dir=global_config_parser.param('picard_collect_gcbias_metrics', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_collect_gcbias_metrics', 'java_other_options'),
+            ram=global_config_parser.param('picard_collect_gcbias_metrics', 'ram'),
             input=input,
             output=output,
             chart=chart,
             summary_file=summary_file,
-            reference=reference_sequence if reference_sequence else config.param('picard_collect_gcbias_metrics', 'genome_fasta'),
-            max_records_in_ram=config.param('picard_collect_gcbias_metrics', 'max_records_in_ram', param_type='int')
+            reference=reference_sequence if reference_sequence else global_config_parser.param('picard_collect_gcbias_metrics', 'genome_fasta'),
+            max_records_in_ram=global_config_parser.param('picard_collect_gcbias_metrics', 'max_records_in_ram', param_type='int')
             )
         )
 
 def fix_mate_information(input, output):
 
-    if config.param('fixmate', 'module_picard').split("/")[2] < "2":
+    if global_config_parser.param('fixmate', 'module_picard').split("/")[2] < "2":
         return picard.fix_mate_information(input, output)
     else:
         return Job(
@@ -276,12 +276,12 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  INPUT={input} \\
  OUTPUT={output} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_fix_mate_information', 'tmp_dir'),
-            java_other_options=config.param('picard_fix_mate_information', 'java_other_options'),
-            ram=config.param('picard_fix_mate_information', 'ram'),
+            tmp_dir=global_config_parser.param('picard_fix_mate_information', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_fix_mate_information', 'java_other_options'),
+            ram=global_config_parser.param('picard_fix_mate_information', 'ram'),
             input=input,
             output=output,
-            max_records_in_ram=config.param('picard_fix_mate_information', 'max_records_in_ram', param_type='int')
+            max_records_in_ram=global_config_parser.param('picard_fix_mate_information', 'max_records_in_ram', param_type='int')
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
@@ -290,9 +290,9 @@ def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
 
     if not isinstance(inputs, list):
         inputs=[inputs]
-    if config.param('picard_mark_duplicates', 'module_picard').split("/")[2] < "2" and config.param('picard_mark_duplicates', 'module_gatk').split("/")[2] < "4":
+    if global_config_parser.param('picard_mark_duplicates', 'module_picard').split("/")[2] < "2" and global_config_parser.param('picard_mark_duplicates', 'module_gatk').split("/")[2] < "4":
         return picard.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
-    elif config.param('picard_mark_duplicates', 'module_gatk').split("/")[2] > "4":
+    elif global_config_parser.param('picard_mark_duplicates', 'module_gatk').split("/")[2] > "4":
         return gatk4.mark_duplicates(inputs, output, metrics_file, remove_duplicates)
     else:
         return Job(
@@ -310,15 +310,15 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  OUTPUT={output} \\
  METRICS_FILE={metrics_file} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram} {other_options}""".format(
-            tmp_dir=config.param('picard_mark_duplicates', 'tmp_dir'),
-            java_other_options=config.param('picard_mark_duplicates', 'java_other_options'),
-            ram=config.param('picard_mark_duplicates', 'ram'),
+            tmp_dir=global_config_parser.param('picard_mark_duplicates', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_mark_duplicates', 'java_other_options'),
+            ram=global_config_parser.param('picard_mark_duplicates', 'ram'),
             remove_duplicates=remove_duplicates,
             inputs=" \\\n  ".join(["INPUT=" + str(input) for input in inputs]),
             output=output,
             metrics_file=metrics_file,
-            max_records_in_ram=config.param('picard_mark_duplicates', 'max_records_in_ram', param_type='int'),
-            other_options=config.param('picard_mark_duplicates', 'other_options',required = False) if config.param('picard_mark_duplicates', 'other_options',required = False) else ""
+            max_records_in_ram=global_config_parser.param('picard_mark_duplicates', 'max_records_in_ram', param_type='int'),
+            other_options=global_config_parser.param('picard_mark_duplicates', 'other_options', required = False) if global_config_parser.param('picard_mark_duplicates', 'other_options', required = False) else ""
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
@@ -326,7 +326,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 def mark_duplicates_mate_cigar(inputs, output, metrics_file, remove_duplicates="false"):
     if not isinstance(inputs, list):
         inputs=[inputs]
-    if config.param('mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] > "4":
+    if global_config_parser.param('mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] > "4":
         return gatk4.mark_duplicates_mate_cigar(inputs, output, metrics_file, remove_duplicates)
     else:
         return Job(
@@ -345,22 +345,22 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  OUTPUT={output} \\
  METRICS_FILE={metrics_file} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram} {other_options}""".format(
-            tmp_dir=config.param('mark_duplicates_mate_cigar', 'tmp_dir'),
-            java_other_options=config.param('mark_duplicates_mate_cigar', 'java_other_options'),
-            ram=config.param('mark_duplicates_mate_cigar', 'ram'),
+            tmp_dir=global_config_parser.param('mark_duplicates_mate_cigar', 'tmp_dir'),
+            java_other_options=global_config_parser.param('mark_duplicates_mate_cigar', 'java_other_options'),
+            ram=global_config_parser.param('mark_duplicates_mate_cigar', 'ram'),
             remove_duplicates=remove_duplicates,
             inputs=" \\\n  ".join(["INPUT=" + str(input) for input in inputs]),
             output=output,
             metrics_file=metrics_file,
-            max_records_in_ram=config.param('mark_duplicates_mate_cigar', 'max_records_in_ram', param_type='int'),
-            other_options=config.param('mark_duplicates_mate_cigar', 'other_options',required = False) if config.param('picard_mark_duplicates', 'other_options',required = False) else ""),
+            max_records_in_ram=global_config_parser.param('mark_duplicates_mate_cigar', 'max_records_in_ram', param_type='int'),
+            other_options=global_config_parser.param('mark_duplicates_mate_cigar', 'other_options', required=False) if global_config_parser.param('picard_mark_duplicates', 'other_options', required=False) else ""),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
 def mark_duplicates_mate_cigar(inputs, output, metrics_file, remove_duplicates="false"):
     if not isinstance(inputs, list):
         inputs=[inputs]
-    if config.param('picard_mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] > "4":
+    if global_config_parser.param('picard_mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] > "4":
         return gatk4.mark_duplicates_mate_cigar(inputs, output, metrics_file, remove_duplicates)
     else:
         return Job(
@@ -379,15 +379,15 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  OUTPUT={output} \\
  METRICS_FILE={metrics_file} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram} {other_options}""".format(
-            tmp_dir=config.param('picard_mark_duplicates_mate_cigar', 'tmp_dir'),
-            java_other_options=config.param('picard_mark_duplicates_mate_cigar', 'java_other_options'),
-            ram=config.param('picard_mark_duplicates_mate_cigar', 'ram'),
+            tmp_dir=global_config_parser.param('picard_mark_duplicates_mate_cigar', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_mark_duplicates_mate_cigar', 'java_other_options'),
+            ram=global_config_parser.param('picard_mark_duplicates_mate_cigar', 'ram'),
             remove_duplicates=remove_duplicates,
             inputs=" \\\n  ".join(["INPUT=" + str(input) for input in inputs]),
             output=output,
             metrics_file=metrics_file,
-            max_records_in_ram=config.param('picard_mark_duplicates_mate_cigar', 'max_records_in_ram', param_type='int'),
-            other_options=config.param('picard_mark_duplicates_mate_cigar', 'other_options',required = False) if config.param('picard_mark_duplicates', 'other_options',required = False) else ""),
+            max_records_in_ram=global_config_parser.param('picard_mark_duplicates_mate_cigar', 'max_records_in_ram', param_type='int'),
+            other_options=global_config_parser.param('picard_mark_duplicates_mate_cigar', 'other_options', required = False) if global_config_parser.param('picard_mark_duplicates', 'other_options', required = False) else ""),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
@@ -395,7 +395,7 @@ def merge_sam_files(inputs, output):
 
     if not isinstance(inputs, list):
         inputs=[inputs]
-    if config.param('picard_merge_sam_files', 'module_picard').split("/")[2] < "2":
+    if global_config_parser.param('picard_merge_sam_files', 'module_picard').split("/")[2] < "2":
         return picard.merge_sam_files(inputs, output)
     else:
         return Job(
@@ -412,12 +412,12 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  {inputs} \\
  OUTPUT={output} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_merge_sam_files', 'tmp_dir'),
-            java_other_options=config.param('picard_merge_sam_files', 'java_other_options'),
-            ram=config.param('picard_merge_sam_files', 'ram'),
+            tmp_dir=global_config_parser.param('picard_merge_sam_files', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_merge_sam_files', 'java_other_options'),
+            ram=global_config_parser.param('picard_merge_sam_files', 'ram'),
             inputs=" \\\n ".join(["INPUT=" + input for input in inputs]),
             output=output,
-            max_records_in_ram=config.param('picard_merge_sam_files', 'max_records_in_ram', param_type='int')
+            max_records_in_ram=global_config_parser.param('picard_merge_sam_files', 'max_records_in_ram', param_type='int')
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output)]
         )
@@ -426,7 +426,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 def reorder_sam(input, output):
 
     
-    if config.param('reorder_sam', 'module_picard').split("/")[2] < "2":
+    if global_config_parser.param('reorder_sam', 'module_picard').split("/")[2] < "2":
         return picard.reorder_sam(input, output)
     else:
         return Job(
@@ -444,13 +444,13 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  OUTPUT={output} \\
  REFERENCE={reference} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_reorder_sam', 'tmp_dir'),
-            java_other_options=config.param('picard_reorder_sam', 'java_other_options'),
-            ram=config.param('picard_reorder_sam', 'ram'),
+            tmp_dir=global_config_parser.param('picard_reorder_sam', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_reorder_sam', 'java_other_options'),
+            ram=global_config_parser.param('picard_reorder_sam', 'ram'),
             input=input,
             output=output,
-            reference=config.param('picard_reorder_sam', 'genome_fasta', param_type='filepath'),
-            max_records_in_ram=config.param('picard_reorder_sam', 'max_records_in_ram', param_type='int')
+            reference=global_config_parser.param('picard_reorder_sam', 'genome_fasta', param_type='filepath'),
+            max_records_in_ram=global_config_parser.param('picard_reorder_sam', 'max_records_in_ram', param_type='int')
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output)]
         )
@@ -458,7 +458,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 # Convert SAM/BAM file to fastq format
 def sam_to_fastq(input, fastq, second_end_fastq=None):
 
-    if config.param('picard_sam_to_fastq', 'module_picard').split("/")[2] < "2":
+    if global_config_parser.param('picard_sam_to_fastq', 'module_picard').split("/")[2] < "2":
         return picard.sam_to_fastq(input, fastq, second_end_fastq)
     else:
         return Job(
@@ -474,9 +474,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  CREATE_MD5_FILE=TRUE \\
  INPUT={input} \\
  FASTQ={fastq}{second_end_fastq}""".format(
-            tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir'),
-            java_other_options=config.param('picard_sam_to_fastq', 'java_other_options'),
-            ram=config.param('picard_sam_to_fastq', 'ram'),
+            tmp_dir=global_config_parser.param('picard_sam_to_fastq', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_sam_to_fastq', 'java_other_options'),
+            ram=global_config_parser.param('picard_sam_to_fastq', 'ram'),
             input=input,
             fastq=fastq,
             second_end_fastq=" \\\n  SECOND_END_FASTQ=" + second_end_fastq if second_end_fastq else ""
@@ -486,7 +486,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 
 def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sam'):
 
-    if config.param(ini_section, 'module_picard').split("/")[2] < "2":
+    if global_config_parser.param(ini_section, 'module_picard').split("/")[2] < "2":
         return picard.sort_sam(input, output, sort_order, ini_section)
     else:
         return Job(
@@ -505,13 +505,13 @@ def sort_sam(input, output, sort_order="coordinate", ini_section='picard_sort_sa
  OUTPUT={output} \\
  SORT_ORDER={sort_order} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param(ini_section, 'tmp_dir'),
-            java_other_options=config.param(ini_section, 'java_other_options'),
-            ram=config.param(ini_section, 'ram'),
+            tmp_dir=global_config_parser.param(ini_section, 'tmp_dir'),
+            java_other_options=global_config_parser.param(ini_section, 'java_other_options'),
+            ram=global_config_parser.param(ini_section, 'ram'),
             input=input,
             output=output,
             sort_order=sort_order,
-            max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
+            max_records_in_ram=global_config_parser.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output) if sort_order == "coordinate" else None]
         )
@@ -520,7 +520,7 @@ def sort_vcfs(inputs, output, ini_section='picard_sort_vcf'):
 
     if not isinstance(inputs, list):
         inputs=[inputs]
-    if config.param(ini_section, 'module_picard').split("/")[2] < "2":
+    if global_config_parser.param(ini_section, 'module_picard').split("/")[2] < "2":
         return picard.sort_vcfs(inputs, output, ini_section)
     else:
         return Job(
@@ -538,12 +538,12 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  {inputs} \\
  OUTPUT={output} \\
  SEQUENCE_DICTIONARY={seq_dict}""".format(
-            tmp_dir=config.param(ini_section, 'tmp_dir'),
-            java_other_options=config.param(ini_section, 'java_other_options'),
-            ram=config.param(ini_section, 'ram'),
+            tmp_dir=global_config_parser.param(ini_section, 'tmp_dir'),
+            java_other_options=global_config_parser.param(ini_section, 'java_other_options'),
+            ram=global_config_parser.param(ini_section, 'ram'),
             inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
             output=output,
-            seq_dict=config.param(ini_section, 'genome_dictionary', param_type='filepath')
+            seq_dict=global_config_parser.param(ini_section, 'genome_dictionary', param_type='filepath')
             )
         )
 
@@ -562,20 +562,20 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
   --REFERENCE_SEQUENCE {reference}{variants} \\
   --OUTPUT {output} \\
   --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=config.param('picard_merge_vcfs', 'tmp_dir'),
-                java_other_options=config.param('picard_merge_vcfs', 'java_other_options'),
-                ram=config.param('picard_merge_vcfs', 'ram'),
-                options=config.param('picard_merge_vcfs', 'options'),
-                reference=config.param('picard_merge_vcfs', 'genome_fasta', param_type='filepath'),
+                tmp_dir=global_config_parser.param('picard_merge_vcfs', 'tmp_dir'),
+                java_other_options=global_config_parser.param('picard_merge_vcfs', 'java_other_options'),
+                ram=global_config_parser.param('picard_merge_vcfs', 'ram'),
+                options=global_config_parser.param('picard_merge_vcfs', 'options'),
+                reference=global_config_parser.param('picard_merge_vcfs', 'genome_fasta', param_type='filepath'),
                 variants="".join(" \\\n  --INPUT " + variant for variant in variants),
                 output=output,
-                max_records_in_ram=config.param('picard_merge_vcfs', 'max_records_in_ram', param_type='int')
+                max_records_in_ram=global_config_parser.param('picard_merge_vcfs', 'max_records_in_ram', param_type='int')
         )
   )
 
 def collect_rna_metrics(input, output, annotation_flat=None,reference_sequence=None):
 
-    if config.param('picard_collect_rna_metrics', 'module_picard').split("/")[2] < "2":
+    if global_config_parser.param('picard_collect_rna_metrics', 'module_picard').split("/")[2] < "2":
         return picard.collect_rna_metrics(input, output, annotation_flat, reference_sequence)
     else:
         return Job(
@@ -598,21 +598,21 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  MINIMUM_LENGTH={min_length} \\
  REFERENCE_SEQUENCE={reference} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_collect_rna_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_rna_metrics', 'java_other_options'),
-            ram=config.param('picard_collect_rna_metrics', 'ram'),
+            tmp_dir=global_config_parser.param('picard_collect_rna_metrics', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_collect_rna_metrics', 'java_other_options'),
+            ram=global_config_parser.param('picard_collect_rna_metrics', 'ram'),
             input=input,
             output=output,
-            ref_flat=annotation_flat if annotation_flat else config.param('picard_collect_rna_metrics', 'annotation_flat'),
-            strand_specificity=config.param('picard_collect_rna_metrics', 'strand_info'),
-            min_length=config.param('picard_collect_rna_metrics', 'minimum_length', param_type='int'),
-            reference=reference_sequence if reference_sequence else config.param('picard_collect_rna_metrics', 'genome_fasta'),
-            max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', param_type='int')
+            ref_flat=annotation_flat if annotation_flat else global_config_parser.param('picard_collect_rna_metrics', 'annotation_flat'),
+            strand_specificity=global_config_parser.param('picard_collect_rna_metrics', 'strand_info'),
+            min_length=global_config_parser.param('picard_collect_rna_metrics', 'minimum_length', param_type='int'),
+            reference=reference_sequence if reference_sequence else global_config_parser.param('picard_collect_rna_metrics', 'genome_fasta'),
+            max_records_in_ram=global_config_parser.param('picard_collect_rna_metrics', 'max_records_in_ram', param_type='int')
             )
         )
 
 def add_read_groups(input, output, readgroup, library, processing_unit, sample, sort_order="coordinate"):
-    if config.param('picard_add_read_groups', 'module_picard').split("/")[2] < "2":
+    if global_config_parser.param('picard_add_read_groups', 'module_picard').split("/")[2] < "2":
         return picard.add_read_groups(input, output, readgroup, library, processing_unit, sample, sort_order)
     else:
         return Job(
@@ -637,18 +637,21 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  RGPU=\"run{processing_unit}\" \\
  RGSM=\"{sample}\" \\
  {sequencing_center}""".format(
-                tmp_dir=config.param('picard_add_read_groups', 'tmp_dir'),
-                java_other_options=config.param('picard_add_read_groups', 'java_other_options'),
-                ram=config.param('picard_add_read_groups', 'ram'),
+                tmp_dir=global_config_parser.param('picard_add_read_groups', 'tmp_dir'),
+                java_other_options=global_config_parser.param('picard_add_read_groups', 'java_other_options'),
+                ram=global_config_parser.param('picard_add_read_groups', 'ram'),
                 input=input,
                 output=output,
                 sort_order=sort_order,
                 readgroup=readgroup,
                 library=library,
-                platform=config.param('picard_add_read_groups', 'platform'),
+                platform=global_config_parser.param('picard_add_read_groups', 'platform'),
                 processing_unit=processing_unit,
                 sample=sample,
-                sequencing_center=("RGCN=\"" + config.param('picard_add_read_groups', 'sequencing_center') + "\"") if config.param('picard_add_read_groups', 'sequencing_center', required=False) else ""
+                sequencing_center=("RGCN=\"" + global_config_parser.param(
+                    'picard_add_read_groups', 'sequencing_center') + "\""
+                                   if global_config_parser.param(
+                    'picard_add_read_groups', 'sequencing_center', required=False) else "")
             )
         )
 
@@ -658,7 +661,7 @@ def bed2interval_list(
     output
     ):
     
-    if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
+    if global_config_parser.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
         return picard.bed2interval_list(
             dictionary,
             bed,
@@ -676,10 +679,10 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
   INPUT={bed} \\
   SEQUENCE_DICTIONARY={dictionary} \\
   OUTPUT={output}""".format(
-            tmp_dir=config.param('picard_bed2interval_list', 'tmp_dir'),
-            java_other_options=config.param('picard_bed2interval_list', 'java_other_options'),
-            ram=config.param('picard_bed2interval_list', 'ram'),
-            dictionary=dictionary if dictionary else config.param('picard_bed2interval_list', 'genome_dictionary', param_type='filepath'),
+            tmp_dir=global_config_parser.param('picard_bed2interval_list', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_bed2interval_list', 'java_other_options'),
+            ram=global_config_parser.param('picard_bed2interval_list', 'ram'),
+            dictionary=dictionary if dictionary else global_config_parser.param('picard_bed2interval_list', 'genome_dictionary', param_type='filepath'),
             bed=bed,
             output=output,
         )
@@ -697,9 +700,9 @@ def interval_list2bed(input, output):
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar IntervalListToBed \\
   INPUT={input} \\
   OUTPUT={output}""".format(
-            tmp_dir=config.param('picard_interval_list2bed', 'tmp_dir'),
-            java_other_options=config.param('picard_interval_list2bed', 'java_other_options'),
-            ram=config.param('picard_interval_list2bed', 'ram'),
+            tmp_dir=global_config_parser.param('picard_interval_list2bed', 'tmp_dir'),
+            java_other_options=global_config_parser.param('picard_interval_list2bed', 'java_other_options'),
+            ram=global_config_parser.param('picard_interval_list2bed', 'ram'),
             input=input,
             output=output
             )
@@ -722,11 +725,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
   ScatterIntervalsByNs {options} \\
   REFERENCE={reference} \\
   OUTPUT={output}""".format(
-            tmp_dir=config.param('picard_ScatterIntervalsByNs', 'tmp_dir'),
-            options=options if options else config.param('picard_ScatterIntervalsByNs', 'options'),
-            java_other_options=config.param('picard_ScatterIntervalsByNs', 'java_other_options'),
-            ram=config.param('picard_ScatterIntervalsByNs', 'ram'),
-            reference=reference if reference else config.param('picard_ScatterIntervalsByNs', 'genome_fasta', param_type='filepath'),
+            tmp_dir=global_config_parser.param('picard_ScatterIntervalsByNs', 'tmp_dir'),
+            options=options if options else global_config_parser.param('picard_ScatterIntervalsByNs', 'options'),
+            java_other_options=global_config_parser.param('picard_ScatterIntervalsByNs', 'java_other_options'),
+            ram=global_config_parser.param('picard_ScatterIntervalsByNs', 'ram'),
+            reference=reference if reference else global_config_parser.param('picard_ScatterIntervalsByNs', 'genome_fasta', param_type='filepath'),
 #            exclude_intervals=exclude_intervals if exclude_intervals else "".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
             output=output
         )
