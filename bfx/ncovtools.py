@@ -91,7 +91,7 @@ module purge""".format(
     variants_pattern_extension=re.sub(r"^.*?\.", ".", output_variants),
     metadata=os.path.basename(metadata),
     primer_prefix=config.param(ini_section, 'primer_prefix'),
-    cpulimit="cpulimit -i -l " + config.param(ini_section, 'nb_threads') + " " if job_scheduler == "pbs" else "",
+    cpulimit="cpulimit -i -l " + config.param(ini_section, 'nb_threads') + "00 " if job_scheduler == "pbs" else "",
     ncovtools_config=ncovtools_config,
     ncovtools_config_local=os.path.basename(ncovtools_config),
     nb_threads=config.param(ini_section, 'nb_threads'),
