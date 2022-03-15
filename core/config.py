@@ -159,7 +159,7 @@ class Config(configparser.SafeConfigParser):
                 else:
                     _raise(SanitycheckError("Unknown parameter type '" + param_type + "'"))
             except Exception as e:
-                _raise(SanitycheckError("Error found :\n  {}".format(e)))
+                _raise(SanitycheckError("Error found :\n  " + str(e)))
         elif required:
             _raise(SanitycheckError("Error: REQUIRED parameter \"[" + original_section + "] " + option + "\" is not defined in config file(s)!"))
         else:

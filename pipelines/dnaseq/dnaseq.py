@@ -786,7 +786,8 @@ END
 
                 job = sambamba.merge(
                     inputs,
-                    merged_realigned_bam
+                    merged_realigned_bam,
+                    ini_section="sambamba_merge_realigned"
                 )
                 job.name = "sambamba_merge_realigned." + sample.name
                 job.samples = [sample]
@@ -3289,7 +3290,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         "/dev/stdin",
                         discordants_normal,
                         lumpy_directory,
-                        config.param('extract_discordant_reads', 'sambamba_option')
+                        config.param('extract_discordant_reads', 'sambamba_options')
                     ),
                 ]),
             ], name="extract_discordant_reads." + sample.name))
@@ -3317,7 +3318,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         "/dev/stdin",
                         splitters_normal,
                         lumpy_directory,
-                        config.param('extract_split_reads', 'sambamba_option')
+                        config.param('extract_split_reads', 'sambamba_options')
                     ),
                 ]),
             ], name="extract_split_reads." + sample.name))
