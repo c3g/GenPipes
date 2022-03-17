@@ -41,7 +41,11 @@ import utils.utils
 
 from pipelines import common
 
+from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
+
+from bfx import bvatools
 from bfx import bwa
+from bfx import gatk4
 from bfx import gq_seq_utils
 from bfx import homer
 from bfx import macs2
@@ -153,6 +157,11 @@ class ChipSeq(common.Illumina):
             self.argparser.error("argument -d/--design is required!")
 
         return self._contrast
+
+    def sequence_dictionary_variant(self):
+        if not hasattr(self, "_sequence_dictionary_variant"):
+            self._sequence_dictionary_variant = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
+        return self._sequence_dictionary_variant
 
     def mappable_genome_size(self):
         genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
@@ -1452,7 +1461,7 @@ done""".format(
                     output.append(os.path.join(output_dir,
                                  sample.name + "." + mark_name + "_peaks.xls"))
                     # other_options = " --broad --nomodel --bdg --SPMR --keep-dup all"
-                    options + = " --nomodel --call-summits"
+                    options += " --nomodel --call-summits"
                     options += " --shift " + config.param('macs2_callpeak', 'shift') if config.param(
                         'macs2_callpeak', 'shift') else " --shift -75 "
                     options += " --extsize " + config.param('macs2_callpeak', 'extsize') if config.param(
@@ -2311,36 +2320,381 @@ done""".format(
 
             return jobs
 
+    def gatk_haplotype_caller(self):
+        """
+        GATK haplotype caller for snps and small indels.
+        """
+
+        jobs = []
+
+
+        for sample in self.samples:
+            for mark_name, mark_type in sample.marks.items():
+                if not mark_type == "I":
+                    alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name,
+                                               mark_name)
+                    haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
+
+                    macs_output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
+
+                    input_bam = os.path.join(alignment_directory,
+                                                 sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+
+                    #peak calling bed file from MACS2 is given here to restrict the variant calling to peaks regions
+                    interval_list = None
+                    if mark_type == "N":
+                        interval_list = os.path.join(macs_output_dir, sample.name + "." + mark_name +"_peaks.narrowPeak.bed")
+                    elif mark_type == "B":
+                        interval_list = os.path.join(macs_output_dir,
+                                                     sample.name + "." + mark_name + "_peaks.broadPeak.bed")
+
+
+                    mkdir_job = bash.mkdir(
+                                haplotype_directory,
+                                remove=True
+                    )
+                    #check whether the file exist
+                    if os.path.isfile(interval_list):
+                        jobs.append(
+                        concat_jobs([
+                        # Create output directory since it is not done by default by GATK tools
+                        mkdir_job,
+                        gatk4.haplotype_caller(
+                            input_bam,
+                            os.path.join(haplotype_directory, sample.name +"."+ mark_name +".hc.g.vcf.gz"),
+                            interval_list=interval_list
+                        )
+                    ],
+                        name="gatk_haplotype_caller." + sample.name +"_"+ mark_name,
+                        samples=[sample]
+                        )
+                        )
+                    else:
+                        log.warning(
+                            "Interval file generated from MACS2 for " + sample.name +"-" +mark_name+ " is not available")
+
+        return jobs
+
+    def merge_and_call_individual_gvcf(self):
+        """
+        Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            for mark_name, mark_type in sample.marks.items():
+                if not mark_type == "I":
+                    alignment_directory = os.path.join("alignment", sample.name, mark_name)
+                    haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
+                    haplotype_file_prefix = os.path.join(haplotype_directory , sample.name +"." +mark_name)
+                    output_haplotype_file_prefix = os.path.join("alignment", sample.name, mark_name, sample.name +"." + mark_name)
+                    macs_output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
+                    interval_list = None
+                    if mark_type == "N":
+                        interval_list = os.path.join(macs_output_dir,
+                                                     sample.name + "." + mark_name + "_peaks.narrowPeak.bed")
+                    elif mark_type == "B":
+                        interval_list = os.path.join(macs_output_dir,
+                                                     sample.name + "." + mark_name + "_peaks.broadPeak.bed")
+
+                    if os.path.isfile(interval_list):
+                        jobs.append(
+                            concat_jobs([
+                                bash.ln(
+                                    haplotype_file_prefix + ".hc.g.vcf.gz",
+                                    output_haplotype_file_prefix + ".hc.g.vcf.gz",
+                                    self.output_dir
+                                ),
+                                bash.ln(
+                                    haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
+                                    output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
+                                    self.output_dir
+                                ),
+                                gatk4.genotype_gvcf(
+                                    output_haplotype_file_prefix + ".hc.g.vcf.gz",
+                                    output_haplotype_file_prefix + ".hc.vcf.gz",
+                                    config.param('gatk_genotype_gvcf', 'options')
+                                )
+                            ],
+                                name="merge_and_call_individual_gvcf.call." + sample.name,
+                                samples=[sample]
+                            )
+                        )
+
+
+        return jobs
+
+    def combine_gvcf(self):
+        """
+        Combine the per sample gvcfs of haplotype caller into one main file for all sample.
+        """
+
+        jobs = []
+        nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', param_type='posint')
+        nb_maxbatches_jobs = config.param('gatk_combine_gvcf', 'nb_batch', param_type='posint')
+
+        interval_list = None
+
+        coverage_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
+        if coverage_bed:
+            interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+
+        mkdir_job = bash.mkdir("variants")
+
+        # merge all sample in one shot
+        if nb_maxbatches_jobs == 1:
+            if nb_haplotype_jobs == 1 or interval_list is not None:
+                jobs.append(
+                    concat_jobs([
+                        mkdir_job,
+                        gatk4.combine_gvcf(
+                            [os.path.join("alignment", sample.name, sample.name) + ".hc.g.vcf.gz" for sample in
+                             self.samples],
+                            os.path.join("variants", "allSamples.hc.g.vcf.gz")
+                        )
+                    ],
+                        name="gatk_combine_gvcf.AllSamples",
+                        samples=self.samples
+                    )
+                )
+            else:
+                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(
+                    self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
+
+                # Create one separate job for each of the first sequences
+                for idx, sequences in enumerate(unique_sequences_per_job):
+                    jobs.append(
+                        concat_jobs([
+                            mkdir_job,
+                            gatk4.combine_gvcf(
+                                [os.path.join("alignment", sample.name, sample.name) + ".hc.g.vcf.gz" for sample in
+                                 self.samples],
+                                os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
+                                intervals=sequences
+                            )
+                        ],
+                            name="gatk_combine_gvcf.AllSample" + "." + str(idx),
+                            samples=self.samples,
+                            removable_files=[
+                                os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
+                                os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz.tbi"
+                            ]
+                        )
+                    )
+
+                # Create one last job to process the last remaining sequences and 'others' sequences
+                job = gatk4.combine_gvcf(
+                    [os.path.join("alignment", sample.name, sample.name) + ".hc.g.vcf.gz" for sample in self.samples],
+                    os.path.join("variants", "allSamples.others.hc.g.vcf.gz"),
+                    exclude_intervals=unique_sequences_per_job_others
+                )
+                job.name = "gatk_combine_gvcf.AllSample" + ".others"
+                job.removable_files = [
+                    os.path.join("variants", "allSamples.others.hc.g.vcf.gz"),
+                    os.path.join("variants", "allSamples.others.hc.g.vcf.gz.tbi")
+                ]
+                job.samples = self.samples
+                jobs.append(job)
+        else:
+            # Combine samples by batch (pre-defined batches number in ini)
+            sample_per_batch = int(math.ceil(len(self.samples) / float(nb_maxbatches_jobs)))
+            batch_of_sample = [self.samples[i:(i + sample_per_batch)] for i in
+                               range(0, len(self.samples), sample_per_batch)]
+            cpt = 0
+            batches = []
+            for batch in batch_of_sample:
+                if nb_haplotype_jobs == 1 or interval_list is not None:
+                    jobs.append(
+                        concat_jobs([
+                            mkdir_job,
+                            gatk4.combine_gvcf(
+                                [os.path.join("alignment", sample.name, sample.name) + ".hc.g.vcf.gz" for sample in
+                                 batch],
+                                os.path.join("variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.gz")
+                            )
+                        ],
+                            name="gatk_combine_gvcf.AllSamples.batch" + str(cpt),
+                            samples=batch,
+                            removable_files=[
+                                os.path.join("variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.gz"),
+                                os.path.join("variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.gz.tbi")
+                            ]
+                        )
+                    )
+                else:
+                    unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(
+                        self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
+
+                    # Create one separate job for each of the first sequences
+                    for idx, sequences in enumerate(unique_sequences_per_job):
+                        jobs.append(
+                            concat_jobs([
+                                mkdir_job,
+                                gatk4.combine_gvcf(
+                                    [os.path.join("alignment", sample.name, sample.name) + ".hc.g.vcf.gz" for sample in
+                                     batch],
+                                    os.path.join("variants", "allSamples") + ".batch" + str(cpt) + "." + str(
+                                        idx) + ".hc.g.vcf.gz",
+                                    intervals=sequences
+                                )
+                            ],
+                                name="gatk_combine_gvcf.AllSample" + ".batch" + str(cpt) + "." + str(idx),
+                                samples=batch,
+                                removable_files=[
+                                    os.path.join("variants", "allSamples") + ".batch" + str(cpt) + "." + str(
+                                        idx) + ".hc.g.vcf.gz",
+                                    os.path.join("variants", "allSamples") + ".batch" + str(cpt) + "." + str(
+                                        idx) + ".hc.g.vcf.gz.tbi"
+                                ]
+                            )
+                        )
+
+                    # Create one last job to process the last remaining sequences and 'others' sequences
+                    job = gatk4.combine_gvcf(
+                        [os.path.join("alignment", sample.name, sample.name) + ".hc.g.vcf.gz" for sample in batch],
+                        os.path.join("variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.gz"),
+                        exclude_intervals=unique_sequences_per_job_others
+                    )
+                    job.name = "gatk_combine_gvcf.AllSample" + ".batch" + str(cpt) + ".others"
+                    job.samples = batch
+                    job.removable_files = [
+                        os.path.join("variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.gz"),
+                        os.path.join("variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.gz.tbi")
+                    ]
+                    job.samples = self.samples
+
+                    jobs.append(job)
+
+                batches.append("batch" + str(cpt))
+                cpt = cpt + 1
+
+            # Combine batches altogether
+            if nb_haplotype_jobs == 1 or interval_list is not None:
+                job = gatk4.combine_gvcf(
+                    [os.path.join("variants", "allSamples." + batch_idx + ".hc.g.vcf.gz") for batch_idx in batches],
+                    os.path.join("variants", "allSamples.hc.g.vcf.gz")
+                )
+                job.name = "gatk_combine_gvcf.AllSamples.batches"
+                job.samples = self.samples
+
+                jobs.append(job)
+
+            else:
+                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(
+                    self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
+
+                # Create one separate job for each of the first sequences
+                for idx, sequences in enumerate(unique_sequences_per_job):
+                    job = gatk4.combine_gvcf(
+                        [os.path.join("variants", "allSamples." + batch_idx + "." + str(idx) + ".hc.g.vcf.gz") for
+                         batch_idx in batches],
+                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
+                        intervals=sequences
+                    )
+                    job.name = "gatk_combine_gvcf.AllSample" + "." + str(idx)
+                    job.samples = self.samples
+                    job.removable_files = [
+                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
+                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz.tbi"
+                    ]
+
+                    jobs.append(job)
+
+                # Create one last job to process the last remaining sequences and 'others' sequences
+                job = gatk4.combine_gvcf(
+                    [os.path.join("variants", "allSamples." + batch_idx + ".others.hc.g.vcf.gz") for batch_idx in
+                     batches],
+                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz"),
+                    exclude_intervals=unique_sequences_per_job_others
+                )
+                job.name = "gatk_combine_gvcf.AllSample" + ".others"
+                job.samples = self.samples
+                job.removable_files = [
+                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz"),
+                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz.tbi")
+                ]
+                jobs.append(job)
+
+        return jobs
+
+    def merge_and_call_combined_gvcf(self):
+        """
+        Merges the combined gvcfs and also generates a general vcf containing genotypes.
+        """
+
+        jobs = []
+        nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', param_type='posint')
+        haplotype_file_prefix = os.path.join("variants", "allSamples")
+        output_haplotype = os.path.join("variants", "allSamples.hc.g.vcf.gz")
+        output_haplotype_genotyped = os.path.join("variants", "allSamples.hc.vcf.gz")
+
+        interval_list = None
+
+        coverage_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
+        if coverage_bed:
+            interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+
+        if nb_haplotype_jobs > 1 and interval_list is None:
+            unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(
+                self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
+            gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in
+                              range(len(unique_sequences_per_job))]
+
+            gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
+
+            job = gatk4.cat_variants(
+                gvcfs_to_merge,
+                output_haplotype
+            )
+            job.name = "merge_and_call_combined_gvcf.merge.AllSample"
+            job.samples = self.samples
+            jobs.append(job)
+
+        job = gatk4.genotype_gvcf(
+            output_haplotype,
+            output_haplotype_genotyped,
+            config.param('gatk_genotype_gvcf', 'options')
+        )
+        job.name = "merge_and_call_combined_gvcf.call.AllSample"
+        job.samples = self.samples
+        jobs.append(job)
+
+        return jobs
+
     @property
     def steps(self):
         return [
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
-                self.merge_trimmomatic_stats,
+               self.merge_trimmomatic_stats,
                 self.mapping_bwa_mem_sambamba,
                 # self.bwa_mem_picard_sort_sam,
                 # self.samtools_view_filter,
                 # self.picard_merge_sam_files,
-                self.sambamba_merge_bam_files,
+                self.sambamba_merge_bam_files, #5
                 # self.samtools_view_filter,
                 self.sambamba_mark_duplicates,
                 self.sambamba_view_filter,
                 # self.picard_mark_duplicates,
-                self.metrics,
+               self.metrics,
                 self.homer_make_tag_directory,
                 self.qc_metrics,
-                self.homer_make_ucsc_file,
+                self.homer_make_ucsc_file,  #11
                 self.macs2_callpeak,
                 self.homer_annotate_peaks,
                 self.homer_find_motifs_genome,
                 self.annotation_graphs,
                 # self.ihec_preprocess_files,
                 self.run_spp,
-                self.differential_binding,
+                self.differential_binding, #17
                 self.ihec_metrics,
                 self.multiqc_report,
-                self.cram_output],
+                self.cram_output,
+                self.gatk_haplotype_caller,
+                self.merge_and_call_individual_gvcf #22
+            ],
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
