@@ -392,7 +392,7 @@ class PBSScheduler(Scheduler):
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
                     job_name_prefix = job.name.split(".")[0]
 
-                    config_step_wrapper = config.param(job_name_prefix, 'step_wrapper')
+                    config_step_wrapper = config.param(job_name_prefix, 'step_wrapper', required=False)
 
                     #sleepTime = random.randint(10, 100)
                     self.genpipes_file.write("""
