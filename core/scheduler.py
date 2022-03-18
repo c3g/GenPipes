@@ -392,6 +392,8 @@ class PBSScheduler(Scheduler):
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
                     job_name_prefix = job.name.split(".")[0]
 
+                    config_step_wrapper = config.param(job_name_prefix, 'step_wrapper')
+
                     #sleepTime = random.randint(10, 100)
                     self.genpipes_file.write("""
 {separator_line}
@@ -428,7 +430,7 @@ exit \$MUGQIC_STATE" | \\
                         container_line=self.container_line,
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                         job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE'),
-                        step_wraper=config.param(job_name_prefix, 'step_wrapper')
+                        step_wraper=config_step_wrapper if config_step_wrapper else ""
                     )
 
                     cmd += \
