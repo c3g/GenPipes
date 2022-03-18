@@ -450,7 +450,6 @@ def haplotype_caller(
     interval_padding=100
     ):
 
-    interval_padding = str(interval_padding)
     if not isinstance(inputs, list):
         inputs = [inputs]
 
@@ -488,7 +487,7 @@ gatk --java-options "{java_other_options} -Xmx{ram}" \\
                 options=config.param('gatk_haplotype_caller', 'options'),
                 threads=config.param('gatk_haplotype_caller', 'threads'),
                 reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
-                interval_list=" \\\n  --interval-padding " + interval_padding + " --intervals " + interval_list if interval_list else "",
+                interval_list=" \\\n  --interval-padding " + str(interval_padding) + " --intervals " + interval_list if interval_list else "",
                 input=" \\\n  ".join(input for input in inputs),
                 output=output,
                 intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
