@@ -388,6 +388,10 @@ class PBSScheduler(Scheduler):
                     else:
                         job_dependencies = "JOB_DEPENDENCIES="
 
+                    # Cluster settings section must match job name prefix before first "."
+                    # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
+                    job_name_prefix = job.name.split(".")[0]
+
                     #sleepTime = random.randint(10, 100)
                     self.genpipes_file.write("""
 {separator_line}
@@ -412,7 +416,7 @@ chmod 755 $COMMAND
                     )
 
                     cmd = """\
-echo "rm -f $JOB_DONE && {job2json_start} {container_line} $COMMAND
+echo "rm -f $JOB_DONE && {job2json_start} {step_wraper} {container_line} $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 {job2json_end}
@@ -424,12 +428,9 @@ exit \$MUGQIC_STATE" | \\
                         container_line=self.container_line,
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                         job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE'),
+                        step_wraper=config.param(job_name_prefix, 'step_wrapper')
                     )
-                        #sleep_time=sleepTime
 
-                    # Cluster settings section must match job name prefix before first "."
-                    # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"
-                    job_name_prefix = job.name.split(".")[0]
                     cmd += \
                         self.submit_cmd + " " + \
                         config.param(job_name_prefix, 'cluster_other_arg') + " " + \
