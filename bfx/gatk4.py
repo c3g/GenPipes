@@ -451,6 +451,7 @@ def haplotype_caller(
     interval_padding=100
     ):
 
+#added interval_padding as a varibale. Because in chipseq we don't need to add any padding to the peaks
     if not isinstance(inputs, list):
         inputs = [inputs]
 
@@ -470,6 +471,7 @@ def haplotype_caller(
         )
     else:
         return Job(
+            #to track all files as input files replaced input with input_lists
             inputs_list,
             [output, output + ".tbi"],
             [
