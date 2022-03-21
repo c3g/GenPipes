@@ -232,6 +232,11 @@ def haplotype_caller(
     if not isinstance(inputs, list):
         inputs = [inputs]
 
+    if not interval_list is None:
+
+       inputs_list = inputs.copy()
+       inputs_list.extend([interval_list])
+
     if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] >= "4":
         return gatk4.haplotype_caller(
             inputs,
@@ -242,7 +247,7 @@ def haplotype_caller(
         )
     else:
         return Job(
-            inputs,
+            inputs_list,
             [output, output + ".tbi"],
             [
                 ['gatk_haplotype_caller', 'module_java'],
