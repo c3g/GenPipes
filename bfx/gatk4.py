@@ -447,7 +447,7 @@ def haplotype_caller(
     output,
     intervals=[],
     exclude_intervals=[],
-    interval_list=None,
+    interval_list=None
     ):
 
     interval_padding = config.param('gatk_haplotype_caller', 'interval_padding')
@@ -457,7 +457,6 @@ def haplotype_caller(
         inputs = [inputs]
 
     # Added this to check intervel_list (peak file) availability in the chip-seq pipeline
-
     inputs_list = inputs.copy()
     if not interval_list is None:
        inputs_list.extend([interval_list])
