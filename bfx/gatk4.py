@@ -453,6 +453,7 @@ def haplotype_caller(
 
     interval_padding = config.param('gatk_haplotype_caller', 'interval_padding')
 
+#added interval_padding as a varibale. Because in chipseq we don't need to add any padding to the peaks
     if not isinstance(inputs, list):
         inputs = [inputs]
 
