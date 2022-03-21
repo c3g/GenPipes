@@ -447,7 +447,8 @@ def haplotype_caller(
     output,
     intervals=[],
     exclude_intervals=[],
-    interval_list=None
+    interval_list=None,
+    interval_padding=100
     ):
 
     interval_padding = config.param('gatk_haplotype_caller', 'interval_padding')
