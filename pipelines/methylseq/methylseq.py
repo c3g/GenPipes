@@ -1096,8 +1096,8 @@ pandoc \\
             self.filter_snp_cpg,
             self.prepare_methylkit,         # step 15
            # self.methylkit_differential_analysis,
-            self.cram_output,
-        ],
+            self.cram_output
+        ], [
             self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
@@ -1115,6 +1115,7 @@ pandoc \\
             self.prepare_methylkit,  # step 15
             self.cram_output
         ]
+        ]
 
 
 class MethylSeq(MethylSeqRaw):
@@ -1127,7 +1128,6 @@ class MethylSeq(MethylSeqRaw):
 
 
 if __name__ == '__main__':
-
     argv = sys.argv
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
