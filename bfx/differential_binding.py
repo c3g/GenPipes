@@ -37,7 +37,8 @@ def diffbind( input_files, comparison, design, readset, output_dir, alignment_di
         [output_file, html_output],
         [
             ['differential_binding', 'module_mugqic_tools'],
-            ['differential_binding', 'module_R']
+            ['differential_binding', 'module_R'],
+            ['differential_binding', 'module_pandoc']
         ],
         command="""\
         mkdir -p {output_dir} &&
