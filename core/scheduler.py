@@ -294,7 +294,7 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
                                  )
 
     def job2json(self, pipeline, step, job, job_status):
-        if not pipeline.json:
+        if not (pipeline.json and job.json):
             return ""
 
         json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])

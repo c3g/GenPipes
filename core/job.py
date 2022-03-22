@@ -18,7 +18,7 @@
 ################################################################################
 
 # Python Standard Modules
-from collections import OrderedDict
+import collections
 import datetime
 import logging
 import os
@@ -32,20 +32,23 @@ log = logging.getLogger(__name__)
 class Job(object):
 
     def __init__(self, input_files=[], output_files=[], module_entries=[],
-                 name="", command="", report_files=[], multiqc_files=[], removable_files=[], samples=[]):
+                 name="", command="", report_files=[], multiqc_files=[], removable_files=[], samples=[], json=True, dependency_jobs=[],output_dir=""):
         # Remove undefined input/output/removable files if any
         self._input_files = [_f for _f in input_files if _f]
         self._output_files = [_f for _f in output_files if _f]
         self._report_files = [_f for _f in report_files if _f]
         self._multiqc_files = [_f for _f in multiqc_files if _f]
         self._removable_files = [_f for _f in removable_files if _f]
+        self.dependency_jobs = [_f for _f in dependency_jobs if _f]
 
         # Retrieve modules from config, removing duplicates but keeping the order
-        self._modules = list(OrderedDict.fromkeys([config.param(section, option) for section, option in module_entries]))
+        self._modules = list(collections.OrderedDict.fromkeys([config.param(section, option) for section, option in module_entries]))
 
         self._name = name
         self._command = command
         self._samples = samples
+        self._output_dir = output_dir
+        self._json = json
 
     @property
     def id(self):
@@ -62,6 +65,10 @@ class Job(object):
     @name.setter
     def name(self, value):
         self._name = value
+
+    @property
+    def json(self):
+        return self._json
 
     @property
     def output_dir(self):
@@ -158,19 +165,27 @@ class Job(object):
             command = "module purge && \\\n" + "module load " + " ".join(self.modules) + " && \\\n" + command
         return command
 
-    def abspath(self, file):
+    def abspath(self, file, output_dir=""):
+        outpath = output_dir if output_dir != "" else self.output_dir
         tmp_file = os.path.expandvars(file)
         if not os.path.isabs(tmp_file):
             # File path is relative to the job output directory
-            tmp_file = os.path.normpath(os.path.join(self.output_dir, tmp_file))
+            tmp_file = os.path.normpath(os.path.join(outpath, tmp_file))
         return tmp_file
 
+    # def is_up2date(self):
+    #     # If job has dependencies, job is not up to date
+    #     if self.dependency_jobs:
+    #         log.debug("Job " + self.name + " NOT up to date")
+    #         log.debug("Dependency jobs:\n  " + "\n  ".join([job.name for job in self.dependency_jobs]) + "\n")
+    #         return False
     def is_up2date(self):
         # If job has dependencies, job is not up to date
         if self.dependency_jobs:
-            log.debug("Job " + self.name + " NOT up to date")
-            log.debug("Dependency jobs:\n  " + "\n  ".join([job.name for job in self.dependency_jobs]) + "\n")
-            return False
+            for dep_job in self.dependency_jobs:
+                log.debug("Job " + self.name + " NOT up to date")
+                log.debug("Dependency jobs:\n  " + "\n  ".join([job.name for job in self.dependency_jobs]) + "\n")
+                return False
 
         # Retrieve absolute paths for .done, input and output files to avoid redundant OS function calls
         abspath_done = self.abspath(self.done)
@@ -204,14 +219,15 @@ class Job(object):
         return True
 
 # Create a new job by concatenating a list of jobs together
-def concat_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=[], removable_files=[], report_files=[]):
+def concat_jobs(jobs, name="", samples=[], removable_files = [], json=True, dependency_jobs=[], output_dir=""):
 
     # Merge all input/output/report/removable files and modules
     input_files = []
     output_files = []
+    report_files = []
     multiqc_files = []
     modules = []
-    for job_item in [job_item for job_item in jobs if job_item]:
+    for job_item in jobs:
         input_files.extend([input_file for input_file in job_item.input_files if input_file not in input_files and input_file not in output_files])
         output_files.extend([output_file for output_file in job_item.output_files if output_file not in output_files])
         report_files.extend([report_file for report_file in job_item.report_files if report_file not in report_files])
@@ -220,52 +236,43 @@ def concat_jobs(jobs, name="", input_dependency=[], output_dependency=[], sample
         modules.extend([module for module in job_item.modules if module not in modules])
         samples.extend([sample for sample in job_item.samples if sample not in samples])
 
-    if input_dependency:
-        input_files=input_dependency
-    if output_dependency:
-        output_files=output_dependency
-
-    job = Job(input_files, output_files, name=name, report_files=report_files, multiqc_files=multiqc_files, removable_files=removable_files, samples=samples)
+    job = Job(input_files, output_files, name=name, report_files=report_files, multiqc_files=multiqc_files, removable_files=removable_files, samples=samples, json=json, dependency_jobs=dependency_jobs, output_dir=output_dir)
     job.modules = modules
 
     # Merge commands
-    job.command = " && \\\n".join([job_item.command for job_item in jobs if job_item and job_item.command])
+    job.command = " && \\\n".join([job_item.command for job_item in jobs if job_item.command])
 
     return job
 
 # Create a new job by piping a list of jobs together
-def pipe_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=[], removable_files=[], report_files=[]):
+def pipe_jobs(jobs, name="", samples=[], json=True, dependency_jobs=[], output_dir=""):
 
-    # Remove 'None' jobs from the job list, may happened in the case of conditional jobs
-    jobs = [job for job in jobs if job]
-    job = Job(jobs[0].input_files, jobs[-1].output_files, name=name)
+    job = Job(jobs[0].input_files, jobs[-1].output_files, name=name, json=json, dependency_jobs=dependency_jobs)
 
     # Merge all report/removable files and modules
+    report_files = []
     multiqc_files = []
+    removable_files = []
     modules = []
-    for job_item in [job_item for job_item in jobs if job_item]:
+    sample_list = samples
+    for job_item in jobs:
         report_files.extend(job_item.report_files)
         multiqc_files.extend(job_item.multiqc_files)
         removable_files.extend(job_item.removable_files)
         modules.extend(job_item.modules)
-        samples.extend([sample for sample in job_item.samples if sample not in samples])
+        sample_list.extend([sample for sample in job_item.samples if sample not in sample_list])
 
     # Remove duplicates if any, keeping the order
-    report_files = list(OrderedDict.fromkeys([report_file for report_file in report_files]))
+    report_files = list(collections.OrderedDict.fromkeys([report_file for report_file in report_files]))
     job.report_files = report_files
-    multiqc_files = list(OrderedDict.fromkeys([multiqc_file for multiqc_file in multiqc_files]))
+    multiqc_files = list(collections.OrderedDict.fromkeys([multiqc_file for multiqc_file in multiqc_files]))
     job.multiqc_files = multiqc_files
-    removable_files = list(OrderedDict.fromkeys([removable_file for removable_file in removable_files]))
+    removable_files = list(collections.OrderedDict.fromkeys([removable_file for removable_file in removable_files]))
     job.removable_files = removable_files
-    modules = list(OrderedDict.fromkeys([module for module in modules]))
+    modules = list(collections.OrderedDict.fromkeys([module for module in modules]))
     job.modules = modules
-    samples = list(OrderedDict.fromkeys([sample for sample in samples]))
-    job.samples = samples
-
-    if input_dependency:
-        job.input_files=input_dependency
-    if output_dependency:
-        job.output_files=output_dependency
+    sample_list = list(collections.OrderedDict.fromkeys([sample for sample in sample_list]))
+    job.samples = sample_list
 
     # Merge commands
     job.command = " | \\\n".join([job_item.command for job_item in jobs])
