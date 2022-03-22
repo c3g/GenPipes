@@ -741,7 +741,7 @@ cp \\
             
             # Trim log files
             for readset in sample.readsets:
-                inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
+                inputs.append(os.path.abspath(os.path.join("trim", sample.name, readset.name + ".trim.log")))
 
             # Aligned pre-deduplicated bam files
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
