@@ -23,17 +23,17 @@ import os
 # MUGQIC Modules
 from core.job import Job
 
-def mkdir(
-    folder,
-    remove=False
-    ):
-
+def mkdir(folder, remove=False, output_dependency=None):
+    if output_dependency is not None:
+        outputs=output_dependency
+    else:
+        outputs=[folder]
     return Job(
         [],
-        [folder],
+        outputs,
+        [],
         command="""\
-mkdir -p {directory} && \\
-touch {directory}""".format(
+mkdir -p {directory}""".format(
             directory=folder
         ),
         removable_files=[folder] if remove else []
@@ -68,62 +68,71 @@ ln -s -f \\
         removable_files=[link]
     )
 
-def mv(
-    source,
-    target,
-    force=False
-    ):
-
+def mv(source, target, input_dependency=None, output_dependency=None):
+    if input_dependency is not None:
+        inputs=input_dependency
+    else:
+        inputs=[source]
+    if output_dependency is not None:
+        outputs=output_dependency
+    else:
+        outputs=[target]
     return Job(
-        [source],
-        [target],
+        inputs,
+        outputs,
+        [],
         command="""\
-mv {force}{source} \\
-   {dest}""".format(
-            force="-f " if force else "",
+mv {source} {dest}""".format(
             source=source,
             dest=target
         )
     )
 
-def cp(
-    source,
-    target,
-    recursive=False,
-    update=False
-    ):
-
+def cp(source, target, recursive=False, input_dependency=None, output_dependency=None):
+    if input_dependency is not None:
+        inputs=input_dependency
+    else:
+        inputs=[source]
+    if output_dependency is not None:
+        outputs=output_dependency
+    else:
+        outputs=[target]
     return Job(
-        [source],
-        [target],
-        command="""\
-cp {rec}{upd}'{source}' {dest}""".format(
-            source=source,
-            dest=target,
-            rec="-r " if recursive else "",
-            upd="-u " if update else ""
-        )
-    )
-
-def rm(
-    source,
-    recursive=True,
-    force=True
-    ):
-
-    return Job(
-        [source],
+        inputs,
+        outputs,
         [],
         command="""\
-rm {rec}{force}{source}""".format(
-            rec="-r " if recursive else "",
-            force="-f " if force else "",
-            source=source
+cp {rec} {source} {dest}""".format(
+            source=source,
+            dest=target,
+            rec="-r" if recursive else ""
         )
     )
 
-def touch(target):
+def rm(target, recursive=False, remove=False, force=False, input_dependency=None, output_dependency=[]):
+    if input_dependency is not None:
+        inputs=input_dependency
+    else:
+        inputs=[target]
     return Job(
+        inputs,
+        output_dependency,
+        [],
+        command="""\
+rm {rec} {force} {target}""".format(
+            target=target,
+            rec="-r" if recursive else "",
+            force="-f" if force else ""
+        )
+    )
+
+def touch(target, input_dependency=None):
+    if input_dependency is not None:
+        inputs=input_dependency
+    else:
+        inputs=[target]
+    return Job(
+        inputs,
         [],
         [],
         command="""\
