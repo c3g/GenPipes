@@ -506,7 +506,7 @@ END
 
     def sambamba_merge_sam_files(self):
         """
-        BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+        BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
         This step takes as input files:
 
@@ -573,7 +573,7 @@ END
 
     def picard_merge_sam_files(self):
         """
-        BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
+        BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
 
         This step takes as input files:
 
