@@ -323,8 +323,8 @@ class Pipeline(object):
                 # dependency_jobs() checks if the current candidate input files is valid, otherwise raises an exception
                 try:
                     job = Job(input_files=input_files)
-                    job.output_dir = self.output_dir
-                    self.dependency_jobs(job)
+                    job.output_dir = job.output_dir if job.output_dir != "" else self.output_dir
+                    self.dependency_jobs(job, output_dir=self.output_dir)
                     selected_input_files = input_files
                 except Exception as e:
                     log.debug("Caught Exception for candidate input file: " +  ", ".join(input_files))
@@ -338,8 +338,8 @@ class Pipeline(object):
                 " neither found in dependencies nor on file system!"))
 
 
-    def dependency_jobs(self, current_job):
-        dependency_jobs = []
+    def dependency_jobs(self, current_job, output_dir=""):
+        dependency_jobs =  current_job.dependency_jobs
         dependency_input_files = set()
         for step in self.step_range:
             for step_job in step.jobs:
@@ -355,10 +355,10 @@ class Pipeline(object):
         # where first command output becomes second command input
         for remaining_input_file in set(current_job.input_files).difference(dependency_input_files).difference(set(current_job.output_files)):
             # Use 'exists' instead of 'isfile' since input file can be a directory
-            if not os.path.exists(current_job.abspath(remaining_input_file)):
+            if not os.path.exists(current_job.abspath(remaining_input_file, output_dir=output_dir)):
                 missing_input_files.add(remaining_input_file)
         if missing_input_files:
-            raise Exception("Warning: missing input files for job " + current_job.name + ": " +
+            raise Exception("Warning: missing input files for job " + current_job.name + ": " + " ! " + current_job.abspath(remaining_input_file,output_dir=output_dir) + " ! " +
                 ", ".join(missing_input_files) + " neither found in dependencies nor on file system!")
 
         return dependency_jobs
@@ -382,8 +382,8 @@ class Pipeline(object):
                 # Job .done file name contains the command checksum.
                 # Thus, if the command is modified, the job is not up-to-date anymore.
                 job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command_with_modules.encode('utf-8')).hexdigest() + ".mugqic.done")
-                job.output_dir = self.output_dir
-                job.dependency_jobs = self.dependency_jobs(job)
+                job.output_dir = job.output_dir if job.output_dir != "" else self.output_dir
+                job.dependency_jobs = self.dependency_jobs(job, output_dir=self.output_dir)
 
                 if not self.force_jobs and job.is_up2date():
                     log.info("Job " + job.name + " up to date... skipping\n")

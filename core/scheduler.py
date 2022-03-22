@@ -427,8 +427,8 @@ exit \$MUGQIC_STATE" | \\
                     cmd += \
                         self.submit_cmd + " " + \
                         config.param(job_name_prefix, 'cluster_other_arg') + " " + \
-                        config.param(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
-                        config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
+                        config.param(job_name_prefix, 'cluster_work_dir_arg') + " " + (job.output_dir if job.output_dir != pipeline.output_dir else " $OUTPUT_DIR" ) + " " + \
+                        config.param(job_name_prefix, 'cluster_output_dir_arg')  + " " + (job.output_dir + "/job_output/" if job.output_dir != pipeline.output_dir else " $JOB_OUTPUT") + " "  + \
                         config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
                         self.walltime(job_name_prefix) + " " + \
                         self.memory(job_name_prefix) + " " + \
@@ -656,8 +656,8 @@ exit \$MUGQIC_STATE" | \\
                     cmd += \
                         self.submit_cmd + " " + \
                         config.param(job_name_prefix, 'cluster_other_arg') + " " + \
-                        config.param(job_name_prefix, 'cluster_work_dir_arg') + " $OUTPUT_DIR " + \
-                        config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
+                        config.param(job_name_prefix, 'cluster_work_dir_arg') + " " + (job.output_dir if job.output_dir != pipeline.output_dir else " $OUTPUT_DIR") + " "  + \
+                        config.param(job_name_prefix, 'cluster_output_dir_arg') + " " + (job.output_dir + "/job_output/" if job.output_dir != pipeline.output_dir else " $JOB_OUTPUT") + " "  +  \
                         config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
                         self.walltime(job_name_prefix) + " " + \
                         self.memory(job_name_prefix) + " " + \
