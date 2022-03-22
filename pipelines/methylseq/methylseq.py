@@ -1138,6 +1138,7 @@ class MethylSeq(MethylSeqRaw):
 
 
 if __name__ == '__main__':
+
     argv = sys.argv
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
