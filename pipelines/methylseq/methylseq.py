@@ -59,7 +59,7 @@ from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
 
-class MethylSeqRaw(dnaseq.DnaSeqRaw):
+class MethylSeq(dnaseq.DnaSeqRaw):
     """
     Methyl-Seq Pipeline
     ================
@@ -102,7 +102,7 @@ class MethylSeqRaw(dnaseq.DnaSeqRaw):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
-        super(MethylSeqRaw, self).__init__(protocol)
+        super(MethylSeq, self).__init__(protocol)
 
     def bismark_align(self):
         """
@@ -217,25 +217,25 @@ pandoc --to=markdown \\
         )
 
         return jobs
-
-
+    
+    
     def add_bam_umi(self):
         """
         Add read UMI tag to individual bam files using fgbio
         """
-
+        
         jobs = []
         for readset in self.readsets:
-            if readset.umi :
+            if readset.umi : 
                 alignment_directory = os.path.join("alignment", readset.sample.name)
                 input_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
                 output_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam")
                 output_bai = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bai")
                 input_umi = readset.umi
                 input_umi_corrected = os.path.join("corrected_umi", readset.name, readset.name + ".corrected.fastq.gz")
-
+                
                 #correct umi fastq name (removing space)
-
+                
                 jobs.append(
                     concat_jobs([
                         Job(command="mkdir -p corrected_umi/" + readset.name),
@@ -401,15 +401,15 @@ cp \\
             job.name = "bvatools_depth_of_coverage." + sample.name
             job.samples = [sample]
             jobs.append(job)
-
+            
             # Get reads# raw and after duplication
             dedup_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam")
             raw_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.bam")
-
+            
             count_dedup_output = os.path.join("alignment", sample.name, sample.name + ".dedup.count")
             count_raw_output = os.path.join("alignment", sample.name, sample.name + ".raw.count")
-
-
+            
+            
             job = samtools.mapped_count(
                 raw_bam,
                 count_raw_output,
@@ -419,7 +419,7 @@ cp \\
             job.removable_files=[count_dedup_output,count_raw_output]
             job.samples = [sample]
             jobs.append(job)
-
+            
             job = samtools.mapped_count(
                 dedup_bam,
                 count_dedup_output,
@@ -432,7 +432,7 @@ cp \\
 
             if coverage_bed:
                 # Get on-target reads (if on-target context is detected) raw and after duplication
-
+                
                 count_dedup_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.dedup.count")
                 count_raw_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.raw.count")
                 job = samtools.mapped_count(
@@ -444,7 +444,7 @@ cp \\
                 job.removable_files=[count_dedup_output,count_raw_output]
                 job.samples = [sample]
                 jobs.append(job)
-
+                
                 job = samtools.mapped_count(
                     dedup_bam,
                     count_dedup_output,
@@ -454,7 +454,7 @@ cp \\
                 job.removable_files=[count_dedup_output,count_raw_output]
                 job.samples = [sample]
                 jobs.append(job)
-
+                
                 # Compute on target percent of hybridisation based capture
                 interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
                 if not interval_list in created_interval_lists:
@@ -682,7 +682,7 @@ cp \\
                 job.samples = [sample]
                 jobs.append(job)
                 cpg_profile = target_cpg_profile
-
+                
                 target_cpg_profile_count=os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count")
                 job = metrics.target_cpg_profile(
                     target_cpg_profile,
@@ -692,8 +692,8 @@ cp \\
                 job.name = "metrics_target_CpG_profile." + sample.name
                 job.samples = [sample]
                 jobs.append(job)
-
-
+                
+                
 
             # Caluculate median & mean CpG coverage
             median_CpG_coverage = re.sub(".CpG_report.txt.gz", ".median_CpG_coverage.txt", cpg_input_file)
@@ -734,14 +734,14 @@ cp \\
             inputs = []
             sample_list.append(sample.name)
             metrics_file =  os.path.join("ihec_metrics", sample.name + ".read_stats.txt")
-
+            
             metrics_output_list.append(metrics_file)
             #add dependency for previous job in order to fill the allSample output correctly
             inputs.append(metrics_output_list[counter])
-
+            
             # Trim log files
             for readset in sample.readsets:
-                inputs.append(os.path.abspath(os.path.join("trim", sample.name, readset.name + ".trim.log")))
+                inputs.append(os.path.join("trim", sample.name, readset.name + ".trim.log"))
 
             # Aligned pre-deduplicated bam files
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
@@ -758,11 +758,9 @@ cp \\
             # GC bias files
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.GCBias_all.txt"))
 
-            if self.protocol == "bismark":
-                # Bismark alignment files
-                for readset in sample.readsets:
-                    inputs.append(os.path.join("alignment", sample.name, readset.name,
-                                               readset.name + ".sorted_noRG_bismark_bt2_report.txt"))
+            # Bismark alignment files
+            for readset in sample.readsets:
+                inputs.append(os.path.join("alignment", sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_report.txt"))
 
             # CpG coverage files
             inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.median_CpG_coverage.txt"))
@@ -779,21 +777,21 @@ cp \\
                 [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
             ])
             inputs.append(cgstats_file)
-
+            
             #Estimated library sizes
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.metrics"))
-
-            # read count (raw, dedup)
+            
+            # read count (raw, dedup) 
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".dedup.count"))
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".raw.count"))
 
             # read count (raw, dedup)  and CpG_profyle in targeted context
-            if target_bed :
+            if target_bed : 
                 inputs.append(os.path.join("alignment", sample.name, sample.name + ".onTarget.dedup.count"))
                 inputs.append(os.path.join("alignment", sample.name, sample.name + ".onTarget.raw.count"))
                 inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count"))
-
-
+	    
+            
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p ihec_metrics metrics"),
@@ -860,7 +858,7 @@ pandoc \\
                 ], name="bissnp." + sample.name, samples=[sample])
             )
 
-        return jobs
+        return jobs 
 
     def filter_snp_cpg(self):
         """
@@ -945,7 +943,7 @@ pandoc \\
         """
         Align reads with dragen
         """
-        duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='string').lower()
+
         jobs = []
         for readset in self.readsets:
             trim_file_prefix = os.path.join(self.output_dir, "trim", readset.sample.name, readset.name + ".trim.")
@@ -953,13 +951,8 @@ pandoc \\
             dragen_inputfolder = os.path.join(config.param('dragen_align', 'work_folder'), "reads", readset.name)
             dragen_workfolder = os.path.join(config.param('dragen_align', 'work_folder'), "alignment", readset.name)
             dragen_tmp_bam = os.path.join(dragen_workfolder, readset.name + ".bam")
-            if duplicate_marking == "true":
-                dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
-            else:
-                dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".bam")
-            output_bam = dragen_bam
-            index_bam = output_bam + ".bai"
-
+            dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".bam")
+            output_bam = re.sub(".bam", ".sorted.bam", dragen_bam)
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -1024,7 +1017,7 @@ pandoc \\
                     readset.sample.name,
                     readset.library if readset.library else readset.sample.name,
                     readset.name + "_" + readset.run + "_" + readset.lane,
-                    input_dependency=[fastq1, fastq2], output_dependency=[dragen_bam]
+                    input_dependency=[fastq1, fastq2],
                 ),
                 bashc.cp(dragen_workfolder, os.path.abspath(alignment_directory) + "/", recursive=True,
                          input_dependency=[fastq1, fastq2], output_dependency=[dragen_bam]),
@@ -1032,7 +1025,8 @@ pandoc \\
                          output_dependency=[dragen_bam]),
                 # bashc.rm(dragen_workfolder, recursive=True, force=True, input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
                 rm_dragen_fastq_job
-            ], name="dragen_align." + readset.name, samples=[readset.sample])
+            ], name="dragen_align." + readset.name, samples=[readset.sample], json=False, dependency_jobs=[],
+                output_dir=config.param('dragen_align', 'work_folder'))
             dragen_output_copy = concat_jobs([
                 bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'), "job_output",
                                       "dragen_align." + readset.name + "*"),
@@ -1041,28 +1035,33 @@ pandoc \\
                 bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'), "job_output", "dragen_align",
                                       "dragen_align." + readset.name + "*"),
                          os.path.abspath(os.path.join("job_output", "dragen_align")) + "/", recursive=True,
-                         input_dependency=[dragen_bam]),
-                bashc.rm(os.path.join(config.param('dragen_align', 'work_folder'), "job_output",
-                                      "dragen_align." + readset.name + "*"), input_dependency=[dragen_bam], recursive=True),
-                bashc.rm(os.path.join(config.param('dragen_align', 'work_folder'), "job_output", "dragen_align",
-                                      "dragen_align." + readset.name + "*") ,input_dependency=[dragen_bam], recursive=True)
-            ], name="dragen_copy." + readset.name, samples=[readset.sample])
+                         input_dependency=[dragen_bam])
+            ], name="dragen_copy." + readset.name, samples=[readset.sample], json=False, dependency_jobs=[],
+                output_dir=config.param('dragen_align', 'work_folder'))
             jobs.append(
                 dragen_align
             )
+            jobs.append(
+                dragen_output_copy
+            )
             # jobs.append(
-            #     dragen_output_copy
+            # concat_jobs([
+            # bashc.mkdir(alignment_directory, output_dependency=[dragen_bam]),
+            # bashc.mv(dragen_workfolder,os.path.join(alignment_directory, readset.name),input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
+            # bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'),"job_output","dragen_align." + readset.name + "*"),os.path.join("job_output","dragen_align"),input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
+            # bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'),"job_output","dragen_align","dragen_align." + readset.name + "*"),os.path.join("job_output","dragen_align"),input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
+            # rm_dragen_fastq_job
+            # ], name="dragen_clean." + readset.name, samples=[readset.sample] , json=False, dependency_jobs=[])
             # )
-
-            # jobs.append(
-            #     concat_jobs([
-            #         bashc.mkdir(alignment_directory),
-            #         picard.sort_sam(
-            #             dragen_bam,
-            #             output_bam
-            #         )
-            #     ], name="picard_sort_sam." + readset.name, samples=[readset.sample])
-            # )
+            jobs.append(
+                concat_jobs([
+                    bashc.mkdir(alignment_directory),
+                    picard.sort_sam(
+                        dragen_bam,
+                        output_bam
+                    )
+                ], name="picard_sort_sam." + readset.name, samples=[readset.sample])
+            )
             jobs.append(
                 concat_jobs([
                     bashc.mkdir(alignment_directory),
@@ -1070,54 +1069,10 @@ pandoc \\
                         output_bam,
                         re.sub(".bam", "_flagstat.txt", output_bam),
                     )
-                ], name="samtools_flagstat." + readset.name, samples=[readset.sample], output_dependency = [re.sub(".bam", "_flagstat.txt", output_bam)])
+                ], name="samtools_flagstat." + readset.name, samples=[readset.sample])
             )
-            jobs.append(
-                concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory),
-                    sambamba.index(
-                        output_bam,
-                        index_bam
-                    )
-                ], name="sambamba_index." + readset.name, samples=[readset.sample]))
 
         return jobs
-
-    def symlink_dedub(self):
-        jobs = []
-
-        duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='string').lower()
-
-        if duplicate_marking == "true":
-
-            for sample in self.samples:
-                alignment_directory = os.path.join("alignment", sample.name)
-
-                input_file = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-                output_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
-
-                jobs.append(
-                    concat_jobs([
-
-                        bashc.ln(
-                            input_file,
-                            output_file,
-                            self.output_dir
-                        )
-
-                    ],
-                        name="symlink_merge_sorted_dedub." + sample.name,
-                        samples=[sample]
-                    )
-                )
-
-
-
-        else:
-            jobs.extend(self.picard_remove_duplicates())
-
-        return jobs
-
 
     @property
     def steps(self):
@@ -1139,16 +1094,15 @@ pandoc \\
             self.filter_snp_cpg,
             self.prepare_methylkit,         # step 15
            # self.methylkit_differential_analysis,
-            self.cram_output
-        ], [
+            self.cram_output,
+        ],
             self.picard_sam_to_fastq,
             self.trimmomatic,
             self.merge_trimmomatic_stats,
             self.dragen_align,
-            #self.add_bam_umi,               # step 5
+            # self.add_bam_umi,               # step 5
             self.sambamba_merge_sam_files,
-            self.symlink_dedub,
-            #self.picard_remove_duplicates,
+            self.picard_remove_duplicates,
             self.metrics,
             self.methylation_call,
             self.wiggle_tracks,  # step 10
@@ -1159,27 +1113,15 @@ pandoc \\
             self.prepare_methylkit,  # step 15
             self.cram_output
         ]
-        ]
 
 
-
-class MethylSeq(MethylSeqRaw):
-    def __init__(self, protocol=None):
-        self._protocol = protocol
-        # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="MethylSeq analysis type", choices=["bismark", "dragen"],
-                                    default="bismark")
-        super(MethylSeq, self).__init__(protocol)
-
-
-
-class MethylSeq(MethylSeqRaw):
-    def __init__(self, protocol=None):
-        self._protocol = protocol
-        # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="MethylSeq analysis type", choices=["bismark", "dragen"],
-                                    default="bismark")
-        super(MethylSeq, self).__init__(protocol)
+# class  MethylSeq(MethylSeq):
+#     def __init__(self, protocol=None):
+#         self._protocol = protocol
+#         # Add pipeline specific arguments
+#         self.argparser.add_argument("-t", "--type", help="MethylSeq analysis type", choices=["bismark", "dragen"],
+#                                     default="bismark")
+#         super(MethylSeq, self).__init__(protocol)
 
 
 if __name__ == '__main__':
