@@ -758,9 +758,11 @@ cp \\
             # GC bias files
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.GCBias_all.txt"))
 
-            # Bismark alignment files
-            for readset in sample.readsets:
-                inputs.append(os.path.join("alignment", sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_report.txt"))
+            if self.protocol == "bismark":
+                # Bismark alignment files
+                for readset in sample.readsets:
+                    inputs.append(os.path.join("alignment", sample.name, readset.name,
+                                               readset.name + ".sorted_noRG_bismark_bt2_report.txt"))
 
             # CpG coverage files
             inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.median_CpG_coverage.txt"))
