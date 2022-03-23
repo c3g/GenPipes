@@ -2029,7 +2029,7 @@ done""".format(
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
-               self.merge_trimmomatic_stats,
+                self.merge_trimmomatic_stats,
                 self.mapping_bwa_mem_sambamba,
                 self.sambamba_merge_bam_files,
                 self.sambamba_mark_duplicates,

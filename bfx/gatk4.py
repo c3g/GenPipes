@@ -450,13 +450,14 @@ def haplotype_caller(
     interval_padding=100
     ):
 
+    interval_padding = str(interval_padding)
     if not isinstance(inputs, list):
         inputs = [inputs]
 
     # Added this to check intervel_list (peak file) availability in the chip-seq pipeline
+
     inputs_list = inputs.copy()
     if not interval_list is None:
-
        inputs_list.extend([interval_list])
 
     if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
