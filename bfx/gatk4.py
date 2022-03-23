@@ -450,7 +450,6 @@ def haplotype_caller(
     interval_padding=100
     ):
 
-    interval_padding = str(interval_padding)
     if not isinstance(inputs, list):
         inputs = [inputs]
 
