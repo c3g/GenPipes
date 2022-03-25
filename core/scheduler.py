@@ -431,7 +431,7 @@ exit \$MUGQIC_STATE" | \\
                         container_line=self.container_line,
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                         job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE'),
-                        step_wraper=config_step_wrapper if config_step_wrapper else ""
+                        step_wraper=config_step_wrapper
                     )
 
                     cmd += \
@@ -516,7 +516,7 @@ if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
                             separator_line=separator_line,
                             job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                             job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE'),
-                            step_wraper=config_step_wrapper if config_step_wrapper else ""
+                            step_wraper=config_step_wrapper
                         )
                     )
 
@@ -644,7 +644,7 @@ exit \$MUGQIC_STATE" | \\
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                         job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE') ,
                         container_line=self.container_line,
-                        step_wraper=config_step_wrapper if config_step_wrapper else ""
+                        step_wraper=config_step_wrapper
 )
                     cmd += \
                         self.submit_cmd + " " + \

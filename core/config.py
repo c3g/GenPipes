@@ -162,8 +162,8 @@ class Config(configparser.SafeConfigParser):
                 _raise(SanitycheckError("Error found :\n  " + str(e)))
         elif required:
             _raise(SanitycheckError("Error: REQUIRED parameter \"[" + original_section + "] " + option + "\" is not defined in config file(s)!"))
-        else:
-            return ""
+        # Returning empty string instead of None if nothing catched before as error
+        return ""
 
     @staticmethod
     def config_error(message=''):
