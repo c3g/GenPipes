@@ -955,6 +955,8 @@ pandoc \\
             dragen_tmp_bam = os.path.join(dragen_workfolder, readset.name + ".bam")
             dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".bam")
             output_bam = re.sub(".bam", ".sorted.bam", dragen_bam)
+            index_bam = output_bam + ".bai"
+
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -1073,6 +1075,14 @@ pandoc \\
                     )
                 ], name="samtools_flagstat." + readset.name, samples=[readset.sample])
             )
+            jobs.append(
+                concat_jobs([
+                    Job(command="mkdir -p " + alignment_directory),
+                    sambamba.index(
+                        output_bam,
+                        index_bam
+                    )
+                ], name="sambamba_index." + readset.name, samples=[readset.sample]))
 
         return jobs
 
