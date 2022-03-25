@@ -648,7 +648,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
                 platform=config.param('picard_add_read_groups', 'platform'),
                 processing_unit=processing_unit,
                 sample=sample,
-                sequencing_center=("RGCN=\"" + config.param('picard_add_read_groups', 'sequencing_center') + "\"" if config.param('picard_add_read_groups', 'sequencing_center', required=False) else "")
+                sequencing_center=("RGCN=\"" + config.param('picard_add_read_groups', 'sequencing_center') + "\"") if config.param('picard_add_read_groups', 'sequencing_center', required=False) else ""
             )
         )
 

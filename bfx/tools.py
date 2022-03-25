@@ -791,7 +791,7 @@ IHEC_chipseq_metrics_max.sh \\
             chip_bam=chip_bam,
             chip_type=chip_type,
             chip_name=chip_name,
-            threads=config.param('IHEC_chipseq_metrics', 'thread', param_type='int') if config.param('IHEC_chipseq_metrics', 'thread', param_type='int', required=False) else 1,
+            threads=config.param('IHEC_chipseq_metrics', 'thread', param_type='int'),
             chip_bed=chip_bed,
             output_dir=output_dir,
             assembly=assembly
