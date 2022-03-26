@@ -36,6 +36,7 @@ from bfx.readset import parse_illumina_readset_file
 
 def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libraryName, readGroupID,
                       input_dependency=None, output_dependency=None):
+    duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='string').lower()
     if input_dependency is not None:
         inputs = input_dependency
     else:
@@ -45,9 +46,11 @@ def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libra
             inputs = [fastq1]
     if output_dependency is not None:
         outputs = output_dependency
+    elif duplicate_marking == "true":
+        outputs = [os.path.join(output_dir, readsetName + ".sorted.bam")]
     else:
         outputs = [os.path.join(output_dir, readsetName + ".bam")]
-
+    print(outputs)
     return Job(
         inputs,
         outputs,
@@ -58,10 +61,12 @@ dragen --enable-methylation-calling true \\
     --intermediate-results-dir {dragen_tmp} \\
     --methylation-protocol {met_protocol} \\
     --ref-dir {reference} \\
-    --output-directory  {output_dir} \\
-    --output-file-prefix {readset} \\
+    --output-directory {output_dir} \\
+    --output-file-prefix {readset}.sorted \\
     --methylation-generate-cytosine-report {ct_report} \\
-    --enable-sort false \\
+    --methylation-mapping-implementation {mapping_implementation} \\
+    --enable-sort {sort} \\
+    --enable-duplicate-marking {duplicate_marking} \\
     --RGID {rgid} \\
     --RGLB {rglb} \\
     --RGSM {rgsm} \\
@@ -73,6 +78,9 @@ dragen --enable-methylation-calling true \\
             met_protocol=config.param('dragen_align', 'methylation_protocol', param_type='string'),
             reference=config.param('dragen_align', 'reference', param_type='string'),
             ct_report="true" if config.param('dragen_align', 'CTreport', param_type='boolean') else "false",
+            sort=config.param('dragen_align', 'sort', param_type='string'),
+            mapping_implementation=config.param('dragen_align', 'mapping_implementation', param_type='string'),
+            duplicate_marking=duplicate_marking,
             rgid=readGroupID,
             rglb=libraryName,
             rgsm=sampleName,

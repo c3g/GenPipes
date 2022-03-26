@@ -953,8 +953,8 @@ pandoc \\
             dragen_inputfolder = os.path.join(config.param('dragen_align', 'work_folder'), "reads", readset.name)
             dragen_workfolder = os.path.join(config.param('dragen_align', 'work_folder'), "alignment", readset.name)
             dragen_tmp_bam = os.path.join(dragen_workfolder, readset.name + ".bam")
-            dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".bam")
-            output_bam = re.sub(".bam", ".sorted.bam", dragen_bam)
+            dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            output_bam = dragen_bam
             index_bam = output_bam + ".bai"
 
 
@@ -1039,7 +1039,11 @@ pandoc \\
                 bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'), "job_output", "dragen_align",
                                       "dragen_align." + readset.name + "*"),
                          os.path.abspath(os.path.join("job_output", "dragen_align")) + "/", recursive=True,
-                         input_dependency=[dragen_bam])
+                         input_dependency=[dragen_bam]),
+                bashc.rm(os.path.join(config.param('dragen_align', 'work_folder'), "job_output",
+                                      "dragen_align." + readset.name + "*"), input_dependency=[dragen_bam], recursive=True),
+                bashc.rm(os.path.join(config.param('dragen_align', 'work_folder'), "job_output", "dragen_align",
+                                      "dragen_align." + readset.name + "*") ,input_dependency=[dragen_bam], recursive=True)
             ], name="dragen_copy." + readset.name, samples=[readset.sample], json=False, dependency_jobs=[],
                 output_dir=config.param('dragen_align', 'work_folder'))
             jobs.append(
@@ -1048,24 +1052,16 @@ pandoc \\
             jobs.append(
                 dragen_output_copy
             )
+
             # jobs.append(
-            # concat_jobs([
-            # bashc.mkdir(alignment_directory, output_dependency=[dragen_bam]),
-            # bashc.mv(dragen_workfolder,os.path.join(alignment_directory, readset.name),input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
-            # bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'),"job_output","dragen_align." + readset.name + "*"),os.path.join("job_output","dragen_align"),input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
-            # bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'),"job_output","dragen_align","dragen_align." + readset.name + "*"),os.path.join("job_output","dragen_align"),input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
-            # rm_dragen_fastq_job
-            # ], name="dragen_clean." + readset.name, samples=[readset.sample] , json=False, dependency_jobs=[])
+            #     concat_jobs([
+            #         bashc.mkdir(alignment_directory),
+            #         picard.sort_sam(
+            #             dragen_bam,
+            #             output_bam
+            #         )
+            #     ], name="picard_sort_sam." + readset.name, samples=[readset.sample])
             # )
-            jobs.append(
-                concat_jobs([
-                    bashc.mkdir(alignment_directory),
-                    picard.sort_sam(
-                        dragen_bam,
-                        output_bam
-                    )
-                ], name="picard_sort_sam." + readset.name, samples=[readset.sample])
-            )
             jobs.append(
                 concat_jobs([
                     bashc.mkdir(alignment_directory),
@@ -1085,6 +1081,31 @@ pandoc \\
                 ], name="sambamba_index." + readset.name, samples=[readset.sample]))
 
         return jobs
+
+    def symlink_dedub(self):
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join("alignment", sample.name)
+
+            input_file = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            output_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
+
+            jobs.append(
+                concat_jobs([
+
+                    bashc.ln(
+                        input_file,
+                        output_file,
+                        self.output_dir
+                    )
+
+                ],
+                    name="symlink_merge_sorted_dedub." + sample.name,
+                    samples=[sample]
+                )
+            )
+            return jobs
+
 
     @property
     def steps(self):
@@ -1114,7 +1135,8 @@ pandoc \\
             self.dragen_align,
             # self.add_bam_umi,               # step 5
             self.sambamba_merge_sam_files,
-            self.picard_remove_duplicates,
+            self.symlink_dedub,
+            #self.picard_remove_duplicates,
             self.metrics,
             self.methylation_call,
             self.wiggle_tracks,  # step 10
