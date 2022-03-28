@@ -245,7 +245,7 @@ class JobStat(object):
                 self._delta = self.stop - self.start
 
             return self._delta
-        except KeyError:
+        except (KeyError, ValueError):
             return datetime.timedelta(0)
 
     @property
@@ -275,14 +275,14 @@ class JobStat(object):
     def prologue_time(self):
         try:
             return self.start_time + self.start
-        except (TypeError, KeyError):
+        except (TypeError, KeyError, ValueError):
             return None
 
     @property
     def epilogue_time(self):
         try:
             return self.start_time + self.stop
-        except (TypeError, KeyError):
+        except (TypeError, KeyError, ValueError):
             return None
 
     @property
