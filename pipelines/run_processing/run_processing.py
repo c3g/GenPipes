@@ -676,7 +676,8 @@ class RunProcessing(common.MUGQICPipeline):
                             )
                         ],
                         name="basecall." + self.run_id + "." + lane,
-                        samples=self.samples[lane]
+                        samples=self.samples[lane],
+                        report_files=[os.path.join(basecall_dir, self.run_id, "L0" + lane, "SequenceStat.txt")]
                     )
                 )
 
@@ -821,7 +822,8 @@ class RunProcessing(common.MUGQICPipeline):
                     ],
                     name="bcl2fastq_index." + self.run_id + "." + lane,
                     samples=self.samples[lane],
-                    removable_files=[os.path.join(self.output_dir, "index", "L00" + lane)]
+                    removable_files=[os.path.join(self.output_dir, "index", "L00" + lane)],
+                    report_files=[os.path.join(self.output_dir, "index", "L00" + lane, "Stats", "Stats.json")]
                 ))
 
                 # Index Validation
@@ -1253,7 +1255,8 @@ class RunProcessing(common.MUGQICPipeline):
                             name=ini_section + ".demultiplex." + self.run_id + "." + lane,
                             samples=self.samples[lane],
                             input_dependency=demultiplex_job.input_files,
-                            output_dependency=demuxfastqs_outputs
+                            output_dependency=demuxfastqs_outputs,
+                            report_files=[metrics_file]
                         )
                     )
 
@@ -1305,7 +1308,8 @@ class RunProcessing(common.MUGQICPipeline):
                             output_dir
                     )],
                     name="qc_graphs." + readset.name + ".qc." + self.run_id + "." + lane,
-                    samples=[readset.sample]
+                    samples=[readset.sample],
+                    report_files=[os.path.join(output_dir, "mpsQC_" + region_name + "_stats.xml")]
                 ))
                 self.report_inputs[lane]['qc_graphs'][readset.name] = os.path.join(output_dir, "mpsQC_" + region_name + "_stats.xml")
 
@@ -1368,12 +1372,14 @@ class RunProcessing(common.MUGQICPipeline):
                         ]
                 for input1, outputs in input_dict.items():
                     unzip = False
+                    report_file = None
                     if input1 == readset.fastq1:
                         job_suffix = "R1."
                         input2 = None
                         unzip = True
                         if not len(self.readsets[lane]) == 1:
                             self.report_inputs[lane]['fastqc'][readset.name] = outputs[2]
+                            report_file = outputs[2]
                     elif input1 == readset.fastq2:
                         job_suffix = "R2."
                         input2 = None
@@ -1382,22 +1388,26 @@ class RunProcessing(common.MUGQICPipeline):
                         job_suffix = "Barcodes."
                         input2 = readset.index_fastq2 if self.is_dual_index[lane] else None
                     lane_jobs.append(
-                        concat_jobs([
-                            bash.mkdir(
-                                os.path.dirname(outputs[0]),
-                                remove=True
-                            ),
-                            fastqc.fastqc(
-                                input1,
-                                input2,
-                                outputs,
-                                adapter_file=None,
-                                extract=unzip,
-                                use_tmp=True
-                        )],
-                        name="fastqc." + readset.name + "_" + job_suffix + "." + self.run_id + "." + lane,
-                        samples=[readset.sample]
-                    ))
+                        concat_jobs(
+                            [
+                                bash.mkdir(
+                                    os.path.dirname(outputs[0]),
+                                    remove=True
+                                ),
+                                fastqc.fastqc(
+                                    input1,
+                                    input2,
+                                    outputs,
+                                    adapter_file=None,
+                                    extract=unzip,
+                                    use_tmp=True
+                                )
+                            ],
+                            name="fastqc." + readset.name + "_" + job_suffix + "." + self.run_id + "." + lane,
+                            samples=[readset.sample],
+                            report_files=[report_file]
+                        )
+                    )
 
             self.add_to_report_hash("fastqc", lane, lane_jobs)
             self.add_copy_job_inputs(lane_jobs, lane)
@@ -1420,12 +1430,14 @@ class RunProcessing(common.MUGQICPipeline):
                 output_json_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.name + ".fastp.json")
                 output_html_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.name + ".fastp.html")
                 lane_jobs.append(
-                    concat_jobs([
-                        bash.mkdir(os.path.dirname(output_json_path), remove=True),
-                        fastp.fastp_basic_qc(readset.fastq1, readset.fastq2, output_json_path, output_html_path),
-                    ],
-                    name="fastp." + readset.name + "." + self.run_id + "." + lane,
-                    samples=[readset.sample]
+                    concat_jobs(
+                        [
+                            bash.mkdir(os.path.dirname(output_json_path), remove=True),
+                            fastp.fastp_basic_qc(readset.fastq1, readset.fastq2, output_json_path, output_html_path),
+                        ],
+                        name="fastp." + readset.name + "." + self.run_id + "." + lane,
+                        samples=[readset.sample],
+                        report_files=[output_json_path]
                     )
                 )
             self.add_to_report_hash("fastp", lane, lane_jobs)
@@ -1495,7 +1507,8 @@ class RunProcessing(common.MUGQICPipeline):
                             ["blast", "module_mugqic_tools"],
                             ["blast", "module_blast"]
                         ],
-                        command=command
+                        command=command,
+                        report_files=[output]
                     )
                 )
 
@@ -1620,7 +1633,8 @@ class RunProcessing(common.MUGQICPipeline):
                             readset.name
                     )],
                     name="sample_tag." + readset.name + "." + self.run_id + "." + str(readset.lane),
-                    samples=[readset.sample]
+                    samples=[readset.sample],
+                    report_files=[os.path.join(ouput_directory, readset.name + ".sample_tag_stats.csv")]
                 ))
                 self.report_inputs[lane]['sample_tag'][readset.name] = os.path.join(ouput_directory, readset.name + ".sample_tag_stats.csv")
 
@@ -1683,6 +1697,7 @@ class RunProcessing(common.MUGQICPipeline):
                 )
                 job.name = "picard_mark_duplicates." + readset.name + ".dup." + self.run_id + "." + lane
                 job.samples = [readset.sample]
+                job.report_files = [metrics_file]
                 lane_jobs.append(job)
 
             self.add_to_report_hash("picard_mark_duplicates", lane, lane_jobs)
@@ -1831,62 +1846,51 @@ class RunProcessing(common.MUGQICPipeline):
 
             self.generate_lane_json_report_file(lane)
 
-            general_information_file = os.path.join(self.output_dir, self.run_id + "." + lane + ".general_information.json")
-            if not os.path.exists(os.path.dirname(general_information_file)):
-                os.makedirs(os.path.dirname(general_information_file))
-            with open(general_information_file, 'w') as out_json:
-                json.dump(self.report_hash[lane], out_json, indent=4)
-
             # metrics to JSON
+            # Loop over all the steps of the pipeline
             for step in self.step_list:
                 report_step_jobs = []
-                if step.name in self.report_inputs[lane].keys() and self.report_inputs[lane][step.name]:
-                   if type(self.report_inputs[lane][step.name]) is str:
-                       report_step_jobs.append(
-                           concat_jobs(
-                               [
-                                   bash.mkdir(os.path.join(self.job_output_dir, "checkpoint")),
-                                   tools.run_processing_metrics_to_json(
-                                       self.run_validation_report_json[lane],
-                                       step.name,
-                                       self.args.type,
-                                       self.report_inputs[lane][step.name]
-                                   ),
-                                   bash.touch(os.path.join(self.job_output_dir, "checkpoint", step.name + "." + self.run_id + "." + lane + ".reportUpdated"))
-                               ],
-                               name="report." + step.name + "." + self.run_id + "." + lane,
-                               samples=self.samples[lane]
-                           )
-                       )
-                   elif type(self.report_inputs[lane][step.name]) is dict:
-                       for readset in self.readsets[lane]:
-                           report_step_jobs.append(
-                               concat_jobs(
-                                   [
-                                       bash.mkdir(os.path.join(self.job_output_dir, "checkpoint")),
-                                       tools.run_processing_metrics_to_json(
-                                           self.run_validation_report_json[lane],
-                                           step.name,
-                                           self.args.type,
-                                           self.report_inputs[lane][step.name][readset.name],
-                                           readset.name
-                                       ),
-                                       bash.touch(os.path.join(self.job_output_dir, "checkpoint", step.name + "." + readset.name + "." + self.run_id + "." + lane + ".reportUpdated"))
-                                   ],
-                                   name="report." + step.name + "." + readset.name + "." + self.run_id + "." + lane,
-                                   samples=self.samples[lane]
-                               )
-                           )
-                   else:
-                       _raise(SanitycheckError("Unknown metrics type : " + type(self.report_inputs[lane][step.name]) + " for step '" + step.name + "'"))
+                if step.name in ['basecall', 'fastq', 'index']:
+                    step_report_files = list(set([report_file for job in step.jobs for report_file in job.report_files for sample in job.samples for readset in sample.readsets if job.report_files and readset.lane == lane]))
+                    if step_report_files:
+                        report_job = tools.run_processing_metrics_to_json(
+                             self.run_validation_report_json[lane],
+                             step.name,
+                             self.args.type,
+                             step_report_files
+                        )
+                        report_job.name = "report." + step.name + "." + self.run_id + "." + lane
+                        report_job.samples = self.samples[lane]
+                        report_step_jobs.append(report_job)
+                else:
+                    for readset in self.readsets[lane]:
+                        readset_name = readset.name
+                        step_report_files = [] 
+                        for job in step.jobs:
+                            if job.report_files: 
+                                for sample in job.samples:
+                                    if not isinstance(sample, str):
+                                        for readset in sample.readsets:
+                                            if readset.lane == lane and readset.name == readset.name:
+                                                for report_file in job.report_files:
+                                                    step_report_files.append(report_file)
+                        step_report_files = list(set(step_report_files))
+                        if step_report_files:
+                            report_job = tools.run_processing_metrics_to_json(
+                                self.run_validation_report_json[lane],
+                                step.name,
+                                self.args.type,
+                                step_report_files,
+                                readset.name
+                            )
+                            report_job.name = "report." + step.name + "." + readset.name + "." + self.run_id + "." + lane
+                            report_job.samples = self.samples[lane]
+                            report_step_jobs.append(report_job)
 
-                   lane_jobs.extend(self.throttle_jobs(report_step_jobs))
+                lane_jobs.extend(self.throttle_jobs(report_step_jobs))
 
                 # checkpoint file
-                step_checkpoint_file = os.path.join(self.job_output_dir, "checkpoint", step.name + "." + self.run_id + "." + lane + ".done")
-#                if report_step_jobs:
-#                    step_checkpoint_job_dependencies = [output for job in report_step_jobs for output in job.output_files]
-#                else:
+                step_checkpoint_file = os.path.join(self.job_output_dir, "checkpoint", step.name + "." + self.run_id + "." + lane + ".stepDone")
                 step_checkpoint_job_dependencies = [output for job in step.jobs for output in job.output_files]
                 if step_checkpoint_job_dependencies:
                     lane_jobs.append(
@@ -2846,6 +2850,27 @@ class RunProcessing(common.MUGQICPipeline):
                     }
                 }
             )
+
+        # Adding the MultiQC input file list
+        self.report_hash[lane]["multiqc_inputs"] = []
+        for step in self.step_list:
+            if step.name in ['basecall', 'fastq', 'index']:
+                step_report_files = list(set([report_file for job in step.jobs for report_file in job.report_files for sample in job.samples for readset in sample.readsets if job.report_files and readset.lane == lane]))
+                self.report_hash[lane]["multiqc_inputs"].extend([os.path.relpath(path, os.path.join(self.output_dir, "report")) for path in step_report_files])
+            else:
+                for readset in self.readsets[lane]:
+                    readset_name = readset.name
+                    step_report_files = []
+                    for job in step.jobs:
+                        if job.report_files: 
+                            for sample in job.samples:
+                                if not isinstance(sample, str):
+                                    for readset in sample.readsets:
+                                        if readset.lane == lane and readset.name == readset.name:
+                                            for report_file in job.report_files:
+                                                step_report_files.append(report_file)
+                    step_report_files = list(set(step_report_files))
+                    self.report_hash[lane]["multiqc_inputs"].extend([os.path.relpath(path, os.path.join(self.output_dir, "report")) for path in step_report_files])
 
         report_dir = os.path.join(self.output_dir, "report")
         if not os.path.exists(os.path.dirname(self.run_validation_report_json[lane])):

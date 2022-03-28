@@ -27,7 +27,7 @@ from bfx import sample
 
 # Start creating the json dump for the passed sample
 def create(pipeline, sample):
-    jsonator_version = "1.0.1"
+    jsonator_version = "2.0.0"
 
     # Retrieve the project name fome the config file, if not specified then use the parent folder name of where the pipeline has been launched
     if config.param("DEFAULT", 'project_name', required=False):
@@ -66,7 +66,15 @@ def create(pipeline, sample):
             'assembly_used' : config.param("DEFAULT", 'assembly'),
             'assembly_source' : config.param("DEFAULT", 'source')
         }
-    else :
+    elif pipeline.__class__.__name__ == "RunProcessing":
+        general_info = {
+            'run_id' : pipeline.run_id,
+            'platform' : pipeline.args.type,
+            'instrument': pipeline.instrument,
+            "flowcell": pipeline.flowcell_id,
+            "project_id": list(set([readset.project_id for readset in sample.readsets if not isinstance(sample, str)]))[0],
+        }
+    else:
         general_info = {
             'analysed_species' : config.param("DEFAULT", 'scientific_name'),
             'assembly_used' : config.param("DEFAULT", 'assembly'),
@@ -148,6 +156,31 @@ def create(pipeline, sample):
                     } for software in softwares],
                     'step': []
                 }
+            }
+        elif pipeline.__class__.__name__ == "RunProcessing":
+            json_hash = { 
+                'version': jsonator_version,
+                'project': list(set([readset.project for readset in sample.readsets]))[0],
+                'submission_date': "", 
+                # Create a submission time entry and let it empty : will be updated as the bash script is launched
+                'sample_name': sample.name,
+                'readset': [{
+                    "name": readset.name,
+                    "lane": readset.lane,
+                    "library": readset.library,
+                    "fastq1": os.path.realpath(readset.fastq1) if readset.fastq1 else "",
+                    "fastq2": os.path.realpath(readset.fastq2) if readset.fastq2 else "",
+                    "bam": os.path.realpath(readset.bam + ".bam") if readset.bam else ""
+                } for readset in sample.readsets],
+                'pipeline': {
+                    'name': pipeline.__class__.__name__,
+                    'general_information': general_info,
+                    'software': [{
+                        'name': software['name'],
+                        'version': software['version']
+                    } for software in softwares],
+                    'step': []
+                }   
             }
         else :
             json_hash = {
