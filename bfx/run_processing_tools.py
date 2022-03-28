@@ -34,7 +34,7 @@ def index(
     mask
     ):
 
-    barcode_file = config.param('index', 'barcode_file', type='filepath', required='false')
+    barcode_file = config.param('index', 'barcode_file', param_type='filepath', required='false')
     if not (barcode_file and os.path.isfile(barcode_file)):
         barcode_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'resources', 'barcode.mergedup.txt')
 
@@ -432,7 +432,7 @@ client_linux \\
             thread=config.param(ini_section, 'thread'),
             workspace=os.path.dirname(run_dir),
             fastq=output_dir,
-            config_template=os.path.expandvars(config.param(ini_section, 'mgi_t7_config_template', type='filepath')),
+            config_template=os.path.expandvars(config.param(ini_section, 'mgi_t7_config_template', param_type='filepath')),
             config_file=lane_config_file,
             target_dir=os.path.dirname(lane_config_file),
             fcid=flowcell_id,

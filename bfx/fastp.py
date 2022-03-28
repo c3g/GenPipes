@@ -33,7 +33,7 @@ def fastp_basic_qc(input1, input2, output_json_path, output_html_path=None, over
     else:
         inputs = [input1]
 
-    num_threads = config.param('fastp', 'threads', required=False, type='posint')
+    num_threads = config.param('fastp', 'threads', required=False, param_type='posint')
     output_files = filter(None, [output_json_path, output_html_path])
 
     return Job(

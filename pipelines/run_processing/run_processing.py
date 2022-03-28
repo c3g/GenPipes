@@ -467,7 +467,7 @@ class RunProcessing(common.MUGQICPipeline):
                 # If only one library on the lane
                 if len(self.readsets[lane]) == 1:
                     self._merge_undetermined[lane] = True
-                if config.param('fastq_illumina', 'merge_undetermined', required=False, type='boolean'):
+                if config.param('fastq_illumina', 'merge_undetermined', required=False, param_type='boolean'):
                     self._merge_undetermined[lane] = config.param('fastq_illumina', 'merge_undetermined')
         return self._merge_undetermined
 
@@ -1455,8 +1455,8 @@ class RunProcessing(common.MUGQICPipeline):
         """
         jobs = []
 
-        nb_blast_to_do = config.param('blast', 'nb_blast_to_do', type="posint")
-        is_nb_blast_per_lane = config.param('blast', 'is_nb_for_whole_lane', type="boolean")
+        nb_blast_to_do = config.param('blast', 'nb_blast_to_do', param_type="posint")
+        is_nb_blast_per_lane = config.param('blast', 'is_nb_for_whole_lane', param_type="boolean")
 
         for lane in self.lanes:
             lane_jobs = []
@@ -1818,7 +1818,7 @@ class RunProcessing(common.MUGQICPipeline):
 
                 lane_jobs.append(job)
 
-            if config.param('md5', 'one_job', required=False, type="boolean"):
+            if config.param('md5', 'one_job', required=False, param_type="boolean"):
                 lane_job = concat_jobs(
                     lane_jobs,
                     name="md5." + self.run_id + "." + lane,
@@ -1920,14 +1920,14 @@ class RunProcessing(common.MUGQICPipeline):
 
         if not self.args.type == 'illumina':
             full_destination_folder = os.path.join(
-                config.param("copy", "destination_folder", type="dirpath"),
+                config.param("copy", "destination_folder", param_type="dirpath"),
                 self.seq_category,
                 self.year,
                 self.date + "_" + self.instrument + "_" + self.run_number + "_" + self.flowcell_position + self.flowcell_id + "_" + self.sequencer_run_id + "-" + self.seqtype
             )
         else:
             full_destination_folder = os.path.join(
-                config.param("copy", "destination_folder", type="dirpath"),
+                config.param("copy", "destination_folder", param_type="dirpath"),
                 self.seq_category,
                 self.year,
                 os.path.basename(self.run_dir) + "-" + self.seqtype
@@ -1953,8 +1953,8 @@ class RunProcessing(common.MUGQICPipeline):
                 "reportTransferCompleted." + lane + ".out"
             )
 
-            exclude_bam = config.param('copy', 'exclude_bam', required=False, type='boolean')
-            exclude_fastq_with_bam = config.param('copy', 'exclude_fastq_with_bam', required=False, type='boolean')
+            exclude_bam = config.param('copy', 'exclude_bam', required=False, param_type='boolean')
+            exclude_fastq_with_bam = config.param('copy', 'exclude_fastq_with_bam', required=False, param_type='boolean')
             if exclude_bam and exclude_fastq_with_bam:
                 log.warn("Excluding both BAM and fastq files")
 
@@ -2008,7 +2008,7 @@ class RunProcessing(common.MUGQICPipeline):
         jobs = []
 
         full_destination_folder = os.path.join(
-            config.param('copy', 'destination_folder', type="dirpath"),
+            config.param('copy', 'destination_folder', param_type="dirpath"),
             self.seq_category,
             self.year,
             os.path.basename(self.run_dir) + "-" + self.seqtype
@@ -2053,14 +2053,14 @@ class RunProcessing(common.MUGQICPipeline):
         for lane in self.lanes:
             if not self.args.type == 'illumina':
                 full_destination_folder = os.path.join(
-                    config.param("copy", "destination_folder", type="dirpath"),
+                    config.param("copy", "destination_folder", param_type="dirpath"),
                     self.seq_category,
                     self.year,
                     self.date + "_" + self.instrument + "_" + self.run_number + "_" + self.flowcell_position + self.flowcell_id + "_" + self.sequencer_run_id + "-" + self.seqtype
                 )
             else:
                 full_destination_folder = os.path.join(
-                    config.param("copy", "destination_folder", type="dirpath"),
+                    config.param("copy", "destination_folder", param_type="dirpath"),
                     self.seq_category,
                     self.year,
                     os.path.basename(self.run_dir) + "-" + self.seqtype
@@ -2370,7 +2370,7 @@ class RunProcessing(common.MUGQICPipeline):
         """
 
         instrument = self.instrument
-        instrument_file = config.param('DEFAULT', 'instrument_list_file', type='filepath', required=False)
+        instrument_file = config.param('DEFAULT', 'instrument_list_file', param_type='filepath', required=False)
         if not (instrument_file and os.path.isfile(instrument_file)):
             instrument_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'instrument_list.csv')
 
@@ -2652,9 +2652,9 @@ class RunProcessing(common.MUGQICPipeline):
         final_index1 = self.index1cycles[lane] if overindex1 is None else overindex1
         final_index2 = self.index2cycles[lane] if overindex2 is None else overindex2
 
-        self._mask[lane] = config.param('fastq_illumina', 'overmask') if config.param('fastq_illumina', 'overmask', required=False, type='string') else final_mask
-        self._index1cycles[lane] = config.param('fastq_illumina', 'overindex1') if config.param('fastq_illumina', 'overindex1', required=False, type='int') else final_index1
-        self._index2cycles[lane] = config.param('fastq_illumina', 'overindex2') if config.param('fastq_illumina', 'overindex2', required=False, type='int') else final_index2
+        self._mask[lane] = config.param('fastq_illumina', 'overmask') if config.param('fastq_illumina', 'overmask', required=False, param_type='string') else final_mask
+        self._index1cycles[lane] = config.param('fastq_illumina', 'overindex1') if config.param('fastq_illumina', 'overindex1', required=False, param_type='int') else final_index1
+        self._index2cycles[lane] = config.param('fastq_illumina', 'overindex2') if config.param('fastq_illumina', 'overindex2', required=False, param_type='int') else final_index2
 
         # If the second index exists
         if self.index2cycles != 0:
@@ -3643,7 +3643,7 @@ class RunProcessing(common.MUGQICPipeline):
         Group jobs of the same task (same name prefix) if they exceed the configured threshold number.
         """
 
-        max_jobs_per_step = config.param('default', 'max_jobs_per_step', required=False, type="int")
+        max_jobs_per_step = config.param('default', 'max_jobs_per_step', required=False, param_type="int")
         jobs_by_name = OrderedDict()
         reply = []
 
@@ -3689,7 +3689,7 @@ class RunProcessing(common.MUGQICPipeline):
                 "PAIRED_END" if self.is_paired_end[lane] else "SINGLE_END",
                 self.readset_file,
                 lane,
-                config.param('DEFAULT', 'genome_root', type="dirpath"),
+                config.param('DEFAULT', 'genome_root', param_type="dirpath"),
                 self.get_sequencer_minimum_read_length(),
                 self.index1cycles[lane],
                 self.index2cycles[lane],
