@@ -127,6 +127,7 @@ class RunProcessingAligner(object):
                         command="cut -f2- " + output_prefix + ".selfSM > " + output_prefix + ".tsv"
                 )],
                 name="verify_bam_id." + readset.name + "." + readset.run + "." + readset.lane,
+                report_files=[readset.bam + ".metrics.verifyBamId.selfSM"],
                 samples=[readset.sample]
             ))
 
@@ -251,6 +252,10 @@ class BwaRunProcessingAligner(RunProcessingAligner):
         )
         job.name = "picard_collect_multiple_metrics." + readset.name + ".met" + "." + readset.run + "." + readset.lane
         job.samples = [readset.sample]
+        job.report_files = [
+            input_file_prefix + "metrics.alignment_summary_metrics",
+            input_file_prefix + "metrics.insert_size_metrics"
+        ]
         jobs.append(job)
 
         if readset.beds:
@@ -306,6 +311,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
         )
         job.name = "bvatools_depth_of_coverage." + readset.name + ".doc" + "." + readset.run + "." + readset.lane
         job.samples = [readset.sample]
+        job.report_files = [readset.bam + ".metrics.targetCoverage.txt"]
         jobs.append(job)
 
         return jobs
@@ -400,7 +406,8 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
                     os.path.join(input_bam_directory, readset.sample.name + "." + readset.library + ".rnaseqc.sorted.dup.metrics.tsv")
                 )],
                 name="rnaseqc." + readset.name + ".rnaseqc" + "." + readset.run + "." + readset.lane,
-                samples=[readset.sample]
+                samples=[readset.sample],
+                report_files=[os.path.join(input_bam_directory, readset.sample.name + "." + readset.library + ".rnaseqc.sorted.dup.metrics.tsv")]
             )
             jobs.append(job)
 
@@ -425,6 +432,10 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
         )
         job.name = "picard_collect_multiple_metrics." + readset.name + ".met" + "." + readset.run + "." + readset.lane
         job.samples = [readset.sample]
+        job.report_files = [
+            readset.bam + ".metrics.alignment_summary_metrics",
+            readset.bam + ".metrics.insert_size_metrics"
+        ]
         jobs.append(job)
 
         if len(readset.annotation_files) > 2 and os.path.isfile(readset.annotation_files[2]):
@@ -481,10 +492,11 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
                     typ="transcript"
                 )],
                 name="bwa_mem_rRNA." + readset.name + ".rRNA" + "." + readset.run + "." + readset.lane,
-                samples=[readset.sample]
+                samples=[readset.sample],
+                report_files=[os.path.join(readset.bam + ".metrics.rRNA.tsv")],
+                removable_files=[readset_metrics_bam]
             )
 
-            job.removable_files = [readset_metrics_bam]
             jobs.append(job)
 
         return jobs

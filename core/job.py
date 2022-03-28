@@ -204,12 +204,11 @@ class Job(object):
         return True
 
 # Create a new job by concatenating a list of jobs together
-def concat_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=[], removable_files=[]):
+def concat_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=[], removable_files=[], report_files=[]):
 
     # Merge all input/output/report/removable files and modules
     input_files = []
     output_files = []
-    report_files = []
     multiqc_files = []
     modules = []
     for job_item in [job_item for job_item in jobs if job_item]:
@@ -235,14 +234,13 @@ def concat_jobs(jobs, name="", input_dependency=[], output_dependency=[], sample
     return job
 
 # Create a new job by piping a list of jobs together
-def pipe_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=[], removable_files = []):
+def pipe_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=[], removable_files=[], report_files=[]):
 
     # Remove 'None' jobs from the job list, may happened in the case of conditional jobs
     jobs = [job for job in jobs if job]
     job = Job(jobs[0].input_files, jobs[-1].output_files, name=name)
 
     # Merge all report/removable files and modules
-    report_files = []
     multiqc_files = []
     modules = []
     for job_item in [job_item for job_item in jobs if job_item]:
