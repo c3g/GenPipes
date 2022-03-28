@@ -645,11 +645,11 @@ def sh_sample_tag_summary(
     output_dir
     ):
 
-    nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', type='int', required=True)
-    align_size = config.param('sample_tag', 'align_size', type='int', required=True)
-    mismatches = config.param('sample_tag', 'mismatches', type='int', required=True)
-    identity = config.param('sample_tag', 'identity', type='float', required=True)
-    database_file = config.param('sample_tag', 'database', type='filepath', required=True)
+    nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', param_type='int', required=True)
+    align_size = config.param('sample_tag', 'align_size', param_type='int', required=True)
+    mismatches = config.param('sample_tag', 'mismatches', param_type='int', required=True)
+    identity = config.param('sample_tag', 'identity', param_type='float', required=True)
+    database_file = config.param('sample_tag', 'database', param_type='filepath', required=True)
 
     output_base_name = os.path.basename(fastq_in) + ".subSampled_" + str(nreads_sample_tag) + ".blast.tsv."+ str(align_size) + "bp_" + str(mismatches) + "MM_" + str(int(100*identity)) + "id.tsv.summary.tsv"
     output_file = os.path.join(output_dir, output_base_name)
@@ -673,7 +673,7 @@ bash $TOOLS/estimateSpikeInCount.sh \\
             nreads_sample_tag=nreads_sample_tag,
             output_dir=output_dir,
             fastq=fastq_in,
-            db=config.param('sample_tag', 'database', type='filepath', required=True),
+            db=config.param('sample_tag', 'database', param_type='filepath', required=True),
             align_size=align_size,
             mismatches=mismatches,
             identity=identity
@@ -689,10 +689,10 @@ def sh_sample_tag_stats(
 
     input_prefix = os.path.join(output_dir, os.path.basename(fastq_in))
 
-    nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', type='int', required=True)
-    align_size = config.param('sample_tag', 'align_size', type='int', required=True)
-    mismatches = config.param('sample_tag', 'mismatches', type='int', required=True)
-    identity = int(100 * config.param('sample_tag', 'identity', type='float', required=True))
+    nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', param_type='int', required=True)
+    align_size = config.param('sample_tag', 'align_size', param_type='int', required=True)
+    mismatches = config.param('sample_tag', 'mismatches', param_type='int', required=True)
+    identity = int(100 * config.param('sample_tag', 'identity', param_type='float', required=True))
 
     input_file = input_prefix + ".subSampled_" + str(nreads_sample_tag) + ".blast.tsv." + str(align_size) + "bp_" + str(mismatches) + "MM_" + str(identity) + "id.tsv.summary.tsv"
     output_file = os.path.join(output_dir, readset_name + ".sample_tag_stats.csv")

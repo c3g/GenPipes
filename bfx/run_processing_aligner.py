@@ -260,7 +260,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
         if readset.beds:
             coverage_bed = readset.beds[0]
-            full_coverage_bed = os.path.join(config.param('DEFAULT', 'bed_path', type='dirpath', required=False), coverage_bed)
+            full_coverage_bed = os.path.join(config.param('DEFAULT', 'bed_path', param_type='dirpath', required=False), coverage_bed)
             if not os.path.isfile(full_coverage_bed):
                 full_coverage_bed = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", "bed", coverage_bed)
         else:

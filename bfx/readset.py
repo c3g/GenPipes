@@ -370,17 +370,17 @@ def parse_illumina_raw_readset_files(
     readset_csv = csv.DictReader(open(readset_file, 'r'), delimiter='\t', quotechar='"')
 
     for line in readset_csv:
-        protocol_file = config.param('DEFAULT', 'library_protocol_file', type='filepath', required=False)
+        protocol_file = config.param('DEFAULT', 'library_protocol_file', param_type='filepath', required=False)
         if not (protocol_file and os.path.isfile(protocol_file)):
             protocol_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'library_protocol_list.csv')
         protocol_csv = csv.DictReader(open(protocol_file, 'r'), delimiter=',', quotechar='"')
 
-        adapter_file = config.param('DEFAULT', 'adapter_type_file', type='filepath', required=False)
+        adapter_file = config.param('DEFAULT', 'adapter_type_file', param_type='filepath', required=False)
         if not (adapter_file and os.path.isfile(adapter_file)):
             adapter_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_types.txt')
         adapter_csv = csv.reader(open(adapter_file, 'r'), delimiter=',', quotechar='"')
 
-        index_file = config.param('DEFAULT', 'index_settings_file', type='filepath', required=False)
+        index_file = config.param('DEFAULT', 'index_settings_file', param_type='filepath', required=False)
         if not (index_file and os.path.isfile(index_file)):
             index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
         index_csv = csv.reader(open(index_file, 'r'), delimiter=',', quotechar='"')
@@ -818,12 +818,12 @@ def parse_mgi_raw_readset_files(
     readset_csv = csv.DictReader(open(readset_file, 'r'), delimiter='\t', quotechar='"')
     for line in readset_csv:
 
-        adapter_file = config.param('DEFAULT', 'adapter_type_file', type='filepath', required=False)
+        adapter_file = config.param('DEFAULT', 'adapter_type_file', param_type='filepath', required=False)
         if not (adapter_file and os.path.isfile(adapter_file)):
             adapter_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_types.txt')
         adapter_csv = csv.reader(open(adapter_file, 'r'), delimiter=',', quotechar='"')
 
-        index_file = config.param('DEFAULT', 'index_settings_file', type='filepath', required=False)
+        index_file = config.param('DEFAULT', 'index_settings_file', param_type='filepath', required=False)
         if not (index_file and os.path.isfile(index_file)):
             index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
         index_csv = csv.reader(open(index_file, 'r'), delimiter=',', quotechar='"')
@@ -918,7 +918,7 @@ def parse_mgi_raw_readset_files(
             readset._is_scrna = False
 
         # Searching for a matching reference for the specified species
-        genome_root = config.param('DEFAULT', 'genome_root', type="dirpath")
+        genome_root = config.param('DEFAULT', 'genome_root', param_type="dirpath")
 
         m = re.search("(?P<build>\w+):(?P<assembly>[\w\.]+)", readset.genomic_database)
         genome_build = None
@@ -1224,7 +1224,7 @@ def get_index(
         index1seq = ""
         index2seq = ""
 
-        index_file = config.param('DEFAULT', 'index_settings_file', type='filepath', required=False)
+        index_file = config.param('DEFAULT', 'index_settings_file', param_type='filepath', required=False)
         if not (index_file and os.path.isfile(index_file)):
             index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
 
@@ -1290,7 +1290,7 @@ def sub_get_index(
         ):
         """
         """
-        index_file = config.param('DEFAULT', 'index_settings_file', type='filepath', required=False)
+        index_file = config.param('DEFAULT', 'index_settings_file', param_type='filepath', required=False)
         if not (index_file and os.path.isfile(index_file)):
             index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
 
