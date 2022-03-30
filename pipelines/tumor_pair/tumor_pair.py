@@ -2579,13 +2579,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
             )
 
             if coverage_bed:
-                local_coverage_bed = os.path.join(somatic_dir, os.path.basename(coverage_bed))
+                local_coverage_bed = os.path.join(pair_directory, os.path.basename(coverage_bed))
                 bed_file = local_coverage_bed + ".gz"
                 jobs.append(
                     concat_jobs(
                         [
-                            bash.rm(somatic_dir),
-                            bash.mkdir(somatic_dir),
+                            bash.mkdir(pair_directory),
                             Job(
                                 [coverage_bed],
                                 [local_coverage_bed + ".sort"],
@@ -2617,6 +2616,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             jobs.append(
                 concat_jobs(
                     [
+                        bash.rm(somatic_dir),
                         strelka2.somatic_config(
                             input_normal[0],
                             input_tumor[0],
@@ -2629,7 +2629,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             output_dep=output_dep
                         ),
                     ],
-                    name="strelka2_paired_somatic.call." + tumor_pair.name
+                    name="strelka2_paired_somatic.call."+tumor_pair.name,
+                    samples=[tumor_pair]
                 )
             )
 
@@ -2723,20 +2724,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 tumor_pair.normal.readsets[0]
             )
         
-            # if os.path.isdir(germline_dir):
-            #     jobs.append(concat_jobs([
-            #         bash.rm(
-            #             germline_dir
-            #         )
-            #     ], name="rm_strelka2_directory." + tumor_pair.name))
-        
             if coverage_bed:
-                local_coverage_bed = os.path.join(germline_dir, os.path.basename(coverage_bed))
+                local_coverage_bed = os.path.join(pair_directory, os.path.basename(coverage_bed))
                 bed_file = local_coverage_bed + ".gz"
                 jobs.append(
                     concat_jobs(
                         [
-                            bash.mkdir(germline_dir),
+                            bash.mkdir(pair_directory),
                             Job(
                                 [coverage_bed],
                                 [local_coverage_bed + ".sort"],
@@ -2765,6 +2759,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             jobs.append(
                 concat_jobs(
                     [
+                        bash.rm(germline_dir),
                         strelka2.germline_config(
                             input,
                             germline_dir,
@@ -2775,7 +2770,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             output_dep=output_dep
                         )
                     ],
-                    name="strelka2_paired_germline.call." + tumor_pair.name
+                    name="strelka2_paired_germline.call."+tumor_pair.name,
+                    samples=[tumor_pair]
                 )
             )
         
