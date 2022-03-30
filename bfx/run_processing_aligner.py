@@ -20,14 +20,12 @@
 # Python Standard Modules
 import os
 import re
-import configparser
 import sys
 
 # MUGQIC Modules
 from core.job import Job, concat_jobs, pipe_jobs
 from core.config import config
 from bfx import bvatools
-from bfx import snpeff
 from bfx import verify_bam_id
 from bfx import bwa
 from bfx import metrics
@@ -144,11 +142,10 @@ class RunProcessingAligner(object):
         ini_file = os.path.join(synonym_path + os.sep + new_assembly + ".ini")
 
         if os.path.isfile(ini_file):
-            genome_config = ConfigParser.SafeConfigParser()
-            genome_config.read(ini_file)
+            config.parse_files([ini_file])
 
-            if genome_config.has_option("DEFAULT", option):
-                transcriptome = genome_config.get("DEFAULT", option)
+            if config.has_option("DEFAULT", option):
+                transcriptome = config.get("DEFAULT", option)
                 if transcriptome:
                     trans_path = os.path.join(synonym_path, "genome", "10xGenomics", transcriptome)
         return trans_path
@@ -196,16 +193,15 @@ class BwaRunProcessingAligner(RunProcessingAligner):
         folder_name = os.path.basename(self.genome_folder)
         ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
         if os.path.isfile(ini_file):
-            genome_config = configparser.SafeConfigParser()
-            genome_config.read(ini_file)
+            config.parse_files([ini_file])
 
             section = "DEFAULT"
             dbsnp_option_name = "dbsnp_version"
             af_option_name = "population_AF"
 
-            if genome_config.has_option(section, dbsnp_option_name) and genome_config.has_option(section, af_option_name):
-                dbsnp_version = genome_config.get(section, dbsnp_option_name)
-                af_name = genome_config.get(section, af_option_name)
+            if config.has_option(section, dbsnp_option_name) and config.has_option(section, af_option_name):
+                dbsnp_version = config.get(section, dbsnp_option_name)
+                af_name = config.get(section, af_option_name)
                 return [
                     os.path.join(
                         self.genome_folder,
@@ -321,12 +317,11 @@ class RNARunProcessingAligner(RunProcessingAligner):
         folder_name = os.path.basename(self.genome_folder)
         ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
         if os.path.isfile(ini_file):
-            genome_config = configparser.SafeConfigParser()
-            genome_config.read(ini_file)
+            config.parse_files([ini_file])
 
             section = "DEFAULT"
-            source = genome_config.get(section, "source")
-            version = genome_config.get(section, "version")
+            source = config.get(section, "source")
+            version = config.get(section, "version")
 
             annotation_files = [
                 os.path.join(self.genome_folder,
@@ -345,9 +340,9 @@ class RNARunProcessingAligner(RunProcessingAligner):
 
             dbsnp_option_name = "dbsnp_version"
             af_option_name = "population_AF"
-            if genome_config.has_option(section, dbsnp_option_name) and genome_config.has_option(section, af_option_name):
-                dbsnp_version = genome_config.get(section, dbsnp_option_name)
-                af_name = genome_config.get(section, af_option_name)
+            if config.has_option(section, dbsnp_option_name) and config.has_option(section, af_option_name):
+                dbsnp_version = config.get(section, dbsnp_option_name)
+                af_name = config.get(section, af_option_name)
                 annotation_files.append(
                     os.path.join(
                         self.genome_folder,
@@ -514,14 +509,20 @@ class StarRunProcessingAligner(RNARunProcessingAligner):
         folder_name = os.path.basename(self.genome_folder)
         ini_file = os.path.join(self.genome_folder + os.sep + folder_name + ".ini")
         if os.path.isfile(ini_file):
-            genome_config = configparser.SafeConfigParser()
-            genome_config.read(ini_file)
+            config.parse_files([ini_file])
 
-            source = genome_config.get("DEFAULT", "source")
-            version = genome_config.get("DEFAULT", "version")
+            source = config.get("DEFAULT", "source")
+            version = config.get("DEFAULT", "version")
+            star_version=config.get("DEFAULT", "module_star").split('/')[-1]
 
-            indexFile = os.path.join(self.genome_folder, "genome", "star_index", source + version + ".sjdbOverhang" + str(self.nb_cycles - 1))
-            indexFile2 = os.path.join(self.genome_folder, "genome", "star_index", source + version + ".sjdbOverhang" + str(self.nb_cycles - 2))
+            star_index_folder = os.path.join(self.genome_folder, "genome", "star" + star_version + "_index")
+            if not os.path.exists(os.path.expandvars(star_index_folder)):
+                star_index_folder = os.path.join(self.genome_folder, "genome", "star_index")
+                if not os.path.exists(os.path.expandvars(star_index_folder)):
+                    return None
+
+            indexFile = os.path.join(star_index_folder, source + version + ".sjdbOverhang" + str(self.nb_cycles - 1))
+            indexFile2 = os.path.join(star_index_folder, source + version + ".sjdbOverhang" + str(self.nb_cycles - 2))
             return indexFile if os.path.exists(indexFile) else indexFile2
         else:
             return None
@@ -587,19 +588,16 @@ class CellrangerRunProcessingAligner(RNARunProcessingAligner):
         assembly_name = os.path.basename(self.genome_folder)
         ini_file = os.path.join(self.genome_folder, assembly_name + ".ini")
         if os.path.isfile(ini_file):
-            genome_config = configparser.SafeConfigParser()
-            genome_config.read(ini_file)
+            config.parse_files([ini_file])
 
-
-
-            if genome_config.has_option("DEFAULT", "10x_transcriptome"):
-                transcriptome = genome_config.get("DEFAULT", "10x_transcriptome")
+            if config.has_option("DEFAULT", "10x_transcriptome"):
+                transcriptome = config.get("DEFAULT", "10x_transcriptome")
                 trans_path = os.path.join(self.genome_folder, "genome", "10xGenomics", transcriptome)
 
                 if trans_path is None or not os.path.isdir(trans_path):
                     """ Main transcriptome not found, we will try to resolve it if synomym exists """
-                    if genome_config.has_option("DEFAULT", "assembly_synonyms"):
-                        synonym = genome_config.get("DEFAULT", "assembly_synonyms")
+                    if config.has_option("DEFAULT", "assembly_synonyms"):
+                        synonym = config.get("DEFAULT", "assembly_synonyms")
                         trans_path = self.find_10x_synonym_reference(self.genome_folder, synonym, "10x_transcriptome")
 
             return trans_path
@@ -665,18 +663,17 @@ class AtacRunProcessingAligner(RNARunProcessingAligner):
         assembly_name = os.path.basename(self.genome_folder)
         ini_file = os.path.join(self.genome_folder + os.sep + assembly_name + ".ini")
         if os.path.isfile(ini_file):
-            genome_config = ConfigParser.SafeConfigParser()
-            genome_config.read(ini_file)
+            config.parse_files([ini_file])
             trans_path = ""
 
-            if genome_config.has_option("DEFAULT", "10x_atac_transcriptome"):
-                transcriptome = genome_config.get("DEFAULT", "10x_atac_transcriptome")
+            if config.has_option("DEFAULT", "10x_atac_transcriptome"):
+                transcriptome = config.get("DEFAULT", "10x_atac_transcriptome")
                 trans_path = os.path.join(self.genome_folder, "genome", "10xGenomics", transcriptome)
 
             if trans_path is None or not os.path.isdir(trans_path):
                 """ Main transcriptome not found, we will try to resolve it if synomym exists """
-                if genome_config.has_option("DEFAULT", "assembly_synonyms"):
-                    synonym = genome_config.get("DEFAULT", "assembly_synonyms")
+                if config.has_option("DEFAULT", "assembly_synonyms"):
+                    synonym = config.get("DEFAULT", "assembly_synonyms")
                     trans_path = self.find_10x_synonym_reference(self.genome_folder, synonym, "10x_atac_transcriptome")
             return trans_path
         else:
@@ -696,7 +693,7 @@ class AtacRunProcessingAligner(RNARunProcessingAligner):
             reference=self.get_reference_index()
         )
         outdir = os.path.join(
-            self.output_dir, 
+            self.output_dir,
             config.param('cellranger_atac', 'working_dir', required=True) + "_" + readset.lane,
             readset.name + "_" + readset.sample_number,
             "outs"

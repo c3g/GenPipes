@@ -26,7 +26,6 @@ import re
 import xml.etree.ElementTree as Xml
 import sys
 import subprocess
-from Bio.Seq import Seq
 
 # MUGQIC Modules
 from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner
@@ -816,7 +815,12 @@ def parse_mgi_raw_readset_files(
     # Parsing Clarity event file
     log.info("Parsing Clarity event file " + readset_file + " for readset in lane " + lane + "...")
     readset_csv = csv.DictReader(open(readset_file, 'r'), delimiter='\t', quotechar='"')
+
     for line in readset_csv:
+        protocol_file = config.param('DEFAULT', 'library_protocol_file', param_type='filepath', required=False)
+        if not (protocol_file and os.path.isfile(protocol_file)):
+            protocol_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'library_protocol_list.csv')
+        protocol_csv = csv.DictReader(open(protocol_file, 'r'), delimiter=',', quotechar='"')
 
         adapter_file = config.param('DEFAULT', 'adapter_type_file', param_type='filepath', required=False)
         if not (adapter_file and os.path.isfile(adapter_file)):
@@ -828,7 +832,7 @@ def parse_mgi_raw_readset_files(
             index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
         index_csv = csv.reader(open(index_file, 'r'), delimiter=',', quotechar='"')
 
-        current_lane = line['Position'].split(":")[0]
+        current_lane = line['Position'].split(':')[0]
 
         if int(current_lane) != int(lane):
             continue
@@ -840,51 +844,63 @@ def parse_mgi_raw_readset_files(
         samples.append(sample)
 
         # Create readset and add it to sample
-        readset = MGIRawReadset(line['SampleName'] + "_" + line['LibraryLUID'], run_type)
-        readset._library = line['LibraryLUID']
+        readset = MGIRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
+        readset._quality_offset = 33
+        readset._description = line['Index'].split(' ')[0]
         readset._index_name = line['Index']
+        readset._library = line['LibraryLUID']
         readset._sample_tag = line['Sample Tag']
         readset._gender = line['Gender'] if line['Gender'] else 'N/A'
 
-        if readset.index_name:
-            # Dual Index
-            if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name):
-                key = readset.index_name.split('-')[0]
-                for idx, index in enumerate(readset.index_name.split("-")):
-                    for index_line in index_csv:
-                        if index_line and index_line[0] == index:
-                            if idx > 0 and len(index_line[1]) > 0:
-                                index2 = index_line[1]
-                            else:
-                                index1 = index_line[1]
-                            break
-                    else:
-                         _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
-                index_from_lims = [{'INDEX1':index1, 'INDEX2':index2}]
-            # Single-index (pooled or not)
-            else:
-                key = readset.index_name
-                for index_line in index_csv:
-                    if index_line and index_line[0] == key:
-                        index_from_lims = [{'INDEX1':index, 'INDEX2':""} for index in index_line[1:] if len(index) > 0]
-                        break
-                else:
-                    _raise(SanitycheckError("Could not find index " + key + " in index file file " + index_file + " Aborting..."))
-            readset._index = index_from_lims
+        for protocol_line in protocol_csv:
+            if protocol_line['Clarity Step Name'] == line['LibraryProcess']:
+                readset._protocol = line['LibraryProcess']
+                readset._library_source = protocol_line['Processing Protocol Name']
+                readset._library_type = protocol_line['Library Structure']
 
-            for adapter_line in adapter_csv:
-                if adapter_line :
-                    if adapter_line[0] == key:
-                        readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
-                        readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
-                        break
-            else:
-                _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + " Aborting..."))
+                if readset.index_name:
+                    # Dual Index
+                    if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name):
+                        key = readset.index_name.split('-')[0]
+                        for idx, index in enumerate(readset.index_name.split("-")):
+                            for index_line in index_csv:
+                                if index_line and index_line[0] == index:
+                                    if idx > 0 and len(index_line[1]) > 0:
+                                        index2 = index_line[1]
+                                    else:
+                                        index1 = index_line[1]
+                                    break
+                            else:
+                               _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
+                        index_from_lims = [{'INDEX1':index1, 'INDEX2':index2}]
+
+                    # Single-index (pooled or not)
+                    else:
+                        key = readset.index_name
+                        for index_line in index_csv:
+                            if index_line and index_line[0] == key:
+                                index_from_lims = [{'INDEX1':index, 'INDEX2':""} for index in index_line[1:] if len(index) > 0]
+                                break
+                        else:
+                            _raise(SanitycheckError("Could not find index " + key + " in index file file " + index_file + " Aborting..."))
+                    readset._index = index_from_lims
+
+                    for adapter_line in adapter_csv:
+                        if adapter_line :
+                            if adapter_line[0] == key:
+                                readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
+                                readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
+                                break
+                    else:
+                        _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + " Aborting..."))
+
+                    # At this point, inedx_file, adapter_file  protocol_file were succesfully parsed, then exit the loop !
+                    break
+        else:
+            _raise(SanitycheckError("Could not find protocol " + line['LibraryProcess'] + " (from event file " + readset_file + ") in protocol library file " + protocol_file + " for readset " + readset.name + " Aborting..."))
 
         readset._project = line['ProjectName']
         readset._project_id = line['ProjectLUID']
-        readset._protocol = line['LibraryProcess']
-        readset._library_source = line['Library Kit Name']
         readset._run = run
         readset._flow_cell = line['ContainerName']
         readset._lane = current_lane
@@ -895,7 +911,6 @@ def parse_mgi_raw_readset_files(
         readset._species = line['Species']
 
         readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
-
         readset._beds = line['Capture REF_BED'].split(";")[1:] if line['Capture REF_BED'] and line['Capture REF_BED'] != "N/A" else []
 
         fastq_file_pattern = os.path.join(
