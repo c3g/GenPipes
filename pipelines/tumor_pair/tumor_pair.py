@@ -2578,19 +2578,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 tumor_pair.normal.readsets[0]
             )
 
-            # if os.path.isdir(somatic_dir):
-            #     jobs.append(concat_jobs([
-            #         bash.rm(
-            #             somatic_dir
-            #         )
-            #     ], name="rm_strelka2_directory." + tumor_pair.name))
-
             if coverage_bed:
                 local_coverage_bed = os.path.join(somatic_dir, os.path.basename(coverage_bed))
                 bed_file = local_coverage_bed + ".gz"
                 jobs.append(
                     concat_jobs(
                         [
+                            bash.rm(somatic_dir),
                             bash.mkdir(somatic_dir),
                             Job(
                                 [coverage_bed],
