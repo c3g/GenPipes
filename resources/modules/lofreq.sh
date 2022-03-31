@@ -2,20 +2,23 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=bcftools
-VERSION=1.14
-ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
-ARCHIVE_URL=https://github.com/samtools/bcftools/releases/download/${VERSION}/${ARCHIVE}
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+SOFTWARE=lofreq
+VERSION=2.1.5
+ARCHIVE=${SOFTWARE}_star-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/CSB5/${SOFTWARE}/raw/master/dist/${ARCHIVE}
+SOFTWARE_DIR=LoFreq-$VERSION
+MODULE_HTSLIB=mugqic/htslib/1.14
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar jxvf $ARCHIVE
+  tar zxvf $ARCHIVE
 
-  cd $SOFTWARE_DIR
+  module load $MODULE_HTSLIB
+
+  cd ${SOFTWARE}_star-${VERSION}
+  ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR --with-htslib=$HTSLIB_LIBRARY_DIR
   make -j12
-  # Install software
-  make -j12 prefix=$INSTALL_DIR/${SOFTWARE_DIR} install
+  make install
 }
 
 module_file() {
@@ -28,10 +31,12 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin
-setenv          BCFTOOLS_PLUGINS    \$root/libexec/bcftools
+prepend-path    PYTHONPATH          \$root/lib/python2.7/site-packages/
+
 "
 }
 
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
+
