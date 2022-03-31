@@ -456,7 +456,6 @@ def haplotype_caller(
         inputs = [inputs]
 
     # Added this to check intervel_list (peak file) availability in the chip-seq pipeline
-
     inputs_list = inputs.copy()
     if not interval_list is None:
 
@@ -468,7 +467,8 @@ def haplotype_caller(
             output,
             intervals=intervals,
             exclude_intervals=exclude_intervals,
-            interval_list=interval_list
+            interval_list=interval_list,
+            interval_padding=interval_padding
         )
     else:
         return Job(
