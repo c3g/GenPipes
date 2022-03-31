@@ -227,7 +227,7 @@ def haplotype_caller(
     intervals=[],
     exclude_intervals=[],
     interval_list=None,
-    interval_padding=None
+    interval_padding=100
     ):
 
 
