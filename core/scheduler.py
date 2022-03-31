@@ -488,6 +488,7 @@ class BatchScheduler(Scheduler):
 {separator_line}
 JOB_NAME={job.name}
 JOB_DONE={job.done}
+JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH
 COMMAND=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.sh
 cat << '{limit_string}' > $COMMAND
 #!/bin/bash
