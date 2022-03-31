@@ -447,7 +447,7 @@ def haplotype_caller(
     intervals=[],
     exclude_intervals=[],
     interval_list=None,
-    interval_padding=None
+    interval_padding=100
     ):
 
 #added interval_padding as a varibale. Because in chipseq we don't need to add any padding to the peaks
