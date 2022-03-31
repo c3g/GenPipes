@@ -456,9 +456,9 @@ def haplotype_caller(
         inputs = [inputs]
 
     # Added this to check intervel_list (peak file) availability in the chip-seq pipeline
+
     inputs_list = inputs.copy()
     if not interval_list is None:
-
        inputs_list.extend([interval_list])
 
     if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
@@ -473,6 +473,7 @@ def haplotype_caller(
     else:
         return Job(
             #to track all files as input files replaced input with input_lists
+
             inputs_list,
             [output, output + ".tbi"],
             [
