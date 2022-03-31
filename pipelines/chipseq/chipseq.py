@@ -2354,9 +2354,6 @@ done""".format(
                     )
                     )
 
-
-        return jobs
-
     def merge_and_call_individual_gvcf(self):
         """
         Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
@@ -2402,7 +2399,7 @@ done""".format(
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
-               self.merge_trimmomatic_stats,
+                self.merge_trimmomatic_stats,
                 self.mapping_bwa_mem_sambamba,
                 self.sambamba_merge_bam_files,
                 self.sambamba_mark_duplicates,
