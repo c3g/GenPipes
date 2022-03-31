@@ -447,9 +447,10 @@ def haplotype_caller(
     output,
     intervals=[],
     exclude_intervals=[],
-    interval_list=None,
-    interval_padding=100
+    interval_list=None
     ):
+
+    interval_padding = config.param('gatk_haplotype_caller', 'interval_padding')
 
 #added interval_padding as a varibale. Because in chipseq we don't need to add any padding to the peaks
     if not isinstance(inputs, list):
@@ -466,8 +467,7 @@ def haplotype_caller(
             output,
             intervals=intervals,
             exclude_intervals=exclude_intervals,
-            interval_list=interval_list,
-            interval_padding=interval_padding
+            interval_list=interval_list
         )
     else:
         return Job(
@@ -483,14 +483,15 @@ gatk --java-options "{java_other_options} -Xmx{ram}" \\
   HaplotypeCaller {options} --native-pair-hmm-threads {threads} \\
   --reference {reference_sequence} \\
   --input {input} \\
-  --output {output}{interval_list}{intervals}{exclude_intervals}""".format(
+  --output {output}{interval_padding} {interval_list}{intervals}{exclude_intervals}""".format(
                 tmp_dir=config.param('gatk_haplotype_caller', 'tmp_dir'),
                 java_other_options=config.param('gatk_haplotype_caller', 'gatk4_java_options'),
                 ram=config.param('gatk_haplotype_caller', 'ram'),
                 options=config.param('gatk_haplotype_caller', 'options'),
                 threads=config.param('gatk_haplotype_caller', 'threads'),
                 reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
-                interval_list=" \\\n  --interval-padding " + str(interval_padding) + " --intervals " + interval_list if interval_list else "",
+                interval_list=" --intervals " + interval_list if interval_list else "",
+                interval_padding=" \\\n --interval-padding " + str(interval_padding)  if interval_padding else "",
                 input=" \\\n  ".join(input for input in inputs),
                 output=output,
                 intervals="".join(" \\\n  --intervals " + interval for interval in intervals),

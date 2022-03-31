@@ -226,11 +226,9 @@ def haplotype_caller(
     output,
     intervals=[],
     exclude_intervals=[],
-    interval_list=None,
-    interval_padding=100
+    interval_list=None
     ):
-
-
+    interval_padding = config.param('gatk_haplotype_caller', 'interval_padding')
     if not isinstance(inputs, list):
         inputs = [inputs]
 
@@ -260,13 +258,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
-  --out {output}{interval_list}{intervals}{exclude_intervals}""".format(
+  --out {output}{interval_padding} {interval_list}{intervals}{exclude_intervals}""".format(
         tmp_dir=config.param('gatk_haplotype_caller', 'tmp_dir'),
         java_other_options=config.param('gatk_haplotype_caller', 'java_other_options'),
         ram=config.param('gatk_haplotype_caller', 'ram'),
         options=config.param('gatk_haplotype_caller', 'options'),
         reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
-        interval_list=" \\\n  --interval-padding " + str(interval_padding) + " --intervals " + interval_list if interval_list else "",
+        interval_list=" --intervals " + interval_list if interval_list else "",
+        interval_padding=" \\\n --interval-padding " + str(interval_padding) if interval_padding else "",
         input=" \\\n  ".join(input for input in inputs),
         output=output,
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
