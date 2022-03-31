@@ -2302,8 +2302,6 @@ done""".format(
                             samples=[sample]
                         )
                     )
-
-
         return jobs
 
     @property
