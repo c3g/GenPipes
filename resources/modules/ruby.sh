@@ -4,9 +4,9 @@ set -eu -o pipefail
 
 
 SOFTWARE=Ruby
-VERSION=2.5.3
+VERSION=3.1.0
 ARCHIVE=${SOFTWARE,}-${VERSION}.tar.gz
-ARCHIVE_URL=https://cache.ruby-lang.org/pub/ruby/2.5/${ARCHIVE}
+ARCHIVE_URL=https://cache.ruby-lang.org/pub/ruby/3.1/${ARCHIVE}
 SOFTWARE_DIR=${SOFTWARE,}-${VERSION}
 
 # Specific commands to extract and build the software
