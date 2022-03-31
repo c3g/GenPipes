@@ -448,7 +448,7 @@ def haplotype_caller(
     intervals=[],
     exclude_intervals=[],
     interval_list=None,
-    interval_padding=100
+    interval_padding=None
     ):
 
 #added interval_padding as a varibale. Because in chipseq we don't need to add any padding to the peaks
@@ -456,9 +456,9 @@ def haplotype_caller(
         inputs = [inputs]
 
     # Added this to check intervel_list (peak file) availability in the chip-seq pipeline
-
     inputs_list = inputs.copy()
     if not interval_list is None:
+
        inputs_list.extend([interval_list])
 
     if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
@@ -467,7 +467,8 @@ def haplotype_caller(
             output,
             intervals=intervals,
             exclude_intervals=exclude_intervals,
-            interval_list=interval_list
+            interval_list=interval_list,
+            interval_padding=interval_padding
         )
     else:
         return Job(
