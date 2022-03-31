@@ -4462,7 +4462,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
                 normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-    
+
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
             pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
