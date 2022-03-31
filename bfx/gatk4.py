@@ -447,8 +447,7 @@ def haplotype_caller(
     output,
     intervals=[],
     exclude_intervals=[],
-    interval_list=None,
-    interval_padding=100
+    interval_list=None
     ):
 
     interval_padding = config.param('gatk_haplotype_caller', 'interval_padding')
@@ -468,8 +467,7 @@ def haplotype_caller(
             output,
             intervals=intervals,
             exclude_intervals=exclude_intervals,
-            interval_list=interval_list,
-            interval_padding=interval_padding
+            interval_list=interval_list
         )
     else:
         return Job(
