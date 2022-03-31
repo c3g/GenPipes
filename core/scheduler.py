@@ -318,7 +318,7 @@ module unload {module_python} {command_separator}
             jsonfiles=json_file_list,
             config_files=",".join([ os.path.abspath(c.name) for c in self._config_files ]),
             status=job_status,
-            command_separator="&&" if (job_status=='\"running\"') else ""
+            command_separator="&&" if (job_status=='"running"') else ""
         ) if json_file_list else ""
 
         else:
