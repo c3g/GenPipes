@@ -2247,6 +2247,7 @@ done""".format(
                                 haplotype_directory,
                                 remove=True
                     )
+                    interval_padding = config.param('gatk_haplotype_caller', 'interval_padding')
                     jobs.append(
                     concat_jobs([
                     # Create output directory since it is not done by default by GATK tools
@@ -2254,14 +2255,16 @@ done""".format(
                     gatk4.haplotype_caller(
                         input_bam,
                         os.path.join(haplotype_directory, sample.name +"."+ mark_name +".hc.g.vcf.gz"),
-                        interval_list=interval_list,
-                        interval_padding = 0
+                        interval_list=interval_list
+
                     )
                 ],
                     name="gatk_haplotype_caller." + sample.name +"_"+ mark_name,
                     samples=[sample]
                     )
                     )
+
+        return jobs
 
     def merge_and_call_individual_gvcf(self):
         """
