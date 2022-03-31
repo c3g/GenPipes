@@ -3,9 +3,7 @@
 set -eu -o pipefail
 
 # Perl module where to install libs
-#PERL_MODULE=mugqic/perl/5.10.1
-#PERL_MODULE=mugqic/perl/5.18.2
-PERL_MODULE=mugqic/perl/5.28.2
+PERL_MODULE=mugqic/perl/5.34.0
 module load $PERL_MODULE
 echo "Perl module loaded :" $PERL_MODULE
 # Install Perl modules from CPAN
@@ -14,8 +12,8 @@ echo "Perl module loaded :" $PERL_MODULE
 export PERL_MM_USE_DEFAULT=1
 # Install module prerequisites automatically
 export PERL_EXTUTILS_AUTOINSTALL="--defaultdeps"
-echo "starting for loop..."
-echo for MODULE in \
+
+for MODULE in \
 Algorithm::Munkres \
 Array::Compare \
 Bio::ASN1::EntrezGene \
@@ -38,7 +36,6 @@ DBI::SQL::Nano \
 Devel::Size \
 Digest::MD5 \
 Error \
-File::Basename \
 File::Slurp \
 File::Which \
 File::ShareDir \
@@ -75,7 +72,6 @@ Params::Validate \
 Perl::Unsafe::Signals \
 PerlIO::gzip \
 Pod::Usage \
-POSIX \
 PostScript::TextBlock \
 Proc::ParallelLoop \
 Readonly \
@@ -119,10 +115,9 @@ YAML \
 DB_File \
 Set::IntervalTree \
 ; do
-echo perl -MCPAN -e "CPAN::Shell->force(qw(install $MODULE))"
+$PERL_HOME/bin/perl -MCPAN -e "CPAN::Shell->force(qw(install $MODULE))"
 # Test if module is properly installed
 $PERL_HOME/bin/perl -e "use $MODULE"
 done
-echo "for loop finished...."
 # Add permissions
 chmod -R ug+rwX,o+rX-w $PERL_HOME

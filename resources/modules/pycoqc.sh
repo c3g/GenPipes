@@ -2,12 +2,12 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=CNVkit
-VERSION=0.9.9
+SOFTWARE=pycoQC
+VERSION=2.5.2
 ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
-ARCHIVE_URL=https://github.com/etal/${SOFTWARE,,}/archive/v${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/tleonardi/$SOFTWARE/archive/refs/tags/$VERSION.tar.gz
 SOFTWARE_DIR=${SOFTWARE,,}-${VERSION}
-PYTHON_VERSION=3.9.1
+PYTHON_VERSION=3.10.2
 PYTHON_SHORT_VERSION=${PYTHON_VERSION:0:3}
 
 build() {

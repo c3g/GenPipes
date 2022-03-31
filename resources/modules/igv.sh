@@ -1,39 +1,33 @@
 #!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
 
-###################
-################### IGV
-###################
-VERSION="2.3.23"
-mkdir -p $MUGQIC_INSTALL_HOME/modulefiles/mugqic/igv/tmp/unzip/
-cd $MUGQIC_INSTALL_HOME/modulefiles/mugqic/igv/tmp
+SOFTWARE=igv
+VERSION=2.11.9
+ARCHIVE=${SOFTWARE^^}_${VERSION}.zip
+ARCHIVE_URL=http://www.broadinstitute.org/${SOFTWARE,,}/projects/downloads/2.11/$ARCHIVE
+SOFTWARE_DIR=${SOFTWARE^^}_${VERSION}
 
-# Download and install
-wget http://www.broadinstitute.org/igv/projects/downloads/IGV_${VERSION}.zip
-unzip IGV_$VERSION.zip -d unzip/
-INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/igv # where to install..
-ARCHIVE_PATH=$MUGQIC_INSTALL_HOME/archive/igv 
-mkdir -p $INSTALL_PATH $ARCHIVE_PATH
-cp -r unzip/IGV_${VERSION}  $INSTALL_PATH
-chmod -R 775 $INSTALL_PATH 
-mv IGV_${VERSION}.zip $ARCHIVE_PATH
+build() {
+  cd $INSTALL_DOWNLOAD
 
-# Module filem
-echo "#%Module1.0
+  unzip $ARCHIVE 
+  mv $SOFTWARE_DIR $INSTALL_DIR/
+}
+
+module_file() {
+echo "\
+#%Module1.0
 proc ModulesHelp { } {
        puts stderr \"\tMUGQIC - IGV \"
 }
 module-whatis \"MUGQIC - IGVtools  \"
             
-set             root               \$::env(MUGQIC_INSTALL_HOME)/software/igv/IGV_${VERSION}
+set             root               $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH               \$root
-" > $VERSION
+"
+}
 
-# version file
-echo "#%Module1.0
-set ModulesVersion \"$VERSION\"
-" > .version
-
-mv .version $VERSION $MUGQIC_INSTALL_HOME/modulefiles/mugqic/igv/
-
-cd ..
-rm -rf tmp
+# Call generic module install script once all variables and functions have been set
+MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
