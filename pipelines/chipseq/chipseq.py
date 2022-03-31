@@ -801,7 +801,7 @@ pandoc --to=markdown \\
                 output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name,
                                           sample.name + "." + mark_name)
                 other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
-                genome = config.param('homer_make_tag_directory', 'genome_fasta', required=False) if config.param('homer_make_tag_directory', 'genome_fasta', required=False) else self.ucsc_genome
+                genome = config.param('homer_make_tag_directory', 'genome', required=False) if config.param('homer_make_tag_directory', 'genome', required=False) else self.ucsc_genome
 
                 job = homer.makeTagDir(
                     output_dir,
