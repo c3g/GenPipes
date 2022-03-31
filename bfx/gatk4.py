@@ -468,8 +468,7 @@ def haplotype_caller(
             output,
             intervals=intervals,
             exclude_intervals=exclude_intervals,
-            interval_list=interval_list,
-            interval_padding=interval_padding
+            interval_list=interval_list
         )
     else:
         return Job(
