@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=sambamba
-VERSION=0.8.0
+VERSION=0.8.1
 ARCHIVE=${SOFTWARE}-${VERSION}.gz
 ARCHIVE_URL=https://github.com/biod/${SOFTWARE}/releases/download/v${VERSION}/${SOFTWARE}-${VERSION}-linux-amd64-static.gz
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}
