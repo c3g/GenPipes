@@ -226,7 +226,8 @@ def haplotype_caller(
     output,
     intervals=[],
     exclude_intervals=[],
-    interval_list=None
+    interval_list=None,
+    interval_padding=None
     ):
 
 
@@ -265,7 +266,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         ram=config.param('gatk_haplotype_caller', 'ram'),
         options=config.param('gatk_haplotype_caller', 'options'),
         reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
-        interval_list=" \\\n  --interval_padding 100 --intervals " + interval_list if interval_list else "",
+        interval_list=" \\\n  --interval-padding " + str(interval_padding) + " --intervals " + interval_list if interval_list else "",
         input=" \\\n  ".join(input for input in inputs),
         output=output,
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
