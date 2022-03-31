@@ -298,7 +298,31 @@ mkdir -p $JOB_OUTPUT_DIR/$STEP
             return ""
 
         json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
-        return """\
+        if self.name == "Batch":
+            ret = """\
+module load {module_python}
+{job2json_script} \\
+  -u \"$USER\" \\
+  -c \"{config_files}\" \\
+  -s \"{step.name}\" \\
+  -j \"$JOB_NAME\" \\
+  -d \"$JOB_DONE\" \\
+  -l \"$JOB_OUTPUT\" \\
+  -o \"{jsonfiles}\" \\
+  -f {status}
+module unload {module_python} {command_separator}
+""".format(
+            job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
+            module_python=config.param('DEFAULT', 'module_python'),
+            step=step,
+            jsonfiles=json_file_list,
+            config_files=",".join([ os.path.abspath(c.name) for c in self._config_files ]),
+            status=job_status,
+            command_separator="&&" if (job_status=='\"running\"') else ""
+        ) if json_file_list else ""
+
+        else:
+            ret = """\
 module load {module_python}
 {job2json_script} \\
   -u \\"$USER\\" \\
@@ -313,13 +337,14 @@ module unload {module_python} {command_separator}
 """.format(
             job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
             module_python=config.param('DEFAULT', 'module_python'),
-            module_mugqic_tools=config.param('DEFAULT', 'module_mugqic_tools'),
             step=step,
             jsonfiles=json_file_list,
             config_files=",".join([ os.path.abspath(c.name) for c in self._config_files ]),
             status=job_status,
             command_separator="&&" if (job_status=='\\"running\\"') else ""
         ) if json_file_list else ""
+
+        return ret
 
 class PBSScheduler(Scheduler):
 
