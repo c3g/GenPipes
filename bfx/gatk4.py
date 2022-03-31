@@ -473,7 +473,6 @@ def haplotype_caller(
     else:
         return Job(
             #to track all files as input files replaced input with input_lists
-
             inputs_list,
             [output, output + ".tbi"],
             [
