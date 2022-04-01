@@ -855,8 +855,7 @@ fi""".format(
                     metadata,
                     ncovtools_directory,
                     ncovtools_config,
-                    self.output_dir,
-                    job_scheduler=self.args.job_scheduler
+                    self.output_dir
                 )
             ],
                 name="prepare_report." + self.run_name

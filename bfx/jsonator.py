@@ -124,7 +124,7 @@ def create(pipeline, sample):
                     'step': []
                 }
             }
-        elif pipeline.__class__.__name__ == "Nanopore":
+        elif pipeline.__class__.__name__ == "Nanopore" or pipeline.__class__.__name__ == "NanoporeCoVSeq":
             json_hash = {
                 'version': jsonator_version,
                 'project': project_name,
