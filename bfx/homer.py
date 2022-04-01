@@ -224,11 +224,11 @@ def makeUCSCfile(tag_dir, bedgraph_file):
             )
 
 
-def annotatePeaks(peak_file, genome, output_dir, annotation_file):
+def annotatePeaks(peak_file, genome, output_dir, annotation_file, genome_size):
     cmd = """annotatePeaks.pl \\
     {peak_file} \\
     {genome} \\
-    -gsize {genome} \\
+    -gsize {genome_size} \\
     -cons -CpG \\
     -go {output_dir} \\
     -genomeOntology {output_dir} \\
