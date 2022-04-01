@@ -913,12 +913,11 @@ done""".format(
                 jobs.append(
                     concat_jobs([
                         bash.mkdir(os.path.join(bedgraph_dir, "bigWig")),
-                        Job(command="export TMPDIR={tmp_dir}".format(
-                            tmp_dir=config.param('homer_make_ucsc_file', 'tmp_dir'))),
                         ucsc.bedGraphToBigWig(
                             bedgraph_file,
                             big_wig_output,
-                            header=True)
+                            header=True,
+                            ini_section="homer_make_ucsc_file")
                     ],
                         name="homer_make_ucsc_file_bigWig." + sample.name + "." + mark_name)
                 )
