@@ -1355,12 +1355,14 @@ done""".format(
                         output_prefix = os.path.join(output_dir, sample.name + "." + mark_name)
                         annotation_file = output_prefix + ".annotated.csv"
 
+                        genome = config.param('homer_annotate_peaks', 'genome', required=False) if config.param('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
+
                         jobs.append(
                             concat_jobs([
                                 bash.mkdir(output_dir),
                                 homer.annotatePeaks(
                                     peak_file,
-                                    self.ucsc_genome,
+                                    genome,
                                     output_dir,
                                     annotation_file
                                 ),
@@ -1465,12 +1467,14 @@ done""".format(
                                                      mark_type] + "Peak")
                         output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
 
+                        genome = config.param('homer_annotate_peaks', 'genome', required=False) if config.param('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
+
                         jobs.append(
                             concat_jobs([
                                 bash.mkdir(output_dir),
                                 homer.findMotifsGenome(
                                     peak_file,
-                                    self.ucsc_genome,
+                                    genome,
                                     output_dir,
                                     config.param('homer_find_motifs_genome', 'threads', param_type='posint')
                                 )
