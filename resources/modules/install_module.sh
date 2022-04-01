@@ -159,7 +159,7 @@ then
   LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
 else
   echo "*** ERROR ***"
-  echo "'"`cat /etc/*-release`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
+  echo "'"`cat /etc/*-release`"' OS detected... should be either 'Ubuntu' or 'CentOS'..."
 #  echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
   exit 1
 fi

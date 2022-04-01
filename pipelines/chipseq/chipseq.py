@@ -158,7 +158,7 @@ class ChipSeq(common.Illumina):
         genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
         # 2nd column of genome index contains chromosome length
         # HOMER and MACS2 mappable genome size (without repetitive features) is about 80 % of total size
-        return sum([int(chromosome[1]) for chromosome in genome_index]) * 0.8
+        return sum([int(chromosome[1]) for chromosome in genome_index]) * config.param('DEFAULT', 'mappable_genome_size', param_type='float', required=True)
 
     def trimmomatic(self):
         """
@@ -1356,6 +1356,7 @@ done""".format(
                         annotation_file = output_prefix + ".annotated.csv"
 
                         genome = config.param('homer_annotate_peaks', 'genome', required=False) if config.param('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
+                        genome_size = self.mappable_genome_size()
 
                         jobs.append(
                             concat_jobs([
@@ -1364,7 +1365,8 @@ done""".format(
                                     peak_file,
                                     genome,
                                     output_dir,
-                                    annotation_file
+                                    annotation_file,
+                                    genome_size
                                 ),
                                 Job(
                                     [annotation_file],
@@ -1899,32 +1901,32 @@ done""".format(
             return jobs
 
     def cram_output(self):
-            """
-            Generate long term storage version of the final alignment files in CRAM format
-            Using this function will include the orginal final bam file into the  removable file list
-            """
+        """
+        Generate long term storage version of the final alignment files in CRAM format
+        Using this function will include the orginal final bam file into the  removable file list
+        """
 
-            jobs = []
+        jobs = []
 
-            for sample in self.samples:
-                for mark_name in sample.marks:
-                    input_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                             sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
-                    output_cram = re.sub("\.bam$", ".cram", input_bam)
+        for sample in self.samples:
+            for mark_name in sample.marks:
+                input_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                output_cram = re.sub("\.bam$", ".cram", input_bam)
 
-                    # Run samtools
-                    job = samtools.view(
-                        input_bam,
-                        output_cram,
-                        options=config.param('samtools_cram_output', 'options'),
-                        removable=False
-                    )
-                    job.name = "cram_output." + sample.name + "." + mark_name
-                    job.removable_files = input_bam
+                # Run samtools
+                job = samtools.view(
+                    input_bam,
+                    output_cram,
+                    options=config.param('samtools_cram_output', 'options'),
+                    removable=False
+                )
+                job.name = "cram_output." + sample.name + "." + mark_name
+                job.removable_files = input_bam
 
-                    jobs.append(job)
+                jobs.append(job)
 
-            return jobs
+        return jobs
 
     @property
     def steps(self):
