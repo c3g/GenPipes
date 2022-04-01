@@ -235,6 +235,7 @@ def annotatePeaks(peak_file, genome, output_dir, annotation_file, genome_size):
     > {annotation_file}""".format(
                             peak_file=peak_file,
                             genome=genome,
+                            genome_size=genome_size,
                             output_dir=output_dir,
                             annotation_file=annotation_file)
 
