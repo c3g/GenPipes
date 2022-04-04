@@ -981,7 +981,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                     ## set macs2 variables:
 
                     options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
-                    genome_size = self.mappable_genome_size()
+                    genome_size = config.param('macs2_callpeak', 'genome_size') if config.param('macs2_callpeak', 'genome_size') else self.mappable_genome_size()
                     output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
 
                     if mark_type == "B":  # Broad region
@@ -1129,7 +1129,7 @@ done""".format(
                     ## set macs2 variables:
 
                     options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
-                    genome_size = self.mappable_genome_size()
+                    genome_size = config.param('macs2_callpeak', 'genome_size') if config.param('macs2_callpeak', 'genome_size') else self.mappable_genome_size()
                     output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
                     # output = os.path.join(output_dir,
                     #                       sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
