@@ -217,25 +217,25 @@ pandoc --to=markdown \\
         )
 
         return jobs
-    
-    
+
+
     def add_bam_umi(self):
         """
         Add read UMI tag to individual bam files using fgbio
         """
-        
+
         jobs = []
         for readset in self.readsets:
-            if readset.umi : 
+            if readset.umi :
                 alignment_directory = os.path.join("alignment", readset.sample.name)
                 input_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
                 output_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam")
                 output_bai = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bai")
                 input_umi = readset.umi
                 input_umi_corrected = os.path.join("corrected_umi", readset.name, readset.name + ".corrected.fastq.gz")
-                
+
                 #correct umi fastq name (removing space)
-                
+
                 jobs.append(
                     concat_jobs([
                         Job(command="mkdir -p corrected_umi/" + readset.name),
@@ -401,15 +401,15 @@ cp \\
             job.name = "bvatools_depth_of_coverage." + sample.name
             job.samples = [sample]
             jobs.append(job)
-            
+
             # Get reads# raw and after duplication
             dedup_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam")
             raw_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.bam")
-            
+
             count_dedup_output = os.path.join("alignment", sample.name, sample.name + ".dedup.count")
             count_raw_output = os.path.join("alignment", sample.name, sample.name + ".raw.count")
-            
-            
+
+
             job = samtools.mapped_count(
                 raw_bam,
                 count_raw_output,
@@ -419,7 +419,7 @@ cp \\
             job.removable_files=[count_dedup_output,count_raw_output]
             job.samples = [sample]
             jobs.append(job)
-            
+
             job = samtools.mapped_count(
                 dedup_bam,
                 count_dedup_output,
@@ -432,7 +432,7 @@ cp \\
 
             if coverage_bed:
                 # Get on-target reads (if on-target context is detected) raw and after duplication
-                
+
                 count_dedup_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.dedup.count")
                 count_raw_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.raw.count")
                 job = samtools.mapped_count(
@@ -444,7 +444,7 @@ cp \\
                 job.removable_files=[count_dedup_output,count_raw_output]
                 job.samples = [sample]
                 jobs.append(job)
-                
+
                 job = samtools.mapped_count(
                     dedup_bam,
                     count_dedup_output,
@@ -454,7 +454,7 @@ cp \\
                 job.removable_files=[count_dedup_output,count_raw_output]
                 job.samples = [sample]
                 jobs.append(job)
-                
+
                 # Compute on target percent of hybridisation based capture
                 interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
                 if not interval_list in created_interval_lists:
@@ -682,7 +682,7 @@ cp \\
                 job.samples = [sample]
                 jobs.append(job)
                 cpg_profile = target_cpg_profile
-                
+
                 target_cpg_profile_count=os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count")
                 job = metrics.target_cpg_profile(
                     target_cpg_profile,
@@ -692,8 +692,8 @@ cp \\
                 job.name = "metrics_target_CpG_profile." + sample.name
                 job.samples = [sample]
                 jobs.append(job)
-                
-                
+
+
 
             # Caluculate median & mean CpG coverage
             median_CpG_coverage = re.sub(".CpG_report.txt.gz", ".median_CpG_coverage.txt", cpg_input_file)
@@ -734,11 +734,11 @@ cp \\
             inputs = []
             sample_list.append(sample.name)
             metrics_file =  os.path.join("ihec_metrics", sample.name + ".read_stats.txt")
-            
+
             metrics_output_list.append(metrics_file)
             #add dependency for previous job in order to fill the allSample output correctly
             inputs.append(metrics_output_list[counter])
-            
+
             # Trim log files
             for readset in sample.readsets:
                 inputs.append(os.path.abspath(os.path.join("trim", sample.name, readset.name + ".trim.log")))
@@ -779,21 +779,21 @@ cp \\
                 [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
             ])
             inputs.append(cgstats_file)
-            
+
             #Estimated library sizes
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.metrics"))
-            
-            # read count (raw, dedup) 
+
+            # read count (raw, dedup)
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".dedup.count"))
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".raw.count"))
 
             # read count (raw, dedup)  and CpG_profyle in targeted context
-            if target_bed : 
+            if target_bed :
                 inputs.append(os.path.join("alignment", sample.name, sample.name + ".onTarget.dedup.count"))
                 inputs.append(os.path.join("alignment", sample.name, sample.name + ".onTarget.raw.count"))
                 inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count"))
-	    
-            
+
+
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p ihec_metrics metrics"),
@@ -860,7 +860,7 @@ pandoc \\
                 ], name="bissnp." + sample.name, samples=[sample])
             )
 
-        return jobs 
+        return jobs
 
     def filter_snp_cpg(self):
         """
@@ -947,7 +947,6 @@ pandoc \\
         """
 
         jobs = []
-        print("hello")
         for readset in self.readsets:
             trim_file_prefix = os.path.join(self.output_dir, "trim", readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join("alignment", readset.sample.name)
@@ -957,6 +956,7 @@ pandoc \\
             dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             output_bam = dragen_bam
             index_bam = output_bam + ".bai"
+
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -1029,7 +1029,8 @@ pandoc \\
                          output_dependency=[dragen_bam]),
                 # bashc.rm(dragen_workfolder, recursive=True, force=True, input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
                 rm_dragen_fastq_job
-            ], name="dragen_align." + readset.name, samples=[readset.sample], dependency_jobs=[])
+            ], name="dragen_align." + readset.name, samples=[readset.sample], json=False, dependency_jobs=[],
+                output_dir=config.param('dragen_align', 'work_folder'))
             dragen_output_copy = concat_jobs([
                 bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'), "job_output",
                                       "dragen_align." + readset.name + "*"),
@@ -1153,7 +1154,17 @@ class MethylSeq(MethylSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="MethylSeq alignment type", choices=["bismark", "dragen"],
+        self.argparser.add_argument("-t", "--type", help="MethylSeq analysis type", choices=["bismark", "dragen"],
+                                    default="bismark")
+        super(MethylSeq, self).__init__(protocol)
+
+
+
+class MethylSeq(MethylSeqRaw):
+    def __init__(self, protocol=None):
+        self._protocol = protocol
+        # Add pipeline specific arguments
+        self.argparser.add_argument("-t", "--type", help="MethylSeq analysis type", choices=["bismark", "dragen"],
                                     default="bismark")
         super(MethylSeq, self).__init__(protocol)
 
