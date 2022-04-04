@@ -947,6 +947,7 @@ pandoc \\
         """
 
         jobs = []
+        print("hello")
         for readset in self.readsets:
             trim_file_prefix = os.path.join(self.output_dir, "trim", readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join("alignment", readset.sample.name)
@@ -956,7 +957,6 @@ pandoc \\
             dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             output_bam = dragen_bam
             index_bam = output_bam + ".bai"
-
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -1029,8 +1029,7 @@ pandoc \\
                          output_dependency=[dragen_bam]),
                 # bashc.rm(dragen_workfolder, recursive=True, force=True, input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
                 rm_dragen_fastq_job
-            ], name="dragen_align." + readset.name, samples=[readset.sample], json=False, dependency_jobs=[],
-                output_dir=config.param('dragen_align', 'work_folder'))
+            ], name="dragen_align." + readset.name, samples=[readset.sample], dependency_jobs=[])
             dragen_output_copy = concat_jobs([
                 bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'), "job_output",
                                       "dragen_align." + readset.name + "*"),
@@ -1154,7 +1153,7 @@ class MethylSeq(MethylSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="MethylSeq analysis type", choices=["bismark", "dragen"],
+        self.argparser.add_argument("-t", "--type", help="MethylSeq alignment type", choices=["bismark", "dragen"],
                                     default="bismark")
         super(MethylSeq, self).__init__(protocol)
 
