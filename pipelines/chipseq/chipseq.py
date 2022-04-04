@@ -1356,7 +1356,7 @@ done""".format(
                         annotation_file = output_prefix + ".annotated.csv"
 
                         genome = config.param('homer_annotate_peaks', 'genome', required=False) if config.param('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
-                        genome_size = self.mappable_genome_size()
+                        genome_size = config.param('homer_annotate_peaks', 'genome_size') if config.param('homer_annotate_peaks', 'genome_size') else self.mappable_genome_size()
 
                         jobs.append(
                             concat_jobs([
