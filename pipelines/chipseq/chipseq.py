@@ -158,7 +158,7 @@ class ChipSeq(common.Illumina):
         genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
         # 2nd column of genome index contains chromosome length
         # HOMER and MACS2 mappable genome size (without repetitive features) is about 80 % of total size
-        return sum([int(chromosome[1]) for chromosome in genome_index]) * config.param('DEFAULT', 'mappable_genome_size', param_type='float', required=True)
+        return int(sum([int(chromosome[1]) for chromosome in genome_index]) * config.param('DEFAULT', 'mappable_genome_size', param_type='float', required=True))
 
     def trimmomatic(self):
         """
