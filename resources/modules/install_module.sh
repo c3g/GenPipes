@@ -126,6 +126,13 @@ then
     LIB=lib
     INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
     LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+  elif [[ `cat /etc/*-release` == *"20.04"* ]]
+  then
+    echo "Ubuntu 20.04" > /dev/null
+    C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu2004/1.0
+    LIB=lib
+    INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+    LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
   elif [[ `cat /etc/*-release` == *"21.10"* ]]
   then
     echo "Ubuntu 21.0" > /dev/null
