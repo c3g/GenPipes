@@ -32,6 +32,9 @@ def diffbind( input_files, comparison, design, readset, output_dir, alignment_di
     html_output = "".join((output_dir, "_".join(("/diffbind", comparison, method, "dba.html"))))
     R_filename = "".join((output_dir, "_".join(("/diffbind", comparison, method, "dba.R"))))
 
+    th = config.param('differential_binding', 'th')
+    bUsePval = config.param('differential_binding', 'bUsePval')
+
     return Job(
         input_files,
         [output_file, html_output],
@@ -42,8 +45,9 @@ def diffbind( input_files, comparison, design, readset, output_dir, alignment_di
         ],
         command="""\
         mkdir -p {output_dir} &&
-cp $R_TOOLS/DiffBind.R {R_filename} &&
-Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("{R_filename}",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap="{minOverlap}",minMembers="{minMembers}",method="{method}"),output_file=file.path(cur_dir,"{html_output}"));' &&
+#cp $R_TOOLS/DiffBind.R {R_filename} &&
+cp /home/pubudu/genpipes_testing/mugqic_tools/R-tools/DiffBind.R {R_filename} &&
+Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("{R_filename}",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap={minOverlap},minMembers={minMembers},method="{method}",th={th},bUsePval={bUsePval}),output_file=file.path(cur_dir,"{html_output}"));' &&
 rm {R_filename}""".format(
         design=design,
         comparison=comparison,
@@ -56,7 +60,9 @@ rm {R_filename}""".format(
         minMembers=minMembers,
         html_output=html_output,
         R_filename=R_filename,
-        method=method
+        method=method,
+        th=th,
+        bUsePval = bUsePval
     ))
 
 
@@ -65,6 +71,9 @@ rm {R_filename}""".format(
 def diffbind_R( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap, minMembers, method):
 
     output_file = "".join((output_dir, "_".join(("/diffbind", comparison, method, "dba.txt"))))
+
+    th = config.param('differential_binding', 'th')
+    bUsePval = config.param('differential_binding', 'bUsePval')
 
     return Job(
         input_files,
@@ -85,7 +94,9 @@ Rscript $R_TOOLS/DiffBind.R \\
   -dir {output_dir} \\
   -minOverlap {minOverlap} \\
   -minMembers {minMembers} \\
-  -method {method}""".format(
+  -method {method} \\
+  -th {th} \\
+  -bUsePval {bUsePval}""".format(
         design=design,
         comparison=comparison,
         output_file=output_file,
@@ -95,5 +106,7 @@ Rscript $R_TOOLS/DiffBind.R \\
         peak_dir=peak_dir,
         minOverlap=minOverlap,
         minMembers=minMembers,
-        method=method
+        method=method,
+        th=th,
+        bUsePval=bUsePval
     ))
