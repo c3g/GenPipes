@@ -47,7 +47,7 @@ def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libra
     if output_dependency is not None:
         outputs = output_dependency
     elif duplicate_marking == "true":
-        outputs = [os.path.join(output_dir, readsetName + ".sorted.bam")]
+        outputs = [os.path.join(output_dir, readsetName + ".bam")]
     else:
         outputs = [os.path.join(output_dir, readsetName + ".bam")]
     print(outputs)

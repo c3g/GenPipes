@@ -953,7 +953,7 @@ pandoc \\
             dragen_inputfolder = os.path.join(config.param('dragen_align', 'work_folder'), "reads", readset.name)
             dragen_workfolder = os.path.join(config.param('dragen_align', 'work_folder'), "alignment", readset.name)
             dragen_tmp_bam = os.path.join(dragen_workfolder, readset.name + ".bam")
-            dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".bam")
             output_bam = dragen_bam
             index_bam = output_bam + ".bai"
 
@@ -1029,8 +1029,7 @@ pandoc \\
                          output_dependency=[dragen_bam]),
                 # bashc.rm(dragen_workfolder, recursive=True, force=True, input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
                 rm_dragen_fastq_job
-            ], name="dragen_align." + readset.name, samples=[readset.sample], json=False, dependency_jobs=[],
-                output_dir=config.param('dragen_align', 'work_folder'))
+            ], name="dragen_align." + readset.name, samples=[readset.sample])
             dragen_output_copy = concat_jobs([
                 bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'), "job_output",
                                       "dragen_align." + readset.name + "*"),
@@ -1044,8 +1043,7 @@ pandoc \\
                                       "dragen_align." + readset.name + "*"), input_dependency=[dragen_bam], recursive=True),
                 bashc.rm(os.path.join(config.param('dragen_align', 'work_folder'), "job_output", "dragen_align",
                                       "dragen_align." + readset.name + "*") ,input_dependency=[dragen_bam], recursive=True)
-            ], name="dragen_copy." + readset.name, samples=[readset.sample], json=False, dependency_jobs=[],
-                output_dir=config.param('dragen_align', 'work_folder'))
+            ], name="dragen_copy." + readset.name, samples=[readset.sample])
             jobs.append(
                 dragen_align
             )
