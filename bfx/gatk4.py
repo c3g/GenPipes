@@ -216,6 +216,7 @@ def apply_bqsr(
                 ['gatk_apply_bqsr', 'module_gatk']
             ],
             command="""\
+rm -rf {output}* && \\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   ApplyBQSRSpark {options} --create-output-bam-index true \\
   --input {input} \\

@@ -415,6 +415,7 @@ def print_reads(input, output, base_quality_score_recalibration):
                 ['gatk_print_reads', 'module_gatk']
             ],
         command="""\
+rm -rf {output}* && \\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type PrintReads --generate_md5 \\
   -nt 1 --num_cpu_threads_per_data_thread {threads} \\
