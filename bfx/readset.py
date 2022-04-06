@@ -29,7 +29,7 @@ import subprocess
 
 # MUGQIC Modules
 from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner
-from .sample import Sample, NanoporeSample
+from .sample import Sample, RunProcessingSample, NanoporeSample
 from core.config import config, _raise, SanitycheckError
 
 # Append mugqic_pipelines directory to Python library path
@@ -392,7 +392,7 @@ def parse_illumina_raw_readset_files(
         sample_name = line['SampleName']
 
         # Always create a new sample
-        sample = Sample(sample_name)
+        sample = RunProcessingSample(sample_name)
         samples.append(sample)
 
         # Create readset and add it to sample
@@ -840,7 +840,7 @@ def parse_mgi_raw_readset_files(
         sample_name = line['SampleName']
 
         # Always create a new sample
-        sample = Sample(sample_name)
+        sample = RunProcessingSample(sample_name)
         samples.append(sample)
 
         # Create readset and add it to sample
