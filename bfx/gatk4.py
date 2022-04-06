@@ -18,6 +18,7 @@
 ################################################################################
 
 # Python Standard Modules
+import logging
 import re
 import os
 
@@ -449,8 +450,16 @@ def haplotype_caller(
     interval_list=None
     ):
 
+    interval_padding = config.param('gatk_haplotype_caller', 'interval_padding')
+
+#added interval_padding as a varibale. Because in chipseq we don't need to add any padding to the peaks
     if not isinstance(inputs, list):
         inputs = [inputs]
+
+    # Added this to check intervel_list (peak file) availability in the chip-seq pipeline
+    inputs_list = inputs.copy()
+    if not interval_list is None:
+       inputs_list.extend([interval_list])
 
     if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
         return gatk.haplotype_caller(
@@ -462,7 +471,8 @@ def haplotype_caller(
         )
     else:
         return Job(
-            inputs,
+            #to track all files as input files replaced input with input_lists
+            inputs_list,
             [output, output + ".tbi"],
             [
                 ['gatk_haplotype_caller', 'module_java'],
@@ -473,14 +483,15 @@ gatk --java-options "{java_other_options} -Xmx{ram}" \\
   HaplotypeCaller {options} --native-pair-hmm-threads {threads} \\
   --reference {reference_sequence} \\
   --input {input} \\
-  --output {output}{interval_list}{intervals}{exclude_intervals}""".format(
+  --output {output}{interval_padding} {interval_list}{intervals}{exclude_intervals}""".format(
                 tmp_dir=config.param('gatk_haplotype_caller', 'tmp_dir'),
                 java_other_options=config.param('gatk_haplotype_caller', 'gatk4_java_options'),
                 ram=config.param('gatk_haplotype_caller', 'ram'),
                 options=config.param('gatk_haplotype_caller', 'options'),
                 threads=config.param('gatk_haplotype_caller', 'threads'),
                 reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
-                interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
+                interval_list=" --intervals " + interval_list if interval_list else "",
+                interval_padding=" \\\n --interval-padding " + str(interval_padding)  if interval_padding else "",
                 input=" \\\n  ".join(input for input in inputs),
                 output=output,
                 intervals="".join(" \\\n  --intervals " + interval for interval in intervals),

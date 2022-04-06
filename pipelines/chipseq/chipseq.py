@@ -41,7 +41,11 @@ import utils.utils
 
 from pipelines import common
 
+from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
+
+from bfx import bvatools
 from bfx import bwa
+from bfx import gatk4
 from bfx import gq_seq_utils
 from bfx import homer
 from bfx import macs2
@@ -153,6 +157,11 @@ class ChipSeq(common.Illumina):
             self.argparser.error("argument -d/--design is required!")
 
         return self._contrast
+
+    def sequence_dictionary_variant(self):
+        if not hasattr(self, "_sequence_dictionary_variant"):
+            self._sequence_dictionary_variant = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
+        return self._sequence_dictionary_variant
 
     def mappable_genome_size(self):
         genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
@@ -1928,6 +1937,97 @@ done""".format(
 
         return jobs
 
+    def gatk_haplotype_caller(self):
+        """
+        GATK haplotype caller for snps and small indels.
+        """
+
+        jobs = []
+
+
+        for sample in self.samples:
+            for mark_name, mark_type in sample.marks.items():
+                if not mark_type == "I":
+                    alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name,
+                                               mark_name)
+                    haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
+
+                    macs_output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
+
+                    input_bam = os.path.join(alignment_directory,
+                                                 sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+
+                    #peak calling bed file from MACS2 is given here to restrict the variant calling to peaks regions
+                    interval_list = None
+                    if mark_type == "N":
+                        interval_list = os.path.join(macs_output_dir, sample.name + "." + mark_name +"_peaks.narrowPeak.bed")
+                    elif mark_type == "B":
+                        interval_list = os.path.join(macs_output_dir,
+                                                     sample.name + "." + mark_name + "_peaks.broadPeak.bed")
+
+
+                    mkdir_job = bash.mkdir(
+                                haplotype_directory,
+                                remove=True
+                    )
+                    interval_padding = config.param('gatk_haplotype_caller', 'interval_padding')
+                    jobs.append(
+                    concat_jobs([
+                    # Create output directory since it is not done by default by GATK tools
+                    mkdir_job,
+                    gatk4.haplotype_caller(
+                        input_bam,
+                        os.path.join(haplotype_directory, sample.name +"."+ mark_name +".hc.g.vcf.gz"),
+                        interval_list=interval_list
+
+                    )
+                ],
+                    name="gatk_haplotype_caller." + sample.name +"_"+ mark_name,
+                    samples=[sample]
+                    )
+                    )
+
+        return jobs
+
+    def merge_and_call_individual_gvcf(self):
+        """
+        Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            for mark_name, mark_type in sample.marks.items():
+                if not mark_type == "I":
+                    alignment_directory = os.path.join("alignment", sample.name, mark_name)
+                    haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
+                    haplotype_file_prefix = os.path.join(haplotype_directory , sample.name +"." +mark_name)
+                    output_haplotype_file_prefix = os.path.join("alignment", sample.name, mark_name, sample.name +"." + mark_name)
+
+                    jobs.append(
+                        concat_jobs([
+                            bash.ln(
+                                haplotype_file_prefix + ".hc.g.vcf.gz",
+                                output_haplotype_file_prefix + ".hc.g.vcf.gz",
+                                self.output_dir
+                            ),
+                            bash.ln(
+                                haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
+                                output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
+                                self.output_dir
+                            ),
+                            gatk4.genotype_gvcf(
+                                output_haplotype_file_prefix + ".hc.g.vcf.gz",
+                                output_haplotype_file_prefix + ".hc.vcf.gz",
+                                config.param('gatk_genotype_gvcf', 'options')
+                            )
+                        ],
+                            name="merge_and_call_individual_gvcf.call." + sample.name,
+                            samples=[sample]
+                        )
+                    )
+        return jobs
+
     @property
     def steps(self):
         return [
@@ -1936,22 +2036,26 @@ done""".format(
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.mapping_bwa_mem_sambamba,
-                self.sambamba_merge_bam_files,
+                self.sambamba_merge_bam_files, #5
                 self.sambamba_mark_duplicates,
                 self.sambamba_view_filter,
+                # self.picard_mark_duplicates,
                 self.metrics,
                 self.homer_make_tag_directory,
                 self.qc_metrics,
-                self.homer_make_ucsc_file,
+                self.homer_make_ucsc_file,  #11
                 self.macs2_callpeak,
                 self.homer_annotate_peaks,
                 self.homer_find_motifs_genome,
                 self.annotation_graphs,
                 self.run_spp,
-                self.differential_binding,
+                self.differential_binding, #17
                 self.ihec_metrics,
                 self.multiqc_report,
-                self.cram_output],
+                self.cram_output,
+                self.gatk_haplotype_caller,
+                self.merge_and_call_individual_gvcf #22
+            ],
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
@@ -1972,7 +2076,10 @@ done""".format(
                 self.differential_binding,
                 self.ihec_metrics,
                 self.multiqc_report,
-                self.cram_output]
+                self.cram_output,
+                self.gatk_haplotype_caller,
+                self.merge_and_call_individual_gvcf
+            ]
         ]
 
 
