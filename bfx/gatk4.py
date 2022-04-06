@@ -456,7 +456,6 @@ def haplotype_caller(
         inputs = [inputs]
 
     # Added this to check intervel_list (peak file) availability in the chip-seq pipeline
-
     inputs_list = inputs.copy()
     if not interval_list is None:
        inputs_list.extend([interval_list])
@@ -492,6 +491,7 @@ gatk --java-options "{java_other_options} -Xmx{ram}" \\
                 threads=config.param('gatk_haplotype_caller', 'threads'),
                 reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
                 interval_list=" \\\n  --interval-padding " + str(interval_padding) + " --intervals " + interval_list if interval_list else "",
+
                 input=" \\\n  ".join(input for input in inputs),
                 output=output,
                 intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
