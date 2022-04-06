@@ -117,21 +117,15 @@ class Scheduler(object):
             cpu_str = self.config.param(job_name_prefix, 'cluster_cpu', required=False)
         if cpu_str:
             try:
-                if "ppn" in cpu_str or '-c' in cpu_str:
+                if "nodes" in cpu_str or '-N' in cpu_str:
                     # to be back compatible
-                    node = re.search("(nodes=|-N\s*)([0-9]+)",cpu_str).groups()[1]
-                else:
-                    node = re.search("[0-9]+", cpu_str).group()
+                    return re.search("(nodes=|-N\s*)([0-9]+)",cpu_str).groups()[1]
             except AttributeError:
                 raise ValueError('"{}" is not a valid entry for "cluster_cpu"'.format(cpu_str))
-            return node
-
         try:
             return re.search("[0-9]+", node_str).group()
         except AttributeError:
             return node
-
-
 
     def submit(self, pipeline):
         # Needs to be defined in scheduler child class
