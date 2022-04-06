@@ -2022,7 +2022,7 @@ done""".format(
                                 config.param('gatk_genotype_gvcf', 'options')
                             )
                         ],
-                            name="merge_and_call_individual_gvcf.call." + sample.name,
+                            name="merge_and_call_individual_gvcf.call." + sample.name +"_"+ mark_name,
                             samples=[sample]
                         )
                     )
