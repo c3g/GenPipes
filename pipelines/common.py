@@ -76,6 +76,8 @@ class MUGQICPipeline(Pipeline):
         return self._samples
 
     def mugqic_log(self):
+        if 'NO_MUGQIC_REPORT' in os.environ:
+            return None
         server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
         listName = {}
         for readset in self.readsets:
