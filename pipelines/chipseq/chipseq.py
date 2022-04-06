@@ -158,7 +158,7 @@ class ChipSeq(common.Illumina):
         genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
         # 2nd column of genome index contains chromosome length
         # HOMER and MACS2 mappable genome size (without repetitive features) is about 80 % of total size
-        return sum([int(chromosome[1]) for chromosome in genome_index]) * 0.8
+        return int(sum([int(chromosome[1]) for chromosome in genome_index]) * config.param('DEFAULT', 'mappable_genome_size', param_type='float', required=True))
 
     def trimmomatic(self):
         """
@@ -801,11 +801,12 @@ pandoc --to=markdown \\
                 output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name,
                                           sample.name + "." + mark_name)
                 other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
+                genome = config.param('homer_make_tag_directory', 'genome', required=False) if config.param('homer_make_tag_directory', 'genome', required=False) else self.ucsc_genome
 
                 job = homer.makeTagDir(
                     output_dir,
                     alignment_file,
-                    self.ucsc_genome,
+                    genome,
                     restriction_site=None,
                     illuminaPE=False,
                     other_options=other_options
@@ -912,12 +913,11 @@ done""".format(
                 jobs.append(
                     concat_jobs([
                         bash.mkdir(os.path.join(bedgraph_dir, "bigWig")),
-                        Job(command="export TMPDIR={tmp_dir}".format(
-                            tmp_dir=config.param('homer_make_ucsc_file', 'tmp_dir'))),
                         ucsc.bedGraphToBigWig(
                             bedgraph_file,
                             big_wig_output,
-                            header=True)
+                            header=True,
+                            ini_section="homer_make_ucsc_file")
                     ],
                         name="homer_make_ucsc_file_bigWig." + sample.name + "." + mark_name)
                 )
@@ -981,7 +981,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                     ## set macs2 variables:
 
                     options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
-                    genome_size = self.mappable_genome_size()
+                    genome_size = config.param('macs2_callpeak', 'genome_size') if config.param('macs2_callpeak', 'genome_size') else self.mappable_genome_size()
                     output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
 
                     if mark_type == "B":  # Broad region
@@ -1129,7 +1129,7 @@ done""".format(
                     ## set macs2 variables:
 
                     options = "--format " + ("BAMPE" if self.run_type == "PAIRED_END" else "BAM")
-                    genome_size = self.mappable_genome_size()
+                    genome_size = config.param('macs2_callpeak', 'genome_size') if config.param('macs2_callpeak', 'genome_size') else self.mappable_genome_size()
                     output_prefix_name = os.path.join(output_dir, sample.name + "." + mark_name)
                     # output = os.path.join(output_dir,
                     #                       sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
@@ -1355,14 +1355,18 @@ done""".format(
                         output_prefix = os.path.join(output_dir, sample.name + "." + mark_name)
                         annotation_file = output_prefix + ".annotated.csv"
 
+                        genome = config.param('homer_annotate_peaks', 'genome', required=False) if config.param('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
+                        genome_size = config.param('homer_annotate_peaks', 'genome_size') if config.param('homer_annotate_peaks', 'genome_size') else self.mappable_genome_size()
+
                         jobs.append(
                             concat_jobs([
                                 bash.mkdir(output_dir),
                                 homer.annotatePeaks(
                                     peak_file,
-                                    self.ucsc_genome,
+                                    genome,
                                     output_dir,
-                                    annotation_file
+                                    annotation_file,
+                                    genome_size
                                 ),
                                 Job(
                                     [annotation_file],
@@ -1465,12 +1469,14 @@ done""".format(
                                                      mark_type] + "Peak")
                         output_dir = os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)
 
+                        genome = config.param('homer_annotate_peaks', 'genome', required=False) if config.param('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
+
                         jobs.append(
                             concat_jobs([
                                 bash.mkdir(output_dir),
                                 homer.findMotifsGenome(
                                     peak_file,
-                                    self.ucsc_genome,
+                                    genome,
                                     output_dir,
                                     config.param('homer_find_motifs_genome', 'threads', param_type='posint')
                                 )
@@ -1895,32 +1901,32 @@ done""".format(
             return jobs
 
     def cram_output(self):
-            """
-            Generate long term storage version of the final alignment files in CRAM format
-            Using this function will include the orginal final bam file into the  removable file list
-            """
+        """
+        Generate long term storage version of the final alignment files in CRAM format
+        Using this function will include the orginal final bam file into the  removable file list
+        """
 
-            jobs = []
+        jobs = []
 
-            for sample in self.samples:
-                for mark_name in sample.marks:
-                    input_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                             sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
-                    output_cram = re.sub("\.bam$", ".cram", input_bam)
+        for sample in self.samples:
+            for mark_name in sample.marks:
+                input_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                output_cram = re.sub("\.bam$", ".cram", input_bam)
 
-                    # Run samtools
-                    job = samtools.view(
-                        input_bam,
-                        output_cram,
-                        options=config.param('samtools_cram_output', 'options'),
-                        removable=False
-                    )
-                    job.name = "cram_output." + sample.name + "." + mark_name
-                    job.removable_files = input_bam
+                # Run samtools
+                job = samtools.view(
+                    input_bam,
+                    output_cram,
+                    options=config.param('samtools_cram_output', 'options'),
+                    removable=False
+                )
+                job.name = "cram_output." + sample.name + "." + mark_name
+                job.removable_files = input_bam
 
-                    jobs.append(job)
+                jobs.append(job)
 
-            return jobs
+        return jobs
 
     @property
     def steps(self):
