@@ -3,21 +3,21 @@
 set -eu -o pipefail
 
 SOFTWARE=bedops
-VERSION=v2.4.35
+VERSION=v2.4.40
 ARCHIVE=${SOFTWARE}_linux_x86_64-${VERSION}.tar.bz2
-ARCHIVE_URL=https://github.com/${SOFTWARE}/${SOFTWARE}/releases/download/${VERSION}/${ARCHIVE}
+ARCHIVE_URL=https://github.com/$SOFTWARE/$SOFTWARE/archive/refs/tags/$VERSION.tar.gz
 SOFTWARE_DIR=${SOFTWARE}_${VERSION}
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  tar jxvf $ARCHIVE
+  git clone https://github.com/bedops/bedops.git -b $VERSION $SOFTWARE_DIR
 
-  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
+  cd $SOFTWARE_DIR
+  make all -j12
+  make install_all
+
   cd $INSTALL_DOWNLOAD
-  mv -i bin $INSTALL_DIR/$SOFTWARE_DIR/
+  mv -i $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 

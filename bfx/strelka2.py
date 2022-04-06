@@ -21,7 +21,13 @@
 from core.config import *
 from core.job import *
 
-def somatic_config(input_normal,input_tumor, output_dir, callRegions=None, mantaIndels=None):
+def somatic_config(
+    input_normal,
+    input_tumor,
+    output_dir,
+    callRegions=None,
+    mantaIndels=None
+    ):
 
     output=[
         os.path.join(output_dir, "runWorkflow.py"),
@@ -36,23 +42,29 @@ def somatic_config(input_normal,input_tumor, output_dir, callRegions=None, manta
             ['strelka2_paired_somatic', 'module_strelka2']
         ],
         command="""\
- python $STRELKA2_HOME/bin/configureStrelkaSomaticWorkflow.py \\
-        --normalBam {normal} \\
-        --tumorBam {tumor} \\
-        --referenceFasta {genome} \\
-        {experiment_type} {callRegions} {mantaIndels} \\
-        --runDir {output}""".format(
+rm -f {workflow} && \\
+python $STRELKA2_HOME/bin/configureStrelkaSomaticWorkflow.py \\
+  --normalBam {normal} \\
+  --tumorBam {tumor} \\
+  --referenceFasta {genome} \\
+  {experiment_type} {callRegions} {mantaIndels} \\
+  --runDir {output}""".format(
+            workflow=os.path.join(output_dir, "runWorkflow.py"),
             normal=input_normal,
             tumor=input_tumor,
             genome=config.param('strelka2_paired_somatic','genome_fasta', param_type='filepath'),
             experiment_type=config.param('strelka2_paired_somatic','experiment_type_option') if config.param('strelka2_paired_somatic','experiment_type_option') else "",
-            callRegions="\\\n        --callRegions " + callRegions if callRegions else "",
-            mantaIndels="\\\n        --indelCandidates " + mantaIndels if mantaIndels else "",
+            callRegions="\\\n  --callRegions " + callRegions if callRegions else "",
+            mantaIndels="\\\n  --indelCandidates " + mantaIndels if mantaIndels else "",
             output=output_dir
         )
     )
 
-def germline_config(input_normal, output_dir, callRegions=None):
+def germline_config(
+    input_normal,
+    output_dir,
+    callRegions=None
+    ):
 
     if not isinstance(input_normal, list):
         input_normal = [input_normal]
@@ -65,20 +77,25 @@ def germline_config(input_normal, output_dir, callRegions=None):
             ['strelka2_paired_germline', 'module_strelka2']
         ],
         command="""\
- python $STRELKA2_HOME/bin/configureStrelkaGermlineWorkflow.py \\
-        {normal} \\
-        --referenceFasta {genome} \\
-        {experiment_type} {callRegions} \\
-        --runDir {output}""".format(
+rm -f {workflow} && \\
+python $STRELKA2_HOME/bin/configureStrelkaGermlineWorkflow.py \\
+  {normal} \\
+  --referenceFasta {genome} \\
+  {experiment_type} {callRegions} \\
+  --runDir {output}""".format(
+            workflow=os.path.join(output_dir, "runWorkflow.py"),
             normal="".join(" \\\n  --bam " + input for input in input_normal),
             genome=config.param('strelka2_paired_germline','genome_fasta', param_type='filepath'),
             experiment_type=config.param('strelka2_paired_germline','experiment_type_option') if config.param('strelka2_paired_germline','experiment_type_option') else "",
-            callRegions="\\\n        --callRegions " + callRegions if callRegions else "",
+            callRegions="\\\n  --callRegions " + callRegions if callRegions else "",
             output=output_dir
         )
     )
 
-def run(input_dir, output_dep=[]):
+def run(
+    input_dir,
+    output_dep=[]
+    ):
 
     ram = config.param('manta_sv', 'ram')
     ram_num = re.match('[0-9]+', ram)
@@ -98,10 +115,10 @@ def run(input_dir, output_dep=[]):
         ],
         command="""\
 python {input_dir}/runWorkflow.py \\
-        -m {mode}  \\
-        -j {nodes} \\
-        -g {ram} \\
-        --quiet""".format(
+  -m {mode}  \\
+  -j {nodes} \\
+  -g {ram} \\
+  --quiet""".format(
             input_dir=input_dir,
             mode=config.param('strelka2_paired_somatic','option_mode'),
             nodes=config.param('strelka2_paired_somatic','option_nodes'),

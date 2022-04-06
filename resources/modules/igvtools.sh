@@ -3,15 +3,11 @@
 set -eu -o pipefail
 
 SOFTWARE=igvtools
-VERSION=2.3.67
-#VERSION=2.3.14
+VERSION=2.11.9
 ARCHIVE=${SOFTWARE}_$VERSION.zip
-ARCHIVE_URL=http://www.broadinstitute.org/igv/projects/downloads/$ARCHIVE
+ARCHIVE_URL=http://www.broadinstitute.org/igv/projects/downloads/2.11/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
