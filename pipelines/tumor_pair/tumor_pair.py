@@ -69,6 +69,8 @@ from bfx import gatk4
 from bfx import vardict
 from bfx import strelka2
 from bfx import bcbio_variation_recall
+from bfx import cpsr
+from bfx import pcgr
 from bfx import gemini
 
 #sv
@@ -3516,6 +3518,229 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         return jobs
 
+    def filter_ensemble_germline(self):
+        """
+        Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
+        the filter on those generated fields
+        """
+        jobs = []
+    
+        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+    
+        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
+    
+        for tumor_pair in self.tumor_pairs.values():
+            input = os.path.join(
+                ensemble_directory,
+                tumor_pair.name,
+                tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz"
+            )
+            output_2caller = os.path.join(
+                ensemble_directory,
+                tumor_pair.name,
+                tumor_pair.name + ".ensemble.germline.vt.annot.2caller.vcf.gz"
+            )
+            output_filter = os.path.join(
+                ensemble_directory,
+                tumor_pair.name,
+                tumor_pair.name + ".ensemble.germline.vt.annot.2caller.flt.vcf.gz"
+            )
+            
+            jobs.append(concat_jobs([
+                tools.format2pcgr(
+                    input,
+                    output_2caller,
+                    "germline",
+                    tumor_pair.tumor,
+                ),
+                pipe_jobs([
+                    bcftools.view(
+                        output_2caller,
+                        None,
+                        filter_options=config.param('filter_ensemble', 'filter_options'),
+                    ),
+                    bcftools.view(
+                        None,
+                        None,
+                        filter_options="-Oz -s ^" + tumor_pair.normal
+                    ),
+                    bcftools.sort(
+                        None,
+                        output_filter,
+                        sort_options="-Oz"
+                    ),
+                ]),
+                htslib.tabix(
+                    output_filter
+                ),
+                ], name="filter_ensemble.germline." + tumor_pair.name))
+    
+        return jobs
+
+    def report_cpsr(self):
+        """
+        Creates a cpsr gremline report (https://sigven.github.io/cpsr/)
+        input: filtered ensemble gremline vcf
+        output: html report and addtionalflat files
+        """
+        jobs = []
+    
+        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+    
+        for tumor_pair in self.tumor_pairs.values():
+            input = os.path.join(
+                ensemble_directory,
+                tumor_pair.name,
+                tumor_pair.name + ".ensemble.germline.vt.annot.2caller.flt.vcf.gz"
+            )
+            cpsr_directory = os.path.join(
+                ensemble_directory,
+                tumor_pair.name,
+                "cpsr"
+            )
+        
+            jobs.append(concat_jobs([
+                bash.mkdir(
+                    cpsr_directory,
+                ),
+                cpsr.report(
+                    input,
+                    cpsr_directory,
+                    tumor_pair.tumor
+                )
+            ], name="report_cpsr" + tumor_pair.name))
+    
+        return jobs
+
+    def filter_ensemble_somatic(self):
+        """
+        Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
+        the filter on those generated fields
+        """
+        jobs = []
+    
+        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+    
+        for tumor_pair in self.tumor_pairs.values():
+            input = os.path.join(
+                ensemble_directory,
+                tumor_pair.name,
+                tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz"
+            )
+            output_2caller = os.path.join(
+                ensemble_directory,
+                tumor_pair.name,
+                tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.vcf.gz"
+            )
+            output_filter = os.path.join(
+                ensemble_directory,
+                tumor_pair.name,
+                tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz"
+            )
+        
+            jobs.append(concat_jobs([
+                tools.format2pcgr(
+                    input,
+                    output_2caller,
+                    "somatic",
+                    tumor_pair.tumor,
+                ),
+                pipe_jobs([
+                    bcftools.view(
+                        output_2caller,
+                        None,
+                        filter_options=config.param('filter_ensemble', 'filter_options'),
+                    ),
+                    bcftools.view(
+                        None,
+                        None,
+                        filter_options="-Oz -s ^" + tumor_pair.normal
+                    ),
+                    bcftools.sort(
+                        None,
+                        output_filter,
+                        sort_options="-Oz"
+                    ),
+                ]),
+                htslib.tabix(
+                    output_filter
+                ),
+            ], name="filter_ensemble.somatic." + tumor_pair.name))
+    
+        return jobs
+
+    def report_pcgr(self):
+        """
+        Creates a PCGR somatic + germline report (https://sigven.github.io/cpsr/)
+        input: filtered ensemble gremline vcf
+        output: html report and addtionalflat files
+        """
+        jobs = []
+    
+        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+    
+        for tumor_pair in self.tumor_pairs.values():
+            input = os.path.join(
+                ensemble_directory,
+                tumor_pair.name,
+                tumor_pair.name + ".ensemble.germline.vt.annot.2caller.flt.vcf.gz"
+            )
+            input_cna = os.path.join(
+                self.output_dir,
+                "SVariant",
+                tumor_pair.name,
+                tumor_pair.name + "cnvkit.vcf.gz"
+            )
+            output_cna_body = os.path.join(
+                self.output_dir,
+                "SVariant",
+                tumor_pair.name + "cnvkit.body.tsv"
+            )
+            output_cna = os.path.join(
+                self.output_dir,
+                "SVariant",
+                tumor_pair.name + "cnvkit.cna.tsv"
+            )
+            cpsr_directory = os.path.join(
+                ensemble_directory,
+                tumor_pair.name,
+                "cpsr"
+            )
+            pcgr_directory = os.path.join(
+                ensemble_directory,
+                tumor_pair.name,
+                "pcgr"
+            )
+    
+            jobs.append(concat_jobs([
+                bash.mkdir(
+                    cpsr_directory,
+                ),
+                pcgr.create_header(
+                    os.path.join(
+                        self.output_dir,
+                        "SVariant", "header")
+                    ),
+                bcftools.query(
+                    input_cna,
+                    output_cna_body,
+                    query_options="-f '%CHROM\t%POS\t%END\t%FOLD_CHANGE_LOG\n'"
+                ),
+                bash.cat(
+                    os.path.join(
+                        self.output_dir,
+                        "SVariant", "header"),
+                    output_cna,
+                    append=output_cna_body,
+                ),
+                pcgr.report(
+                    input,
+                    cpsr_directory,
+                    pcgr_directory,
+                    tumor_pair.tumor
+                )
+            ], name="report_pcgr." + tumor_pair.name))
+
     def compute_cancer_effects_somatic(self):
         """
         Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
@@ -4772,7 +4997,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 jobs.append(
                     concat_jobs(
                         [
-                            bash.mkdir(manta_dir),
+                            bash.mkdir(manta_directory),
                             Job(
                                 [coverage_bed],
                                 [local_coverage_bed + ".sort"],
@@ -6503,6 +6728,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 self.metrics_dna_sample_qualimap,
                 self.metrics_dna_fastqc,
                 self.sequenza,
+                self.manta_sv_calls,
                 self.strelka2_paired_somatic,
                 self.strelka2_paired_germline,
                 self.purple,
@@ -6516,23 +6742,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 self.ensemble_somatic,
                 self.gatk_variant_annotator_somatic,
                 self.merge_gatk_variant_annotator_somatic,
-                self.compute_cancer_effects_somatic,
-                self.ensemble_somatic_dbnsfp_annotation,
-                self.sample_gemini_annotations_somatic,
                 self.ensemble_germline_loh,
                 self.gatk_variant_annotator_germline,
                 self.merge_gatk_variant_annotator_germline,
-                self.compute_cancer_effects_germline,
-                self.ensemble_germline_dbnsfp_annotation,
-                self.sample_gemini_annotations_germline,
-                #self.combine_tumor_pairs_somatic,
-                #self.decompose_and_normalize_mnps_somatic,
-                #self.all_pairs_compute_effects_somatic,
-                #self.gemini_annotations_somatic,
-                #self.combine_tumor_pairs_germline,
-                #self.decompose_and_normalize_mnps_germline,
-                #self.all_pairs_compute_effects_germline,
-                #self.gemini_annotations_germline,
+                self.cnvkit_batch,
+                self.filter_ensemble_germline,
+                self.filter_ensemble_somatic,
+                self.report_cpsr,
+                self.report_pcgr,
                 self.run_pair_multiqc,
                 self.sym_link_fastq_pair,
                 self.sym_link_final_bam,

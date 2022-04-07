@@ -175,6 +175,46 @@ bcftools \\
         )
     )
 
+def sort(input, output, sort_options=None):
+    """
+    Generalized sort
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['bcftools_sort', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  sort {sort_options} \\
+  {output}{input}""".format(
+        sort_options=sort_options if sort_options else "",
+        input=" \\\n " + input if input else "",
+        output=" \\\n -o " + output if output else ""
+        )
+    )
+
+def query(input, output, query_options=None):
+    """
+    Generalized sort
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['bcftools_sort', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  query {query_options} \\
+  {output}{input}""".format(
+        query_options=query_options if query_options else "",
+        input=" \\\n " + input if input else "",
+        output=" \\\n -o " + output if output else ""
+        )
+    )
+
 def filter(input, output, filter_options):
     """
     Generalized filter function

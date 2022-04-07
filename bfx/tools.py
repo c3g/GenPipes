@@ -261,6 +261,30 @@ def fix_genotypes_strelka(input, output, normal, tumor):
                 tumor=tumor,
             )
         )
+
+def format2pcgr(input, output, variant_type, tumor):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+	python $PYTHON_TOOLS/format2pcgr.py \\
+	    -i {input} \\
+	    -o {output} \\
+	    -f {filter} \\
+	    -v {variant_type} \\
+	    -t {tumor}""".format(
+            input=input if input else "",
+            output=output if input else "",
+            filter=config.param('variant_report', 'filter'),
+            variant_type=variant_type,
+            tumor=tumor,
+        )
+    )
+
 def cpg_cov_stats(input, output):
     return Job(
         [input],
