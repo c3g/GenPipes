@@ -34,7 +34,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 import utils.utils
-from bfx.readset import parse_illumina_readset_file
+from core.readset import parse_illumina_readset_file
 
 from bfx import bvatools
 from bfx import bismark
