@@ -945,7 +945,7 @@ pandoc \\
         """
         Align reads with dragen
         """
-
+        duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='string').lower()
         jobs = []
         for readset in self.readsets:
             trim_file_prefix = os.path.join(self.output_dir, "trim", readset.sample.name, readset.name + ".trim.")
@@ -953,7 +953,10 @@ pandoc \\
             dragen_inputfolder = os.path.join(config.param('dragen_align', 'work_folder'), "reads", readset.name)
             dragen_workfolder = os.path.join(config.param('dragen_align', 'work_folder'), "alignment", readset.name)
             dragen_tmp_bam = os.path.join(dragen_workfolder, readset.name + ".bam")
-            dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".bam")
+            if duplicate_marking == "true":
+                dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            else:
+                dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".bam")
             output_bam = dragen_bam
             index_bam = output_bam + ".bai"
 
@@ -1021,7 +1024,7 @@ pandoc \\
                     readset.sample.name,
                     readset.library if readset.library else readset.sample.name,
                     readset.name + "_" + readset.run + "_" + readset.lane,
-                    input_dependency=[fastq1, fastq2],
+                    input_dependency=[fastq1, fastq2], output_dependency=[dragen_bam]
                 ),
                 bashc.cp(dragen_workfolder, os.path.abspath(alignment_directory) + "/", recursive=True,
                          input_dependency=[fastq1, fastq2], output_dependency=[dragen_bam]),
@@ -1047,9 +1050,9 @@ pandoc \\
             jobs.append(
                 dragen_align
             )
-            jobs.append(
-                dragen_output_copy
-            )
+            # jobs.append(
+            #     dragen_output_copy
+            # )
 
             # jobs.append(
             #     concat_jobs([
@@ -1067,7 +1070,7 @@ pandoc \\
                         output_bam,
                         re.sub(".bam", "_flagstat.txt", output_bam),
                     )
-                ], name="samtools_flagstat." + readset.name, samples=[readset.sample])
+                ], name="samtools_flagstat." + readset.name, samples=[readset.sample], output_dependency = [re.sub(".bam", "_flagstat.txt", output_bam)])
             )
             jobs.append(
                 concat_jobs([
@@ -1082,27 +1085,38 @@ pandoc \\
 
     def symlink_dedub(self):
         jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
 
-            input_file = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            output_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
+        duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='string').lower()
 
-            jobs.append(
-                concat_jobs([
+        if duplicate_marking == "true":
 
-                    bashc.ln(
-                        input_file,
-                        output_file,
-                        self.output_dir
+            for sample in self.samples:
+                alignment_directory = os.path.join("alignment", sample.name)
+
+                input_file = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+                output_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
+
+                jobs.append(
+                    concat_jobs([
+
+                        bashc.ln(
+                            input_file,
+                            output_file,
+                            self.output_dir
+                        )
+
+                    ],
+                        name="symlink_merge_sorted_dedub." + sample.name,
+                        samples=[sample]
                     )
-
-                ],
-                    name="symlink_merge_sorted_dedub." + sample.name,
-                    samples=[sample]
                 )
-            )
-            return jobs
+
+
+
+        else:
+            jobs.extend(self.picard_remove_duplicates())
+
+        return jobs
 
 
     @property
@@ -1131,7 +1145,7 @@ pandoc \\
             self.trimmomatic,
             self.merge_trimmomatic_stats,
             self.dragen_align,
-            # self.add_bam_umi,               # step 5
+            #self.add_bam_umi,               # step 5
             self.sambamba_merge_sam_files,
             self.symlink_dedub,
             #self.picard_remove_duplicates,
@@ -1146,6 +1160,7 @@ pandoc \\
             self.cram_output
         ]
         ]
+
 
 
 class MethylSeq(MethylSeqRaw):

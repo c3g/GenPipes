@@ -19,12 +19,13 @@
 
 # Check Python version
 import sys
-if sys.version_info < (2,7):
+
+if sys.version_info < (2, 7):
     raise SystemExit("Incompatible Python version: " + sys.version + "\nPython 2.7 or higher is required")
 
 # Python Standard Modules
+from collections import Counter, OrderedDict, namedtuple
 import argparse
-import collections
 import datetime
 import hashlib
 import logging
@@ -41,16 +42,20 @@ from .scheduler import create_scheduler
 from .step import Step
 
 from bfx import jsonator
+from bfx.sample import Sample
 
 log = logging.getLogger(__name__)
+
 
 class Pipeline(object):
 
     def __init__(self):
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self._args = self.argparser.parse_args()
-        self._genpipes_version = subprocess.check_output("cat " + os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "VERSION"), shell=True)
-            
+        self._genpipes_version = subprocess.check_output(
+            "cat " + os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))),
+                                  "VERSION"), shell=True)
+
         if self.protocol is None:
             step_list = self.steps
         elif self.args.help:
@@ -87,17 +92,18 @@ class Pipeline(object):
               ```
               {step_doc}
             """).format(
-            pipeline_doc=textwrap.dedent(self.__doc__ or ""),
-            help=self.argparser.format_help(),
-            overview=self.__doc__ or "",
-            #step_doc="\n".join([str(idx + 1) + "- " + step.__name__ + "\n" + "-" * len(str(idx + 1) + "- " + step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for idx, step in enumerate(step_list)])
-            step_doc="\n".join([step.__name__ + "\n" + "-" * len(step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for step in step_list])
+                pipeline_doc=textwrap.dedent(self.__doc__ or ""),
+                help=self.argparser.format_help(),
+                overview=self.__doc__ or "",
+                # step_doc="\n".join([str(idx + 1) + "- " + step.__name__ + "\n" + "-" * len(str(idx + 1) + "- " + step.__name__) + (textwrap.dedent(step.__doc__) if step.__doc__ else "") for idx, step in enumerate(step_list)])
+                step_doc="\n".join([step.__name__ + "\n" + "-" * len(step.__name__) + (
+                    textwrap.dedent(step.__doc__) if step.__doc__ else "") for step in step_list])
             ))
             self.argparser.exit()
 
         # Normal pipeline execution
         if self.args.config:
-            if self.args.sanity_check : config.sanity = True
+            if self.args.sanity_check: config.sanity = True
             config.parse_files(self.args.config)
         else:
             self.argparser.error("argument -c/--config is required!")
@@ -116,14 +122,20 @@ class Pipeline(object):
             config._filepath = os.path.abspath(config_trace.name)
 
         self._output_dir = os.path.abspath(self.args.output_dir)
-        self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config, container=self.args.container,
-                                           genpipes_file=self.args.genpipes_file)
+        self._job_output_dir = os.path.join(self.output_dir, "job_output")
+
+        self._scheduler = create_scheduler(
+            self.args.job_scheduler,
+            self.args.config,
+            container=self.args.container,
+            genpipes_file=self.args.genpipes_file
+        )
 
         self._json = True
         if self.args.no_json:
             self._json = False
 
-        step_counter = collections.Counter(step_list)
+        step_counter = Counter(step_list)
         duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
         if duplicated_steps:
             raise Exception("Error: pipeline contains duplicated steps: " + ", ".join(duplicated_steps) + "!")
@@ -135,12 +147,11 @@ class Pipeline(object):
                 self._step_range = [self.step_list[i - 1] for i in parse_range(self.args.steps)]
             else:
                 raise Exception("Error: step range \"" + self.args.steps +
-                    "\" is invalid (should match \d+([,-]\d+)*)!")
+                                "\" is invalid (should match \d+([,-]\d+)*)!")
         else:
-#            self.argparser.error("argument -s/--steps is required!")
+            #            self.argparser.error("argument -s/--steps is required!")
             log.warning("No step provided by the user => launching the entire pipeline\n")
             self._step_range = self.step_list
-                
 
         self._sample_list = []
         self._sample_paths = []
@@ -166,22 +177,23 @@ class Pipeline(object):
                 self.submit_jobs()
             except SanitycheckError as e:
                 log.error("""
-***The pipeline encounterered an error :
+***The pipeline encountered an error :
     {error}
 ***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag to check for more potential issues...""".format(
-                   error=e
-                   ))
+                    error=e
+                ))
                 exit(1)
-            
+
     # Pipeline command line arguments parser
     @property
     def argparser(self):
         if self.protocol is None:
-            steps = "\n".join([str(idx + 1) + "- " + step.__name__  for idx, step in enumerate(self.steps)])
+            steps = "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(self.steps)])
         else:
             steps = ""
             for i in range(0, len(self.protocol)):
-                steps += "\n----\n"+self.protocol[i]+":\n"+"\n".join([str(idx + 1) + "- " + step.__name__  for idx, step in enumerate(self.steps[i])])
+                steps += "\n----\n" + self.protocol[i] + ":\n" + "\n".join(
+                    [str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(self.steps[i])])
 
         if not hasattr(self, "_argparser"):
             epilog = textwrap.dedent("""\
@@ -192,15 +204,16 @@ class Pipeline(object):
 
             # Create ArgumentParser with numbered step list and description as epilog
             self._argparser = argparse.ArgumentParser(
-                    formatter_class=argparse.RawDescriptionHelpFormatter,
-                    epilog=epilog,
-                    conflict_handler='resolve')
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                epilog=epilog,
+                conflict_handler='resolve')
 
             # Common options for all pipelines
             self._argparser.add_argument("--help", help="show detailed description of pipeline and steps",
                                          action="store_true")
             self._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are "
-                                                                "overwritten based on files order", nargs="+", type=argparse.FileType('r'))
+                                                                "overwritten based on files order", nargs="+",
+                                         type=argparse.FileType('r'))
             self._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'")
             self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)",
                                          default=os.getcwd())
@@ -228,9 +241,9 @@ class Pipeline(object):
                                          action="store_true")
             self._argparser.add_argument("--container", nargs=2,
                                          help="Run inside a container providing a valid "
-                                         "singularity image path", action=ValidateContainer,
-                                          metavar=("{wrapper, singularity}",
-                                                   "<IMAGE PATH>"))
+                                              "singularity image path", action=ValidateContainer,
+                                         metavar=("{wrapper, singularity}",
+                                                  "<IMAGE PATH>"))
             self._argparser.add_argument("--genpipes_file", '-g', default=sys.stdout, type=argparse.FileType('w'),
                                          help="Command file output path. This is the command used to process "
                                               "the data, or said otherwise, this command will \"run the "
@@ -253,8 +266,13 @@ class Pipeline(object):
         return self._output_dir
 
     @property
+    def job_output_dir(self):
+        return self._job_output_dir
+
+    @property
     def report_template_dir(self):
-        return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "bfx", "report")
+        return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "bfx",
+                            "report")
 
     @property
     def scheduler(self):
@@ -323,11 +341,11 @@ class Pipeline(object):
                 # dependency_jobs() checks if the current candidate input files is valid, otherwise raises an exception
                 try:
                     job = Job(input_files=input_files)
-                    job.output_dir = job.output_dir if job.output_dir != "" else self.output_dir
-                    self.dependency_jobs(job, output_dir=self.output_dir)
+                    job.output_dir = self.output_dir
+                    self.dependency_jobs(job)
                     selected_input_files = input_files
                 except Exception as e:
-                    log.debug("Caught Exception for candidate input file: " +  ", ".join(input_files))
+                    log.debug("Caught Exception for candidate input file: " + ", ".join(input_files))
                     log.debug(e)
 
         if selected_input_files:
@@ -335,11 +353,10 @@ class Pipeline(object):
             return selected_input_files
         else:
             _raise(SanitycheckError("Error: missing candidate input files: " + str(candidate_input_files) +
-                " neither found in dependencies nor on file system!"))
+                                    " neither found in dependencies nor on file system!"))
 
-
-    def dependency_jobs(self, current_job, output_dir=""):
-        dependency_jobs =  current_job.dependency_jobs
+    def dependency_jobs(self, current_job):
+        dependency_jobs = []
         dependency_input_files = set()
         for step in self.step_range:
             for step_job in step.jobs:
@@ -353,21 +370,22 @@ class Pipeline(object):
         missing_input_files = set()
         # Add current_job.output_files in case of "... && ..." command
         # where first command output becomes second command input
-        for remaining_input_file in set(current_job.input_files).difference(dependency_input_files).difference(set(current_job.output_files)):
+        for remaining_input_file in set(current_job.input_files).difference(dependency_input_files).difference(
+                set(current_job.output_files)):
             # Use 'exists' instead of 'isfile' since input file can be a directory
-            if not os.path.exists(current_job.abspath(remaining_input_file, output_dir=output_dir)):
+            if not os.path.exists(current_job.abspath(remaining_input_file)):
                 missing_input_files.add(remaining_input_file)
         if missing_input_files:
-            raise Exception("Warning: missing input files for job " + current_job.name + ": " + " ! " + current_job.abspath(remaining_input_file,output_dir=output_dir) + " ! " +
-                ", ".join(missing_input_files) + " neither found in dependencies nor on file system!")
+            raise Exception("Warning: missing input files for job " + current_job.name + ": " +
+                            ", ".join(missing_input_files) + " neither found in dependencies nor on file system!")
 
         return dependency_jobs
 
     def create_jobs(self):
         for step in self.step_range:
-            if self.args.sanity_check :
+            if self.args.sanity_check:
                 log.warn("* Checking jobs for step " + step.name + "...")
-            else :
+            else:
                 log.info("Create jobs for step " + step.name + "...")
             jobs = step.create_jobs()
             for job in jobs:
@@ -381,9 +399,10 @@ class Pipeline(object):
 
                 # Job .done file name contains the command checksum.
                 # Thus, if the command is modified, the job is not up-to-date anymore.
-                job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command_with_modules.encode('utf-8')).hexdigest() + ".mugqic.done")
-                job.output_dir = job.output_dir if job.output_dir != "" else self.output_dir
-                job.dependency_jobs = self.dependency_jobs(job, output_dir=self.output_dir)
+                job.done = os.path.join(self.job_output_dir, step.name, job.name + "." + hashlib.md5(
+                    job.command_with_modules.encode('utf-8')).hexdigest() + ".mugqic.done")
+                job.output_dir = self.output_dir
+                job.dependency_jobs = self.dependency_jobs(job)
 
                 if not self.force_jobs and job.is_up2date():
                     log.info("Job " + job.name + " up to date... skipping\n")
@@ -394,46 +413,54 @@ class Pipeline(object):
                             if sample not in self.sample_list:
                                 self.sample_list.append(sample)
 
-            if not self.args.sanity_check :
-                log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
+            if not self.args.sanity_check:
+                log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + (
+                    "s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
 
         # Now create the json dumps for all the samples if not already done
         if self.json:
-            for sample in self.sample_list:
-                self.sample_paths.append(jsonator.create(self, sample))
             # Check if portal_output_dir is set from a valid environment variable
             self.portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False)
-            log.info(self.portal_output_dir.startswith("$"))
-            log.info(os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)))
-            if self.portal_output_dir.startswith("$") and (os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) is None or os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) == ""):
+            if self.portal_output_dir.startswith("$") and (
+                    os.environ.get(re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) is None or os.environ.get(
+                    re.search("^\$(.*)\/?", self.portal_output_dir).group(1)) == ""):
                 if self.portal_output_dir == "$PORTAL_OUTPUT_DIR":
                     self.portal_output_dir = ""
-                    log.info(" --> PORTAL_OUTPUT_DIR environment variable is not set... no JSON file will be generated during analysis...\n")
+                    log.info(
+                        " --> PORTAL_OUTPUT_DIR environment variable is not set... no JSON file will be generated during analysis...\n")
                     self._json = False
                 else:
-                    _raise(SanitycheckError("Environment variable \"" + re.search("^\$(.*)\/?", self.portal_output_dir).group(1) + "\" does not exist or is not valid!"))
+                    _raise(SanitycheckError(
+                        "Environment variable \"" + re.search("^\$(.*)\/?", self.portal_output_dir).group(
+                            1) + "\" does not exist or is not valid!"))
             elif not os.path.isdir(os.path.expandvars(self.portal_output_dir)):
-                _raise(SanitycheckError("Directory path \"" + self.portal_output_dir + "\" does not exist or is not a valid directory!"))
+                _raise(SanitycheckError(
+                    "Directory path \"" + self.portal_output_dir + "\" does not exist or is not a valid directory!"))
+            else:
+                for sample in self.sample_list:
+                    self.sample_paths.append(jsonator.create(self, sample))
 
-        log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + ("" if self.jobs else "... skipping") + "\n")
+        log.info("TOTAL: " + str(len(self.jobs)) + " job" + ("s" if len(self.jobs) > 1 else "") + " created" + (
+            "" if self.jobs else "... skipping") + "\n")
 
     def submit_jobs(self):
         self.scheduler.submit(self)
 
         ## Print a copy of sample JSONs for the genpipes dashboard
-#        if self.json and self.portal_output_dir != "":
-#            copy_commands = []
-#            for i, sample in enumerate(self.sample_list):
-#                input_file = self.sample_paths[i]
-#                output_file = os.path.join(self.portal_output_dir, '$USER.' + sample.name + '.' + uuid4().get_hex() + '.json')
-#                copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
-#                    input_file=input_file, output_file=output_file))
-#            print(textwrap.dedent("""
-#                #------------------------------------------------------------------------------
-#                # Print a copy of sample JSONs for the genpipes dashboard
-#                #------------------------------------------------------------------------------
-#                {copy_commands}
-#            """).format(copy_commands='\n'.join(copy_commands)))
+
+    #        if self.json and self.portal_output_dir != "":
+    #            copy_commands = []
+    #            for i, sample in enumerate(self.sample_list):
+    #                input_file = self.sample_paths[i]
+    #                output_file = os.path.join(self.portal_output_dir, '$USER.' + sample.name + '.' + uuid4().get_hex() + '.json')
+    #                copy_commands.append("cp \"{input_file}\" \"{output_file}\"".format(
+    #                    input_file=input_file, output_file=output_file))
+    #            print(textwrap.dedent("""
+    #                #------------------------------------------------------------------------------
+    #                # Print a copy of sample JSONs for the genpipes dashboard
+    #                #------------------------------------------------------------------------------
+    #                {copy_commands}
+    #            """).format(copy_commands='\n'.join(copy_commands)))
 
     def report_jobs(self, output_dir=None):
         if not output_dir:
@@ -443,7 +470,7 @@ class Pipeline(object):
             # Retrieve absolute paths of report files
             for report_file in job.report_files:
                 if report_file not in report_files:
-                    if os.path.exists(os.path.join(output_dir, report_file)) :
+                    if os.path.exists(os.path.join(output_dir, report_file)):
                         report_files.append(report_file)
                     else:
                         log.warn("Report file: " + report_file + " not found!... skipping")
@@ -496,9 +523,10 @@ pandoc \\
             # Retrieve absolute paths of removable files
             abspath_removable_files.extend([job.abspath(removable_file) for removable_file in job.removable_files])
         # Remove removable file duplicates but keep the order
-        for removable_file in list(collections.OrderedDict.fromkeys(abspath_removable_files)):
+        for removable_file in list(OrderedDict.fromkeys(abspath_removable_files)):
             if os.path.exists(removable_file):
                 print("rm -rf " + removable_file)
+
 
 # Return a range list given a string.
 # e.g. parse_range('1,3,5-12') returns [1, 3, 5, 6, 7, 8, 9, 10, 11, 12]
@@ -509,14 +537,14 @@ def parse_range(astr):
         result.update(range(int(x[0]), int(x[-1]) + 1))
     return sorted(result)
 
-class ValidateContainer(argparse.Action):
 
+class ValidateContainer(argparse.Action):
     VALID_TYPE = ('singularity', 'wrapper')
 
     def __call__(self, parser, args, values, option_string=None):
         c_type, container = values
         if c_type not in self.VALID_TYPE:
             raise ValueError('{} is not supported, choose from {}'.format(c_type, self.VALID_TYPE))
-        Container = collections.namedtuple('container', 'type name')
+        Container = namedtuple('container', 'type name')
 
         setattr(args, self.dest, Container(c_type, container))

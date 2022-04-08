@@ -46,11 +46,14 @@ def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libra
             inputs = [fastq1]
     if output_dependency is not None:
         outputs = output_dependency
-    elif duplicate_marking == "true":
-        outputs = [os.path.join(output_dir, readsetName + ".bam")]
+
+    if duplicate_marking == "true":
+        #outputs = [os.path.join(output_dir, readsetName + ".sorted.bam")]
+        output_prefix = readsetName + ".sorted"
     else:
-        outputs = [os.path.join(output_dir, readsetName + ".bam")]
-    print(outputs)
+        #outputs = [os.path.join(output_dir, readsetName + ".bam")]
+        output_prefix = readsetName
+   # print(outputs)
     return Job(
         inputs,
         outputs,
@@ -62,7 +65,7 @@ dragen --enable-methylation-calling true \\
     --methylation-protocol {met_protocol} \\
     --ref-dir {reference} \\
     --output-directory {output_dir} \\
-    --output-file-prefix {readset}.sorted \\
+    --output-file-prefix {output_prefix} \\
     --methylation-generate-cytosine-report {ct_report} \\
     --methylation-mapping-implementation {mapping_implementation} \\
     --enable-sort {sort} \\
@@ -73,7 +76,7 @@ dragen --enable-methylation-calling true \\
     -1 {fastq1} \\
     {fastq2} {other_options}""".format(
             output_dir=output_dir,
-            readset=readsetName,
+            output_prefix=output_prefix,
             dragen_tmp=config.param('dragen_align', 'tmp_dragen', param_type='string'),
             met_protocol=config.param('dragen_align', 'methylation_protocol', param_type='string'),
             reference=config.param('dragen_align', 'reference', param_type='string'),
