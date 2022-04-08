@@ -3527,8 +3527,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
     
         ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
     
-        nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
-    
         for tumor_pair in self.tumor_pairs.values():
             input = os.path.join(
                 ensemble_directory,
@@ -3550,8 +3548,9 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 tools.format2pcgr(
                     input,
                     output_2caller,
+                    config.param('filter_ensemble', 'call_filter'),
                     "germline",
-                    tumor_pair.tumor,
+                    tumor_pair.tumor.name,
                 ),
                 pipe_jobs([
                     bcftools.view(
@@ -3562,7 +3561,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     bcftools.view(
                         None,
                         None,
-                        filter_options="-Oz -s ^" + tumor_pair.normal
+                        filter_options="-Ov -s ^" + tumor_pair.normal.name
                     ),
                     bcftools.sort(
                         None,
@@ -3571,7 +3570,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     ),
                 ]),
                 htslib.tabix(
-                    output_filter
+                    output_filter,
+                    options="-pvcf"
                 ),
                 ], name="filter_ensemble.germline." + tumor_pair.name))
     
@@ -3606,9 +3606,9 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 cpsr.report(
                     input,
                     cpsr_directory,
-                    tumor_pair.tumor
+                    tumor_pair.name
                 )
-            ], name="report_cpsr" + tumor_pair.name))
+            ], name="report_cpsr." + tumor_pair.name))
     
         return jobs
 
@@ -3642,28 +3642,18 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 tools.format2pcgr(
                     input,
                     output_2caller,
+                    config.param('filter_ensemble', 'call_filter'),
                     "somatic",
-                    tumor_pair.tumor,
+                    tumor_pair.tumor.name,
                 ),
-                pipe_jobs([
-                    bcftools.view(
-                        output_2caller,
-                        None,
-                        filter_options=config.param('filter_ensemble', 'filter_options'),
-                    ),
-                    bcftools.view(
-                        None,
-                        None,
-                        filter_options="-Oz -s ^" + tumor_pair.normal
-                    ),
-                    bcftools.sort(
-                        None,
-                        output_filter,
-                        sort_options="-Oz"
-                    ),
-                ]),
+                bcftools.view(
+                    output_2caller,
+                    output_filter,
+                    filter_options=config.param('filter_ensemble', 'filter_options'),
+                ),
                 htslib.tabix(
-                    output_filter
+                    output_filter,
+                    options="-pvcf"
                 ),
             ], name="filter_ensemble.somatic." + tumor_pair.name))
     
@@ -3677,69 +3667,95 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
     
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
-    
+        ensemble_directory = os.path.join(
+            self.output_dir,
+            "pairedVariants",
+            "ensemble"
+        )
+        assembly = config.param('report_pcgr', 'assembly')
+
         for tumor_pair in self.tumor_pairs.values():
-            input = os.path.join(
-                ensemble_directory,
-                tumor_pair.name,
-                tumor_pair.name + ".ensemble.germline.vt.annot.2caller.flt.vcf.gz"
-            )
-            input_cna = os.path.join(
-                self.output_dir,
-                "SVariant",
-                tumor_pair.name,
-                tumor_pair.name + "cnvkit.vcf.gz"
-            )
-            output_cna_body = os.path.join(
-                self.output_dir,
-                "SVariant",
-                tumor_pair.name + "cnvkit.body.tsv"
-            )
-            output_cna = os.path.join(
-                self.output_dir,
-                "SVariant",
-                tumor_pair.name + "cnvkit.cna.tsv"
-            )
             cpsr_directory = os.path.join(
                 ensemble_directory,
                 tumor_pair.name,
                 "cpsr"
+            )
+            input_cpsr = os.path.join(
+                cpsr_directory,
+                tumor_pair.name + ".cpsr." + assembly + ".json.gz"
+            )
+            input = os.path.join(
+                ensemble_directory,
+                tumor_pair.name,
+                tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz"
+            )
+            input_cna = os.path.join(
+                self.output_dir,
+                "SVariants",
+                tumor_pair.name,
+                tumor_pair.name + ".cnvkit.vcf.gz"
+            )
+            header = os.path.join(
+                self.output_dir,
+                "SVariants",
+                "header"
+            )
+            output_cna_body = os.path.join(
+                self.output_dir,
+                "SVariants",
+                tumor_pair.name + ".cnvkit.body.tsv"
+            )
+            output_cna = os.path.join(
+                self.output_dir,
+                "SVariants",
+                tumor_pair.name + ".cnvkit.cna.tsv"
             )
             pcgr_directory = os.path.join(
                 ensemble_directory,
                 tumor_pair.name,
                 "pcgr"
             )
-    
-            jobs.append(concat_jobs([
-                bash.mkdir(
-                    cpsr_directory,
-                ),
-                pcgr.create_header(
-                    os.path.join(
-                        self.output_dir,
-                        "SVariant", "header")
-                    ),
-                bcftools.query(
-                    input_cna,
-                    output_cna_body,
-                    query_options="-f '%CHROM\t%POS\t%END\t%FOLD_CHANGE_LOG\n'"
-                ),
-                bash.cat(
-                    os.path.join(
-                        self.output_dir,
-                        "SVariant", "header"),
-                    output_cna,
-                    append=output_cna_body,
-                ),
-                pcgr.report(
-                    input,
-                    cpsr_directory,
-                    pcgr_directory,
-                    tumor_pair.tumor
+            output = os.path.join(
+                pcgr_directory,
+                tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"
+            )
+     
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            pcgr_directory,
+                        ),
+                        pcgr.create_header(
+                            header,
+                        ),
+                        bcftools.query(
+                            input_cna,
+                            output_cna_body,
+                            query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
+                        ),
+                        bash.cat(
+                            [
+                                header,
+                                output_cna_body,
+                            ],
+                            output_cna,
+                        ),
+                        pcgr.report(
+                            input,
+                            output_cna,
+                            input_cpsr,
+                            pcgr_directory,
+                            tumor_pair.tumor.name
+                        )
+                    ],
+                    name="report_pcgr." + tumor_pair.name,
+                    input_dependency = [header, input, input_cna, input_cpsr, output_cna_body],
+                    output_dependency = [header, output_cna_body, output_cna, output]
                 )
-            ], name="report_pcgr." + tumor_pair.name))
+            )
+        
+        return jobs
 
     def compute_cancer_effects_somatic(self):
         """

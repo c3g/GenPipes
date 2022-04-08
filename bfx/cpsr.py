@@ -26,15 +26,17 @@ from core.job import *
 
 
 def report(input, output_dir, tumor_id):
-    assembly = config.param('cpsr_report', 'assembly')
-    output_json = os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".json.gz"),
-    output_html = os.path.join(output_dir, tumor_id + ".cpsr." + assembly + "html"),
+    assembly = config.param('report_cpsr', 'assembly')
+    output = [
+        os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".json.gz"),
+        os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".html")
+    ]
     
     return Job(
-        input,
-        [output_json, output_html],
+        [input],
+        output,
         [
-            ['cpsr_report', 'mugqic_cpsr'],
+            ['report_cpsr', 'module_cpsr'],
         ],
         command="""\
 cpsr.py {options} \\
@@ -43,10 +45,10 @@ cpsr.py {options} \\
     --output_dir {output_dir} \\
     --genome_assembly {assembly} \\
     --sample_id {tumor_id}""".format(
-            options=config.param('cpsr_report', 'option'),
+            options=config.param('report_cpsr', 'options'),
             input=input,
             output_dir=output_dir,
-            assembly=config.param('cpsr_report', 'assembly'),
+            assembly=config.param('report_cpsr', 'assembly'),
             tumor_id=tumor_id
         )
     )

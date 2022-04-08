@@ -262,7 +262,7 @@ def fix_genotypes_strelka(input, output, normal, tumor):
             )
         )
 
-def format2pcgr(input, output, variant_type, tumor):
+def format2pcgr(input, output, filter, variant_type, tumor):
     return Job(
         [input],
         [output],
@@ -271,15 +271,15 @@ def format2pcgr(input, output, variant_type, tumor):
             ['DEFAULT', 'module_python']
         ],
         command="""\
-	python $PYTHON_TOOLS/format2pcgr.py \\
-	    -i {input} \\
-	    -o {output} \\
-	    -f {filter} \\
-	    -v {variant_type} \\
-	    -t {tumor}""".format(
+python $PYTHON_TOOLS/format2pcgr.py \\
+	-i {input} \\
+	-o {output} \\
+	-f {filter} \\
+	-v {variant_type} \\
+	-t {tumor}""".format(
             input=input if input else "",
             output=output if input else "",
-            filter=config.param('variant_report', 'filter'),
+            filter=filter,
             variant_type=variant_type,
             tumor=tumor,
         )

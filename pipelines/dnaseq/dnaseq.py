@@ -343,7 +343,7 @@ END
         jobs = []
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
+            alignment_directory = os.path.join(self.output_dir, "alignment", readset.sample.name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
 
@@ -508,7 +508,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dir, "alignment", sample.name)
             # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
             # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
             candidate_readset_bams = [

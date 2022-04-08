@@ -25,25 +25,16 @@ from core.config import *
 from core.job import *
 
 
-def report(input_vcf, input_cna, cpsr_dir, output_dir, tumor_id):
-    assembly = config.param('pcgr_report', 'assembly')
-    cpsr_report = os.path.join(cpsr_dir, tumor_id + ".cpsr." + assembly + ".json.gz"),
-    output_json = os.path.join(output_dir, tumor_id + ".pcgr_acmg." + assembly + ".json.gz"),
-    output_html = os.path.join(output_dir, tumor_id + ".pcgr_acmg." + assembly + ".flexdb.html"),
+def report(input_vcf, input_cna, cpsr_report, output_dir, tumor_id):
     
     return Job(
         [
             input_vcf,
             input_cna,
-            cpsr_report
-        ]
-        ,
-        [
-            output_json,
-            output_html
         ],
+        output_dir,
         [
-            ['pcgr_report', 'mugqic_pcgr'],
+            ['report_pcgr', 'module_pcgr'],
         ],
         command="""\
 pcgr.py {options} \\
@@ -61,19 +52,19 @@ pcgr.py {options} \\
     --output_dir {output_dir} \\
     --genome_assembly {assembly} \\
     --sample_id {tumor_id}""".format(
-            options=config.param('pcgr_report', 'option'),
-            tumor_type=config.param('pcgr_report', 'tumor_type'),
-            assay=config.param('pcgr_report', 'assay'),
-            tumor_options=config.param('pcgr_report', 'tumor_options'),
-            normal_options=config.param('pcgr_report', 'normal_options'),
-            mutsig_options=config.param('pcgr_report', 'mutsig_options'),
-            tmb_options=config.param('pcgr_report', 'tmb_options'),
-            msi_options=config.param('pcgr_report', 'msi_options'),
+            options=config.param('report_pcgr', 'options'),
+            tumor_type=config.param('report_pcgr', 'tumor_type'),
+            assay=config.param('report_pcgr', 'assay'),
+            tumor_options=config.param('report_pcgr', 'tumor_options'),
+            normal_options=config.param('report_pcgr', 'normal_options'),
+            mutsig_options=config.param('report_pcgr', 'mutsig_options'),
+            tmb_options=config.param('report_pcgr', 'tmb_options'),
+            msi_options=config.param('report_pcgr', 'msi_options'),
             input_vcf=input_vcf,
             cpsr_report=cpsr_report,
             input_cna=input_cna,
             output_dir=output_dir,
-            assembly=config.param('pcgr_report', 'assembly'),
+            assembly=config.param('report_pcgr', 'assembly'),
             tumor_id=tumor_id
         )
     )
