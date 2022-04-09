@@ -1864,14 +1864,13 @@ class RunProcessing(common.MUGQICPipeline):
                         report_step_jobs.append(report_job)
                 else:
                     for readset in self.readsets[lane]:
-                        readset_name = readset.name
-                        step_report_files = [] 
+                        step_report_files = []
                         for job in step.jobs:
-                            if job.report_files: 
+                            if job.report_files:
                                 for sample in job.samples:
                                     if not isinstance(sample, str):
-                                        for readset in sample.readsets:
-                                            if readset.lane == lane and readset.name == readset.name:
+                                        for sample_readset in sample.readsets:
+                                            if sample_readset.lane == lane and sample_readset.name == readset.name:
                                                 for report_file in job.report_files:
                                                     step_report_files.append(report_file)
                         step_report_files = list(set(step_report_files))
@@ -2862,7 +2861,7 @@ class RunProcessing(common.MUGQICPipeline):
                     readset_name = readset.name
                     step_report_files = []
                     for job in step.jobs:
-                        if job.report_files: 
+                        if job.report_files:
                             for sample in job.samples:
                                 if not isinstance(sample, str):
                                     for readset in sample.readsets:
