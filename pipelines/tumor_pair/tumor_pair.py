@@ -1922,7 +1922,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 output_snp = os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf")
                 output_indel = os.path.join(varscan_directory, tumor_pair.name + ".indel.vcf")
                 output_vcf = os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf")
-                output_vcf_gz = os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz")
+                output_vcf_gz = os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")
     
                 jobs.append(concat_jobs([
                     bash.mkdir(
