@@ -21,20 +21,22 @@
 
 # Python Standard Modules
 import argparse
-import pathlib
-import shutil
-import logging
-import os
-import re
-import socket
-import string
-import math
 import csv
-import sys
-import subprocess
-import xml.etree.ElementTree as Xml
+import errno
 import json
+import logging
+import math
+import os
+import pathlib
+import re
+import shutil
+import subprocess
+import sys
+import xml.etree.ElementTree as Xml
+from collections import Counter
 from collections import OrderedDict
+
+
 
 # Append genpipes directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -51,6 +53,7 @@ from bfx import fastqc
 from bfx import tools
 from bfx import run_processing_tools
 from bfx import bash_cmd as bash
+import utils
 
 from pipelines import common
 
@@ -239,18 +242,19 @@ class RunProcessing(common.MUGQICPipeline):
         The flow cell ID from the readset file
         """
         if not hasattr(self, "_flowcell_id"):
-            self._flowcell_id = ""
-            for lane in self.lanes:
-                fc_set = set([readset.flow_cell for readset in self.readsets[lane] if readset.flow_cell])
-                if len(fc_set) == 0:
-                    _raise(SanitycheckError("Error: no flowcell id could be found in the readset objects for lane '" + lane + "'..."))
-                if len(fc_set) > 1:
-                    _raise(SanitycheckError("Error: more than one flowcell id found in the readset objects for lane '" + lane + "'..."))
-                fc_id = list(fc_set)[0]
-                if not self._flowcell_id:
-                    self._flowcell_id = fc_id
-                elif not self._flowcell_id == fc_id:
-                    _raise(SanitycheckError("Error: more than one flowcell id found for the run, please check the readset file '" + self.readset_file + "'..."))
+            all_flowcells = [readset.flow_cell for lane in self.lanes for readset in self.readsets[lane]]
+            flowcells = set(all_flowcells)
+            if len(flowcells) == 1:
+                self._flowcell_id = flowcells.pop()
+            elif len(flowcells) == 0:
+                _raise(SanitycheckError("Error: No flowcell ids could be found."))
+            else:
+                # More than one flowcell found in the run, report which flowcells were found in which lanes.
+                flowcell_counts = Counter(all_flowcells)
+                readset_lanes = [lane for lane in self.lanes for _ in self.readsets[lane]]
+                flowcell_found_in_lanes = {unique_flowcell: {lane for (flowcell, lane) in zip(all_flowcells, readset_lanes) if flowcell == unique_flowcell} for unique_flowcell in flowcell_counts}
+                msg = ", ".join(["Flowcell '{}' in lanes: {}".format(flowcell, ",".join(sorted(lanes))) for (flowcell, lanes) in flowcell_found_in_lanes.items()])
+                _raise(SanitycheckError("Error: Multiple flowcells found in this run. Please check the readset file. " + msg))
         return self._flowcell_id
 
     @property
@@ -1268,7 +1272,7 @@ class RunProcessing(common.MUGQICPipeline):
                     if self.args.type == 'mgit7':
                         lane_jobs.extend(jobs_to_throttle)
                     else:
-                        lane_jobs.extend(self.throttle_jobs(jobs_to_throttle))
+                        lane_jobs.extend(self.throttle_jobs(jobs_to_throttle, lane))
 
                     self.add_to_report_hash("fastq", lane, lane_jobs)
                     self.add_copy_job_inputs(lane_jobs, lane)
@@ -1886,7 +1890,7 @@ class RunProcessing(common.MUGQICPipeline):
                             report_job.samples = self.samples[lane]
                             report_step_jobs.append(report_job)
 
-                lane_jobs.extend(self.throttle_jobs(report_step_jobs))
+                lane_jobs.extend(self.throttle_jobs(report_step_jobs, f"{step.name}.{lane}"))
 
                 # checkpoint file
                 step_checkpoint_file = os.path.join(self.job_output_dir, "checkpoint", step.name + "." + self.run_id + "." + lane + ".stepDone")
@@ -3637,7 +3641,7 @@ class RunProcessing(common.MUGQICPipeline):
                 i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
             )
 
-    def throttle_jobs(self, jobs):
+    def throttle_jobs(self, jobs, key=""):
         """
         Group jobs of the same task (same name prefix) if they exceed the configured threshold number.
         """
@@ -3662,7 +3666,7 @@ class RunProcessing(common.MUGQICPipeline):
                         merged_jobs.append(
                             concat_jobs(
                                 current_jobs[x * number_task_by_job:min((x + 1) * number_task_by_job, len(current_jobs))],
-                                name=job_name + "." + str(x + 1) + "." + self.run_id
+                                name=f"{job_name}.{key}{('','.')[key!='']}{str(x + 1)}.{self.run_id}"
                             )
                         )
                 reply.extend(merged_jobs)
@@ -3774,7 +3778,7 @@ if __name__ == '__main__':
 
     argv = sys.argv
     if '--wrap' in argv:
-        utils.utils.container_wrapper_argparse(argv)
+        utils.container_wrapper_argparse(argv)
     else:
         RunProcessing(protocol=['illumina', 'mgig400', 'mgit7'])
 
