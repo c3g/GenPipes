@@ -118,6 +118,15 @@ class TumorPair(dnaseq.DnaSeqRaw):
         self.argparser.add_argument("-t", "--type", help="Tumor pair analysis type", choices = ["fastpass", "ensemble", "sv"], default="ensemble")
         super(TumorPair, self).__init__(protocol)
 
+    @property
+    def output_dirs(self):
+        dirs = {
+            'alignment_directory': 'alignment',
+            'metrics_directory': 'metrics',
+            'paired_variants_directory': 'pairedVariants',
+            'sv_variants_directory': 'SVariants'
+        }
+        return dirs
 
     @property
     def tumor_pairs(self):
@@ -256,14 +265,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
                 
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
-            pair_directory = os.path.join(self.output_dir, "alignment", "realign", tumor_pair.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
+            pair_directory = os.path.join(self.output_dirs['alignment_directory'], "realign", tumor_pair.name)
 
-            input_normal = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.bam")
+            input_normal = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.normal.name + ".sorted.bam")
             input_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")
 
             if nb_jobs == 1:
@@ -272,14 +281,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 
                 normal_bam = os.path.join(pair_directory, tumor_pair.normal.name + ".sorted.realigned.all.bam")
                 normal_index = re.sub("\.bam$", ".bai", normal_bam)
-                normal_output_bam = os.path.join(normal_alignment_directory,
-                                                 tumor_pair.normal.name + ".sorted.realigned.bam")
+                normal_output_bam = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.realigned.bam")
                 normal_output_index = re.sub("\.bam$", ".bai", normal_output_bam)
                 
                 tumor_bam = os.path.join(pair_directory, tumor_pair.tumor.name + ".sorted.realigned.all.bam")
                 tumor_index = re.sub("\.bam$", ".bai", tumor_bam)
-                tumor_output_bam = os.path.join(tumor_alignment_directory,
-                                                tumor_pair.tumor.name + ".sorted.realigned.bam")
+                tumor_output_bam = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.realigned.bam")
                 tumor_output_index = re.sub("\.bam$", ".bai", tumor_output_bam)
 
                 jobs.append(concat_jobs([
@@ -495,11 +502,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
  
             # if nb_jobs == 1, symlink has been created in indel_realigner and merging is not necessary
             if nb_jobs > 1:
@@ -569,11 +576,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             [normal_input] = self.select_input_files([
                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.realigned.bam")],
@@ -623,11 +630,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
             normal_prefix = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.")
             tumor_prefix = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.")
@@ -707,11 +714,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             inputs["Normal"] = [self.select_input_files([
                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
@@ -776,13 +783,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            metrics_directory = os.path.join(self.output_dir, "metrics")
+            metrics_directory = os.path.join(self.output_dirs['metrics_directory'])
 
             input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")
             input_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")
@@ -834,11 +841,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            pair_directory = os.path.join(self.output_dir,"pairedVariants", tumor_pair.name, "panel")
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
             nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
@@ -854,7 +861,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     ),
                     samtools.mpileup(
                         [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam"),
-                         os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                         os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
                         input_pair,
                         config.param('rawmpileup_panel', 'mpileup_other_options'),
                         regionFile=bedfile
@@ -874,7 +881,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             ),
                             samtools.mpileup(
                                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam"),
-                                 os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
+                                 os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.bam")],
                                 pair_output,
                                 config.param('rawmpileup_panel', 'mpileup_other_options'),
                                 region=sequence['name'],
@@ -892,7 +899,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
             nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
@@ -1006,7 +1013,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
             nb_jobs = config.param('rawmpileup_panel', 'nb_jobs', param_type='posint')
@@ -1131,7 +1138,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
 
             prefix = os.path.join(pair_directory, tumor_pair.name)
             output_somatic = prefix + ".varscan2.somatic.vt.vcf.gz"
@@ -1184,7 +1191,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
             if not os.path.exists(varscan_directory):
@@ -1242,7 +1249,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel")
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
             if not os.path.exists(varscan_directory):
@@ -1278,7 +1285,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            inputs["Tumor"] =  [os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, "panel", tumor_pair.name)]
+            inputs["Tumor"] =  [os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel", tumor_pair.name)]
 
             for key, input_files in inputs.items():
                 for idx, sample_prefix in enumerate(input_files):
@@ -1368,16 +1375,16 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name)
 
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
-            normal_picard_directory = os.path.join(self.output_dir, "metrics", "dna", normal_metrics, "picard_metrics")
-            tumor_picard_directory = os.path.join(self.output_dir, "metrics", "dna", tumor_pair.tumor.name, "picard_metrics")
+            normal_picard_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", normal_metrics, "picard_metrics")
+            tumor_picard_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.tumor.name, "picard_metrics")
 
             [normal_input] = self.select_input_files([
                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
@@ -1524,17 +1531,17 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name)
 
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
-            normal_qualimap_directory = os.path.join(self.output_dir, "metrics", "dna", normal_metrics,
+            normal_qualimap_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", normal_metrics,
                                                      "qualimap", tumor_pair.normal.name)
-            tumor_qualimap_directory = os.path.join(self.output_dir, "metrics", "dna", tumor_pair.tumor.name,
+            tumor_qualimap_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.tumor.name,
                                                      "qualimap", tumor_pair.tumor.name)
 
             [normal_input] = self.select_input_files([
@@ -1611,17 +1618,17 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
                 normal_metrics = os.path.join(tumor_pair.normal.name)
 
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            normal_fastqc_directory = os.path.join(self.output_dir, "metrics", "dna", normal_metrics, "fastqc")
+            normal_fastqc_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", normal_metrics, "fastqc")
 
-            tumor_fastqc_directory = os.path.join(self.output_dir, "metrics", "dna", tumor_pair.tumor.name, "fastqc")
+            tumor_fastqc_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.tumor.name, "fastqc")
   
             [normal_input] = self.select_input_files([
                 # [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
@@ -1630,7 +1637,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
             ])
             
-            normal_output_dir = os.path.join(self.output_dir, normal_fastqc_directory)
+            normal_output_dir = normal_fastqc_directory
             normal_file = re.sub(".bam", "", os.path.basename(normal_input))
             normal_output = os.path.join(normal_fastqc_directory, normal_file + "_fastqc.zip")
             
@@ -1641,7 +1648,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
             ])
         
-            tumor_output_dir = os.path.join(self.output_dir, tumor_fastqc_directory)
+            tumor_output_dir = tumor_fastqc_directory
             tumor_file = re.sub(".bam", "", os.path.basename(tumor_input))
             tumor_output = os.path.join(tumor_fastqc_directory, tumor_file + "_fastqc.zip")
         
@@ -1713,7 +1720,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        metrics_directory = os.path.join(self.output_dir, "metrics", "dna")
+        metrics_directory = os.path.join(self.output_dirs['metrics_directory'], "dna")
         input_dep = []
         for tumor_pair in self.tumor_pairs.values():
             input_dep = []
@@ -1775,7 +1782,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            inputs["Tumor"] = [os.path.join(self.output_dir, "metrics", "dna", tumor_pair.name + ".multiqc.html")]
+            inputs["Tumor"] = [os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.name + ".multiqc.html")]
 
             for key, input_files in inputs.items():
                 for idx, report_file in enumerate(input_files):
@@ -1801,13 +1808,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
             bed_file = None
@@ -1898,7 +1905,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
             output = os.path.join(varscan_directory, tumor_pair.name)
 
@@ -2018,7 +2025,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
             nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
@@ -2196,13 +2203,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
 
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             mutect_directory = os.path.join(pair_directory, "rawMuTect2")
 
             input_normal = self.select_input_files([
@@ -2330,7 +2337,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         nb_jobs = config.param('gatk_mutect2', 'nb_jobs', param_type='posint')
 
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             mutect_directory = os.path.join(pair_directory, "rawMuTect2")
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             output_gz = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz")
@@ -2547,13 +2554,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if (tumor_pair.multiple_normal == 1):
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
 
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             somatic_dir = os.path.abspath(os.path.join(pair_directory, "rawStrelka2_somatic"))
             output_prefix = os.path.abspath(os.path.join(pair_directory, tumor_pair.name))
 
@@ -2570,8 +2577,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
             ])
 
             mantaIndels = None
-            if os.path.isfile(os.path.join(self.output_dir, "SVariants", tumor_pair.name, "rawManta", "results", "variants", "candidateSmallIndels.vcf.gz")):
-                mantaIndels = os.path.join(self.output_dir, "SVariants", tumor_pair.name, "rawManta", "results", "variants", "candidateSmallIndels.vcf.gz")
+            if os.path.isfile(os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "rawManta", "results", "variants", "candidateSmallIndels.vcf.gz")):
+                mantaIndels = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "rawManta", "results", "variants", "candidateSmallIndels.vcf.gz")
 
             bed_file = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(
@@ -2698,13 +2705,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if (tumor_pair.multiple_normal == 1):
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
 
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             germline_dir = os.path.abspath(os.path.join(pair_directory, "rawStrelka2_germline"))
             output_prefix = os.path.abspath(os.path.join(pair_directory, tumor_pair.name))
 
@@ -2841,7 +2848,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         interval_list = []
 
-        splitjobs_dir = os.path.join(self.output_dir, "pairedVariants", "splitjobs", "vardict" )
+        splitjobs_dir = os.path.join(self.output_dirs['paired_variants_directory'], "splitjobs", "vardict" )
         if use_bed:
             for idx in range(nb_jobs):
                 interval_list.append(
@@ -2920,13 +2927,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
             
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             vardict_directory = os.path.join(pair_directory, "rawVardict")
             
             input_normal = self.select_input_files(
@@ -3042,7 +3049,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         use_bed = config.param('vardict_paired', 'use_bed', param_type='boolean', required=True)
 
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             vardict_directory = os.path.join(pair_directory, "rawVardict")
             output_tmp = os.path.abspath(os.path.join(pair_directory, tumor_pair.name + ".vardict.tmp.vcf.gz"))
             output = os.path.join(pair_directory, tumor_pair.name + ".vardict.vcf.gz")
@@ -3193,11 +3200,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
 
         for tumor_pair in self.tumor_pairs.values():
             paired_ensemble_directory = os.path.join(ensemble_directory, tumor_pair.name)
-            input_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            input_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
 
             input_mutect2 = os.path.join(input_directory, tumor_pair.name + ".mutect2.somatic.vt.vcf.gz")
             input_strelka2 = os.path.abspath(os.path.join(input_directory, tumor_pair.name + ".strelka2.somatic.vt.vcf.gz"))
@@ -3233,11 +3240,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
 
         for tumor_pair in self.tumor_pairs.values():
             paired_ensemble_directory = os.path.join(ensemble_directory, tumor_pair.name)
-            input_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            input_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
 
             input_strelka2 = os.path.abspath(os.path.join(input_directory, tumor_pair.name + ".strelka2.germline.vt.vcf.gz"))
             input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
@@ -3280,7 +3287,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
 
         nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
@@ -3288,13 +3295,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if (tumor_pair.multiple_normal == 1):
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            annot_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble", tumor_pair.name, "rawAnnotation")
+            annot_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, "rawAnnotation")
             input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
             input_tumor = os.path.join( tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
             input_somatic_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.vcf.gz")
@@ -3362,7 +3369,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
 
         nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
@@ -3370,13 +3377,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if (tumor_pair.multiple_normal == 1):
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            annot_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble", tumor_pair.name, "rawAnnotation")
+            annot_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, "rawAnnotation")
             input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
             input_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
             input_germline_variants = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.vcf.gz")
@@ -3443,7 +3450,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
 
         nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
 
@@ -3479,7 +3486,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
 
         nb_jobs = config.param('gatk_variant_annotator', 'nb_jobs', param_type='posint')
 
@@ -3519,7 +3526,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
         if not os.path.exists(ensemble_directory):
             os.makedirs(ensemble_directory)
 
@@ -3563,7 +3570,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
 
         for tumor_pair in self.tumor_pairs.values():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
@@ -3607,7 +3614,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
     
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
 
         for tumor_pair in self.tumor_pairs.values():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
@@ -3640,7 +3647,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
     
         jobs = []
     
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
     
         for tumor_pair in self.tumor_pairs.values():
             paired_directory = os.path.join(ensemble_directory, tumor_pair.name)
@@ -3670,7 +3677,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
         gemini_module = config.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
@@ -3700,7 +3707,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
         gemini_module = config.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
 
@@ -3801,7 +3808,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
         input_merged_vcfs = [
             os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.values()]
         output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.vcf.gz")
@@ -3841,7 +3848,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
         input_merged_vcfs = [os.path.join(ensemble_directory, tumor_pair.name,
                                           tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz") for tumor_pair in
                              self.tumor_pairs.values()]
@@ -3882,7 +3889,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
         input = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vcf.gz")
         output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.vcf.gz")
 
@@ -3906,7 +3913,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
         input_vcf = os.path.join(ensemble_directory, "allPairs.ensemble.germline.annot.vcf.gz")
         output_vcf = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.vcf.gz")
 
@@ -3936,7 +3943,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
         input = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.vcf.gz")
         output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.snpeff.vcf")
         output_gz = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.snpeff.vcf.gz")
@@ -3976,7 +3983,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
         input = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.vcf.gz")
         output = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.snpeff.vcf")
         output_gz = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.snpeff.vcf.gz")
@@ -4006,7 +4013,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
         temp_dir = os.path.join(os.getcwd(), ensemble_directory)
         gemini_prefix = os.path.join(ensemble_directory, "allPairs")
 
@@ -4031,7 +4038,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
         temp_dir = os.path.join(os.getcwd(), ensemble_directory)
         gemini_prefix = os.path.join(ensemble_directory, "allPairs")
 
@@ -4060,13 +4067,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
         nb_jobs = config.param('sequenza', 'nb_jobs', param_type='posint')
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             sequenza_directory = os.path.join(pair_directory, "sequenza")
             rawSequenza_directory = os.path.join(sequenza_directory, "rawSequenza")
             
@@ -4198,7 +4205,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         inputs = dict()
 
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             inputs["Tumor"] = [
                 os.path.join(pair_directory, "sequenza", tumor_pair.name + "_chromosome_view.pdf"),
                 os.path.join(pair_directory, "sequenza", tumor_pair.name + "_genome_view.pdf"),
@@ -4233,13 +4240,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            pair_dir = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            pair_dir = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             purple_dir = os.path.join(pair_dir, "purple")
             amber_dir = os.path.join(purple_dir, "rawAmber")
             cobalt_dir = os.path.join(purple_dir, "rawCobalt")
@@ -4325,13 +4332,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            pair_directory = os.path.join(self.output_dir, "SVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             delly_directory = os.path.join(pair_directory, "rawDelly")
 
             filename = os.path.join(delly_directory, tumor_pair.name + '.tsv')
@@ -4384,7 +4391,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "SVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             final_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name, tumor_pair.name)
             delly_directory = os.path.join(pair_directory, "rawDelly")
             output_vcf = os.path.join(delly_directory, tumor_pair.name + ".delly.merge.sort.vcf.gz")
@@ -4489,7 +4496,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [
                 pair_directory + ".delly.somatic.snpeff.annot.vcf",
                 pair_directory + ".delly.somatic.prioritize.tsv"
@@ -4523,7 +4530,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [
                 pair_directory + ".delly.germline.snpeff.annot.vcf",
                 pair_directory + ".delly.germline.prioritize.tsv"
@@ -4572,13 +4579,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            pair_directory = os.path.join(self.output_dir, "SVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             manta_directory = os.path.abspath(os.path.join(pair_directory, "rawManta"))
             output_prefix = os.path.abspath(os.path.join(pair_directory, tumor_pair.name))
 
@@ -4674,7 +4681,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name))
 
             jobs.append(concat_jobs([
                 snpeff.compute_effects(
@@ -4719,7 +4726,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [
                 pair_directory + ".manta.somatic.snpeff.annot.vcf",
                 pair_directory + ".manta.somatic.prioritize.tsv"
@@ -4753,7 +4760,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [
                 pair_directory + ".manta.germline.snpeff.annot.vcf",
                 pair_directory + ".manta.germline.prioritize.tsv"
@@ -4798,11 +4805,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
             pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name)
             lumpy_directory = os.path.join(pair_directory, "rawLumpy")
@@ -4967,7 +4974,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name)
-            prefix = os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name)
+            prefix = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name)
             
             genotype_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.genotyped.vcf")
             somatic_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.somatic.vcf.gz")
@@ -5043,7 +5050,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [
                 pair_directory + ".lumpy.somatic.snpeff.annot.vcf",
                 pair_directory + ".lumpy.somatic.prioritize.tsv"
@@ -5077,7 +5084,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [
                 pair_directory + ".lumpy.germline.snpeff.annot.vcf",
                 pair_directory + ".lumpy.germline.prioritize.tsv"
@@ -5123,11 +5130,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
             pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name)
             wham_directory = os.path.join(pair_directory, "rawWham")
@@ -5214,7 +5221,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             
             genotyped_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.merged.genotyped.vcf.gz")
 
-            prefix = os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name)
+            prefix = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name)
             
             jobs.append(concat_jobs([
                 pipe_jobs([
@@ -5282,7 +5289,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [
                 pair_directory + ".wham.somatic.snpeff.annot.vcf",
                 pair_directory + ".wham.somatic.prioritize.tsv"
@@ -5316,7 +5323,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [
                 pair_directory + ".wham.germline.snpeff.annot.vcf",
                 pair_directory + ".wham.germline.prioritize.tsv"
@@ -5359,13 +5366,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            pair_directory = os.path.join(self.output_dir, "SVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
             inputNormal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
             inputTumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
@@ -5375,7 +5382,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             tumor_cns = os.path.join(cnvkit_dir, tumor_pair.tumor.name + ".cns")
             vcf_gz = os.path.join(pair_directory, tumor_pair.name + ".cnvkit.vcf.gz")
 
-            metrics = os.path.join(self.output_dir, "SVariants", "cnvkit_reference")
+            metrics = os.path.join(self.output_dirs['sv_variants_directory'], "cnvkit_reference")
             poolRef = os.path.join(self.output_dir, metrics, "pooledReference.cnn")
 
             if os.path.isfile(poolRef):
@@ -5394,7 +5401,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             if coverage_bed:
                 bed = coverage_bed
 
-            vardict_vcf = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
+            vardict_vcf = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
 
             input_vcf = None
             normal = None
@@ -5573,12 +5580,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "SVariants", tumor_pair.name)
-            ensemble_directory = os.path.join(self.output_dir, "SVariants", "ensemble", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
+            ensemble_directory = os.path.join(self.output_dirs['sv_variants_directory'], "ensemble", tumor_pair.name)
 
-            inputTumor = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
-            isize_file = os.path.join(self.output_dir, "metrics", "dna", tumor_pair.tumor.name, "picard_metrics", "picard_metrics.all.metrics.insert_size_metrics")
-            gatk_vcf = os.path.join(self.output_dir, "pairedVariants", "ensemble", tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vcf.gz")
+            inputTumor = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            isize_file = os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.tumor.name, "picard_metrics", "picard_metrics.all.metrics.insert_size_metrics")
+            gatk_vcf = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vcf.gz")
             lumpy_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.somatic.vcf.gz")
             manta_vcf = os.path.abspath(os.path.join(pair_directory, tumor_pair.name + ".manta.somatic.vcf.gz"))
             wham_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.somatic.vcf.gz")
@@ -5639,17 +5646,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
     
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "SVariants", tumor_pair.name)
-            ensemble_directory = os.path.join(self.output_dir, "SVariants", "ensemble", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
+            ensemble_directory = os.path.join(self.output_dirs['sv_variants_directory'], "ensemble", tumor_pair.name)
         
-            inputTumor = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name,
-                                      tumor_pair.tumor.name + ".sorted.dup.recal.bam")
-            isize_file = os.path.join(self.output_dir, "metrics", "dna", tumor_pair.tumor.name, "picard_metrics",
-                                      "picard_metrics.all.metrics.insert_size_metrics")
-            gatk_vcf = os.path.join(self.output_dir, "pairedVariants", "ensemble", tumor_pair.name,
-                                    tumor_pair.name + ".ensemble.germline.vcf.gz")
-            gatk_pass = os.path.join(self.output_dir, "pairedVariants", "ensemble", tumor_pair.name,
-                                     tumor_pair.name + ".ensemble.germline.flt.pass.vcf.gz")
+            inputTumor = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+            isize_file = os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.tumor.name, "picard_metrics", "picard_metrics.all.metrics.insert_size_metrics")
+            gatk_vcf = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, tumor_pair.name + ".ensemble.germline.vcf.gz")
+            gatk_pass = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, tumor_pair.name + ".ensemble.germline.flt.pass.vcf.gz")
             lumpy_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.germline.vcf.gz")
             manta_vcf = os.path.abspath(os.path.join(pair_directory, tumor_pair.name + ".manta.germline.vcf.gz"))
             wham_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.germline.vcf.gz")
@@ -5708,7 +5711,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            ensemble_directory = os.path.join(self.output_dir, "SVariants", "ensemble", tumor_pair.name)
+            ensemble_directory = os.path.join(self.output_dirs['sv_variants_directory'], "ensemble", tumor_pair.name)
 
             jobs.append(concat_jobs([
                 snpeff.compute_effects(
@@ -5728,7 +5731,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
     
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", "ensemble", tumor_pair.name, tumor_pair.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dirs['sv_variants_directory'], "ensemble", tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [pair_directory + ".metasv.snpeff.annot.vcf"]
         
             for key, input_files in inputs.items():
@@ -5772,13 +5775,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            sv_directory = os.path.join(self.output_dir, "SVariants", tumor_pair.name)
+            sv_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             scones_directory = os.path.join(sv_directory, "SCoNEs")
             inputNormal = self.select_input_files(
                 [[os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
@@ -5866,13 +5869,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name, tumor_pair.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
-                normal_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.normal.name)
+                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
     
-            tumor_alignment_directory = os.path.join(self.output_dir, "alignment", tumor_pair.tumor.name)
+            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            pair_directory = os.path.join(self.output_dir, "SVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             svaba_directory = os.path.join(pair_directory, "rawSvaba")
 
             input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
@@ -5930,7 +5933,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name)
 
             jobs.append(concat_jobs([
                 Job(
@@ -5988,7 +5991,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [
                 pair_directory + ".svaba.somatic.snpeff.annot.vcf",
                 pair_directory + ".svaba.somatic.prioritize.tsv"
@@ -6022,7 +6025,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", tumor_pair.name, tumor_pair.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name))
             inputs["Tumor"] = [
                 pair_directory + ".svaba.germline.sv.snpeff.annot.vcf",
                 pair_directory + ".svaba.germline.prioritize.tsv"
