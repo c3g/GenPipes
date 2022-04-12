@@ -3514,7 +3514,7 @@ class RunProcessing(common.MUGQICPipeline):
         creating R1 (without barcode sequences) I1 (and I2) fastq files from R1 fastq file.
         """
         if self.is_paired_end[lane]:
-            return """-v inst=\"{instrument}\" -v run=\"{run}\" 'match($0, /@({flowcell})L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):?([ACTGN-]+)?\/([0-9]{{1}})/, head_items) {{
+            return """-v inst=\"{instrument}\" -v run=\"{run}\" 'match($0, /@({flowcell})L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):?([ACTGN:-]+)?\/([0-9]{{1}})/, head_items) {{
  gsub("^0*", "", head_items[3])
  gsub("^0*", "", head_items[4])
  gsub("^0*", "", head_items[5])
@@ -3532,7 +3532,7 @@ class RunProcessing(common.MUGQICPipeline):
  getline seq
  getline sep
  getline qual
- match(header, /@({flowcell})L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):?([ACTGN-]+)?\/([0-9]{{1}})/, head_items)
+ match(header, /@({flowcell})L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):?([ACTGN:-]+)?\/([0-9]{{1}})/, head_items)
  gsub("^0*", "", head_items[3]); gsub("^0*", "", head_items[4]); gsub("^0*", "", head_items[5])
  header="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:" head_items[6]
  r1_seq=substr(seq,1,read_len)
@@ -3593,7 +3593,7 @@ class RunProcessing(common.MUGQICPipeline):
  getline seq
  getline sep
  getline qual
- match(header, /@({flowcell})L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):?([ACTGN-]+)?\/([0-9]{{1}})/, head_items)
+ match(header, /@({flowcell})L([0-9]{{1}})C([0-9]{{3}})R([0-9]{{3}})([0-9]+):?([ACTGN:-]+)?\/([0-9]{{1}})/, head_items)
  gsub("^0*", "", head_items[3]); gsub("^0*", "", head_items[4]); gsub("^0*", "", head_items[5])
  header="@" inst ":" run ":" head_items[1] ":" head_items[2] ":" head_items[5] ":" head_items[3] ":" head_items[4] " " head_items[7] ":N:0:" head_items[6]
  r2_seq=substr(seq,1,read_len)
