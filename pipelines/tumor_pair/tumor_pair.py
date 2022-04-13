@@ -33,7 +33,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config
 from core.job import Job, concat_jobs, pipe_jobs
-from bfx.sample_tumor_pairs import parse_tumor_pair_file
+from core.sample_tumor_pairs import parse_tumor_pair_file
 from bfx.sequence_dictionary import split_by_size, parse_sequence_dictionary_file
 import utils.utils
 

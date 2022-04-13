@@ -35,7 +35,7 @@ from core.job import Job, concat_jobs
 from core.pipeline import Pipeline
 from core.design import parse_design_file
 from core.readset import parse_illumina_readset_file
-from bfx.sample_tumor_pairs import *
+from core.sample_tumor_pairs import *
 
 from bfx import bvatools
 from bfx import verify_bam_id
