@@ -68,12 +68,12 @@ verify_concordance.py {options} \\
   -M {markers} \\
   -N {input_normal} \\
   -T {input_tumor} \\ 
-  {output}""".format(
+  -O {output}""".format(
         options=config.param('conpair_concordance_contamination', 'concord_options'),
         markers=config.param('conpair_concordance_contamination', 'markers_txt'),
         input_normal=input_normal,
         input_tumor=input_tumor,
-        output=" > " + output
+        output= output
         )
     )
 
@@ -91,12 +91,12 @@ estimate_tumor_normal_contamination.py {options} \\
   -M {markers} \\
   -N {input_normal} \\
   -T {input_tumor} \\
-  {output}""".format(
+  -O {output}""".format(
         options=config.param('conpair_concordance_contamination', 'contam_options'),
         markers=config.param('conpair_concordance_contamination', 'markers_txt'),
         input_normal=input_normal,
         input_tumor=input_tumor,
-        output=" --outfile " + output
+        output=output
         )
     )
 

@@ -798,8 +798,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
             pileup_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".gatkPileup")
             pileup_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".gatkPileup")
 
-            concordance_out = os.path.join(metrics_directory, tumor_pair.name + ".concordance.tsv")
-            contamination_out = os.path.join(metrics_directory, tumor_pair.name + ".contamination.tsv")
+            concordance_out = os.path.join(metrics_directory, tumor_pair.tumor.name + ".concordance.tsv")
+            contamination_out = os.path.join(metrics_directory, tumor_pair.tumor.name + ".contamination.tsv")
 
             jobs.append(concat_jobs([
                 conpair.pileup(
