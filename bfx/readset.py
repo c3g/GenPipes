@@ -794,6 +794,16 @@ class MGIRawReadset(MGIReadset):
     def flow_cell(self):
         return self._flow_cell
 
+    @property
+    def report_files(self):
+        if not hasattr(self, "_report_files"):
+            self._report_files = {}
+        return self._report_files
+
+    @report_files.setter
+    def report_files(self, value):
+        self._report_files = value
+
 def parse_mgi_raw_readset_files(
     readset_file,
     run_type,
