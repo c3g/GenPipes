@@ -147,7 +147,8 @@ STAR --runMode alignReads \\
 def index(
     genome_index_folder,
     junction_file,
-    gtf = config.param('star_align', 'gtf', param_type='filepath', required=False),
+    genome_length,
+    gtf=config.param('star_align', 'gtf', param_type='filepath', required=False)
     ):
     #STAR --runMode genomeGenerate --genomeDir $odir --genomeFastaFiles $genome --runThreadN $runThreadN --limitGenomeGenerateRAM $limitGenomeGenerateRAM --sjdbOverhang $sjdbOverhang  --sjdbFileChrStartEnd "
 
@@ -167,17 +168,19 @@ def index(
     io_max = int(utils.number_symbol_converter(io_limit))
     read_size = config.param('star_index', 'star_cycle_number', param_type='posint')
     other_options = config.param('star_index', 'other_options', required=False)
-     
+
     job.command = """\
 mkdir -p {genome_index_folder} && \\
 STAR --runMode genomeGenerate \\
   --genomeDir {genome_index_folder} \\
   --genomeFastaFiles {reference_fasta} \\
+  --genomeSAindexNbases {genome_length} \\
   --runThreadN {num_threads} \\
   --limitGenomeGenerateRAM {ram} \\
   --outTmpDir {tmp_dir}/$(mktemp -u star_XXXXXXXX) \\
   --sjdbFileChrStartEnd {junction_file}{gtf}{io_limit_size}{sjdbOverhang}{other_options}""".format(
         genome_index_folder=genome_index_folder,
+        genome_length=genome_length,
         reference_fasta=reference_fasta,
         num_threads=num_threads if str(num_threads) != "" and isinstance(num_threads, int) and  num_threads > 0 else 1,
         ram=max_ram,
