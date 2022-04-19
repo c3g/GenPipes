@@ -1965,7 +1965,6 @@ done""".format(
                         interval_list = os.path.join(macs_output_dir,
                                                      sample.name + "." + mark_name + "_peaks.broadPeak.bed")
 
-
                     mkdir_job = bash.mkdir(
                                 haplotype_directory,
                                 remove=True
@@ -2036,7 +2035,7 @@ done""".format(
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
                 self.mapping_bwa_mem_sambamba,
-                self.sambamba_merge_bam_files,
+                self.sambamba_merge_bam_files, #5
                 self.sambamba_mark_duplicates,
                 self.sambamba_view_filter,
                 # self.picard_mark_duplicates,
