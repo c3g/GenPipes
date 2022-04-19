@@ -675,7 +675,7 @@ def parse_mgi_readset_file(
             if line.get(format, None):
                 line[format] = os.path.expandvars(line[format])
                 if not os.path.isabs(line[format]):
-                    line[format] = os.path.dirname(os.path.abspath(os.path.expandvars(illumina_readset_file))) + os.sep + line[format]
+                    line[format] = os.path.dirname(os.path.abspath(os.path.expandvars(mgi_readset_file))) + os.sep + line[format]
                 line[format] = os.path.normpath(line[format])
 
         readset._bam = line.get('BAM', None)
