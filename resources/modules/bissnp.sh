@@ -3,14 +3,11 @@
 set -eu -o pipefail
 
 SOFTWARE=BisSNP
-VERSION=0.82.2
+VERSION=1.0.0
 ARCHIVE=$SOFTWARE-$VERSION.jar
 ARCHIVE_URL=http://sourceforge.net/projects/bissnp/files/$SOFTWARE-$VERSION/$ARCHIVE/download
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   mkdir $INSTALL_DIR/$SOFTWARE_DIR

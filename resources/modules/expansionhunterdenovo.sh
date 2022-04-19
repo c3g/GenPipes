@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=ExpansionHunterDenovo
-VERSION=0.8.7
+VERSION=0.9.0
 ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
 ARCHIVE_URL=https://github.com/Illumina/${SOFTWARE}/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}

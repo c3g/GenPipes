@@ -228,9 +228,13 @@ def haplotype_caller(
     exclude_intervals=[],
     interval_list=None
     ):
-
+    interval_padding = config.param('gatk_haplotype_caller', 'interval_padding')
     if not isinstance(inputs, list):
         inputs = [inputs]
+
+    inputs_list = inputs.copy()
+    if not interval_list is None:
+       inputs_list.extend([interval_list])
 
     if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] >= "4":
         return gatk4.haplotype_caller(
@@ -242,7 +246,7 @@ def haplotype_caller(
         )
     else:
         return Job(
-            inputs,
+            inputs_list,
             [output, output + ".tbi"],
             [
                 ['gatk_haplotype_caller', 'module_java'],
@@ -254,13 +258,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
-  --out {output}{interval_list}{intervals}{exclude_intervals}""".format(
+  --out {output}{interval_padding} {interval_list}{intervals}{exclude_intervals}""".format(
         tmp_dir=config.param('gatk_haplotype_caller', 'tmp_dir'),
         java_other_options=config.param('gatk_haplotype_caller', 'java_other_options'),
         ram=config.param('gatk_haplotype_caller', 'ram'),
         options=config.param('gatk_haplotype_caller', 'options'),
         reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
-        interval_list=" \\\n  --interval_padding 100 --intervals " + interval_list if interval_list else "",
+        interval_list=" --intervals " + interval_list if interval_list else "",
+        interval_padding=" \\\n --interval-padding " + str(interval_padding) if interval_padding else "",
         input=" \\\n  ".join(input for input in inputs),
         output=output,
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
@@ -415,6 +420,7 @@ def print_reads(input, output, base_quality_score_recalibration):
                 ['gatk_print_reads', 'module_gatk']
             ],
         command="""\
+rm -rf {output}* && \\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type PrintReads --generate_md5 \\
   -nt 1 --num_cpu_threads_per_data_thread {threads} \\

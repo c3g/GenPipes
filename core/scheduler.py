@@ -117,21 +117,15 @@ class Scheduler(object):
             cpu_str = self.config.param(job_name_prefix, 'cluster_cpu', required=False)
         if cpu_str:
             try:
-                if "ppn" in cpu_str or '-c' in cpu_str:
+                if "nodes" in cpu_str or '-N' in cpu_str:
                     # to be back compatible
-                    node = re.search("(nodes=|-N\s*)([0-9]+)",cpu_str).groups()[1]
-                else:
-                    node = re.search("[0-9]+", cpu_str).group()
+                    return re.search("(nodes=|-N\s*)([0-9]+)",cpu_str).groups()[1]
             except AttributeError:
                 raise ValueError('"{}" is not a valid entry for "cluster_cpu"'.format(cpu_str))
-            return node
-
         try:
             return re.search("[0-9]+", node_str).group()
         except AttributeError:
             return node
-
-
 
     def submit(self, pipeline):
         # Needs to be defined in scheduler child class
@@ -319,13 +313,13 @@ module unload {module_python} {command_separator}
 """.format(
             job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
             module_python=config.param('DEFAULT', 'module_python'),
-            module_mugqic_tools=config.param('DEFAULT', 'module_mugqic_tools'),
             step=step,
             jsonfiles=json_file_list,
             config_files=",".join([ os.path.abspath(c.name) for c in self._config_files ]),
             status=job_status,
             command_separator="&&" if (job_status=='\\"running\\"') else ""
         ) if json_file_list else ""
+
 
 class PBSScheduler(Scheduler):
 
@@ -468,6 +462,33 @@ class BatchScheduler(Scheduler):
         super(BatchScheduler, self).__init__(*args, **kwargs)
         self.name = 'Batch'
 
+    def job2json(self, pipeline, step, job, job_status):
+        if not pipeline.json:
+            return ""
+
+        json_file_list = ",".join([os.path.join(pipeline.output_dir, "json", sample.json_file) for sample in job.samples])
+        return """\
+module load {module_python}
+{job2json_script} \\
+  -u \"$USER\" \\
+  -c \"{config_files}\" \\
+  -s \"{step.name}\" \\
+  -j \"$JOB_NAME\" \\
+  -d \"$JOB_DONE\" \\
+  -l \"$JOB_OUTPUT\" \\
+  -o \"{jsonfiles}\" \\
+  -f {status}
+module unload {module_python} {command_separator}
+""".format(
+            job2json_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json.py"),
+            module_python=config.param('DEFAULT', 'module_python'),
+            step=step,
+            jsonfiles=json_file_list,
+            config_files=",".join([ os.path.abspath(c.name) for c in self._config_files ]),
+            status=job_status,
+            command_separator="&&" if (job_status=='"running"') else ""
+        ) if json_file_list else ""
+
     def submit(self, pipeline):
         logger.info('\n\t To run the script use: \n\t"{}  ./<command>.sh"'.format(
             self.container_line))
@@ -484,6 +505,8 @@ class BatchScheduler(Scheduler):
 {separator_line}
 JOB_NAME={job.name}
 JOB_DONE={job.done}
+JOB_OUTPUT_RELATIVE_PATH=$STEP/${{JOB_NAME}}_$TIMESTAMP.o
+JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH
 COMMAND=$JOB_OUTPUT_DIR/$STEP/${{JOB_NAME}}_$TIMESTAMP.sh
 cat << '{limit_string}' > $COMMAND
 #!/bin/bash
@@ -493,8 +516,7 @@ set -eu -o pipefail
 chmod 755 $COMMAND
 printf "\\n$SEPARATOR_LINE\\n"
 echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
-rm -f $JOB_DONE 
-{job2json_start} $COMMAND
+rm -f $JOB_DONE && {job2json_start} $COMMAND &> $JOB_OUTPUT
 MUGQIC_STATE=$?
 echo "End MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`"
 echo MUGQICexitStatus:$MUGQIC_STATE

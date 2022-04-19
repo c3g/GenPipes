@@ -112,6 +112,8 @@ chipseq:
 18- ihec_metrics
 19- multiqc_report
 20- cram_output
+21- gatk_haplotype_caller
+22- merge_and_call_individual_gvcf
 ----
 ```
 ![chipseq atacseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_atacseq.resized.png)
@@ -138,6 +140,8 @@ atacseq:
 18- ihec_metrics
 19- multiqc_report
 20- cram_output
+21- gatk_haplotype_caller
+22- merge_and_call_individual_gvcf
 
 ```
 picard_sam_to_fastq
@@ -268,5 +272,14 @@ Peaks are called using the MACS2 software. Different calling strategies are used
 The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
 The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
 The default mfold parameter of MACS2 is [10,30].
+
+gatk_haplotype_caller
+-------------------------
+GATK haplotype caller for snps and small indels.
+
+merge_and_call_individual_gvcf
+--------------------------
+
+Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
 
 

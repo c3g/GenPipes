@@ -2,26 +2,18 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=deepTools
-VERSION=3.5.1
+SOFTWARE=parallel-fastq-dump
+VERSION=0.6.5
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/${SOFTWARE,,}/${SOFTWARE}/archive/${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/rvalieris/${SOFTWARE}/archive/${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
-PYTHON_VERSION=3.9.1
-PYTHON_SHORT_VERSION=${PYTHON_VERSION:0:3}
-NOWRAP=1
-NOPATCH=1
+PYTHON_VERSION=3.10.4
+PYTHON_SHORT_VERSION=${PYTHON_VERSION%.*}
 
 build() {
   cd $INSTALL_DOWNLOAD
-#  tar zxvf $ARCHIVE
-#  cd $SOFTWARE_DIR
   module load mugqic/python/$PYTHON_VERSION
-#  python setup.py install --prefix $INSTALL_DIR/$SOFTWARE_DIR
-  pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed git+https://github.com/${SOFTWARE,,}/${SOFTWARE}.git@${VERSION}
-  pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed git+https://github.com/${SOFTWARE,,}/deeptools_intervals.git
-  pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed git+https://github.com/${SOFTWARE,,}/pyBigWig.git
-  pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed git+https://github.com/${SOFTWARE,,}/py2bit.git
+  pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR --ignore-installed ${SOFTWARE}==${VERSION}
   ln -s $(which python) $INSTALL_DIR/$SOFTWARE_DIR/bin/python
   ln -s $(which python3) $INSTALL_DIR/$SOFTWARE_DIR/bin/python3
 }

@@ -29,7 +29,7 @@ import subprocess
 
 # MUGQIC Modules
 from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner
-from .sample import Sample, NanoporeSample
+from .sample import Sample, RunProcessingSample, NanoporeSample
 from core.config import config, _raise, SanitycheckError
 
 # Append mugqic_pipelines directory to Python library path
@@ -392,7 +392,7 @@ def parse_illumina_raw_readset_files(
         sample_name = line['SampleName']
 
         # Always create a new sample
-        sample = Sample(sample_name)
+        sample = RunProcessingSample(sample_name)
         samples.append(sample)
 
         # Create readset and add it to sample
@@ -675,7 +675,7 @@ def parse_mgi_readset_file(
             if line.get(format, None):
                 line[format] = os.path.expandvars(line[format])
                 if not os.path.isabs(line[format]):
-                    line[format] = os.path.dirname(os.path.abspath(os.path.expandvars(illumina_readset_file))) + os.sep + line[format]
+                    line[format] = os.path.dirname(os.path.abspath(os.path.expandvars(mgi_readset_file))) + os.sep + line[format]
                 line[format] = os.path.normpath(line[format])
 
         readset._bam = line.get('BAM', None)
@@ -794,6 +794,16 @@ class MGIRawReadset(MGIReadset):
     def flow_cell(self):
         return self._flow_cell
 
+    @property
+    def report_files(self):
+        if not hasattr(self, "_report_files"):
+            self._report_files = {}
+        return self._report_files
+
+    @report_files.setter
+    def report_files(self, value):
+        self._report_files = value
+
 def parse_mgi_raw_readset_files(
     readset_file,
     run_type,
@@ -840,7 +850,7 @@ def parse_mgi_raw_readset_files(
         sample_name = line['SampleName']
 
         # Always create a new sample
-        sample = Sample(sample_name)
+        sample = RunProcessingSample(sample_name)
         samples.append(sample)
 
         # Create readset and add it to sample

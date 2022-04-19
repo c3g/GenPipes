@@ -81,7 +81,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR
             reference_genome_fasta=reference if reference else config.param('rnaseqc', 'genome_fasta', param_type='filepath'),
             sample_file=sample_file,
             gtf_file=gtf_file if gtf_file else config.param('rnaseqc', 'gtf', param_type='filepath'),
-            other_options=" \\\n  " + config.param('rnaseqc', 'other_options', required=False) if config.param('rnaseqc', 'other_options', required=False) else "",
+            other_options=(" \\\n  " + config.param('rnaseqc', 'other_options', required=False)) if config.param('rnaseqc', 'other_options', required=False) else "",
             single_end=" \\\n  -singleEnd" if is_single_end else "",
             ribosomal_interval_file=" \\\n  -rRNA " + ribosomal_interval_file if ribosomal_interval_file else "\\\n  -BWArRNA dummy_rRNA.fa"
         ),
