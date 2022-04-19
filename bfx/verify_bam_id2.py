@@ -24,32 +24,34 @@ import os
 from core.config import *
 from core.job import *
 
-from . import verify_bam_id2
+from . import verify_bam_id
 
 def verify(
     input_bam,
     output_prefix,
-    var=None
+    var=None,
+    ref=None
     ):
 
-    if config.param('bverify_bam_id', 'module_verify_bam_id').split("/")[2] >= "2":
-        return verify_bam_id2.verify(input, output_prefix, var)
+    if not config.param('verify_bam_id', 'module_verify_bam_id').split("/")[2] >= "2":
+        return verify_bam_id.verify(input, output_prefix, var)
     else:
         return Job(
-            [input_bam],
-            [output_prefix + ".selfSM"],
-            [
-                ['verify_bam_id', 'module_verify_bam_id']
-            ],
-            command="""\
-verifyBamID \\
-  --vcf {vcf} \\
-  --bam {input_bam} \\
-  --out {output_prefix} \\
-  {other_options}""".format(
-                vcf=var if var else config.param('verify_bam_id', 'vcf', param_type='filepath'),
-                input_bam=input_bam,
-                output_prefix=output_prefix,
-                other_options=config.param('verify_bam_id', 'options')
-            )
+        [input_bam],
+        [output_prefix + ".selfSM"],
+        [
+            ['verify_bam_id', 'module_verify_bam_id']
+        ],
+        command="""\
+VerifyBamID {other_options} \\
+  --SVDPrefix {svdprefix} \\
+  --Reference {reference} \\
+  --BamFile {input_bam} \\
+  --Output {output_prefix}""".format(
+            svdprefix=var if var else config.param('verify_bam_id', 'svd_dataset'),
+            reference=ref if ref else config.param('verify_bam_id', 'genome_fasta', type='filepath'),
+            input_bam=input_bam,
+            output_prefix=output_prefix,
+            other_options=config.param('verify_bam_id', 'options')
         )
+    )

@@ -26,7 +26,7 @@ import sys
 from core.job import Job, concat_jobs, pipe_jobs
 from core.config import config
 from bfx import bvatools
-from bfx import verify_bam_id
+from bfx import verify_bam_id2 as verify_bam_id
 from bfx import bwa
 from bfx import metrics
 from bfx import picard
@@ -83,7 +83,7 @@ class RunProcessingAligner(object):
                "\tPL:" + platform + \
                "'"
 
-    def verify_bam_id(self, readset, type="DNA"):
+    def verify_bam_id(self, readset):
         """
             verifyBamID is a software that verifies whether the reads in particular file match previously known
             genotypes for an individual (or group of individuals), and checks whether the reads are contaminated
@@ -92,42 +92,37 @@ class RunProcessingAligner(object):
             detects sample swaps.
         """
         jobs = []
-        known_variants_annotated_filtered = ""
-        if type == "RNA":
-            if len(readset.annotation_files) > 3 and os.path.isfile(readset.annotation_files[3]):
-                known_variants_annotated = readset.annotation_files[3]
-            else:
-                return jobs
-        else:
-            if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
-                known_variants_annotated = readset.annotation_files[0]
-            else:
-                return jobs
 
-        known_variants_annotated_filtered = known_variants_annotated
+        known_variants_annotated_filtered = ""
+        if config.param('verify_bam_id', 'module_verify_bam_id').split("/")[2] >= "2":
+            if 'dat' in readset.annotation_files and os.path.isfile(readset.annotation_files['dat']+".UD") and os.path.isfile(readset.annotation_files['dat']+".bed") and os.path.isfile(readset.annotation_files['dat']+".mu"):
+                known_variants_annotated_filtered = readset.annotation_files['dat']
+            else:
+                log.info("VerifyBamID2 is requested but no SVD dataset was found for " + readset.species + "... skipping VerifyBamID...")
+        else:
+            if readset.annotation_files['vcf'] and os.path.isfile(readset.annotation_files['vcf']):
+                known_variants_annotated_filtered = readset.annotation_files['vcf']
+            else:
+                log.info("VerifyBamID is requested but no suitable VCF was found for " + readset.species + "... skipping VerifyBamID...")
 
         if known_variants_annotated_filtered:
-
             input_bam = readset.bam + ".bam"
             output_prefix = readset.bam + ".metrics.verifyBamId"
             jobs.append(
-                concat_jobs([
-                    verify_bam_id.verify(
-                        input_bam,
-                        output_prefix,
-                        vcf=known_variants_annotated_filtered,
-                    ),
-                    # the first column starts with a # (a comment for nanuq) so we remove the column and output the result
-                    # in a file with the name supported by nanuq
-                    Job(
-                        [output_prefix + ".selfSM"],
-                        [output_prefix + ".tsv"],
-                        command="cut -f2- " + output_prefix + ".selfSM > " + output_prefix + ".tsv"
-                )],
-                name="verify_bam_id." + readset.name + "." + readset.run + "." + readset.lane,
-                report_files=[readset.bam + ".metrics.verifyBamId.selfSM"],
-                samples=[readset.sample]
-            ))
+                concat_jobs(
+                    [
+                        verify_bam_id.verify(
+                            input_bam,
+                            output_prefix,
+                            var=known_variants_annotated_filtered,
+                            ref=readset.reference_file
+                        )
+                    ],
+                    name="verify_bam_id." + readset.name + "." + readset.run + "." + readset.lane,
+                    report_files=[readset.bam + ".metrics.verifyBamId.selfSM"],
+                    samples=[readset.sample]
+                )
+            )
 
         return jobs
 
@@ -166,7 +161,7 @@ class NullRunProcessingAligner(RunProcessingAligner):
         return []
 
     def get_annotation_files(self):
-        return []
+        return {}
 
 class BwaRunProcessingAligner(RunProcessingAligner):
     downloaded_bed_files = []
@@ -199,18 +194,17 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             dbsnp_option_name = "dbsnp_version"
             af_option_name = "population_AF"
 
+            annotation_files = {}
             if config.has_option(section, dbsnp_option_name) and config.has_option(section, af_option_name):
                 dbsnp_version = config.get(section, dbsnp_option_name)
                 af_name = config.get(section, af_option_name)
-                return [
-                    os.path.join(
-                        self.genome_folder,
-                        "annotations",
-                        folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf.gz"
-                    )
-                ]
+                annotation_folder = os.path.join(self.genome_folder, "annotations")
+                annotation_files["vcf"] = os.path.join(annotation_folder, folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf.gz")
 
-        return []
+                if config.param('verify_bam_id', 'module_verify_bam_id').split("/")[2] >= "2":
+                    annotation_files["dat"] = os.path.join(annotation_folder, "svd_datasets", folder_name + ".1000g.phase3.100k.vcf.gz.dat")
+
+        return annotation_files
 
     def get_alignment_job(self, readset):
         output = readset.bam + ".bam"
@@ -295,8 +289,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             job.samples = [readset.sample]
             jobs.append(job)
 
-        if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
-            jobs.extend(self.verify_bam_id(readset, "DNA"))
+        jobs.extend(self.verify_bam_id(readset))
 
         job = bvatools.depth_of_coverage(
             input,
@@ -323,40 +316,29 @@ class RNARunProcessingAligner(RunProcessingAligner):
             source = config.get(section, "source")
             version = config.get(section, "version")
 
-            annotation_files = [
-                os.path.join(self.genome_folder,
-                             "annotations",
-                             folder_name + '.' + source + version + ".transcript_id.gtf"),
+            annotation_folder = os.path.join(self.genome_folder, "annotations")
 
-                os.path.join(self.genome_folder,
-                             "annotations",
-                             "rrna_bwa_index",
-                             folder_name + '.' + source + version + ".rrna.fa"),
-
-                os.path.join(self.genome_folder,
-                             "annotations",
-                             folder_name + '.' + source + version + ".ref_flat.tsv")
-            ]
+            annotation_files = {
+                "gtf": os.path.join(annotation_folder, folder_name + '.' + source + version + ".transcript_id.gtf"),
+                "rrna_fa": os.path.join(annotation_folder, "rrna_bwa_index", folder_name + '.' + source + version + ".rrna.fa"),
+                "ref_flat": os.path.join(annotation_folder, folder_name + '.' + source + version + ".ref_flat.tsv")
+            }
 
             dbsnp_option_name = "dbsnp_version"
             af_option_name = "population_AF"
             if config.has_option(section, dbsnp_option_name) and config.has_option(section, af_option_name):
                 dbsnp_version = config.get(section, dbsnp_option_name)
                 af_name = config.get(section, af_option_name)
-                annotation_files.append(
-                    os.path.join(
-                        self.genome_folder,
-                        "annotations",
-                        folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf.gz"
-                    )
-                )
+                annotation_files['vcf'] = os.path.join(annotation_folder, folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf.gz")
+
+                if config.param('verify_bam_id', 'module_verify_bam_id').split("/")[2] >= "2":
+                    annotation_files["dat"] = os.path.join(annotation_folder, "svd_datasets", folder_name + ".1000g.phase3.100k.vcf.gz.dat")
+
             return annotation_files
-        else:
-            return None
 
     def get_metrics_jobs(self, readset):
         jobs = []
-        jobs += self.verify_bam_id(readset, "RNA") + self._rnaseqc(readset) + self._picard_rna_metrics(readset) + \
+        jobs += self.verify_bam_id(readset) + self._rnaseqc(readset) + self._picard_rna_metrics(readset) + \
                 self._estimate_ribosomal_rna(readset, self.platform)
         return jobs
 
@@ -374,8 +356,7 @@ class RNARunProcessingAligner(RunProcessingAligner):
         output_directory = os.path.join(input_bam_directory, "rnaseqc_" + readset.sample.name + "." + readset.library)
         ribosomal_interval_file = os.path.join(output_directory, "empty.list")
 
-        if len(readset.annotation_files) > 0 and os.path.isfile(readset.annotation_files[0]):
-            gtf_transcript_id = readset.annotation_files[0]
+        if readset.annotation_files['gtf'] and os.path.isfile(readset.annotation_files['gtf']):
             reference = readset.reference_file
             job = concat_jobs([
                 bash.mkdir(output_directory),
@@ -392,7 +373,7 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
                     sample_file,
                     output_directory,
                     readset.fastq2 is None,
-                    gtf_file=gtf_transcript_id,
+                    gtf_file=readset.annotation_files['gtf'],
                     ribosomal_interval_file=ribosomal_interval_file,
                     reference=reference
                 ),
@@ -422,7 +403,8 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
         output_directory = os.path.dirname(alignment_file)
 
         job = picard.collect_multiple_metrics(
-            alignment_file, readset.bam + ".metrics",
+            alignment_file,
+            readset.bam + ".metrics",
             reference_sequence=readset.reference_file
         )
         job.name = "picard_collect_multiple_metrics." + readset.name + ".met" + "." + readset.run + "." + readset.lane
@@ -433,11 +415,11 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
         ]
         jobs.append(job)
 
-        if len(readset.annotation_files) > 2 and os.path.isfile(readset.annotation_files[2]):
+        if readset.annotation_files['ref_flat'] and os.path.isfile(readset.annotation_files['ref_flat']):
             job = picard.collect_rna_metrics(
                 alignment_file,
                 os.path.join(output_directory, sample.name),
-                readset.annotation_files[2],
+                readset.annotation_files['ref_flat'],
                 readset.reference_file
             )
 
@@ -458,8 +440,7 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
         """
 
         jobs = []
-        if len(readset.annotation_files) > 1 and os.path.isfile(readset.annotation_files[0]) and os.path.isfile(
-                readset.annotation_files[1]):
+        if readset.annotation_files['gtf'] and readset.annotation_files['rrna_fa'] and os.path.isfile(readset.annotation_files['gtf']) and os.path.isfile(readset.annotation_files['rrna_fa']):
             readset_bam = readset.bam + ".bam"
             readset_metrics_bam = readset.bam + ".rRNA.bam"
 
@@ -470,7 +451,7 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
                         "/dev/stdin",
                         None,
                         read_group=RunProcessingAligner.get_rg_tag(readset, platform, 'bwa_mem_rRNA'),
-                        ref=readset.annotation_files[1],
+                        ref=readset.annotation_files['rrna_fa'],
                         ini_section='bwa_mem_rRNA'
                     ),
                     picard.sort_sam(
@@ -482,7 +463,7 @@ echo "Sample\tBamFile\tNote\n{sample_row}" \\
                 ]),
                 tools.py_rrnaBAMcount(
                     bam=readset_metrics_bam,
-                    gtf=readset.annotation_files[0],
+                    gtf=readset.annotation_files['gtf'],
                     output=os.path.join(readset.bam + ".metrics.rRNA.tsv"),
                     typ="transcript"
                 )],
@@ -611,7 +592,7 @@ class CellrangerRunProcessingAligner(RNARunProcessingAligner):
         cell_count_job = cellranger.count(
             read1=readset.fastq1,
             read2=readset.fastq2,
-            sample_id=readset_name + "_" + readset.sample_number,
+            sample_id=readset.name + "_" + readset.sample_number,
             lane_id=readset.lane,
             project=readset.project,
             fastqs=os.path.dirname(readset.fastq1),
