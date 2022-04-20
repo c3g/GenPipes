@@ -36,7 +36,7 @@ def pileup(input_bam, output):
             ['conpair_concordance_contamination', 'module_conpair']
         ],
         command="""\
-run_gatk_pileup_for_sample.py -t {tmp_dir} \\
+python3 $CONPAIR_SCRIPTS/run_gatk_pileup_for_sample.py -t {tmp_dir} \\
   -m {ram} \\
   -G $GATK_JAR \\
   -D $CONPAIR_DIR \\
@@ -64,7 +64,7 @@ def concordance(input_normal, input_tumor, output):
             ['conpair_concordance_contamination', 'module_conpair']
         ],
         command="""\
-verify_concordance.py {options} \\
+python3 $CONPAIR_SCRIPTS/verify_concordance.py {options} \\
   -M {markers} \\
   -N {input_normal} \\
   -T {input_tumor} \\ 
@@ -87,7 +87,7 @@ def contamination(input_normal, input_tumor, output):
             ['conpair_concordance_contamination', 'module_conpair']
         ],
         command="""\
-estimate_tumor_normal_contamination.py {options} \\
+python3 $CONPAIR_SCRIPTS/estimate_tumor_normal_contamination.py {options} \\
   -M {markers} \\
   -N {input_normal} \\
   -T {input_tumor} \\

@@ -271,7 +271,7 @@ def format2pcgr(input, output, filter, variant_type, tumor):
             ['DEFAULT', 'module_python']
         ],
         command="""\
-python $PYTHON_TOOLS/format2pcgr.py \\
+python3 $PYTHON_TOOLS/format2pcgr.py \\
 	-i {input} \\
 	-o {output} \\
 	-f {filter} \\

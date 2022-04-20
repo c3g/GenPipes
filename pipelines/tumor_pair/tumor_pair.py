@@ -3561,7 +3561,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     bcftools.view(
                         None,
                         None,
-                        filter_options="-Ov -s ^" + tumor_pair.normal.name
+                        filter_options="-Oz -s ^" + tumor_pair.normal.name
                     ),
                     bcftools.sort(
                         None,
