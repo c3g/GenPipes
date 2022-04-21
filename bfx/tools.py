@@ -233,7 +233,7 @@ def fix_varscan_output(input, output=None, options=None):
             ['fix_varscan_output', 'module_python']
         ],
         command="""\
-python $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
+python3 $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
     {output}""".format(
             options=options if options else "",
             input=input if input else "",
@@ -250,7 +250,7 @@ def fix_genotypes_strelka(input, output, normal, tumor):
                 ['DEFAULT', 'module_python']
             ],
             command="""\
-	python $PYTHON_TOOLS/update_genotypes_strelka.py \\
+	python3 $PYTHON_TOOLS/update_genotypes_strelka.py \\
 	    -i {input} \\
 	    -o {output} \\
 	    -n {normal} \\
