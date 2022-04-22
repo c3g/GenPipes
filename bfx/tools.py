@@ -198,7 +198,7 @@ def dict2beds(dictionary,beds):
             ['dict2beds', 'module_python']
         ],
         command="""\
-dict2BEDs.py \\
+python3 $PYTHON_TOOLS/dict2BEDs.py \\
   --dict {dictionary} \\
   --beds {beds}""".format(
             dictionary=dictionary if dictionary else config.param('dict2beds', 'genome_dictionary', param_type='filepath'),
