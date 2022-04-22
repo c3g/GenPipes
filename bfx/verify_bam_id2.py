@@ -43,7 +43,7 @@ def verify(
             ['verify_bam_id', 'module_verify_bam_id']
         ],
         command="""\
-VerifyBamID {other_options} \\
+verifyBamID {other_options} \\
   --SVDPrefix {svdprefix} \\
   --Reference {reference} \\
   --BamFile {input_bam} \\
