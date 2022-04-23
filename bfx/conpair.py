@@ -65,10 +65,10 @@ def concordance(input_normal, input_tumor, output):
         ],
         command="""\
 python3 $CONPAIR_SCRIPTS/verify_concordance.py {options} \\
-  -M {markers} \\
-  -N {input_normal} \\
-  -T {input_tumor} \\ 
-  -O {output}""".format(
+  --markers {markers} \\
+  --normal_pileup {input_normal} \\
+  --tumor_pileup {input_tumor} \\
+  --outfile {output}""".format(
         options=config.param('conpair_concordance_contamination', 'concord_options'),
         markers=config.param('conpair_concordance_contamination', 'markers_txt'),
         input_normal=input_normal,
@@ -88,10 +88,10 @@ def contamination(input_normal, input_tumor, output):
         ],
         command="""\
 python3 $CONPAIR_SCRIPTS/estimate_tumor_normal_contamination.py {options} \\
-  -M {markers} \\
-  -N {input_normal} \\
-  -T {input_tumor} \\
-  -O {output}""".format(
+  --markers {markers} \\
+  --normal_pileup {input_normal} \\
+  --tumor_pileup {input_tumor} \\
+  --outfile {output}""".format(
         options=config.param('conpair_concordance_contamination', 'contam_options'),
         markers=config.param('conpair_concordance_contamination', 'markers_txt'),
         input_normal=input_normal,

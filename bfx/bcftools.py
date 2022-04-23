@@ -289,10 +289,31 @@ def norm(input, output, options, ini_section='bcftools_norm'):
         command="""\
 bcftools \\
   norm {options} \\
-  {input}\\
+  {input} \\
   {output}""".format(
         options=options if options else "",
         input=input,
         output="> " + output if output else ""
+        )
+    )
+
+def split(input, output, options, ini_section='bcftools_split'):
+    """
+    split vcf by sample
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  +split {options} \\
+  {input} \\
+  -o {output}""".format(
+        options=options if options else "",
+        input=input,
+        output=output
         )
     )

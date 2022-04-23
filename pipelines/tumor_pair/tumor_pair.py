@@ -2831,6 +2831,70 @@ class TumorPair(dnaseq.DnaSeqRaw):
     
         return jobs
 
+    def strelka2_paired_germline_snpeff(self):
+        """
+        Strelka2 is a fast and accurate small variant caller optimized for analysis of germline variation in small
+        cohorts and somatic variation in tumor/normal sample pairs
+        This implementation is optimized for germline calling in cancer pairs.
+        [Strelka2](https://github.com/Illumina/strelka)
+        """
+        jobs = []
+    
+        for tumor_pair in self.tumor_pairs.values():
+            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bcftools.split(
+                            os.path.join(pair_directory, tumor_pair.name + ".strelka2.germline.vt.vcf.gz"),
+                            pair_directory,
+                            config.param('strelka2_paired_germline_snpeff', 'split_options'),
+                        ),
+                    ],name="strelka2_paired_germline_snpeff.split." + tumor_pair.name,
+                    input_dependency=[
+                        os.path.join(pair_directory, tumor_pair.name + ".strelka2.germline.vt.vcf.gz")
+                    ],
+                    output_dependency=[
+                        os.path.join(pair_directory, tumor_pair.normal.name + ".vcf.gz"),
+                        os.path.join(pair_directory, tumor_pair.tumor.name + ".vcf.gz")
+                    ]
+                )
+            )
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        snpeff.compute_effects(
+                            os.path.join(pair_directory, tumor_pair.normal.name + ".vcf.gz"),
+                            os.path.join(pair_directory, tumor_pair.normal.name + ".snpeff.vcf"),
+                            options=config.param('strelka2_paired_germline_snpeff', 'options')
+                        ),
+                        htslib.bgzip_tabix(
+                            os.path.join(pair_directory, tumor_pair.normal.name + ".snpeff.vcf"),
+                            os.path.join(pair_directory, tumor_pair.normal.name + ".snpeff.vcf.gz")
+                        ),
+                    ], name="strelka2_paired_germline_snpeff.normal." + tumor_pair.name,
+                )
+            )
+            
+            jobs.append(
+                concat_jobs(
+                    [
+                        snpeff.compute_effects(
+                            os.path.join(pair_directory, tumor_pair.tumor.name + ".vcf.gz"),
+                            os.path.join(pair_directory, tumor_pair.tumor.name + ".snpeff.vcf"),
+                            options=config.param('strelka2_paired_germline_snpeff', 'options')
+                        ),
+                        htslib.bgzip_tabix(
+                            os.path.join(pair_directory, tumor_pair.tumor.name + ".snpeff.vcf"),
+                            os.path.join(pair_directory, tumor_pair.tumor.name + ".snpeff.vcf.gz")
+                        ),
+                    ], name="strelka2_paired_germline_snpeff.tumor." + tumor_pair.name,
+                )
+            )
+        return jobs
+
     def vardict_paired(self):
         """
         vardict caller for SNVs and Indels.
@@ -6747,6 +6811,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 self.manta_sv_calls,
                 self.strelka2_paired_somatic,
                 self.strelka2_paired_germline,
+                self.strelka2_paired_germline_snpeff,
                 self.purple,
                 self.rawmpileup,
                 self.paired_varscan2,
