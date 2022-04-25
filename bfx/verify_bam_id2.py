@@ -33,7 +33,7 @@ def verify(
     ref=None
     ):
 
-    if not config.param('verify_bam_id', 'module_verify_bam_id').split("/")[2] >= "2":
+    if (not config.param('verify_bam_id', 'module_verify_bam_id').split("/")[2] >= "2") or ("devMaster" in config.param('verify_bam_id', 'module_verify_bam_id').split("/")[2] >= "2")):
         return verify_bam_id.verify(input, output_prefix, var)
     else:
         return Job(
