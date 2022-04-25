@@ -26,7 +26,7 @@ import sys
 from core.job import Job, concat_jobs, pipe_jobs
 from core.config import config
 from bfx import bvatools
-from bfx import verify_bam_id2 as verify_bam_id
+from bfx import verify_bam_id
 from bfx import bwa
 from bfx import metrics
 from bfx import picard
@@ -94,16 +94,17 @@ class RunProcessingAligner(object):
         jobs = []
 
         known_variants_annotated_filtered = ""
-        if config.param('verify_bam_id', 'module_verify_bam_id').split("/")[2] >= "2":
-            if 'dat' in readset.annotation_files and os.path.isfile(readset.annotation_files['dat']+".UD") and os.path.isfile(readset.annotation_files['dat']+".bed") and os.path.isfile(readset.annotation_files['dat']+".mu"):
-                known_variants_annotated_filtered = readset.annotation_files['dat']
-            else:
-                log.info("VerifyBamID2 is requested but no SVD dataset was found for " + readset.species + "... skipping VerifyBamID...")
-        else:
+        if verify_bam_id.getVersion() == 1:
             if readset.annotation_files['vcf'] and os.path.isfile(readset.annotation_files['vcf']):
                 known_variants_annotated_filtered = readset.annotation_files['vcf']
             else:
                 log.info("VerifyBamID is requested but no suitable VCF was found for " + readset.species + "... skipping VerifyBamID...")
+        else:
+            if 'dat' in readset.annotation_files and os.path.isfile(readset.annotation_files['dat']+".UD") and os.path.isfile(readset.annotation_files['dat']+".bed") and os.path.isfile(readset.annotation_files['dat']+".mu"):
+                known_variants_annotated_filtered = readset.annotation_files['dat']
+            else:
+                log.info("VerifyBamID2 is requested but no SVD dataset was found for " + readset.species + "... skipping VerifyBamID...")
+
 
         if known_variants_annotated_filtered:
             input_bam = readset.bam + ".bam"
