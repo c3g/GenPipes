@@ -6,13 +6,14 @@ PCR-free,default DNA,,bam,WGS
 PCR-enriched,default DNA,,bam,WGS
 WGS,default DNA,,bam,WGS
 10x Genomics Single Cell RNA v1,default RNA,tenX_sc_RNA_v1,fastq,Single Cell RNA
-10x Genomics Single Cell RNA v2,default RNA,tenX_sc_RNA_v2,fastq,Single Cell RNA
-10x Genomics Single Cell RNA,default RNA,tenX_sc_RNA_v2,fastq,Single Cell RNA
-10x Genomics Linked Reads gDNA,default DNA,tenX_DNA_v2,fastq,WGS Linked Reads
-10x Genomics Single Cell CNV,default DNA,tenX_DNA_v2,fastq,Single Cell DNA
-10x Genomics Single Cell V-D-J,default RNA,tenX_sc_RNA_v2,fastq,Single Cell RNA
-10x Genomics Single Cell ATAC,default DNA,tenX_sc_ATAC_v1,fastq,Single Cell DNA
-10x Genomics Single Cell Visium Spacial RNA,default RNA,tenX_sc_RNA_visium_v2,fastq,Single Cell RNA
+10x Genomics Single Cell RNA v2,default RNA,,fastq,Single Cell RNA
+10x Genomics Single Cell RNA,default RNA,,fastq,Single Cell RNA
+10x Genomics Linked Reads gDNA,default DNA,,fastq,WGS Linked Reads
+10x Genomics Single Cell CNV,default DNA,,fastq,Single Cell DNA
+10x Genomics Single Cell V-D-J,default RNA,,fastq,Single Cell RNA
+10x Genomics Single Cell ATAC,default DNA,,fastq,Single Cell DNA
+10x Genomics Single Cell Visium Spacial RNA,default RNA,,fastq,Single Cell RNA
+10x Genomics Single Cell Visium Spatial RNA,default RNA,,fastq,Single Cell RNA
 10x Genomics Single Cell Feature Barcode,default RNA,FeatureBarcode,fastq,Single Cell RNA
 WGBS,default DNA,,fastq,WGBS
 MCC,default DNA,,fastq,MCC
@@ -46,4 +47,7 @@ MNaseSeq,default DNA,,fastq,MnaseSeq
 Amplicon DNA,default DNA,,fastq,Amplicon DNA
 Amplicon RNA,default RNA,,fastq,Amplicon RNA
 VirusSeq,default RNA,,fastq,Amplicon RNA
-
+PCR-free MGI,default DNA,,bam,WGS
+WGBS MGI,default DNA,,fastq,WGBS
+RNASeq MGI,default RNA,,fastq,RNA-Seq
+TELL-Seq,default DNA,,fastq,TELL-Seq
