@@ -202,7 +202,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
                 annotation_folder = os.path.join(self.genome_folder, "annotations")
                 annotation_files["vcf"] = os.path.join(annotation_folder, folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf.gz")
 
-                if config.param('verify_bam_id', 'module_verify_bam_id').split("/")[2] >= "2":
+                if verify_bam_id.getVersion() == 2:
                     annotation_files["dat"] = os.path.join(annotation_folder, "svd_datasets", folder_name + ".1000g.phase3.100k.vcf.gz.dat")
 
         return annotation_files
@@ -332,7 +332,7 @@ class RNARunProcessingAligner(RunProcessingAligner):
                 af_name = config.get(section, af_option_name)
                 annotation_files['vcf'] = os.path.join(annotation_folder, folder_name + ".dbSNP" + dbsnp_version + "_" + af_name + ".vcf.gz")
 
-                if config.param('verify_bam_id', 'module_verify_bam_id').split("/")[2] >= "2":
+                if verify_bam_id.getVersion() == 2:
                     annotation_files["dat"] = os.path.join(annotation_folder, "svd_datasets", folder_name + ".1000g.phase3.100k.vcf.gz.dat")
 
             return annotation_files
