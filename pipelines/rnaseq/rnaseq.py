@@ -22,7 +22,9 @@
 # Python Standard Modules
 import argparse
 import collections
+import csv
 import logging
+import math
 import os
 import re
 import sys
@@ -100,6 +102,14 @@ class RnaSeqRaw(common.Illumina):
         self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
         super(RnaSeqRaw, self).__init__(protocol)
 
+    def star_genome_length(self):
+        """
+        Calculation for setting genomeSAindexNbases for STAR index
+        """
+        genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
+
+        return int(min(14, math.log2(sum([int(chromosome[1]) for chromosome in genome_index])) / 2 - 1))
+
     def star(self):
         """
         The filtered reads are aligned to a reference genome. The alignment is done per readset of sequencing
@@ -116,6 +126,7 @@ class RnaSeqRaw(common.Illumina):
         project_index_directory = "reference.Merged"
         project_junction_file = os.path.join("alignment_1stPass", "AllSamples.SJ.out.tab")
         individual_junction_list=[]
+        genome_length = self.star_genome_length()
         ######
         #pass 1 -alignment
         for readset in self.readsets:
@@ -172,7 +183,8 @@ class RnaSeqRaw(common.Illumina):
             #pass 1 - genome indexing
             star.index(
                 genome_index_folder=project_index_directory,
-                junction_file=project_junction_file
+                junction_file=project_junction_file,
+                genome_length=genome_length
         )], name = "star_index.AllSamples", samples=self.samples))
 
         ######
