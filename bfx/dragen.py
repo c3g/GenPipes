@@ -35,8 +35,14 @@ from bfx.readset import parse_illumina_readset_file
 
 
 def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libraryName, readGroupID,
-                      input_dependency=None, output_dependency=None):
-    duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='string').lower()
+                      input_dependency=None, output_dependency=None, protocol="hybrid"):
+   # print(protocol)
+    if protocol == "dragen":
+
+        duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='string').lower()
+    else:
+        duplicate_marking = "false"
+
     if input_dependency is not None:
         inputs = input_dependency
     else:
@@ -46,14 +52,12 @@ def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libra
             inputs = [fastq1]
     if output_dependency is not None:
         outputs = output_dependency
-
     if duplicate_marking == "true":
         #outputs = [os.path.join(output_dir, readsetName + ".sorted.bam")]
         output_prefix = readsetName + ".sorted"
     else:
         #outputs = [os.path.join(output_dir, readsetName + ".bam")]
         output_prefix = readsetName
-   # print(outputs)
     return Job(
         inputs,
         outputs,
@@ -74,7 +78,8 @@ dragen --enable-methylation-calling true \\
     --RGLB {rglb} \\
     --RGSM {rgsm} \\
     -1 {fastq1} \\
-    {fastq2} {other_options}""".format(
+    {fastq2} \\
+    --remove-duplicates {remove_duplicates} {other_options}""".format(
             output_dir=output_dir,
             output_prefix=output_prefix,
             dragen_tmp=config.param('dragen_align', 'tmp_dragen', param_type='string'),
@@ -84,10 +89,11 @@ dragen --enable-methylation-calling true \\
             sort=config.param('dragen_align', 'sort', param_type='string'),
             mapping_implementation=config.param('dragen_align', 'mapping_implementation', param_type='string'),
             duplicate_marking=duplicate_marking,
+            remove_duplicates=config.param('dragen_align', 'remove_duplicates', param_type='string').lower(),
             rgid=readGroupID,
             rglb=libraryName,
             rgsm=sampleName,
-            other_options=config.param('dragen_align', 'other_options', param_type='string'),
+            other_options=config.param('dragen_align', 'other_options', param_type='string', required=False),
             fastq1=fastq1,
             fastq2="-2 " + fastq2 if fastq2 != None else ""
         ),
