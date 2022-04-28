@@ -25,7 +25,6 @@ import logging
 import os
 import re
 import socket
-import string
 import sys
 from collections import OrderedDict
 
@@ -37,9 +36,8 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 from core.pipeline import Pipeline
 from bfx.design import parse_design_file
-from bfx.readset import Readset, parse_illumina_readset_file 
+from bfx.readset import parse_illumina_readset_file
 
-from bfx import metrics
 from bfx import bvatools
 from bfx import verify_bam_id
 from bfx import picard
@@ -47,7 +45,6 @@ from bfx import trimmomatic
 from bfx import variantBam
 from bfx import samtools
 from bfx import rmarkdown
-from bfx import jsonator
 from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
@@ -86,7 +83,7 @@ class MUGQICPipeline(Pipeline):
             for r_list in self.readsets.values():
                 readset_list.extend(r_list)
         # In all other pipelines, self.readsets is a list
-        else: 
+        else:
             readset_list = self.readsets
 
         for readset in readset_list:
@@ -122,8 +119,8 @@ class MUGQICPipeline(Pipeline):
 # Call home with pipeline statistics
 {separator_line}
 LOG_MD5=$(echo $USER-'{uniqueIdentifier}' | md5sum | awk '{{ print $1 }}')
-if test -t 1; then ncolors=$(tput colors); if test -n "$ncolors" && test $ncolors -ge 8; then bold="$(tput bold)"; normal="$(tput sgr0)"; yellow="$(tput setaf 3)"; fi; fi
-wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to mugqic.hpc.mcgill.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
+if test -t 1; then ncolors=$(tput colors); if test -n "$ncolors" && test $ncolors -ge 8; then bold="$(tput bold)"; normal="$(tput sgr0)"; yellow="$(tput setaf 3)"; else bold="";normal="";yellow=""; fi; fi
+wget --timeout=20 --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to mugqic.hpc.mcgill.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, uniqueIdentifier=uniqueIdentifier))
 
     def submit_jobs(self):

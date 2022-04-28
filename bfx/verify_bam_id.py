@@ -78,7 +78,7 @@ verifyBamID \\
             vcf=var if var else config.param('verify_bam_id', 'vcf', param_type='filepath'),
             input_bam=input_bam,
             output_prefix=output_prefix,
-            other_options=config.param('verify_bam_id', 'options')
+            other_options=config.param('verify_bam_id', 'options', required=False)
         )
     )
 
@@ -101,10 +101,10 @@ VerifyBamID {other_options} \\
 --Reference {reference} \\
 --BamFile {input_bam} \\
 --Output {output_prefix}""".format(
-            svdprefix=var if var else config.param('verify_bam_id', 'svd_dataset'),
-            reference=ref if ref else config.param('verify_bam_id', 'genome_fasta', type='filepath'),
+            svdprefix=var if var else config.param('verify_bam_id_2', 'svd_dataset'),
+            reference=ref if ref else config.param('verify_bam_id_2', 'genome_fasta', type='filepath'),
             input_bam=input_bam,
             output_prefix=output_prefix,
-            other_options=config.param('verify_bam_id', 'options', required=False)
+            other_options=config.param('verify_bam_id_2', 'options', required=False)
             )
         )

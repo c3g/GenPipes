@@ -2896,7 +2896,7 @@ class RunProcessing(common.MUGQICPipeline):
                                 bash.awk(
                                     None,
                                     None,
-                                    self.awk_read_1_processing_command()
+                                    self.awk_read_1_processing_command(lane, readset)
                                 ),
                                 bash.gzip(
                                     None,
@@ -2933,7 +2933,7 @@ class RunProcessing(common.MUGQICPipeline):
                                     bash.awk(
                                         None,
                                         None,
-                                        self.awk_read_2_processing_command(readset, lane)
+                                        self.awk_read_2_processing_command(lane, readset)
                                     )
                                 ]
                             )
@@ -2958,7 +2958,7 @@ class RunProcessing(common.MUGQICPipeline):
                     bash.awk(
                         None,
                         None,
-                        self.awk_read_1_processing_command()
+                        self.awk_read_1_processing_command(lane)
                     ),
                     bash.gzip(
                         None,
@@ -2990,7 +2990,7 @@ class RunProcessing(common.MUGQICPipeline):
                         bash.awk(
                             None,
                             None,
-                            self.awk_read_2_processing_command(None, lane)
+                            self.awk_read_2_processing_command(lane)
                         )
                     ],
                     output_dependency=outputs,
@@ -3290,23 +3290,32 @@ class RunProcessing(common.MUGQICPipeline):
             readset_r2_outputs = []
 
             for index in readset.indexes:
-                readset_r1_outputs.append(
-                    os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['BARCODE_SEQUENCE']+"_R1.fastq.gz")
-                )
                 if readset.run_type == "PAIRED_END":
+                    readset_r1_outputs.append(
+                        os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['BARCODE_SEQUENCE']+"_R1.fastq.gz")
+                    )
                     readset_r2_outputs.append(
                         os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['BARCODE_SEQUENCE']+"_R2.fastq.gz")
+                    )
+                else:
+                    readset_r1_outputs.append(
+                        os.path.join(output_dir, "tmp", index['SAMPLESHEET_NAME']+"-"+index['SAMPLESHEET_NAME']+'_'+index['INDEX_NAME']+"-"+index['BARCODE_SEQUENCE']+".fastq.gz")
                     )
 
             # If True, then merge the 'Undetermined' reads
             if self.merge_undetermined[lane]:
-                readset_r1_outputs.append(
-                    os.path.join(output_dir, "tmp", "unmatched_R1.fastq.gz")
-                )
                 if readset.run_type == "PAIRED_END":
+                    readset_r1_outputs.append(
+                        os.path.join(output_dir, "tmp", "unmatched_R1.fastq.gz")
+                    )
                     readset_r2_outputs.append(
                         os.path.join(output_dir, "tmp", "unmatched_R2.fastq.gz")
                     )
+                else:
+                    readset_r1_outputs.append(
+                        os.path.join(output_dir, "tmp", "unmatched.fastq.gz")
+                    )
+
 
             # Processing R1 fastq outputs :
             #   convert headers from MGI to Illumina format using zcat and awk
@@ -3330,7 +3339,7 @@ class RunProcessing(common.MUGQICPipeline):
                                 bash.awk(
                                     None,
                                     None,
-                                    self.awk_read_1_processing_command(readset, lane)
+                                    self.awk_read_1_processing_command(lane, readset)
                                 ),
                                 bash.gzip(
                                     None,
@@ -3368,7 +3377,7 @@ class RunProcessing(common.MUGQICPipeline):
                                     bash.awk(
                                         None,
                                         None,
-                                        self.awk_read_2_processing_command(readset, lane)
+                                        self.awk_read_2_processing_command(lane, readset)
                                     )
                                 ]
                             )
@@ -3380,7 +3389,11 @@ class RunProcessing(common.MUGQICPipeline):
                 )
 
         # Process undetermined reads fastq files
-        unmatched_R1_fastq = os.path.join(output_dir, "tmp", "unmatched_R1.fastq.gz")
+        if readset.run_type == "PAIRED_END":
+            unmatched_R1_fastq = os.path.join(output_dir, "tmp", "unmatched_R1.fastq.gz")
+        else:
+            unmatched_R1_fastq = os.path.join(output_dir, "tmp", "unmatched.fastq.gz")
+
         if unmatched_R1_fastq not in demuxfastqs_outputs:
             demuxfastqs_outputs.append(unmatched_R1_fastq)
         outputs = [os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz")]
@@ -3404,7 +3417,7 @@ class RunProcessing(common.MUGQICPipeline):
                     bash.awk(
                         None,
                         None,
-                        self.awk_read_1_processing_command(readset, lane)
+                        self.awk_read_1_processing_command(lane)
                     ),
                     bash.gzip(
                         None,
@@ -3446,7 +3459,7 @@ class RunProcessing(common.MUGQICPipeline):
                         bash.awk(
                             None,
                             None,
-                            self.awk_read_2_processing_command(None, lane)
+                            self.awk_read_2_processing_command(lane)
                         )
                     ],
                     output_dependency=outputs,
@@ -3473,7 +3486,7 @@ class RunProcessing(common.MUGQICPipeline):
 
         return demuxfastqs_outputs, postprocessing_jobs
 
-    def awk_read_1_processing_command(self, readset, lane):
+    def awk_read_1_processing_command(self, lane, readset=None):
         """
         Returns a string serving as instructions for awk.
         This produces the command to convert the header of R1 fastq file from MGI to Illumina format
@@ -3514,7 +3527,7 @@ class RunProcessing(common.MUGQICPipeline):
 }}'""".format(
                     instrument=self.instrument,
                     run=self.run_number,
-                    read_len=self.read2cycles[lane],
+                    read_len=self.read1cycles[lane],
                     barcode1_len=self.index1cycles[lane],
                     barcode2_len=self.index2cycles[lane],
                     flowcell=self.flowcell_id,
@@ -3540,14 +3553,14 @@ class RunProcessing(common.MUGQICPipeline):
 }}'""".format(
                     instrument=self.instrument,
                     run=self.run_number,
-                    read_len=self.read2cycles[lane],
+                    read_len=self.read1cycles[lane],
                     barcode_len=self.index1cycles[lane],
                     flowcell=self.flowcell_id,
                     r1_out=readset.fastq1 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz"),
                     i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
                 )
 
-    def awk_read_2_processing_command(self, readset, lane):
+    def awk_read_2_processing_command(self, lane, readset=None):
         """
         Returns a string serving as instructions for awk.
         This produces the command to extract I1 (and I2 if exists) sequence from the R2 fastq,
