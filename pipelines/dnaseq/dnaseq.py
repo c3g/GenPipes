@@ -116,6 +116,14 @@ class DnaSeqRaw(common.Illumina):
         super(DnaSeqRaw, self).__init__(protocol)
 
     @property
+    def output_dirs(self):
+        dirs = {
+            'alignment_directory': 'alignment',
+            'metrics_directory': 'metrics',
+        }
+        return dirs
+
+    @property
     def sequence_dictionary(self):
         if not hasattr(self, "_sequence_dictionary"):
             self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
@@ -343,7 +351,7 @@ END
         jobs = []
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join(self.output_dir, "alignment", readset.sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], readset.sample.name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
 
@@ -508,7 +516,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dir, "alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
             # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
             candidate_readset_bams = [
@@ -575,7 +583,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
 
             # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
             candidate_readset_bams = [
@@ -650,7 +658,7 @@ END
             log.warning("Number of realign jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             realign_directory = os.path.join(alignment_directory, "realign")
             # alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
@@ -771,7 +779,7 @@ END
         nb_jobs = config.param('gatk_indel_realigner', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             realign_directory = os.path.join(alignment_directory, "realign")
             merged_realigned_bam = os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")
 
@@ -803,7 +811,7 @@ END
         """
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
@@ -842,7 +850,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
@@ -889,7 +897,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             picard_directory = os.path.join("metrics", "dna", sample.name, "picard_metrics")
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
@@ -940,7 +948,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
@@ -974,7 +982,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
@@ -1010,7 +1018,7 @@ END
         jobs = []
 
         for sample in self.samples:
-            duplicate_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.")
+            duplicate_file_prefix = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.")
             input = duplicate_file_prefix + "bam"
             print_reads_output = duplicate_file_prefix + "recal.bam"
             base_recalibrator_output = duplicate_file_prefix + "recalibration_report.grp"
@@ -1061,7 +1069,7 @@ END
         jobs = []
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
@@ -1139,7 +1147,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            picard_directory = os.path.join(self.output_dir, "metrics", "dna", sample.name, "picard_metrics")
+            picard_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "picard_metrics")
 
             alignment_directory = os.path.join("alignment", sample.name)
             readset = sample.readsets[0]
@@ -1209,7 +1217,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            qualimap_directory = os.path.join(self.output_dir, "metrics", "dna", sample.name, "qualimap", sample.name)
+            qualimap_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "qualimap", sample.name)
             alignment_directory = os.path.join("alignment", sample.name)
             [input] = self.select_input_files([
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
@@ -1257,8 +1265,8 @@ END
 
         jobs = []
         for sample in self.samples:
-            flagstat_directory = os.path.join("metrics", "dna", sample.name, "flagstat")
-            alignment_directory = os.path.join("alignment", sample.name)
+            flagstat_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "flagstat")
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
@@ -1292,8 +1300,8 @@ END
 
         jobs = []
         for sample in self.samples:
-            fastqc_directory = os.path.join(self.output_dir,"metrics", "dna", sample.name, "fastqc")
-            alignment_directory = os.path.join("alignment", sample.name)
+            fastqc_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "fastqc")
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                 #[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
@@ -1343,7 +1351,7 @@ END
 
         jobs = []
 
-        metrics_directory = os.path.join(self.output_dir,"metrics", "dna")
+        metrics_directory = os.path.join(self.output_dirs['metrics_directory'], "dna")
         input_dep = []
         inputs = []
         for sample in self.samples:
@@ -1401,7 +1409,7 @@ END
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files([
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
@@ -1479,7 +1487,7 @@ END
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
 
-                alignment_directory = os.path.join("alignment", sample.name)
+                alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
                 [input] = self.select_input_files([
                     # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
@@ -1508,8 +1516,8 @@ END
         jobs = []
 
         for sample in self.samples:
-            alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_file_prefix = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".")
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
@@ -1537,8 +1545,8 @@ END
         jobs = []
 
         for sample in self.samples:
-            alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_file_prefix = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".")
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
@@ -1567,7 +1575,7 @@ END
         jobs = []
 
         for sample in self.samples:
-            alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
+            alignment_file_prefix = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".")
 
             job = bvatools.ratiobaf(
                 alignment_file_prefix+"commonSNPs.alleleFreq.csv",
@@ -1626,7 +1634,7 @@ END
         inputs = []
         
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.cram")],
@@ -1699,7 +1707,7 @@ END
 
         inputs = []
         for sample in self.samples:
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".hc.vcf.gz"))
+            inputs.append(os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.vcf.gz"))
 
         output = os.path.join("metrics", "dna", "checkmate")
         vcf_file = os.path.join(output, 'checkmate.tsv')
@@ -1760,7 +1768,7 @@ END
         jobs = []
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             output = os.path.join("metrics", "dna", sample.name, "verifyBamId")
             input = self.select_input_files(
                 [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
@@ -1792,7 +1800,7 @@ END
         inputs = []
 
         for readset in self.readsets:
-            alignment_directory = os.path.join("alignment", readset.sample.name, readset.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], readset.sample.name, readset.name)
             input = os.path.join(alignment_directory, readset.sample.name, readset.name + ".sorted.bam")
             inputs.append(input)
 
@@ -1848,7 +1856,7 @@ END
             log.warning("Number of haplotype jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
 
             [input_bam] = self.select_input_files([
@@ -1942,7 +1950,7 @@ END
         nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
             haplotype_file_prefix = os.path.join(haplotype_directory, sample.name)
             output_haplotype_file_prefix = os.path.join("alignment", sample.name, sample.name)
@@ -2025,7 +2033,7 @@ END
                     concat_jobs([
                         mkdir_job,
                         gatk4.combine_gvcf(
-                            [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
+                            [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
                             os.path.join("variants", "allSamples.hc.g.vcf.gz")
                                 )
                         ],
@@ -2042,7 +2050,7 @@ END
                         concat_jobs([
                             mkdir_job,
                             gatk4.combine_gvcf(
-                                [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
+                                [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
                                 os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
                                 intervals=sequences
                                 )
@@ -2058,7 +2066,7 @@ END
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 job = gatk4.combine_gvcf(
-                    [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
+                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
                     os.path.join("variants", "allSamples.others.hc.g.vcf.gz"),
                     exclude_intervals=unique_sequences_per_job_others
                 )
@@ -2081,7 +2089,7 @@ END
                         concat_jobs([
                             mkdir_job,
                             gatk4.combine_gvcf(
-                                [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in batch],
+                                [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in batch],
                                 os.path.join("variants", "allSamples.batch" + str(cpt)+".hc.g.vcf.gz")
                                     )
                             ],
@@ -2102,7 +2110,7 @@ END
                             concat_jobs([
                                 mkdir_job,
                                 gatk4.combine_gvcf(
-                                    [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in batch],
+                                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in batch],
                                     os.path.join("variants", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.gz",
                                     intervals=sequences
                                         )
@@ -2118,7 +2126,7 @@ END
 
                     # Create one last job to process the last remaining sequences and 'others' sequences
                     job = gatk4.combine_gvcf(
-                        [os.path.join("alignment", sample.name, sample.name)+".hc.g.vcf.gz" for sample in batch],
+                        [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in batch],
                         os.path.join("variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.gz"),
                         exclude_intervals=unique_sequences_per_job_others
                     )
