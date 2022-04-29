@@ -2841,7 +2841,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
     
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir, "pairedVariants", tumor_pair.name)
+            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
 
             jobs.append(
                 concat_jobs(
@@ -3272,7 +3272,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             input_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
 
             input_mutect2 = os.path.join(input_directory, tumor_pair.name + ".mutect2.somatic.vt.vcf.gz")
-            input_strelka2 = os.path.abspath(os.path.join(input_directory, tumor_pair.name + ".strelka2.somatic.purple.vcf.gz"))
+            input_strelka2 = os.path.join(input_directory, tumor_pair.name + ".strelka2.somatic.purple.vcf.gz")
             input_vardict = os.path.join(input_directory, tumor_pair.name + ".vardict.somatic.vt.vcf.gz")
             input_varscan2 = os.path.join(input_directory, tumor_pair.name + ".varscan2.somatic.vt.vcf.gz")
             inputs_somatic = [input_mutect2, input_strelka2, input_vardict, input_varscan2]
@@ -3589,7 +3589,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
     
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
     
         for tumor_pair in self.tumor_pairs.values():
             input = os.path.join(
@@ -3649,7 +3649,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
     
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
     
         for tumor_pair in self.tumor_pairs.values():
             input = os.path.join(
@@ -3683,7 +3683,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
     
-        ensemble_directory = os.path.join(self.output_dir, "pairedVariants", "ensemble")
+        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
     
         for tumor_pair in self.tumor_pairs.values():
             input = os.path.join(
@@ -3732,8 +3732,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         jobs = []
     
         ensemble_directory = os.path.join(
-            self.output_dir,
-            "pairedVariants",
+            self.output_dirs['paired_variants_directory'],
             "ensemble"
         )
         assembly = config.param('report_pcgr', 'assembly')
@@ -3754,24 +3753,20 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 tumor_pair.name + ".ensemble.somatic.vt.annot.2caller.flt.vcf.gz"
             )
             input_cna = os.path.join(
-                self.output_dir,
-                "SVariants",
+                self.output_dirs['sv_variants_directory'],
                 tumor_pair.name,
                 tumor_pair.name + ".cnvkit.vcf.gz"
             )
             header = os.path.join(
-                self.output_dir,
-                "SVariants",
+                self.output_dirs['sv_variants_directory'],
                 "header"
             )
             output_cna_body = os.path.join(
-                self.output_dir,
-                "SVariants",
+                self.output_dirs['sv_variants_directory'],
                 tumor_pair.name + ".cnvkit.body.tsv"
             )
             output_cna = os.path.join(
-                self.output_dir,
-                "SVariants",
+                self.output_dirs['sv_variants_directory'],
                 tumor_pair.name + ".cnvkit.cna.tsv"
             )
             pcgr_directory = os.path.join(
