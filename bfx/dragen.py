@@ -39,9 +39,11 @@ def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libra
    # print(protocol)
     if protocol == "dragen":
 
-        duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='string').lower()
+        duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='boolean')
+        remove_duplicates = config.param('dragen_align', 'remove_duplicates', param_type='boolean')
     else:
         duplicate_marking = "false"
+        remove_duplicates = "false"
 
     if input_dependency is not None:
         inputs = input_dependency
@@ -52,12 +54,11 @@ def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libra
             inputs = [fastq1]
     if output_dependency is not None:
         outputs = output_dependency
-    if duplicate_marking == "true":
-        #outputs = [os.path.join(output_dir, readsetName + ".sorted.bam")]
+   # if duplicate_marking == "true":
+        ##outputs = [os.path.join(output_dir, readsetName + ".sorted.bam")]
         output_prefix = readsetName + ".sorted"
-    else:
-        #outputs = [os.path.join(output_dir, readsetName + ".bam")]
-        output_prefix = readsetName
+    #else:
+     #   output_prefix = readsetName
     return Job(
         inputs,
         outputs,
@@ -86,16 +87,62 @@ dragen --enable-methylation-calling true \\
             met_protocol=config.param('dragen_align', 'methylation_protocol', param_type='string'),
             reference=config.param('dragen_align', 'reference', param_type='string'),
             ct_report="true" if config.param('dragen_align', 'CTreport', param_type='boolean') else "false",
-            sort=config.param('dragen_align', 'sort', param_type='string'),
+           # sort=config.param('dragen_align', 'sort', param_type='string'),
+            sort="true",
             mapping_implementation=config.param('dragen_align', 'mapping_implementation', param_type='string'),
             duplicate_marking=duplicate_marking,
-            remove_duplicates=config.param('dragen_align', 'remove_duplicates', param_type='string').lower(),
+            remove_duplicates=remove_duplicates,
             rgid=readGroupID,
             rglb=libraryName,
             rgsm=sampleName,
             other_options=config.param('dragen_align', 'other_options', param_type='string', required=False),
             fastq1=fastq1,
             fastq2="-2 " + fastq2 if fastq2 != None else ""
+        ),
+    )
+
+
+def call_methylation(bam, output_dir, readsetName,
+                      input_dependency=None, output_dependency=None, protocol="dragen"):
+
+    if input_dependency is not None:
+        inputs = input_dependency
+    else:
+        inputs = [bam]
+    if output_dependency is not None:
+        outputs = output_dependency
+        output_prefix = readsetName + ".sorted"
+    else:
+        #TODO complete this to get output file path
+        outputs = []
+    return Job(
+        inputs,
+        outputs,
+        [],
+        command="""\
+dragen_reset && \\
+dragen --enable-methylation-calling true \\
+    --intermediate-results-dir {dragen_tmp} \\
+    --ref-dir {reference} \\
+    --output-directory {output_dir} \\
+    --output-file-prefix {output_prefix} \\
+    --methylation-reports-only {ct_report} \\
+    --methylation-generate-cytosine-report {ct_report} \\
+    --methylation-generate-mbias-report {mbias_report} \\
+    --enable-sort {sort} \\
+    --methylation-match-bismark {match_bismark} \\
+    -b {bam} {other_options}""".format(
+            output_dir=output_dir,
+            output_prefix=output_prefix,
+            dragen_tmp=config.param('dragen_align', 'tmp_dragen', param_type='string'),
+            reference=config.param('dragen_align', 'reference', param_type='string'),
+            ct_report="true",
+            sort="false",
+            mbias_report="true",
+            match_bismark="true",
+            mapping_implementation=config.param('dragen_align', 'mapping_implementation', param_type='string'),
+            other_options=config.param('dragen_align', 'other_options', param_type='string', required=False),
+            bam=bam
         ),
     )
 
