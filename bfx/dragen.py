@@ -146,3 +146,30 @@ dragen --enable-methylation-calling true \\
         ),
     )
 
+def split_dragen_methylation_report(input,output, meth_contex="CG"):
+    return Job(
+        [input],
+        [output],
+        [],
+        command="""\
+awk -v OFS="\\t" '{{if( $6=="{context}"){{print $0}}}}' {input} | \\
+gzip -c > {output}""".format(
+            input=input,
+            output=output,
+            context=meth_contex
+        )
+    )
+
+
+def dragen_bedgraph(input,output):
+    return Job(
+        [input],
+        [output],
+        [],
+        command="""\
+awk -v OFS="\\t" 'BEGIN {{print "track type=bedGraph"}} {{if(NR!=1){{print $1,$2,$3, $NF }} }} \\
+{input} | gzip -c > {output}'""".format(
+            input=input,
+            output=output
+        )
+    )

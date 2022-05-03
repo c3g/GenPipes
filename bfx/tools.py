@@ -995,16 +995,4 @@ Rscript $R_TOOLS/somaticSignatureAlexandrov.R \\
         ),removable_files=remove_file
     )
 
-def split_dragen_methylation_report(input,output, meth_contex="CG"):
-    return Job(
-        [input],
-        [output],
-        [],
-        command="""\
-awk -v OFS="\\t" '{{if( $6=="{context}"){{print $0}}}}' {input} | \\
-gzip -c > {output}""".format(
-            input=input,
-            output=output,
-            context=meth_contex
-        )
-    )
+

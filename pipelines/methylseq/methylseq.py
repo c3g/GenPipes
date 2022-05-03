@@ -1335,13 +1335,37 @@ pandoc \\
             jobs.append(
                 concat_jobs([
 
-                    tools.split_dragen_methylation_report(
+                    dragen.split_dragen_methylation_report(
                         input_file,
                         output_file,
                         meth_contex="CG"
                     )
                 ],
                     name="split_dragen_methylation_report." + sample.name,
+                    samples=[sample]
+                )
+            )
+
+        return jobs
+
+    def dragen_bedgraph(self):
+        jobs = []
+
+        for sample in self.samples:
+            methylation_directory = os.path.join("methylation_call", sample.name)
+
+            input_file = os.path.join(methylation_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.csv")
+            output_file = os.path.join(methylation_directory, sample.name + ".readset_sorted.dedup.bedGraph.gz")
+
+            jobs.append(
+                concat_jobs([
+
+                    dragen.dragen_bedgraph(
+                        input_file,
+                        output_file
+                    )
+                ],
+                    name="dragen_bedgraph." + sample.name,
                     samples=[sample]
                 )
             )
@@ -1377,7 +1401,6 @@ pandoc \\
             self.dragen_align,
             self.add_bam_umi,               # step 5
             self.sambamba_merge_sam_files,
-            #self.symlink_dedub,
             self.picard_remove_duplicates,
             self.metrics,
             self.methylation_call,
@@ -1399,12 +1422,13 @@ pandoc \\
             self.symlink_dedub,
             self.metrics,
             self.dragen_methylation_call,
-            self.wiggle_tracks,  # step 10
-            self.split_dragen_methylation_report,
+            self.split_dragen_methylation_report, # step 10
             self.methylation_profile,
+            self.dragen_bedgraph,
+            self.wiggle_tracks,
             self.ihec_sample_metrics_report,
-            self.bis_snp,
-            self.filter_snp_cpg, # step 16
+            self.bis_snp, # step 15
+            self.filter_snp_cpg,
             self.prepare_methylkit,
             self.cram_output
             ]
