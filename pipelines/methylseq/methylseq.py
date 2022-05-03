@@ -1301,6 +1301,10 @@ pandoc \\
 
                 input_file = os.path.join(alignment_directory, sample.name + ".sorted.bam")
                 output_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
+                #empty metric file will be created for "ihec_sample_metrics_report" steps. Otherwise it will be failed.
+                # Therefore added an empty file with ESTIMATED_LIBRARY_SIZE = NA
+                #so the dragen protocol will not estimate the library size
+                empty_metric_file= os.path.join(alignment_directory, sample.name + ".sorted.dedup.metrics")
 
                 jobs.append(
                     concat_jobs([
@@ -1310,6 +1314,12 @@ pandoc \\
                             output_file,
                             self.output_dir
                         )
+                        ,
+                        Job(output_files=[empty_metric_file], command="""\
+                        printf "ESTIMATED_LIBRARY_SIZE\\nNA" > {output}""".
+                            format(
+                            output=empty_metric_file
+                        ) )
 
                     ],
                         name="symlink_merge_sorted_dedub." + sample.name,
