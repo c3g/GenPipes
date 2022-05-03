@@ -100,7 +100,8 @@ VerifyBamID {other_options} \\
 --SVDPrefix {svdprefix} \\
 --Reference {reference} \\
 --BamFile {input_bam} \\
---Output {output_prefix}""".format(
+--Output {output_prefix} \\
+|| touch {output_prefix}.selfSM""".format(
             svdprefix=var if var else config.param('verify_bam_id_2', 'svd_dataset'),
             reference=ref if ref else config.param('verify_bam_id_2', 'genome_fasta', type='filepath'),
             input_bam=input_bam,

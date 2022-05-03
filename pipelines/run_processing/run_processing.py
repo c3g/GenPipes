@@ -2787,14 +2787,14 @@ class RunProcessing(common.MUGQICPipeline):
                     "index": {
                         "Barcode": readset.index_name,
                         "Barcode sequence": ','.join([readset_index['BARCODE_SEQUENCE'] for readset_index in readset.indexes]),
-                        "% on index in lane": None,
-                        "% of the lane": None,
-                        "% Perfect barcode": None,
-                        "% One mismatch barcode": None,
-                        "PF Clusters": None,
-                        "Yield (bases)": None,
-                        "Mean Quality Score": None,
-                        "% >= Q30 bases": None
+                        "pct_on_index_in_lane": None,
+                        "pct_of_the_lane": None,
+                        "pct_perfect_barcode": None,
+                        "pct_one_mismatch_barcode": None,
+                        "pf_clusters": None,
+                        "yield": None,
+                        "mean_quality_score": None,
+                        "pct_q30_bases": None
                     },
                     "qc": {
                         "avgQual": None,
@@ -2811,7 +2811,7 @@ class RunProcessing(common.MUGQICPipeline):
                         "average_aligned_insert_size": None,
                         "reported_sex": readset.gender,
                         "pf_read_alignment_rate": None,
-                        "Freemix": None,
+                        "freemix": None,
                         "inferred_sex": None,
                         "adapter_dimers": None,
                         "mean_coverage": None,
