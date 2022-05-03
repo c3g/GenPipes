@@ -102,8 +102,8 @@ dragen --enable-methylation-calling true \\
     )
 
 
-def call_methylation(bam, output_dir, readsetName,
-                      input_dependency=None, output_dependency=None, protocol="dragen"):
+def call_methylation(bam, output_dir, sample_name,
+                      input_dependency=None, output_dependency=None):
 
     if input_dependency is not None:
         inputs = input_dependency
@@ -111,7 +111,7 @@ def call_methylation(bam, output_dir, readsetName,
         inputs = [bam]
     if output_dependency is not None:
         outputs = output_dependency
-        output_prefix = readsetName + ".sorted"
+        output_prefix = sample_name
     else:
         #TODO complete this to get output file path
         outputs = []
