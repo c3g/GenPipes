@@ -3640,7 +3640,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     bcftools.view(
                         output_2caller,
                         None,
-                        filter_options=config.param('filter_ensemble', 'filter_options'),
+                        filter_options=config.param('filter_ensemble', 'germline_filter_options'),
                     ),
                     bcftools.view(
                         None,
@@ -3733,7 +3733,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 bcftools.view(
                     output_2caller,
                     output_filter,
-                    filter_options=config.param('filter_ensemble', 'filter_options'),
+                    filter_options=config.param('filter_ensemble', 'somatic_filter_options'),
                 ),
                 htslib.tabix(
                     output_filter,
