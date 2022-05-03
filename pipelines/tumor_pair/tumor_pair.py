@@ -2113,6 +2113,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             None,
                             config.param('varscan2_readcount_fpfilter', 'germline_filter_options')
                         ),
+                        bcftools.view(
+                            None,
+                            None,
+                            config.param('varscan2_readcount_fpfilter', 'genotype_filter_options')
+                        ),
                         htslib.bgzip_tabix(
                             None,
                             germline_output_vt
@@ -2180,6 +2185,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         all_output_vt,
                         None,
                         config.param('varscan2_readcount_fpfilter', 'germline_filter_options')
+                    ),
+                    bcftools.view(
+                        None,
+                        None,
+                        config.param('varscan2_readcount_fpfilter', 'genotype_filter_options')
                     ),
                     htslib.bgzip_tabix(
                         None,
@@ -3177,7 +3187,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         bcftools.view(
                             output_vt,
                             None,
-                            config.param('merge_filter_paired_vardict', 'germline_loh_filter_options')
+                            config.param('merge_filter_paired_vardict', 'germline_filter_options')
+                        ),
+                        bcftools.view(
+                            None,
+                            None,
+                            config.param('merge_filter_paired_vardict', 'genotype_filter_options')
                         ),
                         htslib.bgzip_tabix(
                             None,
@@ -3247,7 +3262,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         bcftools.view(
                             output_vt,
                             None,
-                            config.param('merge_filter_paired_vardict', 'germline_loh_filter_options')
+                            config.param('merge_filter_paired_vardict', 'germline_filter_options')
+                        ),
+                        bcftools.view(
+                            None,
+                            None,
+                            config.param('merge_filter_paired_vardict', 'genotype_filter_options')
                         ),
                         htslib.bgzip_tabix(
                             None,
