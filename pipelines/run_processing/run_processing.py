@@ -2829,7 +2829,6 @@ class RunProcessing(common.MUGQICPipeline):
                 self.report_hash[lane]["multiqc_inputs"].extend([os.path.relpath(path, os.path.join(self.output_dir, "report")) for path in step_report_files])
             else:
                 for readset in self.readsets[lane]:
-                    readset_name = readset.name
                     step_report_files = []
                     for job in step.jobs:
                         if job.report_files:
@@ -2842,11 +2841,11 @@ class RunProcessing(common.MUGQICPipeline):
                     step_report_files = list(set(step_report_files))
                     self.report_hash[lane]["multiqc_inputs"].extend([os.path.relpath(path, os.path.join(self.output_dir, "report")) for path in step_report_files])
 
-        report_dir = os.path.join(self.output_dir, "report")
         if not os.path.exists(os.path.dirname(self.run_validation_report_json[lane])):
              os.makedirs(os.path.dirname(self.run_validation_report_json[lane]))
-        with open(self.run_validation_report_json[lane], 'w') as out_json:
-            json.dump(self.report_hash[lane], out_json, indent=4)
+        if not os.path.exists(self.run_validation_report_json[lane]):
+            with open(self.run_validation_report_json[lane], 'w') as out_json:
+                json.dump(self.report_hash[lane], out_json, indent=4)
 
     def generate_basecall_outputs(self, lane):
         basecall_outputs = []
