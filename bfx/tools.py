@@ -289,7 +289,7 @@ def run_processing_metrics_to_json(
 
     return Job(
         [json_file] + metrics_files,
-        [],
+        [json_file],
         [
             ['metrics_to_json', 'module_mugqic_tools'],
             ['metrics_to_json', 'module_python']
@@ -353,7 +353,7 @@ def bed2interval_list(
     output,
     ref_dict=None,
     ):
-    
+
     return Job(
         [bed],
         [output],
