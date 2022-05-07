@@ -941,292 +941,135 @@ pandoc \\
             methylkit_job
         ], name="methylkit_differential_analysis")]
 
-    def dragen_align_dragen(self):
-        """
-        Align reads with dragen
-        """
-        duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='boolean')
-        methylation_protocol = self.args.type
-        jobs = []
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join(self.output_dir, "trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            dragen_inputfolder = os.path.join(config.param('dragen_align', 'work_folder'), "reads", readset.name)
-            dragen_workfolder = os.path.join(config.param('dragen_align', 'work_folder'), "alignment", readset.name)
-            dragen_tmp_bam = os.path.join(dragen_workfolder, readset.name + ".bam")
-            dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
-            output_bam = dragen_bam
-            index_bam = output_bam + ".bai"
-
-
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
-                                                  re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-                # first fastqs need to be copy to the dragen work_folder
-                dragen_tmp_fastq1 = os.path.join(dragen_inputfolder, readset.name + ".pair1.fastq.gz")
-                dragen_tmp_fastq2 = os.path.join(dragen_inputfolder, readset.name + ".pair2.fastq.gz")
-                cp_dragen_fastq_job = concat_jobs([
-                    bashc.mkdir(dragen_inputfolder, output_dependency=[dragen_bam]),
-                    bashc.cp(os.path.abspath(fastq1), dragen_tmp_fastq1, output_dependency=[dragen_bam]),
-                    bashc.cp(os.path.abspath(fastq2), dragen_tmp_fastq2, output_dependency=[dragen_bam])
-                ], name="dragen_copy_fastq." + readset.name, samples=[readset.sample])
-                rm_dragen_fastq_job = concat_jobs([
-                    bashc.rm(dragen_tmp_fastq1, recursive=True, force=True, input_dependency=[fastq1],
-                             output_dependency=[dragen_bam]),
-                    bashc.rm(dragen_tmp_fastq2, recursive=True, force=True, input_dependency=[fastq2],
-                             output_dependency=[dragen_bam])
-                ], name="dragen_remove_fastq." + readset.name, samples=[readset.sample])
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-                # first fastqs need to be copy to the dragen work_folder
-                dragen_tmp_fastq1 = os.path.join(dragen_workfolder, readset.name + ".single.fastq.gz")
-                dragen_tmp_fastq2 = fastq2
-                cp_dragen_fastq_job = concat_jobs([
-                    bashc.mkdir(dragen_inputfolder, output_dependency=[dragen_bam]),
-                    bashc.cp(os.path.abspath(fastq1), dragen_tmp_fastq1, output_dependency=[dragen_bam])
-                ], name="dragen_copy_fastq." + readset.name, samples=[readset.sample])
-                rm_dragen_fastq_job = concat_jobs([
-                    bashc.rm(dragen_tmp_fastq1, recursive=True, force=True, input_dependency=[fastq1],
-                             output_dependency=[dragen_bam])
-                ], name="dragen_remove_fastq." + readset.name, samples=[readset.sample])
-            else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                                        "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
-            # align_methylation(fastq1, fastq2, output_dir, sampleName, libraryName, readGroupID)
-            # jobs.append(
-            # cp_dragen_fastq_job
-            # )
-            dragen_align = concat_jobs([
-                cp_dragen_fastq_job,
-                bashc.mkdir(dragen_workfolder, output_dependency=[dragen_bam]),
-                bashc.mkdir(os.path.join(config.param('dragen_align', 'work_folder'), "job_output", "dragen_align"),
-                            output_dependency=[dragen_bam]),
-                bashc.mkdir(os.path.abspath(alignment_directory), output_dependency=[dragen_bam]),
-                dragen.align_methylation(
-                    dragen_tmp_fastq1,
-                    dragen_tmp_fastq2,
-                    dragen_workfolder,
-                    readset.name,
-                    readset.sample.name,
-                    readset.library if readset.library else readset.sample.name,
-                    readset.name + "_" + readset.run + "_" + readset.lane,
-                    input_dependency=[fastq1, fastq2], output_dependency=[dragen_bam], protocol=methylation_protocol
-
-                ),
-                bashc.cp(dragen_workfolder, os.path.abspath(alignment_directory) + "/", recursive=True,
-                         input_dependency=[fastq1, fastq2], output_dependency=[dragen_bam]),
-                bashc.rm(dragen_workfolder, recursive=True, force=True, input_dependency=[fastq1, fastq2],
-                         output_dependency=[dragen_bam]),
-                # bashc.rm(dragen_workfolder, recursive=True, force=True, input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
-                rm_dragen_fastq_job
-            ], name="dragen_align." + readset.name, samples=[readset.sample])
-            dragen_output_copy = concat_jobs([
-                bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'), "job_output",
-                                      "dragen_align." + readset.name + "*"),
-                         os.path.abspath(os.path.join("job_output", "dragen_align")) + "/", recursive=True,
-                         input_dependency=[dragen_bam]),
-                bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'), "job_output", "dragen_align",
-                                      "dragen_align." + readset.name + "*"),
-                         os.path.abspath(os.path.join("job_output", "dragen_align")) + "/", recursive=True,
-                         input_dependency=[dragen_bam]),
-                bashc.rm(os.path.join(config.param('dragen_align', 'work_folder'), "job_output",
-                                      "dragen_align." + readset.name + "*"), input_dependency=[dragen_bam], recursive=True),
-                bashc.rm(os.path.join(config.param('dragen_align', 'work_folder'), "job_output", "dragen_align",
-                                      "dragen_align." + readset.name + "*") ,input_dependency=[dragen_bam], recursive=True)
-            ], name="dragen_copy." + readset.name, samples=[readset.sample])
-            jobs.append(
-                dragen_align
-            )
-            # jobs.append(
-            #     dragen_output_copy
-            # )
-            # jobs.append(
-            #     concat_jobs([
-            #         bashc.mkdir(alignment_directory),
-            #         picard.sort_sam(
-            #             dragen_bam,
-            #             output_bam
-            #         )
-            #     ], name="picard_sort_sam." + readset.name, samples=[readset.sample])
-            # )
-            jobs.append(
-                concat_jobs([
-                    bashc.mkdir(alignment_directory),
-                    samtools.flagstat(
-                        output_bam,
-                        re.sub(".bam", "_flagstat.txt", output_bam),
-                    )
-                ], name="samtools_flagstat." + readset.name, samples=[readset.sample], output_dependency = [re.sub(".bam", "_flagstat.txt", output_bam)])
-
-            )
-            jobs.append(
-                concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory),
-                    sambamba.index(
-                        output_bam,
-                        index_bam
-                    )
-                ], name="sambamba_index." + readset.name, samples=[readset.sample]))
-
-        return jobs
-
-
     def dragen_align(self):
         """
-        Align reads with dragen and call methylation with bismark
+        Align reads with dragen and call methylation with bismark. both hybrid and dragen protocols use this step to
+        align reads. The dragen parameters can be changed using other_options of the ini configuration.
 
         """
        # duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='string').lower()
 
         jobs = []
-        methylation_protocol = self.args.type
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join(self.output_dir, "trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
-            dragen_inputfolder = os.path.join(config.param('dragen_align', 'work_folder'), "reads", readset.name)
-            dragen_workfolder = os.path.join(config.param('dragen_align', 'work_folder'), "alignment", readset.name)
-            dragen_tmp_bam = os.path.join(dragen_workfolder, readset.name + ".bam")
-            dragen_bam = os.path.join(alignment_directory, readset.sample.name, readset.name + ".sorted.bam")
-            output_bam = dragen_bam
-            index_bam = output_bam + ".bai"
+        methylseq_protocol = self.args.type
 
+        methylation_protocol = config.param('dragen_align', 'methylation_protocol', param_type='string')
+        mapping_implementation = config.param('dragen_align', 'mapping_implementation', param_type='string')
+        # if the protocol is hybrid and methylation_protocol is "directional-complement" and
+        # mapping_implementation is "sigle-pass" pipeline will not be generating genpipes file. Dragen protocol
+        # should be used in this case.
+        if not methylseq_protocol == "hybrid" and methylation_protocol == "directional-complement" and mapping_implementation=="sigle-pass":
 
+            for readset in self.readsets:
+                trim_file_prefix = os.path.join(self.output_dir, "trim", readset.sample.name, readset.name + ".trim.")
+                alignment_directory = os.path.join("alignment", readset.sample.name)
+                # All the input files should copy to dragen work folder because IO operations with default locations
+                # are really slow or have permission issues. After processing files all the files should move back to
+                # the default GenPipes folder and remove files from dragen work folder
+                dragen_inputfolder = os.path.join(config.param('dragen_align', 'work_folder'), "reads", readset.name)
+                dragen_workfolder = os.path.join(config.param('dragen_align', 'work_folder'), "alignment", readset.name)
+                dragen_tmp_bam = os.path.join(dragen_workfolder, readset.name + ".bam")
+                # dragen output file name
+                dragen_bam = os.path.join(alignment_directory, readset.sample.name, readset.name + ".sorted.bam")
+                #output_bam = dragen_bam
+                index_bam = dragen_bam + ".bai"
 
-            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
-                                                  re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-                # first fastqs need to be copy to the dragen work_folder
-                dragen_tmp_fastq1 = os.path.join(dragen_inputfolder, readset.name + ".pair1.fastq.gz")
-                dragen_tmp_fastq2 = os.path.join(dragen_inputfolder, readset.name + ".pair2.fastq.gz")
-                cp_dragen_fastq_job = concat_jobs([
-                    bashc.mkdir(dragen_inputfolder, output_dependency=[dragen_bam]),
-                    bashc.cp(os.path.abspath(fastq1), dragen_tmp_fastq1, output_dependency=[dragen_bam]),
-                    bashc.cp(os.path.abspath(fastq2), dragen_tmp_fastq2, output_dependency=[dragen_bam])
-                ], name="dragen_copy_fastq." + readset.name, samples=[readset.sample])
-                rm_dragen_fastq_job = concat_jobs([
-                    bashc.rm(dragen_tmp_fastq1, recursive=True, force=True, input_dependency=[fastq1],
+                # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+                if readset.run_type == "PAIRED_END":
+                    candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                    if readset.fastq1 and readset.fastq2:
+                        candidate_input_files.append([readset.fastq1, readset.fastq2])
+                    if readset.bam:
+                        candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
+                                                      re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                    # first fastqs need to be copy to the dragen work_folder
+                    dragen_tmp_fastq1 = os.path.join(dragen_inputfolder, readset.name + ".pair1.fastq.gz")
+                    dragen_tmp_fastq2 = os.path.join(dragen_inputfolder, readset.name + ".pair2.fastq.gz")
+                    cp_dragen_fastq_job = concat_jobs([
+                        bashc.mkdir(dragen_inputfolder, output_dependency=[dragen_bam]),
+                        bashc.cp(os.path.abspath(fastq1), dragen_tmp_fastq1, output_dependency=[dragen_bam]),
+                        bashc.cp(os.path.abspath(fastq2), dragen_tmp_fastq2, output_dependency=[dragen_bam])
+                    ], name="dragen_copy_fastq." + readset.name, samples=[readset.sample])
+                    rm_dragen_fastq_job = concat_jobs([
+                        bashc.rm(dragen_tmp_fastq1, recursive=True, force=True, input_dependency=[fastq1],
+                                 output_dependency=[dragen_bam]),
+                        bashc.rm(dragen_tmp_fastq2, recursive=True, force=True, input_dependency=[fastq2],
+                                 output_dependency=[dragen_bam])
+                    ], name="dragen_remove_fastq." + readset.name, samples=[readset.sample])
+                elif readset.run_type == "SINGLE_END":
+                    candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                    if readset.fastq1:
+                        candidate_input_files.append([readset.fastq1])
+                    if readset.bam:
+                        candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    [fastq1] = self.select_input_files(candidate_input_files)
+                    fastq2 = None
+                    # first fastqs need to be copy to the dragen work_folder
+                    dragen_tmp_fastq1 = os.path.join(dragen_workfolder, readset.name + ".single.fastq.gz")
+                    dragen_tmp_fastq2 = fastq2
+                    cp_dragen_fastq_job = concat_jobs([
+                        bashc.mkdir(dragen_inputfolder, output_dependency=[dragen_bam]),
+                        bashc.cp(os.path.abspath(fastq1), dragen_tmp_fastq1, output_dependency=[dragen_bam])
+                    ], name="dragen_copy_fastq." + readset.name, samples=[readset.sample])
+                    rm_dragen_fastq_job = concat_jobs([
+                        bashc.rm(dragen_tmp_fastq1, recursive=True, force=True, input_dependency=[fastq1],
+                                 output_dependency=[dragen_bam])
+                    ], name="dragen_remove_fastq." + readset.name, samples=[readset.sample])
+                else:
+                    _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                                            "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                dragen_align = concat_jobs([
+                    #to track the dragen output files and done file input dependency and output dependency of the original
+                    #location should be defined
+                    cp_dragen_fastq_job,
+                    bashc.mkdir(dragen_workfolder, output_dependency=[dragen_bam]),
+                    bashc.mkdir(os.path.join(config.param('dragen_align', 'work_folder'), "job_output", "dragen_align"),
+                                output_dependency=[dragen_bam]),
+                    bashc.mkdir(os.path.abspath(alignment_directory), output_dependency=[dragen_bam]),
+                    dragen.align_methylation(
+                        dragen_tmp_fastq1,
+                        dragen_tmp_fastq2,
+                        dragen_workfolder,
+                        readset.name,
+                        readset.sample.name,
+                        readset.library if readset.library else readset.sample.name,
+                        readset.name + "_" + readset.run + "_" + readset.lane,
+                        input_dependency=[fastq1, fastq2], output_dependency=[dragen_bam], protocol=methylseq_protocol
+
+                    ),
+                    bashc.cp(dragen_workfolder, os.path.abspath(alignment_directory) + "/", recursive=True,
+                             input_dependency=[fastq1, fastq2], output_dependency=[dragen_bam]),
+                    bashc.rm(dragen_workfolder, recursive=True, force=True, input_dependency=[fastq1, fastq2],
                              output_dependency=[dragen_bam]),
-                    bashc.rm(dragen_tmp_fastq2, recursive=True, force=True, input_dependency=[fastq2],
-                             output_dependency=[dragen_bam])
-                ], name="dragen_remove_fastq." + readset.name, samples=[readset.sample])
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-                # first fastqs need to be copy to the dragen work_folder
-                dragen_tmp_fastq1 = os.path.join(dragen_workfolder, readset.name + ".single.fastq.gz")
-                dragen_tmp_fastq2 = fastq2
-                cp_dragen_fastq_job = concat_jobs([
-                    bashc.mkdir(dragen_inputfolder, output_dependency=[dragen_bam]),
-                    bashc.cp(os.path.abspath(fastq1), dragen_tmp_fastq1, output_dependency=[dragen_bam])
-                ], name="dragen_copy_fastq." + readset.name, samples=[readset.sample])
-                rm_dragen_fastq_job = concat_jobs([
-                    bashc.rm(dragen_tmp_fastq1, recursive=True, force=True, input_dependency=[fastq1],
-                             output_dependency=[dragen_bam])
-                ], name="dragen_remove_fastq." + readset.name, samples=[readset.sample])
-            else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                                        "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
-            # align_methylation(fastq1, fastq2, output_dir, sampleName, libraryName, readGroupID)
-            # jobs.append(
-            # cp_dragen_fastq_job
-            # )
-            dragen_align = concat_jobs([
-                cp_dragen_fastq_job,
-                bashc.mkdir(dragen_workfolder, output_dependency=[dragen_bam]),
-                bashc.mkdir(os.path.join(config.param('dragen_align', 'work_folder'), "job_output", "dragen_align"),
-                            output_dependency=[dragen_bam]),
-                bashc.mkdir(os.path.abspath(alignment_directory), output_dependency=[dragen_bam]),
-                dragen.align_methylation(
-                    dragen_tmp_fastq1,
-                    dragen_tmp_fastq2,
-                    dragen_workfolder,
-                    readset.name,
-                    readset.sample.name,
-                    readset.library if readset.library else readset.sample.name,
-                    readset.name + "_" + readset.run + "_" + readset.lane,
-                    input_dependency=[fastq1, fastq2], output_dependency=[dragen_bam], protocol=methylation_protocol
+                    # bashc.rm(dragen_workfolder, recursive=True, force=True, input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
+                    rm_dragen_fastq_job
+                ], name="dragen_align." + readset.name, samples=[readset.sample])
+                jobs.append(
+                    dragen_align
+                )
+                jobs.append(
+                    concat_jobs([
+                        bashc.mkdir(alignment_directory),
+                        samtools.flagstat(
+                            dragen_bam,
+                            re.sub(".bam", "_flagstat.txt", dragen_bam),
+                        )
+                    ], name="samtools_flagstat." + readset.name, samples=[readset.sample], output_dependency = [re.sub(".bam", "_flagstat.txt", output_bam)])
 
-                ),
-                bashc.cp(dragen_workfolder, os.path.abspath(alignment_directory) + "/", recursive=True,
-                         input_dependency=[fastq1, fastq2], output_dependency=[dragen_bam]),
-                bashc.rm(dragen_workfolder, recursive=True, force=True, input_dependency=[fastq1, fastq2],
-                         output_dependency=[dragen_bam]),
-                # bashc.rm(dragen_workfolder, recursive=True, force=True, input_dependency=[fastq1,fastq2], output_dependency=[dragen_bam]),
-                rm_dragen_fastq_job
-            ], name="dragen_align." + readset.name, samples=[readset.sample])
-            dragen_output_copy = concat_jobs([
-                bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'), "job_output",
-                                      "dragen_align." + readset.name + "*"),
-                         os.path.abspath(os.path.join("job_output", "dragen_align")) + "/", recursive=True,
-                         input_dependency=[dragen_bam]),
-                bashc.cp(os.path.join(config.param('dragen_align', 'work_folder'), "job_output", "dragen_align",
-                                      "dragen_align." + readset.name + "*"),
-                         os.path.abspath(os.path.join("job_output", "dragen_align")) + "/", recursive=True,
-                         input_dependency=[dragen_bam]),
-                bashc.rm(os.path.join(config.param('dragen_align', 'work_folder'), "job_output",
-                                      "dragen_align." + readset.name + "*"), input_dependency=[dragen_bam], recursive=True),
-                bashc.rm(os.path.join(config.param('dragen_align', 'work_folder'), "job_output", "dragen_align",
-                                      "dragen_align." + readset.name + "*") ,input_dependency=[dragen_bam], recursive=True)
-            ], name="dragen_copy." + readset.name, samples=[readset.sample])
-            jobs.append(
-                dragen_align
-            )
-            # jobs.append(
-            #     dragen_output_copy
-            # )
-            # jobs.append(
-            #     concat_jobs([
-            #         bashc.mkdir(alignment_directory),
-            #         picard.sort_sam(
-            #             dragen_bam,
-            #             output_bam
-            #         )
-            #     ], name="picard_sort_sam." + readset.name, samples=[readset.sample])
-            # )
-            jobs.append(
-                concat_jobs([
-                    bashc.mkdir(alignment_directory),
-                    samtools.flagstat(
-                        output_bam,
-                        re.sub(".bam", "_flagstat.txt", output_bam),
-                    )
-                ], name="samtools_flagstat." + readset.name, samples=[readset.sample], output_dependency = [re.sub(".bam", "_flagstat.txt", output_bam)])
+                )
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + alignment_directory),
+                        sambamba.index(
+                            dragen_bam,
+                            index_bam
+                        )
+                    ], name="sambamba_index." + readset.name, samples=[readset.sample]))
 
-            )
-            jobs.append(
-                concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory),
-                    sambamba.index(
-                        output_bam,
-                        index_bam
-                    )
-                ], name="sambamba_index." + readset.name, samples=[readset.sample]))
+            return jobs
 
-        return jobs
-
+        else:
+            _raise(SanitycheckError("Please use \"dragen\" protocol when using directional-complement on single-pass mode. Skipping generating the genpipes file..."))
 
     def dragen_methylation_call(self):
         """
@@ -1280,16 +1123,10 @@ pandoc \\
             )
         return jobs
 
-
-    def dragen_align2(self):
-        jobs =[]
-        if self.args.type == "hybrid":
-            jobs.extend(self.dragen_align_hybrid())
-        elif self.args.type == "dragen":
-            jobs.extend(self.dragen_align_dragen())
-        return jobs
-
     def symlink_dedub(self):
+        """
+        Creates symlink from dragen output bam to plug in to other steps (same file as the picard output bam files)
+        """
         jobs = []
 
         duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='boolean')
@@ -1301,9 +1138,9 @@ pandoc \\
 
                 input_file = os.path.join(alignment_directory, sample.name + ".sorted.bam")
                 output_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
-                #empty metric file will be created for "ihec_sample_metrics_report" steps. Otherwise it will be failed.
+                # empty metric file will be created for "ihec_sample_metrics_report" steps. Otherwise it will be failed.
                 # Therefore added an empty file with ESTIMATED_LIBRARY_SIZE = NA
-                #so the dragen protocol will not estimate the library size
+                # so the dragen protocol will not estimate the library size
                 empty_metric_file= os.path.join(alignment_directory, sample.name + ".sorted.dedup.metrics")
 
                 jobs.append(
@@ -1333,6 +1170,10 @@ pandoc \\
 
     def split_dragen_methylation_report(self):
 
+        """
+        Dragen methylation report contain all three methylation contex. To create combined CSV CpGs should be extracted
+        """
+
         jobs = []
 
 
@@ -1359,6 +1200,10 @@ pandoc \\
         return jobs
 
     def dragen_bedgraph(self):
+
+        """
+        Creates bedgraph file from combined strand CpG file
+        """
         jobs = []
 
         for sample in self.samples:
@@ -1444,6 +1289,7 @@ pandoc \\
             ]
         ]
 
+
 class MethylSeq(MethylSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
@@ -1452,10 +1298,10 @@ class MethylSeq(MethylSeqRaw):
                                     default="bismark")
         super(MethylSeq, self).__init__(protocol)
 
-
 if __name__ == '__main__':
     argv = sys.argv
+
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        MethylSeq(protocol=['bismark', 'hybrid','dragen'])
+        MethylSeq(protocol=['bismark', 'hybrid', 'dragen'])

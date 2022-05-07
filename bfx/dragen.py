@@ -141,7 +141,7 @@ dragen --enable-methylation-calling true \\
             mbias_report="true",
             match_bismark="true",
             mapping_implementation=config.param('dragen_align', 'mapping_implementation', param_type='string'),
-            other_options=config.param('dragen_align', 'other_options', param_type='string', required=False),
+            other_options=config.param('dragen_methylation_call', 'other_options', param_type='string', required=False),
             bam=bam
         ),
     )
