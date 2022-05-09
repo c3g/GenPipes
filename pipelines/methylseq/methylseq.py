@@ -957,7 +957,7 @@ pandoc \\
         # if the protocol is hybrid and methylation_protocol is "directional-complement" and
         # mapping_implementation is "sigle-pass" pipeline will not be generating genpipes file. Dragen protocol
         # should be used in this case.
-        if not methylseq_protocol == "hybrid" and methylation_protocol == "directional-complement" and mapping_implementation=="sigle-pass":
+        if not (methylseq_protocol == "hybrid" and methylation_protocol == "directional-complement" and mapping_implementation=="single-pass"):
 
             for readset in self.readsets:
                 trim_file_prefix = os.path.join(self.output_dir, "trim", readset.sample.name, readset.name + ".trim.")
@@ -1054,7 +1054,7 @@ pandoc \\
                             dragen_bam,
                             re.sub(".bam", "_flagstat.txt", dragen_bam),
                         )
-                    ], name="samtools_flagstat." + readset.name, samples=[readset.sample], output_dependency = [re.sub(".bam", "_flagstat.txt", output_bam)])
+                    ], name="samtools_flagstat." + readset.name, samples=[readset.sample], output_dependency = [re.sub(".bam", "_flagstat.txt", dragen_bam)])
 
                 )
                 jobs.append(
