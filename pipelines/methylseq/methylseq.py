@@ -121,6 +121,7 @@ class MethylSeqRaw(dnaseq.DnaSeqRaw):
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                print(candidate_input_files)
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
@@ -741,7 +742,7 @@ cp \\
 
             # Trim log files
             for readset in sample.readsets:
-                inputs.append(os.path.abspath(os.path.join("trim", sample.name, readset.name + ".trim.log")))
+                inputs.append((os.path.join("trim", sample.name, readset.name + ".trim.log")))
 
             # Aligned pre-deduplicated bam files
             inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
@@ -960,7 +961,7 @@ pandoc \\
         if not (methylseq_protocol == "hybrid" and methylation_protocol == "directional-complement" and mapping_implementation=="single-pass"):
 
             for readset in self.readsets:
-                trim_file_prefix = os.path.join(self.output_dir, "trim", readset.sample.name, readset.name + ".trim.")
+                trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
                 alignment_directory = os.path.join("alignment", readset.sample.name)
                 # All the input files should copy to dragen work folder because IO operations with default locations
                 # are really slow or have permission issues. After processing files all the files should move back to
@@ -969,7 +970,7 @@ pandoc \\
                 dragen_workfolder = os.path.join(config.param('dragen_align', 'work_folder'), "alignment", readset.name)
                 dragen_tmp_bam = os.path.join(dragen_workfolder, readset.name + ".bam")
                 # dragen output file name
-                dragen_bam = os.path.join(alignment_directory, readset.sample.name, readset.name + ".sorted.bam")
+                dragen_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
                 #output_bam = dragen_bam
                 index_bam = dragen_bam + ".bai"
 
@@ -977,7 +978,7 @@ pandoc \\
                 if readset.run_type == "PAIRED_END":
                     candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
                     if readset.fastq1 and readset.fastq2:
-                        candidate_input_files.append([readset.fastq1, readset.fastq2])
+                         candidate_input_files.append([readset.fastq1, readset.fastq2])
                     if readset.bam:
                         candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
                                                       re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
@@ -987,8 +988,8 @@ pandoc \\
                     dragen_tmp_fastq2 = os.path.join(dragen_inputfolder, readset.name + ".pair2.fastq.gz")
                     cp_dragen_fastq_job = concat_jobs([
                         bashc.mkdir(dragen_inputfolder, output_dependency=[dragen_bam]),
-                        bashc.cp(os.path.abspath(fastq1), dragen_tmp_fastq1, output_dependency=[dragen_bam]),
-                        bashc.cp(os.path.abspath(fastq2), dragen_tmp_fastq2, output_dependency=[dragen_bam])
+                        bashc.cp(os.path.abspath(fastq1), dragen_tmp_fastq1, input_dependency=[fastq1], output_dependency=[dragen_bam]),
+                        bashc.cp(os.path.abspath(fastq2), dragen_tmp_fastq2, input_dependency=[fastq2], output_dependency=[dragen_bam])
                     ], name="dragen_copy_fastq." + readset.name, samples=[readset.sample])
                     rm_dragen_fastq_job = concat_jobs([
                         bashc.rm(dragen_tmp_fastq1, recursive=True, force=True, input_dependency=[fastq1],
@@ -1073,7 +1074,7 @@ pandoc \\
 
     def dragen_methylation_call(self):
         """
-        call methylation with dragen using the 2nd run of dragen alignment
+        Call methylation with dragen using the 2nd run of Dragen alignment
 
         """
        # duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='string').lower()
@@ -1090,7 +1091,7 @@ pandoc \\
             dragen_tmp_bam = os.path.join(dragen_inputfolder, sample.name + ".sorted.bam")
             cp_dragen_bam_job = concat_jobs([
                 bashc.mkdir(dragen_inputfolder, output_dependency=[output_report]),
-                bashc.cp(os.path.abspath(dragen_bam), dragen_tmp_bam, output_dependency=[output_report])
+                bashc.cp(os.path.abspath(dragen_bam), dragen_tmp_bam, input_dependency=[dragen_bam], output_dependency=[output_report])
             ], name="dragen_copy_bam." + sample.name, samples=[sample])
             rm_dragen_bam_job = concat_jobs([
                 bashc.rm(dragen_tmp_bam, recursive=True, force=True, input_dependency=[dragen_bam],
@@ -1123,7 +1124,7 @@ pandoc \\
             )
         return jobs
 
-    def symlink_dedub(self):
+    def sort_dragen_sam(self):
         """
         Creates symlink from dragen output bam to plug in to other steps (same file as the picard output bam files)
         """
@@ -1138,31 +1139,37 @@ pandoc \\
 
                 input_file = os.path.join(alignment_directory, sample.name + ".sorted.bam")
                 output_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
+                output_file_index = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam.bai")
                 # empty metric file will be created for "ihec_sample_metrics_report" steps. Otherwise it will be failed.
                 # Therefore added an empty file with ESTIMATED_LIBRARY_SIZE = NA
                 # so the dragen protocol will not estimate the library size
                 empty_metric_file= os.path.join(alignment_directory, sample.name + ".sorted.dedup.metrics")
 
                 jobs.append(
-                    concat_jobs([
 
-                        bashc.ln(
+                    concat_jobs([
+                        bashc.mkdir(alignment_directory),
+                        picard.sort_sam(
                             input_file,
-                            output_file,
-                            self.output_dir
-                        )
-                        ,
-                        Job(output_files=[empty_metric_file], command="""\
+                            output_file
+                        ), Job(output_files=[empty_metric_file], command="""\
                         printf "ESTIMATED_LIBRARY_SIZE\\nNA" > {output}""".
                             format(
                             output=empty_metric_file
                         ) )
+                    ], name="picard_sort_sam." + sample.name, samples=[sample]
 
-                    ],
-                        name="symlink_merge_sorted_dedub." + sample.name,
-                        samples=[sample]
                     )
+
                 )
+                jobs.append(
+                    concat_jobs([
+                        picard.build_bam_index(
+                        output_file,
+                        output_file_index
+                    )
+                ], name = "build_bam_index." + sample.name, samples = [sample]
+                ))
         else:
             log.info("skipping symlinks creation for duplicate marked bams....")
 
@@ -1171,7 +1178,7 @@ pandoc \\
     def split_dragen_methylation_report(self):
 
         """
-        Dragen methylation report contain all three methylation contex. To create combined CSV CpGs should be extracted
+        Dragen methylation report contains all three methylation context. To create combined CSV CpGs should be extracted
         """
 
         jobs = []
@@ -1274,7 +1281,7 @@ pandoc \\
             self.dragen_align,
             self.add_bam_umi,               # step 5
             self.sambamba_merge_sam_files,
-            self.symlink_dedub,
+            self.sort_dragen_sam,
             self.metrics,
             self.dragen_methylation_call,
             self.split_dragen_methylation_report, # step 10

@@ -167,8 +167,9 @@ def dragen_bedgraph(input,output):
         [output],
         [],
         command="""\
-awk -v OFS="\\t" 'BEGIN {{print "track type=bedGraph"}} {{if(NR!=1){{print $1,$2,$3, $NF }} }} \\
-{input} | gzip -c > {output}'""".format(
+awk -v OFS="\\t" 'BEGIN {{print "track type=bedGraph"}} {{if(NR!=1){{print $1,$2,$3, $NF }} }}' \\
+{input} | \\
+gzip -c > {output}""".format(
             input=input,
             output=output
         )
