@@ -7,7 +7,7 @@ Methyl-Seq Pipeline
 The GenPIpes Methyl-Seq pipeline now has three protocols. 
  1. bismark
  2. hybrid
- 3. dragen uses Bismark to align reads to the 
+ 3. dragen
 
 The "bismark" protocol uses Bismark to align reads to the reference genome. 
 Picard is used to mark and remove duplicates and generate metric files. The
