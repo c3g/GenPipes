@@ -3825,7 +3825,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             output_cna,
                             input_cpsr,
                             pcgr_directory,
-                            tumor_pair.tumor.name
+                            tumor_pair.name
                         )
                     ],
                     name="report_pcgr." + tumor_pair.name,
