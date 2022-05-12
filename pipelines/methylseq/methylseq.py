@@ -59,7 +59,7 @@ from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
 
-class MethylSeqRaw(dnaseq.DnaSeqRaw):
+class MethylSeq(dnaseq.DnaSeqRaw):
     """
     Methyl-Seq Pipeline
     ================
@@ -102,7 +102,9 @@ class MethylSeqRaw(dnaseq.DnaSeqRaw):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
-        super(MethylSeqRaw, self).__init__(protocol)
+        self.argparser.add_argument("-t", "--type", help="MethylSeq analysis type", choices=["bismark", "hybrid", "dragen"],
+                                    default="bismark")
+        super(MethylSeq, self).__init__(protocol)
 
     def bismark_align(self):
         """
@@ -1281,15 +1283,6 @@ pandoc \\
             self.cram_output
             ]
         ]
-
-
-class MethylSeq(MethylSeqRaw):
-    def __init__(self, protocol=None):
-        self._protocol = protocol
-        # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="MethylSeq analysis type", choices=["bismark", "hybrid", "dragen"],
-                                    default="bismark")
-        super(MethylSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
     argv = sys.argv
