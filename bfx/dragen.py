@@ -35,8 +35,10 @@ from bfx.readset import parse_illumina_readset_file
 
 
 def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libraryName, readGroupID,
-                      input_dependency=None, output_dependency=None, protocol="hybrid"):
-   # print(protocol)
+                      protocol="hybrid"):
+    output_prefix = readsetName + ".sorted"
+    outputs = output_prefix + ".bam"
+
     if protocol == "dragen":
 
         duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='boolean')
@@ -45,23 +47,14 @@ def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libra
         duplicate_marking = "false"
         remove_duplicates = "false"
 
-    if input_dependency is not None:
-        inputs = input_dependency
+    if fastq2 is not None:
+        inputs = [fastq1, fastq2]
     else:
-        if fastq2 is not None:
-            inputs = [fastq1, fastq2]
-        else:
-            inputs = [fastq1]
-    if output_dependency is not None:
-        outputs = output_dependency
-   # if duplicate_marking == "true":
-        ##outputs = [os.path.join(output_dir, readsetName + ".sorted.bam")]
-        output_prefix = readsetName + ".sorted"
-    #else:
-     #   output_prefix = readsetName
+        inputs = [fastq1]
+
     return Job(
         inputs,
-        outputs,
+        [outputs],
         [],
         command="""\
 dragen_reset && \\
@@ -87,7 +80,6 @@ dragen --enable-methylation-calling true \\
             met_protocol=config.param('dragen_align', 'methylation_protocol', param_type='string'),
             reference=config.param('dragen_align', 'reference', param_type='string'),
             ct_report="true" if config.param('dragen_align', 'CTreport', param_type='boolean') else "false",
-           # sort=config.param('dragen_align', 'sort', param_type='string'),
             sort="true",
             mapping_implementation=config.param('dragen_align', 'mapping_implementation', param_type='string'),
             duplicate_marking=duplicate_marking,
@@ -102,22 +94,14 @@ dragen --enable-methylation-calling true \\
     )
 
 
-def call_methylation(bam, output_dir, sample_name,
-                      input_dependency=None, output_dependency=None):
+def call_methylation(bam, output_dir, sample_name, output):
 
-    if input_dependency is not None:
-        inputs = input_dependency
-    else:
-        inputs = [bam]
-    if output_dependency is not None:
-        outputs = output_dependency
-        output_prefix = sample_name
-    else:
-        #TODO complete this to get output file path
-        outputs = []
+    inputs = [bam]
+    output_prefix = sample_name
+
     return Job(
         inputs,
-        outputs,
+        [output],
         [],
         command="""\
 dragen_reset && \\
