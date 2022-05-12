@@ -33,7 +33,8 @@ def mkdir(folder, remove=False, output_dependency=None):
         outputs,
         [],
         command="""\
-mkdir -p {directory}""".format(
+mkdir -p {directory} && \\
+touch {directory}""".format(
             directory=folder
         ),
         removable_files=[folder] if remove else []
@@ -68,7 +69,7 @@ ln -s -f \\
         removable_files=[link]
     )
 
-def mv(source, target, input_dependency=None, output_dependency=None):
+def mv(source, target, force=False, input_dependency=None, output_dependency=None):
     if input_dependency is not None:
         inputs=input_dependency
     else:
@@ -82,13 +83,15 @@ def mv(source, target, input_dependency=None, output_dependency=None):
         outputs,
         [],
         command="""\
-mv {source} {dest}""".format(
+mv {force}{source} \\
+   {dest}""".format(
+            force="-f " if force else "",
             source=source,
             dest=target
         )
     )
 
-def cp(source, target, recursive=False, input_dependency=None, output_dependency=None):
+def cp(source, target, recursive=False, update=False, input_dependency=None, output_dependency=None):
     if input_dependency is not None:
         inputs=input_dependency
     else:
@@ -102,10 +105,11 @@ def cp(source, target, recursive=False, input_dependency=None, output_dependency
         outputs,
         [],
         command="""\
-cp {rec} {source} {dest}""".format(
+cp {rec}{upd}'{source}' {dest}""".format(
             source=source,
             dest=target,
-            rec="-r" if recursive else ""
+            rec="-r " if recursive else "",
+            upd="-u " if update else ""
         )
     )
 

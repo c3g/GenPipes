@@ -994,5 +994,3 @@ Rscript $R_TOOLS/somaticSignatureAlexandrov.R \\
         output=output
         ),removable_files=remove_file
     )
-
-
