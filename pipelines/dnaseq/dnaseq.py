@@ -525,7 +525,9 @@ END
             ]
             candidate_readset_bams.append([readset.bam for readset in sample.readsets if readset.bam])
             readset_bams = self.select_input_files(candidate_readset_bams)
+
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
@@ -534,21 +536,20 @@ END
                 sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
     
                 jobs.append(
-                    concat_jobs([
-                        bash.mkdir(
-                            os.path.dirname(sample_bam)
-                        ),
-                        bash.ln(
-                            readset_bam,
-                            sample_bam,
-                            self.output_dir
-                        ),
-                        bash.ln(
-                            readset_index,
-                            sample_index,
-                            self.output_dir
-                        )
-                    ],
+                    concat_jobs(
+                        [
+                            mkdir_job,
+                            bash.ln(
+                                readset_bam,
+                                sample_bam,
+                                self.output_dir
+                            ),
+                            bash.ln(
+                                readset_index,
+                                sample_index,
+                                self.output_dir
+                            )
+                        ],
                         name="symlink_readset_sample_bam." + sample.name,
                         samples=[sample]
                     )
@@ -556,89 +557,30 @@ END
 
             elif len(sample.readsets) > 1:
                 jobs.append(
-                    concat_jobs([
-                        bash.mkdir(
-                            os.path.dirname(sample_bam)
-                        ),
-                        sambamba.merge(
-                            readset_bams,
-                            sample_bam
-                        )
-                    ],
-                        name="sambamba_merge_sam_files." + sample.name,
-                        samples=[sample]
-                    )
-                )
-        return jobs
-
-    def picard_merge_sam_files(self):
-        """
-        BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
-
-        This step takes as input files:
-
-        1. Aligned and sorted BAM output files from previous bwa_mem_sambamba_sort_sam step if available
-        2. Else, BAM files from the readset file
-        """
-
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-
-            # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
-            candidate_readset_bams = [
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
-            ]
-            if readset.bam:
-                candidate_readset_bams.append([readset.bam for readset in sample.readsets])
-            readset_bams = self.select_input_files(candidate_readset_bams)
-
-            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
-
-            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            if len(sample.readsets) == 1:
-                readset_bam = readset_bams[0]
-                readset_index = re.sub("\.bam$", ".bai", readset_bam)
-                sample_index = re.sub("\.bam$", ".bai", sample_bam)
-    
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(
-                            os.path.dirname(sample_bam)
-                        ),
-                        bash.ln(
-                            readset_bam,
-                            sample_bam,
-                            self.output_dir
-                        ),
-                        bash.ln(
-                            readset_index,
-                            sample_index,
-                            self.output_dir
-                        )
-                    ],
-                        name="symlink_readset_sample_bam." + sample.name,
-                        samples=[sample]
-                    )
-                )
-
-            elif len(sample.readsets) > 1:
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(
-                            os.path.dirname(sample_bam)
-                        ),
-                        sambamba.merge(
-                            readset_bams,
-                            sample_bam
+                    concat_jobs(
+                        [
+                            mkdir_job,
+                            sambamba.merge(
+                                readset_bams,
+                                sample_bam
                             )
                         ],
                         name="sambamba_merge_sam_files." + sample.name,
                         samples=[sample]
-                        )
                     )
+                )
+
+            # Extract unmapped reads from the merged sample bam file
+            sample_unmapped_bam = os.path.join(alignment_directory, sample.name + ".unmapped.bam")
+            jobs.append(
+                sambamba.view(
+                    sample_bam,
+                    sample_unmapped_bam,
+                    config.param("sambamba_extract_unmapped", "options")
+                ),
+                name="sambamba_extract_unmapped." + sample.name,
+                samples=[sample]
+            )
 
         return jobs
 
@@ -1037,19 +979,22 @@ END
                         interval_list
                     )
                     job.name = "interval_list." + os.path.basename(coverage_bed)
+                    job.sampes [sample]
                     jobs.append(job)
 
             jobs.append(
-                concat_jobs([
-                    gatk4.base_recalibrator(
-                        input,
-                        base_recalibrator_output,
-                        intervals=interval_list
-                        )
+                concat_jobs(
+                    [
+                        gatk4.base_recalibrator(
+                            input,
+                            base_recalibrator_output,
+                            intervals=interval_list
+                            )
                     ],
-                    name="gatk_base_recalibrator." + sample.name
-                    )
+                    name="gatk_base_recalibrator." + sample.name,
+                    samples=[sample]
                 )
+            )
             
             jobs.append(
                 concat_jobs([
@@ -1059,9 +1004,32 @@ END
                         base_recalibrator_output
                         ),
                     ],
-                    name="gatk_print_reads." + sample.name
+                    name="gatk_print_reads." + sample.name,
+                    samples=[sample]
                 )
             )
+
+            # Merge unmapped reads to recal.bam
+            sample_unmapped_bam = os.path.join("alignment", sample.name, sample.name + ".unmapped.bam")
+            jobs.append(
+                sambamba.merge(
+                    [
+                        print_reads_output,
+                        sample_unmapped_bam
+                    ],
+                    print_reads_output
+                ),
+                name="sambamba_merge_unmapped." + sample.name,
+                samples=[sample]
+            )
+
+for i in `ls alignment/*/*.recal.bam` ; \
+do UNM=`echo $i | sed -e 's#sorted.dup.recal#unmapped#g'` ; \
+OUT=`echo $i | sed -e 's#bam#unmapped.bam#g'` ; \
+ID=`echo $i | cut -d/ -f2` ; \
+echo "echo \"module load mugqic/sambamba/0.8.1 && sambamba merge -t 7 $OUT $i $UNM\" \
+| qsub -m ae -M $JOB_MAIL -W umask=0002 -d `pwd` -j oe -N merge.$ID -l walltime=12:00:0 -q centos7 -l qos=project -l nodes=1:ppn=8" ; \
+done
 
         return jobs
 
