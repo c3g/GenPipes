@@ -66,7 +66,7 @@ dragen --enable-methylation-calling true \\
     --output-file-prefix {output_prefix} \\
     --methylation-generate-cytosine-report {ct_report} \\
     --methylation-mapping-implementation {mapping_implementation} \\
-    --enable-sort {sort} \\
+    --enable-sort true \\
     --enable-duplicate-marking {duplicate_marking} \\
     --RGID {rgid} \\
     --RGLB {rglb} \\
@@ -80,7 +80,6 @@ dragen --enable-methylation-calling true \\
             met_protocol=config.param('dragen_align', 'methylation_protocol', param_type='string'),
             reference=config.param('dragen_align', 'reference', param_type='string'),
             ct_report="true" if config.param('dragen_align', 'CTreport', param_type='boolean') else "false",
-            sort="true",
             mapping_implementation=config.param('dragen_align', 'mapping_implementation', param_type='string'),
             duplicate_marking=duplicate_marking,
             remove_duplicates=remove_duplicates,
@@ -110,20 +109,16 @@ dragen --enable-methylation-calling true \\
     --ref-dir {reference} \\
     --output-directory {output_dir} \\
     --output-file-prefix {output_prefix} \\
-    --methylation-reports-only {ct_report} \\
-    --methylation-generate-cytosine-report {ct_report} \\
-    --methylation-generate-mbias-report {mbias_report} \\
-    --enable-sort {sort} \\
-    --methylation-match-bismark {match_bismark} \\
+    --methylation-reports-only true \\
+    --methylation-generate-cytosine-report true \\
+    --methylation-generate-mbias-report true \\
+    --enable-sort false \\
+    --methylation-match-bismark true \\
     -b {bam} {other_options}""".format(
             output_dir=output_dir,
             output_prefix=output_prefix,
             dragen_tmp=config.param('dragen_align', 'tmp_dragen', param_type='string'),
             reference=config.param('dragen_align', 'reference', param_type='string'),
-            ct_report="true",
-            sort="false",
-            mbias_report="true",
-            match_bismark="true",
             mapping_implementation=config.param('dragen_align', 'mapping_implementation', param_type='string'),
             other_options=config.param('dragen_methylation_call', 'other_options', param_type='string', required=False),
             bam=bam
