@@ -1023,14 +1023,6 @@ END
                 samples=[sample]
             )
 
-for i in `ls alignment/*/*.recal.bam` ; \
-do UNM=`echo $i | sed -e 's#sorted.dup.recal#unmapped#g'` ; \
-OUT=`echo $i | sed -e 's#bam#unmapped.bam#g'` ; \
-ID=`echo $i | cut -d/ -f2` ; \
-echo "echo \"module load mugqic/sambamba/0.8.1 && sambamba merge -t 7 $OUT $i $UNM\" \
-| qsub -m ae -M $JOB_MAIL -W umask=0002 -d `pwd` -j oe -N merge.$ID -l walltime=12:00:0 -q centos7 -l qos=project -l nodes=1:ppn=8" ; \
-done
-
         return jobs
 
     def sym_link_final_bam(self):
