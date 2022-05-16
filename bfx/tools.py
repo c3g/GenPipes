@@ -198,7 +198,7 @@ def dict2beds(dictionary,beds):
             ['dict2beds', 'module_python']
         ],
         command="""\
-dict2BEDs.py \\
+python3 $PYTHON_TOOLS/dict2BEDs.py \\
   --dict {dictionary} \\
   --beds {beds}""".format(
             dictionary=dictionary if dictionary else config.param('dict2beds', 'genome_dictionary', param_type='filepath'),
@@ -233,7 +233,7 @@ def fix_varscan_output(input, output=None, options=None):
             ['fix_varscan_output', 'module_python']
         ],
         command="""\
-python $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
+python3 $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
     {output}""".format(
             options=options if options else "",
             input=input if input else "",
@@ -250,7 +250,7 @@ def fix_genotypes_strelka(input, output, normal, tumor):
                 ['DEFAULT', 'module_python']
             ],
             command="""\
-	python $PYTHON_TOOLS/update_genotypes_strelka.py \\
+	python3 $PYTHON_TOOLS/update_genotypes_strelka.py \\
 	    -i {input} \\
 	    -o {output} \\
 	    -n {normal} \\
@@ -261,6 +261,30 @@ def fix_genotypes_strelka(input, output, normal, tumor):
                 tumor=tumor,
             )
         )
+
+def format2pcgr(input, output, filter, variant_type, tumor):
+    return Job(
+        [input],
+        [output],
+        [
+            ['DEFAULT', 'module_mugqic_tools'],
+            ['DEFAULT', 'module_python']
+        ],
+        command="""\
+python3 $PYTHON_TOOLS/format2pcgr.py \\
+	-i {input} \\
+	-o {output} \\
+	-f {filter} \\
+	-v {variant_type} \\
+	-t {tumor}""".format(
+            input=input if input else "",
+            output=output if input else "",
+            filter=filter,
+            variant_type=variant_type,
+            tumor=tumor,
+        )
+    )
+
 def cpg_cov_stats(input, output):
     return Job(
         [input],
