@@ -5096,7 +5096,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             Job(
                                 [coverage_bed],
                                 [local_coverage_bed + ".sort"],
-                                command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > "
+                                command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + "  > "
                                         + local_coverage_bed + ".sort"
                             ),
                             htslib.bgzip(
