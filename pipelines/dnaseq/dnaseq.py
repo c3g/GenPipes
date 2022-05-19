@@ -572,15 +572,14 @@ END
 
             # Extract unmapped reads from the merged sample bam file
             sample_unmapped_bam = os.path.join(alignment_directory, sample.name + ".unmapped.bam")
-            jobs.append(
-                sambamba.view(
-                    sample_bam,
-                    sample_unmapped_bam,
-                    config.param("sambamba_extract_unmapped", "options")
-                ),
-                name="sambamba_extract_unmapped." + sample.name,
-                samples=[sample]
+            unmapped_job = sambamba.view(
+                sample_bam,
+                sample_unmapped_bam,
+                config.param("sambamba_extract_unmapped", "options")
             )
+            unmapped_job.name = "sambamba_extract_unmapped." + sample.name,
+            unmapped_jobsamples = [sample]
+            jobs.append(unmapped_job)
 
         return jobs
 
