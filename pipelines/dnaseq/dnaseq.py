@@ -965,7 +965,7 @@ END
             base_recalibrator_output = duplicate_file_prefix + "recalibration_report.grp"
 
             interval_list = None
-            
+
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 sample.readsets[0]
             )
@@ -1010,16 +1010,28 @@ END
 
             # Merge unmapped reads to recal.bam
             sample_unmapped_bam = os.path.join("alignment", sample.name, sample.name + ".unmapped.bam")
-            unmapped_job = sambamba.merge(
-                [
-                    print_reads_output,
-                    sample_unmapped_bam
-                ],
-                print_reads_output
+            jobs.append(
+                concat_jobs(
+                    [
+                        sambamba.merge(
+                            [
+                                print_reads_output,
+                                sample_unmapped_bam
+                            ],
+                            re.sub(".bam", ".no_unmapped.bam", print_reads_output)
+                        ),
+                        bash.rm(print_reads_output),
+                        bash.mv(
+                            re.sub(".bam", ".no_unmapped.bam", print_reads_output),
+                            print_reads_output
+                        )
+                    ],
+                    input_dependency=[print_reads_output, sample_unmapped_bam],
+                    output_dependency=[print_reads_output],
+                    name="sambamba_merge_unmapped." + sample.name,
+                    samples=[sample]
+                )
             )
-            unmapped_job.name = "sambamba_merge_unmapped." + sample.name
-            unmapped_job.samples = [sample]
-            jobs.append(unmapped_job)
 
         return jobs
 
