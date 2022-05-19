@@ -577,8 +577,8 @@ END
                 sample_unmapped_bam,
                 config.param("sambamba_extract_unmapped", "options")
             )
-            unmapped_job.name = "sambamba_extract_unmapped." + sample.name,
-            unmapped_jobsamples = [sample]
+            unmapped_job.name = "sambamba_extract_unmapped." + sample.name
+            unmapped_job.samples = [sample]
             jobs.append(unmapped_job)
 
         return jobs
