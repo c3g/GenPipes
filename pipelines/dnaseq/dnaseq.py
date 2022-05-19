@@ -1010,17 +1010,16 @@ END
 
             # Merge unmapped reads to recal.bam
             sample_unmapped_bam = os.path.join("alignment", sample.name, sample.name + ".unmapped.bam")
-            jobs.append(
-                sambamba.merge(
-                    [
-                        print_reads_output,
-                        sample_unmapped_bam
-                    ],
-                    print_reads_output
-                ),
-                name="sambamba_merge_unmapped." + sample.name,
-                samples=[sample]
+            unmapped_job = sambamba.merge(
+                [
+                    print_reads_output,
+                    sample_unmapped_bam
+                ],
+                print_reads_output
             )
+            unmapped_job.name = "sambamba_merge_unmapped." + sample.name
+            unmapped_job.samples = [sample]
+            jobs.append(unmapped_job)
 
         return jobs
 
