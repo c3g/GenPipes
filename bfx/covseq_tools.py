@@ -33,6 +33,7 @@ def covid_collect_metrics(readset_file, covid_collect_metrics_inputs, ini_sectio
                 input_files=covid_collect_metrics_inputs,
                 output_files=[os.path.join("metrics", "metrics.csv"), os.path.join("metrics", "host_contamination_metrics.tsv"), os.path.join("metrics", "host_removed_metrics.tsv"), os.path.join("metrics", "kraken2_metrics.tsv")],
                 module_entries=[
+                    [ini_section, 'module_samtools'],
                     [ini_section, 'module_R'],
                     [ini_section, 'module_CoVSeQ_tools']
                 ],
