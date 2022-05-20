@@ -1010,6 +1010,12 @@ END
 
             # Merge unmapped reads to recal.bam
             sample_unmapped_bam = os.path.join("alignment", sample.name, sample.name + ".unmapped.bam")
+            [print_reads_index_output] = self.select_input_files(
+                [
+                    [re.sub(".bam", ".bam.bai", print_reads_output)],
+                    [re.sub(".bam", ".bai", print_reads_output)]
+                ]
+            )
             jobs.append(
                 concat_jobs(
                     [
@@ -1021,13 +1027,18 @@ END
                             re.sub(".bam", ".no_unmapped.bam", print_reads_output)
                         ),
                         bash.rm(print_reads_output),
+                        bash.rm(print_reads_index_output),
                         bash.mv(
                             re.sub(".bam", ".no_unmapped.bam", print_reads_output),
                             print_reads_output
+                        ),
+                        sambamba.index(
+                            print_reads_output,
+                            print_reads_index_output
                         )
                     ],
                     input_dependency=[print_reads_output, sample_unmapped_bam],
-                    output_dependency=[print_reads_output],
+                    output_dependency=[print_reads_output, print_reads_index_output],
                     name="sambamba_merge_unmapped." + sample.name,
                     samples=[sample]
                 )
