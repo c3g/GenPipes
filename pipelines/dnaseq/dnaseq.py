@@ -1010,12 +1010,7 @@ END
 
             # Merge unmapped reads to recal.bam
             sample_unmapped_bam = os.path.join("alignment", sample.name, sample.name + ".unmapped.bam")
-            [print_reads_index_output] = self.select_input_files(
-                [
-                    [re.sub(".bam", ".bam.bai", print_reads_output)],
-                    [re.sub(".bam", ".bai", print_reads_output)]
-                ]
-            )
+            print_reads_index_output = re.sub(".bam", ".bam.bai", print_reads_output)
             jobs.append(
                 concat_jobs(
                     [
