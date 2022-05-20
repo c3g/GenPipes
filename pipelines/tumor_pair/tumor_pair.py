@@ -1060,15 +1060,22 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
                         config.param('merge_varscan2', 'tabix_options', required=False)
                     ),
-                    bcftools.view(
-                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
-                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
-                        config.param('merge_varscan2', 'germline_filter_options')
-                    ),
-                    htslib.tabix(
-                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
-                        config.param('merge_varscan2', 'tabix_options', required=False)
-                    ),
+                    pipe_jobs([
+                        bcftools.view(
+                            os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
+                            None,
+                            config.param('merge_varscan2', 'germline_filter_options')
+                        ),
+                        bcftools.view(
+                            None,
+                            None,
+                            config.param('merge_varscan2', 'genotype_filter_options')
+                        ),
+                        htslib.bgzip_tabix(
+                            None,
+                            os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
+                        ),
+                    ]),
                 ], name = "merge_varscan2." + tumor_pair.name))
 
             else:
@@ -1117,15 +1124,22 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vcf.gz"),
                         config.param('merge_varscan2', 'tabix_options', required=False)
                     ),
-                    bcftools.view(
-                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
-                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
-                        config.param('merge_varscan2', 'germline_filter_options')
-                    ),
-                    htslib.tabix(
-                        os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
-                        config.param('merge_varscan2', 'tabix_options', required=False)
-                    ),
+                    pipe_jobs([
+                        bcftools.view(
+                            os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz"),
+                            None,
+                            config.param('merge_varscan2', 'germline_filter_options')
+                        ),
+                        bcftools.view(
+                            None,
+                            None,
+                            config.param('merge_varscan2', 'genotype_filter_options')
+                        ),
+                        htslib.bgzip_tabix(
+                            None,
+                            os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vcf.gz"),
+                        ),
+                    ]),
                 ], name="merge_varscan2." + tumor_pair.name))
 
         return jobs
@@ -2100,7 +2114,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         bcftools.view(
                             all_output_vt,
                             None,
-                            config.param('varscan2_readcount_fpfilter', 'somatic_filter_options')
+                            config.param('merge_varscan2', 'somatic_filter_options')
                         ),
                         htslib.bgzip_tabix(
                             None,
@@ -2111,12 +2125,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         bcftools.view(
                             all_output_vt,
                             None,
-                            config.param('varscan2_readcount_fpfilter', 'germline_filter_options')
+                            config.param('merge_varscan2', 'germline_filter_options')
                         ),
                         bcftools.view(
                             None,
                             None,
-                            config.param('varscan2_readcount_fpfilter', 'genotype_filter_options')
+                            config.param('merge_varscan2', 'genotype_filter_options')
                         ),
                         htslib.bgzip_tabix(
                             None,
