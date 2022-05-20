@@ -161,13 +161,13 @@ def base_recalibrator(input, output, intervals=None):
         return gatk.base_recalibrator(input, output, intervals)
     else:
         return Job(
-        [input, intervals],
-        [output],
-        [
-            ['gatk_base_recalibrator', 'module_java'],
-            ['gatk_base_recalibrator', 'module_gatk']
-        ],
-        command="""\
+            [input, intervals],
+            [output],
+            [
+                ['gatk_base_recalibrator', 'module_java'],
+                ['gatk_base_recalibrator', 'module_gatk']
+            ],
+            command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   BaseRecalibratorSpark {options} \\
   --input {input} \\
@@ -224,14 +224,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --bqsr-recal-file {bqsr_file} \\
   --spark-master local[{threads}] \\
   --output {output}""".format(
-            tmp_dir=config.param('gatk_apply_bqsr', 'tmp_dir'),
-            java_other_options=config.param('gatk_apply_bqsr', 'gatk4_java_options'),
-            ram=config.param('gatk_apply_bqsr', 'ram'),
-            options=config.param('gatk_apply_bqsr', 'options'),
-            threads=config.param('gatk_apply_bqsr', 'threads', param_type='int'),
-            input=input,
-            bqsr_file=base_quality_score_recalibration,
-            output=output,
+                tmp_dir=config.param('gatk_apply_bqsr', 'tmp_dir'),
+                java_other_options=config.param('gatk_apply_bqsr', 'gatk4_java_options'),
+                ram=config.param('gatk_apply_bqsr', 'ram'),
+                options=config.param('gatk_apply_bqsr', 'options'),
+                threads=config.param('gatk_apply_bqsr', 'threads', param_type='int'),
+                input=input,
+                bqsr_file=base_quality_score_recalibration,
+                output=output,
             )
         )
 

@@ -996,12 +996,17 @@ END
             )
             
             jobs.append(
-                concat_jobs([
-                    gatk4.print_reads(
-                        input,
-                        print_reads_output,
-                        base_recalibrator_output
-                        ),
+                concat_jobs(
+                    [
+                        gatk4.print_reads(
+                            input,
+                            re.sub(".bam", ".no_unmapped.bam", print_reads_output),
+                            base_recalibrator_output
+                        )
+                    ],
+                    removable_files=[
+                        re.sub(".bam", ".no_unmapped.bam", print_reads_output),
+                        re.sub(".bam", ".no_unmapped.bam.bai", print_reads_output)
                     ],
                     name="gatk_print_reads." + sample.name,
                     samples=[sample]
@@ -1016,15 +1021,9 @@ END
                     [
                         sambamba.merge(
                             [
-                                print_reads_output,
+                                re.sub(".bam", ".no_unmapped.bam", print_reads_output),
                                 sample_unmapped_bam
                             ],
-                            re.sub(".bam", ".no_unmapped.bam", print_reads_output)
-                        ),
-                        bash.rm(print_reads_output),
-                        bash.rm(print_reads_index_output),
-                        bash.mv(
-                            re.sub(".bam", ".no_unmapped.bam", print_reads_output),
                             print_reads_output
                         ),
                         sambamba.index(
