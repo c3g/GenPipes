@@ -23,7 +23,7 @@
 from core.config import *
 from core.job import *
 
-def compute_effects(input, output, split=False, cancer_sample_file=[], options=[]):
+def compute_effects(input, output, split=False, cancer_sample_file=[], options=[], ini_section='compute_effects'):
     output_stats = output + ".stats.csv"
     output_stats_html = output + ".stats.html"
     job = Job(
@@ -43,14 +43,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
   -stats {output_stats_html} \\
   {reference_snpeff_genome} \\
   {input}{output}""".format(
-        tmp_dir=config.param('compute_effects', 'tmp_dir'),
-        java_other_options=config.param('compute_effects', 'java_other_options'),
-        ram=config.param('compute_effects', 'ram'),
+        tmp_dir=config.param(ini_section, 'tmp_dir'),
+        java_other_options=config.param(ini_section, 'java_other_options'),
+        ram=config.param(ini_section, 'ram'),
         options=options if options else "",
         cancer_sample_file="-cancerSamples " + cancer_sample_file if cancer_sample_file else "",
         output_stats=output_stats,
         output_stats_html=output_stats_html,
-        reference_snpeff_genome=config.param('compute_effects', 'snpeff_genome'),
+        reference_snpeff_genome=config.param(ini_section, 'snpeff_genome'),
         input=input,
         output=" \\\n  > " + output if output else ""
         )

@@ -1232,6 +1232,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     input_somatic,
                     output_somatic,
                     cancer_sample_file=cancer_pair_filename,
+                    ini_section='compute_cancer_effects_somatic',
                     options=config.param('compute_cancer_effects_somatic', 'options')
                 ),
                 htslib.bgzip_tabix(
@@ -1246,6 +1247,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     input_germline,
                     output_germline,
                     cancer_sample_file=cancer_pair_filename,
+                    ini_section='compute_cancer_effects_germline',
                     options=config.param('compute_cancer_effects_germline', 'options')
                 ),
                 htslib.bgzip_tabix(
