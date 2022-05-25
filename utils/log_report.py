@@ -158,8 +158,7 @@ class JobStat(object):
         n = 0
         lines_to_parse = []
         if os.path.isfile(log_file_path):  # Make sure the file exists
-            for line in open(log_file_path):
-
+            for line in open(log_file_path, encoding='utf-8', errors='ignore'):
                 if "SLURM FAKE PROLOGUE" in line:
                     n = 0
                     to_parse = True
