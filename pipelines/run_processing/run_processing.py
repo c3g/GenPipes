@@ -214,8 +214,6 @@ class RunProcessing(common.MUGQICPipeline):
                     self._run_id = self.args.run_id
                 else:
                     rundir_basename = os.path.basename(self.run_dir.rstrip('/'))
-                    log.error(rundir_basename)
-                    log.error(self.args.type)
                     if self.args.type == 'mgig400' and "_" in rundir_basename:
                         [junk_food, self._run_id] = rundir_basename.split("_")
                     if self.args.type == 'mgit7':
@@ -1835,7 +1833,6 @@ class RunProcessing(common.MUGQICPipeline):
             # Loop over all the steps of the pipeline
             step_list = [step for step in self.step_list if step.jobs]
             for step in step_list:
-                log.error(step.name)
                 report_step_jobs = []
                 if step.name in ['basecall', 'fastq', 'index']:
                     step_report_files = list(set([report_file for readset in self.readsets[lane] for report_file in readset.report_files[step.name] if step.name in readset.report_files]))
