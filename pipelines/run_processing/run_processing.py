@@ -214,8 +214,10 @@ class RunProcessing(common.MUGQICPipeline):
                     self._run_id = self.args.run_id
                 else:
                     rundir_basename = os.path.basename(self.run_dir.rstrip('/'))
-                    if "_" in rundir_basename:
+                    if self.args.type == 'mgig400' and "_" in rundir_basename:
                         [junk_food, self._run_id] = rundir_basename.split("_")
+                    if self.args.type == 'mgit7':
+                        self._run_id = rundir_basename
                     else:
                         _raise(SanitycheckError("Error: Run ID could not be parsed from the RUN folder : " + self.run_dir))
         return self._run_id
