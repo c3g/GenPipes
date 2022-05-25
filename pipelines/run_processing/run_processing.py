@@ -586,7 +586,7 @@ class RunProcessing(common.MUGQICPipeline):
                             {
                                 "sample_name": readset.sample.name,
                                 "barcodes": readset.indexes,
-                                "species": readset.species if readset.species and not readset.species == 'N/A' else readset.reference,
+                                "species": readset.genomic_database if readset.genomic_database and not readset.genomic_database == 'N/A' else readset.species,
                                 "fastq_1": readset.fastq1,
                                 "fastq_2": readset.fastq2 if self.is_paired_end[lane] else None,
                                 "bam": readset.bam + ".bam" if readset.bam else None,
