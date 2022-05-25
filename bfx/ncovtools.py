@@ -49,7 +49,11 @@ module purge && \\
 module load {ncovtools} && \\
 echo "Preparing to run ncov_tools..." && \\
 ln -sf {reference_genome} {ncovtools_directory}/{reference_genome_file} && \\
-NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg|neg" {readset_file} | awk '{{pwet=pwet", ""\\""$1"\\""}} END {{print substr(pwet,2)}}') && \\
+if ! grep -Ei "((negctrl|ext)|ntc)|ctrl_neg|neg" {readset_file}; then
+    NEG_CTRL=""
+else
+    NEG_CTRL=$(grep -Ei "((negctrl|ext)|ntc)|ctrl_neg|neg" {readset_file} | awk '{{pwet=pwet", ""\\""$1"\\""}} END {{print substr(pwet,2)}}')
+fi && \\
 echo "data_root: data
 platform: \\"{platform}\\"
 run_name: \\"{run_name}\\"
