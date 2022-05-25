@@ -572,7 +572,7 @@ class RunProcessing(common.MUGQICPipeline):
             self._report_hash = {}
             for lane in self.lanes:
                 self._report_hash[lane] = {
-                    "version" : "2.0",
+                    "version" : "3.0",
                     "run" : self.run_id,
                     "instrument" : self.instrument,
                     "flowcell" : self.flowcell_id,
@@ -587,6 +587,7 @@ class RunProcessing(common.MUGQICPipeline):
                                 "sample_name": readset.sample.name,
                                 "barcodes": readset.indexes,
                                 "species": readset.species,
+                                "reported_sex": readset.gender,
                                 "fastq_1": readset.fastq1,
                                 "fastq_2": readset.fastq2 if self.is_paired_end[lane] else None,
                                 "bam": readset.bam + ".bam" if readset.bam else None,
@@ -2813,7 +2814,6 @@ class RunProcessing(common.MUGQICPipeline):
                     "alignment": {
                         "chimeras": None,
                         "average_aligned_insert_size": None,
-                        "reported_sex": readset.gender,
                         "pf_read_alignment_rate": None,
                         "freemix": None,
                         "inferred_sex": None,
