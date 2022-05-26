@@ -262,13 +262,13 @@ def fix_genotypes_strelka(input, output, normal, tumor):
             )
         )
 
-def format2pcgr(input, output, filter, variant_type, tumor):
+def format2pcgr(input, output, filter, variant_type, tumor, ini_section='DEFAULT'):
     return Job(
         [input],
         [output],
         [
-            ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_python']
+            [ini_section, 'module_mugqic_tools'],
+            [ini_section, 'module_python']
         ],
         command="""\
 python3 $PYTHON_TOOLS/format2pcgr.py \\

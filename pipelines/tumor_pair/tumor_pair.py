@@ -3649,6 +3649,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     config.param('filter_ensemble', 'call_filter'),
                     "germline",
                     tumor_pair.tumor.name,
+                    ini_section='filter_ensemble'
                 ),
                 pipe_jobs([
                     bcftools.view(
@@ -3743,6 +3744,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     config.param('filter_ensemble', 'call_filter'),
                     "somatic",
                     tumor_pair.tumor.name,
+                    ini_section='filter_ensemble'
                 ),
                 bcftools.view(
                     output_2caller,
