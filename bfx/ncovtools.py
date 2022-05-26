@@ -72,10 +72,10 @@ primer_prefix: \\"{primer_prefix}\\"
 assign_lineages: true" > {ncovtools_config} && \\
 echo "Running ncov_tools..." && \\
 cd {ncovtools_directory} && \\
-snakemake --unlock --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE
-snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all
-snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary
-snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis
+snakemake --unlock --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE || true && \\
+snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all || true && \\
+snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_summary || true && \\
+snakemake --rerun-incomplete --configfile {ncovtools_config_local} --cores {nb_threads} -s $NCOVTOOLS_SNAKEFILE all_qc_analysis || true && \\
 cd {output_dir} && \\
 module purge""".format(
     ncovtools=config.param(ini_section, 'module_ncovtools'),
