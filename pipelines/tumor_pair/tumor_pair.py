@@ -2112,17 +2112,15 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             all_output_vt
                         ),
                     ]),
-                    pipe_jobs([
-                        bcftools.view(
-                            all_output_vt,
-                            None,
-                            config.param('merge_varscan2', 'somatic_filter_options')
-                        ),
-                        htslib.bgzip_tabix(
-                            None,
-                            somtic_output_vt
-                        ),
-                    ]),
+                    bcftools.view(
+                        all_output_vt,
+                        somtic_output_vt,
+                        config.param('merge_varscan2', 'somatic_filter_options')
+                    ),
+                    htslib.tabix(
+                        somtic_output_vt,
+                        config.param('merge_varscan2', 'tabix_options')
+                    ),
                     pipe_jobs([
                         bcftools.view(
                             all_output_vt,
