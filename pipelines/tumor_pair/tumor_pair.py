@@ -1229,7 +1229,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 Job(
                     [input_somatic, input_germline],
                     [cancer_pair_filename], command="""\
-echo "{normal_name}\t{tumor_name}" \\
+echo -e "{normal_name}\\t{tumor_name}" \\
 > {cancer_pair_filename}""".format(
                         normal_name=tumor_pair.normal.name,
                         tumor_name=tumor_pair.tumor.name,
