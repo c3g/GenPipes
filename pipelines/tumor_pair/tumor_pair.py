@@ -1210,9 +1210,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
-            if not os.path.exists(varscan_directory):
-                os.makedirs(varscan_directory)
-
             input_somatic = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vt.vcf.gz")
             output_somatic = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vt.snpeff.vcf")
             output_somatic_gz = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vt.snpeff.vcf.gz")
@@ -1223,8 +1220,23 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                               tumor_pair.name + ".varscan2.germline.vt.snpeff.vcf.gz")
 
             cancer_pair_filename = os.path.join(varscan_directory, tumor_pair.name + '.tsv')
-            cancer_pair = open(cancer_pair_filename, 'w')
-            cancer_pair.write(tumor_pair.normal.name + "\t" + tumor_pair.tumor.name + "\n")
+
+            jobs.append(concat_jobs([
+                Job(
+                    command="mkdir -p " + varscan_directory,
+                    removable_files=[varscan_directory],
+                ),
+                Job(
+                    [input_somatic, input_germline],
+                    [cancer_pair_filename], command="""\
+echo "{normal_name}\t{tumor_name}" \\
+> {cancer_pair_filename}""".format(
+                        normal_name=tumor_pair.normal.name,
+                        tumor_name=tumor_pair.tumor.name,
+                        cancer_pair_filename=cancer_pair_filename
+                    )
+                ),
+            ], name="compute_cancer_effects_somatic.file." + tumor_pair.name))
 
             jobs.append(concat_jobs([
                 Job(samples=[tumor_pair.normal, tumor_pair.tumor]),
