@@ -76,7 +76,7 @@ qualimap rnaseq \\
   --java-mem-size={ram} \\
   {other_options}""".format(
             input_bam=input_bam,
-            gtf=config.param('qualimap', 'gtf', type='filepath'),
+            gtf=config.param('qualimap', 'gtf', param_type='filepath'),
             output_directory=output_directory,
             output=output,
             ram=config.param('qualimap', 'ram'),

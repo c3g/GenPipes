@@ -41,7 +41,7 @@ delly call {options} \\
             sv_type=sv_type,
             exclude_list="\\\n    -x " + config.param('delly_call_filter','exclude_list') if config.param('delly_call_filter','exclude_list') else "",
             output=output,
-            genome=config.param('delly_call_filter','genome_fasta',type='filepath'),
+            genome=config.param('delly_call_filter','genome_fasta', param_type='filepath'),
             genotype_file="-v " + genotype_file if genotype_file else "",
             input_pair="".join(" \\\n " + sample for sample in input_pair)
         )

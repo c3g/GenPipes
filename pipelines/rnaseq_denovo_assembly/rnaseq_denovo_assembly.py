@@ -155,7 +155,7 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
                 "fq",
                 config.param('insilico_read_normalization_readsets', 'jellyfish_memory'),
                 normalization_directory,
-                config.param('insilico_read_normalization_readsets', 'cpu', required=False, type='int')
+                config.param('insilico_read_normalization_readsets', 'cpu', required=False, param_type='int')
             )
 
             job.name = "insilico_read_normalization_readsets." + readset.name
@@ -191,7 +191,7 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
             "fq",
             config.param('insilico_read_normalization_all', 'jellyfish_memory'),
             normalization_directory_all,
-            config.param('insilico_read_normalization_all', 'cpu', required=False, type='int')
+            config.param('insilico_read_normalization_all', 'cpu', required=False, param_type='int')
         )
 
         job.name = "insilico_read_normalization_all"
@@ -305,7 +305,7 @@ pandoc --to=markdown \\
         trinity_fasta = os.path.join(trinity_directory, "Trinity.fasta")
         trinity_fasta_for_blast = os.path.join(trinity_directory, "Trinity.fa")
         trinity_chunks_directory = os.path.join(trinity_directory, "Trinity.fasta_chunks")
-        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
+        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
 
         return [concat_jobs([
             Job(command="rm -rf " + trinity_chunks_directory),
@@ -322,10 +322,10 @@ pandoc --to=markdown \\
         jobs = []
         trinity_chunks_directory = os.path.join("trinity_out_dir", "Trinity.fasta_chunks")
         blast_directory = "blast"
-        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
+        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
         program = "blastx"
-        swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath')
-        uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath')
+        swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
+        uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
         cpu = config.param('blastx_trinity_uniprot', 'cpu')
 
         # (Removed blast on uniref_db since it's too long)
@@ -354,11 +354,11 @@ pandoc --to=markdown \\
 
         jobs = []
         blast_directory = "blast"
-        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', type='posint')
+        num_fasta_chunks = config.param('exonerate_fastasplit', 'num_fasta_chunks', param_type='posint')
         program = "blastx"
         blast_prefix = os.path.join(blast_directory, program + "_Trinity_")
-        swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath')
-        uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", type='prefixpath')
+        swissprot_db = config.param("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath')
+        uniref_db = config.param("blastx_trinity_uniprot", "uniref_db", param_type='prefixpath')
 
         # (Removed blast on uniref_db since it's too long)
         for db in [swissprot_db]:
@@ -453,7 +453,7 @@ pandoc --to=markdown \\
 
         blast_directory = os.path.join("trinotate", "blastp")
         transdecoder_fasta = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
-        db = config.param("blastp_transdecoder_uniprot", "swissprot_db", type='prefixpath')
+        db = config.param("blastp_transdecoder_uniprot", "swissprot_db", param_type='prefixpath')
 
         jobs = trinotate.blastp_transdecoder_uniprot(blast_directory, transdecoder_fasta, db)
         for job in jobs:
@@ -496,7 +496,7 @@ pandoc --to=markdown \\
         """
         jobs = []
 
-        swissprot_db = os.path.basename(config.param("blastx_trinity_uniprot", "swissprot_db", type='prefixpath'))
+        swissprot_db = os.path.basename(config.param("blastx_trinity_uniprot", "swissprot_db", param_type='prefixpath'))
         transdecoder_pep = os.path.join("trinotate", "transdecoder", "Trinity.fasta.transdecoder.pep")
 
         job = trinotate.trinotate(

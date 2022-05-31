@@ -45,7 +45,7 @@ $BCBIO_VARIATION_RECALL_HOME/bcbio.variation.recall ensemble \\
         ram=config.param('bcbio_ensemble', 'ram'),
         options=options,
         output=output if output else "-",
-        reference_sequence=config.param('bcbio_ensemble', 'genome_fasta', type='filepath'),
+        reference_sequence=config.param('bcbio_ensemble', 'genome_fasta', param_type='filepath'),
         input_callers="  ".join("  \\\n  " + caller for caller in input_callers)
         )
     )

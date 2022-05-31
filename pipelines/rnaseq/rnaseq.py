@@ -22,7 +22,9 @@
 # Python Standard Modules
 import argparse
 import collections
+import csv
 import logging
+import math
 import os
 import re
 import sys
@@ -100,6 +102,14 @@ class RnaSeqRaw(common.Illumina):
         self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
         super(RnaSeqRaw, self).__init__(protocol)
 
+    def star_genome_length(self):
+        """
+        Calculation for setting genomeSAindexNbases for STAR index
+        """
+        genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
+
+        return int(min(14, math.log2(sum([int(chromosome[1]) for chromosome in genome_index])) / 2 - 1))
+
     def star(self):
         """
         The filtered reads are aligned to a reference genome. The alignment is done per readset of sequencing
@@ -116,6 +126,7 @@ class RnaSeqRaw(common.Illumina):
         project_index_directory = "reference.Merged"
         project_junction_file = os.path.join("alignment_1stPass", "AllSamples.SJ.out.tab")
         individual_junction_list=[]
+        genome_length = self.star_genome_length()
         ######
         #pass 1 -alignment
         for readset in self.readsets:
@@ -172,7 +183,8 @@ class RnaSeqRaw(common.Illumina):
             #pass 1 - genome indexing
             star.index(
                 genome_index_folder=project_index_directory,
-                junction_file=project_junction_file
+                junction_file=project_junction_file,
+                genome_length=genome_length
         )], name = "star_index.AllSamples", samples=self.samples))
 
         ######
@@ -366,7 +378,7 @@ awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/
         input_bams = [sample_row[1] for sample_row in sample_rows]
         output_directory = os.path.join("metrics", "rnaseqRep")
         # Use GTF with transcript_id only otherwise RNASeQC fails
-        gtf_transcript_id = config.param('rnaseqc', 'gtf_transcript_id', type='filepath')
+        gtf_transcript_id = config.param('rnaseqc', 'gtf_transcript_id', param_type='filepath')
 
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + output_directory, removable_files=[output_directory], samples=self.samples),
@@ -374,7 +386,7 @@ awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/
 echo "Sample\tBamFile\tNote
 {sample_rows}" \\
   > {sample_file}""".format(sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]), sample_file=sample_file)),
-            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id, reference=config.param('rnaseqc', 'genome_fasta', type='filepath'), ribosomal_interval_file=config.param('rnaseqc', 'ribosomal_fasta', type='filepath')),
+            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id, reference=config.param('rnaseqc', 'genome_fasta', param_type='filepath'), ribosomal_interval_file=config.param('rnaseqc', 'ribosomal_fasta', param_type='filepath')),
             Job([], [output_directory + ".zip"], command="zip -r {output_directory}.zip {output_directory}".format(output_directory=output_directory))
         ], name="rnaseqc"))
 
@@ -444,7 +456,7 @@ pandoc \\
         """
 
         jobs = []
-        reference_file = config.param('picard_rna_metrics', 'genome_fasta', type='filepath')
+        reference_file = config.param('picard_rna_metrics', 'genome_fasta', param_type='filepath')
         for sample in self.samples:
                 alignment_file = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
                 output_directory = os.path.join("metrics", sample.name)
@@ -622,7 +634,7 @@ pandoc \\
                         ),
                         htseq.htseq_count(
                         "-",
-                        config.param('htseq_count', 'gtf', type='filepath'),
+                        config.param('htseq_count', 'gtf', param_type='filepath'),
                         output_count,
                         config.param('htseq_count', 'options'),
                         stranded
@@ -665,7 +677,7 @@ do
 done && \\
 echo -e $HEAD | cat - {output_directory}/tmpMatrix.txt | tr ' ' '\\t' > {output_matrix} && \\
 rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
-            reference_gtf=config.param('raw_counts_metrics', 'gtf', type='filepath'),
+            reference_gtf=config.param('raw_counts_metrics', 'gtf', param_type='filepath'),
             output_directory=output_directory,
             read_count_files=" \\\n  ".join(read_count_files),
             output_matrix=output_matrix
@@ -694,7 +706,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         # RPKM and Saturation
         count_file = os.path.join("DGE", "rawCountMatrix.csv")
-        gene_size_file = config.param('rpkm_saturation', 'gene_size', type='filepath')
+        gene_size_file = config.param('rpkm_saturation', 'gene_size', param_type='filepath')
         rpkm_directory = "raw_counts"
         saturation_directory = os.path.join("metrics", "saturation")
 
@@ -742,7 +754,7 @@ pandoc --to=markdown \\
         """
         jobs = []
 
-        gtf = config.param('stringtie','gtf', type='filepath')
+        gtf = config.param('stringtie','gtf', param_type='filepath')
 
         for sample in self.samples:
             input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
@@ -764,7 +776,7 @@ pandoc --to=markdown \\
         output_directory = os.path.join("stringtie", "AllSamples")
         sample_file = os.path.join("stringtie", "stringtie-merge.samples.txt")
         input_gtfs = [os.path.join("stringtie", sample.name, "transcripts.gtf") for sample in self.samples]
-        gtf = config.param('stringtie','gtf', type='filepath')
+        gtf = config.param('stringtie','gtf', param_type='filepath')
 
 
         job = concat_jobs([
@@ -831,7 +843,7 @@ END
 
         jobs = []
 
-        gtf = config.param('cufflinks','gtf', type='filepath')
+        gtf = config.param('cufflinks','gtf', param_type='filepath')
 
         for sample in self.samples:
             input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
@@ -854,7 +866,7 @@ END
         output_directory = os.path.join("cufflinks", "AllSamples")
         sample_file = os.path.join("cufflinks", "cuffmerge.samples.txt")
         input_gtfs = [os.path.join("cufflinks", sample.name, "transcripts.gtf") for sample in self.samples]
-        gtf = config.param('cuffmerge','gtf', type='filepath')
+        gtf = config.param('cuffmerge','gtf', param_type='filepath')
 
 
         job = concat_jobs([
@@ -989,7 +1001,7 @@ END
             gq_seq_utils.exploratory_analysis_rnaseq(
                 os.path.join("DGE", "rawCountMatrix.csv"),
                 "cuffnorm",
-                config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', type='filepath'),
+                config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', param_type='filepath'),
                 "exploratory"
             )
         ], name="gq_seq_utils_exploratory_analysis_rnaseq"))

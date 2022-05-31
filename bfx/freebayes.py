@@ -45,8 +45,8 @@ freebayes -f {reference_genome} \\
   {other_options} \\
   {input_bam} \\
   | sed s/QR,Number=1,Type=Integer/QR,Number=1,Type=Float/ > {output_file}""".format(
-    reference_genome=config.param(ini_section, 'genome_fasta', type='filepath'),
-    bed_targets="-t " + config.param(ini_section, 'bed_targets', type='filepath', required=False) if config.param(ini_section, 'bed_targets', required=False) else "",
+    reference_genome=config.param(ini_section, 'genome_fasta', param_type='filepath'),
+    bed_targets="-t " + config.param(ini_section, 'bed_targets', param_type='filepath', required=False) if config.param(ini_section, 'bed_targets', required=False) else "",
     options=options if options else "",
     other_options=config.param(ini_section, 'freebayes_options'),
     input_bam=input_bam,

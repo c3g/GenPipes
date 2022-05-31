@@ -50,7 +50,7 @@ $SKEWER_HOME/./skewer --threads {threads} {options} \\
   {adapter_file} \\
   {inputs} \\
   {outputs}""".format(
-        threads=config.param('skewer_trimming', 'threads', type='posint'),
+        threads=config.param('skewer_trimming', 'threads', param_type='posint'),
         options=config.param('skewer_trimming', 'options'),
         adapter_file="-x " + adapter_file, 
         inputs=" \\\n  ".join(inputs),

@@ -198,10 +198,10 @@ def dict2beds(dictionary,beds):
             ['dict2beds', 'module_python']
         ],
         command="""\
-dict2BEDs.py \\
+python3 $PYTHON_TOOLS/dict2BEDs.py \\
   --dict {dictionary} \\
   --beds {beds}""".format(
-            dictionary=dictionary if dictionary else config.param('dict2beds', 'genome_dictionary', type='filepath'),
+            dictionary=dictionary if dictionary else config.param('dict2beds', 'genome_dictionary', param_type='filepath'),
             beds=' '.join(beds)
         )
     )
@@ -233,7 +233,7 @@ def fix_varscan_output(input, output=None, options=None):
             ['fix_varscan_output', 'module_python']
         ],
         command="""\
-python $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
+python3 $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
     {output}""".format(
             options=options if options else "",
             input=input if input else "",
@@ -250,7 +250,7 @@ def fix_genotypes_strelka(input, output, normal, tumor):
                 ['DEFAULT', 'module_python']
             ],
             command="""\
-	python $PYTHON_TOOLS/update_genotypes_strelka.py \\
+	python3 $PYTHON_TOOLS/update_genotypes_strelka.py \\
 	    -i {input} \\
 	    -o {output} \\
 	    -n {normal} \\
@@ -261,6 +261,30 @@ def fix_genotypes_strelka(input, output, normal, tumor):
                 tumor=tumor,
             )
         )
+
+def format2pcgr(input, output, filter, variant_type, tumor, ini_section='DEFAULT'):
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, 'module_mugqic_tools'],
+            [ini_section, 'module_python']
+        ],
+        command="""\
+python3 $PYTHON_TOOLS/format2pcgr.py \\
+	-i {input} \\
+	-o {output} \\
+	-f {filter} \\
+	-v {variant_type} \\
+	-t {tumor}""".format(
+            input=input if input else "",
+            output=output if input else "",
+            filter=filter,
+            variant_type=variant_type,
+            tumor=tumor,
+        )
+    )
+
 def cpg_cov_stats(input, output):
     return Job(
         [input],
@@ -297,7 +321,7 @@ bed2IntervalList.pl \\
   --dict {dictionary} \\
   --bed {bed} \\
   > {output}""".format(
-            dictionary=config.param('bed2interval_list', 'genome_dictionary', type='filepath'),
+            dictionary=config.param('bed2interval_list', 'genome_dictionary', param_type='filepath'),
             bed=bed,
             output=output
         )
@@ -593,8 +617,8 @@ IHEC_rnaseq_metrics.sh \\
             input_bam=input_bam,
             input_name=input_name,
             input_picard_dup=input_picard_dup,
-            intergenic_bed=config.param('IHEC_rnaseq_metrics', 'intergenic_bed', type='filepath', required=True),
-            rrna_bed=config.param('IHEC_rnaseq_metrics', 'ribo_rna_bed', type='filepath', required=True),
+            intergenic_bed=config.param('IHEC_rnaseq_metrics', 'intergenic_bed', param_type='filepath', required=True),
+            rrna_bed=config.param('IHEC_rnaseq_metrics', 'ribo_rna_bed', param_type='filepath', required=True),
             output_dir=output_dir
         )
     )
@@ -646,7 +670,7 @@ IHEC_chipseq_metrics_max.sh \\
             chip_bam=chip_bam,
             chip_type=chip_type,
             chip_name=chip_name,
-            threads=config.param('IHEC_chipseq_metrics', 'thread', type='int') if config.param('IHEC_chipseq_metrics', 'thread', type='int', required=False) else 1,
+            threads=config.param('IHEC_chipseq_metrics', 'thread', param_type='int'),
             chip_bed=chip_bed,
             output_dir=output_dir,
             assembly=assembly

@@ -93,7 +93,7 @@ memtime contamWrapper.pl \\
     outfile_unmatched = outfile_unmatched,
     log = log,
     db = db,
-    num_threads = config.param('duk_wrapper', 'num_threads', type='int')
+    num_threads = config.param('duk_wrapper', 'num_threads', param_type='int')
     )
     return job
 

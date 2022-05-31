@@ -24,7 +24,7 @@ from core.config import *
 from core.job import *
 
 # Large RNA-Seq data sets, such as those exceeding 300M pairs, are best suited for in silico normalization prior to running Trinity, in order to reduce memory requirements and greatly improve upon runtimes
-def insilico_read_normalization(left_or_single_reads, right_reads, sequence_type, jellyfish_memory,output_directory=None, cpu=None):
+def insilico_read_normalization(left_or_single_reads, right_reads, sequence_type, jellyfish_memory, output_directory=None, cpu=None):
 
     normalization_stats_file = "normalization.stats.tsv"
     output_files = ["left.norm." + sequence_type, "right.norm." + sequence_type] if right_reads else ["single.norm." + sequence_type]
@@ -50,7 +50,7 @@ insilico_read_normalization.pl {other_options} \\
             other_options=config.param('insilico_read_normalization', 'other_options', required=False),
             sequence_type=sequence_type,
             jellyfish_memory=jellyfish_memory,
-            maximum_coverage=config.param('insilico_read_normalization', 'maximum_coverage', type="int"),
+            maximum_coverage=config.param('insilico_read_normalization', 'maximum_coverage', param_type="int"),
             left_or_single_reads=" \\\n  ".join(["--left " + read for read in left_or_single_reads]) if right_reads else " \\\n  ".join(["--single " + read for read in left_or_single_reads]),
             right_reads="".join([" \\\n  --right " + read for read in right_reads]) if right_reads else "",
             output_directory=" \\\n  --output " + output_directory if output_directory else "",
@@ -160,7 +160,7 @@ align_and_estimate_abundance.pl {other_options} \\
                 transcripts=trinity_fasta,
                 sample_name=sample_name,
                 output_directory=output_directory,
-                cpu=config.param('align_and_estimate_abundance', 'cpu', type='posint'),
+                cpu=config.param('align_and_estimate_abundance', 'cpu', param_type='posint'),
                 left_or_single_reads="--left " + ",".join(left_or_single_reads) if right_reads else "--single " + ",".join(left_or_single_reads),
                 right_reads=" \\\n  --right " + ",".join(right_reads) if right_reads else ""
             ),

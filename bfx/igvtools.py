@@ -40,6 +40,6 @@ def compute_tdf(input, output):
         option=config.param('igvtools_compute_tdf', 'option'),
         input=input,
         output=output,
-        genome=config.param('compute_tdf', 'igv_genome', type='filepath')
+        genome=config.param('compute_tdf', 'igv_genome', param_type='filepath')
         )
     )

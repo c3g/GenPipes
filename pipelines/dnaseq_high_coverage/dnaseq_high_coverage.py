@@ -180,7 +180,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        nb_jobs = config.param('varscan', 'nb_jobs', type='posint')
+        nb_jobs = config.param('varscan', 'nb_jobs', param_type='posint')
         if nb_jobs > 50:
             log.warning("Number of VarScan jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
@@ -191,7 +191,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         for idx in range(nb_jobs):
             beds.append(os.path.join(varscan_directory, 'chrs.' + str(idx) + '.bed'))
 
-        genome_dictionary = config.param('DEFAULT', 'genome_dictionary', type='filepath')
+        genome_dictionary = config.param('DEFAULT', 'genome_dictionary', param_type='filepath')
 
         if nb_jobs > 1:
             bedJob = tools.dict2beds(genome_dictionary, beds)

@@ -124,8 +124,8 @@ Rscript $R_TOOLS/goseq.R {other_options} \\
   -c {input_columns} \\
   -o {output_file}""".format(
         other_options=config.param('differential_expression_goseq','other_options'),
-        gene_size_file=gene_size_file if gene_size_file else config.param('differential_expression_goseq', 'gene_size', type='filepath'),
-        gene_ontology_file=gene_ontology_file if gene_ontology_file else config.param('differential_expression_goseq', 'gene_ontology', type='filepath'),
+        gene_size_file=gene_size_file if gene_size_file else config.param('differential_expression_goseq', 'gene_size', param_type='filepath'),
+        gene_ontology_file=gene_ontology_file if gene_ontology_file else config.param('differential_expression_goseq', 'gene_ontology', param_type='filepath'),
         input_file=input_file,
         input_columns=input_columns,
         output_file=output_file

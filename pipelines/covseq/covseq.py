@@ -782,7 +782,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                         bcftools.norm(
                             file,
                             None,
-                            "-f " + config.param("DEFAULT", 'genome_fasta', type='filepath'),
+                            "-f " + config.param("DEFAULT", 'genome_fasta', param_type='filepath'),
                             ini_section='freebayes_call_variants'
                             ),
                         htslib.bgzip_tabix(
@@ -944,7 +944,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                     bcftools.consensus(
                         input_ambiguous_norm,
                         output_ambiguous_fasta,
-                        "-f " + config.param("DEFAULT", 'genome_fasta', type='filepath') + " -I "
+                        "-f " + config.param("DEFAULT", 'genome_fasta', param_type='filepath') + " -I "
                         ),
                     pipe_jobs([
                         bcftools.consensus(
@@ -1493,12 +1493,13 @@ fi""".format(
                     output_files=[],
                     module_entries=[
                         ['prepare_report', 'module_R'],
-                        ['prepare_report', 'module_CoVSeQ_tools']
+                        ['prepare_report', 'module_CoVSeQ_tools'],
+                        ['prepare_report', 'module_pandoc']
                     ],
                     command="""\\
 module purge && \\
 module load {R_covseqtools}""".format(
-    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
+    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools') + " " + config.param('prepare_report', 'module_pandoc'),
     output_dir=self.output_dir)
                     ),
                 covseq_tools.generate_report_tables(
@@ -1617,12 +1618,13 @@ fi""".format(
                     output_files=[],
                     module_entries=[
                         ['prepare_report', 'module_R'],
-                        ['prepare_report', 'module_CoVSeQ_tools']
+                        ['prepare_report', 'module_CoVSeQ_tools'],
+                        ['prepare_report', 'module_pandoc']
                     ],
                     command="""\\
 module purge && \\
 module load {R_covseqtools}""".format(
-    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools'),
+    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools') + " " + config.param('prepare_report', 'module_pandoc'),
     output_dir=self.output_dir)
                     ),
                 covseq_tools.generate_report_tables(

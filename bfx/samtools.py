@@ -92,7 +92,7 @@ samtools mpileup {other_options} \\
   {input_bams} \\
   {output}""".format(
             other_options=other_options,
-            reference_fasta="-f " + config.param('samtools_mpileup', 'genome_fasta', type='filepath') if config.param('samtools_mpileup', 'genome_fasta', type='filepath') else "",
+            reference_fasta="-f " + config.param('samtools_mpileup', 'genome_fasta', param_type='filepath') if config.param('samtools_mpileup', 'genome_fasta', param_type='filepath') else "",
             region="-r " + region if region else "",
             regionFile="-l " + regionFile if regionFile else "",
             input_bams=" \\\n  ".join([input_bam for input_bam in inputs]),
@@ -132,7 +132,7 @@ def bcftools_mpileup(inputs, output, options, region=None, regionFile=None, ini_
 bcftools mpileup {options} \\
   -f {reference_fasta}{region}{regionFile}{inputs}{output}""".format(
         options=options if options else "",
-        reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),
+        reference_fasta=config.param('samtools_mpileup', 'genome_fasta', param_type='filepath'),
         regionFile=" \\\n  -l " + regionFile if regionFile else "",
         region=" \\\n  -r " + region if region else "",
         inputs="".join([" \\\n  " + input for input in inputs]),

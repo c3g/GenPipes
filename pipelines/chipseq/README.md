@@ -32,7 +32,7 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [--genpipes_file GENPIPES_FILE] [-d DESIGN]
                   [-t {chipseq,atacseq}] [-r READSETS] [-v]
 
-Version: 4.1.2
+Version: 4.1.3
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -112,6 +112,8 @@ chipseq:
 18- ihec_metrics
 19- multiqc_report
 20- cram_output
+21- gatk_haplotype_caller
+22- merge_and_call_individual_gvcf
 ----
 ```
 ![chipseq atacseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_atacseq.resized.png)
@@ -138,6 +140,8 @@ atacseq:
 18- ihec_metrics
 19- multiqc_report
 20- cram_output
+21- gatk_haplotype_caller
+22- merge_and_call_individual_gvcf
 
 ```
 picard_sam_to_fastq
@@ -261,6 +265,14 @@ cram_output
 -----------
 Generate long term storage version of the final alignment files in CRAM format
 Using this function will include the orginal final bam file into the  removable file list
+
+gatk_haplotype_caller
+---------------------
+GATK haplotype caller for snps and small indels.
+
+merge_and_call_individual_gvcf
+------------------------------
+Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
 
 macs2_atacseq_callpeak
 ----------------------

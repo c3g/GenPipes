@@ -23,7 +23,23 @@ import re
 # MUGQIC Modules
 from core.config import _raise, SanitycheckError
 
-class Sample(object):
+class UniqueName(type):
+    """
+    This ensure that only one copy if each object
+    with the same name exist
+    """
+    def __call__(cls, name, *args, **kwargs):
+        if name not in cls._registered_samples:
+            self = cls.__new__(cls, name, *args, **kwargs)
+            cls.__init__(self, name, *args, **kwargs)
+            cls._registered_samples[name] = self
+        return cls._registered_samples[name]
+
+    def __init__(cls, name, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+        cls._registered_samples = {}
+
+class Sample(metaclass=UniqueName):
 
     def __init__(self, name):
         if re.search("^\w[\w.-]*$", name):

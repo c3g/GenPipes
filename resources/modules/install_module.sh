@@ -73,9 +73,9 @@ patch_c3g_binaries() {
       echo "GO Done" > /dev/null
     elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]+[a-z]*)*$ ]]
     then
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $RPATH $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --force-rpath --set-rpath $RPATH $i
     else
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $RPATH $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --force-rpath --set-rpath $RPATH $i
     fi
   done
 }
@@ -106,57 +106,66 @@ then
   LD_LIBRARY_PATH=
 fi
 
-if [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="Ubuntu"' ]]; then echo "Ubuntu";  elif [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="CentOS Linux"' ]]; then echo "CentOS"; fi
-
-# Set path to C3G system libraries
-#if [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="Ubuntu"' ]]
-if [[ `cat /etc/*-release` == *"Ubuntu"* ]]
+if [ -z ${NOPATCH+x} ] && [ -z ${NOWRAP+x} ]
 then
-  if [[ `cat /etc/*-release` == *"16.04"* ]]
+  if [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="Ubuntu"' ]]; then echo "Ubuntu";  elif [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="CentOS Linux"' ]]; then echo "CentOS"; fi
+
+  # Set path to C3G system libraries
+  #if [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="Ubuntu"' ]]
+  if [[ `cat /etc/*-release` == *"Ubuntu"* ]]
   then
-    echo "Ubuntu 16.04" > /dev/null
-    C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
-    LIB=lib
-    INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
-    LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
-  elif [[ `cat /etc/*-release` == *"18.04"* ]]
+    if [[ `cat /etc/*-release` == *"16.04"* ]]
+    then
+      echo "Ubuntu 16.04" > /dev/null
+      C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
+      LIB=lib
+      INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+    elif [[ `cat /etc/*-release` == *"18.04"* ]]
+    then
+      echo "Ubuntu 18.04" > /dev/null
+      C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1804/1.0
+      LIB=lib
+      INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+    elif [[ `cat /etc/*-release` == *"20.04"* ]]
+    then
+      echo "Ubuntu 20.04" > /dev/null
+      C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu2004/1.0
+      LIB=lib
+      INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+    elif [[ `cat /etc/*-release` == *"21.10"* ]]
+    then
+      echo "Ubuntu 21.0" > /dev/null
+      C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu2110/1.0
+      LIB=lib
+      INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+    fi
+  #elif [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="CentOS Linux"' ]]
+  elif [[ `cat /etc/*-release` == *"CentOS"*"7."* ]]
   then
-    echo "Ubuntu 18.04" > /dev/null
-    C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1804/1.0
-    LIB=lib
-    INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
-    LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
-  elif [[ `cat /etc/*-release` == *"21.10"* ]]
+    echo "CentOS" > /dev/null
+    C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
+    LIB=lib64
+    INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
+    LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+  #elif [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="CentOS Linux"' ]]
+  elif [[ `cat /etc/*-release` == *"CentOS"*"8."* ]]
   then
-    echo "Ubuntu 21.0" > /dev/null
-    C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu2110/1.0
-    LIB=lib
-    INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
-    LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+    echo "CentOS" > /dev/null
+    C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos8/1.0
+    LIB=lib64
+    INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
+    LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+  else
+    echo "*** ERROR ***"
+    echo "'"`cat /etc/*-release`"' OS detected... should be either 'Ubuntu' or 'CentOS'..."
+  #  echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
+    exit 1
   fi
-#elif [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="CentOS Linux"' ]]
-elif [[ `cat /etc/*-release` == *"CentOS"*"7."* ]]
-then
-  echo "CentOS" > /dev/null
-  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
-  LIB=lib64
-  INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
-#elif [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="CentOS Linux"' ]]
-elif [[ `cat /etc/*-release` == *"CentOS"*"8."* ]]
-then
-  echo "CentOS" > /dev/null
-  C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos8/1.0
-  LIB=lib64
-  INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
-  LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
-else
-  echo "*** ERROR ***"
-  echo "'"`cat /etc/*-release`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
-#  echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
-  exit 1
 fi
-
 
 echo "Installing $SOFTWARE version $VERSION in \$$INSTALL_HOME..."
 echo

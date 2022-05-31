@@ -6,14 +6,11 @@ export NOPATCH=1
 export NOWRAP=1
 
 SOFTWARE=pandoc
-VERSION=2.16.1
+VERSION=2.16.2
 ARCHIVE=${SOFTWARE}-${VERSION}-linux-amd64.tar.gz
 ARCHIVE_URL=https://github.com/jgm/pandoc/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar -xvf $ARCHIVE

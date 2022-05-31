@@ -47,14 +47,19 @@ def graph(input_bam, output_bed_graph, library_type="PAIRED_END"):
         ],
         command="""\
 nmblines=$(samtools view {samtools_options} {input_bam} | wc -l) && \\
-scalefactor=0$(echo "scale=2; 1 / ($nmblines / 10000000);" | bc) && \\
+if [[ $nmblines -ge 100000 ]]
+  then
+    scalefactor=$(echo "scale=2; 1 / ($nmblines / 10000000);" | bc)
+  else
+    scalefactor=1
+fi
 genomeCoverageBed {other_options} -bg -split -scale $scalefactor \\
   -ibam {input_bam} \\
   -g {chromosome_size} \\
   > {output_bed_graph}""".format(
             samtools_options=samtools_options,
             input_bam=input_bam,
-            chromosome_size=config.param('bedtools_graph', 'chromosome_size', type='filepath'),
+            chromosome_size=config.param('bedtools_graph', 'chromosome_size', param_type='filepath'),
             other_options=config.param('bedtools_graph', 'other_options', required=False),
             output_bed_graph=output_bed_graph
         )

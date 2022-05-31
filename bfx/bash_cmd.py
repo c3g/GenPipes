@@ -115,7 +115,7 @@ def rm(
         [source],
         [],
         command="""\
-rm -rf {rec}{force}{source}""".format(
+rm {rec}{force}{source}""".format(
             rec="-r " if recursive else "",
             force="-f " if force else "",
             source=source
