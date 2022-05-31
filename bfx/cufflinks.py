@@ -46,8 +46,8 @@ formatDenovoCombinedGTF.py \\
   -o {output_prefix}.TranscriptList.tsv""".format(
         output_directory=os.path.dirname(output_prefix),
         output_prefix=output_prefix,
-        reference_gff=config.param('cuffcompare', 'gtf', type='filepath'),
-        reference_fasta=config.param('cuffcompare', 'genome_fasta', type='filepath'),
+        reference_gff=config.param('cuffcompare', 'gtf', param_type='filepath'),
+        reference_fasta=config.param('cuffcompare', 'genome_fasta', param_type='filepath'),
         gtf_files=" \\\n  ".join(gtf_files),
         gtf_list=gtf_list
         )
@@ -75,10 +75,10 @@ cuffdiff {other_options} \\
   {gtf} \\
   {input_files}""".format(
         other_options=config.param('cuffdiff', 'other_options'),
-        genome_fasta=config.param('cuffdiff', 'genome_fasta', type='filepath'),
+        genome_fasta=config.param('cuffdiff', 'genome_fasta', param_type='filepath'),
         library_type=config.param('cuffdiff', 'strand_info'),
         output_directory=output_directory,
-        num_threads=config.param('cuffdiff', 'threads', type='posint'),
+        num_threads=config.param('cuffdiff', 'threads', param_type='posint'),
         gtf=gtf,
         # Join replicate bams per sample with a "," then join all sample replicate groups with a " "
         input_files=" \\\n  ".join([",".join(sample_replicate_files) for sample_replicate_files in sample_replicate_group_files])
@@ -101,10 +101,10 @@ cufflinks -q {other_options}{gtf} \\
   {input_bam}""".format(
         other_options=config.param('cufflinks', 'other_options', required=False),
         gtf=" \\\n  --GTF-guide " + gtf if gtf else "",
-        max_bundle_frags=config.param('cufflinks', 'max_bundle_frags', type='int'),
+        max_bundle_frags=config.param('cufflinks', 'max_bundle_frags', param_type='int'),
         library_type=config.param('cufflinks', 'strand_info'),
         output_directory=output_directory,
-        num_threads=config.param('cufflinks', 'threads', type='posint'),
+        num_threads=config.param('cufflinks', 'threads', param_type='posint'),
         input_bam=input_bam
         )
     )
@@ -122,9 +122,9 @@ cuffmerge {gtf} \\
   --num-threads {num_threads} \\
   {sample_file}""".format(
         gtf=" \\\n  --ref-gtf " + gtf_file if gtf_file else "",
-        reference_sequence=config.param('cuffmerge', 'genome_fasta', type='filepath', required=True),
+        reference_sequence=config.param('cuffmerge', 'genome_fasta', param_type='filepath', required=True),
         output_directory=output_directory,
-        num_threads=config.param('cuffmerge', 'threads', type='posint'),
+        num_threads=config.param('cuffmerge', 'threads', param_type='posint'),
         sample_file=sample_file
         )
     )
@@ -146,10 +146,10 @@ cuffquant -q {other_options} \\
   {input_bam}""".format(
         other_options=config.param('cuffquant', 'other_options', required=False),
         gtf=gtf,
-        max_bundle_frags=config.param('cuffquant', 'max_bundle_frags', type='int'),
+        max_bundle_frags=config.param('cuffquant', 'max_bundle_frags', param_type='int'),
         library_type=config.param('cuffquant', 'strand_info'),
         output_directory=output_directory,
-        num_threads=config.param('cuffquant', 'threads', type='posint'),
+        num_threads=config.param('cuffquant', 'threads', param_type='posint'),
         input_bam=input_bam
         )
     )
@@ -173,7 +173,7 @@ cuffnorm -q {other_options} \\
         gtf=gtf,
         library_type=config.param('cuffnorm', 'strand_info'),
         output_directory=output_directory,
-        num_threads=config.param('cuffnorm', 'threads', type='posint'),
+        num_threads=config.param('cuffnorm', 'threads', param_type='posint'),
         sample_labels=sample_labels,
         input_files=" \\\n  ".join(input_files)
         )

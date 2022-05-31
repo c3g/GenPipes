@@ -36,7 +36,7 @@ def pileup(input_bam, output):
             ['conpair_concordance_contamination', 'module_conpair']
         ],
         command="""\
-run_gatk_pileup_for_sample.py -t {tmp_dir} \\
+python3 $CONPAIR_SCRIPTS/run_gatk_pileup_for_sample.py -t {tmp_dir} \\
   -m {ram} \\
   -G $GATK_JAR \\
   -D $CONPAIR_DIR \\
@@ -46,7 +46,7 @@ run_gatk_pileup_for_sample.py -t {tmp_dir} \\
   -O {output} {other_options}""".format(
         tmp_dir=config.param('conpair_concordance_contamination', 'tmp_dir'),
         ram=config.param('conpair_concordance_contamination', 'ram'),
-        reference_sequence=config.param('conpair_concordance_contamination', 'genome_fasta', type='filepath'),
+        reference_sequence=config.param('conpair_concordance_contamination', 'genome_fasta', param_type='filepath'),
         markers=config.param('conpair_concordance_contamination', 'markers_bed'),
         input=input_bam,
         other_options=" \\\n  " + config.param('conpair_concordance_contamination', 'other_options', required= False) if config.param('conpair_concordance_contamination', 'other_options', required= False) else "",
@@ -64,16 +64,16 @@ def concordance(input_normal, input_tumor, output):
             ['conpair_concordance_contamination', 'module_conpair']
         ],
         command="""\
-verify_concordance.py {options} \\
-  -M {markers} \\
-  -N {input_normal} \\
-  -T {input_tumor} \\ 
-  {output}""".format(
+python3 $CONPAIR_SCRIPTS/verify_concordance.py {options} \\
+  --markers {markers} \\
+  --normal_pileup {input_normal} \\
+  --tumor_pileup {input_tumor} \\
+  --outfile {output}""".format(
         options=config.param('conpair_concordance_contamination', 'concord_options'),
         markers=config.param('conpair_concordance_contamination', 'markers_txt'),
         input_normal=input_normal,
         input_tumor=input_tumor,
-        output=" > " + output
+        output= output
         )
     )
 
@@ -87,16 +87,16 @@ def contamination(input_normal, input_tumor, output):
             ['conpair_concordance_contamination', 'module_conpair']
         ],
         command="""\
-estimate_tumor_normal_contamination.py {options} \\
-  -M {markers} \\
-  -N {input_normal} \\
-  -T {input_tumor} \\
-  {output}""".format(
+python3 $CONPAIR_SCRIPTS/estimate_tumor_normal_contamination.py {options} \\
+  --markers {markers} \\
+  --normal_pileup {input_normal} \\
+  --tumor_pileup {input_tumor} \\
+  --outfile {output}""".format(
         options=config.param('conpair_concordance_contamination', 'contam_options'),
         markers=config.param('conpair_concordance_contamination', 'markers_txt'),
         input_normal=input_normal,
         input_tumor=input_tumor,
-        output=" --outfile " + output
+        output=output
         )
     )
 

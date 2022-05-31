@@ -83,7 +83,7 @@ bcftools \\
   {regionFile} \\
   {output}""".format(
         options=options if options else "",
-        reference_fasta=config.param('samtools_mpileup', 'genome_fasta', type='filepath'),
+        reference_fasta=config.param('samtools_mpileup', 'genome_fasta', param_type='filepath'),
         inputs="".join(" \\\n  " + input for input in inputs),
         regions="-r " + regions if regions else "",
         regionFile="-R " + regionFile if regionFile else "",
@@ -175,6 +175,46 @@ bcftools \\
         )
     )
 
+def sort(input, output, sort_options=None):
+    """
+    Generalized sort
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['bcftools_sort', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  sort {sort_options} \\
+  {output}{input}""".format(
+        sort_options=sort_options if sort_options else "",
+        input=" \\\n " + input if input else "",
+        output=" \\\n -o " + output if output else ""
+        )
+    )
+
+def query(input, output, query_options=None):
+    """
+    Generalized sort
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            ['bcftools_sort', 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  query {query_options} \\
+  {output}{input}""".format(
+        query_options=query_options if query_options else "",
+        input=" \\\n " + input if input else "",
+        output=" \\\n -o " + output if output else ""
+        )
+    )
+
 def filter(input, output, filter_options):
     """
     Generalized filter function
@@ -249,10 +289,31 @@ def norm(input, output, options, ini_section='bcftools_norm'):
         command="""\
 bcftools \\
   norm {options} \\
-  {input}\\
+  {input} \\
   {output}""".format(
         options=options if options else "",
         input=input,
         output="> " + output if output else ""
+        )
+    )
+
+def split(input, output, options, ini_section='bcftools_split'):
+    """
+    split vcf by sample
+    """
+    return Job(
+        [input],
+        [output],
+        [
+            [ini_section, 'module_bcftools']
+        ],
+        command="""\
+bcftools \\
+  +split {options} \\
+  {input} \\
+  -o {output}""".format(
+        options=options if options else "",
+        input=input,
+        output=output
         )
     )

@@ -61,8 +61,8 @@ stringtie -v {other_options} {strd_cmd} {gtf} {abund_cmd} \\
       strd_cmd="\\\n  " + strd_cmd if strd_cmd else " ",
       gtf="\\\n  -G " + gtf if gtf else " ",
       abund_cmd="\\\n  -eB -A " + os.path.join(output_directory, "abundance.tab") if abund else " ",
-      num_threads=config.param('stringtie', 'threads', type='posint'),
-      min_length=config.param('stringtie', 'min_length', type='posint'),
+      num_threads=config.param('stringtie', 'threads', param_type='posint'),
+      min_length=config.param('stringtie', 'min_length', param_type='posint'),
       outgtf=os.path.join(output_directory, "transcripts.gtf"), 
       input_bam=input_bam
         )

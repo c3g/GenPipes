@@ -40,7 +40,7 @@ bash <(run-bwamem {other_options}{read_group} \\
   {in1fastq}{in2fastq}{out_bam})""".format(
         other_options=" \\\n  " + other_options if other_options else "",
         read_group=" \\\n  -R " + read_group if read_group else "",
-        idxbase=ref if ref else config.param(ini_section, 'genome_bwa_index', type='filepath'),
+        idxbase=ref if ref else config.param(ini_section, 'genome_bwa_index', param_type='filepath'),
         in1fastq=in1fastq,
         in2fastq=" \\\n  " + in2fastq if in2fastq else "",
         out_bam=" \\\n  -o " + out_bam if out_bam else ""
@@ -59,7 +59,7 @@ def bwa_postalt(input, output):
 $BWAKIT_PATH/k8 $BWAKIT_PATH/bwa-postalt.js {alt} \\
 	{input} \\
 	{output}""".format(
-		alt=config.param('bwa_kit', 'genome_bwa_alt_index', type='filepath'),
+		alt=config.param('bwa_kit', 'genome_bwa_alt_index', param_type='filepath'),
 		input=input if input else "",
 		output=output if output else ""
 		),

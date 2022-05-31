@@ -34,7 +34,7 @@ usage: tumor_pair.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                      [--genpipes_file GENPIPES_FILE] [-p PAIRS] [--profyle]
                      [-t {fastpass,ensemble,sv}] [-r READSETS] [-v]
 
-Version: 4.1.2
+Version: 4.1.3
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -139,33 +139,34 @@ ensemble:
 11- metrics_dna_sample_qualimap
 12- metrics_dna_fastqc
 13- sequenza
-14- strelka2_paired_somatic
-15- strelka2_paired_germline
-16- purple
-17- rawmpileup
-18- paired_varscan2
-19- merge_varscan2
-20- paired_mutect2
-21- merge_mutect2
-22- vardict_paired
-23- merge_filter_paired_vardict
-24- ensemble_somatic
-25- gatk_variant_annotator_somatic
-26- merge_gatk_variant_annotator_somatic
-27- compute_cancer_effects_somatic
-28- ensemble_somatic_dbnsfp_annotation
-29- sample_gemini_annotations_somatic
-30- ensemble_germline_loh
-31- gatk_variant_annotator_germline
-32- merge_gatk_variant_annotator_germline
-33- compute_cancer_effects_germline
-34- ensemble_germline_dbnsfp_annotation
-35- sample_gemini_annotations_germline
-36- run_pair_multiqc
-37- sym_link_fastq_pair
-38- sym_link_final_bam
-39- sym_link_report
-40- sym_link_ensemble
+14- manta_sv_calls
+15- strelka2_paired_somatic
+16- strelka2_paired_germline
+17- strelka2_paired_germline_snpeff
+18- purple
+19- rawmpileup
+20- paired_varscan2
+21- merge_varscan2
+22- paired_mutect2
+23- merge_mutect2
+24- vardict_paired
+25- merge_filter_paired_vardict
+26- ensemble_somatic
+27- gatk_variant_annotator_somatic
+28- merge_gatk_variant_annotator_somatic
+29- ensemble_germline_loh
+30- gatk_variant_annotator_germline
+31- merge_gatk_variant_annotator_germline
+32- cnvkit_batch
+33- filter_ensemble_germline
+34- filter_ensemble_somatic
+35- report_cpsr
+36- report_pcgr
+37- run_pair_multiqc
+38- sym_link_fastq_pair
+39- sym_link_final_bam
+40- sym_link_report
+41- sym_link_ensemble
 ----
 ```
 ![tumor_pair sv workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_tumor_pair_sv.resized.png)
@@ -367,6 +368,13 @@ cohorts and somatic variation in tumor/normal sample pairs
 This implementation is optimized for germline calling in cancer pairs.
 [Strelka2](https://github.com/Illumina/strelka)
 
+strelka2_paired_germline_snpeff
+-------------------------------
+Strelka2 is a fast and accurate small variant caller optimized for analysis of germline variation in small
+cohorts and somatic variation in tumor/normal sample pairs
+This implementation is optimized for germline calling in cancer pairs.
+[Strelka2](https://github.com/Illumina/strelka)
+
 purple
 ------
 PURPLE is a purity ploidy estimator for whole genome sequenced (WGS) data.
@@ -425,26 +433,6 @@ merge_gatk_variant_annotator_somatic
 ------------------------------------
 Merge annotated somatic vcfs
 
-compute_cancer_effects_somatic
-------------------------------
-Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
-SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
-Modified arguments to consider paired cancer data.
-
-ensemble_somatic_dbnsfp_annotation
-----------------------------------
-Additional SVN annotations. Provides extra information about SVN by using numerous published databases.
-Applicable to human samples. Databases available include Biomart (adds GO annotations based on gene information)
-and dbNSFP (an integrated database of functional annotations from multiple sources for the comprehensive
-collection of human non-synonymous SNPs. It compiles prediction scores from four prediction algorithms
-(SIFT, Polyphen2, LRT and MutationTaster), three conservation scores (PhyloP, GERP++ and SiPhy)
-and other function annotations).
-
-sample_gemini_annotations_somatic
----------------------------------
-Load functionally annotated vcf file into a mysql lite annotation database :
-[Gemini](http://gemini.readthedocs.org/en/latest/index.html)
-
 ensemble_germline_loh
 ---------------------
 Apply Bcbio.variations ensemble approach for Vardict, Samtools and VarScan2 calls
@@ -458,25 +446,33 @@ merge_gatk_variant_annotator_germline
 -------------------------------------
 Merge annotated germline and LOH vcfs
 
-compute_cancer_effects_germline
--------------------------------
-Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
-SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
-Modified arguments to consider paired cancer data.
+cnvkit_batch
+------------
+CNVkit is a Python library and command-line software toolkit to infer and visualize copy number from
+high-throughput DNA sequencing data. It is designed for use with hybrid capture, including both whole-exome and
+custom target panels, and short-read sequencing platforms such as Illumina and Ion Torrent.
 
-ensemble_germline_dbnsfp_annotation
------------------------------------
-Additional SVN annotations. Provides extra information about SVN by using numerous published databases.
-Applicable to human samples. Databases available include Biomart (adds GO annotations based on gene information)
-and dbNSFP (an integrated database of functional annotations from multiple sources for the comprehensive
-collection of human non-synonymous SNPs. It compiles prediction scores from four prediction algorithms
-(SIFT, Polyphen2, LRT and MutationTaster), three conservation scores (PhyloP, GERP++ and SiPhy)
-and other function annotations).
+filter_ensemble_germline
+------------------------
+Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
+the filter on those generated fields
 
-sample_gemini_annotations_germline
-----------------------------------
-Load functionally annotated vcf file into a mysql lite annotation database :
-[Gemini](http://gemini.readthedocs.org/en/latest/index.html)
+filter_ensemble_somatic
+-----------------------
+Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
+the filter on those generated fields
+
+report_cpsr
+-----------
+Creates a cpsr gremline report (https://sigven.github.io/cpsr/)
+input: filtered ensemble gremline vcf
+output: html report and addtionalflat files
+
+report_pcgr
+-----------
+Creates a PCGR somatic + germline report (https://sigven.github.io/cpsr/)
+input: filtered ensemble gremline vcf
+output: html report and addtionalflat files
 
 sym_link_final_bam
 ------------------
@@ -519,12 +515,6 @@ Returns:vcf.
 
 wham_sv_annotation
 ------------------
-cnvkit_batch
-------------
-CNVkit is a Python library and command-line software toolkit to infer and visualize copy number from
-high-throughput DNA sequencing data. It is designed for use with hybrid capture, including both whole-exome and
-custom target panels, and short-read sequencing platforms such as Illumina and Ion Torrent.
-
 cnvkit_sv_annotation
 --------------------
 scones

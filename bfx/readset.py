@@ -605,7 +605,7 @@ def checkDuplicateReadsets(readset_file):
         # Set the header
         csv_headers = readset_csv.fieldnames
         writer = csv.DictWriter(
-            open(genpipes_proposed_readset_file, 'wb'),
+            open(genpipes_proposed_readset_file, 'w'),
             delimiter=str('\t'),
             fieldnames=csv_headers
         )

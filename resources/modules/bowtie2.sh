@@ -3,23 +3,23 @@
 set -eu -o pipefail
 
 SOFTWARE=bowtie2
-VERSION=2.3.5
-ARCHIVE=$SOFTWARE-$VERSION.zip
-ARCHIVE_URL=https://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/${SOFTWARE}-${VERSION}-linux-x86_64.zip
+VERSION=2.4.4
+ARCHIVE=$SOFTWARE-$VERSION-source.zip
+ARCHIVE_URL=https://sourceforge.net/projects/bowtie-bio/files/$SOFTWARE/$VERSION/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
-NOWRAP=1
-NOPATCH=1
 
 build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
 
-#  cd $SOFTWARE_DIR	# uncomment this if source code has been downloaded instead of binaries
-#  make -j12
+  cd $SOFTWARE_DIR
+  make -j12
+  make -j12 sra-deps
+  make -j12 USE_SRA=1
 
   # Install software
   cd $INSTALL_DOWNLOAD
-  mv -i ${SOFTWARE}-${VERSION}-linux-x86_64 $INSTALL_DIR/$SOFTWARE_DIR
+  mv -i ${SOFTWARE_DIR} $INSTALL_DIR/
 }
 
 module_file() {

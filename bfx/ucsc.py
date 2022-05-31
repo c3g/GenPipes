@@ -24,16 +24,16 @@ import os
 from core.config import *
 from core.job import *
 
-def bedGraphToBigWig(input_bed_graph, output_wiggle, header=True):
+def bedGraphToBigWig(input_bed_graph, output_wiggle, header=True, ini_section='ucsc'):
 
     # If using GRCh37 assembly then create temporary dict file
     # only using autosomal + X + Y chromosomes and adding chr (e.g. chr1, instead of 1)
     if (config.param('DEFAULT', 'assembly') == 'GRCh37') :
-        chromosome_size_file = re.sub(".fa.fai", ".withchr.fa.fai", config.param('ucsc', 'chromosome_size', type='filepath'))
+        chromosome_size_file = re.sub(".fa.fai", ".withchr.fa.fai", config.param(ini_section, 'chromosome_size', param_type='filepath'))
         chromosome_prefix = "chr"
         chromosome_sed = "| sed 's/MT/chrM/'"
     else :
-        chromosome_size_file = config.param('ucsc', 'chromosome_size', type='filepath')
+        chromosome_size_file = config.param(ini_section, 'chromosome_size', param_type='filepath')
         chromosome_prefix = ""
         chromosome_sed = ""
 
@@ -41,7 +41,7 @@ def bedGraphToBigWig(input_bed_graph, output_wiggle, header=True):
     # or if it is just a regular bed file (i.e. no bedGraph header)
     if header :
         remove_head_command="""\
-{open} {input_bed_graph} | head -n 1 > {input_bed_graph}.head.tmp && \\
+({open} {input_bed_graph} | head -n 1 > {input_bed_graph}.head.tmp ; ec=$?; if [ "$ec" -eq 141 ]; then exit 0; else exit "$ec"; fi) && \\
 {open} {input_bed_graph} | awk ' NR > 1 ' | sort  --temporary-directory={temp_dir} -k1,1 -k2,2n | \\
 awk '{{if($0 !~ /^[A-W]/) print "{chrom}"$0; else print $0}}' | grep -v "GL\|lambda\|pUC19\|KI\|\KN\|random" {chromosome_sed} | \\
 awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.body.tmp && \\
@@ -49,7 +49,7 @@ cat {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp > {input_bed_graph}.so
 rm {input_bed_graph}.head.tmp {input_bed_graph}.body.tmp""".format(
             open="zcat" if (os.path.splitext(input_bed_graph)[1] == ".gz") else "cat",
             input_bed_graph=input_bed_graph,
-            temp_dir=config.param('ucsc', 'tmp_dir', required=True),
+            temp_dir=config.param(ini_section, 'tmp_dir', required=True),
             chrom=chromosome_prefix,
             chromosome_sed=chromosome_sed
         )
@@ -60,7 +60,7 @@ awk '{{if($0 !~ /^[A-W]/) print "{chrom}"$0; else print $0}}' | grep -v "GL\|lam
 awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.sorted""".format(
             open="zcat" if (os.path.splitext(input_bed_graph)[1] == ".gz") else "cat",
             input_bed_graph=input_bed_graph,
-            temp_dir=config.param('ucsc', 'tmp_dir', required=True),
+            temp_dir=config.param(ini_section, 'tmp_dir', required=True),
             chrom=chromosome_prefix,
             chromosome_sed=chromosome_sed
         )
@@ -69,7 +69,7 @@ awk '{{printf "%s\\t%d\\t%d\\t%4.4g\\n", $1,$2,$3,$4}}' > {input_bed_graph}.sort
         [input_bed_graph],
         [input_bed_graph+".sorted", output_wiggle],
         [
-            ['ucsc', 'module_ucsc']
+            [ini_section, 'module_ucsc']
         ],
         command="""\
 {remove_head_command} && \\
@@ -85,20 +85,20 @@ bedGraphToBigWig \\
         removable_files=[input_bed_graph+".sorted"]
     )
 
-def bedToBigBed(bed_file, bigBed_file):
+def bedToBigBed(bed_file, bigBed_file, ini_section='ucsc'):
 
     return Job(
         [bed_file],
         [bigBed_file],
         [
-            ['ucsc', 'module_ucsc']
+            [ini_section, 'module_ucsc']
         ],
         command="""\
 bedToBigBed \\
   {bed_file} \\
   {chromosome_size} \\
   {bigBed_file}""".format(
-            chromosome_size=config.param('ucsc', 'chromosome_size', type='filepath'),
+            chromosome_size=config.param(ini_section, 'chromosome_size', param_type='filepath'),
             bed_file=bed_file,
             bigBed_file=bigBed_file
         )

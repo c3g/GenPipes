@@ -41,7 +41,7 @@ python $CHECKMATE_PATH/ncm.py {options} \\
     -l {input} \\
     -O {output}""".format(
             options=config.param('run_checkmate', 'options'),
-	        bed=config.param('run_checkmate','bed', type='filepath'),
+	        bed=config.param('run_checkmate','bed', param_type='filepath'),
 	        input=input,
 	        output=output_dir,
         )

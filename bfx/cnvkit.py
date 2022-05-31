@@ -43,7 +43,7 @@ def batch(
         inputs,
         [tar_dep, antitar_dep],
         [
-            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_cnvkit'],
             ['cnvkit_batch', 'module_R'],
         ],
         command="""\
@@ -60,9 +60,9 @@ cnvkit.py batch {options} \\
   {tumor_bam}""".format(
         options=config.param('cnvkit_batch','batch_options'),
         threads=config.param('cnvkit_batch','threads'),
-        genome=config.param('cnvkit_batch','genome_fasta',type='filepath'),
-        access=config.param('cnvkit_batch','access',type='filepath'),
-        annotate=config.param('cnvkit_batch','refFlat',type='filepath'),
+        genome=config.param('cnvkit_batch','genome_fasta', param_type='filepath'),
+        access=config.param('cnvkit_batch','access', param_type='filepath'),
+        annotate=config.param('cnvkit_batch','refFlat', param_type='filepath'),
         reference="--reference " + reference if reference else "",            
         target_bed="--targets " + target_bed if target_bed else "",
         output_cnn="--output-reference " + output_cnn if output_cnn else "",
@@ -77,7 +77,7 @@ def fix(target_cov, antitarget_cov, output_cnr, reference=None, ref_cnn=None):
         [target_cov, antitarget_cov],
         [output_cnr],
         [
-            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_cnvkit'],
             ['cnvkit_batch', 'module_R'],
         ],
         command="""\
@@ -101,7 +101,7 @@ def segment(input_cnr, output_cns, vcf=None, sample_id=None, normal_id=None):
         [input_cnr],
         [output_cns],
         [
-            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_cnvkit'],
             ['cnvkit_batch', 'module_R'],
         ],
         command="""\
@@ -122,7 +122,7 @@ def call(input_cns, output_cns):
         [input_cns],
         [output_cns],
         [
-            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_cnvkit'],
             ['cnvkit_batch', 'module_R'],
         ],
         command="""\
@@ -140,7 +140,7 @@ def export(tumor_cns, output, sample_id=None):
         [tumor_cns],
         [output],
         [
-            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_cnvkit'],
         ],
         command="""\
 cnvkit.py export {options} \\
@@ -159,7 +159,7 @@ def metrics(input_cnr, input_cns, output):
         [input_cnr, input_cns],
         [output],
         [
-            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_cnvkit'],
             ['cnvkit_batch', 'module_R'],
         ],
         command="""\
@@ -179,7 +179,7 @@ def segmetrics(input_cnr, input_cns, output):
         [input_cnr, input_cns],
         [output],
         [
-            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_cnvkit'],
             ['cnvkit_batch', 'module_R'],
         ],
         command="""\
@@ -200,7 +200,7 @@ def select_background(input_cnr, input_cns, output):
         [input_cnr, input_cns],
         output,
         [
-            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_cnvkit'],
             ['cnvkit_batch', 'module_R'],
         ],
         command="""\
@@ -227,7 +227,7 @@ def scatter(input_cnr, input_cns, output, vcf=None, normal=None, tumor=None):
         [input_cnr, input_cns, vcf],
         [output],
         [
-            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_cnvkit'],
             ['cnvkit_batch', 'module_R'],
         ],
         command="""\
@@ -250,7 +250,7 @@ def diagram(input_cnr, input_cns, output):
         [input_cnr, input_cns],
         [output],
         [
-            ['cnvkit_batch', 'module_python'],
+            ['cnvkit_batch', 'module_cnvkit'],
             ['cnvkit_batch', 'module_R'],
         ],
         command="""\
