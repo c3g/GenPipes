@@ -32,7 +32,7 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [--genpipes_file GENPIPES_FILE] [-d DESIGN]
                   [-t {chipseq,atacseq}] [-r READSETS] [-v]
 
-Version: 4.1.2
+Version: 4.1.3
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -266,20 +266,19 @@ cram_output
 Generate long term storage version of the final alignment files in CRAM format
 Using this function will include the orginal final bam file into the  removable file list
 
+gatk_haplotype_caller
+---------------------
+GATK haplotype caller for snps and small indels.
+
+merge_and_call_individual_gvcf
+------------------------------
+Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
+
 macs2_atacseq_callpeak
 ----------------------
 Peaks are called using the MACS2 software. Different calling strategies are used for narrow and broad peaks.
 The mfold parameter used in the model building step is estimated from a peak enrichment diagnosis run.
 The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
 The default mfold parameter of MACS2 is [10,30].
-
-gatk_haplotype_caller
--------------------------
-GATK haplotype caller for snps and small indels.
-
-merge_and_call_individual_gvcf
---------------------------
-
-Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
 
 
