@@ -60,14 +60,13 @@ maxFlashOverlap=$(grep {readset} {file} | cut -f 6)""".format(
             ['flash', 'module_flash']
         ],
         command="""\
-{pre_command}
-$FLASH_HOME/flash \\
+{pre_command}$FLASH_HOME/flash \\
   -t {threads} \\
   -m {min_overlap} \\
   -M {max_overlap} \\
   -o {name_out} \\
   {inputs} 2>&1 | tee {log_out}""".format(
-        pre_command=pre_command,
+        pre_command=pre_command + " \\\n" if pre_command else "",
         threads=config.param('flash', 'threads', param_type='posint'),
         min_overlap="${minFlashOverlap}" if pre_command else config.param('flash', 'min_overlap', param_type='posint'),
         max_overlap="${maxFlashOverlap}" if pre_command else config.param('flash', 'max_overlap', param_type='posint'),
