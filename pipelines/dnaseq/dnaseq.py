@@ -978,7 +978,7 @@ END
                         interval_list
                     )
                     job.name = "interval_list." + os.path.basename(coverage_bed)
-                    job.sampes [sample]
+                    job.samples = [sample]
                     jobs.append(job)
 
             jobs.append(
