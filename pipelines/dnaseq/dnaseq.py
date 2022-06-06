@@ -63,8 +63,6 @@ from bfx import deliverables
 
 from bfx import bash_cmd as bash
 
-from pipelines import common
-
 ##Structural variants
 from bfx import delly
 from bfx import manta
@@ -504,7 +502,7 @@ END
     
         return jobs
 
-    def sambamba_merge_sam_files(self):
+    def sambamba_merge_sam_extract_unmapped(self):
         """
         BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
@@ -565,7 +563,7 @@ END
                                 sample_bam
                             )
                         ],
-                        name="sambamba_merge_sam_files." + sample.name,
+                        name="sambamba_merge_sam_extract_unmapped." + sample.name,
                         samples=[sample]
                     )
                 )
@@ -1024,7 +1022,8 @@ END
                                 re.sub(".bam", ".no_unmapped.bam", print_reads_output),
                                 sample_unmapped_bam
                             ],
-                            print_reads_output
+                            print_reads_output,
+                            ini_section="sambamba_merge_sam_extract_unmapped"
                         ),
                         sambamba.index(
                             print_reads_output,
@@ -3709,7 +3708,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 #self.bwakit_picard_sort_sam,
-                self.sambamba_merge_sam_files,
+                self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
                 #self.fix_mate_by_coordinate_samtools,
@@ -3750,7 +3749,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
-                self.sambamba_merge_sam_files,
+                self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
                 #self.fix_mate_by_coordinate_samtools,
@@ -3784,7 +3783,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
-                self.sambamba_merge_sam_files,
+                self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
                 self.picard_mark_duplicates,
@@ -3816,7 +3815,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
-                self.sambamba_merge_sam_files,
+                self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
                 self.picard_mark_duplicates,

@@ -22,7 +22,6 @@
 # Python Standard Modules
 import argparse
 import logging
-import math
 import os
 import re
 import sys
@@ -54,7 +53,6 @@ from bfx import metrics
 from bfx import bash_cmd as bash
 from bfx import dragen
 
-from pipelines import common
 from pipelines.dnaseq import dnaseq
 
 log = logging.getLogger(__name__)
