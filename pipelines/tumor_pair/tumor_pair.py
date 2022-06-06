@@ -2791,7 +2791,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             ),
                             htslib.tabix(
                                 bed_file,
-                                "-p bed"
+                                "-p -f bed"
                             )
                         ],
                         name="bed_index." + tumor_pair.name
@@ -5133,7 +5133,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             ),
                             htslib.tabix(
                                 bed_file,
-                                "-p bed"
+                                "-f -p bed"
                             )
                         ],
                         name="bed_index." + tumor_pair.name,
