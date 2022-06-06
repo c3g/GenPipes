@@ -3197,7 +3197,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     ),
                     htslib.tabix(
                         coverage_bed + ".gz",
-                        "-p bed"
+                        "-f -p bed"
                     ),
                  ],name="bed_index." + sample.name))
 
