@@ -382,6 +382,7 @@ class PBSScheduler(Scheduler):
                     else:
                         job_dependencies = "JOB_DEPENDENCIES="
 
+                    job_name_prefix = job.name.split(".")[0]
                     config_step_wrapper = config.param(job_name_prefix, 'step_wrapper', required=False)
 
                     #sleepTime = random.randint(10, 100)
@@ -608,6 +609,7 @@ class SlurmScheduler(Scheduler):
                     else:
                         job_dependencies = "JOB_DEPENDENCIES="
 
+                    job_name_prefix = job.name.split(".")[0]
                     config_step_wrapper = config.param(job_name_prefix, 'step_wrapper', required=False)
 
                     self.genpipes_file.write("""
