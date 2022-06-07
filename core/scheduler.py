@@ -408,7 +408,7 @@ chmod 755 $COMMAND
                     )
 
                     cmd = """\
-echo "rm -f $JOB_DONE && {job2json_start} {step_wraper} {container_line} $COMMAND
+echo "rm -f $JOB_DONE && {job2json_start} {step_wrapper} {container_line} $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 {job2json_end}
@@ -420,7 +420,7 @@ exit \$MUGQIC_STATE" | \\
                         container_line=self.container_line,
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                         job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE'),
-                        step_wraper=config_step_wrapper
+                        step_wrapper=config_step_wrapper
                     )
                         #sleep_time=sleepTime
 
@@ -522,7 +522,7 @@ set -eu -o pipefail
 chmod 755 $COMMAND
 printf "\\n$SEPARATOR_LINE\\n"
 echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
-rm -f $JOB_DONE && {job2json_start} {step_wraper} $COMMAND &> $JOB_OUTPUT
+rm -f $JOB_DONE && {job2json_start} {step_wrapper} $COMMAND &> $JOB_OUTPUT
 MUGQIC_STATE=$?
 echo "End MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`"
 echo MUGQICexitStatus:$MUGQIC_STATE
@@ -534,7 +534,7 @@ if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
                             separator_line=separator_line,
                             job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                             job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE'),
-                            step_wraper=config_step_wrapper
+                            step_wrapper=config_step_wrapper
                         )
                     )
 
@@ -640,7 +640,7 @@ date
 scontrol show job \$SLURM_JOBID
 sstat -j \$SLURM_JOBID.batch
 echo '#######################################'
-rm -f $JOB_DONE && {job2json_start} {step_wraper} {container_line}  $COMMAND
+rm -f $JOB_DONE && {job2json_start} {step_wrapper} {container_line}  $COMMAND
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 {job2json_end}
@@ -657,7 +657,7 @@ exit \$MUGQIC_STATE" | \\
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                         job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE') ,
                         container_line=self.container_line,
-                        step_wraper=config_step_wrapper
+                        step_wrapper=config_step_wrapper
 )
 
                     # Cluster settings section must match job name prefix before first "."
