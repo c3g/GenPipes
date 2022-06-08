@@ -1030,7 +1030,6 @@ END
                             print_reads_index_output
                         )
                     ],
-                    input_dependency=[print_reads_output, sample_unmapped_bam],
                     output_dependency=[print_reads_output, print_reads_index_output],
                     name="sambamba_merge_unmapped." + sample.name,
                     samples=[sample]
