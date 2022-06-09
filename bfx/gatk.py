@@ -414,12 +414,12 @@ def print_reads(input, output, base_quality_score_recalibration):
     else:
         return Job(
             [input, base_quality_score_recalibration],
-            [output, re.sub(".bam", ".bai", output)],
+            [output, re.sub(".bam", ".bam.bai", output)],
             [
                 ['gatk_print_reads', 'module_java'],
                 ['gatk_print_reads', 'module_gatk']
             ],
-        command="""\
+            command="""\
 rm -rf {output}* && \\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type PrintReads --generate_md5 \\
@@ -428,16 +428,16 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --reference_sequence {reference_sequence} \\
   --BQSR {base_quality_score_recalibration} \\
   --out {output}""".format(
-        tmp_dir=config.param('gatk_print_reads', 'tmp_dir'),
-        java_other_options=config.param('gatk_print_reads', 'java_other_options'),
-        ram=config.param('gatk_print_reads', 'ram'),
-        threads=config.param('gatk_print_reads', 'threads', param_type='int'),
-        input=input,
-        reference_sequence=config.param('gatk_print_reads', 'genome_fasta', param_type='filepath'),
-        base_quality_score_recalibration=base_quality_score_recalibration,
-        output=output
+                tmp_dir=config.param('gatk_print_reads', 'tmp_dir'),
+                java_other_options=config.param('gatk_print_reads', 'java_other_options'),
+                ram=config.param('gatk_print_reads', 'ram'),
+                threads=config.param('gatk_print_reads', 'threads', param_type='int'),
+                input=input,
+                reference_sequence=config.param('gatk_print_reads', 'genome_fasta', param_type='filepath'),
+                base_quality_score_recalibration=base_quality_score_recalibration,
+                output=output
+            )
         )
-    )
 
 def realigner_target_creator(input,
                              output,

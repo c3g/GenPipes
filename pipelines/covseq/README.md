@@ -19,11 +19,11 @@ usage: covseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--container {wrapper, singularity} <IMAGE PATH>]
                  [--genpipes_file GENPIPES_FILE] [-r READSETS] [-v]
 
-Version: 4.2.0
+Version: 4.2.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
-optional arguments:
+options:
   -h                    show this help message and exit
   --help                show detailed description of pipeline and steps
   -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
@@ -136,7 +136,7 @@ This step takes as input files:
 
 sambamba_merge_sam_files
 ------------------------
-BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
 

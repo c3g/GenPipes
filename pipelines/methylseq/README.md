@@ -31,14 +31,14 @@ usage: methylseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                     [--no-json] [--report] [--clean]
                     [-l {debug,info,warning,error,critical}] [--sanity-check]
                     [--container {wrapper, singularity} <IMAGE PATH>]
-                    [--genpipes_file GENPIPES_FILE] [-d DESIGN] [-r READSETS]
-                    [-v]
+                    [--genpipes_file GENPIPES_FILE] [-d DESIGN]
+                    [-t {bismark,hybrid,dragen}] [-r READSETS] [-v]
 
-Version: 4.2.0
+Version: 4.2.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
-optional arguments:
+options:
   -h                    show this help message and exit
   --help                show detailed description of pipeline and steps
   -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
@@ -79,16 +79,21 @@ optional arguments:
                         stdout if the option is not provided.
   -d DESIGN, --design DESIGN
                         design file
+  -t {bismark,hybrid,dragen}, --type {bismark,hybrid,dragen}
+                        MethylSeq analysis type
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
 
 Steps:
-```
-![methylseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq.png)
-```
 ------
+
+----
+```
+![methylseq bismark workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq_bismark.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq_bismark.png)
+```
+bismark:
 1- picard_sam_to_fastq
 2- trimmomatic
 3- merge_trimmomatic_stats
@@ -105,6 +110,52 @@ Steps:
 14- filter_snp_cpg
 15- prepare_methylkit
 16- cram_output
+----
+```
+![methylseq hybrid workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq_hybrid.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq_hybrid.png)
+```
+hybrid:
+1- picard_sam_to_fastq
+2- trimmomatic
+3- merge_trimmomatic_stats
+4- dragen_align
+5- add_bam_umi
+6- sambamba_merge_sam_files
+7- picard_remove_duplicates
+8- metrics
+9- methylation_call
+10- wiggle_tracks
+11- methylation_profile
+12- ihec_sample_metrics_report
+13- bis_snp
+14- filter_snp_cpg
+15- prepare_methylkit
+16- cram_output
+----
+```
+![methylseq dragen workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq_dragen.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq_dragen.png)
+```
+dragen:
+1- picard_sam_to_fastq
+2- trimmomatic
+3- merge_trimmomatic_stats
+4- dragen_align
+5- add_bam_umi
+6- sambamba_merge_sam_files
+7- sort_dragen_sam
+8- metrics
+9- dragen_methylation_call
+10- split_dragen_methylation_report
+11- methylation_profile
+12- dragen_bedgraph
+13- wiggle_tracks
+14- ihec_sample_metrics_report
+15- bis_snp
+16- filter_snp_cpg
+17- prepare_methylkit
+18- cram_output
 
 ```
 picard_sam_to_fastq
@@ -140,7 +191,7 @@ Add read UMI tag to individual bam files using fgbio
 
 sambamba_merge_sam_files
 ------------------------
-BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
 
@@ -201,5 +252,27 @@ cram_output
 -----------
 Generate long term storage version of the final alignment files in CRAM format
 Using this function will include the orginal final bam file into the  removable file list
+
+dragen_align
+------------
+Align reads with dragen and call methylation with bismark. both hybrid and dragen protocols use this step to
+align reads. The dragen parameters can be changed using other_options of the ini configuration.
+
+
+sort_dragen_sam
+---------------
+Creates symlink from dragen output bam to plug in to other steps (same file as the picard output bam files)
+
+dragen_methylation_call
+-----------------------
+Call methylation with dragen using the 2nd run of Dragen alignment
+
+split_dragen_methylation_report
+-------------------------------
+Dragen methylation report contains all three methylation context. To create combined CSV CpGs should be extracted
+
+dragen_bedgraph
+---------------
+Creates bedgraph file from combined strand CpG file
 
 

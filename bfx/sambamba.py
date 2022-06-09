@@ -76,7 +76,6 @@ def merge(input_bams,
         input_bams,
         [output_bam],
         [
-            [ini_section, 'module_samtools'],
             [ini_section, 'module_sambamba']
         ],
         command="""\
@@ -101,7 +100,6 @@ def markdup(input_bam,
         input_bam,
         [output_bam],
         [
-            ['sambamba_mark_duplicates', 'module_samtools'],
             ['sambamba_mark_duplicates', 'module_sambamba']
         ],
         command="""\

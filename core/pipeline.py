@@ -97,7 +97,7 @@ class Pipeline(object):
 
         # Normal pipeline execution
         if self.args.config:
-            if self.args.sanity_check : config.sanity = True
+            if self.args.sanity_check: config.sanity = True
             config.parse_files(self.args.config)
         else:
             self.argparser.error("argument -c/--config is required!")
@@ -166,7 +166,7 @@ class Pipeline(object):
                 self.submit_jobs()
             except SanitycheckError as e:
                 log.error("""
-***The pipeline encounterered an error :
+***The pipeline encountered an error :
     {error}
 ***Please try running the pipeline in SANITY CHECK mode using the '--sanity-check' flag to check for more potential issues...""".format(
                    error=e
@@ -177,11 +177,11 @@ class Pipeline(object):
     @property
     def argparser(self):
         if self.protocol is None:
-            steps = "\n".join([str(idx + 1) + "- " + step.__name__  for idx, step in enumerate(self.steps)])
+            steps = "\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(self.steps)])
         else:
             steps = ""
             for i in range(0, len(self.protocol)):
-                steps += "\n----\n"+self.protocol[i]+":\n"+"\n".join([str(idx + 1) + "- " + step.__name__  for idx, step in enumerate(self.steps[i])])
+                steps += "\n----\n"+self.protocol[i]+":\n"+"\n".join([str(idx + 1) + "- " + step.__name__ for idx, step in enumerate(self.steps[i])])
 
         if not hasattr(self, "_argparser"):
             epilog = textwrap.dedent("""\
@@ -327,7 +327,7 @@ class Pipeline(object):
                     self.dependency_jobs(job)
                     selected_input_files = input_files
                 except Exception as e:
-                    log.debug("Caught Exception for candidate input file: " +  ", ".join(input_files))
+                    log.debug("Caught Exception for candidate input file: " + ", ".join(input_files))
                     log.debug(e)
 
         if selected_input_files:
@@ -365,9 +365,9 @@ class Pipeline(object):
 
     def create_jobs(self):
         for step in self.step_range:
-            if self.args.sanity_check :
+            if self.args.sanity_check:
                 log.warn("* Checking jobs for step " + step.name + "...")
-            else :
+            else:
                 log.info("Create jobs for step " + step.name + "...")
             jobs = step.create_jobs()
             for job in jobs:
@@ -394,7 +394,7 @@ class Pipeline(object):
                             if sample not in self.sample_list:
                                 self.sample_list.append(sample)
 
-            if not self.args.sanity_check :
+            if not self.args.sanity_check:
                 log.info("Step " + step.name + ": " + str(len(step.jobs)) + " job" + ("s" if len(step.jobs) > 1 else "") + " created" + ("" if step.jobs else "... skipping") + "\n")
 
         # Now create the json dumps for all the samples if not already done
@@ -444,7 +444,7 @@ class Pipeline(object):
             # Retrieve absolute paths of report files
             for report_file in job.report_files:
                 if report_file not in report_files:
-                    if os.path.exists(os.path.join(output_dir, report_file)) :
+                    if os.path.exists(os.path.join(output_dir, report_file)):
                         report_files.append(report_file)
                     else:
                         log.warn("Report file: " + report_file + " not found!... skipping")
