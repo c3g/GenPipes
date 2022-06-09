@@ -32,11 +32,11 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [--genpipes_file GENPIPES_FILE] [-d DESIGN]
                   [-t {chipseq,atacseq}] [-r READSETS] [-v]
 
-Version: 4.1.3
+Version: 4.2.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
-optional arguments:
+options:
   -h                    show this help message and exit
   --help                show detailed description of pipeline and steps
   -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
