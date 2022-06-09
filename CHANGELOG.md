@@ -1,6 +1,145 @@
-34 tags, 9339 commits
+35 tags, 9446 commits
 
-HEAD        Wed Jun 1 15:58:06 2022 -0400        0 commits
+HEAD        Thu Jun 9 13:15:16 2022 -0400        0 commits
+
+4.2.1        Thu Jun 9 17:48:47 2022 +0000        107 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      16 commits
+
+       4e90741 GenPipes - DNASeq : fixing dependencies in recalibratino step for unmapped_reads
+       46042e1 GenPipes - remove useless sections in ini
+       40d6fe2 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       7dff261 GenPipes - move 'sambamba_merge_sam_files' into common.py + renamed 'sambamba_merge_sam_files' to 'sambamba_merge_sam_extract_unmapped' in DNASeq
+       34ea28a Cleaning bfx/sambamba from samtools dependencies
+       adf5e7f GenPipes - DNASeq : revisited recal jobs to avoid useless restart of the step
+       ed49153 GenPipes - DNASeq : Fixing dependencies for recal .bam.bai
+       b7ef560 GenPipes - DNASeq : Recreating of the index of the recal bam file after merging of the unmapped reads
+       373fb13 GenPipes - DNASeq : correcting the job which merges the unmapped reads to the recalibrated fastqs
+       d30127d GenPipes - DNASeq - Fix job queueing for merge unmapped to recalibrated
+       1fc5243 fix typo
+       afffee2 GenPipes - DNASeq : corrected unmapped_reads job queueing
+       379dfdf GenPipes - DNASeq : removing useless part of code...
+       4b897f0 GenPipes - DNASeq : extracting unmapped reads from the merged bam, then re-instering them into the recalibrated bam
+       460b6a3 Version bump to 4.2.0
+       5cc640c Version bump to 4.1.4-beta
+
+  Édouard Henrion <henrione@beluga2.int.ets1.calculquebec.ca>      10 commits
+
+       5690df4 GenPipes - C3G Software Stack : showing only the 3 top versions of the softwares and adding '...' when necessary to indicate more older versions are also available
+       34b06e6 GenPipes - C3G Software Stack : reverse-sorting the software versions when combining the metadata JSONs
+       416fe4a GenPipes - C3G Software Stack : improved sorting of JSON output
+       864465e GenPipes - C3G Software Stack : sort JSON output
+       d3f03f6 GenPipes - C3G Software Stack : parametrized the redirection of the output to a file or to stdout
+       701298b GenPipes - C3G Software Stack : removed the sending of the JSON
+       85b7009 GenPipes - C3G Software Stack : corrected typo
+       833d3ca GenPipes - C3G Software Stack : corrected message when file is sent
+       3303a59 GenPipes - C3G Software Stack : Added sending of the combined JSON to url + reformating the module helpers
+       0b8b7d5 GenPipes - module helper : updating the pythonSearcher class
+
+  ehenrion <edouard.henrion@mcgill.ca>      6 commits
+
+       5f690ff Merged in soft_jsondb_gsoc2020_eh (pull request #181)
+       ba84d8c dnaseq.base.ini edited online with Bitbucket
+       943e103 Merged in unmapped_reads (pull request #355)
+       ef817ea fixed typo
+       ecdcb0a dnaseq.base.ini edited online with Bitbucket
+       9f80a8c Merged in release_4.2.0 (pull request #354)
+
+  Moonshroom <yatharthrai16@ducic.ac.in>      4 commits
+
+       a51bba0 Some documentation edits, README updates, fixed bad variable naming
+       8d223ca Migration to argparse
+       c6bde0f Added -h/--help flag
+       810321f 1. Pushing pre-final code 2. Added CLI args 3. Added CLI Documentation
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      20 commits
+
+       cd2845a Merged in HotFix_dev (pull request #357)
+       a5caedf General - General - Fixing UnboundLocalError: local variable 'job_name_prefix' referenced before assignment
+       100567c Merged in HotFix_dev (pull request #356)
+       a35809f General - General - Fixing typo
+       edc01ae General - General - Fixing typo
+       20801c4 General - General - Adding step_wrapper to slurm and batch mode (fixing regression)
+       e786922 General - general - Standardizing inis + fixing methylseq.base.ini
+       343ec56 Merged in HotFix_dev (pull request #350)
+       401be79 ampliconseq - General - Upgrading to latest release of mugqic_tools
+       a52c6d6 covseq - General - Upgrading to latest release of covseq_tools
+       92e0a5f ampliconseq - flash - Debug previous flash commit
+       d73c35d ampliconseq - ampliconLengthParser - Fixing head with pipefail
+       c74fe1c ampliconseq - flash - Fixing None appearing in cmd
+       720962b covseq - qualimap - Fixing qualimap parameter for threads
+       92081f8 covseq - prepare_report - Fixing pipefail issue for ncovtools: we always want ncvotools error to be ignored and continue the job
+       e40e7cc covseq - prepare_report - Fixing pipefail issue when grep doesn't find anything
+       2c6b46c covseq - prepare_table - Adding threads param
+       5387d29 covseq - prepare_table - Adding samtools as module required
+       b8cfc5e methylseq - metrics - Changing ini path of file
+       f20a986 General - general - Standardizing inis + fixing methylseq.base.ini
+
+  Pierre-Olivier Quirion <pierre-olivier.quirion@computationalgenomics.ca>      1 commits
+
+       cf3d727 Merged in release_4.2.1 (pull request #358)
+
+  P-O Quirion <pierre-olivier.quirion@computationalgenomics.ca>      7 commits
+
+       c7b3aa6 Merge remote-tracking branch 'origin/dev' into release_4.2.1
+       b092002 Update readme and version for release
+       5469a90 remove -nt completely from indel realigner
+       ccf8529 abacus ini typo
+       720fd57 typo in tabix option, and no threads in gatk_indel_realigner
+       68183a8 always force overwrite on tabix
+       ef425e7 tweak and fix base ini
+
+  pubudumanoj <pnawarat@abacus3.ferrier.genome.mcgill.ca>      39 commits
+
+       79ef518 addressed comments from Paul
+       2011bfb removed methylseqraw class
+       a726b97 Fix issues in input and output dependencies
+       66e55e3 resolved differences in dev branch files
+       9c8dd41 Modified dragen.ini file
+       c5acace fixed documentation typo
+       5949d7b fixed issues in output file tracking added documentation
+       fea7a92 fixed issue in dragen hybrid protocol in single-pass
+       8fca6d1 added dragen_bedgraph step
+       454abe6 added split_dragen_methylation_report
+       313ce78 fixed issues in dragen_methylation_call step working pipeline
+       e2a952e trying to fix dependencies
+       0c48154 added missing job to the dragen_aling
+       15dda51 fixed a bug
+       d3e9874 Add changes in common and methylseq
+       c853189 Implement jsonator disabling at job level
+       4d64d73 Debug dragen protocol
+       d1c7bf2 update dragen protocol
+       8ed0ab8 Implement Modified dependency of dragen command to allo mv commands Added dragen function
+       2ce9490 Implement Modified dependency of dragen command to allo mv commands Added dragen function
+       dfa349d fixing issues with the done file tracking system
+       8612011 Trying to fix dependency issue in dragen
+       61945dc resolved merge conflicts
+       f22f0f6 resolved merge conflicts
+       6664a85 added dragen mark_duplication
+       427d7a0 fixed a bug
+       33caf90 update dragen protocol
+       3cb1965 added missing job to the dragen_aling
+       e0e21a7 Resolved incorrect tool link
+       93a084b fixed a bug
+       30ef76c fixed a bug
+       fa534de Add changes in common and methylseq
+       e8833f5 Removing debug outputdir log info
+       8485ae7 Implement jsonator disabling at job level
+       98cc972 Debug dragen protocol
+       5ec4bfc update dragen protocol
+       c32117b pipelines/methylseq/methylseq.dragen.ini
+       5e71366 Implement Modified dependency of dragen command to allo mv commands Added dragen function
+       179cabf Implement Modified dependency of dragen command to allo mv commands Modify dependency of bash commands Added bfx/dragen.py
+
+  pubudumanoj <pubudu.nawarathna@mail.mcgill.ca>      3 commits
+
+       d82bab0 added comments and fix hybrid mode single pass directional-complement
+       865a65f fixed ihec metric by adding a job to create an empty metric file for estimated_library_size
+       cd94f55 changed dragen structure and added a new protocol
+
+  Pubudu Nawarathna <pubudu.nawarathna@mail.mcgill.ca>      1 commits
+
+       7faffc5 Merged in dragen_update_version2 (pull request #346)
 
 4.2.0        Wed Jun 1 20:01:30 2022 +0000        230 commits
 
