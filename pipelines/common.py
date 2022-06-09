@@ -48,7 +48,7 @@ from bfx import trimmomatic
 from bfx import variantBam
 from bfx import samtools
 from bfx import rmarkdown
-from bfx import jsonator
+from bfx import sambamba
 from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
@@ -441,6 +441,74 @@ pandoc \\
                 ),
                 report_files=[report_file]
             )], name="merge_trimmomatic_stats")]
+
+    def sambamba_merge_sam_files(self):
+        """
+        BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
+
+        This step takes as input files:
+
+        1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
+        2. Else, BAM files from the readset file
+        """
+
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
+            # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
+            candidate_readset_bams = [
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets],
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
+            ]
+            candidate_readset_bams.append([readset.bam for readset in sample.readsets if readset.bam])
+            readset_bams = self.select_input_files(candidate_readset_bams)
+
+            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
+
+            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
+            if len(sample.readsets) == 1:
+                readset_bam = readset_bams[0]
+                readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
+                sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
+    
+                jobs.append(
+                    concat_jobs(
+                        [
+                            mkdir_job,
+                            bash.ln(
+                                readset_bam,
+                                sample_bam,
+                                self.output_dir
+                            ),
+                            bash.ln(
+                                readset_index,
+                                sample_index,
+                                self.output_dir
+                            )
+                        ],
+                        name="symlink_readset_sample_bam." + sample.name,
+                        samples=[sample]
+                    )
+                )
+
+            elif len(sample.readsets) > 1:
+                jobs.append(
+                    concat_jobs(
+                        [
+                            mkdir_job,
+                            sambamba.merge(
+                                readset_bams,
+                                sample_bam
+                            )
+                        ],
+                        name="sambamba_merge_sam_files." + sample.name,
+                        samples=[sample]
+                    )
+                )
+
+        return jobs
 
     def verify_bam_id(self):
         """

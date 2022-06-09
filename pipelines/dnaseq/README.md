@@ -15,11 +15,11 @@ usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--genpipes_file GENPIPES_FILE]
                  [-t {mugqic,mpileup,light,sv}] [-r READSETS] [-v]
 
-Version: 4.2.0
+Version: 4.2.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
-optional arguments:
+options:
   -h                    show this help message and exit
   --help                show detailed description of pipeline and steps
   -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
@@ -76,7 +76,7 @@ mugqic:
 1- picard_sam_to_fastq
 2- skewer_trimming
 3- bwa_mem_sambamba_sort_sam
-4- sambamba_merge_sam_files
+4- sambamba_merge_sam_extract_unmapped
 5- gatk_indel_realigner
 6- sambamba_merge_realigned
 7- picard_mark_duplicates
@@ -119,7 +119,7 @@ mpileup:
 1- picard_sam_to_fastq
 2- skewer_trimming
 3- bwa_mem_sambamba_sort_sam
-4- sambamba_merge_sam_files
+4- sambamba_merge_sam_extract_unmapped
 5- gatk_indel_realigner
 6- sambamba_merge_realigned
 7- picard_mark_duplicates
@@ -155,7 +155,7 @@ light:
 1- picard_sam_to_fastq
 2- skewer_trimming
 3- bwa_mem_sambamba_sort_sam
-4- sambamba_merge_sam_files
+4- sambamba_merge_sam_extract_unmapped
 5- gatk_indel_realigner
 6- sambamba_merge_realigned
 7- picard_mark_duplicates
@@ -191,7 +191,7 @@ sv:
 1- picard_sam_to_fastq
 2- skewer_trimming
 3- bwa_mem_sambamba_sort_sam
-4- sambamba_merge_sam_files
+4- sambamba_merge_sam_extract_unmapped
 5- gatk_indel_realigner
 6- sambamba_merge_realigned
 7- picard_mark_duplicates
@@ -233,9 +233,9 @@ This step takes as input files:
 2. Else, FASTQ files from the readset file if available
 3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
 
-sambamba_merge_sam_files
-------------------------
-BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+sambamba_merge_sam_extract_unmapped
+-----------------------------------
+BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 This step takes as input files:
 

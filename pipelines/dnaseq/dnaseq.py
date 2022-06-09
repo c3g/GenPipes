@@ -63,8 +63,6 @@ from bfx import deliverables
 
 from bfx import bash_cmd as bash
 
-from pipelines import common
-
 ##Structural variants
 from bfx import delly
 from bfx import manta
@@ -504,9 +502,9 @@ END
     
         return jobs
 
-    def sambamba_merge_sam_files(self):
+    def sambamba_merge_sam_extract_unmapped(self):
         """
-        BAM readset files are merged into one file per sample. Merge is done using [Picard](http://broadinstitute.github.io/picard/).
+        BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
         This step takes as input files:
 
@@ -525,7 +523,9 @@ END
             ]
             candidate_readset_bams.append([readset.bam for readset in sample.readsets if readset.bam])
             readset_bams = self.select_input_files(candidate_readset_bams)
+
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
@@ -534,111 +534,50 @@ END
                 sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
     
                 jobs.append(
-                    concat_jobs([
-                        bash.mkdir(
-                            os.path.dirname(sample_bam)
-                        ),
-                        bash.ln(
-                            readset_bam,
-                            sample_bam,
-                            self.output_dir
-                        ),
-                        bash.ln(
-                            readset_index,
-                            sample_index,
-                            self.output_dir
-                        )
-                    ],
-                        name="symlink_readset_sample_bam." + sample.name,
-                        samples=[sample]
-                    )
-                )
-
-            elif len(sample.readsets) > 1:
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(
-                            os.path.dirname(sample_bam)
-                        ),
-                        sambamba.merge(
-                            readset_bams,
-                            sample_bam
-                        )
-                    ],
-                        name="sambamba_merge_sam_files." + sample.name,
-                        samples=[sample]
-                    )
-                )
-        return jobs
-
-    def picard_merge_sam_files(self):
-        """
-        BAM readset files are merged into one file per sample. Merge is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
-
-        This step takes as input files:
-
-        1. Aligned and sorted BAM output files from previous bwa_mem_sambamba_sort_sam step if available
-        2. Else, BAM files from the readset file
-        """
-
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-
-            # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
-            candidate_readset_bams = [
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
-            ]
-            if readset.bam:
-                candidate_readset_bams.append([readset.bam for readset in sample.readsets])
-            readset_bams = self.select_input_files(candidate_readset_bams)
-
-            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
-
-            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            if len(sample.readsets) == 1:
-                readset_bam = readset_bams[0]
-                readset_index = re.sub("\.bam$", ".bai", readset_bam)
-                sample_index = re.sub("\.bam$", ".bai", sample_bam)
-    
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(
-                            os.path.dirname(sample_bam)
-                        ),
-                        bash.ln(
-                            readset_bam,
-                            sample_bam,
-                            self.output_dir
-                        ),
-                        bash.ln(
-                            readset_index,
-                            sample_index,
-                            self.output_dir
-                        )
-                    ],
-                        name="symlink_readset_sample_bam." + sample.name,
-                        samples=[sample]
-                    )
-                )
-
-            elif len(sample.readsets) > 1:
-                jobs.append(
-                    concat_jobs([
-                        bash.mkdir(
-                            os.path.dirname(sample_bam)
-                        ),
-                        sambamba.merge(
-                            readset_bams,
-                            sample_bam
+                    concat_jobs(
+                        [
+                            mkdir_job,
+                            bash.ln(
+                                readset_bam,
+                                sample_bam,
+                                self.output_dir
+                            ),
+                            bash.ln(
+                                readset_index,
+                                sample_index,
+                                self.output_dir
                             )
                         ],
-                        name="sambamba_merge_sam_files." + sample.name,
+                        name="symlink_readset_sample_bam." + sample.name,
                         samples=[sample]
-                        )
                     )
+                )
+
+            elif len(sample.readsets) > 1:
+                jobs.append(
+                    concat_jobs(
+                        [
+                            mkdir_job,
+                            sambamba.merge(
+                                readset_bams,
+                                sample_bam
+                            )
+                        ],
+                        name="sambamba_merge_sam_extract_unmapped." + sample.name,
+                        samples=[sample]
+                    )
+                )
+
+            # Extract unmapped reads from the merged sample bam file
+            sample_unmapped_bam = os.path.join(alignment_directory, sample.name + ".unmapped.bam")
+            unmapped_job = sambamba.view(
+                sample_bam,
+                sample_unmapped_bam,
+                config.param("sambamba_extract_unmapped", "options")
+            )
+            unmapped_job.name = "sambamba_extract_unmapped." + sample.name
+            unmapped_job.samples = [sample]
+            jobs.append(unmapped_job)
 
         return jobs
 
@@ -1024,7 +963,7 @@ END
             base_recalibrator_output = duplicate_file_prefix + "recalibration_report.grp"
 
             interval_list = None
-            
+
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 sample.readsets[0]
             )
@@ -1037,29 +976,63 @@ END
                         interval_list
                     )
                     job.name = "interval_list." + os.path.basename(coverage_bed)
+                    job.samples = [sample]
                     jobs.append(job)
 
             jobs.append(
-                concat_jobs([
-                    gatk4.base_recalibrator(
-                        input,
-                        base_recalibrator_output,
-                        intervals=interval_list
-                        )
+                concat_jobs(
+                    [
+                        gatk4.base_recalibrator(
+                            input,
+                            base_recalibrator_output,
+                            intervals=interval_list
+                            )
                     ],
-                    name="gatk_base_recalibrator." + sample.name
-                    )
+                    name="gatk_base_recalibrator." + sample.name,
+                    samples=[sample]
                 )
+            )
             
             jobs.append(
-                concat_jobs([
-                    gatk4.print_reads(
-                        input,
-                        print_reads_output,
-                        base_recalibrator_output
-                        ),
+                concat_jobs(
+                    [
+                        gatk4.print_reads(
+                            input,
+                            re.sub(".bam", ".no_unmapped.bam", print_reads_output),
+                            base_recalibrator_output
+                        )
                     ],
-                    name="gatk_print_reads." + sample.name
+                    removable_files=[
+                        re.sub(".bam", ".no_unmapped.bam", print_reads_output),
+                        re.sub(".bam", ".no_unmapped.bam.bai", print_reads_output)
+                    ],
+                    name="gatk_print_reads." + sample.name,
+                    samples=[sample]
+                )
+            )
+
+            # Merge unmapped reads to recal.bam
+            sample_unmapped_bam = os.path.join("alignment", sample.name, sample.name + ".unmapped.bam")
+            print_reads_index_output = re.sub(".bam", ".bam.bai", print_reads_output)
+            jobs.append(
+                concat_jobs(
+                    [
+                        sambamba.merge(
+                            [
+                                re.sub(".bam", ".no_unmapped.bam", print_reads_output),
+                                sample_unmapped_bam
+                            ],
+                            print_reads_output,
+                            ini_section="sambamba_merge_sam_extract_unmapped"
+                        ),
+                        sambamba.index(
+                            print_reads_output,
+                            print_reads_index_output
+                        )
+                    ],
+                    output_dependency=[print_reads_output, print_reads_index_output],
+                    name="sambamba_merge_unmapped." + sample.name,
+                    samples=[sample]
                 )
             )
 
@@ -3223,7 +3196,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     ),
                     htslib.tabix(
                         coverage_bed + ".gz",
-                        "-p bed"
+                        "-f -p bed"
                     ),
                  ],name="bed_index." + sample.name))
 
@@ -3734,7 +3707,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 #self.bwakit_picard_sort_sam,
-                self.sambamba_merge_sam_files,
+                self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
                 #self.fix_mate_by_coordinate_samtools,
@@ -3775,7 +3748,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
-                self.sambamba_merge_sam_files,
+                self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
                 #self.fix_mate_by_coordinate_samtools,
@@ -3809,7 +3782,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
-                self.sambamba_merge_sam_files,
+                self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
                 self.picard_mark_duplicates,
@@ -3841,7 +3814,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
-                self.sambamba_merge_sam_files,
+                self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
                 self.picard_mark_duplicates,

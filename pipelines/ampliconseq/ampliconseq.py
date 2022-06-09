@@ -408,7 +408,7 @@ pandoc --to=markdown \\
                     [fastq1, flash_hist],
                     [readset_merge_flash_stats],
                     command="""\
-frag_length=$(zless {fastq} | head -n2 | tail -n1 | awk '{{print length($0)}}')
+frag_length=$(zless {fastq} | head -n2 | tail -n1 | awk '{{print length($0)}}'; ec=$?; if [ "$ec" -eq 141 ]; then exit 0; else exit "$ec"; fi)
 minCount=$(cut -f2 {hist} | sort -n | awk ' {{ sum+=$1;i++ }} END {{ print sum/100; }}' | cut -d"." -f1)
 minLen=$(awk -F'\t' -v var=$minCount '$2>var' {hist} | cut -f1 | sort -g | head -n1)
 maxLen=$(awk -F'\t' -v var=$minCount '$2>var' {hist} | cut -f1 | sort -gr | head -n1)
