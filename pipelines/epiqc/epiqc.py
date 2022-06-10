@@ -322,8 +322,7 @@ mkdir -p \\
         # accordingly call SVMFS or user file
 
         #ihec_inputinfofile = "/home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc_test/test_version2/inputinfofile.txt"
-        ihec_inputinfofile = os.environ[config.param('DEFAULT', 'mugqic_path')] + "/" + config.param('chromimpute',
-                                                                                                     'IHEC_inputinfo')
+        ihec_inputinfofile =  config.param('chromimpute', 'IHEC_inputinfo')
 
         #remove inputinfor file if exist
         #at this point imputation directory has already been created as chromosome file has generated first
@@ -403,7 +402,7 @@ mkdir -p \\
             os.makedirs(output_dir)
         #get environment variable to generate the path of the chromosome file. different from usual ini file path.
         #check the ini file
-        chr_sizes = os.environ[config.param('DEFAULT', 'mugqic_path')]+"/"+ config.param('DEFAULT', 'chromosome_size')
+        chr_sizes =  config.param('DEFAULT', 'chromosome_size')
         chrs = config.param('chromimpute_preprocess', 'chromosomes')
         # get the chromosome from the ini file if one chr specified it gets the chromosome and split the string in the
         # ini file
