@@ -33,10 +33,8 @@ import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as Xml
-from collections import Counter
-from collections import OrderedDict
-
-
+from Bio.Seq import Seq
+from collections import Counter, OrderedDict
 
 # Append genpipes directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -304,18 +302,22 @@ class RunProcessing(common.MUGQICPipeline):
     @property
     def json_flag_files(self):
         if not hasattr(self, "_json_flag_files"):
+            log.debug("yaaaaaa")
             self._json_flag_files = {}
             for lane in self.lanes:
                 json_flag_file = os.path.join(self.output_dir, "flag." + lane + ".json")
                 for filename in os.listdir(self.raw_flag_dir):
                     if re.match(self.run_id + "_" + lane + "_.+json", filename):
                         if not os.path.exists(json_flag_file):
+                            if not os.path.exists(os.path.dirname(json_flag_file)):
+                                os.makedirs(os.path.dirname(json_flag_file))
                             shutil.copy(os.path.join(self.raw_flag_dir, filename), json_flag_file)
                         self._json_flag_files[lane] = json_flag_file
                         log.info("JSON FLAG file for lane " + lane + " : " + json_flag_file)
                         break
                 else:
                     _raise(SanitycheckError("Could not find any proper JSON flag file in " + self.raw_flag_dir + " for RUN " + self.run_id))
+        log.debug("yooooo")
         return self._json_flag_files
 
     @property
@@ -395,6 +397,7 @@ class RunProcessing(common.MUGQICPipeline):
             self._index1cycles = {}
             for lane in self.lanes:
                 self._index1cycles[lane] = self.get_index1cycles(lane)
+                log.debug(self.get_index1cycles(lane))
         return self._index1cycles
 
     @property
@@ -2523,17 +2526,21 @@ class RunProcessing(common.MUGQICPipeline):
 
         json_flag_file = self.json_flag_files[lane]
 
+        # index_lengths = self.get_smallest_index_length(lane)
+
         # get the barcode names & sequences to add in the JSON flag file
         all_indexes = {}
         for readset in self.readsets[lane]:
-            for index_dict in readset.index:
-                all_indexes[readset.index_name] = index_dict
+            # for index_dict in readset.index:
+            #     all_indexes[readset.index_name] = index_dict
+            for readset_index in readset.indexes:
+                all_indexes[readset.index_name] = readset_index
         with open(json_flag_file, 'r') as json_fh:
             json_flag_content = json.load(json_fh)
         if self.is_dual_index[lane]:
-            json_flag_content['speciesBarcodes'] = dict([(index_name, index_dict['INDEX2']+index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
+            json_flag_content['speciesBarcodes'] = dict([(index_name, str(Seq(readset_index['INDEX2'] + readset_index['INDEX1']).reverse_complement())) for index_name, readset_index in all_indexes.items()])
         else:
-            json_flag_content['speciesBarcodes'] = dict([(index_name, index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
+            json_flag_content['speciesBarcodes'] = dict([(index_name, str(Seq(readset_index['INDEX1']).reverse_complement())) for index_name, readset_index in all_indexes.items()])
         json_flag_content['barcodeStartPos'] = json_flag_content['TotalCycle'] - json_flag_content['barcodeLength'] + 1
         json_flag_content['SpeciesMismatch'] = self.number_of_mismatches
 

@@ -100,11 +100,11 @@ class RunProcessingAligner(object):
             else:
                 log.info("VerifyBamID is requested but no suitable VCF was found for " + readset.species + "... skipping VerifyBamID...")
         else:
+            log.debug(readset.annotation_files['dat'])
             if 'dat' in readset.annotation_files and os.path.isfile(readset.annotation_files['dat']+".UD") and os.path.isfile(readset.annotation_files['dat']+".bed") and os.path.isfile(readset.annotation_files['dat']+".mu"):
                 known_variants_annotated_filtered = readset.annotation_files['dat']
             else:
                 log.info("VerifyBamID2 is requested but no SVD dataset was found for " + readset.species + "... skipping VerifyBamID...")
-
 
         if known_variants_annotated_filtered:
             input_bam = readset.bam + ".bam"
@@ -204,6 +204,7 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
                 if verify_bam_id.getVersion() == 2:
                     annotation_files["dat"] = os.path.join(annotation_folder, "svd_datasets", folder_name + ".1000g.phase3.100k.vcf.gz.dat")
+                    log.debug(annotation_files["dat"])
 
         return annotation_files
 
@@ -334,6 +335,7 @@ class RNARunProcessingAligner(RunProcessingAligner):
 
                 if verify_bam_id.getVersion() == 2:
                     annotation_files["dat"] = os.path.join(annotation_folder, "svd_datasets", folder_name + ".1000g.phase3.100k.vcf.gz.dat")
+                    log.debug(annotation_files["dat"])
 
             return annotation_files
 
