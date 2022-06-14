@@ -1,11 +1,15 @@
-35 tags, 9446 commits
+35 tags, 9455 commits
 
-HEAD        Thu Jun 9 13:15:16 2022 -0400        0 commits
+HEAD        Tue Jun 14 13:40:37 2022 -0400        0 commits
 
-4.2.1        Thu Jun 9 17:48:47 2022 +0000        107 commits
+4.3.0        Tue Jun 14 17:44:50 2022 +0000        116 commits
 
-  Edouard Henrion <edouard.henrion@mcgill.ca>      16 commits
+  Edouard Henrion <edouard.henrion@mcgill.ca>      20 commits
 
+       76b0b62 Merge remote-tracking branch 'origin/dev' into release_4.3.0
+       ec90b7a GenPipes - prep for new release
+       8636775 Updating CHANGELOG from master after release
+       1e06b04 Version bump to 4.2.1
        4e90741 GenPipes - DNASeq : fixing dependencies in recalibratino step for unmapped_reads
        46042e1 GenPipes - remove useless sections in ini
        40d6fe2 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
@@ -36,8 +40,10 @@ HEAD        Thu Jun 9 13:15:16 2022 -0400        0 commits
        3303a59 GenPipes - C3G Software Stack : Added sending of the combined JSON to url + reformating the module helpers
        0b8b7d5 GenPipes - module helper : updating the pythonSearcher class
 
-  ehenrion <edouard.henrion@mcgill.ca>      6 commits
+  ehenrion <edouard.henrion@mcgill.ca>      8 commits
 
+       390169f Merged in release_4.3.0 (pull request #363)
+       47523b3 Merged in release_4.2.1 (pull request #359)
        5f690ff Merged in soft_jsondb_gsoc2020_eh (pull request #181)
        ba84d8c dnaseq.base.ini edited online with Bitbucket
        943e103 Merged in unmapped_reads (pull request #355)
@@ -131,14 +137,17 @@ HEAD        Thu Jun 9 13:15:16 2022 -0400        0 commits
        5e71366 Implement Modified dependency of dragen command to allo mv commands Added dragen function
        179cabf Implement Modified dependency of dragen command to allo mv commands Modify dependency of bash commands Added bfx/dragen.py
 
-  pubudumanoj <pubudu.nawarathna@mail.mcgill.ca>      3 commits
+  pubudumanoj <pubudu.nawarathna@mail.mcgill.ca>      5 commits
 
+       486907a modified readme file
+       be1755a modified readme file with dragen update
        d82bab0 added comments and fix hybrid mode single pass directional-complement
        865a65f fixed ihec metric by adding a job to create an empty metric file for estimated_library_size
        cd94f55 changed dragen structure and added a new protocol
 
-  Pubudu Nawarathna <pubudu.nawarathna@mail.mcgill.ca>      1 commits
+  Pubudu Nawarathna <pubudu.nawarathna@mail.mcgill.ca>      2 commits
 
+       4211220 Merged in dragen_update2 (pull request #362)
        7faffc5 Merged in dragen_update_version2 (pull request #346)
 
 4.2.0        Wed Jun 1 20:01:30 2022 +0000        230 commits
