@@ -23,6 +23,7 @@
 import logging
 import os
 import sys
+import re
 import csv
 from operator import attrgetter
 
@@ -304,9 +305,7 @@ mkdir -p \\
         # to check whether user needs to add inputinfo file in epiqc.py
         # accordingly call SVMFS or user file
 
-        #ihec_inputinfofile = "/home/pubudu/projects/rrg-bourqueg-ad/pubudu/epiqc_test/test_version2/inputinfofile.txt"
-        ihec_inputinfofile =  config.param('chromimpute', 'IHEC_inputinfo')
-
+        ihec_inputinfofile = self.create_mugqic_path(config.param('chromimpute', 'IHEC_inputinfo'))
         #remove inputinfor file if exist
         #at this point imputation directory has already been created as chromosome file has generated first
         if os.path.exists(inputinfofile):
@@ -377,6 +376,16 @@ mkdir -p \\
 
         return jobs
 
+    def create_mugqic_path(self, path):
+        mugqic_path_temp = path.split(os.sep)
+        mugqic_path = None
+        if mugqic_path_temp[0].replace("$", "") in os.environ.keys():
+            mugqic_path = os.environ[mugqic_path_temp[0].replace("$", "")]
+        if mugqic_path is not None:
+            return (path.replace(mugqic_path_temp[0], mugqic_path))
+        else:
+            return path
+
     def create_chr_sizes(self):
 
         output_dir = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'])
@@ -385,7 +394,8 @@ mkdir -p \\
             os.makedirs(output_dir)
         #get environment variable to generate the path of the chromosome file. different from usual ini file path.
         #check the ini file
-        chr_sizes =  config.param('DEFAULT', 'chromosome_size')
+        chr_sizes =  self.create_mugqic_path(config.param('DEFAULT', 'chromosome_size'))
+
         chrs = config.param('chromimpute_preprocess', 'chromosomes')
         # get the chromosome from the ini file if one chr specified it gets the chromosome and split the string in the
         # ini file
@@ -892,7 +902,7 @@ mkdir -p \\
                                 [['signal_noise', 'module_python'],
                                  ['signal_noise', 'module_mugqic_tools']],
                                 command="""\
-python $PYTHON_TOOLS/signal_noise.py \\                               
+python $PYTHON_TOOLS/signal_noise.py \\
 -i {input_file} \\
 -p1 {percent1} \\
 -p2 {percent2} \\
