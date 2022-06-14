@@ -80,9 +80,10 @@ Steps:
 7- sleuth_differential_expression
 
 ```
+
 picard_sam_to_fastq
 -------------------
-Convert SAM/BAM files from the input readset file into FASTQ format
+Converts SAM/BAM files from the input readset file into FASTQ format.
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
 trimmomatic
@@ -113,7 +114,7 @@ Use the output from Kallisto to create a transcript count matrix.
 
 gq_seq_utils_exploratory_analysis_rnaseq_light
 ----------------------------------------------
-Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight
+Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight.
 
 sleuth_differential_expression
 ------------------------------

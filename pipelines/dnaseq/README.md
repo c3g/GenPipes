@@ -214,13 +214,15 @@ sv:
 24- metasv_sv_annotation
 
 ```
+
 picard_sam_to_fastq
 -------------------
-Convert SAM/BAM files from the input readset file into FASTQ format
+Converts SAM/BAM files from the input readset file into FASTQ format.
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
 skewer_trimming
 ---------------
+Trimming using [skewer](https://sourceforge.net/projects/skewer/)
 
 bwa_mem_sambamba_sort_sam
 -------------------------
@@ -370,12 +372,11 @@ run_multiqc
 -----------
 cram_output
 -----------
-Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list
+Generate long term storage version of the final alignment files in CRAM format.
+Using this function will include the orginal final bam file into the  removable file list.
 
 sym_link_fastq
 --------------
-
 :return:
 
 sym_link_final_bam
@@ -393,7 +394,6 @@ output:
 
 metrics_verify_bam_id
 ---------------------
-
 :param self:
 :return:
 
@@ -493,9 +493,8 @@ discover, genotype and visualize deletions, tandem duplications, inversions and 
 at single-nucleotide resolution in short-read massively parallel sequencing data. It uses paired-ends
 and split-reads to sensitively and accurately delineate genomic rearrangements throughout the genome.
 Structural variants can be visualized using Delly-maze and Delly-suave.
-input: normal and tumor final bams
-Returns:bcf file
-
+Input: normal and tumor final bams
+Returns: bcf file
 
 delly_sv_annotation
 -------------------
@@ -505,9 +504,7 @@ Manta calls structural variants (SVs) and indels from mapped paired-end sequenci
 analysis of germline variation in small sets of individuals and somatic variation in tumor/normal sample pairs.
 Manta discovers, assembles and scores large-scale SVs, medium-sized indels and large insertions within a
 single efficient workflow.
-Returns:Manta accepts input read mappings from BAM or CRAM files and reports all SV and indel inferences
- in VCF 4.1 format.
-
+Returns:Manta accepts input read mappings from BAM or CRAM files and reports all SV and indel inferences in VCF 4.1 format.
 
 manta_sv_annotation
 -------------------
@@ -515,8 +512,7 @@ lumpy_paired_sv
 ---------------
 A probabilistic framework for structural variant discovery.
 Lumpy traditional with paired ends and split reads on tumor normal pair.
-Returns:bams.
-
+Returns: bams.
 
 lumpy_sv_annotation
 -------------------
@@ -525,8 +521,7 @@ wham_call_sv
 Wham (Whole-genome Alignment Metrics) to provide a single, integrated framework for both structural variant
 calling and association testing, thereby bypassing many of the difficulties that currently frustrate attempts
 to employ SVs in association testing.
-Returns:vcf.
-
+Returns: vcf.
 
 wham_sv_annotation
 ------------------
@@ -537,12 +532,10 @@ cnvkit_sv_annotation
 --------------------
 run_breakseq2
 -------------
-BreakSeq2: Ultrafast and accurate nucleotide-resolution analysis of structural variants
-
+BreakSeq2: Ultrafast and accurate nucleotide-resolution analysis of structural variants.
 
 ensemble_metasv
 ---------------
-
 
 metasv_sv_annotation
 --------------------

@@ -146,6 +146,7 @@ capture:
 18- cram_output
 
 ```
+
 samtools_bam_sort
 -----------------
 Sorts bam by readname prior to picard_sam_to_fastq step in order to minimize memory consumption.
@@ -153,7 +154,7 @@ If bam file is small and the memory requirements are reasonable, this step can b
 
 picard_sam_to_fastq
 -------------------
-Convert SAM/BAM files from the input readset file into FASTQ format
+Converts SAM/BAM files from the input readset file into FASTQ format.
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
 trimmomatic
@@ -176,7 +177,7 @@ The trim statistics per readset are merged at this step.
 
 fastq_readName_Edit
 -------------------
-Removes the added /1 and /2 by picard's sam_to_fastq transformation to avoid issues with downstream software like HOMER
+Removes the added /1 and /2 by picard's sam_to_fastq transformation to avoid issues with downstream software like HOMER.
 
 hicup_align
 -----------
@@ -189,52 +190,52 @@ samtools_merge_bams
 -------------------
 BAM readset files are merged into one file per sample. Merge is done using [samtools](http://samtools.sourceforge.net/).
 
-This step takes as input files the aligned bams/sams from the hicup_align step
+This step takes as input files the aligned bams/sams from the hicup_align step.
 
 homer_tag_directory
 -------------------
 The bam file produced by HiCUP is used to create a tag directory using HOMER for further analysis that includes interaction matrix generation,
 compartments and identifying significant interactions.
 
-For more detailed information about the HOMER process visit: [HOMER] (http://homer.ucsd.edu/homer/interactions/index.html)
+For more detailed information about the HOMER process visit: [HOMER] (http://homer.ucsd.edu/homer/interactions/index.html).
 
 interaction_matrices_Chr
 ------------------------
 IntraChromosomal interaction matrices are produced by Homer at resolutions defined in the ini config file and plotted by HiCPlotter.
-For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
-For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter)
+For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html).
+For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter).
 
 interaction_matrices_genome
 ---------------------------
-Genomewide interaction matrices are produced by Homer at resolutions defined in the ini config file
-For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html)
-For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter)
+Genomewide interaction matrices are produced by Homer at resolutions defined in the ini config file.
+For more detailed information about the HOMER matrices visit: [HOMER matrices] (http://homer.ucsd.edu/homer/interactions/HiCmatrices.html).
+For more detailed information about HiCPlotter visit: [HiCPlotter] (https://github.com/kcakdemir/HiCPlotter).
 
 identify_compartments
 ---------------------
-Genomic compartments are identified using Homer at resolutions defined in the ini config file
-For more detailed information about the HOMER compartments visit: [HOMER compartments] (http://homer.ucsd.edu/homer/interactions/HiCpca.html)
+Genomic compartments are identified using Homer at resolutions defined in the ini config file.
+For more detailed information about the HOMER compartments visit: [HOMER compartments] (http://homer.ucsd.edu/homer/interactions/HiCpca.html).
 
 identify_TADs_TopDom
 --------------------
 Topological associating Domains (TADs) are identified using TopDom at resolutions defined in the ini config file.
-For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975)
+For more detailed information about the TopDom visit: [TopDom] (https://www.ncbi.nlm.nih.gov/pubmed/26704975).
 
 identify_TADs_RobusTAD
 ----------------------
 Topological associating Domain (TAD) scores are calculated using RobusTAD for every bin in the genome.
 RobusTAD is resolution-independant and will use the first resolution in "resolution_TADs"  under [identify_TADs] in the ini file.
-For more detailed information about the RobusTAD visit: [RobusTAD] (https://github.com/rdali/RobusTAD)
+For more detailed information about the RobusTAD visit: [RobusTAD] (https://github.com/rdali/RobusTAD).
 
 identify_peaks
 --------------
 Significant intraChromosomal interactions (peaks) are identified using Homer.
-For more detailed information about the Homer peaks visit: [Homer peaks] (http://homer.ucsd.edu/homer/interactions/HiCinteractions.html)
+For more detailed information about the Homer peaks visit: [Homer peaks] (http://homer.ucsd.edu/homer/interactions/HiCinteractions.html).
 
 create_hic_file
 ---------------
 A .hic file is created per sample in order to visualize in JuiceBox, WashU epigenome browser or as input for other tools.
-For more detailed information about the JuiceBox visit: [JuiceBox] (http://www.aidenlab.org/software.html)
+For more detailed information about the JuiceBox visit: [JuiceBox] (http://www.aidenlab.org/software.html).
 
 reproducibility_scores
 ----------------------
@@ -258,13 +259,13 @@ for more information visit: [http://hifive.docs.taylorlab.org/en/latest/quasar_s
 
 cram_output
 -----------
-Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list
+Generate long term storage version of the final alignment files in CRAM format.
+Using this function will include the orginal final bam file into the  removable file list.
 
 multiqc_report
 --------------
 A quality control report for all samples is generated.
-For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/)
+For more detailed information about the MultiQc visit: [MultiQc] (http://multiqc.info/).
 
 create_rmap_file
 ----------------
@@ -285,12 +286,12 @@ input file (sample.chinput) for Chicago capture analysis is created using the rm
 runChicago
 ----------
 Chicago is run on capture data. Chicago will filter capture hic artifacts and identify significant interactions. It will output data as a bed file and will also output SeqMonk and WashU tracks.
-For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago] https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html
+For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago](https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html).
 
 runChicago_featureOverlap
 -------------------------
 Runs the feature enrichement of chicago significant interactions.
-For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago] https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html
+For more detailed information about the Chicago, including how to interpret the plots, please visit: [Chicago](https://bioconductor.org/packages/release/bioc/vignettes/Chicago/inst/doc/Chicago.html).
 
 bait_intersect
 --------------
