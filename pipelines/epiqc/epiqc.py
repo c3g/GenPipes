@@ -156,7 +156,7 @@ class EpiQC(common.Illumina):
 
     @property
     def prefix_path(self):
-        # Depending on the path of the readset, file this try to generate the path to singal tracks folder
+        # Depending on the path of the readset, file this try to generate the path to signal tracks folder
         # Therefore, It is necessary to place the readset file in the ChIP-seq output directory
         #
         #gets the complete path to the readset directory and remove the readset name from the file path
@@ -164,20 +164,10 @@ class EpiQC(common.Illumina):
 
         return path
 
-#delete later
-    # @property
-    # def contrasts(self):
-    #     flag = False
-    #     if self.args.design:
-    #         self._contrast = parse_chipseq_design_file(self.args.design.name, self.samples)
-    #     else:
-    #         self.argparser.error("argument -d/--design is required!")
-    #     return self._contrast
-
     def parseInputInfoFile(self, inputinfofile):
         """
             Parses a chromimpute input info file.
-            Each element of the array samplesMarksFiles contains the name of the sample, its mark, and the name of the file in that order.
+            Each element of the array samplesMarksFiles contains the name of the sample, it's mark, and the name of the file in that order.
         """
         samplesMarksFiles = []
         for line in inputinfofile:
@@ -191,8 +181,7 @@ class EpiQC(common.Illumina):
         Runs the tool bigWigInfo on bigwig files (
 
         Inspecting signal tracks to identify some obvious problems that
-        could have an impact on the quality of the ChIP-Seq data is performed by UCSC-bigwiginfo
-        https://bioconda-recipes-demo.readthedocs.io/en/docs/recipes/ucsc-bigwiginfo/README.html)
+        could have an impact on the quality of the ChIP-Seq data is performed by [UCSC-bigwiginfo](https://bioconda-recipes-demo.readthedocs.io/en/docs/recipes/ucsc-bigwiginfo/README.html) )
         bigWigInfo is capable of identifying obvious issues such as
         missing chromosomes and insufficient track coverage, which are usually symptoms of
         improperly generated tracks.
@@ -201,13 +190,9 @@ class EpiQC(common.Illumina):
         the tool. Otherwise, the user is required to process files using ChIp-Seq pipeline to generate
         bigwig files. Then paths for bigwig files are reconstructed based on the ChIP-Seq readset file
         and will be used subsequently.
-        (Note that: the readset file should be in the same folder as the ChIp-Seq output)
+        (Note that: the readset file should be in the same folder as the ChIp-Seq output).
         """
         jobs = []
-
-
-
-
 
         output_dir = self.output_dirs['bigwiginfo_output_directory']
 
@@ -237,7 +222,7 @@ class EpiQC(common.Illumina):
 
     def bigwig_to_bedgraph(self):
         """
-        ucsc-bigwigtobedgraph (https://bioconda-recipes-demo.readthedocs.io/en/docs/recipes/ucsc-bigwigtobedgraph/README.html)
+        [ucsc-bigwigtobedgraph](https://bioconda-recipes-demo.readthedocs.io/en/docs/recipes/ucsc-bigwigtobedgraph/README.html)
         is used to convert bigwig files to bedgraph files (Used in ChromImpute subsequently).
         """
         jobs = []
@@ -1026,7 +1011,7 @@ python $PYTHON_TOOLS/signal_noise.py \\
     def epigeec(self):
 
         """
-            Runs the epigeec pipeline (https://bitbucket.org/labjacquespe/epigeec/src/master/)
+            Runs the [epigeec pipeline](https://bitbucket.org/labjacquespe/epigeec/src/master/)
             on the bigwig files given to the pipeline
             Epigeec pipeline is consisted of 3 sub-steps
             1. Bigwig files are first converted to the hdf5 format
