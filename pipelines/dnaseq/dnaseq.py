@@ -147,7 +147,6 @@ class DnaSeqRaw(common.Illumina):
 
     def sym_link_fastq(self):
         """
-
         :return:
         """
         jobs = []
@@ -246,6 +245,7 @@ END
 
     def skewer_trimming(self):
         """
+        Trimming using [skewer](https://sourceforge.net/projects/skewer/)
         """
 
         jobs = []
@@ -1733,7 +1733,6 @@ END
 
     def metrics_verify_bam_id(self):
         """
-        
         :param self:
         :return:
         """
@@ -3020,7 +3019,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def haplotype_caller_metrics_snv_graph_metrics(self):
         """
-        See general metrics_vcf_stats !  Applied to haplotype caller vcf
+        See general metrics_vcf_stats !  Applied to haplotype caller vcf.
         """
 
         jobs = self.metrics_snv_graph_metrics(
@@ -3033,7 +3032,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def mpileup_metrics_snv_graph_metrics(self):
         """
-        See general metrics_vcf_stats !  Applied to mpileup vcf
+        See general metrics_vcf_stats !  Applied to mpileup vcf.
         """
 
         jobs = self.metrics_snv_graph_metrics(
@@ -3050,9 +3049,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         at single-nucleotide resolution in short-read massively parallel sequencing data. It uses paired-ends
         and split-reads to sensitively and accurately delineate genomic rearrangements throughout the genome.
         Structural variants can be visualized using Delly-maze and Delly-suave.
-        input: normal and tumor final bams
-        Returns:bcf file
-
+        Input: normal and tumor final bams
+        Returns: bcf file
         """
 
         jobs = []
@@ -3158,9 +3156,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         analysis of germline variation in small sets of individuals and somatic variation in tumor/normal sample pairs.
         Manta discovers, assembles and scores large-scale SVs, medium-sized indels and large insertions within a
         single efficient workflow.
-        Returns:Manta accepts input read mappings from BAM or CRAM files and reports all SV and indel inferences
-         in VCF 4.1 format.
-
+        Returns:Manta accepts input read mappings from BAM or CRAM files and reports all SV and indel inferences in VCF 4.1 format.
         """
         jobs = []
 
@@ -3238,8 +3234,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         """
         A probabilistic framework for structural variant discovery.
         Lumpy traditional with paired ends and split reads on tumor normal pair.
-        Returns:bams.
-
+        Returns: bams.
         """
         jobs = []
     
@@ -3348,8 +3343,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         Wham (Whole-genome Alignment Metrics) to provide a single, integrated framework for both structural variant
         calling and association testing, thereby bypassing many of the difficulties that currently frustrate attempts
         to employ SVs in association testing.
-        Returns:vcf.
-
+        Returns: vcf.
         """
         jobs = []
     
@@ -3526,8 +3520,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def run_breakseq2(self):
         """
-        BreakSeq2: Ultrafast and accurate nucleotide-resolution analysis of structural variants
-
+        BreakSeq2: Ultrafast and accurate nucleotide-resolution analysis of structural variants.
         """
     
         jobs = []
@@ -3555,7 +3548,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def ensemble_metasv(self):
         """
-
 		"""
         jobs = []
 	

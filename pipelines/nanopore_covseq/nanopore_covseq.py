@@ -109,8 +109,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
 
     def guppy_basecall(self):
         """
-        Use guppy to perform basecalling on raw FAST5 files
-
+        Use guppy to perform basecalling on raw FAST5 files.
         """
         jobs = []
 
@@ -152,8 +151,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
 
     def guppy_demultiplex(self):
         """
-        Use guppy to perform demultiplexing on raw FASTQ read files
-
+        Use guppy to perform demultiplexing on raw FASTQ read files.
         """
         jobs = []
         fastq_directory = os.path.join("basecall", "pass")
@@ -194,7 +192,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
 
     def pycoqc(self):
         """
-        Use pycoQC to produce an interactive quality report based on the summary file and
+        Use [pycoQC](https://hpc.nih.gov/apps/pycoQC.html) to produce an interactive quality report based on the summary file and
         alignment outputs.
         """
         jobs = []
@@ -228,7 +226,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
 
     def host_reads_removal_dependency(self):
         """
-        Runs minimap2 on a hybrid genome to remove potential host reads
+        Runs [minimap2](https://github.com/lh3/minimap2) on a hybrid genome to remove potential host reads.
         """
 
         jobs = []
@@ -298,7 +296,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
 
     def host_reads_removal(self):
         """
-        Runs minimap2 on a hybrid genome to remove potential host reads
+        Runs [minimap2](https://github.com/lh3/minimap2) on a hybrid genome to remove potential host reads.
         """
 
         jobs = []
@@ -373,7 +371,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
 
     def kraken_analysis(self):
         """
-        kraken
+        Taxonomic sequence classification system using [kraken](https://github.com/DerrickWood/kraken2).
         """
 
         jobs = []
@@ -547,7 +545,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
 
     def wub_metrics(self):
         """
-        Generate WUB metrics on bam file
+        Generate WUB metrics on bam file.
         """
 
         jobs = []
@@ -575,7 +573,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
 
     def snpeff_annotate(self):
         """
-        Consensus annotation with SnpEff
+        Consensus annotation with [SnpEff](https://pcingola.github.io/SnpEff/).
         """
 
         jobs = []
@@ -662,7 +660,7 @@ echo "pass_reads" $(grep -c "^@" {pass_fq}) >> {fq_stats} """.format(
 
     def quast_consensus_metrics(self):
         """
-        Generate QUAST metrics on consensus
+        Generate [QUAST](http://quast.sourceforge.net/) metrics on consensus.
         """
 
         jobs = []
@@ -688,7 +686,7 @@ echo "pass_reads" $(grep -c "^@" {pass_fq}) >> {fq_stats} """.format(
 
     def rename_consensus_header(self):
         """
-        Rename reads headers
+        Rename reads headers.
         """
         jobs = []
         for sample in self.samples:
@@ -754,6 +752,9 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
         return jobs
 
     def prepare_report(self):
+        """
+        Prepare analysis report.
+        """
 
         jobs = []
 

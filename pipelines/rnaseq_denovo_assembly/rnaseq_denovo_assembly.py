@@ -724,7 +724,7 @@ pandoc --to=markdown \\
 
     def gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered(self):
         """
-        Exploratory analysis using the gqSeqUtils R package using a subset of filtered transcripts
+        Exploratory analysis using the gqSeqUtils R package using a subset of filtered transcripts.
         """
         # Run exploratory analysis on filtered components
         # Extract filtered components from counts file
@@ -908,7 +908,7 @@ pandoc --to=markdown \\
 
     def differential_expression_filtered(self):
         """
-        Differential Expression and GOSEQ analysis based on filtered transcripts and genes
+        Differential Expression and GOSEQ analysis based on filtered transcripts and genes.
         """
         output_directory = os.path.join("filtered_assembly","differential_expression")
         jobs = []
@@ -1150,7 +1150,7 @@ rm {temp_out2}""".format(
 
         For each contrast different folders and all the files for that particular contrast are
         generated. Therefore, only pairwise comparisons are possible
-        (treatment and controls will be added according to the 1 and 2 in the design file)
+        (treatment and controls will be added according to the 1 and 2 in the design file).
         """
         jobs = []
         samples_to_merge = []
@@ -1361,7 +1361,6 @@ rm {temp_out2}""".format(
         differential expression. The original seq2fun sample table and KO abundance table
         cannot be used in this case as differential expression needs all the samples together.
         The design file is directly used to find the contrasts.
-
         """
 
         jobs =[]

@@ -208,7 +208,7 @@ class Illumina(MUGQICPipeline):
 
     def picard_sam_to_fastq(self):
         """
-        Convert SAM/BAM files from the input readset file into FASTQ format
+        Converts SAM/BAM files from the input readset file into FASTQ format.
         if FASTQ files are not already specified in the readset file. Do nothing otherwise.
         """
         jobs = []
@@ -584,8 +584,8 @@ pandoc \\
 
     def cram_output(self):
         """
-        Generate long term storage version of the final alignment files in CRAM format
-        Using this function will include the orginal final bam file into the  removable file list
+        Generate long term storage version of the final alignment files in CRAM format.
+        Using this function will include the orginal final bam file into the  removable file list.
         """
 
         jobs = []
