@@ -305,7 +305,8 @@ mkdir -p \\
         # to check whether user needs to add inputinfo file in epiqc.py
         # accordingly call SVMFS or user file
 
-        ihec_inputinfofile = self.create_mugqic_path(config.param('chromimpute', 'IHEC_inputinfo'))
+        ihec_inputinfofile = os.path.expandvars(config.param('chromimpute', 'IHEC_inputinfo', param_type='filepath'))
+
         #remove inputinfor file if exist
         #at this point imputation directory has already been created as chromosome file has generated first
         if os.path.exists(inputinfofile):
@@ -376,16 +377,6 @@ mkdir -p \\
 
         return jobs
 
-    def create_mugqic_path(self, path):
-        mugqic_path_temp = path.split(os.sep)
-        mugqic_path = None
-        if mugqic_path_temp[0].replace("$", "") in os.environ.keys():
-            mugqic_path = os.environ[mugqic_path_temp[0].replace("$", "")]
-        if mugqic_path is not None:
-            return (path.replace(mugqic_path_temp[0], mugqic_path))
-        else:
-            return path
-
     def create_chr_sizes(self):
 
         output_dir = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'])
@@ -394,7 +385,7 @@ mkdir -p \\
             os.makedirs(output_dir)
         #get environment variable to generate the path of the chromosome file. different from usual ini file path.
         #check the ini file
-        chr_sizes =  self.create_mugqic_path(config.param('DEFAULT', 'chromosome_size'))
+        chr_sizes =  os.path.expandvars(config.param('DEFAULT', 'chromosome_size',  param_type='filepath'))
 
         chrs = config.param('chromimpute_preprocess', 'chromosomes')
         # get the chromosome from the ini file if one chr specified it gets the chromosome and split the string in the
