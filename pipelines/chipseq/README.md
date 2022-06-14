@@ -144,9 +144,10 @@ atacseq:
 22- merge_and_call_individual_gvcf
 
 ```
+
 picard_sam_to_fastq
 -------------------
-Convert SAM/BAM files from the input readset file into FASTQ format
+Converts SAM/BAM files from the input readset file into FASTQ format.
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
 trimmomatic

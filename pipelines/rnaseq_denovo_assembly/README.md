@@ -178,9 +178,10 @@ seq2fun:
 5- pathway_enrichment_seq2fun
 
 ```
+
 picard_sam_to_fastq
 -------------------
-Convert SAM/BAM files from the input readset file into FASTQ format
+Converts SAM/BAM files from the input readset file into FASTQ format.
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
 trimmomatic
@@ -279,11 +280,11 @@ Filter high quality contigs based on values in trinotate annotations. Recreate a
 
 gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered
 --------------------------------------------------------
-Exploratory analysis using the gqSeqUtils R package using a subset of filtered transcripts
+Exploratory analysis using the gqSeqUtils R package using a subset of filtered transcripts.
 
 differential_expression_filtered
 --------------------------------
-Differential Expression and GOSEQ analysis based on filtered transcripts and genes
+Differential Expression and GOSEQ analysis based on filtered transcripts and genes.
 
 merge_fastq
 -----------
@@ -308,7 +309,7 @@ This step perform seq2fun analysis and generates output files including KO abund
 
 For each contrast different folders and all the files for that particular contrast are
 generated. Therefore, only pairwise comparisons are possible
-(treatment and controls will be added according to the 1 and 2 in the design file)
+(treatment and controls will be added according to the 1 and 2 in the design file).
 
 differential_expression_seq2fun
 -------------------------------

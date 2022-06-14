@@ -641,7 +641,6 @@ pandoc --to=markdown \\
         This step takes as input file:
 
         1. Catenated and filtered FASTA file from previous step.
-
         """
 
         jobs = []
@@ -678,7 +677,6 @@ pandoc --to=markdown \\
 
         1. OTU file from previous step
         2. Catenated and filtered FASTA file from filter_chimeras step.
-
         """
 
         jobs = []
@@ -715,7 +713,6 @@ pandoc --to=markdown \\
         This step takes as input files:
 
         1. OTU representative sequence file from previous step.
-
         """
 
         jobs = []
@@ -750,7 +747,6 @@ pandoc --to=markdown \\
 
         1. OTU picking file.
         2. Taxonomy assignment for each OTU from the previous step.
-
         """
 
         jobs = []
@@ -841,7 +837,6 @@ $QIIME_HOME/biom summarize-table \\
         This step takes as input file:
 
         1. OTU representative sequence file.
-
         """
 
         jobs = []
@@ -872,7 +867,6 @@ $QIIME_HOME/biom summarize-table \\
         This step takes as input file:
 
         1. Alignment sequence file.
-
         """
 
         jobs = []
@@ -903,7 +897,6 @@ $QIIME_HOME/biom summarize-table \\
         This step takes as input file:
 
         1. Filtered alignment sequence file from previous step.
-
         """
 
         jobs = []
@@ -989,7 +982,6 @@ pandoc --to=markdown \\
         This step takes as input files:
 
         1. OTU non rarefied table in biom format.
-
         """
 
         jobs = []
@@ -1025,7 +1017,6 @@ pandoc --to=markdown \\
         This step takes as input files:
 
         1. Multiple OTU rarefied table in biom format from previous step.
-
         """
 
         jobs = []
@@ -1245,7 +1236,6 @@ pandoc --to=markdown \\
         This step takes as input files:
 
         1. OTU table in biom format.
-
         """
 
         jobs = []
@@ -1344,7 +1334,6 @@ pandoc --to=markdown \\
         This step takes as input files:
 
         1. OTU table in biom format.
-
         """
 
         jobs = []
@@ -1488,7 +1477,6 @@ pandoc --to=markdown \\
 
         1. OTU rarefied table in biom format if available.
         2. Else, OTU non rarefied table in biom format.
-
         """
 
         jobs = []
@@ -1534,7 +1522,6 @@ pandoc --to=markdown \\
         This step takes as input files:
 
         1. Summarized information from previous step.
-
         """
 
         jobs = []
@@ -1576,7 +1563,6 @@ pandoc --to=markdown \\
         This step takes as input files:
 
         1. Summarized information from previous step.
-
         """
 
         jobs = []
@@ -1792,7 +1778,6 @@ pandoc --to=markdown \\
 
         1. OTU rarefied table in biom format.
         2. Tree file.
-
         """
 
         jobs = []
@@ -1841,7 +1826,6 @@ pandoc --to=markdown \\
         This step takes as input file:
 
         1. Matrix produced in the previous step.
-
         """
 
         jobs = []
@@ -1896,7 +1880,6 @@ pandoc --to=markdown \\
         This step takes as input file:
 
         1. PCoA from the previous step.
-
         """
 
         jobs = []

@@ -185,7 +185,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
     def kraken_analysis(self):
         """
-        kraken
+        Taxonomic sequence classification system using [kraken](https://github.com/DerrickWood/kraken2).
         """
 
         # TODO: include kraken analysis and output in metrics
@@ -410,7 +410,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
     def sambamba_filtering(self):
         """
-        Filter raw bams with sambamba and an awk cmd to filter by insert size
+        Filter raw bams with [Sambamba](http://lomereiter.github.io/sambamba/index.html) and an awk cmd to filter by insert size
         """
 
         jobs = []
@@ -455,7 +455,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
     def fgbio_trim_primers(self):
         """
-        Remove primer sequences to individual bam files using fgbio
+        Remove primer sequences to individual bam files using [fgbio](https://fulcrumgenomics.github.io/fgbio/).
         """
 
         jobs = []
@@ -483,7 +483,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
     def ivar_trim_primers(self):
         """
-        Remove primer sequences to individual bam files using ivar
+        Remove primer sequences to individual bam files using [ivar](https://andersen-lab.github.io/ivar/html/manualpage.html).
         """
 
         jobs = []
@@ -517,7 +517,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
     def metrics_sambamba_flagstat(self):
         """
-        Sambamba flagstsat
+        [Sambamba](http://lomereiter.github.io/sambamba/index.html) flagstsat.
         """
 
         jobs = []
@@ -551,7 +551,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
     def metrics_bedtools_genomecov(self):
         """
-        bedtools genome coverage
+        [bedtools genome coverage](https://bedtools.readthedocs.io/en/latest/content/tools/genomecov.html).
         """
 
         jobs = []
@@ -581,7 +581,9 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
 
     def multiple_metrics_picard(self):
-        # Calculates picard metrics from dnaseq pipeline but on raw AND on filtered bam file
+        """
+        Calculates bedtools genome coverage](https://broadinstitute.github.io/picard/) metrics from dnaseq pipeline but on raw AND on filtered bam file.
+        """
 
         ##check the library status
         library = {}
@@ -652,7 +654,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
     def covseq_metrics(self):
         """
-        Multiple metrics from dnaseq
+        Gathering multiple metrics. (coming from dnaseq pipeline)
         """
 
         jobs = []
@@ -672,7 +674,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
     def ivar_calling(self):
 
         """
-        ivar calling
+        [ivar](https://andersen-lab.github.io/ivar/html/manualpage.html) calling variants.
         """
 
         jobs = []
@@ -727,7 +729,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
     def freebayes_calling(self):
         """
-        FreeBayes is a haplotype-based variant detector designed to find small polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels (insertions and deletions), MNPs (multi-nucleotide polymorphisms), and complex events (composite insertion and substitution events) smaller than the length of a short-read sequencing alignment.
+        [FreeBayes](https://github.com/freebayes/freebayes) is a haplotype-based variant detector designed to find small polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels (insertions and deletions), MNPs (multi-nucleotide polymorphisms), and complex events (composite insertion and substitution events) smaller than the length of a short-read sequencing alignment.
 
         This method avoids one of the core problems with alignment-based variant detection that identical sequences may have multiple possible alignments.
         """
@@ -822,7 +824,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
     def snpeff_annotate(self):
         """
-        Consensus annotation with SnpEff
+        Consensus annotation with [SnpEff](https://pcingola.github.io/SnpEff/).
         """
 
         jobs = []
@@ -876,7 +878,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
     def ivar_create_consensus(self):
         """
-        Create consensus with ivar through a samtools mpileup
+        Create consensus with [ivar](https://andersen-lab.github.io/ivar/html/manualpage.html) through a [samtools](http://samtools.sourceforge.net/) mpileup
         """
 
         jobs = []
@@ -918,7 +920,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
     def bcftools_create_consensus(self):
         """
-        bcftools consensus creation
+        [bcftools](https://samtools.github.io/bcftools/bcftools.html) consensus creation
         """
 
         jobs = []
@@ -974,7 +976,7 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
 
     def quast_consensus_metrics(self):
         """
-        Generate QUAST metrics on consensus
+        Generate [QUAST](http://quast.sourceforge.net/) metrics on consensus
         """
 
         jobs = []
@@ -1012,7 +1014,7 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
 
     def rename_consensus_header_ivar(self):
         """
-        Rename reads headers
+        Rename reads headers after [ivar](https://andersen-lab.github.io/ivar/html/manualpage.html) variants calling.
         """
 
         jobs = []
@@ -1098,7 +1100,7 @@ ln -sf {ivar_output_status_fa_basename} {ivar_output_fa}""".format(
 
     def rename_consensus_header_freebayes(self):
         """
-        Rename reads headers
+        Rename reads headers after [FreeBayes](https://github.com/freebayes/freebayes) variants calling.
         """
 
         jobs = []
@@ -1210,7 +1212,7 @@ ln -sf {freebayes_output_status_fa_basename} {freebayes_output_fa}""".format(
 
     def ncovtools_quickalign(self):
         """
-        Uses quickalign to provides summary statistics, which can be used to determine the sequencing quality and evolutionary novelty of input genomes (e.g. number of new mutations and indels). 
+        Uses [ncov-tools](https://github.com/jts/ncov-tools) quickalign to provides summary statistics, which can be used to determine the sequencing quality and evolutionary novelty of input genomes (e.g. number of new mutations and indels). 
 
         It uses ivar consensus as well as freebayes consensus to arrive at the alignment decisions.
         """
@@ -1250,7 +1252,7 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
 
     def prepare_table(self):
         """
-        Gathers all analysis data for quast, kraken and other metrics and module details.
+        Gathers all analysis data for [QUAST](http://quast.sourceforge.net/), [kraken](https://github.com/DerrickWood/kraken2) and other metrics and module details.
         """
         jobs = []
 
@@ -1389,7 +1391,7 @@ echo "Software Versions
 
     def prepare_report_ivar(self):
         """
-        Prepare ivar analysis report.
+        Prepare [ivar](https://andersen-lab.github.io/ivar/html/manualpage.html) analysis report.
         """
         jobs = []
 
@@ -1520,7 +1522,7 @@ module load {R_covseqtools}""".format(
 
     def prepare_report_freebayes(self):
         """
-        Prepare ivar analysis report.
+        Prepare [FreeBayes](https://github.com/freebayes/freebayes) analysis report.
         """
 
         jobs = []

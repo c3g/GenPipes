@@ -55,7 +55,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
 
     def kallisto(self):
         """
-            Run Kallisto on fastq files for a fast esimate of abundance.
+        Run Kallisto on fastq files for a fast esimate of abundance.
         """
         transcriptome_file = config.param('kallisto', 'transcriptome_idx', param_type="filepath")
         tx2genes_file = config.param('kallisto', 'transcript2genes', param_type="filepath")
@@ -181,7 +181,7 @@ cp \\
 
     def gq_seq_utils_exploratory_analysis_rnaseq_light(self):
         """
-        Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight
+        Exploratory analysis using the gqSeqUtils R package adapted for RnaSeqLight.
         """
 
         jobs = []

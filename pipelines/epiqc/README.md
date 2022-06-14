@@ -98,13 +98,13 @@ Steps:
 9- epiqc_final_report
 
 ```
+
 bigwiginfo
 ----------
 Runs the tool bigWigInfo on bigwig files (
 
 Inspecting signal tracks to identify some obvious problems that
-could have an impact on the quality of the ChIP-Seq data is performed by UCSC-bigwiginfo
-https://bioconda-recipes-demo.readthedocs.io/en/docs/recipes/ucsc-bigwiginfo/README.html)
+could have an impact on the quality of the ChIP-Seq data is performed by [UCSC-bigwiginfo](https://bioconda-recipes-demo.readthedocs.io/en/docs/recipes/ucsc-bigwiginfo/README.html) )
 bigWigInfo is capable of identifying obvious issues such as
 missing chromosomes and insufficient track coverage, which are usually symptoms of
 improperly generated tracks.
@@ -113,7 +113,7 @@ If the user has specified bigwig files in the readset file under BIGIWIG column,
 the tool. Otherwise, the user is required to process files using ChIp-Seq pipeline to generate
 bigwig files. Then paths for bigwig files are reconstructed based on the ChIP-Seq readset file
 and will be used subsequently.
-(Note that: the readset file should be in the same folder as the ChIp-Seq output)
+(Note that: the readset file should be in the same folder as the ChIp-Seq output).
 
 chromimpute
 -----------
@@ -130,7 +130,7 @@ The resulted output is a tsv file
 
 epigeec
 -------
-Runs the epigeec pipeline (https://bitbucket.org/labjacquespe/epigeec/src/master/)
+Runs the [epigeec pipeline](https://bitbucket.org/labjacquespe/epigeec/src/master/)
 on the bigwig files given to the pipeline
 Epigeec pipeline is consisted of 3 sub-steps
 1. Bigwig files are first converted to the hdf5 format
@@ -145,7 +145,7 @@ This step is performed to generate report on bigwiginfo result
 
 chromimpute_report
 ------------------
-        This step is performed to generate a report comparing ChromImpute imputed signal
+This step is performed to generate a report comparing ChromImpute imputed signal
 track and input signal track (in bedgraph format).
 
 signal_to_noise_report
@@ -154,7 +154,7 @@ This step is performed to generate report on signal_to_noise result
 
 epigeec_report
 --------------
-This step is performed to generate a heatmap from EpiGeEC results
+This step is performed to generate a heatmap from EpiGeEC results.
 
 epiqc_final_report
 ------------------

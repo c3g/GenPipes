@@ -102,6 +102,7 @@ Steps:
 5- svim
 
 ```
+
 blastqc
 -------
 Uses BLAST to perform a basic QC test by aligning 1000bp of randomly selected
