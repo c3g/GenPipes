@@ -748,7 +748,6 @@ pandoc --to=markdown \\
     def stringtie(self):
         """
         Assemble transcriptome using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-        Warning: Still in testing.
         """
         jobs = []
 
@@ -768,7 +767,6 @@ pandoc --to=markdown \\
     def stringtie_merge(self):
         """
         Merge assemblies into a master teranscriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-        Warning: still in testing.
         """
 
         output_directory = os.path.join("stringtie", "AllSamples")
@@ -793,7 +791,6 @@ END
     def stringtie_abund(self):
         """
         Assemble transcriptome and compute RNA-seq expression using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-        Warning: Still in testing.
         """
         jobs = []
 
@@ -813,7 +810,6 @@ END
     def ballgown(self):
         """
         [Ballgown](https://bioconductor.org/packages/release/bioc/html/ballgown.html) is used to calculate differential transcript and gene expression levels and test them for significant differences.
-        Warning: still in testing.
         """
 
         jobs = []
