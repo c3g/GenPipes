@@ -104,7 +104,7 @@ class RnaSeqRaw(common.Illumina):
 
     def star_genome_length(self):
         """
-        Calculation for setting genomeSAindexNbases for STAR index
+        Calculation for setting genomeSAindexNbases for STAR index.
         """
         genome_index = csv.reader(open(config.param('DEFAULT', 'genome_fasta', param_type='filepath') + ".fai", 'r'), delimiter='\t')
 
@@ -477,9 +477,7 @@ pandoc \\
         The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
         BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
 
-        This step takes as input files:
-
-        readset Bam files
+        This step takes as input files: readset Bam files.
         """
 
         jobs = []
@@ -770,7 +768,7 @@ pandoc --to=markdown \\
     def stringtie_merge(self):
         """
         Merge assemblies into a master teranscriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-        Warning: still in testing
+        Warning: still in testing.
         """
 
         output_directory = os.path.join("stringtie", "AllSamples")
@@ -815,8 +813,7 @@ END
     def ballgown(self):
         """
         [Ballgown](https://bioconductor.org/packages/release/bioc/html/ballgown.html) is used to calculate differential transcript and gene expression levels and test them for significant differences.
-
-        Warning: still in testing
+        Warning: still in testing.
         """
 
         jobs = []

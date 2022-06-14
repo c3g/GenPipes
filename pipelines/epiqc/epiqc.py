@@ -188,20 +188,20 @@ class EpiQC(common.Illumina):
 
     def bigwiginfo(self):
         """
-            Runs the tool bigWigInfo on bigwig files (
+        Runs the tool bigWigInfo on bigwig files (
 
-            Inspecting signal tracks to identify some obvious problems that
-            could have an impact on the quality of the ChIP-Seq data is performed by UCSC-bigwiginfo
-            https://bioconda-recipes-demo.readthedocs.io/en/docs/recipes/ucsc-bigwiginfo/README.html)
-            bigWigInfo is capable of identifying obvious issues such as
-            missing chromosomes and insufficient track coverage, which are usually symptoms of
-            improperly generated tracks.
+        Inspecting signal tracks to identify some obvious problems that
+        could have an impact on the quality of the ChIP-Seq data is performed by UCSC-bigwiginfo
+        https://bioconda-recipes-demo.readthedocs.io/en/docs/recipes/ucsc-bigwiginfo/README.html)
+        bigWigInfo is capable of identifying obvious issues such as
+        missing chromosomes and insufficient track coverage, which are usually symptoms of
+        improperly generated tracks.
 
-            If the user has specified bigwig files in the readset file under BIGIWIG column, they will be utilized by
-            the tool. Otherwise, the user is required to process files using ChIp-Seq pipeline to generate
-            bigwig files. Then paths for bigwig files are reconstructed based on the ChIP-Seq readset file
-            and will be used subsequently.
-            (Note that: the readset file should be in the same folder as the ChIp-Seq output)
+        If the user has specified bigwig files in the readset file under BIGIWIG column, they will be utilized by
+        the tool. Otherwise, the user is required to process files using ChIp-Seq pipeline to generate
+        bigwig files. Then paths for bigwig files are reconstructed based on the ChIP-Seq readset file
+        and will be used subsequently.
+        (Note that: the readset file should be in the same folder as the ChIp-Seq output)
         """
         jobs = []
 
@@ -237,8 +237,8 @@ class EpiQC(common.Illumina):
 
     def bigwig_to_bedgraph(self):
         """
-            ucsc-bigwigtobedgraph (https://bioconda-recipes-demo.readthedocs.io/en/docs/recipes/ucsc-bigwigtobedgraph/README.html)
-            is used to convert bigwig files to bedgraph files (Used in ChromImpute subsequently).
+        ucsc-bigwigtobedgraph (https://bioconda-recipes-demo.readthedocs.io/en/docs/recipes/ucsc-bigwigtobedgraph/README.html)
+        is used to convert bigwig files to bedgraph files (Used in ChromImpute subsequently).
         """
         jobs = []
 
@@ -271,13 +271,11 @@ class EpiQC(common.Illumina):
 
     def chromimpute_preprocess(self):
         """
-            This step (mandatory) is performed to create chromimpute directories, chromosome sizes file, inputinfo file with IHEC
-            and user samples and finally link the converted IHEC bedgraph files to user directory. In order to run
-            the chromimpute, inputinfo and chromsizes file are required to be in the imputation directory.
-            Please note: chromsizes and inputinfo files are created dynamically when the user runs the pipeline. It is
-            not necessary to submit jobs to create them.
-
-
+        This step (mandatory) is performed to create chromimpute directories, chromosome sizes file, inputinfo file with IHEC
+        and user samples and finally link the converted IHEC bedgraph files to user directory. In order to run
+        the chromimpute, inputinfo and chromsizes file are required to be in the imputation directory.
+        Please note: chromsizes and inputinfo files are created dynamically when the user runs the pipeline. It is
+        not necessary to submit jobs to create them.
         """
 
         # for now there is no way we can start from bedgraph files without creating a folder called "bedgraph_data"
@@ -429,11 +427,11 @@ mkdir -p \\
 
     def chromimpute_convert(self):
         """
-            This step is performed to convert each unique mark and sample combination signal tracks (bedgraph files)
-            in the user dataset into binned signal resolution tracks.
+        This step is performed to convert each unique mark and sample combination signal tracks (bedgraph files)
+        in the user dataset into binned signal resolution tracks.
 
-            If you got index out of bound exception, check whether your reference genome version of the bedgraph file
-            is similar to chromosome_sizes_file inside the imputation folder
+        If you got index out of bound exception, check whether your reference genome version of the bedgraph file
+        is similar to chromosome_sizes_file inside the imputation folder
         """
         jobs = []
 
@@ -471,11 +469,9 @@ mkdir -p \\
 
     def chromimpute_compute_global_dist(self):
         """
-
-            This steps is used to Compute the global distance based on correlation for each mark in each sample with
-            the same mark in all other samples in inputinfo file. Creates a file for each mark in each sample containing
-            a ranked list of the globally nearest samples.
-
+        This steps is used to Compute the global distance based on correlation for each mark in each sample with
+        the same mark in all other samples in inputinfo file. Creates a file for each mark in each sample containing
+        a ranked list of the globally nearest samples.
         """
         jobs = []
         chr_sizes_file = self.chromosome_file
@@ -552,8 +548,8 @@ mkdir -p \\
 
     def chromimpute_generate_train_data(self):
         """
-            This step is performed to generate a set of training data instances taking directory of converted data
-            and global distances.
+        This step is performed to generate a set of training data instances taking directory of converted data
+        and global distances.
         """
         jobs = []
 
@@ -718,8 +714,7 @@ mkdir -p \\
 
     def chromimpute_train(self):
         """
-            This step is used to train regression trees based on the feature data produced by GenerateTrainData.
-
+        This step is used to train regression trees based on the feature data produced by GenerateTrainData.
         """
         jobs = []
 
@@ -758,8 +753,8 @@ mkdir -p \\
 
     def chromimpute_apply(self):
         """
-            This step is used to apply the predictors generated in the Train command to generate the imputed data.
-            A job is created for each sample and mark given in the dataset.
+        This step is used to apply the predictors generated in the Train command to generate the imputed data.
+        A job is created for each sample and mark given in the dataset.
         """
         jobs = []
 
@@ -811,8 +806,8 @@ mkdir -p \\
 
     def chromimpute_eval(self):
         """
-            This step is used to compare the agreement between an observed and imputed data set.
-            A job is created for every sample-mark given in the dataset.
+        This step is used to compare the agreement between an observed and imputed data set.
+        A job is created for every sample-mark given in the dataset.
         """
         jobs = []
 
@@ -877,9 +872,9 @@ mkdir -p \\
 
     def signal_to_noise(self):
         """
-            Binned signal resolution tracks from chromipute convert step is used to determined the
-            percentage of the whole file signal that was located in the top 5% and 10% of the bins
-            The resulted output is a tsv file
+        Binned signal resolution tracks from chromipute convert step is used to determined the
+        percentage of the whole file signal that was located in the top 5% and 10% of the bins
+        The resulted output is a tsv file
         """
         jobs = []
         output_dir = self.output_dirs['signal_to_noise_output_directory']
@@ -1164,7 +1159,7 @@ python $PYTHON_TOOLS/signal_noise.py \\
     def chromimpute_report(self):
         """
         This step is performed to generate a report comparing ChromImpute imputed signal
-track and input signal track (in bedgraph format).
+        track and input signal track (in bedgraph format).
         """
         jobs = []
         impute_job = []
@@ -1197,7 +1192,7 @@ track and input signal track (in bedgraph format).
 
     def epigeec_report(self):
         """
-        This step is performed to generate a heatmap from EpiGeEC results
+        This step is performed to generate a heatmap from EpiGeEC results.
         """
         jobs = []
 

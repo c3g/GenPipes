@@ -85,6 +85,7 @@ class Pipeline(object):
 
               {help}
               ```
+
               {step_doc}
             """).format(
             pipeline_doc=textwrap.dedent(self.__doc__ or ""),

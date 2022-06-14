@@ -243,7 +243,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         """
         Preprocess vcf for loading into a annotation database - gemini : http://gemini.readthedocs.org/en/latest/index.html
         Processes include normalization and decomposition of MNPs by vt (http://genome.sph.umich.edu/wiki/Vt) and 
-        vcf FORMAT modification for correct loading into gemini
+        vcf FORMAT modification for correct loading into gemini.
         """
 
         jobs = []
@@ -291,7 +291,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
 
     def gemini_annotations(self):
         """
-        Load functionally annotated vcf file into a mysql lite annotation database : http://gemini.readthedocs.org/en/latest/index.html
+        Load functionally annotated vcf file into a mysql lite annotation database with [gemini](http://gemini.readthedocs.org/en/latest/index.html).
         """
 
         jobs = []

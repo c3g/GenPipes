@@ -115,7 +115,7 @@ However, if you would like to setup and use dragen in own cluster please refer o
 
     def bismark_align(self):
         """
-        Align reads with [Bismark](https://www.bioinformatics.babraham.ac.uk/projects/bismark/Bismark_User_Guide.pdf)
+        Align reads with [Bismark](https://www.bioinformatics.babraham.ac.uk/projects/bismark/Bismark_User_Guide.pdf).
         """
 
         jobs = []
@@ -230,7 +230,7 @@ pandoc --to=markdown \\
 
     def add_bam_umi(self):
         """
-        Add read UMI tag to individual bam files using [fgbio](https://fulcrumgenomics.github.io/fgbio/tools/latest/GroupReadsByUmi.html)
+        Add read UMI tag to individual bam files using [fgbio](https://fulcrumgenomics.github.io/fgbio/tools/latest/GroupReadsByUmi.html).
         """
 
         jobs = []
@@ -299,8 +299,7 @@ pandoc --to=markdown \\
         Remove duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
         (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
         will be removed as a duplicate in the BAM file. Removing duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
-        This step is used in bismark and hybrid protocols
-
+        This step is used in bismark and hybrid protocols.
         """
 
         jobs = []
@@ -542,7 +541,7 @@ cp \\
         The script reads in a bisulfite read alignment file produced by the Bismark bisulfite mapper
         and extracts the methylation information for individual cytosines.
         The methylation extractor outputs result files for cytosines in CpG, CHG and CHH context.
-        It also outputs bedGraph, a coverage file from positional methylation data and cytosine methylation report
+        It also outputs bedGraph, a coverage file from positional methylation data and cytosine methylation report.
         """
 
         # Check the library status
@@ -648,7 +647,7 @@ cp \\
     def methylation_profile(self):
         """
         Generation of a CpG methylation profile by combining both forward and reverse strand Cs.
-        Also generating of all the methylatoin metrics : CpG stats, pUC19 CpG stats, lambda conversion rate, median CpG coverage, GC bias
+        Also generating of all the methylatoin metrics : CpG stats, pUC19 CpG stats, lambda conversion rate, median CpG coverage, GC bias.
         """
 
         jobs = []
@@ -725,9 +724,7 @@ cp \\
     def ihec_sample_metrics_report(self):
         """
         Retrieve the computed metrics which fit the IHEC standards and build a tsv report table for IHEC.
-
-Note: The dragen protocol does not generate a metric for estimated library size. You will have to run Picard separately for this metric.
-
+        Note: The dragen protocol does not generate a metric for estimated library size. You will have to run Picard separately for this metric.
         """
 
         jobs = []
@@ -852,7 +849,7 @@ pandoc \\
 
     def bis_snp(self):
         """
-        SNP calling with [BisSNP](https://people.csail.mit.edu/dnaase/bissnp2011/)
+        SNP calling with [BisSNP](https://people.csail.mit.edu/dnaase/bissnp2011/).
         """
 
         jobs = []
@@ -880,7 +877,7 @@ pandoc \\
 
     def filter_snp_cpg(self):
         """
-        SNP CpGs filtering
+        SNP CpGs filtering.
         """
 
         jobs = []
@@ -903,7 +900,7 @@ pandoc \\
 
     def prepare_methylkit(self):
         """
-        Prepare input file for [methylKit](https://www.bioconductor.org/packages/release/bioc/vignettes/methylKit/inst/doc/methylKit.html) differential analysis
+        Prepare input file for [methylKit](https://www.bioconductor.org/packages/release/bioc/vignettes/methylKit/inst/doc/methylKit.html) differential analysis.
         """
 
         jobs = []
@@ -927,7 +924,7 @@ pandoc \\
 
     def methylkit_differential_analysis(self):
         """
-        Run methylKit to get DMCs & DMRs for different design comparisons
+        Run methylKit to get DMCs & DMRs for different design comparisons.
         """
 
         jobs = []
@@ -959,12 +956,8 @@ pandoc \\
 
     def dragen_align(self):
         """
-        Align reads with
-[Dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm)
-both hybrid and dragen protocols use this step to
-align reads. The Dragen parameters can be changed using other_options of
-the ini configuration.
-
+        Align reads with [Dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm) both hybrid and dragen protocols use this step to align reads.
+        The Dragen parameters can be changed using other_options of the ini configuration.
         """
        # duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='string').lower()
 
@@ -1085,7 +1078,7 @@ the ini configuration.
 
     def dragen_methylation_call(self):
         """
-        Call methylation with Dragen using the 2nd run of Dragen alignment
+        Call methylation with Dragen using the 2nd run of Dragen alignment.
         """
        # duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='string').lower()
 
@@ -1130,7 +1123,7 @@ the ini configuration.
 
     def sort_dragen_sam(self):
         """
-        Coordinate sorting the bam file resulted from dragen and create an index
+        Coordinate sorting the bam file resulted from dragen and create an index.
         """
         jobs = []
 
