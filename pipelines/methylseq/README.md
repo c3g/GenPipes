@@ -125,7 +125,7 @@ Steps:
 ![methylseq hybrid workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq_hybrid.resized.png)
 [download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq_hybrid.png)
 
-### hybrid:
+### hybrid protocol:
 ```
 
 1- picard_sam_to_fastq
