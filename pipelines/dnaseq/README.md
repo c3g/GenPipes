@@ -15,11 +15,11 @@ usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--genpipes_file GENPIPES_FILE]
                  [-t {mugqic,mpileup,light,sv}] [-r READSETS] [-v]
 
-Version: 4.2.1
+Version: 4.3.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
-options:
+optional arguments:
   -h                    show this help message and exit
   --help                show detailed description of pipeline and steps
   -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
