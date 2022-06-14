@@ -207,9 +207,11 @@ class Illumina(MUGQICPipeline):
 
 
     def picard_sam_to_fastq(self):
+        
         """
         Convert SAM/BAM files from the input readset file into FASTQ format
         if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+
         """
         jobs = []
         analyses_dir = os.path.join("analyses")
