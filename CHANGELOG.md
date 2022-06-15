@@ -1,6 +1,27 @@
-35 tags, 9455 commits
+35 tags, 9465 commits
 
-HEAD        Tue Jun 14 13:40:37 2022 -0400        0 commits
+HEAD        Tue Jun 14 17:37:06 2022 -0400        9 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      3 commits
+
+       69d74b0 Merge remote-tracking branch 'origin/dev' into release_4.3.0.1
+       ee071fd Updating READMEs
+       3f33a35 Version bump to 4.3.0
+
+  ehenrion <edouard.henrion@mcgill.ca>      1 commits
+
+       2e0a7ec Merged in release_4.3.0 (pull request #364)
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      3 commits
+
+       ce99735 Merged in dragen_update1 (pull request #365)
+       0c39884 rnaseq - General - Updating doc.
+       3079952 General - General - Formalizing README doc.
+
+  Pubudu Nawarathna Mudiyanselage <pubudu.nawarathna@mail.mcgill.ca>      2 commits
+
+       9684c5e fixed some issues in epiQC md file
+       b772f84 Added multiline comments to methylseq pipeline
 
 4.3.0        Tue Jun 14 17:44:50 2022 +0000        116 commits
 
