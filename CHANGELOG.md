@@ -1,32 +1,18 @@
-35 tags, 9465 commits
+35 tags, 9466 commits
 
-HEAD        Tue Jun 14 17:37:06 2022 -0400        9 commits
+HEAD        Wed Jun 15 10:59:54 2022 -0400        1 commits
 
-  Edouard Henrion <edouard.henrion@mcgill.ca>      3 commits
+  Edouard Henrion <edouard.henrion@mcgill.ca>      1 commits
+
+       937a5ca Version bump to 4.3.0
+
+4.3.0        Wed Jun 15 14:55:53 2022 +0000        126 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      23 commits
 
        69d74b0 Merge remote-tracking branch 'origin/dev' into release_4.3.0.1
        ee071fd Updating READMEs
        3f33a35 Version bump to 4.3.0
-
-  ehenrion <edouard.henrion@mcgill.ca>      1 commits
-
-       2e0a7ec Merged in release_4.3.0 (pull request #364)
-
-  Paul Stretenowich <paul.stretenowich@mcgill.ca>      3 commits
-
-       ce99735 Merged in dragen_update1 (pull request #365)
-       0c39884 rnaseq - General - Updating doc.
-       3079952 General - General - Formalizing README doc.
-
-  Pubudu Nawarathna Mudiyanselage <pubudu.nawarathna@mail.mcgill.ca>      2 commits
-
-       9684c5e fixed some issues in epiQC md file
-       b772f84 Added multiline comments to methylseq pipeline
-
-4.3.0        Tue Jun 14 17:44:50 2022 +0000        116 commits
-
-  Edouard Henrion <edouard.henrion@mcgill.ca>      20 commits
-
        76b0b62 Merge remote-tracking branch 'origin/dev' into release_4.3.0
        ec90b7a GenPipes - prep for new release
        8636775 Updating CHANGELOG from master after release
@@ -61,8 +47,10 @@ HEAD        Tue Jun 14 17:37:06 2022 -0400        9 commits
        3303a59 GenPipes - C3G Software Stack : Added sending of the combined JSON to url + reformating the module helpers
        0b8b7d5 GenPipes - module helper : updating the pythonSearcher class
 
-  ehenrion <edouard.henrion@mcgill.ca>      8 commits
+  ehenrion <edouard.henrion@mcgill.ca>      10 commits
 
+       110f8ad Merged in release_4.3.0.1 (pull request #366)
+       2e0a7ec Merged in release_4.3.0 (pull request #364)
        390169f Merged in release_4.3.0 (pull request #363)
        47523b3 Merged in release_4.2.1 (pull request #359)
        5f690ff Merged in soft_jsondb_gsoc2020_eh (pull request #181)
@@ -79,8 +67,11 @@ HEAD        Tue Jun 14 17:37:06 2022 -0400        9 commits
        c6bde0f Added -h/--help flag
        810321f 1. Pushing pre-final code 2. Added CLI args 3. Added CLI Documentation
 
-  Paul Stretenowich <paul.stretenowich@mcgill.ca>      20 commits
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      23 commits
 
+       ce99735 Merged in dragen_update1 (pull request #365)
+       0c39884 rnaseq - General - Updating doc.
+       3079952 General - General - Formalizing README doc.
        cd2845a Merged in HotFix_dev (pull request #357)
        a5caedf General - General - Fixing UnboundLocalError: local variable 'job_name_prefix' referenced before assignment
        100567c Merged in HotFix_dev (pull request #356)
@@ -165,6 +156,11 @@ HEAD        Tue Jun 14 17:37:06 2022 -0400        9 commits
        d82bab0 added comments and fix hybrid mode single pass directional-complement
        865a65f fixed ihec metric by adding a job to create an empty metric file for estimated_library_size
        cd94f55 changed dragen structure and added a new protocol
+
+  Pubudu Nawarathna Mudiyanselage <pubudu.nawarathna@mail.mcgill.ca>      2 commits
+
+       9684c5e fixed some issues in epiQC md file
+       b772f84 Added multiline comments to methylseq pipeline
 
   Pubudu Nawarathna <pubudu.nawarathna@mail.mcgill.ca>      2 commits
 
