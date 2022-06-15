@@ -94,6 +94,7 @@ Steps:
 20- prepare_report_freebayes
 
 ```
+
 host_reads_removal
 ------------------
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
@@ -108,7 +109,7 @@ This step takes as input files:
 
 kraken_analysis
 ---------------
-kraken
+Taxonomic sequence classification system using [kraken](https://github.com/DerrickWood/kraken2).
 
 cutadapt
 --------
@@ -145,66 +146,66 @@ This step takes as input files:
 
 sambamba_filtering
 ------------------
-Filter raw bams with sambamba and an awk cmd to filter by insert size
+Filter raw bams with [Sambamba](http://lomereiter.github.io/sambamba/index.html) and an awk cmd to filter by insert size
 
 ivar_trim_primers
 -----------------
-Remove primer sequences to individual bam files using ivar
+Remove primer sequences to individual bam files using [ivar](https://andersen-lab.github.io/ivar/html/manualpage.html).
 
 covseq_metrics
 --------------
-Multiple metrics from dnaseq
+Gathering multiple metrics. (coming from dnaseq pipeline)
 
 freebayes_calling
 -----------------
-FreeBayes is a haplotype-based variant detector designed to find small polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels (insertions and deletions), MNPs (multi-nucleotide polymorphisms), and complex events (composite insertion and substitution events) smaller than the length of a short-read sequencing alignment.
+[FreeBayes](https://github.com/freebayes/freebayes) is a haplotype-based variant detector designed to find small polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels (insertions and deletions), MNPs (multi-nucleotide polymorphisms), and complex events (composite insertion and substitution events) smaller than the length of a short-read sequencing alignment.
 
 This method avoids one of the core problems with alignment-based variant detection that identical sequences may have multiple possible alignments.
 
 ivar_calling
 ------------
-ivar calling
+[ivar](https://andersen-lab.github.io/ivar/html/manualpage.html) calling variants.
 
 snpeff_annotate
 ---------------
-Consensus annotation with SnpEff
+Consensus annotation with [SnpEff](https://pcingola.github.io/SnpEff/).
 
 ivar_create_consensus
 ---------------------
-Create consensus with ivar through a samtools mpileup
+Create consensus with [ivar](https://andersen-lab.github.io/ivar/html/manualpage.html) through a [samtools](http://samtools.sourceforge.net/) mpileup
 
 bcftools_create_consensus
 -------------------------
-bcftools consensus creation
+[bcftools](https://samtools.github.io/bcftools/bcftools.html) consensus creation
 
 quast_consensus_metrics
 -----------------------
-Generate QUAST metrics on consensus
+Generate [QUAST](http://quast.sourceforge.net/) metrics on consensus
 
 rename_consensus_header_ivar
 ----------------------------
-Rename reads headers
+Rename reads headers after [ivar](https://andersen-lab.github.io/ivar/html/manualpage.html) variants calling.
 
 rename_consensus_header_freebayes
 ---------------------------------
-Rename reads headers
+Rename reads headers after [FreeBayes](https://github.com/freebayes/freebayes) variants calling.
 
 ncovtools_quickalign
 --------------------
-Uses quickalign to provides summary statistics, which can be used to determine the sequencing quality and evolutionary novelty of input genomes (e.g. number of new mutations and indels). 
+Uses [ncov-tools](https://github.com/jts/ncov-tools) quickalign to provides summary statistics, which can be used to determine the sequencing quality and evolutionary novelty of input genomes (e.g. number of new mutations and indels). 
 
 It uses ivar consensus as well as freebayes consensus to arrive at the alignment decisions.
 
 prepare_table
 -------------
-Gathers all analysis data for quast, kraken and other metrics and module details.
+Gathers all analysis data for [QUAST](http://quast.sourceforge.net/), [kraken](https://github.com/DerrickWood/kraken2) and other metrics and module details.
 
 prepare_report_ivar
 -------------------
-Prepare ivar analysis report.
+Prepare [ivar](https://andersen-lab.github.io/ivar/html/manualpage.html) analysis report.
 
 prepare_report_freebayes
 ------------------------
-Prepare ivar analysis report.
+Prepare [FreeBayes](https://github.com/freebayes/freebayes) analysis report.
 
 

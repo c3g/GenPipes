@@ -128,9 +128,10 @@ cufflinks:
 25- cram_output
 
 ```
+
 picard_sam_to_fastq
 -------------------
-Convert SAM/BAM files from the input readset file into FASTQ format
+Converts SAM/BAM files from the input readset file into FASTQ format.
 if FASTQ files are not already specified in the readset file. Do nothing otherwise.
 
 trimmomatic
@@ -188,9 +189,7 @@ The filtered reads are aligned to a reference fasta file of ribosomal sequence. 
 The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
 BWA output BAM files are then sorted by coordinate using [Picard](http://broadinstitute.github.io/picard/).
 
-This step takes as input files:
-
-readset Bam files
+This step takes as input files: readset Bam files.
 
 bam_hard_clip
 -------------
@@ -215,23 +214,18 @@ Create rawcount matrix, zip the wiggle tracks and create the saturation plots ba
 stringtie
 ---------
 Assemble transcriptome using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-Warning: Still in testing.
 
 stringtie_merge
 ---------------
 Merge assemblies into a master teranscriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-Warning: still in testing
 
 stringtie_abund
 ---------------
 Assemble transcriptome and compute RNA-seq expression using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
-Warning: Still in testing.
 
 ballgown
 --------
 [Ballgown](https://bioconductor.org/packages/release/bioc/html/ballgown.html) is used to calculate differential transcript and gene expression levels and test them for significant differences.
-
-Warning: still in testing
 
 differential_expression
 -----------------------
@@ -240,8 +234,8 @@ Merge the results of the analysis in a single csv file.
 
 cram_output
 -----------
-Generate long term storage version of the final alignment files in CRAM format
-Using this function will include the orginal final bam file into the  removable file list
+Generate long term storage version of the final alignment files in CRAM format.
+Using this function will include the orginal final bam file into the  removable file list.
 
 cufflinks
 ---------

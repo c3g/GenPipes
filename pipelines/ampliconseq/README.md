@@ -129,6 +129,7 @@ dada2:
 7- asva
 
 ```
+
 trimmomatic16S
 --------------
 MiSeq raw reads adapter & primers trimming and basic QC is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
@@ -183,7 +184,6 @@ This step takes as input file:
 
 1. Catenated and filtered FASTA file from previous step.
 
-
 otu_rep_picking
 ---------------
 After picking OTUs, this step pick a representative sequence for each OTU.
@@ -193,7 +193,6 @@ This step takes as input files:
 1. OTU file from previous step
 2. Catenated and filtered FASTA file from filter_chimeras step.
 
-
 otu_assigning
 -------------
 Given a set of OTUS, this step attempts to assign the taxonomy of each OTU using [Uclust] (http://drive5.com/usearch/manual/uclust_algo.html).
@@ -201,7 +200,6 @@ Given a set of OTUS, this step attempts to assign the taxonomy of each OTU using
 This step takes as input files:
 
 1. OTU representative sequence file from previous step.
-
 
 otu_table
 ---------
@@ -212,7 +210,6 @@ This step takes as input files:
 1. OTU picking file.
 2. Taxonomy assignment for each OTU from the previous step.
 
-
 otu_alignment
 -------------
 Align OTU representative sequences using [PyNAST] (http://biocore.github.io/pynast/).
@@ -220,7 +217,6 @@ Align OTU representative sequences using [PyNAST] (http://biocore.github.io/pyna
 This step takes as input file:
 
 1. OTU representative sequence file.
-
 
 filter_alignment
 ----------------
@@ -230,7 +226,6 @@ This step takes as input file:
 
 1. Alignment sequence file.
 
-
 phylogeny
 ---------
 Build a phylogenetic tree from a multiple sequence alignment using [FastTree] (http://www.microbesonline.org/fasttree/).
@@ -238,7 +233,6 @@ Build a phylogenetic tree from a multiple sequence alignment using [FastTree] (h
 This step takes as input file:
 
 1. Filtered alignment sequence file from previous step.
-
 
 qiime_report
 ------------
@@ -254,7 +248,6 @@ This step takes as input files:
 
 1. OTU non rarefied table in biom format.
 
-
 alpha_diversity
 ---------------
 2nd step (/4) for rarefaction plot.
@@ -263,7 +256,6 @@ Calculate alpha diversity on each sample using a variety of alpha diversity metr
 This step takes as input files:
 
 1. Multiple OTU rarefied table in biom format from previous step.
-
 
 collate_alpha
 -------------
@@ -288,7 +280,6 @@ This step takes as input files:
 
 1. OTU table in biom format.
 
-
 css_normalization
 -----------------
 This step is recommended. Alternative method for normalization to rarefaction.
@@ -297,7 +288,6 @@ Performs the CSS Matrix normalization.
 This step takes as input files:
 
 1. OTU table in biom format.
-
 
 rarefaction_plot
 ----------------
@@ -314,7 +304,6 @@ This step takes as input files:
 1. OTU rarefied table in biom format if available.
 2. Else, OTU non rarefied table in biom format.
 
-
 plot_taxa
 ---------
 2nd step (/3) for taxonomic affiliation plot.
@@ -324,7 +313,6 @@ This step takes as input files:
 
 1. Summarized information from previous step.
 
-
 plot_heatmap
 ------------
 Last step for taxonomic affiliation plot.
@@ -333,7 +321,6 @@ Make heatmap at phylum level.
 This step takes as input files:
 
 1. Summarized information from previous step.
-
 
 krona
 -----
@@ -354,7 +341,6 @@ This step takes as input files:
 1. OTU rarefied table in biom format.
 2. Tree file.
 
-
 pcoa
 ----
 2nd step (/3) for 2D PCoA plot.
@@ -364,7 +350,6 @@ This step takes as input file:
 
 1. Matrix produced in the previous step.
 
-
 pcoa_plot
 ---------
 Last step for 2D PCoA plot.
@@ -372,7 +357,6 @@ Last step for 2D PCoA plot.
 This step takes as input file:
 
 1. PCoA from the previous step.
-
 
 plot_to_beta
 ------------

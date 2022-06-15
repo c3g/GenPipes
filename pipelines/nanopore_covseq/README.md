@@ -111,13 +111,14 @@ basecalling:
 12- prepare_report
 
 ```
+
 host_reads_removal
 ------------------
-Runs minimap2 on a hybrid genome to remove potential host reads
+Runs [minimap2](https://github.com/lh3/minimap2) on a hybrid genome to remove potential host reads.
 
 kraken_analysis
 ---------------
-kraken
+Taxonomic sequence classification system using [kraken](https://github.com/DerrickWood/kraken2).
 
 artic_nanopolish
 ----------------
@@ -125,42 +126,42 @@ Runs artic nanopolish pipeline on all samples.
 
 wub_metrics
 -----------
-Generate WUB metrics on bam file
+Generate WUB metrics on bam file.
 
 covseq_metrics
 --------------
 
 snpeff_annotate
 ---------------
-Consensus annotation with SnpEff
+Consensus annotation with [SnpEff](https://pcingola.github.io/SnpEff/).
 
 quast_consensus_metrics
 -----------------------
-Generate QUAST metrics on consensus
+Generate [QUAST](http://quast.sourceforge.net/) metrics on consensus.
 
 rename_consensus_header
 -----------------------
-Rename reads headers
+Rename reads headers.
 
 prepare_report
 --------------
+Prepare analysis report.
+
 guppy_basecall
 --------------
-Use guppy to perform basecalling on raw FAST5 files
-
+Use guppy to perform basecalling on raw FAST5 files.
 
 guppy_demultiplex
 -----------------
-Use guppy to perform demultiplexing on raw FASTQ read files
-
+Use guppy to perform demultiplexing on raw FASTQ read files.
 
 pycoqc
 ------
-Use pycoQC to produce an interactive quality report based on the summary file and
+Use [pycoQC](https://hpc.nih.gov/apps/pycoQC.html) to produce an interactive quality report based on the summary file and
 alignment outputs.
 
 host_reads_removal_dependency
 -----------------------------
-Runs minimap2 on a hybrid genome to remove potential host reads
+Runs [minimap2](https://github.com/lh3/minimap2) on a hybrid genome to remove potential host reads.
 
 
