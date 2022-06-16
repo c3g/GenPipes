@@ -195,16 +195,18 @@ class HicSeq(common.Illumina):
                 candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-            job_confFile = hicup.create_hicup_conf(readset.name, fastq1, fastq2, sample_output_dir, self.genome_digest)
+            # job_confFile = hicup.create_hicup_conf(readset.name, fastq1, fastq2, sample_output_dir, self.genome_digest)
 
-            job_hicup = hicup.hicup_run(readset.name, "hicup_align." + readset.name + ".conf", sample_output_dir, fastq1, fastq2)
+            # job_hicup = hicup.hicup_run(readset.name, "hicup_align." + readset.name + ".conf", sample_output_dir, fastq1, fastq2, self.genome_digest)
 
-            job = concat_jobs([
-                    job_confFile, job_hicup
-                ],
-                name = "hicup_align." + readset.name,
-                samples = [readset.sample]
-            )
+            job = hicup.hicup_run(
+                                readset.name,
+                                "hicup_align." + readset.name + ".conf",
+                                sample_output_dir,
+                                fastq1,
+                                fastq2,
+                                self.genome_digest
+                                )
 
             jobs.append(job)
 

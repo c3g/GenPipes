@@ -58,29 +58,66 @@ def create_hicup_conf(name, fastq1, fastq2, sample_output_dir, genome_digest):
 
     command_confFile ='echo \"{configFileContent}\" > {fileName}'.format(fileName=fileName, configFileContent=configFileContent)
 
-    return Job(input_files = [fastq1 + ".edited.gz", fastq2 + ".edited.gz"],
-            name = "hicup_align.create_hicup_conf." + name,
-            command = command_confFile,
-            removable_files = [fileName]
-            )
+    return Job(
+                input_files=[fastq1 + ".edited.gz", fastq2 + ".edited.gz"],
+                name="hicup_align.create_hicup_conf." + name,
+                command=command_confFile,
+                removable_files=[fileName]
+                )
 
 
-def hicup_run (name, confFile, sample_output_dir, fastq1, fastq2):
+def hicup_run (name, confFile, sample_output_dir, fastq1, fastq2, genome_digest):
 
-    command_hicup = "rm -rf {sample_output_dir} && \
-                    mkdir -p {sample_output_dir} && \
-                    hicup -c {fileName} && rm {fileName}".format(sample_output_dir = sample_output_dir, fileName = confFile)
+    command_hicup = """\\
+Bowtie2_path=`which bowtie2`
+R_path=`which R`
+echo "Outdir: {sample_output_dir}
+Threads: {threads}
+Quiet:{Quiet}
+Keep:{Keep}
+Zip:1
+Bowtie2: $Bowtie2_path
+R: $R_path
+Index: {Genome_Index_hicup}
+Digest: {Genome_Digest}
+Format: {Format}
+Longest: {Longest}
+Shortest: {Shortest}
+{fastq1}
+{fastq2}" > {hicup_config} && \\
+rm -rf {sample_output_dir} && \\
+mkdir -p {sample_output_dir} && \\
+hicup -c {fileName} && rm {fileName}""".format(
+    sample_output_dir = sample_output_dir,
+    threads = config.param('hicup_align', 'threads'),
+    Quiet = config.param('hicup_align', 'Quiet'),
+    Keep = config.param('hicup_align', 'Keep'),
+    Genome_Index_hicup = os.path.expandvars(config.param('hicup_align', 'Genome_Index_hicup')),
+    Genome_Digest = genome_digest,
+    Format = config.param('hicup_align', 'Format'),
+    Longest = config.param('hicup_align', 'Longest'),
+    Shortest = config.param('hicup_align', 'Shortest'),
+    fastq1 = fastq1 + ".edited.gz",
+    fastq2 = fastq2 + ".edited.gz",
+    hicup_config="hicup_align." + name + ".conf",
+    sample_output_dir=sample_output_dir,
+    fileName=confFile
+    )
 
     hicup_prefix = ".trim.pair1_2.fastq.gz.edited.hicup.bam"
     hicup_file_output = os.path.join(sample_output_dir, name + hicup_prefix)
 
-    return Job(input_files = [fastq1 + ".edited.gz", fastq2 + ".edited.gz"],
-            output_files = [hicup_file_output],
-            module_entries = [['hicup_align', 'module_perl'], ['hicup_align', 'module_bowtie2'], ['hicup_align', 'module_samtools'], ['hicup_align', 'module_R'], ['hicup_align', 'module_mugqic_R_packages'], ['hicup_align', 'module_HiCUP']],
-            name = "hicup_align." + name,
-            command = command_hicup,
-            )
-
-
-
-
+    return Job(
+                input_files=[fastq1 + ".edited.gz", fastq2 + ".edited.gz"],
+                output_files=[hicup_file_output],
+                module_entries=[
+                    ['hicup_align', 'module_perl'],
+                    ['hicup_align', 'module_bowtie2'],
+                    ['hicup_align', 'module_samtools'],
+                    ['hicup_align', 'module_R'],
+                    ['hicup_align', 'module_mugqic_R_packages'],
+                    ['hicup_align', 'module_HiCUP']
+                    ],
+                name="hicup_align." + name,
+                command=command_hicup
+                )
