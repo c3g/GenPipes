@@ -200,7 +200,7 @@ class HicSeq(common.Illumina):
             # job_hicup = hicup.hicup_run(readset.name, "hicup_align." + readset.name + ".conf", sample_output_dir, fastq1, fastq2, self.genome_digest)
 
             job = concat_jobs([
-                    bash_cmd.mkdir(sample_output_dir),
+                    bash.mkdir(sample_output_dir),
                     hicup.hicup_run(
                                 readset.name,
                                 sample_output_dir,
