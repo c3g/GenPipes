@@ -100,7 +100,6 @@ hicup -c {fileName} && rm {fileName}""".format(
     fastq1 = fastq1 + ".edited.gz",
     fastq2 = fastq2 + ".edited.gz",
     hicup_config="hicup_align." + name + ".conf",
-    sample_output_dir=sample_output_dir,
     fileName=confFile
     )
 
