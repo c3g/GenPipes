@@ -199,14 +199,27 @@ class HicSeq(common.Illumina):
 
             # job_hicup = hicup.hicup_run(readset.name, "hicup_align." + readset.name + ".conf", sample_output_dir, fastq1, fastq2, self.genome_digest)
 
-            job = hicup.hicup_run(
+            job = concat_jobs([
+                    bash_cmd.mkdir(sample_output_dir),
+                    hicup.hicup_run(
                                 readset.name,
-                                "hicup_align." + readset.name + ".conf",
                                 sample_output_dir,
                                 fastq1,
                                 fastq2,
                                 self.genome_digest
                                 )
+                    ],
+                    name = "hicup_align." + readset.name,
+                    samples = [readset.sample]
+                )
+
+            # job = hicup.hicup_run(
+            #                     readset.name,
+            #                     sample_output_dir,
+            #                     fastq1,
+            #                     fastq2,
+            #                     self.genome_digest
+            #                     )
 
             jobs.append(job)
 

@@ -66,7 +66,9 @@ def create_hicup_conf(name, fastq1, fastq2, sample_output_dir, genome_digest):
                 )
 
 
-def hicup_run (name, confFile, sample_output_dir, fastq1, fastq2, genome_digest):
+def hicup_run (name, sample_output_dir, fastq1, fastq2, genome_digest):
+
+    hicup_config = os.path.join(sample_output_dir, "hicup_align." + name + ".conf")
 
     command_hicup = """\\
 Bowtie2_path=`which bowtie2`
@@ -85,22 +87,19 @@ Longest: {Longest}
 Shortest: {Shortest}
 {fastq1}
 {fastq2}" > {hicup_config} && \\
-rm -rf {sample_output_dir} && \\
-mkdir -p {sample_output_dir} && \\
-hicup -c {fileName} && rm {fileName}""".format(
-    sample_output_dir = sample_output_dir,
-    threads = config.param('hicup_align', 'threads'),
-    Quiet = config.param('hicup_align', 'Quiet'),
-    Keep = config.param('hicup_align', 'Keep'),
-    Genome_Index_hicup = os.path.expandvars(config.param('hicup_align', 'Genome_Index_hicup')),
-    Genome_Digest = genome_digest,
-    Format = config.param('hicup_align', 'Format'),
-    Longest = config.param('hicup_align', 'Longest'),
-    Shortest = config.param('hicup_align', 'Shortest'),
-    fastq1 = fastq1 + ".edited.gz",
-    fastq2 = fastq2 + ".edited.gz",
-    hicup_config="hicup_align." + name + ".conf",
-    fileName=confFile
+hicup -c {hicup_config}""".format(
+    sample_output_dir=sample_output_dir,
+    threads=config.param('hicup_align', 'threads'),
+    Quiet=config.param('hicup_align', 'Quiet'),
+    Keep=config.param('hicup_align', 'Keep'),
+    Genome_Index_hicup=os.path.expandvars(config.param('hicup_align', 'Genome_Index_hicup')),
+    Genome_Digest=genome_digest,
+    Format=config.param('hicup_align', 'Format'),
+    Longest=config.param('hicup_align', 'Longest'),
+    Shortest=config.param('hicup_align', 'Shortest'),
+    fastq1=fastq1 + ".edited.gz",
+    fastq2=fastq2 + ".edited.gz",
+    hicup_config=hicup_config
     )
 
     hicup_prefix = ".trim.pair1_2.fastq.gz.edited.hicup.bam"
@@ -118,5 +117,6 @@ hicup -c {fileName} && rm {fileName}""".format(
                     ['hicup_align', 'module_HiCUP']
                     ],
                 name="hicup_align." + name,
-                command=command_hicup
+                command=command_hicup,
+                removable_files=[hicup_config]
                 )
