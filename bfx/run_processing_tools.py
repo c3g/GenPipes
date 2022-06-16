@@ -260,7 +260,7 @@ rm -f {tmp_dir}/chunks_R[12] joblog.*.txt && mkfifo {tmp_dir}/chunks_R1 {tmp_dir
 rm -rf {tmp_dir}/out && mkdir -p {tmp_dir}/out
 rm -rf {tmp_dir}/split && mkdir -p {tmp_dir}/split
 
-# Start chunking up the huge fastqgz into smaller pieces.
+# Start chunking up the huge fastq.gz into smaller pieces.
 # Chunk filenames+paths are written into the named pipes chunks_R1 and chunks_R2.
 echo "Chunking of the raw fastq files..."
 zcat $FASTQ_1_IN | \\
@@ -284,7 +284,7 @@ zcat $FASTQ_2_IN  \\
     -L 4 \\
     "gzip -c > {tmp_dir}/split/in.2.child_{{#}}.gz; echo {tmp_dir}/split/in.2.child_{{#}}.gz" > {tmp_dir}/chunks_R2 & \\
 
-# Take those names pipes and process each pair of chunked fastqgzs in parallel.
+# Take those named pipes and process each pair of chunked fastq.gzs in parallel.
 echo "Demultinplexing the fastq chunks..."
 mkdir -p {metrics_folder}/chunk && \\
 parallel \\

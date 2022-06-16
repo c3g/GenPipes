@@ -955,8 +955,8 @@ def parse_mgi_raw_readset_files(
         # Setting default mouse ref if needed
         elif "Mus musculus" in readset.species:
             genome_build = GenomeBuild("Mus_musculus", "GRCm38")
-        log.debug(readset.genomic_database)
-        log.debug(genome_build)
+        # log.debug(readset.genomic_database)
+        # log.debug(genome_build)
 
         if genome_build is not None:
             folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)

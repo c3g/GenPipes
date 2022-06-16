@@ -647,8 +647,8 @@ class RunProcessing(common.MUGQICPipeline):
                 basecall_outputs.extend(
                     [
                         os.path.join(basecall_dir, self.run_id, "L0" + lane),
-                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
-                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix + "_L0" + lane + ".summaryReport.html"),
+                        os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix + "_L0" + lane + ".heatmapReport.html"),
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv"),
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, "SequenceStat.txt"),
                         os.path.join(basecall_dir, self.run_id, "L0" + lane, "BarcodeStat.txt")
@@ -683,19 +683,19 @@ class RunProcessing(common.MUGQICPipeline):
             else:
                 basecall_outputs = [
                     os.path.join(basecall_dir, self.run_id, "L0" + lane),
-                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
-                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + "_read_2.fq.gz"),
-                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
-                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix + "_L0" + lane + "_read_1.fq.gz"),
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix + "_L0" + lane + "_read_2.fq.gz"),
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix + "_L0" + lane + ".summaryReport.html"),
+                    os.path.join(basecall_dir, self.run_id, "L0" + lane, self.raw_fastq_prefix + "_L0" + lane + ".heatmapReport.html"),
                     os.path.join(basecall_dir, self.run_id, "L0" + lane, "summaryTable.csv")
                 ]
 
                 raw_fastq_dir = os.path.join(unaligned_dir, "raw_fastq")
                 raw_fastq_outputs = [
-                    os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + "_read_1.fq.gz"),
-                    os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + "_read_2.fq.gz"),
-                    os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".summaryReport.html"),
-                    os.path.join(raw_fastq_dir, self.raw_fastq_prefix +  "_L0" + lane + ".heatmapReport.html"),
+                    os.path.join(raw_fastq_dir, self.raw_fastq_prefix + "_L0" + lane + "_read_1.fq.gz"),
+                    os.path.join(raw_fastq_dir, self.raw_fastq_prefix + "_L0" + lane + "_read_2.fq.gz"),
+                    os.path.join(raw_fastq_dir, self.raw_fastq_prefix + "_L0" + lane + ".summaryReport.html"),
+                    os.path.join(raw_fastq_dir, self.raw_fastq_prefix + "_L0" + lane + ".heatmapReport.html"),
                     os.path.join(raw_fastq_dir, "summaryTable.csv")
                 ]
 
@@ -1199,11 +1199,11 @@ class RunProcessing(common.MUGQICPipeline):
                     metrics_file = os.path.join(self.output_dir, "Unaligned." + lane, self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
                     demuxfastqs_outputs.append(metrics_file)
 
-                    if ini_section == 'fastq_g400':
+                    if self.readsets[lane][0].run_type == "PAIRED_END":
                         raw_name_prefix = self.raw_fastq_prefix +  "_L0" + lane
                         input1 = os.path.join(input_fastq_dir, raw_name_prefix + "_read_1.fq.gz")
                         input2 = os.path.join(input_fastq_dir, raw_name_prefix + "_read_2.fq.gz")
-                        if self.readsets[lane][0].run_type == "PAIRED_END":
+                        if ini_section == 'fastq_g400':
                             demultiplex_job = run_processing_tools.demux_fastqs(
                                 os.path.join(self.output_dir, "samplesheet." + lane + ".csv"),
                                 self.number_of_mismatches,
@@ -1214,7 +1214,20 @@ class RunProcessing(common.MUGQICPipeline):
                                 input2,
                                 ini_section
                             )
-                        else:
+                        elif ini_section == 'fastq_t7':
+                            demultiplex_job = run_processing_tools.demux_fastqs_by_chunk(
+                            os.path.join(self.output_dir, "samplesheet." + lane + ".csv"),
+                            self.number_of_mismatches,
+                            self.mask[lane],
+                            demuxfastqs_outputs,
+                            tmp_metrics_file,
+                            input1,
+                            input2,
+                            ini_section
+                        )
+                    else:
+                        input1 = os.path.join(input_fastq_dir, raw_name_prefix + "_read.fq.gz")
+                        if ini_section == 'fastq_g400':
                             input1 = os.path.join(input_fastq_dir, raw_name_prefix + "_read.fq.gz")
                             demultiplex_job = run_processing_tools.demux_fastqs_single_end(
                                 os.path.join(self.output_dir, "samplesheet." + lane + ".csv"),
@@ -1225,17 +1238,16 @@ class RunProcessing(common.MUGQICPipeline):
                                 input1,
                                 ini_section
                             )
-                    elif ini_section == 'fastq_t7':
-                        demultiplex_job = run_processing_tools.demux_fastqs_by_chunk(
-                            os.path.join(self.output_dir, "samplesheet." + lane + ".csv"),
-                            self.number_of_mismatches,
-                            self.mask[lane],
-                            demuxfastqs_outputs,
-                            tmp_metrics_file,
-                            input1,
-                            input2,
-                            ini_section
-                        )
+                        elif ini_section == 'fastq_t7':
+                            demultiplex_job = run_processing_tools.demux_fastqs_by_chunk(
+                                os.path.join(self.output_dir, "samplesheet." + lane + ".csv"),
+                                self.number_of_mismatches,
+                                self.mask[lane],
+                                demuxfastqs_outputs,
+                                tmp_metrics_file,
+                                input1,
+                                ini_section
+                            )
                     lane_jobs.append(
                         concat_jobs(
                             [
@@ -1840,7 +1852,11 @@ class RunProcessing(common.MUGQICPipeline):
             for step in step_list:
                 report_step_jobs = []
                 if step.name in ['basecall', 'fastq', 'index']:
-                    step_report_files = list(set([report_file for readset in self.readsets[lane] for report_file in readset.report_files[step.name] if step.name in readset.report_files]))
+                    step_report_files = []
+                    for readset in self.readsets[lane]:
+                        if step.name in readset.report_files:
+                            step_report_files.extend(readset.report_files[step.name])
+                    # step_report_files = list(set([report_file for report_file in readset.report_files[step.name] for readset in self.readsets[lane] for step_name in readset.report_files if step_name == step.name]))
                     if step_report_files:
                         report_job = tools.run_processing_metrics_to_json(
                              self.run_validation_report_json[lane],
@@ -2091,7 +2107,7 @@ class RunProcessing(common.MUGQICPipeline):
             return self.bioinfo_hash[lane]["Read1 Cycles"]
 
         elif self.args.type == "mgit7":
-            return self.json_flag_hash[lane]['Read1']
+            return str(int(self.json_flag_hash[lane]['Read1']) - 1)
 
         else:
             _raise(SanitycheckError("Unknown protocol : " + self.args.type))
@@ -2107,7 +2123,7 @@ class RunProcessing(common.MUGQICPipeline):
             return self.bioinfo_hash[lane]["Read2 Cycles"]
 
         elif self.args.type == "mgit7":
-            return self.json_flag_hash[lane]['Read2']
+            return str(int(self.json_flag_hash[lane]['Read2']) - 1)
         else:
             _raise(SanitycheckError("Unknown protocol : " + self.args.type))
 
@@ -2134,7 +2150,6 @@ class RunProcessing(common.MUGQICPipeline):
                 return "0"
             else:
                 return self.bioinfo_hash[lane]["Barcode"]
-            _raise(SanitycheckError("Could not get Index 1 Cycles from " + self.bioinfo_files[lane]))
 
         elif self.args.type == "mgit7":
             if self.json_flag_hash[lane]["Barcode"] == '':
@@ -2837,12 +2852,16 @@ class RunProcessing(common.MUGQICPipeline):
         step_list = [step for step in self.step_list if step.jobs]
         for step in step_list:
             if step.name in ['basecall', 'fastq', 'index']:
-                step_report_files = list(set([report_file for job in step.jobs for report_file in job.report_files for sample in job.samples for readset in sample.readsets if job.report_files and readset.lane == lane]))
+                step_report_files = []
+                for readset in self.readsets[lane]:
+                    if step.name in readset.report_files:
+                        step_report_files.extend(readset.report_files[step.name])
+                # step_report_files = list(set([report_file for report_file in readset.report_files[step.name] for readset in self.readsets[lane] for step_name in readset.report_files if step_name == step.name]))
                 self.report_hash[lane]["multiqc_inputs"].extend([os.path.relpath(path, self.report_dir[lane]) for path in step_report_files])
             else:
                 for readset in self.readsets[lane]:
-                    step_report_files = list(set([report_file for job in step.jobs for sample in job.samples for sreadset in sample.readsets for report_file in job.report_files if job.report_files and sreadset.lane == lane and sreadset.name == readset.name]))
-                    self.report_hash[lane]["multiqc_inputs"].extend([os.path.relpath(path, self.report_dir[lane]) for path in step_report_files])
+                    if step.name in readset.report_files:
+                        self.report_hash[lane]["multiqc_inputs"].extend([os.path.relpath(path, self.report_dir[lane]) for path in readset.report_files[step.name]])
 
         if not os.path.exists(os.path.dirname(self.run_validation_report_json[lane])):
              os.makedirs(os.path.dirname(self.run_validation_report_json[lane]))
