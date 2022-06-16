@@ -461,7 +461,16 @@ class HicSeq(common.Illumina):
                     #Storing output files for next step in a list
                     tsv_files_for_merging.append(tsv_output)
                 #create a job for merginh .tsv file with individual reproducibnility score for each pairwise comparison
-                job_merge = hicrep.merge_tmp_files(input_files_for_merging, tsv_files_for_merging, output_dir, res, smooth, bound_width, down_sampling, temp_dir)
+                job_merge = hicrep.merge_tmp_files(
+                                                    input_files_for_merging,
+                                                    tsv_files_for_merging,
+                                                    output_dir,
+                                                    res,
+                                                    smooth,
+                                                    bound_width,
+                                                    down_sampling,
+                                                    temp_dir
+                                                    )
                 job_merge.samples = self.samples
                 job_merge.name = "merge_hicrep_scores." + res
                 jobs.append(job_merge)
