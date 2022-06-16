@@ -534,7 +534,7 @@ def parse_illumina_raw_readset_files(
                         'alignment',
                         sample_name,
                         'run' + readset.run + "_" + readset.lane,
-                        sample_name + "." + readset.library + ".sorted"
+                        sample_name + "_" + readset.library + ".sorted"
                     )
 
                 else:
