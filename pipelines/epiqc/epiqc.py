@@ -23,10 +23,6 @@
 import logging
 import os
 import sys
-import re
-import csv
-from operator import attrgetter
-
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -42,7 +38,6 @@ from bfx import chromimpute
 from bfx import epigeec
 from bfx import epiqc_reports
 from bfx.readset import parse_illumina_readset_file
-import utils.utils
 from shutil import copyfile
 from bfx import genome
 
