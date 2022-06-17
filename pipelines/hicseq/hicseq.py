@@ -127,15 +127,6 @@ class HicSeq(common.Illumina):
         return restriction_site
 
     @property
-    def genome(self):
-        genome_source = config.param('DEFAULT', 'source')
-        if genome_source == "UCSC":
-            genome = config.param('DEFAULT', 'assembly')
-        else:
-            genome = config.param('DEFAULT', 'assembly_synonyms')
-        return genome
-
-    @property
     def genome_digest(self):
         genome_digest = os.path.expandvars(config.param('hicup_align', "genome_digest_" + self.enzyme))
         return genome_digest
@@ -283,6 +274,7 @@ class HicSeq(common.Illumina):
 
         makeDirTag_hic_other_options=config.param('homer_tag_directory', 'other_options', required=False)
         PEflag = eval(config.param('homer_tag_directory', 'illuminaPE'))
+        genome = config.param('homer_tag_directory', 'genome', required=False) if config.param('homer_tag_directory', 'genome', required=False) else config.param('DEFAULT', 'assembly_synonyms')
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -290,7 +282,7 @@ class HicSeq(common.Illumina):
             hicup_file_output = os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam")
             input_bam = ",".join([hicup_file_output, hicup_file_output])
 
-            tagDir_job = homer.makeTagDir(sample_output_dir, input_bam, self.genome, self.restriction_site, PEflag, makeDirTag_hic_other_options)
+            tagDir_job = homer.makeTagDir(sample_output_dir, input_bam, genome, self.restriction_site, PEflag, makeDirTag_hic_other_options)
             QcPlots_job = homer.hic_tagDirQcPlots(sample.name, sample_output_dir)
             archive_job = homer.archive_contigs(sample_output_dir)
 
@@ -619,7 +611,7 @@ class HicSeq(common.Illumina):
                 fileName = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"raw.txt")))
                 fileNameRN = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"rawRN.txt")))
 
-                jobMatrix = homer.hic_interactionMatrix_genome (sample.name, sample_output_dir_genome, homer_output_dir, res, fileName, fileNameRN)
+                jobMatrix = homer.hic_interactionMatrix_genome(sample.name, sample_output_dir_genome, homer_output_dir, res, fileName, fileNameRN)
                 jobMatrix.samples = [sample]
 
                 jobPlot = hicplotter.genome_wide_matrix_plot(
@@ -644,6 +636,7 @@ class HicSeq(common.Illumina):
         jobs = []
 
         res = config.param('identify_compartments', 'resolution_cmpt')
+        genome = config.param('identify_compartments', 'genome', required=False) if config.param('identify_compartments', 'genome', required=False) else config.param('DEFAULT', 'assembly_synonyms')
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -653,7 +646,7 @@ class HicSeq(common.Illumina):
             fileName_PC1 = os.path.join(sample_output_dir, sample.name + "_homerPCA_Res" + res + ".PC1.txt")
             fileName_Comp = os.path.join(sample_output_dir, sample.name + "_homerPCA_Res" + res + "_compartments")
 
-            job = homer.hic_compartments (sample.name, sample_output_dir, fileName, homer_output_dir, res, self.genome, fileName_PC1, fileName_Comp, 3)
+            job = homer.hic_compartments(sample.name, sample_output_dir, fileName, homer_output_dir, res, genome, fileName_PC1, fileName_Comp, 3)
             job.samples = [sample]
 
             jobs.append(job)
@@ -757,6 +750,8 @@ class HicSeq(common.Illumina):
 
         res = config.param('identify_peaks', 'resolution_pks')
 
+        genome = config.param('identify_peaks', 'genome', required=False) if config.param('identify_peaks', 'genome', required=False) else config.param('DEFAULT', 'assembly_synonyms')
+
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
             homer_output_dir = os.path.join(self.output_dirs['homer_output_directory'], tagDirName)
@@ -764,7 +759,7 @@ class HicSeq(common.Illumina):
             fileName = os.path.join(sample_output_dir, sample.name + "IntraChrInteractionsRes" + res + ".txt")
             fileName_anno = os.path.join(sample_output_dir, sample.name + "IntraChrInteractionsRes" + res + "_Annotated")
 
-            job = homer.hic_peaks(sample.name, sample_output_dir, homer_output_dir, res, self.genome, fileName, fileName_anno, 3)
+            job = homer.hic_peaks(sample.name, sample_output_dir, homer_output_dir, res, genome, fileName, fileName_anno, 3)
             job.samples = [sample]
 
             jobs.append(job)
@@ -779,20 +774,35 @@ class HicSeq(common.Illumina):
 
         jobs = []
 
+        genome = config.param('create_hic_file', 'genome', required=False) if config.param('create_hic_file', 'genome', required=False) else config.param('DEFAULT', 'assembly_synonyms')
+
         for sample in self.samples:
             sample_input = os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam")
             sortedBamPrefix = re.sub("\.merged.bam", ".merged.sorted", sample_input.strip())
             sortedBam = sortedBamPrefix + ".bam"
             hic_output = os.path.join(self.output_dirs['hicfiles_output_directory'], sample.name + ".hic")
 
-            job = concat_jobs([
+            job = concat_jobs(
+                [
                 bash.mkdir(self.output_dirs['hicfiles_output_directory']),
-                samtools.sort(sample_input, sortedBamPrefix, sort_by_name=True),
-                hic.create_input(sortedBam, sample.name),
-                hic.create_hic(sample.name + ".juicebox.input.sorted", hic_output, self.genome)
-            ])
-            job.name = "create_hic_file." + sample.name
-            job.samples = [sample]
+                samtools.sort(
+                    sample_input,
+                    sortedBamPrefix,
+                    sort_by_name=True
+                    ),
+                hic.create_input(
+                    sortedBam,
+                    sample.name
+                    ),
+                hic.create_hic(
+                    sample.name + ".juicebox.input.sorted",
+                    hic_output,
+                    genome
+                    )
+                ],
+                name="create_hic_file." + sample.name,
+                samples=[sample]
+                )
 
             jobs.append(job)
 

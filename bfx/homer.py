@@ -27,12 +27,12 @@ from core.job import *
 
 ##### General Homer:
 
-def archive_contigs (homerTagDir, output_dir = "archive"):
+def archive_contigs(homerTagDir, output_dir = "archive"):
 
     command_archive = """cd {homerTagDir} && \\
-    mkdir -p {output_dir} && \\
-    mv -t {output_dir} *random*.tsv *chrUn*.tsv *hap*.tsv chrM*.tsv MT*.tsv *Y*.tsv *EBV*.tsv *GL*.tsv NT_*.tsv || echo "not all files found"
-    cd ../../""".format(
+mkdir -p {output_dir} && \\
+mv -t {output_dir} *random*.tsv *chrUn*.tsv *hap*.tsv chrM*.tsv MT*.tsv *Y*.tsv *EBV*.tsv *GL*.tsv NT_*.tsv || echo "not all files found"
+cd ../../""".format(
         homerTagDir=homerTagDir,
         output_dir=output_dir)
 
@@ -41,15 +41,12 @@ def archive_contigs (homerTagDir, output_dir = "archive"):
             command = command_archive
         )
 
-
-
-
-def makeTagDir (output_dir, input_bam, genome, restriction_site=None, illuminaPE=False, other_options=None):
+def makeTagDir(output_dir, input_bam, genome, restriction_site=None, illuminaPE=False, other_options=None):
     ## if hic experiment then input_bam should be provided twice: {input_bam},{input_bam}
     command_tagDir = """makeTagDirectory {output_dir} \\
-            {input_bam} \\
-            -genome {genome} \\
-            -checkGC{illuminaPE}{restriction_site}{other_options}""".format(
+    {input_bam} \\
+    -genome {genome} \\
+    -checkGC{illuminaPE}{restriction_site}{other_options}""".format(
                 output_dir=output_dir,
                 input_bam=input_bam,
                 genome=genome,
@@ -103,10 +100,8 @@ def hic_interactionMatrix_chr (name, output_dir, homer_dir, res, chr, fileName, 
                 fileName=fileName,
                 fileNameRN=fileNameRN)
 
-
     if fileNameRN is None:
         fileNameRN = re.sub("\.txt", "RN.txt", fileName)
-
 
     commandFormatMatrix = """cut -f 2- {fileName} > {fileNameRN}""".format(
         fileName=fileName,
@@ -128,7 +123,7 @@ def hic_interactionMatrix_chr (name, output_dir, homer_dir, res, chr, fileName, 
 def hic_interactionMatrix_genome(name, output_dir, homer_dir, res, fileName, fileNameRN=None, norm="raw", format = True):
 
     commandMatrix="""mkdir -p {output_dir} && \\
-            analyzeHiC {homer_dir} -res {res} -{norm} > {fileName}""".format(
+analyzeHiC {homer_dir} -res {res} -{norm} > {fileName}""".format(
         output_dir=output_dir,
         homer_dir=homer_dir,
         res=res,
@@ -161,8 +156,8 @@ def hic_interactionMatrix_genome(name, output_dir, homer_dir, res, fileName, fil
 def hic_compartments (name, output_dir, fileName, homer_dir, res, genome, fileName_PC1, fileName_Comp, cpu):
 
     command = """mkdir -p {output_dir} && \\
-    runHiCpca.pl {fileName} {homer_dir} -res {res} -genome {genome} -cpu {cpu} && \\
-    findHiCCompartments.pl {fileName_PC1}  > {fileName_Comp}""".format(
+runHiCpca.pl {fileName} {homer_dir} -res {res} -genome {genome} -cpu {cpu} && \\
+findHiCCompartments.pl {fileName_PC1}  > {fileName_Comp}""".format(
         output_dir=output_dir,
         fileName=fileName,
         homer_dir=homer_dir,
@@ -184,8 +179,8 @@ def hic_compartments (name, output_dir, fileName, homer_dir, res, genome, fileNa
 def hic_peaks(name, output_dir, homer_dir, res, genome, fileName, fileName_anno, cpu=1):
 
     command = """mkdir -p {output_dir} && \\
-    findHiCInteractionsByChr.pl {homer_dir} -res {res} -cpu {cpu} > {fileName} && \\
-    annotateInteractions.pl {fileName} {genome} {fileName_anno}""".format(
+findHiCInteractionsByChr.pl {homer_dir} -res {res} -cpu {cpu} > {fileName} && \\
+annotateInteractions.pl {fileName} {genome} {fileName_anno}""".format(
         output_dir=output_dir,
         homer_dir=homer_dir,
         res=res,
@@ -210,8 +205,8 @@ def makeUCSCfile(tag_dir, bedgraph_file):
     bedgraph_file_gz = bedgraph_file + ".gz"
 
     cmd = """makeUCSCfile \\
-        {tag_dir} > {bedgraph_file} && \\
-        gzip -c {bedgraph_file} > {bedgraph_file_gz}""".format(
+{tag_dir} > {bedgraph_file} && \\
+gzip -c {bedgraph_file} > {bedgraph_file_gz}""".format(
                     tag_dir=tag_dir,
                     bedgraph_file=bedgraph_file,
                     bedgraph_file_gz=bedgraph_file_gz)
@@ -231,8 +226,7 @@ def annotatePeaks(peak_file, genome, output_dir, annotation_file, genome_size):
     -gsize {genome_size} \\
     -cons -CpG \\
     -go {output_dir} \\
-    -genomeOntology {output_dir} \\
-    > {annotation_file}""".format(
+    -genomeOntology {output_dir} > {annotation_file}""".format(
                             peak_file=peak_file,
                             genome=genome,
                             genome_size=genome_size,
