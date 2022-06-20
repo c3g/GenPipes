@@ -87,6 +87,7 @@ Longest: {Longest}
 Shortest: {Shortest}
 {fastq1}
 {fastq2}" > {hicup_config} && \\
+rm -f {sample_output_dir}/* && \\
 hicup -c {hicup_config}""".format(
     sample_output_dir=sample_output_dir,
     threads=config.param('hicup_align', 'threads'),
