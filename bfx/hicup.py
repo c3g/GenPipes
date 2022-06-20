@@ -71,6 +71,7 @@ def hicup_run (name, sample_output_dir, fastq1, fastq2, genome_digest):
     hicup_config = os.path.join(sample_output_dir, "hicup_align." + name + ".conf")
 
     command_hicup = """\\
+rm -rf {sample_output_dir}/* && \\
 Bowtie2_path=`which bowtie2`
 R_path=`which R`
 echo "Outdir: {sample_output_dir}
@@ -87,7 +88,6 @@ Longest: {Longest}
 Shortest: {Shortest}
 {fastq1}
 {fastq2}" > {hicup_config} && \\
-rm -rf {sample_output_dir}/* && \\
 hicup -c {hicup_config}""".format(
     sample_output_dir=sample_output_dir,
     threads=config.param('hicup_align', 'threads'),
