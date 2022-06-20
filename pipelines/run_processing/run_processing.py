@@ -1856,13 +1856,14 @@ class RunProcessing(common.MUGQICPipeline):
                     for readset in self.readsets[lane]:
                         if step.name in readset.report_files:
                             step_report_files.extend(readset.report_files[step.name])
-                    # step_report_files = list(set([report_file for report_file in readset.report_files[step.name] for readset in self.readsets[lane] for step_name in readset.report_files if step_name == step.name]))
+                    # With mgit7 platform running "slow-mode", set platform to mgig400
+                    platform = "mgig400" if (self.args.type == "mgit7" and not self.args.splitbarcode_demux) else self.args.type
                     if step_report_files:
                         report_job = tools.run_processing_metrics_to_json(
-                             self.run_validation_report_json[lane],
-                             step.name,
-                             self.args.type,
-                             step_report_files
+                            self.run_validation_report_json[lane],
+                            step.name,
+                            platform,
+                            step_report_files
                         )
                         report_job.name = "report." + step.name + "." + self.run_id + "." + lane
                         report_job.samples = self.samples[lane]
