@@ -37,7 +37,8 @@ from bfx import bigwiginfo
 from bfx import chromimpute
 from bfx import epigeec
 from bfx import epiqc_reports
-from bfx.readset import parse_illumina_readset_file
+from core.readset import parse_illumina_readset_file
+import utils.utils
 from shutil import copyfile
 from bfx import genome
 

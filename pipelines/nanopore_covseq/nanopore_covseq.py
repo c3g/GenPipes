@@ -37,7 +37,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 import utils.utils
 from core.config import config, SanitycheckError, _raise
 from core.job import Job, concat_jobs, pipe_jobs
-from bfx.readset import parse_nanopore_readset_file
+from core.readset import parse_nanopore_readset_file
 from pipelines import common
 
 from bfx import artic

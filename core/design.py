@@ -20,12 +20,10 @@
 # Python Standard Modules
 import csv
 import logging
-import os
-import re
 
 # MUGQIC Modules
-from core.config import _raise, SanitycheckError
-from .sample import *
+from core.config import _raise
+from core.sample import *
 
 log = logging.getLogger(__name__)
 

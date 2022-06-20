@@ -20,11 +20,9 @@
 # Python Standard Modules
 import csv
 import logging
-import os
 import re
 
 # MUGQIC Modules
-from .sample import Sample
 
 log = logging.getLogger(__name__)
 
