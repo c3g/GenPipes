@@ -3797,7 +3797,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             )
             header = os.path.join(
                 self.output_dirs['sv_variants_directory'],
-                "header"
+                tumor_pair.name + ".header"
             )
             output_cna_body = os.path.join(
                 self.output_dirs['sv_variants_directory'],
