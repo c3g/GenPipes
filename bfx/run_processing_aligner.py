@@ -24,7 +24,7 @@ import sys
 
 # MUGQIC Modules
 from core.job import Job, concat_jobs, pipe_jobs
-from core.config import config
+from core.config import config, _raise, SanitycheckError
 from bfx import bvatools
 from bfx import verify_bam_id
 from bfx import bwa
@@ -165,7 +165,6 @@ class NullRunProcessingAligner(RunProcessingAligner):
         return {}
 
 class BwaRunProcessingAligner(RunProcessingAligner):
-    downloaded_bed_files = []
     created_interval_lists = []
 
     def get_reference_index(self):
@@ -260,15 +259,8 @@ class BwaRunProcessingAligner(RunProcessingAligner):
             full_coverage_bed = None
 
         if coverage_bed:
-            if (not os.path.exists(full_coverage_bed)) and (coverage_bed not in BwaRunProcessingAligner.downloaded_bed_files):
-                # Download the bed file
-                command = config.param('DEFAULT', 'fetch_bed_file_command').format(
-                    output_directory=self.output_dir,
-                    filename=coverage_bed
-                )
-                job = Job([], [full_coverage_bed], command=command, name="bed_download." + coverage_bed, samples=[readset.sample])
-                BwaRunProcessingAligner.downloaded_bed_files.append(coverage_bed)
-                jobs.append(job)
+            if (not os.path.exists(full_coverage_bed)):
+                _raise(SanitycheckError("Could not find the bed coverage file " + full_coverage_bed + "..."))
 
             interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
