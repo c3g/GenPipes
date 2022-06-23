@@ -33,7 +33,7 @@ import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as Xml
-from Bio.Seq import Seq
+# from Bio.Seq import Seq
 from collections import Counter, OrderedDict
 
 # Append genpipes directory to Python library path
@@ -302,7 +302,6 @@ class RunProcessing(common.MUGQICPipeline):
     @property
     def json_flag_files(self):
         if not hasattr(self, "_json_flag_files"):
-            log.debug("yaaaaaa")
             self._json_flag_files = {}
             for lane in self.lanes:
                 json_flag_file = os.path.join(self.output_dir, "flag." + lane + ".json")
@@ -317,7 +316,6 @@ class RunProcessing(common.MUGQICPipeline):
                         break
                 else:
                     _raise(SanitycheckError("Could not find any proper JSON flag file in " + self.raw_flag_dir + " for RUN " + self.run_id))
-        log.debug("yooooo")
         return self._json_flag_files
 
     @property
@@ -397,7 +395,6 @@ class RunProcessing(common.MUGQICPipeline):
             self._index1cycles = {}
             for lane in self.lanes:
                 self._index1cycles[lane] = self.get_index1cycles(lane)
-                log.debug(self.get_index1cycles(lane))
         return self._index1cycles
 
     @property
@@ -2547,16 +2544,14 @@ class RunProcessing(common.MUGQICPipeline):
         # get the barcode names & sequences to add in the JSON flag file
         all_indexes = {}
         for readset in self.readsets[lane]:
-            # for index_dict in readset.index:
-            #     all_indexes[readset.index_name] = index_dict
-            for readset_index in readset.indexes:
-                all_indexes[readset.index_name] = readset_index
+            for index_dict in readset.index:
+                all_indexes[readset.index_name] = index_dict
         with open(json_flag_file, 'r') as json_fh:
             json_flag_content = json.load(json_fh)
         if self.is_dual_index[lane]:
-            json_flag_content['speciesBarcodes'] = dict([(index_name, str(Seq(readset_index['INDEX2'] + readset_index['INDEX1']).reverse_complement())) for index_name, readset_index in all_indexes.items()])
+            json_flag_content['speciesBarcodes'] = dict([(index_name, index_dict['INDEX2']+index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
         else:
-            json_flag_content['speciesBarcodes'] = dict([(index_name, str(Seq(readset_index['INDEX1']).reverse_complement())) for index_name, readset_index in all_indexes.items()])
+            json_flag_content['speciesBarcodes'] = dict([(index_name, index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
         json_flag_content['barcodeStartPos'] = json_flag_content['TotalCycle'] - json_flag_content['barcodeLength'] + 1
         json_flag_content['SpeciesMismatch'] = self.number_of_mismatches
 
