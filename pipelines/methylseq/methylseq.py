@@ -1252,7 +1252,7 @@ To create combined CSV CpGs should be extracted from the dragen methylation repo
             self.bis_snp,
             self.filter_snp_cpg,
             self.prepare_methylkit,         # step 15
-           # self.methylkit_differential_analysis,
+            self.methylkit_differential_analysis,
             self.cram_output
         ], [
             self.picard_sam_to_fastq,
@@ -1270,6 +1270,7 @@ To create combined CSV CpGs should be extracted from the dragen methylation repo
             self.bis_snp,
             self.filter_snp_cpg,
             self.prepare_methylkit,  # step 15
+            self.methylkit_differential_analysis,
             self.cram_output
         ],
             [
@@ -1290,6 +1291,7 @@ To create combined CSV CpGs should be extracted from the dragen methylation repo
             self.bis_snp, # step 15
             self.filter_snp_cpg,
             self.prepare_methylkit,
+            self.methylkit_differential_analysis,
             self.cram_output
             ]
         ]
