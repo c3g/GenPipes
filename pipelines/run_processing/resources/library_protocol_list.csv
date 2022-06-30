@@ -1,53 +1,284 @@
-Clarity Step Name,Processing Protocol Name,Library Structure,Raw Data Type,Common Name
-KAPA Hyper Plus,default DNA,,bam,WGS
-Lucigen AmpFREE Low DNA 1.0,default DNA,,bam,WGS
-Lucigen AmpFREE Low DNA 2.0,default DNA,,bam,WGS
-PCR-free,default DNA,,bam,WGS
-PCR-enriched,default DNA,,bam,WGS
-WGS,default DNA,,bam,WGS
-10x Genomics Single Cell RNA v1,default RNA,tenX_sc_RNA_v1,fastq,Single Cell RNA
-10x Genomics Single Cell RNA v2,default RNA,,fastq,Single Cell RNA
-10x Genomics Single Cell RNA,default RNA,,fastq,Single Cell RNA
-10x Genomics Linked Reads gDNA,default DNA,,fastq,WGS Linked Reads
-10x Genomics Single Cell CNV,default DNA,,fastq,Single Cell DNA
-10x Genomics Single Cell V-D-J,default RNA,,fastq,Single Cell RNA
-10x Genomics Single Cell ATAC,default DNA,,fastq,Single Cell DNA
-10x Genomics Single Cell Visium Spacial RNA,default RNA,,fastq,Single Cell RNA
-10x Genomics Single Cell Visium Spatial RNA,default RNA,,fastq,Single Cell RNA
-10x Genomics Single Cell Feature Barcode,default RNA,FeatureBarcode,fastq,Single Cell RNA
-WGBS,default DNA,,fastq,WGBS
-MCC,default DNA,,fastq,MCC
-Exome,default DNA,,fastq,Exome
-WGBS Lucigen,default DNA,,fastq,WGBS
-WGBS Kapa,default DNA,,fastq,WGBS
-MCC Lucigen,default DNA,,fastq,MCC
-MCC Kapa,default DNA,,fastq,MCC
-Hi-C,default DNA,,fastq,Hi-C
-HiC,default DNA,,fastq,Hi-C
-Hi-C Library Prep.,default DNA,,fastq,Hi-C
-Nextera WGS,default DNA,,fastq,WGS
-RNASeq,default RNA,,fastq,RNA-Seq
-Generic Library,default DNA,,fastq,Unknown
-Cancer Capture,default DNA,,fastq,Capture
-ATAC-Seq Library,default DNA,,fastq,ATAC-Seq
-ATAC-Seq,default DNA,,fastq,ATAC-Seq
-ATACSeq,default DNA,,fastq,ATAC-Seq
-ImmunoSeq Capture,default DNA,,fastq,Capture
-ChIP_H3K4me1,default DNA,,fastq,ChIP-Seq
-ChIP_H3K4me3,default DNA,,fastq,ChIP-Seq
-ChIP_H3K27me3,default DNA,,fastq,ChIP-Seq
-ChIP_H3K27ac,default DNA,,fastq,ChIP-Seq
-ChIP_Input,default DNA,,fastq,ChIP-Seq
-ChIPSeq,default DNA,,fastq,ChIP-Seq
-ChIPmentation,default DNA,,fastq,ChIPmentation
-ChIP-Seq,default DNA,,fastq,ChIP-Seq
-HaloPlex,default DNA,,fastq,HaloPlex
-Panel,default DNA,,fastq,Panel
-MNaseSeq,default DNA,,fastq,MnaseSeq
-Amplicon DNA,default DNA,,fastq,Amplicon DNA
-Amplicon RNA,default RNA,,fastq,Amplicon RNA
-VirusSeq,default RNA,,fastq,Amplicon RNA
-PCR-free MGI,default DNA,,bam,WGS
-WGBS MGI,default DNA,,fastq,WGBS
-RNASeq MGI,default RNA,,fastq,RNA-Seq
-TELL-Seq,default DNA,,fastq,TELL-Seq
+Library Type,Processing Protocol Name,Library Structure,Raw Data Type,Alt Name,Library Category,Library Description,Publish
+PCR-free,default DNA,,bam,WGS,low-level-dna-detection,Whole genome sequencing with no amplification step,1
+PCR-enriched,default DNA,,bam,WGS,low-level-dna-detection,Whole genome sequencing with amplification step,1
+RNASeq,default RNA,,fastq,RNA-Seq,rna-transcription,RNA Sequencing,1
+WGBS,default DNA,,fastq,WGBS,epigenetics,Whole-Genome Bisulfite Sequencing,1
+MCC,default DNA,,fastq,MCC,epigenetics,Methyl-CpG Binding Domain (MBD) Based Capture and Sequencing,1
+Exome,default DNA,,fastq,Exome,low-level-dna-detection,Exome Sequencing,1
+ATACSeq,default DNA,,fastq,ATAC-Seq,dna-protein-interactions,Assay for Transposase-Accessible Chromatin Sequencing,1
+Hi-C,default DNA,,fastq,Hi-C,dna-protein-interactions,Chromatin Conformation Capture Sequencing,1
+ChIPSeq,default DNA,,fastq,ChIP-Seq,dna-protein-interactions,Chromatin Immunoprecipitation Sequencing,1
+ChIPmentation,default DNA,,fastq,ChIPmentation,dna-protein-interactions,Chromatin Immunoprecipitation with Sequencing Library Preparation by Tn5 Transposase,1
+Amplicon DNA,default DNA,,fastq,Amplicon DNA,low-level-dna-detection,Amplicon Panel from cDNA,1
+Amplicon RNA,default RNA,,fastq,Amplicon RNA,low-level-rna-detection,Amplicon Panel from DNA,1
+16S Amplicon RNA,default RNA,,fastq,16S Amplicon RNA,low-level-rna-detection,16S Amplification,1
+18S Amplicon RNA,default RNA,,fastq,18S Amplicon RNA,low-level-rna-detection,18S Amplification,1
+Panel,default DNA,,fastq,Panel,low-level-dna-detection,Generic Panel,1
+10x Genomics Single Cell RNA,default RNA,,fastq,Single Cell RNA,low-level-rna-detection,3 prime or 5 prime single cell RNASeq (10x Genomics),1
+10x Genomics Linked Reads gDNA,default DNA,,fastq,WGS Linked Reads,low-level-dna-detection,Linked reads (10x Genomics),1
+10x Genomics Single Cell CNV,default DNA,,fastq,Single Cell DNA,low-level-dna-detection,single cell DNA (10x Genomics),1
+10x Genomics Single Cell V-D-J,default RNA,,fastq,Single Cell RNA,low-level-rna-detection,single cell v(D)J (10x Genomics),1
+10x Genomics Single Cell ATAC,default DNA,,fastq,Single Cell DNA,dna-protein-interactions,single cell ATAC (10x Genomics),1
+10x Genomics Single Cell Visium Spatial RNA,default RNA,,fastq,Single Cell RNA,low-level-rna-detection,Single Cell spacial transcritomics (10x Genomics),1
+10x Genomics Single Cell Feature Barcode,default RNA,FeatureBarcode,fastq,Single Cell RNA,low-level-rna-detection,single cell Feature Barcode (10x Genomics),1
+10x Genomics Single Cell RNA v1,default RNA,tenX_sc_RNA_v1,fastq,Single Cell RNA,,,0
+10x Genomics Single Cell RNA v2,default RNA,,fastq,Single Cell RNA,,,0
+WGS,default DNA,,bam,WGS,,,0
+KAPA Hyper Plus,default DNA,,bam,WGS,,,0
+Lucigen AmpFREE Low DNA 1.0,default DNA,,bam,WGS,,,0
+Lucigen AmpFREE Low DNA 2.0,default DNA,,bam,WGS,,,0
+WGBS Lucigen,default DNA,,fastq,WGBS,,,0
+WGBS Kapa,default DNA,,fastq,WGBS,,,0
+MCC Lucigen,default DNA,,fastq,MCC,,,0
+MCC Kapa,default DNA,,fastq,MCC,,,0
+HiC,default DNA,,fastq,Hi-C,,,0
+Hi-C Library Prep.,default DNA,,fastq,Hi-C,,,0
+Nextera WGS,default DNA,,fastq,WGS,,,0
+Generic Library,default DNA,,fastq,Unknown,,,0
+Cancer Capture,default DNA,,fastq,Capture,,,0
+ATAC-Seq Library,default DNA,,fastq,ATAC-Seq,,,0
+ATAC-Seq,default DNA,,fastq,ATAC-Seq,,,0
+ImmunoSeq Capture,default DNA,,fastq,Capture,,,0
+ChIP_H3K4me1,default DNA,,fastq,ChIP-Seq,,,0
+ChIP_H3K4me3,default DNA,,fastq,ChIP-Seq,,,0
+ChIP_H3K27me3,default DNA,,fastq,ChIP-Seq,,,0
+ChIP_H3K27ac,default DNA,,fastq,ChIP-Seq,,,0
+ChIP_Input,default DNA,,fastq,ChIP-Seq,,,0
+ChIP-Seq,default DNA,,fastq,ChIP-Seq,,,0
+HaloPlex,default DNA,,fastq,HaloPlex,,,0
+VirusSeq,default RNA,,fastq,Amplicon RNA,,,0
+PCR-free MGI,default DNA,,bam,WGS,,,0
+WGBS MGI,default DNA,,fastq,WGBS,,,0
+RNASeq MGI,default RNA,,fastq,RNA-Seq,,,0
+MNaseSeq,default DNA,,fastq,MNase-Seq,dna-protein-interactions,Micrococcal Nuclease Sequencing,1
+TELL-Seq,default DNA,,fastq,TELL-Seq,low-level-dna-detection,Linked reads (Universal Sequencing),1
+SHARE-Seq_ATAC,default DNA,,fastq,SHARE-Seq_ATAC,low-level-rna-detection,Chromatin accessibility and gene expression in the same single cell,1
+SHARE-Seq_RNA,default RNA,,fastq,SHARE-Seq_RNA,low-level-rna-detection,Chromatin accessibility and gene expression in the same single cell,1
+CEL-Seq,default RNA,,fastq,CEL-Seq,low-level-rna-detection,Cell Expression by Linear Amplification Sequencing,1
+CirSeq,default RNA,,fastq,CirSeq,low-level-rna-detection,Identification of Low-Abundance RNA Viruses with Circular Sequencin,1
+CLaP,default RNA,,fastq,CLaP,low-level-rna-detection,Cell Labeling via Photobleaching,1
+CytoSeq,default RNA,,fastq,CytoSeq,low-level-rna-detection,Gene Expression Cytometry,1
+Digital RNA Sequencing,default RNA,,fastq,Digital RNA Sequencing,low-level-rna-detection,Digital RNA Sequencing,1
+DP-Seq,default RNA,,fastq,DP-Seq,low-level-rna-detection,Designed Primer_Based RNA Sequencing,1
+Drop-Seq,default RNA,,fastq,Drop-Seq,low-level-rna-detection,Analysis of mRNA Transcripts from Individual Cells in Droplets,1
+Hi-SCL,default RNA,,fastq,Hi-SCL,low-level-rna-detection,High-Throughput Single-Cell Labeling,1
+InDrop,default RNA,,fastq,InDrop,low-level-rna-detection,High-Throughput Single-Cell Labeling with Indexing Droplets,1
+MARS-Seq,default RNA,,fastq,MARS-Seq,low-level-rna-detection,Massively Parallel RNA Single-Cell Sequencing Framework,1
+Nuc-Seq,default RNA,,fastq,Nuc-Seq,low-level-rna-detection,A Single-Nucleus RNA-Seq from Frozen Tissues,1
+PAIR,default RNA,,fastq,PAIR,low-level-rna-detection,Peptide Nucleic Acid (PNA)-Assisted Identification of RNA Binding Proteins,1
+Quartz-Seq,default RNA,,fastq,Quartz-Seq,low-level-rna-detection,Whole-Transcript Amplification for Single Cells,1
+scM&T-Seq,default RNA,,fastq,scM&T-Seq,low-level-rna-detection,Single-Cell Methylome and Transcriptome Sequencing,1
+SCRB-Seq,default RNA,,fastq,SCRB-Seq,low-level-rna-detection,Single-Cell RNA Barcoding and Sequencing,1
+scRNA-Seq,default RNA,,fastq,scRNA-Seq,low-level-rna-detection,Single-Cell mRNA Sequencing,1
+scTrio-seq,default RNA,,fastq,scTrio-seq,low-level-rna-detection,Single-Cell Triple Omics Sequencing,1
+Smart-Seq,default RNA,,fastq,Smart-Seq,low-level-rna-detection,Switch Mechanism at the 5prime End of RNA Templates,1
+Smart-Seq2,default RNA,,fastq,Smart-Seq2,low-level-rna-detection,Switch Mechanism at the 5prime End of RNA Templates,1
+snRNA-Seq,default RNA,,fastq,snRNA-Seq,low-level-rna-detection,Single-Nuclei RNA Sequencing,1
+STRT-Seq,default RNA,,fastq,STRT-Seq,low-level-rna-detection,Single-Cell Tagged Reverse Transcription Sequencing,1
+SUPeR-Seq,default RNA,,fastq,SUPeR-Seq,low-level-rna-detection,Single-Cell Universal Poly(A)-Independent RNA Sequencing,1
+TCR-LA-MC PCR,default RNA,,fastq,TCR-LA-MC PCR,low-level-rna-detection,TCR Ligation-Anchored Magnetically Captured PCR,1
+TIVA,default RNA,,fastq,TIVA,low-level-rna-detection,Transcriptome in Vivo Analysis,1
+UMI,default RNA,,fastq,UMI,low-level-rna-detection,Unique Molecular Identifiers,1
+5C,default RNA,,fastq,5C,low-level-rna-detection,Chromatin Conformation Capture Carbon Copy,1
+5C,default RNA,,fastq,5C,low-level-rna-detection,Chromatin Conformation Capture Carbon Copy,1
+Div-Seq,default RNA,,fastq,Div-Seq,low-level-rna-detection,Nuc-Seq with EdU-Mediated Labeling of Proliferating Cells,1
+FRISCR,default RNA,,fastq,FRISCR,low-level-rna-detection,Fixed and Recovered Intact Single-Cell RNA,1
+TCR Chain Pairing,default RNA,,fastq,TCR Chain Pairing,low-level-rna-detection,Identification of T-Cell Receptor (TCR) a-b Chain Pairing in Single Cells,1
+AbPair,default RNA,,fastq,AbPair,low-level-rna-detection,AbPair is an emulsion-based method for paired sequencing of immunoglobulin (antibody) and T cell receptor (TCR) variable regions. It has been extended to expression strength quantitation for multi-gene panels and for cell surface protein quantitation with DNA-barcoded affinity reagents.,1
+ICE,default RNA,,fastq,ICE,rna-modifications,Inosine Chemical Erasing,1
+MeRIP-Seq,default RNA,,fastq,MeRIP-Seq,rna-modifications,m6A-Specific Methylated RNA Immunoprecipitation Sequencing,1
+miCLIP-m6A,default RNA,,fastq,miCLIP-m6A,rna-modifications,N6-methyladenosine (m6A Individual-Nucleotide-Resolution Crosslinking and Immunoprecipitation,1
+Pseudo-Seq,default RNA,,fastq,Pseudo-Seq,rna-modifications,Method for Genome-Wide Identification of Pseudouridylation Sites,1
+PSI-Seq,default RNA,,fastq,PSI-Seq,rna-modifications,Pseudouridine Site Identification Sequencing,1
+CAP-seq,default RNA,,fastq,CAP-seq,rna-structure,CXXC Affinity Purification Sequencing,1
+Cap-Seq,default RNA,,fastq,Cap-Seq,rna-structure,CXXC Affinity Purification Plus Deep Sequencing,1
+CIP-TAP,default RNA,,fastq,CIP-TAP,rna-structure,Alkaline Phosphatase  Calf Intestine-Tobacco Acid Pyrophosphatase Sequencing,1
+PARS-Seq,default RNA,,fastq,PARS-Seq,rna-structure,Parallel Analysis of RNA Structure,1
+SPARE,default RNA,,fastq,SPARE,rna-structure,Specific Parallel Amplification of 5prime RNA Ends,1
+Structure-Seq,default RNA,,fastq,Structure-Seq,rna-structure,Use Dimethyl Sulphate Methylation of Unprotected Adenines and Cytosines,1
+DMS-Seq,default RNA,,fastq,DMS-Seq,rna-structure,Use Dimethyl Sulphate Methylation of Unprotected Adenines and Cytosines,1
+CIRS-Seq,default RNA,,fastq,CIRS-Seq,rna-structure,Chemical Inference of RNA Structures,1
+icSHAPE,default RNA,,fastq,icSHAPE,rna-structure,In Vivo Click Selective 2ê-Hydroxyl Acylation and Profiling Experiment,1
+SHAPE-MaP,default RNA,,fastq,SHAPE-MaP,rna-structure,Selective 2ê-Hydroxyl Acylation Analyzed by Primer Extension and Mutational Profiling,1
+SHAPE-Seq,default RNA,,fastq,SHAPE-Seq,rna-structure,Selective 2ê-Hydroxyl Acylation Analyzed by Primer Extension Sequencing,1
+2P-Seq,default RNA,,fastq,2P-Seq,rna-transcription,Poly(A)-Tail-Primed Sequencing,1
+3primeNT Method,default RNA,,fastq,3primeNT Method,rna-transcription,3prime End of Nascent Transcripts,1
+3P-Seq,default RNA,,fastq,3P-Seq,rna-transcription,Poly(A)-Position Profiling by Sequencing,1
+3Seq,default RNA,,fastq,3Seq,rna-transcription,3prime-End Sequencing for Expression Quantification,1
+3prime-Seq,default RNA,,fastq,3prime-Seq,rna-transcription,Quantitatively Measure Abundance of 3primeUTR Isoforms,1
+5prime-GRO-Seq,default RNA,,fastq,5prime-GRO-Seq,rna-transcription,5prime Global Run-on Sequencing,1
+BruChase-Seq,default RNA,,fastq,BruChase-Seq,rna-transcription,Bromouridine Pulse-chase Sequencing,1
+BruDRB-Seq,default RNA,,fastq,BruDRB-Seq,rna-transcription,Bromouridine 5-6-dichlorobenzimidazole1-b-D-ribofuranoside Sequencing,1
+Bru-Seq,default RNA,,fastq,Bru-Seq,rna-transcription,Bromouridine Sequencing,1
+CAGE,default RNA,,fastq,CAGE,rna-transcription,Cap Analysis Gene Expression Sequencing,1
+CHART,default RNA,,fastq,CHART,rna-transcription,Capture Hybridization Analysis of RNA Targets,1
+ChIRP,default RNA,,fastq,ChIRP,rna-transcription,Chromatin Isolation by RNA Purification,1
+ClickSeq,default RNA,,fastq,ClickSeq,rna-transcription,RNA-Seq Libraries from Stochastically Terminated 3prime-azido-blocked cDNA Fragments,1
+GRO-seq,default RNA,,fastq,GRO-seq,rna-transcription,Global Run-on Sequencing,1
+NET-Seq,default RNA,,fastq,NET-Seq,rna-transcription,Native Elongating Transcript Sequencing,1
+PAL-Seq,default RNA,,fastq,PAL-Seq,rna-transcription,Poly(A)-Tail Length Profiling by Sequencing,1
+PARE-Seq,default RNA,,fastq,PARE-Seq,rna-transcription,Parallel Analysis of RNA Ends Sequencing,1
+PEAT,default RNA,,fastq,PEAT,rna-transcription,Paired-end Analysis of Transcription Start Sites,1
+PRO-Cap,default RNA,,fastq,PRO-Cap,rna-transcription,Precision Nuclear Run-on Sequencing for RNA Polymerase II Start Sites,1
+PRO-Seq,default RNA,,fastq,PRO-Seq,rna-transcription,Precision Nuclear Run-on Sequencing,1
+RAP,default RNA,,fastq,RAP,rna-transcription,RNA Antisense Purification,1
+RARseq,default RNA,,fastq,RARseq,rna-transcription,Restriction Site Associated RNA Sequencing,1
+RASL-Seq,default RNA,,fastq,RASL-Seq,rna-transcription,RNA-Mediated Oligonucleotide Annealing  Selection  and Ligation with Next-Generation Sequencing,1
+SMORE-Seq,default RNA,,fastq,SMORE-Seq,rna-transcription,Simultaneous Mapping of RNA Ends with Sequencing,1
+TAIL-Seq,default RNA,,fastq,TAIL-Seq,rna-transcription,Poly(A) Tail Sequencing,1
+TATL-Seq,default RNA,,fastq,TATL-Seq,rna-transcription,Translation-Associated Transcript Leader Sequencing,1
+TIF-Seq,default RNA,,fastq,TIF-Seq,rna-transcription,Transcript Isoform Sequencing,1
+TL-Seq,default RNA,,fastq,TL-Seq,rna-transcription,Transcript Leader Sequencing,1
+4sUDRB-Seq,default RNA,,fastq,4sUDRB-Seq,rna-transcription,4-Thiouridine and 5-6-Dichlorobenzimidazole 1-b-D-Ribofuranoside Sequencing,1
+CaptureSeq,default RNA,,fastq,CaptureSeq,rna-transcription,RNA Capture Sequencing,1
+cP-RNA-Seq,default RNA,,fastq,cP-RNA-Seq,rna-transcription,2prime 3prime-cyclic phosphate (cP) RNA Sequencing,1
+FRT-Seq,default RNA,,fastq,FRT-Seq,rna-transcription,Flowcell Reverse Transcription Sequencing,1
+GMUCT,default RNA,,fastq,GMUCT,rna-transcription,Genome-wide Mapping of Uncapped and Cleaved Transcripts,1
+mNET-Seq,default RNA,,fastq,mNET-Seq,rna-transcription,Native Elongating Transcript Sequencing Technology for Mammalian Chromatin,1
+AGO-CLIP,default RNA,,fastq,AGO-CLIP,rna-protein-interactions,Argonaute-Crosslinking and Immunprecipitation,1
+CLASH,default RNA,,fastq,CLASH,rna-protein-interactions,Crosslinking  Ligation  and Sequencing of Hybrids,1
+CLIP-Seq,default RNA,,fastq,CLIP-Seq,rna-protein-interactions,High-Throughput Sequencing of CLIP cDNA Library,1
+HITS-CLIP,default RNA,,fastq,HITS-CLIP,rna-protein-interactions,High-Throughput Sequencing of CLIP cDNA Library,1
+DLAF,default RNA,,fastq,DLAF,rna-protein-interactions,Directly Ligate Sequencing Adapters to the First-Strand cDNA,1
+eCLIP,default RNA,,fastq,eCLIP,rna-protein-interactions,Enhanced Cross-linking Immunoprecipitation,1
+hiCLIP,default RNA,,fastq,hiCLIP,rna-protein-interactions,RNA Hybrid and Individual-Nucleotide Resolution Ultraviolet Crosslinking and Immunoprecipitation,1
+iCLIP,default RNA,,fastq,iCLIP,rna-protein-interactions,Individual Nucleotide Resolution CLIP,1
+miR-CLIP,default RNA,,fastq,miR-CLIP,rna-protein-interactions,MicroRNA Crosslinking and Immunoprecipitation,1
+miTRAP,default RNA,,fastq,miTRAP,rna-protein-interactions,miRNA Trapping by RNA in Vitro Affinity Purification,1
+PAR-CLIP,default RNA,,fastq,PAR-CLIP,rna-protein-interactions,Photoactivatable Ribonucleoside_Enhanced Crosslinking and Immunoprecipitation,1
+PIP-Seq,default RNA,,fastq,PIP-Seq,rna-protein-interactions,Protein Interaction Profile Sequencing,1
+Pol II CLIP,default RNA,,fastq,Pol II CLIP,rna-protein-interactions,Crosslinking and Immunoprecipitation of RNA Polymerase II,1
+RBNS,default RNA,,fastq,RBNS,rna-protein-interactions,RNA Bind-n-Seq,1
+Ribo-Seq,default RNA,,fastq,Ribo-Seq,rna-protein-interactions,Ribosome Profiling Sequencing,1
+ARTSeq,default RNA,,fastq,ARTSeq,rna-protein-interactions,Ribosome Profiling Sequencing,1
+RIP-Seq,default RNA,,fastq,RIP-Seq,rna-protein-interactions,RNA Immunoprecipitation Sequencing,1
+TRAP-Seq,default RNA,,fastq,TRAP-Seq,rna-protein-interactions,Targeted Purification of Polysomal mRNA,1
+TRIBE,default RNA,,fastq,TRIBE,rna-protein-interactions,Targets of RNA-Binding Proteins Identified by Editing,1
+BrdU-CLIP,default RNA,,fastq,BrdU-CLIP,rna-protein-interactions,CLIP with BrdU Affinity Purification,1
+HiTS-RAP,default RNA,,fastq,HiTS-RAP,rna-protein-interactions,High-Throughput SequencingãRNA Affinity Profiling,1
+irCLIP,default RNA,,fastq,irCLIP,rna-protein-interactions,UV-C Crosslinking and Immunoprecipitation,1
+PD-Seq,default RNA,,fastq,PD-Seq,protein-protein-interaction,Candidate Cellular Protein Target Identification,1
+ProP-PD,default RNA,,fastq,ProP-PD,protein-protein-interaction,Proteomic Peptide-Phage Display,1
+PDZ-Seq,default RNA,,fastq,PDZ-Seq,protein-protein-interaction,Proteomic Peptide-Phage Display,1
+2b-RAD,default DNA,,fastq,2b-RAD,sequence-rearrangements,RAD With Type IIB Restriction Endonucleases,1
+CPT-seq,default DNA,,fastq,CPT-seq,sequence-rearrangements,Contiguity-Preserving Transposition Sequencing,1
+ddRADseq,default DNA,,fastq,ddRADseq,sequence-rearrangements,Double Digest Restriction-Site Associated DNA Marker Generation,1
+Digenome-seq,default DNA,,fastq,Digenome-seq,sequence-rearrangements,Cas9-Digested Whole-Genome Sequencing,1
+EC-seq,default DNA,,fastq,EC-seq,sequence-rearrangements,Excision Circle Sequencing,1
+hyRAD,default DNA,,fastq,hyRAD,sequence-rearrangements,Hybridization RAD for Degraded DNA,1
+RAD-Seq,default DNA,,fastq,RAD-Seq,sequence-rearrangements,Restriction-Site Associated DNA Sequencing,1
+Rapture,default DNA,,fastq,Rapture,sequence-rearrangements,Restriction-Site Associated DNA Capture,1
+RC-Seq,default DNA,,fastq,RC-Seq,sequence-rearrangements,Retrotransposon Capture Sequencing,1
+Repli-Seq,default DNA,,fastq,Repli-Seq,sequence-rearrangements,Nascent DNA Replication Strand Sequencing,1
+SLAF-seq,default DNA,,fastq,SLAF-seq,sequence-rearrangements,Specific Locus Amplified Fragment Sequencing,1
+TC-Seq,default DNA,,fastq,TC-Seq,sequence-rearrangements,Translocation-Capture Sequencing,1
+Tn-Seq,default DNA,,fastq,Tn-Seq,sequence-rearrangements,Transposon Sequencing or Insertion Sequencing,1
+INSeq,default DNA,,fastq,INSeq,sequence-rearrangements,Transposon Sequencing or Insertion Sequencing,1
+Bubble-Seq,default DNA,,fastq,Bubble-Seq,sequence-rearrangements,Libraries of Restriction Fragments that Contain Replication Initiation Sites (Bubbles),1
+NSCR,default DNA,,fastq,NSCR,sequence-rearrangements,Nascent Strand Capture and Release,1
+NS-Seq,default DNA,,fastq,NS-Seq,sequence-rearrangements,Nascent Strand Sequencing,1
+Rep-Seq,default DNA,,fastq,Rep-Seq,sequence-rearrangements,Repertoire Sequencing,1
+Ig-Seq,default DNA,,fastq,Ig-Seq,sequence-rearrangements,Repertoire Sequencing,1
+MAF,default DNA,,fastq,MAF,sequence-rearrangements,Repertoire Sequencing,1
+BLESS,default DNA,,fastq,BLESS,dna-break-mapping,Breaks labeling and Enrichment on Streptavidin and Sequencing,1
+DSB-Seq,default DNA,,fastq,DSB-Seq,dna-break-mapping,Map DNA Double-Strand Breaks,1
+GUIDE-seq,default DNA,,fastq,GUIDE-seq,dna-break-mapping,Genome-Wide  Unbiased Identification of DSBs Enabled by Sequencing,1
+HTGTS,default DNA,,fastq,HTGTS,dna-break-mapping,High-Throughput Genome-Wide Translocation Sequencing,1
+LAM-HTGTS,default DNA,,fastq,LAM-HTGTS,dna-break-mapping,Linear Amplification-Mediated High-Throughput Genome-Wide Sequencing,1
+Break-seq,default DNA,,fastq,Break-seq,dna-break-mapping,Double-Stranded Break Labeling,1
+SSB-Seq,default DNA,,fastq,SSB-Seq,dna-break-mapping,Map DNA Single-Strand Breaks,1
+DNaseI Seq,default DNA,,fastq,DNaseI Seq,dna-protein-interactions,DNase l Hypersensitive Sites Sequencing,1
+DNase-Seq,default DNA,,fastq,DNase-Seq,dna-protein-interactions,DNase l Hypersensitive Sites Sequencing,1
+Pu-seq,default DNA,,fastq,Pu-seq,dna-protein-interactions,Polymerase Usage Sequencing,1
+3-C,default DNA,,fastq,3-C,dna-protein-interactions,Chromatin Conformation Capture Sequencing,1
+Capture-C,default DNA,,fastq,Capture-C,dna-protein-interactions,Chromatin Conformation Capture Sequencing,1
+4C-seq,default DNA,,fastq,4C-seq,dna-protein-interactions,Circular Chromatin Conformation Capture,1
+5C,default DNA,,fastq,5C,dna-protein-interactions,Chromatin Conformation Capture Carbon Copy,1
+Fast-ATAC,default DNA,,fastq,Fast-ATAC,dna-protein-interactions,Assay for Transposase-Accessible Chromatin Sequencing,1
+CATCH_IT,default DNA,,fastq,CATCH_IT,dna-protein-interactions,Covalent Attachment of Tags to Capture Histones and Identify Turnover,1
+Chem-seq,default DNA,,fastq,Chem-seq,dna-protein-interactions,Identify Sites Bound by Small Chemical Molecules,1
+ChIA-PET,default DNA,,fastq,ChIA-PET,dna-protein-interactions,Chromatin Interaction Analysis by Paired-End Tag Sequencing,1
+ChIPmentation,default DNA,,fastq,ChIPmentation,dna-protein-interactions,Chromatin Immunoprecipitation with Sequencing Library Preparation by Tn5 Transposase,1
+ChIP-Seq,default DNA,,fastq,ChIP-Seq,dna-protein-interactions,Chromatin Immunoprecipitation Sequencing,1
+HT-ChIP,default DNA,,fastq,HT-ChIP,dna-protein-interactions,Chromatin Immunoprecipitation Sequencing,1
+ChIP-exo,default DNA,,fastq,ChIP-exo,dna-protein-interactions,Chromatin Immunoprecipitation Sequencing,1
+Mint-ChIP,default DNA,,fastq,Mint-ChIP,dna-protein-interactions,Chromatin Immunoprecipitation Sequencing,1
+DamID,default DNA,,fastq,DamID,dna-protein-interactions,DNA Adenine Methyltransferase Interaction Detection,1
+DNase I SIM,default DNA,,fastq,DNase I SIM,dna-protein-interactions,DNase I Simplified in-Nucleus Method for plants,1
+FAIRE-seq,default DNA,,fastq,FAIRE-seq,dna-protein-interactions,Formaldehyde-Assisted Isolation of Regulatory Elements,1
+Sono-Seq,default DNA,,fastq,Sono-Seq,dna-protein-interactions,Formaldehyde-Assisted Isolation of Regulatory Elements,1
+FiT-Seq,default DNA,,fastq,FiT-Seq,dna-protein-interactions,Fixed-Tissue Chromatin Immunoprecipitation Sequencing,1
+HiTS-FLIP,default DNA,,fastq,HiTS-FLIP,dna-protein-interactions,High-Throughput Sequencing With Fluorescent Ligand Interaction Profiling,1
+MINCE-seq,default DNA,,fastq,MINCE-seq,dna-protein-interactions,Mapping in Vivo Nascent Chromatin with EdU,1
+MNase-Seq,default DNA,,fastq,MNase-Seq,dna-protein-interactions,Micrococcal Nuclease Sequencing,1
+MAINE-Seq,default DNA,,fastq,MAINE-Seq,dna-protein-interactions,Micrococcal Nuclease Assisted Isolation of Nucleosomes,1
+Nucleo-Seq,default DNA,,fastq,Nucleo-Seq,dna-protein-interactions,Isolated Nucleosome Sequencing,1
+Nuc-seq,default DNA,,fastq,Nuc-seq,dna-protein-interactions,Isolated Nucleosome Sequencing,1
+MPE-seq,default DNA,,fastq,MPE-seq,dna-protein-interactions,Methidiumpropyl Ethylenediaminetetraacetic Acid (EDTA) Sequencing,1
+NG Capture-C,default DNA,,fastq,NG Capture-C,dna-protein-interactions,Next-Generation Capture-C,1
+NOMe-Seq,default DNA,,fastq,NOMe-Seq,dna-protein-interactions,Nucleosome Occupancy Methylome-Sequencing,1
+ORGANIC,default DNA,,fastq,ORGANIC,dna-protein-interactions,Occupied Regions of Genomes from Affinity-Purified Naturally Isolated Chromatin,1
+PAT-ChIP,default DNA,,fastq,PAT-ChIP,dna-protein-interactions,Pathology Tissue Chromatin Immunoprecipitation,1
+PB_seq,default DNA,,fastq,PB_seq,dna-protein-interactions,Protein-DNA Binding Followed by High-Throughput Sequencing,1
+SELEX,default DNA,,fastq,SELEX,dna-protein-interactions,Systematic Evolution of Ligands by Exponential Enrichment,1
+SELEX-seq,default DNA,,fastq,SELEX-seq,dna-protein-interactions,Systematic Evolution of Ligands by Exponential Enrichment,1
+HT-SELEX,default DNA,,fastq,HT-SELEX,dna-protein-interactions,Systematic Evolution of Ligands by Exponential Enrichment,1
+THS-seq,default DNA,,fastq,THS-seq,dna-protein-interactions,Transposome Hypersensitive Sites Sequencing,1
+UMI-4C,default DNA,,fastq,UMI-4C,dna-protein-interactions,Circular Chromosome Conformation Capture with Unique Molecular Identifiers,1
+X-ChIP-seq,default DNA,,fastq,X-ChIP-seq,dna-protein-interactions,High-Resolution Crosslinking Chromatin Immunoprecipitation Sequencing,1
+Aba-seq,default DNA,,fastq,Aba-seq,epigenetics,AbaSI Coupled with Sequencing,1
+BisChIP-Seq,default DNA,,fastq,BisChIP-Seq,epigenetics,Bisulfite-Treated Chromatin-Immunoprecipitated DNA,1
+ChIP-BS-Seq,default DNA,,fastq,ChIP-BS-Seq,epigenetics,Bisulfite-Treated Chromatin-Immunoprecipitated DNA,1
+ChIP-BMS,default DNA,,fastq,ChIP-BMS,epigenetics,Bisulfite-Treated Chromatin-Immunoprecipitated DNA,1
+BSAS,default DNA,,fastq,BSAS,epigenetics,Bisulfite Amplicon Sequencing,1
+BSPP,default DNA,,fastq,BSPP,epigenetics,Bisulfite Sequencing With Padlock Probes,1
+BS-Seq,default DNA,,fastq,BS-Seq,epigenetics,Whole-Genome Bisulfite Sequencing,1
+Bisulfite-Seq,default DNA,,fastq,Bisulfite-Seq,epigenetics,Whole-Genome Bisulfite Sequencing,1
+CAB-Seq,default DNA,,fastq,CAB-Seq,epigenetics,Chemical Modification_Assisted Bisulfite Sequencing,1
+EpiRADseq,default DNA,,fastq,EpiRADseq,epigenetics,Double-Digest Restriction Site_Associated DNA Marker Generation with a Methylation-Sensitive Restriction Enzyme,1
+fCAB-seq,default DNA,,fastq,fCAB-seq,epigenetics,5-Formylcytosine Chemical Modification_Assisted Bisulfite Sequencing,1
+fC-CET,default DNA,,fastq,fC-CET,epigenetics,5fC Chemical Labeling and C-to-T Transition During PCR,1
+fC-Seal,default DNA,,fastq,fC-Seal,epigenetics,A 5-Formylcytosine-Selective Chemical Labeling,1
+hMeDIP-seq,default DNA,,fastq,hMeDIP-seq,epigenetics,Hydroxymethylated DNA Immunoprecipitation and Sequencing,1
+JBP1-seq,default DNA,,fastq,JBP1-seq,epigenetics,J-Binding Protein 1 Sequencing,1
+MAB-seq,default DNA,,fastq,MAB-seq,epigenetics,M.SssI Methylase-Assisted Bisulfite Sequencing,1
+MBDCap-seq,default DNA,,fastq,MBDCap-seq,epigenetics,Methyl-CpG Binding Domain (MBD) Based Capture and Sequencing,1
+MethylCap-Seq,default DNA,,fastq,MethylCap-Seq,epigenetics,Methyl-CpG Binding Domain (MBD) Based Capture and Sequencing,1
+MiGS,default DNA,,fastq,MiGS,epigenetics,Methyl-CpG Binding Domain (MBD) Based Capture and Sequencing,1
+MeDIP-Seq,default DNA,,fastq,MeDIP-Seq,epigenetics,Methylated DNA Immunoprecipitation,1
+DIP-seq,default DNA,,fastq,DIP-seq,epigenetics,DNA Immunoprecipitation Followed by High-Throughput Sequencing,1
+MIRA,default DNA,,fastq,MIRA,epigenetics,Methylated-CpG Island Recovery Assay (MIRA),1
+MRE-Seq,default DNA,,fastq,MRE-Seq,epigenetics,Methylation-Sensitive Restriction Enzyme Sequencing,1
+Methyl-Seq,default DNA,,fastq,Methyl-Seq,epigenetics,Methylation-Sensitive Restriction Enzyme Sequencing,1
+oxBS-Seq,default DNA,,fastq,oxBS-Seq,epigenetics,Oxidative Bisulfite Sequencing,1
+PBAT,default DNA,,fastq,PBAT,epigenetics,Post-bisulfite Adapter Tagging,1
+redBS-Seq,default DNA,,fastq,redBS-Seq,epigenetics,Reduced Bisulfite Sequencing,1
+caMAB-seq,default DNA,,fastq,caMAB-seq,epigenetics,5-Carboxylcytosine Methylase-Assisted Bisulfite Sequencing,1
+RRBS-Seq,default DNA,,fastq,RRBS-Seq,epigenetics,Reduced-Representation Bisulfite Sequencing,1
+RRMAB-seq,default DNA,,fastq,RRMAB-seq,epigenetics,Reduced-Representation M.SssI Methylase-Assisted Bisulfite Sequencing,1
+TAB-Seq,default DNA,,fastq,TAB-Seq,epigenetics,Tet-Assisted Bisulfite Sequencing,1
+TAmC-Seq,default DNA,,fastq,TAmC-Seq,epigenetics,Tet-Assisted 5-Methylcytosine Sequencing,1
+T-WGBS,default DNA,,fastq,T-WGBS,epigenetics,Tagmentation-Based Whole-Genome Bisulfite Sequencing,1
+Safe-SeqS,default DNA,,fastq,Safe-SeqS,low-level-dna-detection,Safe-Sequencing System is a Unique Molecular Identifier (UMI) Approach to Detect Rare Variants,1
+scAba-seq,default DNA,,fastq,scAba-seq,low-level-dna-detection,Detect 5hmC Marks in Single Cells With AbaSI Nuclease,1
+scATAC-Seq,default DNA,,fastq,scATAC-Seq,low-level-dna-detection,Single-Cell Assay for Transposase-Accessible Chromatin,1
+scBS-Seq,default DNA,,fastq,scBS-Seq,low-level-dna-detection,Single-Cell Bisulfite Sequencing,1
+scRC-Seq,default DNA,,fastq,scRC-Seq,low-level-dna-detection,Single-Cell Retrotransposon Capture Sequencing,1
+SMDB,default DNA,,fastq,SMDB,low-level-dna-detection,Single-Molecule Droplet Barcoding,1
+smMIP,default DNA,,fastq,smMIP,low-level-dna-detection,Single-Molecule Molecular Inversion Probes,1
+G&T-Seq,default DNA,,fastq,G&T-Seq,low-level-dna-detection,Genome and Transcriptome Sequencing,1
+5C,default DNA,,fastq,5C,low-level-dna-detection,Chromatin Conformation Capture Carbon Copy,1
+5C,default DNA,,fastq,5C,low-level-dna-detection,Chromatin Conformation Capture Carbon Copy,1
+DR-Seq,default DNA,,fastq,DR-Seq,low-level-dna-detection,DNA-mRNA Sequencing,1
+MALBAC,default DNA,,fastq,MALBAC,low-level-dna-detection,Multiple Annealing and Looping_Based Amplification Cycles,1
+MDA,default DNA,,fastq,MDA,low-level-dna-detection,Multiple Displacement Amplification,1
+MIDAS,default DNA,,fastq,MIDAS,low-level-dna-detection,Microwell displacement amplification system,1
+IMS-MDA,default DNA,,fastq,IMS-MDA,low-level-dna-detection,Immunomagnetic Separation for Targeted Bacterial Enrichment for MDA,1
+ddMDA,default DNA,,fastq,ddMDA,low-level-dna-detection,Digital Droplet MDA,1
+Drop-ChIP,default DNA,,fastq,Drop-ChIP,low-level-dna-detection,Droplet-Based Single-Cell Chromatin Immunoprecipitation Sequencing,1
+scChIP-seq,default DNA,,fastq,scChIP-seq,low-level-dna-detection,Droplet-Based Single-Cell Chromatin Immunoprecipitation Sequencing,1
+Duplex-Seq,default DNA,,fastq,Duplex-Seq,low-level-dna-detection,Duplex Sequencing,1
+MIPSTR,default DNA,,fastq,MIPSTR,low-level-dna-detection,Targeted Capture of STR Loci by smMIPs,1
+nuc-seq,default DNA,,fastq,nuc-seq,low-level-dna-detection,Single G2-M Nucleus Sequencing of Cells in S Phase,1
+SNES,default DNA,,fastq,SNES,low-level-dna-detection,Single Nucleus Exome Sequencing,1
+OS-Seq,default DNA,,fastq,OS-Seq,low-level-dna-detection,Oligonucleotide-Selective Sequencing,1

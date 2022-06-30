@@ -405,7 +405,7 @@ def parse_illumina_raw_readset_files(
         readset._gender = line['Gender']
 
         for protocol_line in protocol_csv:
-            if protocol_line['Clarity Step Name'] == line['LibraryProcess']:
+            if protocol_line['Library Type'] == line['LibraryProcess']:
                 readset._protocol = line['LibraryProcess']
                 readset._library_source = protocol_line['Processing Protocol Name']
                 readset._library_type = protocol_line['Library Structure']
@@ -863,7 +863,7 @@ def parse_mgi_raw_readset_files(
         readset._gender = line['Gender'] if line['Gender'] else 'N/A'
 
         for protocol_line in protocol_csv:
-            if protocol_line['Clarity Step Name'] == line['LibraryProcess']:
+            if protocol_line['Library Type'] == line['LibraryProcess']:
                 readset._protocol = line['LibraryProcess']
                 readset._library_source = protocol_line['Processing Protocol Name']
                 readset._library_type = protocol_line['Library Structure']
