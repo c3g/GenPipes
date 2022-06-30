@@ -26,7 +26,7 @@ from core.job import *
 
 def ensemble(lumpy, manta, cnvkit, wham, gatk, bam, sample_name, workdir, outdir, isize_mean, isize_sd, output_vcf, breakseq=None):
     return Job(
-        [lumpy, manta, cnvkit, wham, delly, breakseq, gatk, bam],
+        [lumpy, manta, cnvkit, wham, breakseq, gatk, bam],
         [output_vcf],
         [
             ['metasv_ensemble', 'module_spades'],
