@@ -24,9 +24,9 @@ import os
 from core.config import *
 from core.job import *
 
-def ensemble(lumpy, manta, cnvkit, wham, delly, gatk, bam, sample_name, workdir, outdir, isize_mean, isize_sd, output_vcf, breakseq=None):
+def ensemble(lumpy, manta, cnvkit, wham, gatk, bam, sample_name, workdir, outdir, isize_mean, isize_sd, output_vcf, breakseq=None):
     return Job(
-        [lumpy, manta, cnvkit, wham, delly, breakseq, gatk, bam],
+        [lumpy, manta, cnvkit, wham, breakseq, gatk, bam],
         [output_vcf],
         [
             ['metasv_ensemble', 'module_spades'],
@@ -42,7 +42,6 @@ run_metasv.py {options} \\
   --manta_vcf {manta} \\
   {cnvkit} \\
   {wham} \\
-  {delly} \\
   {gatk} \\
   {breakseq} \\
   --bam {bam} \\
@@ -59,7 +58,6 @@ run_metasv.py {options} \\
         lumpy=lumpy,
         manta=manta,
         wham="--wham_vcf " + wham if wham else "",
-        delly="--delly_vcf " + delly if delly else "",
         gatk="--gatk_vcf " + gatk if gatk else "",
         cnvkit="--cnvkit_vcf " + cnvkit if cnvkit else "",
         breakseq="--breakseq_vcf " + breakseq if breakseq else "",
