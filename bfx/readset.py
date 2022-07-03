@@ -405,7 +405,7 @@ def parse_illumina_raw_readset_files(
         readset._gender = line['Gender']
 
         for protocol_line in protocol_csv:
-            if protocol_line['Library Type'] == line['LibraryProcess']:
+            if protocol_line['Clarity Step Name'] == line['LibraryProcess']:
                 readset._protocol = line['LibraryProcess']
                 readset._library_source = protocol_line['Processing Protocol Name']
                 readset._library_type = protocol_line['Library Structure']
@@ -863,7 +863,7 @@ def parse_mgi_raw_readset_files(
         readset._gender = line['Gender'] if line['Gender'] else 'N/A'
 
         for protocol_line in protocol_csv:
-            if protocol_line['Library Type'] == line['LibraryProcess']:
+            if protocol_line['Clarity Step Name'] == line['LibraryProcess']:
                 readset._protocol = line['LibraryProcess']
                 readset._library_source = protocol_line['Processing Protocol Name']
                 readset._library_type = protocol_line['Library Structure']
@@ -1327,6 +1327,8 @@ def sub_get_index(
         primer_seq_pattern = "grep -A8 '%s' %s | grep '_IDX_' | awk -F':' '{print $2}' | tr -d \"35\'\- \" | awk -F',' '{print $%d}'"
 
         index1_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 1") % (seqtype, index_file, 1), shell=True, text=True).strip()
+        log.error(index_file)
+        log.error("grep -A8 'seqtype' index_file | grep 'Index 1' | awk -F':' '{print $2}' | tr -d \"35\'\- \" | awk -F',' '{print $2}'")
         index1_primeroffset = int(subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 1") % (seqtype, index_file, 2), shell=True, text=True).strip())
         index2_primer = subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 2") % (seqtype, index_file, 1), shell=True, text=True).strip()
         index2_primeroffset = int(subprocess.check_output(primer_seq_pattern.replace("_IDX_", "Index 2") % (seqtype, index_file, 2), shell=True, text=True).strip())

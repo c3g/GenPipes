@@ -1,4 +1,4 @@
-Library Type,Processing Protocol Name,Library Structure,Raw Data Type,Alt Name,Library Category,Library Description,Publish
+Clarity Step Name,Processing Protocol Name,Library Structure,Raw Data Type,Alt Name,Library Category,Library Description,Publish
 PCR-free,default DNA,,bam,WGS,low-level-dna-detection,Whole genome sequencing with no amplification step,1
 PCR-enriched,default DNA,,bam,WGS,low-level-dna-detection,Whole genome sequencing with amplification step,1
 RNASeq,default RNA,,fastq,RNA-Seq,rna-transcription,RNA Sequencing,1
