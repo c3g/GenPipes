@@ -1017,9 +1017,11 @@ class RunProcessing(common.MUGQICPipeline):
             log.info("Demultiplexing done during the basecalling... Skipping fastq step...")
 
         else:
-            log.info("No demultiplexing done yet... Processing fastq step...")
+            log.info("Start demultiplexing the FASTQ files...")
 
             for lane in self.lanes:
+
+                demultiplexing_done_file = os.path.join(self.output_dir, self.run_id + "." + lane + ".demultiplexingDone")
 
                 if int(self.index1cycles[lane]) + int(self.index2cycles[lane]) == 0 and len(self.readsets[lane]) > 1:
                      err_msg = "LANE SETTING ERROR :\n"
@@ -1029,6 +1031,9 @@ class RunProcessing(common.MUGQICPipeline):
 
                 elif int(self._index1cycles[lane]) + int(self._index2cycles[lane]) == 0:
                     log.info("No barcode cycles in the lane... Skipping fastq step for lane " + lane + "...")
+
+                elif os.path.exists(demultiplexing_done_file) and not self.force_jobs:
+                    log.info("Demultiplexing done already... Skipping fastq step for lane " + lane + "...")
 
                 else:
 
@@ -1189,7 +1194,7 @@ class RunProcessing(common.MUGQICPipeline):
 
                     input_fastq_dir = os.path.join(self.output_dir, "Unaligned." + lane, "raw_fastq")
 
-                    demuxfastqs_outputs, postprocessing_jobs = self.generate_demuxfastqs_outputs(lane)
+                    demuxfastqs_outputs, postprocessing_jobs, cleanjob_deps = self.generate_demuxfastqs_outputs(lane)
 
                     tmp_output_dir = os.path.dirname(demuxfastqs_outputs[0])
                     tmp_metrics_file = os.path.join(tmp_output_dir, self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
@@ -1261,7 +1266,7 @@ class RunProcessing(common.MUGQICPipeline):
                             name=ini_section + ".demultiplex." + self.run_id + "." + lane,
                             samples=self.samples[lane],
                             input_dependency=demultiplex_job.input_files,
-                            output_dependency=demuxfastqs_outputs,
+                            output_dependency=demuxfastqs_outputs + [tmp_output_dir],
                             report_files=[metrics_file]
                         )
                     )
@@ -1270,6 +1275,23 @@ class RunProcessing(common.MUGQICPipeline):
 
                     if postprocessing_jobs:
                         jobs_to_throttle.extend(postprocessing_jobs)
+
+                    # Last post-processing job : cleaning of the tmp folder
+                    jobs_to_throttle.append(
+                        concat_jobs(
+                            [
+                                bash.rm(
+                                    tmp_output_dir,
+                                    recursive=True,
+                                    force=True
+                                ),
+                                bash.touch(demultiplexing_done_file)
+                            ],
+                            input_dependency=cleanjob_deps,
+                            name="fastq_clean_tmp." + self.run_id + "." + lane,
+                            samples=self.samples[lane]
+                        )
+                    )
 
                     if self.args.type == 'mgit7':
                         lane_jobs.extend(jobs_to_throttle)
@@ -3300,6 +3322,7 @@ class RunProcessing(common.MUGQICPipeline):
     def generate_demuxfastqs_outputs(self, lane):
         demuxfastqs_outputs = []
         postprocessing_jobs = []
+        cleanjob_deps = []
         output_dir = os.path.join(self.output_dir, "Unaligned." + lane)
 
         for readset in self.readsets[lane]:
@@ -3367,9 +3390,10 @@ class RunProcessing(common.MUGQICPipeline):
                     ],
                     output_dependency=outputs,
                     name="fastq_convert.R1." + readset.name + "." + self.run_id + "." + lane,
-                    samples=self.samples[lane]
+                    samples=[readset.sample]
                 )
             )
+            cleanjob_deps.extend(outputs)
 
             if readset.run_type == "PAIRED_END":
                 # Processing "raw R2" fastq (also contains barcode sequences) :
@@ -3401,9 +3425,10 @@ class RunProcessing(common.MUGQICPipeline):
                         ],
                         output_dependency=outputs,
                         name="fastq_convert.R2." + readset.name + "." + self.run_id + "." + lane,
-                        samples=self.samples[lane]
+                        samples=[readset.sample]
                     )
                 )
+                cleanjob_deps.extend(outputs)
 
         # Process undetermined reads fastq files
         if readset.run_type == "PAIRED_END":
@@ -3446,6 +3471,7 @@ class RunProcessing(common.MUGQICPipeline):
                 samples=self.samples[lane]
             )
         )
+        cleanjob_deps.extend(outputs)
 
         if self.is_paired_end[lane]:
             unmatched_R2_fastq = os.path.join(output_dir, "tmp", "unmatched_R2.fastq.gz")
@@ -3484,24 +3510,50 @@ class RunProcessing(common.MUGQICPipeline):
                     samples=self.samples[lane]
                 )
             )
+            cleanjob_deps.extend(outputs)
+
         if unaligned_i1:
             postprocessing_jobs.append(
-                run_processing_tools.fastq_unexpected_count(
-                    unaligned_i1,
-                    unexpected_barcode_counts_i1,
+                concat_jobs(
+                    [
+                        bash.cat(
+                            unaligned_i1,
+                            None,
+                            zip=True
+                        ),
+                        bash.awk(
+                            None,
+                            unexpected_barcode_counts_i1,
+                            "'NR%4==2' | sort | uniq -c | sort -nr"
+                        )
+                    ],
                     name="fastq_countbarcodes.I1.unmatched." + self.run_id + "." + lane,
+                    samples=self.samples[lane]
                 )
             )
+            cleanjob_deps.append(unexpected_barcode_counts_i1)
         if unaligned_i2:
             postprocessing_jobs.append(
-                run_processing_tools.fastq_unexpected_count(
-                    unaligned_i2,
-                    unexpected_barcode_counts_i2,
+                concat_jobs(
+                    [
+                        bash.cat(
+                            unaligned_i2,
+                            None,
+                            zip=True
+                        ),
+                        bash.awk(
+                            None,
+                            unexpected_barcode_counts_i2,
+                            "'NR%4==2' | sort | uniq -c | sort -nr"
+                        )
+                    ],
                     name="fastq_countbarcodes.I2.unmatched." + self.run_id + "." + lane,
+                    samples=self.samples[lane]
                 )
             )
+            cleanjob_deps.append(unexpected_barcode_counts_i2)
 
-        return demuxfastqs_outputs, postprocessing_jobs
+        return demuxfastqs_outputs, postprocessing_jobs, cleanjob_deps
 
     def awk_read_1_processing_command(self, lane, readset=None):
         """

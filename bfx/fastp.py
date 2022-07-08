@@ -40,12 +40,12 @@ def fastp_basic_qc(input1, input2, output_json_path, output_html_path=None, over
         inputs,
         output_files,
         module_entries = [['fastp', 'module_fastp']],
-        command = "fastp {rds1} {rds2} {cpus} {json} {html}".format(
-            rds1 = "\\\n    --in1 "    + input1,
-            rds2 = "\\\n    --in2 "    + input2 if input2 else "",
-            orep = "\\\n    --overrepresentation_analysis" if overrepresentation_analysis else "",
-            cpus = "\\\n    --thread " + str(num_threads) if num_threads else "",
-            json = "\\\n    --json "   + output_json_path if output_json_path else "",
-            html = "\\\n    --html "   + output_html_path if output_html_path else "",
-            )
+        command = "fastp -V {rds1} {rds2} {cpus} {json} {html}".format(
+            rds1 = "\\\n  --in1 "    + input1,
+            rds2 = "\\\n  --in2 "    + input2 if input2 else "",
+            orep = "\\\n  --overrepresentation_analysis" if overrepresentation_analysis else "",
+            cpus = "\\\n  --thread " + str(num_threads) if num_threads else "",
+            json = "\\\n  --json "   + output_json_path if output_json_path else "",
+            html = "\\\n  --html "   + output_html_path if output_html_path else "",
         )
+    )
