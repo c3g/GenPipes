@@ -712,6 +712,8 @@ class HicSeq(common.Illumina):
 
         chrs = config.param('identify_TADs', 'chromosomes')
         res = config.param('identify_TADs', 'resolution_TADs').split(",")[0]
+        minwin = config.param('identify_TADs', 'minwin', required=False) if config.param('identify_TADs', 'minwin', required=False) else "250"
+        maxwin = config.param('identify_TADs', 'maxwin', required=False) if config.param('identify_TADs', 'maxwin', required=False) else "500"
 
         if chrs == "All":
             genome_dict = os.path.expandvars(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'))
@@ -726,12 +728,12 @@ class HicSeq(common.Illumina):
 
                 input_matrix = os.path.join(self.output_dirs['matrices_output_directory'], sample.name, "chromosomeMatrices", "_".join(("HTD", sample.name, self.enzyme, chr, res, "rawRN.txt")))
                 prefix = os.path.splitext(os.path.basename(input_matrix))[0]
-                output_Scores = os.path.join(sample_output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , str(int(res)//1000) ,"_minW250_maxW500_minRatio1.5.txt")))
-                output_calls = os.path.join(sample_output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)//1000) ,"_minW250_maxW500_minRatio1.5_threshold0.2.txt")))
+                output_Scores = os.path.join(sample_output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , str(int(res)//1000) ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5.txt")))
+                output_calls = os.path.join(sample_output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)//1000) ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5_threshold0.2.txt")))
 
                 job = concat_jobs([
                     bash.mkdir(sample_output_dir),
-                    robustad.call_TADs(input_matrix, sample_output_dir, res)
+                    robustad.call_TADs(input_matrix, sample_output_dir, res, minwin, maxwin)
                 ])
                 job.name = "identify_TADs.RobusTAD." + sample.name + "_" + chr
                 job.samples = [sample]
