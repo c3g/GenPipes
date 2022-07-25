@@ -6612,9 +6612,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             svaba_directory,
                             remove=True
                         ),
-                        Job(
-                            command="cd " + svaba_directory
-                        ),
+                        # Job(
+                        #     command="cd " + svaba_directory
+                        # ),
                         svaba.run(
                             input_tumor,
                             tumor_pair.name,
@@ -6870,32 +6870,32 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
-                self.gatk_indel_realigner,
+                self.gatk_indel_realigner, #5
                 self.sambamba_merge_realigned,
                 self.sambamba_mark_duplicates,
                 self.recalibration,
                 self.strelka2_paired_somatic,
-                self.strelka2_paired_germline,
+                self.strelka2_paired_germline, #10
                 self.metrics_dna_picard_metrics,
                 self.sequenza,
                 self.delly_call_filter,
                 self.delly_sv_annotation,
-                self.manta_sv_calls,
+                self.manta_sv_calls, #15
                 self.manta_sv_annotation,
                 self.lumpy_paired_sv,
                 self.lumpy_sv_annotation,
                 self.wham_call_sv,
-                self.wham_sv_annotation,
+                self.wham_sv_annotation, #20
                 self.cnvkit_batch,
                 self.cnvkit_sv_annotation,
                 self.scones,
                 self.svaba_assemble,
-                self.svaba_sv_annotation,
+                self.svaba_sv_annotation, #25
                 self.ensemble_metasv_somatic,
                 self.ensemble_metasv_germline,
                 self.metasv_sv_annotation,
                 self.sym_link_sequenza,
-                self.sym_link_metasv,
+                self.sym_link_metasv, #30
                 self.sym_link_delly,
                 self.sym_link_manta,
                 self.sym_link_lumpy,
