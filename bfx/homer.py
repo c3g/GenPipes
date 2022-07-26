@@ -70,13 +70,15 @@ def makeTagDir(output_dir, input_bam, genome, restriction_site=None, illuminaPE=
 
 
 
-def hic_tagDirQcPlots (name, working_dir, output_dir = "HomerQcPlots"):
+def hic_tagDirQcPlots (name, working_dir, chrlist, output_dir="HomerQcPlots"):
 
-    command_QcPlots="Rscript {script} {name} {working_dir} {output_dir}".format(
-        script=os.path.expandvars("${R_TOOLS}/HomerHiCQcPlotGenerator.R"),  
-        name=name, 
-        working_dir=working_dir, 
-        output_dir=output_dir)
+    command_QcPlots="Rscript {script} {name} {working_dir} {chrlist} {output_dir}".format(
+        script=os.path.expandvars("${R_TOOLS}/HomerHiCQcPlotGenerator.R"),
+        name=name,
+        working_dir=working_dir,
+        chrlist=chrlist,
+        output_dir=output_dir
+        )
 
     return Job(input_files=[os.path.join(working_dir, "tagInfo.txt")],
             output_files=[os.path.join(working_dir, output_dir)],

@@ -275,6 +275,7 @@ class HicSeq(common.Illumina):
         makeDirTag_hic_other_options=config.param('homer_tag_directory', 'other_options', required=False)
         PEflag = eval(config.param('homer_tag_directory', 'illuminaPE'))
         genome = config.param('homer_tag_directory', 'genome', required=False) if config.param('homer_tag_directory', 'genome', required=False) else config.param('DEFAULT', 'assembly_synonyms')
+        chrlist = config.param('homer_tag_directory', 'chrlist', required=True)
 
         for sample in self.samples:
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
@@ -283,7 +284,7 @@ class HicSeq(common.Illumina):
             input_bam = ",".join([hicup_file_output, hicup_file_output])
 
             tagDir_job = homer.makeTagDir(sample_output_dir, input_bam, genome, self.restriction_site, PEflag, makeDirTag_hic_other_options)
-            QcPlots_job = homer.hic_tagDirQcPlots(sample.name, sample_output_dir)
+            QcPlots_job = homer.hic_tagDirQcPlots(sample.name, sample_output_dir, chrlist)
             archive_job = homer.archive_contigs(sample_output_dir)
 
             job = concat_jobs([tagDir_job, QcPlots_job, archive_job])
