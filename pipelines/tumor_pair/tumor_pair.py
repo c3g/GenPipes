@@ -4643,6 +4643,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+            print(pair_directory)
             inputs["Tumor"] = [
                 os.path.join(pair_directory, "sequenza", tumor_pair.name + "_chromosome_view.pdf"),
                 os.path.join(pair_directory, "sequenza", tumor_pair.name + "_genome_view.pdf"),
@@ -6412,8 +6413,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
     
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], "ensemble", tumor_pair.name, tumor_pair.name)
-            inputs["Tumor"] = [self.output_dir, "SVariants", tumor_pair.name,  tumor_pair.name + ".metasv.snpeff.annot.vcf"]
+            pair_directory = os.path.join(self.output_dir, "SVariants", "ensemble", tumor_pair.name, tumor_pair.name)
+            inputs["Tumor"] = [pair_directory + ".metasv.snpeff.annot.vcf"]
         
             for key, input_files in inputs.items():
                 for idx, input_file in enumerate(input_files):
