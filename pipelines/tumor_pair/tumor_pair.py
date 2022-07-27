@@ -1426,7 +1426,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")],
 
             ])
-            # log.info(input)
+
             mkdir_job_normal = bash.mkdir(
                 normal_picard_directory,
                 remove=True
@@ -6161,7 +6161,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-         #   pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name, tumor_pair.name)
+
             pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name)
 
             jobs.append(
@@ -6613,9 +6613,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             svaba_directory,
                             remove=True
                         ),
-                        # Job(
-                        #     command="cd " + svaba_directory
-                        # ),
                         svaba.run(
                             input_tumor,
                             tumor_pair.name,
