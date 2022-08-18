@@ -577,13 +577,12 @@ def methylkit_differential_analysis(design_file, input_files, outputfiles, outpu
             ['methylkit_differential_analysis', 'module_mugqic_tools']
         ],
         command="""\
-R --no-save '--args \\
+Rscript $R_TOOLS/methylKit.R \\
   -design {design_file} \\
   -outdir {output_folder} \\
   -build {genome} \\
   -suff {input_suffix} \\
-  {other_options}' \\
-  < $R_TOOLS/methylKit.R""".format(
+  {other_options}""".format(
             design_file=design_file,
             genome=config.param('methylkit_differential_analysis', 'assembly'),
             output_folder=output_dir,
