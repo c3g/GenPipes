@@ -285,22 +285,6 @@ python3 $PYTHON_TOOLS/format2pcgr.py \\
         )
     )
 
-def cpg_cov_stats(input, output):
-    return Job(
-        [input],
-        [output],
-        [
-            ['DEFAULT', 'module_mugqic_tools'],
-            ['DEFAULT', 'module_python']
-        ],
-        command="""\
-python $PYTHON_TOOLS/CpG_coverageStats.py \\
- -i {input} \\
- -o {output}""".format(
-            input=input,
-            output=output
-         )
-    )
 
 ## functions for perl tools ##
 
@@ -895,12 +879,13 @@ def filter_snp_cpg(input, output):
             ['filter_snp_cpg', 'module_bedops']
         ],
         command="""\
-awk '$11>=5' {input} | sort-bed - > {sorted_bed} && \\
+awk '$11>={cpg_threshold}' {input} | sort-bed - > {sorted_bed} && \\
 zcat {filter_file} | vcf2bed - > {filter_sorted_bed} && \\
 bedops --not-element-of \\
   {sorted_bed} \\
   {filter_sorted_bed} \\
   > {output}""". format(
+            cpg_threshold=config.param('filter_snp_cpg', 'cpg_threshold', required=False, param_type=int) if config.param('filter_snp_cpg', 'cpg_threshold', required=False) else 5,
             input=input,
             sorted_bed=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(input)+".tmp.sorted.bed"),
             filter_file=config.param('filter_snp_cpg', 'known_variants'),
