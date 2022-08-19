@@ -885,7 +885,7 @@ bedops --not-element-of \\
   {sorted_bed} \\
   {filter_sorted_bed} \\
   > {output}""". format(
-            cpg_threshold=config.param('filter_snp_cpg', 'cpg_threshold', required=False, param_type=int) if config.param('filter_snp_cpg', 'cpg_threshold', required=False) else 5,
+            cpg_threshold=config.param('filter_snp_cpg', 'cpg_threshold', required=False) if config.param('filter_snp_cpg', 'cpg_threshold', required=False) else "5",
             input=input,
             sorted_bed=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(input)+".tmp.sorted.bed"),
             filter_file=config.param('filter_snp_cpg', 'known_variants'),
