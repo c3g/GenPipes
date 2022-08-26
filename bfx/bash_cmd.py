@@ -54,7 +54,7 @@ def ln(
     link,
     out_dir=None
     ):
-    
+
     return Job(
         [target_file],
         [link],
@@ -170,7 +170,7 @@ def cat(
     else:
         inputs=input
 
-    cat_call = "cat"    
+    cat_call = "cat"
     if zip:
         cat_call = "zcat"
 
@@ -204,18 +204,39 @@ cut {options} {input}{output}""".format(
     )
 
 def paste(
-    input,
-    output,
-    options
+    input1,
+    input2,
+    output=None,
+    options=None
     ):
 
     return Job(
-        [input],
+        [input1, input2],
         [output],
         command="""\
-paste {options} {input}{output}""".format(
+paste {options} {input1} {input2} {output}""".format(
             options=options,
-            input=input if input else "",
+            input1=input1 if input1 else "",
+            input2=input2 if input2 else "",
+            output=" > " + output if output else "",
+        )
+    )
+
+def zpaste(
+    input1,
+    input2,
+    output=None,
+    options=None
+    ):
+
+    return Job(
+        [input1, input2],
+        [output],
+        command="""\
+paste {options} <(zcat {input1}) <(zcat {input2}) {output}""".format(
+            options=options,
+            input1=input1 if input1 else "",
+            input2=input2 if input2 else "",
             output=" > " + output if output else "",
         )
     )
@@ -261,7 +282,7 @@ def zip(
     ):
 
     # all the inputs are supposed to be in the same directory
-    inputs_dir = os.path.dirname(inputs[0]) 
+    inputs_dir = os.path.dirname(inputs[0])
 
     return Job(
         inputs,

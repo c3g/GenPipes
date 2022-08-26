@@ -3489,6 +3489,8 @@ class RunProcessing(common.MUGQICPipeline):
                 unaligned_i2 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
                 outputs.append(unaligned_i2)
                 unexpected_barcode_counts_i2 = re.sub(".fastq.gz", ".counts.txt", unaligned_i2)
+                unexpected_barcode_counts_i1i2 = re.sub("_I2_001.fastq.gz", "_I1I2_001.counts.txt", unaligned_i2)
+
 #                demuxfastqs_outputs.append(unexpected_barcode_counts_i2)
 
             postprocessing_jobs.append(
@@ -3512,9 +3514,28 @@ class RunProcessing(common.MUGQICPipeline):
             )
             cleanjob_deps.extend(outputs)
 
-        if unaligned_i1:
+        if unaligned_i1 and unaligned_i2:
             postprocessing_jobs.append(
-                concat_jobs(
+                pipe_jobs(
+                    [
+                        bash.zpaste(
+                            unaligned_i1,
+                            unaligned_i2,
+                        ),
+                        bash.awk(
+                            None,
+                            unexpected_barcode_counts_i1i2,
+                            "'BEGIN {OFS=\",\"} NR%4==2 {print $1, $2}' | sort | uniq -c | sort -nr | head -n 1000"
+                        )
+                    ],
+                    name="fastq_countbarcodes.I1I2.unmatched." + self.run_id + "." + lane,
+                    samples=self.samples[lane]
+                )
+            )
+            cleanjob_deps.append(unexpected_barcode_counts_i1i2)
+        elif unaligned_i1:
+            postprocessing_jobs.append(
+                pipe_jobs(
                     [
                         bash.cat(
                             unaligned_i1,
@@ -3524,7 +3545,7 @@ class RunProcessing(common.MUGQICPipeline):
                         bash.awk(
                             None,
                             unexpected_barcode_counts_i1,
-                            "'NR%4==2' | sort | uniq -c | sort -nr"
+                            "'NR%4==2' | sort | uniq -c | sort -nr | head -n 1000"
                         )
                     ],
                     name="fastq_countbarcodes.I1.unmatched." + self.run_id + "." + lane,
@@ -3532,9 +3553,9 @@ class RunProcessing(common.MUGQICPipeline):
                 )
             )
             cleanjob_deps.append(unexpected_barcode_counts_i1)
-        if unaligned_i2:
+        elif unaligned_i2:
             postprocessing_jobs.append(
-                concat_jobs(
+                pipe_jobs(
                     [
                         bash.cat(
                             unaligned_i2,
@@ -3544,7 +3565,7 @@ class RunProcessing(common.MUGQICPipeline):
                         bash.awk(
                             None,
                             unexpected_barcode_counts_i2,
-                            "'NR%4==2' | sort | uniq -c | sort -nr"
+                            "'BEGIN NR%4==2' | sort | uniq -c | sort -nr | head -n 1000"
                         )
                     ],
                     name="fastq_countbarcodes.I2.unmatched." + self.run_id + "." + lane,
