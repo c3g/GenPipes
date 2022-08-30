@@ -864,7 +864,7 @@ pandoc \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + variant_directory),
+                    bash.mkdir(variant_directory),
                     bissnp.bisulfite_genotyper(
                         input_file,
                         cpg_output_file,
@@ -889,7 +889,7 @@ pandoc \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory),
+                    bash.mkdir(methyl_directory),
                     tools.filter_snp_cpg(
                         input_file,
                         output_file
@@ -913,7 +913,7 @@ pandoc \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + output_directory),
+                    bash.mkdir(output_directory),
                     tools.prepare_methylkit(
                         input_file,
                         output_file
@@ -950,7 +950,7 @@ pandoc \\
         )
 
         return [concat_jobs([
-            Job(command="mkdir -p " + output_directory),
+            bash.mkdir(output_directory),
             methylkit_job
         ], name="methylkit_differential_analysis")]
 
