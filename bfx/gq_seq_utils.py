@@ -39,7 +39,7 @@ suppressPackageStartupMessages(library(gqSeqUtils))
 
 exploratoryAnalysisRNAseq(htseq.counts.path="{htseq_count_file}", cuffnorm.fpkms.dir="{cuffnorm_dir}", genes.path="{genes_file}", output.dir="{output_dir}")
 desc = readRDS(file.path("{output_dir}","index.RData"))
-write.table(desc,file=file.path("{output_dir}","index.tsv"),sep='\t',quote=F,col.names=T,row.names=F)
+write.table(desc,file=file.path("{output_dir}","index.tsv"),sep='\\t',quote=F,col.names=T,row.names=F)
 print("done.")
 
 EOF""".format(
@@ -63,7 +63,7 @@ R --no-save --no-restore <<-EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
 exploratoryAnalysisRNAseqdenovo(read.counts.path="{count_file}", genes.path="{genes_file}", output.dir="{output_dir}")
 desc = readRDS(file.path("{output_dir}","index.RData"))
-write.table(desc,file=file.path("{output_dir}","index.tsv"),sep='\t',quote=F,col.names=T,row.names=F)
+write.table(desc,file=file.path("{output_dir}","index.tsv"),sep='\\t',quote=F,col.names=T,row.names=F)
 print("done.")
 
 EOF""".format(
@@ -86,7 +86,7 @@ R --no-save --no-restore <<-EOF
 suppressPackageStartupMessages(library(gqSeqUtils))
 exploratoryAnalysisRNAseqLightKallisto(read.counts.path="{count_file}", genes.path="{genes_file}", output.dir="{output_dir}")
 desc = readRDS(file.path("{output_dir}","index.RData"))
-write.table(desc,file=file.path("{output_dir}","index.tsv"),sep='\t',quote=F,col.names=T,row.names=F)
+write.table(desc,file=file.path("{output_dir}","index.tsv"),sep='\\t',quote=F,col.names=T,row.names=F)
 print("done.")
 
 EOF""".format(

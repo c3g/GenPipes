@@ -47,16 +47,16 @@ def create_hic(juicebox_input, hic_output, assembly):
         [juicebox_input],
         [hic_output],
         [
-            ["create_hic_file", "module_java"]
+            ["create_hic_file", "module_java"],
+            ["create_hic_file", "module_juicer"]
         ],
         command="""
-java -jar {juicer} \\
+java -jar $juicer_JAR \\
   pre \\
   -q {q} \\
   {input} \\
   {output} \\
   {assembly}""".format(
-            juicer=os.path.expandvars(config.param('create_hic_file', 'JuicerPath')),
             q=config.param('create_hic_file', 'q'),
             input=juicebox_input,
             output=hic_output,
