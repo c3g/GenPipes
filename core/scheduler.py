@@ -369,17 +369,20 @@ class PBSScheduler(Scheduler):
         return '-W depend={}:'.format(condition)
 
     def memory(self, job_name_prefix):
-        mem_str = self.config.param(job_name_prefix, 'cluster_mem', required=False)
-        try:
-            mem = re.search("[0-9]+[a-zA-Z]*", mem_str).group()
-        except AttributeError:
-            return " "
+        # mem_str = self.config.param(job_name_prefix, 'cluster_mem', required=False)
+        # try:
+        #     mem = re.search("[0-9]+[a-zA-Z]*", mem_str).group()
+        # except AttributeError:
+        #     return " "
 
-        if 'per' in mem_str.lower() and 'cpu' in mem_str.lower():
-            option = '-l pmem='
-        else:
-            option = '-l mem='
-        return "{}{}".format(option, mem)
+        # if 'per' in mem_str.lower() and 'cpu' in mem_str.lower():
+        #     option = '-l pmem='
+        # else:
+        #     option = '-l mem='
+        # return "{}{}".format(option, mem)
+        ### on Abacus, it is preferred not to use -pmem nor -mem options
+        ### if needed, add more cores (5Gb each) to the job
+        return ""
 
     def cpu(self, job_name_prefix):
         cpu = super().cpu(job_name_prefix)
