@@ -50,6 +50,12 @@ class Config(configparser.SafeConfigParser):
     def filepath(self):
         return self._filepath
 
+    @property
+    def input_list(self):
+        if not hasattr(self, "_input_list"):
+            self._input_list = {}
+        return self._input_list
+
     def parse_files(self, config_files):
         # Make option names case sensitive
         self.optionxform = str
@@ -135,6 +141,7 @@ class Config(configparser.SafeConfigParser):
                     return self.getboolean(section, option)
                 elif param_type == 'filepath':
                     value = os.path.expandvars(self.get(section, option))
+                    self.input_list[section].append(value)
                     if os.path.isfile(value):
                         return value
                     else:
