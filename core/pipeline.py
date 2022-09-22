@@ -128,6 +128,7 @@ class Pipeline(object):
         self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config, container=self.args.container,
                                            genpipes_file=self.args.genpipes_file)
 
+        self._force_mem_per_cpu = self.args.force_mem_per_cpu
         self._json = True
         if self.args.no_json:
             self._json = False
@@ -235,6 +236,10 @@ class Pipeline(object):
                                                                 " all the input files needed for the pipeline to run "
                                                                 "are available on the system (default: false)",
                                          action="store_true")
+            self._argparser.add_argument("--force_mem_per_cpu", default=None, help="Take the mem input in the ini "
+                                                                                   "file and force to have a minimum of"
+                                                                                   " mem_per_cpu by correcting the "
+                                                                                   "number of cpu (default: None)")
             self._argparser.add_argument("--container", nargs=2,
                                          help="Run inside a container providing a valid "
                                          "singularity image path", action=ValidateContainer,
