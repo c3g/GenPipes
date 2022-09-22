@@ -391,12 +391,16 @@ class PBSScheduler(Scheduler):
         return "{}{}".format(option, mem)
 
     def cpu(self, job_name_prefix, adapt=None):
-        cpu = super().cpu(job_name_prefix)
+        cpu = int(super().cpu(job_name_prefix))
 
         mem_info = self.memory(info=True)
         if adapt and mem_info:
+            adapt = int(adapt)
+            mem = int(re.search("[0-9]+", mem_info[1]).group())
+            if 'G' in mem_info[1]:
+                mem = mem * 1024
             if mem_info[0]:
-                mem = mem_info[1] * cpu
+                mem = mem * cpu
             else:
                 mem = mem_info[1]
             import math
