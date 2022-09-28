@@ -368,31 +368,52 @@ class PBSScheduler(Scheduler):
         condition = super().dependency_arg(job_name_prefix)
         return '-W depend={}:'.format(condition)
 
-    def memory(self, job_name_prefix):
-        # mem_str = self.config.param(job_name_prefix, 'cluster_mem', required=False)
-        # try:
-        #     mem = re.search("[0-9]+[a-zA-Z]*", mem_str).group()
-        # except AttributeError:
-        #     return " "
+    def memory(self, job_name_prefix, adapt=None, info=False):
+        mem_str = self.config.param(job_name_prefix, 'cluster_mem', required=False)
+        try:
+            mem = re.search("[0-9]+[a-zA-Z]*", mem_str).group()
+        except AttributeError:
+            return ''
 
-        # if 'per' in mem_str.lower() and 'cpu' in mem_str.lower():
-        #     option = '-l pmem='
-        # else:
-        #     option = '-l mem='
-        # return "{}{}".format(option, mem)
-        ### on Abacus, it is preferred not to use -pmem nor -mem options
-        ### if needed, add more cores (5Gb each) to the job
-        return ""
+        if adapt is not None:
+            return ''
 
-    def cpu(self, job_name_prefix):
-        cpu = super().cpu(job_name_prefix)
+        if 'per' in mem_str.lower() and 'cpu' in mem_str.lower():
+            option = '-l pmem='
+            per_core = True
+        else:
+            option = '-l mem='
+            per_core = False
+
+        if info:
+            return per_core, mem
+
+        return "{}{}".format(option, mem)
+
+    def cpu(self, job_name_prefix, adapt=None):
+        cpu = int(super().cpu(job_name_prefix))
+
+        mem_info = self.memory(info=True)
+        if adapt and mem_info:
+            adapt = int(adapt)
+            mem = int(re.search("[0-9]+", mem_info[1]).group())
+            if 'G' in mem_info[1]:
+                mem = mem * 1024
+            if mem_info[0]:
+                mem = mem * cpu
+            else:
+                mem = mem_info[1]
+            import math
+            cpu_ = math.ceil(mem/adapt)
+
+        cpu = max(cpu, cpu_)
+
         node = self.node(job_name_prefix)
         gpu = self.gpu(job_name_prefix)
         if gpu:
             return "-l nodes={}:ppn={}:gpu{}".format(node, cpu, gpu)
         else:
             return "-l nodes={}:ppn={}".format(node, cpu)
-
 
     def submit(self, pipeline):
         self.print_header(pipeline)
@@ -466,8 +487,8 @@ exit \$MUGQIC_STATE" | \\
                         config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
                         config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
                         self.walltime(job_name_prefix) + " " + \
-                        self.memory(job_name_prefix) + " " + \
-                        self.cpu(job_name_prefix) + " " + \
+                        self.memory(job_name_prefix, adapt=pipeline._force_mem_per_cpu) + " " + \
+                        self.cpu(job_name_prefix, adapt=pipeline._force_mem_per_cpu) + " " + \
                         config.param(job_name_prefix, 'cluster_queue') + " "
 
                     if job.dependency_jobs:
