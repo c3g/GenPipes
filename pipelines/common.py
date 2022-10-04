@@ -21,11 +21,8 @@
 
 # Python Standard Modules
 import argparse
-import logging
 import os
-import re
 import socket
-import string
 import sys
 import collections
 
@@ -36,11 +33,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 from core.pipeline import Pipeline
-from bfx.design import parse_design_file
-from bfx.readset import parse_illumina_readset_file
-from bfx.sample_tumor_pairs import *
+from core.design import parse_design_file
+from core.readset import parse_illumina_readset_file
+from core.sample_tumor_pairs import *
 
-from bfx import metrics
 from bfx import bvatools
 from bfx import verify_bam_id
 from bfx import picard

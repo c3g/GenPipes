@@ -33,7 +33,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 # MUGQIC Modules
 from core.config import config
 from core.job import Job, concat_jobs, pipe_jobs
-from bfx.sample_tumor_pairs import parse_tumor_pair_file
+from core.sample_tumor_pairs import parse_tumor_pair_file
 from bfx.sequence_dictionary import split_by_size, parse_sequence_dictionary_file
 import utils.utils
 
@@ -1426,7 +1426,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")],
 
             ])
-            # log.info(input)
+
             mkdir_job_normal = bash.mkdir(
                 normal_picard_directory,
                 remove=True
@@ -3797,7 +3797,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             )
             header = os.path.join(
                 self.output_dirs['sv_variants_directory'],
-                "header"
+                tumor_pair.name + ".header"
             )
             output_cna_body = os.path.join(
                 self.output_dirs['sv_variants_directory'],
@@ -4643,6 +4643,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+            print(pair_directory)
             inputs["Tumor"] = [
                 os.path.join(pair_directory, "sequenza", tumor_pair.name + "_chromosome_view.pdf"),
                 os.path.join(pair_directory, "sequenza", tumor_pair.name + "_genome_view.pdf"),
@@ -5352,7 +5353,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 concat_jobs(
                     [
                         bash.mkdir(
-                            lumpy_directory,
+                            os.path.join(lumpy_directory, "alignment"),
                             remove=True
                         ),
                         pipe_jobs(
@@ -5365,7 +5366,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                 sambamba.sort(
                                     "/dev/stdin",
                                     discordants_normal,
-                                    lumpy_directory,
+                                    os.path.join(lumpy_directory, "temp"),
                                     config.param('extract_discordant_reads', 'sambamba_options')
                                 )
                             ]
@@ -5380,7 +5381,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                 sambamba.sort(
                                     "/dev/stdin",
                                     discordants_tumor,
-                                    lumpy_directory,
+                                    os.path.join(lumpy_directory, "temp"),
                                     config.param('extract_discordant_reads', 'sambamba_options')
                                 )
                             ]
@@ -5395,7 +5396,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 concat_jobs(
                     [
                         bash.mkdir(
-                            lumpy_directory,
+                            os.path.join(lumpy_directory, "alignment"),
                             remove=True
                         ),
                         pipe_jobs(
@@ -5408,7 +5409,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                 Job(
                                     [None],
                                     [None],
-                                    [['lumpy_sv', 'module_lumpy']],
+                                    [['lumpy_sv', 'module_lumpy'],
+                                     ['lumpy_paired_sv_calls', 'module_python']],
                                     command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"
                                 ),
                                 samtools.view(
@@ -5419,7 +5421,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                 sambamba.sort(
                                     "/dev/stdin",
                                     splitters_normal,
-                                    lumpy_directory,
+                                    os.path.join(lumpy_directory, "temp"),
                                     config.param('extract_split_reads', 'sambamba_options')
                                 ),
                             ]
@@ -5434,7 +5436,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                 Job(
                                     [None],
                                     [None],
-                                    [['lumpy_sv', 'module_lumpy']],
+                                    [['lumpy_sv', 'module_lumpy'],
+                                     ['lumpy_paired_sv_calls', 'module_python']],
                                     command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"
                                 ),
                                 samtools.view(
@@ -5445,7 +5448,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                 sambamba.sort(
                                     "/dev/stdin",
                                     splitters_tumor,
-                                    lumpy_directory,
+                                    os.path.join(lumpy_directory, "temp"),
                                     config.param('extract_split_reads', 'options')
                                 )
                             ]
@@ -6158,7 +6161,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
         jobs = []
 
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dir,"SVariants", tumor_pair.name, tumor_pair.name)
+
+            pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, tumor_pair.name)
 
             jobs.append(
                 concat_jobs(
@@ -6231,13 +6235,15 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             ensemble_directory = os.path.join(self.output_dirs['sv_variants_directory'], "ensemble", tumor_pair.name)
 
+
+
             inputTumor = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
             isize_file = os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.tumor.name, "picard_metrics", "picard_metrics.all.metrics.insert_size_metrics")
             gatk_vcf = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vcf.gz")
-            lumpy_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.somatic.vcf.gz")
+
+            lumpy_vcf = os.path.join(self.output_dir, "SVariants",tumor_pair.name, tumor_pair.name + ".lumpy.somatic.vcf.gz")
             manta_vcf = os.path.join(pair_directory, tumor_pair.name + ".manta.somatic.vcf.gz")
             wham_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.somatic.vcf.gz")
-            delly_vcf= os.path.join(pair_directory, tumor_pair.name + ".delly.somatic.vcf.gz")
             cnvkit_vcf = os.path.join(pair_directory, tumor_pair.name + ".cnvkit.vcf.gz")
 
             if os.path.isfile(isize_file):
@@ -6281,7 +6287,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             manta_vcf,
                             cnvkit_vcf,
                             wham_vcf,
-                            delly_vcf,
                             gatk_pass,
                             inputTumor,
                             tumor_pair.tumor.name,
@@ -6313,10 +6318,10 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             isize_file = os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.tumor.name, "picard_metrics", "picard_metrics.all.metrics.insert_size_metrics")
             gatk_vcf = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, tumor_pair.name + ".ensemble.germline.vcf.gz")
             gatk_pass = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, tumor_pair.name + ".ensemble.germline.flt.pass.vcf.gz")
-            lumpy_vcf = os.path.join(pair_directory, tumor_pair.name + ".lumpy.germline.vcf.gz")
+            lumpy_vcf = os.path.join(self.output_dir, "SVariants", tumor_pair.name,
+                                     tumor_pair.name + ".lumpy.germline.vcf.gz")
             manta_vcf = os.path.join(pair_directory, tumor_pair.name + ".manta.germline.vcf.gz")
             wham_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.germline.vcf.gz")
-            delly_vcf = os.path.join(pair_directory, tumor_pair.name + ".delly.germline.vcf.gz")
             cnvkit_vcf = os.path.join(pair_directory, tumor_pair.name + ".cnvkit.vcf.gz")
 
             if os.path.isfile(isize_file):
@@ -6360,7 +6365,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             manta_vcf,
                             cnvkit_vcf,
                             wham_vcf,
-                            delly_vcf,
                             gatk_pass,
                             inputTumor,
                             tumor_pair.tumor.name,
@@ -6409,7 +6413,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
     
         inputs = dict()
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], "ensemble", tumor_pair.name, tumor_pair.name)
+            pair_directory = os.path.join(self.output_dir, "SVariants", "ensemble", tumor_pair.name, tumor_pair.name)
             inputs["Tumor"] = [pair_directory + ".metasv.snpeff.annot.vcf"]
         
             for key, input_files in inputs.items():
@@ -6608,9 +6612,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         bash.mkdir(
                             svaba_directory,
                             remove=True
-                        ),
-                        Job(
-                            command="cd " + svaba_directory
                         ),
                         svaba.run(
                             input_tumor,
@@ -6867,32 +6868,32 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 self.skewer_trimming,
                 self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_files,
-                self.gatk_indel_realigner,
+                self.gatk_indel_realigner, #5
                 self.sambamba_merge_realigned,
                 self.sambamba_mark_duplicates,
                 self.recalibration,
                 self.strelka2_paired_somatic,
-                self.strelka2_paired_germline,
+                self.strelka2_paired_germline, #10
                 self.metrics_dna_picard_metrics,
                 self.sequenza,
                 self.delly_call_filter,
                 self.delly_sv_annotation,
-                self.manta_sv_calls,
+                self.manta_sv_calls, #15
                 self.manta_sv_annotation,
                 self.lumpy_paired_sv,
                 self.lumpy_sv_annotation,
                 self.wham_call_sv,
-                self.wham_sv_annotation,
+                self.wham_sv_annotation, #20
                 self.cnvkit_batch,
                 self.cnvkit_sv_annotation,
                 self.scones,
                 self.svaba_assemble,
-                self.svaba_sv_annotation,
+                self.svaba_sv_annotation, #25
                 self.ensemble_metasv_somatic,
                 self.ensemble_metasv_germline,
                 self.metasv_sv_annotation,
                 self.sym_link_sequenza,
-                self.sym_link_metasv,
+                self.sym_link_metasv, #30
                 self.sym_link_delly,
                 self.sym_link_manta,
                 self.sym_link_lumpy,

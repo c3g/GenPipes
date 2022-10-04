@@ -39,11 +39,12 @@ usage: methylseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                     [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                     [--no-json] [--report] [--clean]
                     [-l {debug,info,warning,error,critical}] [--sanity-check]
+                    [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                     [--container {wrapper, singularity} <IMAGE PATH>]
                     [--genpipes_file GENPIPES_FILE] [-d DESIGN]
                     [-t {bismark,hybrid,dragen}] [-r READSETS] [-v]
 
-Version: 4.3.0
+Version: 4.3.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -78,6 +79,10 @@ optional arguments:
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
+  --force_mem_per_cpu FORCE_MEM_PER_CPU
+                        Take the mem input in the ini file and force to have a
+                        minimum of mem_per_cpu by correcting the number of cpu
+                        (default: None)
   --container {wrapper, singularity} <IMAGE PATH>
                         Run inside a container providing a valid singularity
                         image path
@@ -118,7 +123,8 @@ bismark:
 13- bis_snp
 14- filter_snp_cpg
 15- prepare_methylkit
-16- cram_output
+16- methylkit_differential_analysis
+17- cram_output
 ----
 ```
 ![methylseq hybrid workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq_hybrid.resized.png)
@@ -140,7 +146,8 @@ hybrid:
 13- bis_snp
 14- filter_snp_cpg
 15- prepare_methylkit
-16- cram_output
+16- methylkit_differential_analysis
+17- cram_output
 ----
 ```
 ![methylseq dragen workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq_dragen.resized.png)
@@ -164,7 +171,8 @@ dragen:
 15- bis_snp
 16- filter_snp_cpg
 17- prepare_methylkit
-18- cram_output
+18- methylkit_differential_analysis
+19- cram_output
 
 ```
 
@@ -260,6 +268,10 @@ SNP CpGs filtering.
 prepare_methylkit
 -----------------
 Prepare input file for [methylKit](https://www.bioconductor.org/packages/release/bioc/vignettes/methylKit/inst/doc/methylKit.html) differential analysis.
+
+methylkit_differential_analysis
+-------------------------------
+Run methylKit to get DMCs & DMRs for different design comparisons.
 
 cram_output
 -----------

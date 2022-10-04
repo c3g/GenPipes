@@ -31,7 +31,6 @@ import itertools
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
-from bfx.readset import parse_illumina_readset_file
 
 
 def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libraryName, readGroupID,

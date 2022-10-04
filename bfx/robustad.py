@@ -23,12 +23,12 @@
 from core.config import *
 from core.job import *
 
-def call_TADs(matrix, output_dir, res):
+def call_TADs(matrix, output_dir, res, minwin, maxwin):
 
     prefix = os.path.splitext(os.path.basename(matrix))[0]
 
-    output_Scores = os.path.join(output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , str(int(res)/1000) ,"_minW250_maxW500_minRatio1.5.txt")))
-    output_calls = os.path.join(output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)/1000) ,"_minW250_maxW500_minRatio1.5_threshold0.2.txt")))
+    output_Scores = os.path.join(output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , str(int(res)/1000) ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5.txt")))
+    output_calls = os.path.join(output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)/1000) ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5_threshold0.2.txt")))
 
     return Job(
         [matrix],
@@ -42,11 +42,15 @@ Rscript {RobusTAD} \\
   -i {input_matrix} \\
   -H \\
   -b {res} \\
+  --minWin {minwin} \\
+  --maxWin {maxwin} \\
   -o {ouput_dir}""".format(
             ouput_dir=output_dir,
             RobusTAD=os.path.expandvars("${R_TOOLS}/RobusTAD.R"),
             input_matrix=matrix,
-            res=int(res)/1000
+            res=int(res)/1000,
+            minwin=minwin,
+            maxwin=maxwin
         ),
         removable_files=[matrix]
     )

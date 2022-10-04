@@ -87,6 +87,7 @@ def sv(input, normal_name, tumor_name, caller, output):
         [os.path.abspath(output)],
         [
             ['vawk', 'module_vawk'],
+            ['vawk', 'module_python'],
         ],
         command="""\
 vawk -v CALLER={caller} -v SNAME={tumor_name} \\

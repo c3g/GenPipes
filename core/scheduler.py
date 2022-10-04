@@ -211,6 +211,30 @@ class Scheduler(object):
             return ""
 
 
+    def fail_on_pattern(self, job_name_prefix):
+
+        pattern = self.config.param(job_name_prefix, 'fail_on_pattern',required=False)
+
+        if not pattern:
+            return ("", "")
+        else:
+            tmp_dir = config.param("DEFAULT", 'tmp_dir', required=True)
+
+            append_command = " | tee {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o ".format(tmp_dir=tmp_dir)
+            test_condition="""
+grep {pattern} {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o
+NO_PROBLEM_IN_LOG=\$?
+
+  if [[  \$NO_PROBLEM_IN_LOG == 0 ]] ; then
+   echo {pattern} found in job log, forcing error 
+   MUGQIC_STATE=74
+fi
+""".format(pattern=pattern, tmp_dir=tmp_dir)
+
+            return (append_command, test_condition)
+
+
+
     def print_header(self, pipeline,shebang='/bin/bash'):
 
         self.genpipes_file.write("""#!{shebang}
@@ -344,21 +368,46 @@ class PBSScheduler(Scheduler):
         condition = super().dependency_arg(job_name_prefix)
         return '-W depend={}:'.format(condition)
 
-    def memory(self, job_name_prefix):
+    def memory(self, job_name_prefix, adapt=None, info=False):
         mem_str = self.config.param(job_name_prefix, 'cluster_mem', required=False)
         try:
             mem = re.search("[0-9]+[a-zA-Z]*", mem_str).group()
         except AttributeError:
-            return " "
+            return ''
+
+        if adapt is not None:
+            return ''
 
         if 'per' in mem_str.lower() and 'cpu' in mem_str.lower():
             option = '-l pmem='
+            per_core = True
         else:
             option = '-l mem='
+            per_core = False
+
+        if info:
+            return per_core, mem
+
         return "{}{}".format(option, mem)
 
-    def cpu(self, job_name_prefix):
-        cpu = super().cpu(job_name_prefix)
+    def cpu(self, job_name_prefix, adapt=None):
+        cpu = int(super().cpu(job_name_prefix))
+
+        mem_info = self.memory(info=True)
+        if adapt and mem_info:
+            adapt = int(adapt)
+            mem = int(re.search("[0-9]+", mem_info[1]).group())
+            if 'G' in mem_info[1]:
+                mem = mem * 1024
+            if mem_info[0]:
+                mem = mem * cpu
+            else:
+                mem = mem_info[1]
+            import math
+            cpu_ = math.ceil(mem/adapt)
+
+        cpu = max(cpu, cpu_)
+
         node = self.node(job_name_prefix)
         gpu = self.gpu(job_name_prefix)
         if gpu:
@@ -409,10 +458,11 @@ chmod 755 $COMMAND
                     )
 
                     cmd = """\
-echo "rm -f $JOB_DONE && {job2json_start} {step_wrapper} {container_line} $COMMAND
+echo "rm -f $JOB_DONE && {job2json_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 {job2json_end}
+{fail_on_pattern1}
 if [ \$MUGQIC_STATE -eq 0 ] ; then
   touch $JOB_DONE ;
 fi
@@ -421,7 +471,9 @@ exit \$MUGQIC_STATE" | \\
                         container_line=self.container_line,
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                         job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE'),
-                        step_wrapper=config_step_wrapper
+                        step_wrapper=config_step_wrapper,
+                        fail_on_pattern0 =self.fail_on_pattern(job_name_prefix)[0],
+                        fail_on_pattern1 =self.fail_on_pattern(job_name_prefix)[1]
                     )
                         #sleep_time=sleepTime
 
@@ -435,8 +487,8 @@ exit \$MUGQIC_STATE" | \\
                         config.param(job_name_prefix, 'cluster_output_dir_arg') + " $JOB_OUTPUT " + \
                         config.param(job_name_prefix, 'cluster_job_name_arg') + " $JOB_NAME " + \
                         self.walltime(job_name_prefix) + " " + \
-                        self.memory(job_name_prefix) + " " + \
-                        self.cpu(job_name_prefix) + " " + \
+                        self.memory(job_name_prefix, adapt=pipeline._force_mem_per_cpu) + " " + \
+                        self.cpu(job_name_prefix, adapt=pipeline._force_mem_per_cpu) + " " + \
                         config.param(job_name_prefix, 'cluster_queue') + " "
 
                     if job.dependency_jobs:
@@ -642,10 +694,11 @@ date
 scontrol show job \$SLURM_JOBID
 sstat -j \$SLURM_JOBID.batch
 echo '#######################################'
-rm -f $JOB_DONE && {job2json_start} {step_wrapper} {container_line}  $COMMAND
+rm -f $JOB_DONE && {job2json_start} {step_wrapper} {container_line}  $COMMAND {fail_on_pattern0}
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 {job2json_end}
+{fail_on_pattern1}
 if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
 echo '#######################################'
 echo 'SLURM FAKE EPILOGUE (MUGQIC)'
@@ -659,8 +712,10 @@ exit \$MUGQIC_STATE" | \\
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                         job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE') ,
                         container_line=self.container_line,
-                        step_wrapper=config_step_wrapper
-)
+                        step_wrapper=config_step_wrapper,
+                        fail_on_pattern0 = self.fail_on_pattern(job_name_prefix)[0],
+                        fail_on_pattern1 = self.fail_on_pattern(job_name_prefix)[1]
+                    )
 
                     # Cluster settings section must match job name prefix before first "."
                     # e.g. "[trimmomatic] cluster_cpu=..." for job name "trimmomatic.readset1"

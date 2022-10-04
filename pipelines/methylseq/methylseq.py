@@ -34,7 +34,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 import utils.utils
-from bfx.readset import parse_illumina_readset_file
+from core.readset import parse_illumina_readset_file
 
 from bfx import bvatools
 from bfx import bismark
@@ -864,7 +864,7 @@ pandoc \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + variant_directory),
+                    bash.mkdir(variant_directory),
                     bissnp.bisulfite_genotyper(
                         input_file,
                         cpg_output_file,
@@ -889,7 +889,7 @@ pandoc \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory),
+                    bash.mkdir(methyl_directory),
                     tools.filter_snp_cpg(
                         input_file,
                         output_file
@@ -913,7 +913,7 @@ pandoc \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + output_directory),
+                    bash.mkdir(output_directory),
                     tools.prepare_methylkit(
                         input_file,
                         output_file
@@ -950,7 +950,7 @@ pandoc \\
         )
 
         return [concat_jobs([
-            Job(command="mkdir -p " + output_directory),
+            bash.mkdir(output_directory),
             methylkit_job
         ], name="methylkit_differential_analysis")]
 
@@ -1252,7 +1252,7 @@ To create combined CSV CpGs should be extracted from the dragen methylation repo
             self.bis_snp,
             self.filter_snp_cpg,
             self.prepare_methylkit,         # step 15
-           # self.methylkit_differential_analysis,
+            self.methylkit_differential_analysis,
             self.cram_output
         ], [
             self.picard_sam_to_fastq,
@@ -1270,6 +1270,7 @@ To create combined CSV CpGs should be extracted from the dragen methylation repo
             self.bis_snp,
             self.filter_snp_cpg,
             self.prepare_methylkit,  # step 15
+            self.methylkit_differential_analysis,
             self.cram_output
         ],
             [
@@ -1290,6 +1291,7 @@ To create combined CSV CpGs should be extracted from the dragen methylation repo
             self.bis_snp, # step 15
             self.filter_snp_cpg,
             self.prepare_methylkit,
+            self.methylkit_differential_analysis,
             self.cram_output
             ]
         ]
