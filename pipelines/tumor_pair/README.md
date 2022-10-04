@@ -30,11 +30,12 @@ usage: tumor_pair.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                      [-o OUTPUT_DIR] [-j {pbs,batch,daemon,slurm}] [-f]
                      [--no-json] [--report] [--clean]
                      [-l {debug,info,warning,error,critical}] [--sanity-check]
+                     [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                      [--container {wrapper, singularity} <IMAGE PATH>]
                      [--genpipes_file GENPIPES_FILE] [-p PAIRS] [--profyle]
                      [-t {fastpass,ensemble,sv}] [-r READSETS] [-v]
 
-Version: 4.3.0
+Version: 4.3.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -69,6 +70,10 @@ optional arguments:
   --sanity-check        run the pipeline in `sanity check mode` to verify that
                         all the input files needed for the pipeline to run are
                         available on the system (default: false)
+  --force_mem_per_cpu FORCE_MEM_PER_CPU
+                        Take the mem input in the ini file and force to have a
+                        minimum of mem_per_cpu by correcting the number of cpu
+                        (default: None)
   --container {wrapper, singularity} <IMAGE PATH>
                         Run inside a container providing a valid singularity
                         image path

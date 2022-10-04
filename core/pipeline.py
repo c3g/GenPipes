@@ -104,15 +104,23 @@ class Pipeline(object):
             self.argparser.error("argument -c/--config is required!")
 
         # Create a config trace from merged config file values
-        with open(self.__class__.__name__ + ".config.trace.ini", 'w') as config_trace:
+        config_trace_filename = "{pipeline}.{timestamp}.config.trace.ini".format(
+            pipeline=self.__class__.__name__,
+            timestamp=datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
+        )
+        with open(config_trace_filename, 'w') as config_trace:
             config_trace.write(textwrap.dedent("""\
               # {self.__class__.__name__} Config Trace
+              # Command: {full_command}
               # Created on: {self.timestamp}
               # From:
               #   {config_files}
               # DO NOT EDIT THIS AUTOMATICALLY GENERATED FILE - edit the master config files
 
-            """).format(config_files="\n#   ".join([config_file.name for config_file in self.args.config]), self=self))
+            """).format(
+                full_command=" ".join(sys.argv[0:]),
+                config_files="\n#   ".join([config_file.name for config_file in self.args.config]),
+                self=self))
             config.write(config_trace)
             config._filepath = os.path.abspath(config_trace.name)
 
@@ -120,6 +128,7 @@ class Pipeline(object):
         self._scheduler = create_scheduler(self.args.job_scheduler, self.args.config, container=self.args.container,
                                            genpipes_file=self.args.genpipes_file)
 
+        self._force_mem_per_cpu = self.args.force_mem_per_cpu
         self._json = True
         if self.args.no_json:
             self._json = False
@@ -227,6 +236,10 @@ class Pipeline(object):
                                                                 " all the input files needed for the pipeline to run "
                                                                 "are available on the system (default: false)",
                                          action="store_true")
+            self._argparser.add_argument("--force_mem_per_cpu", default=None, help="Take the mem input in the ini "
+                                                                                   "file and force to have a minimum of"
+                                                                                   " mem_per_cpu by correcting the "
+                                                                                   "number of cpu (default: None)")
             self._argparser.add_argument("--container", nargs=2,
                                          help="Run inside a container providing a valid "
                                          "singularity image path", action=ValidateContainer,

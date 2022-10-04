@@ -14,12 +14,12 @@ On this page:
 
 Software requirement
 --------------------
-GenPipes have been tested with Python 2.7.
+GenPipes have been tested with Python 3.6+
 
 
 Quick setup for abacus, Beluga, graham, cedar and mammouth users
 ----------------------------------------------------
-Genomes and modules used by the pipelines are already installed on a CVMFS partition mounted on all those clusters in `/cvmfs/soft.mugqic/CentOS6`.
+Genomes and modules used by the pipelines are already installed on a CVMFS partition mounted on all those clusters in `/cvmfs/soft.mugqic/root`.
 To access them, add the following lines to your *$HOME/.bash_profile*:
 
 ```
@@ -28,7 +28,7 @@ umask 0002
 
 ## MUGQIC genomes and modules
 
-export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6
+export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/root
 
 module use $MUGQIC_INSTALL_HOME/modulefiles
 ```
@@ -45,7 +45,7 @@ HOST=`hostname`;
 
 DNSDOMAIN=`dnsdomainname`;
 
-export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6
+export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/root
 
 if [[ $HOST == abacus* || $DNSDOMAIN == ferrier.genome.mcgill.ca ]]; then
 

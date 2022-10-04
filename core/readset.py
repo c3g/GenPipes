@@ -25,9 +25,8 @@ import os
 import re
 
 # MUGQIC Modules
-from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner 
-from .sample import Sample, NanoporeSample
-from core.config import config, _raise, SanitycheckError
+from bfx.run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner
+from core.sample import Sample, NanoporeSample
 
 log = logging.getLogger(__name__)
 

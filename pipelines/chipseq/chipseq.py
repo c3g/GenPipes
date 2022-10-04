@@ -23,13 +23,9 @@
 import argparse
 import csv
 import logging
-import math
 import os
 import re
-import subprocess
-import string
 import sys
-import time
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -41,12 +37,10 @@ import utils.utils
 
 from pipelines import common
 
-from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
+from bfx.sequence_dictionary import parse_sequence_dictionary_file
 
-from bfx import bvatools
 from bfx import bwa
 from bfx import gatk4
-from bfx import gq_seq_utils
 from bfx import homer
 from bfx import macs2
 from bfx import multiqc
@@ -61,8 +55,8 @@ from bfx import differential_binding
 
 from bfx import bash_cmd as bash
 
-from bfx.readset import parse_illumina_readset_file
-from bfx.design import parse_chipseq_design_file
+from core.readset import parse_illumina_readset_file
+from core.design import parse_chipseq_design_file
 
 log = logging.getLogger(__name__)
 
