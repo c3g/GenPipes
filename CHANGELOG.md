@@ -1,10 +1,115 @@
-35 tags, 9466 commits
+36 tags, 9542 commits
 
-HEAD        Wed Jun 15 10:59:54 2022 -0400        1 commits
+HEAD        Tue Oct 4 10:06:44 2022 -0400        0 commits
 
-  Edouard Henrion <edouard.henrion@mcgill.ca>      1 commits
+4.3.1        Tue Oct 4 14:11:09 2022 +0000        77 commits
 
+  Edouard Henrion <edouard.henrion@mcgill.ca>      5 commits
+
+       a647b01 Merge remote-tracking branch 'origin/dev' into release_4.3.1
+       759bbfb GenPipes : updating READMEs for release
+       2410771 GenPipes - PBS Scheduler : stop  using -mem/-pmem parameters anymore in PBS job submission commands
+       5766788 Version bump to 4.3.0 - for real
        937a5ca Version bump to 4.3.0
+
+  ehenrion <edouard.henrion@mcgill.ca>      8 commits
+
+       f0feb9a Merged in release_4.3.1 (pull request #381)
+       94d7a6c GenPipes - ChIPSeq : Updated mugqic_tools to 2.10.10 in chipseq.base.ini to prevent crash at differential_expression step
+       6da854f GenPipes - ChIPSeq : updated mugqic_tools to 2.10.9 in chipseq.base.ini
+       db7a448 tumor_pair.extras.ini edited online with Bitbucket
+       285568f GenPipes - README : replacing former "CentOS6" by "root" in cvmfs path and variables
+       4d824c5 Merged in ehenrion/tumor_pairpy-edited-online-with-bitbucke-1655753579034 (pull request #369)
+       f322ebd tumor_pair.py edited online with Bitbucket
+       e5980e3 Merged in release_4.3.0.1 (pull request #367)
+
+  Hector Galvez <jose.hector.galvez@computaitonalgenomics.ca>      1 commits
+
+       c4a59f5 Changed the core pipeline script to modify the trace config ini file to include the timestamp. Additionally, the full command is now added to the ini header as a comment for future reference.
+
+  José Héctor Gálvez López <jose.hector.galvez@computationalgenomics.ca>      7 commits
+
+       468bbfe Merged in config_timestamp (pull request #374)
+       ed5738d Merged in covseq_nanopore_GPUqueue_bugfix (pull request #373)
+       e1a9112 nanopore_covseq.base.ini edited to re-add the GPU_QUEUE value. Without it the pipeline crashes on Abacus.
+       bd66f86 Merged in MetaSV-Delly-bug (pull request #372)
+       693ee1d Removed Delly input file requirement from dependency list in metasv.py
+       bf99d70 Removed delly referneces from the metasv step in the tumor pair pipeline.
+       4183eb1 MetaSV has a delly argument that should not be there since it does not support Delly (see https://github.com/bioinform/metasv/issues/110). I removed the delly parameter.
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      27 commits
+
+       e2f0de6 Merged in HotFix_dev (pull request #378)
+       56b2fcc rnaseq_light - base ini - Improving syntax
+       511f59a methylseq - General - updating way to mkdir via bfx
+       dec5d50 methylseq - filter_snp_cpg - Debug
+       908b158 methylseq - filter_snp_cpg - Allowing to change cpg threshold for cit minimal
+       1b70864 methylseq - methylkit - Changing the way Rscript is called
+       5d2395f rnaseq - gq_seq_utils_exploratory_analysis_rnaseq - Upgrading to latest R_packages + fixes
+       210a473 rnaseq - gq_seq_utils_exploratory_analysis_rnaseq - Upgrading to latest R_packages
+       2fe1ac6 chipseq - differential_binding - Adding parameter contrastnb for cit atacseq only (set it to "cit" for cit minimal)
+       794a066 hicseq - homer_tag_directory - Adding chrList from ini file
+       1619b24 hicseq - quasar_qc - Allowing more than 1 "_" in chr name
+       9117fe4 hicseq - General - Upgrading mugqic_tools and trimmomatic
+       5269243 hicseq - identify_TADs_RobusTAD - Adding min and max window parameters
+       cf64188 hicseq - multiqc - Upgrading to latest multiqc version
+       b1dead1 hicseq - hicup - Moving remove before hicup conf
+       0a72d80 hicseq - hicup - remove recursive
+       28b1629 hicseq - hicup - Re-adding removing of results otherwise the step is not able to restart
+       d837f8d hicseq - General - Improving the way genome assembly name is handled
+       6e2d1aa hicseq - hic - Improving juicer call
+       9e539f6 hicseq - hicup - Debug
+       0c1b223 hicseq - hicrep - Code cleaning
+       3018b34 hicseq - hicup - No longer creating folder and removing things in the step
+       3ccf807 hicseq - hicup - Debug
+       42245c7 hicseq - General - Improving hicup job and removing path hardcoded in ini
+       2424c6a hicseq - General - Upgrading default genome to hg38
+       c58d795 epiqc - General - Improving code
+       e6776b4 epiqc - General - Improving code
+
+  Pierre-Olivier Quirion <pierre-olivier.quirion@computationalgenomics.ca>      3 commits
+
+       eb2067d Merged in force_mem_per_cpu (pull request #380)
+       9822d93 Merged in fail_on_log_pattern (pull request #376)
+       e1eeb17 Merged in sample_readset (pull request #338)
+
+  P-O Quirion <pierre-olivier.quirion@computationalgenomics.ca>      5 commits
+
+       c3e418b support G and M only
+       13c7c51 Remove explicit request for memory in pbs call when --force_mem_per_cpu option is used
+       a74d954 add a fail_on_pattern ini option
+       4b796de mv sample_tumor_pairs.py to core
+       92049a7 move sample readset and design to core from bfx
+
+  pubudumanoj <pubudumanoj@gmail.com>      2 commits
+
+       d2990b2 modified inputinfofile and chr_sizes path
+       847d476 modified inputinfofile and chr_sizes path
+
+  Pubudu Nawarathna Mudiyanselage <pubudu.nawarathna@mail.mcgill.ca>      16 commits
+
+       c6bcd42 remove comments in tumor pair sv
+       7a85f1d fix more bugs in tumor pair sv protocol
+       2f76d8f fixed more bugs
+       ca6c282 fixed major issues in sv protocol
+       3908f5e modified the methylseq/cit.ini
+       663b11f fixed a regression
+       3166cdf chnaged resources in cit.ini
+       d5aa238 changed mugqic_tools version to 2.10.9
+       ba29564 fixing issues
+       a93935f added methylkit differential binding back to the analysis
+       830b317 modified base.ini
+       6e7dd92 Merge branch 'epiqc_code_improvement' of bitbucket.org:mugqic/genpipes into epiqc_code_improvement
+       0c1426b Corrected the inputinfo file paths in ini
+       f787ac7 expanded env_var in inputinfo file path and chr_sizes path
+       4e7e8e7 Corrected the inputinfo file paths in ini
+       191ed37 expanded env_var in inputinfo file path and chr_sizes path
+
+  Pubudu Nawarathna <pubudu.nawarathna@mail.mcgill.ca>      3 commits
+
+       12be5b9 Merged in tumor_pair_hotfix_metsv (pull request #375)
+       ceadb4e Merged in methylseq_cit_update (pull request #371)
+       f2678be Merged in epiqc_code_improvement (pull request #368)
 
 4.3.0        Wed Jun 15 14:55:53 2022 +0000        126 commits
 
