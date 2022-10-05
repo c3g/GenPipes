@@ -393,7 +393,7 @@ class PBSScheduler(Scheduler):
     def cpu(self, job_name_prefix, adapt=None):
         cpu = int(super().cpu(job_name_prefix))
 
-        mem_info = self.memory(info=True)
+        mem_info = self.memory(job_name_prefix, info=True)
         if adapt and mem_info:
             adapt = int(adapt)
             mem = int(re.search("[0-9]+", mem_info[1]).group())
@@ -405,8 +405,7 @@ class PBSScheduler(Scheduler):
                 mem = mem_info[1]
             import math
             cpu_ = math.ceil(mem/adapt)
-
-        cpu = max(cpu, cpu_)
+            cpu = max(cpu, cpu_)
 
         node = self.node(job_name_prefix)
         gpu = self.gpu(job_name_prefix)
