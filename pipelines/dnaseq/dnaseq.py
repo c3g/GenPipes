@@ -402,9 +402,10 @@ END
                                 "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
                                 #("\\tPU:" + readset.name) + \
                                 ("\\tPU:" + readset.sample.name + "." + readset.run + "." + readset.lane if readset.sample.name and readset.run and readset.lane else "") + \
-                                ("\\tCN:" + config.param('bwa_mem', 'sequencing_center') if config.param('bwa_mem', 'sequencing_center', required=False) else "") + \
-                                ("\\tPL:" + config.param('bwa_mem', 'sequencing_technology') if config.param('bwa_mem', 'sequencing_technology', required=False) else "Illumina") + \
-                                "'"
+                                ("\\tCN:" + config.param('bwa_mem_sambamba_sort_sam', 'sequencing_center') if config.param('bwa_mem_sambamba_sort_sam', 'sequencing_center', required=False) else "") + \
+                                ("\\tPL:" + config.param('bwa_mem_sambamba_sort_sam', 'sequencing_technology') if config.param('bwa_mem_sambamba_sort_sam', 'sequencing_technology', required=False) else "Illumina") + \
+                                "'",
+                                ini_section="bwa_mem_sambamba_sort_sam"
                                 ),
                         sambamba.view(
                             "/dev/stdin",
@@ -414,8 +415,8 @@ END
                         sambamba.sort(
                             "/dev/stdin",
                             readset_bam,
-                            tmp_dir=config.param('sambamba_sort_sam', 'tmp_dir', required=True),
-                            other_options=config.param('sambamba_sort_sam', 'options', required=True),
+                            tmp_dir=config.param('bwa_mem_sambamba_sort_sam', 'tmp_dir', required=True),
+                            other_options=config.param('bwa_mem_sambamba_sort_sam', 'sambamba_sort_options', required=True),
                             )
                         ]),
                     sambamba.index(
@@ -427,7 +428,127 @@ END
                     samples=[readset.sample]
                     )
                 )
-            
+
+        return jobs
+
+    def bwa_mem_sambamba(self):
+        """
+        The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
+        The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+        This step takes as input files:
+
+        1. Trimmed FASTQ files if available
+        2. Else, FASTQ files from the readset file if available
+        3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+        """
+
+        jobs = []
+        for readset in self.readsets:
+            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], readset.sample.name)
+            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".bam")
+            # index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
+
+            fastq1 = ""
+            fastq2 = ""
+            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                if readset.bam:
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                if readset.bam:
+                    prefix = os.path.join(
+                        self.output_dir,
+                        "raw_reads",
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + ".single.fastq.gz"])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
+
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(os.path.dirname(readset_bam)),
+                    pipe_jobs([
+                        bwa.mem(
+                            fastq1,
+                            fastq2,
+                            read_group="'@RG" + \
+                                "\\tID:" + readset.name + \
+                                "\\tSM:" + readset.sample.name + \
+                                "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
+                                ("\\tPU:" + readset.sample.name + "." + readset.run + "." + readset.lane if readset.sample.name and readset.run and readset.lane else "") + \
+                                ("\\tCN:" + config.param('bwa_mem_sambamba', 'sequencing_center') if config.param('bwa_mem_sambamba', 'sequencing_center', required=False) else "") + \
+                                ("\\tPL:" + config.param('bwa_mem_sambamba', 'sequencing_technology') if config.param('bwa_mem_sambamba', 'sequencing_technology', required=False) else "Illumina") + \
+                                "'",
+                                ini_section="bwa_mem_sambamba"
+                                ),
+                        sambamba.view(
+                            "/dev/stdin",
+                            readset_bam,
+                            "-S -f bam"
+                            )
+                        ]),
+                    ],
+                    name="bwa_mem_sambamba." + readset.name,
+                    samples=[readset.sample]
+                    )
+                )
+
+        return jobs
+
+    def sambamba_sort_index(self):
+        """
+        BWA output BAM files are sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
+        This step takes as input files:
+        BAM file from bwa mem alignment compressed by sambamba
+        """
+
+        jobs = []
+        for readset in self.readsets:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], readset.sample.name)
+            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".bam")
+            readset_bam_sorted = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
+
+            jobs.append(
+                concat_jobs([
+                    bash.mkdir(os.path.dirname(readset_bam_sorted)),
+                    sambamba.sort(
+                        readset_bam,
+                        readset_bam_sorted,
+                        tmp_dir=config.param('sambamba_sort_index', 'tmp_dir', required=True),
+                        other_options=config.param('sambamba_sort_index', 'sambamba_sort_options', required=True),
+                        ),
+                    sambamba.index(
+                        readset_bam,
+                        index_bam
+                        )
+                    ],
+                    name="sambamba_sort_index." + readset.name,
+                    samples=[readset.sample]
+                    )
+                )
+
         return jobs
 
     def bwakit_picard_sort_sam(self):
@@ -442,13 +563,13 @@ END
         2. Else, FASTQ files from the readset file if available
         3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
         """
-    
+
         jobs = []
         for readset in self.readsets:
             trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join("alignment", readset.sample.name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
-        
+
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
@@ -458,7 +579,7 @@ END
                     candidate_input_files.append([re.sub("\.sorted.bam$|\.bam$", ".pair1.fastq.gz", readset.bam),
                                                   re.sub("\.sorted.bam$|\.bam$", ".pair2.fastq.gz", readset.bam)])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-        
+
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
                 if readset.fastq1:
@@ -467,11 +588,11 @@ END
                     candidate_input_files.append([re.sub("\.sorted.bam$|\.bam$", ".single.fastq.gz", readset.bam)])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
-        
+
             else:
                 raise Exception("Error: run type \"" + readset.run_type +
                                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
-        
+
             job = concat_jobs([
                 bash.mkdir(os.path.dirname(readset_bam), remove=True),
                 pipe_jobs([
@@ -497,9 +618,9 @@ END
             ])
             job.name = "bwakit_picard_sort_sam." + readset.name
             job.samples = [readset.sample]
-        
+
             jobs.append(job)
-    
+
         return jobs
 
     def sambamba_merge_sam_extract_unmapped(self):
@@ -532,7 +653,7 @@ END
                 readset_bam = readset_bams[0]
                 readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
                 sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
-    
+
                 jobs.append(
                     concat_jobs(
                         [
@@ -683,7 +804,7 @@ END
                 realign_prefix = os.path.join(realign_directory)
                 realign_intervals = os.path.join(realign_prefix, sample.name + ".sorted.realigned.others.intervals")
                 output_bam = os.path.join(realign_prefix, sample.name + ".sorted.realigned.others.bam")
-                
+
                 jobs.append(
                     concat_jobs([
                         # Create output directory since it is not done by default by GATK tools
@@ -806,7 +927,7 @@ END
                         input,
                         "/dev/stdout",
                         config.param('sambamba_sort_sam', 'tmp_dir', required=True),
-                        sort_by_name=True
+                        other_options="-N"
                         ),
                     samtools.fixmate(
                         "/dev/stdin",
