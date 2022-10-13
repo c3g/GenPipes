@@ -3818,7 +3818,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
-                self.bwa_mem_sambamba_sort_sam,
+                self.bwa_mem_sambamba,
+                self.sambamba_sort_index,
+                # self.bwa_mem_sambamba_sort_sam,
                 #self.bwakit_picard_sort_sam,
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
@@ -3860,7 +3862,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
-                self.bwa_mem_sambamba_sort_sam,
+                self.bwa_mem_sambamba,
+                self.sambamba_sort_index,
+                # self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
@@ -3894,7 +3898,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
-                self.bwa_mem_sambamba_sort_sam,
+                self.bwa_mem_sambamba,
+                self.sambamba_sort_index,
+                # self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
@@ -3926,7 +3932,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
-                self.bwa_mem_sambamba_sort_sam,
+                self.bwa_mem_sambamba,
+                self.sambamba_sort_index,
+                # self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
