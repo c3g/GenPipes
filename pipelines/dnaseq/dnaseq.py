@@ -540,7 +540,7 @@ END
                         other_options=config.param('sambamba_sort_index', 'sambamba_sort_options', required=True),
                         ),
                     sambamba.index(
-                        readset_bam,
+                        readset_bam_sorted,
                         index_bam
                         )
                     ],
