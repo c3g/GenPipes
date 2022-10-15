@@ -25,7 +25,12 @@ from core.config import *
 from core.job import *
 
 
-def report(input, output_dir, tumor_id):
+def report(
+    input,
+    output_dir,
+    tumor_id
+    ):
+
     assembly = config.param('report_cpsr', 'assembly')
     output = [
         os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".json.gz"),

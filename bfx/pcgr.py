@@ -25,7 +25,13 @@ from core.config import *
 from core.job import *
 
 
-def report(input_vcf, input_cna, cpsr_report, output_dir, tumor_id):
+def report(
+    input_vcf,
+    input_cna,
+    cpsr_report,
+    output_dir,
+    tumor_id
+    ):
     
     if config.param('report_pcgr', 'module_pcgr').split("/")[2] >= "1":
         call = 'pcgr'
