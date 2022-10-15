@@ -34,16 +34,16 @@ def report(input, output_dir, tumor_id):
 
     if config.param('report_cpsr', 'module_pcgr').split("/")[2] >= "1":
         call = 'cpsr'
-        module = ['report_cpsr', 'module_pcgr']
+        module = 'module_pcgr'
     else:
         call = 'cpsr.py'
-        module = ['report_cpsr', 'module_cpsr']
+        module = 'module_cpsr'
 
     return Job(
         [input],
         output,
         [
-            module,
+            ['remort_cpsr', module],
         ],
         command="""\
 {call} {options} \\
