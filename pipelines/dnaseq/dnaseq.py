@@ -630,63 +630,13 @@ END
         2. Else, BAM files from the readset file
         """
 
-        jobs = []
+        jobs = self.sambamba_merge_sam_files()
+
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
-            # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
-            candidate_readset_bams = [
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
-            ]
-            candidate_readset_bams.append([readset.bam for readset in sample.readsets if readset.bam])
-            readset_bams = self.select_input_files(candidate_readset_bams)
-
-            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
-
-            # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            if len(sample.readsets) == 1:
-                readset_bam = readset_bams[0]
-                readset_index = re.sub("\.bam$", ".bam.bai", readset_bam)
-                sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
-
-                jobs.append(
-                    concat_jobs(
-                        [
-                            mkdir_job,
-                            bash.ln(
-                                readset_bam,
-                                sample_bam,
-                                self.output_dir
-                            ),
-                            bash.ln(
-                                readset_index,
-                                sample_index,
-                                self.output_dir
-                            )
-                        ],
-                        name="symlink_readset_sample_bam." + sample.name,
-                        samples=[sample]
-                    )
-                )
-
-            elif len(sample.readsets) > 1:
-                jobs.append(
-                    concat_jobs(
-                        [
-                            mkdir_job,
-                            sambamba.merge(
-                                readset_bams,
-                                sample_bam
-                            )
-                        ],
-                        name="sambamba_merge_sam_extract_unmapped." + sample.name,
-                        samples=[sample]
-                    )
-                )
 
             # Extract unmapped reads from the merged sample bam file
+            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
             sample_unmapped_bam = os.path.join(alignment_directory, sample.name + ".unmapped.bam")
             unmapped_job = sambamba.view(
                 sample_bam,
