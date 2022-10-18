@@ -23,7 +23,10 @@
 from core.config import *
 from core.job import *
 
-def bgzip(input, output):
+def bgzip(
+    input,
+    output
+    ):
 
     return Job(
         [input],
@@ -33,14 +36,18 @@ def bgzip(input, output):
         ],
         command="""\
 bgzip -cf \\
-{input} > \\
-{output}""".format(
+  {input} > \\
+  {output}""".format(
         input=" \\\n " + input if input else "",
         output=output
         )
     )
 
-def tabix(input, options=None):
+def tabix(
+    input,
+    options=None
+    ):
+
     output = input + ".tbi"
     return Job(
         [input],
@@ -50,13 +57,16 @@ def tabix(input, options=None):
         ],
         command="""\
 tabix {options}  \\
-{input}""".format(
+  {input}""".format(
         input=input,
         options=options,
         )
     )
 
-def bgzip_tabix(input, output):
+def bgzip_tabix(
+    input,
+    output
+    ):
 
     return Job(
         [input],
@@ -66,8 +76,8 @@ def bgzip_tabix(input, output):
         ],
         command="""\
 bgzip -cf \\
-{input} > \\
-{output} && \\
+  {input} > \\
+  {output} && \\
 tabix -pvcf {output}""".format(
         input=" \\\n " + input if input else "",
         output=output,
@@ -75,7 +85,11 @@ tabix -pvcf {output}""".format(
         )
     )
 
-def tabix_split(input, output, chr):
+def tabix_split(
+    input,
+    output,
+    chr
+    ):
 
     return Job(
         [input],
@@ -85,7 +99,7 @@ def tabix_split(input, output, chr):
         ],
         command="""\
 tabix -h {input} {chr} \\
-         {output} \\
+  output} \\
         """.format(
         input=" \\\n " + input if input else "",
         chr=chr,

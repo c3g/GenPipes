@@ -3232,7 +3232,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     ),
                     htslib.tabix(
                         coverage_bed + ".gz",
-                        "-f -p bed"
+                        options="-f -p bed"
                     ),
                  ],name="bed_index." + sample.name))
 
@@ -3631,7 +3631,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         config.param('metasv_ensemble', 'filter_pass_options')
                     ),
                     htslib.tabix(
-                        gatk_pass
+                        gatk_pass,
+                        options="-pvcf"
                     ),
                 ], name="metasv_ensemble.gatk_pass." + sample.name))
 
