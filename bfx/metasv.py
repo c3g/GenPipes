@@ -24,7 +24,13 @@ import os
 from core.config import *
 from core.job import *
 
-def ensemble(lumpy, manta, cnvkit, wham, gatk, bam, sample_name, workdir, outdir, isize_mean, isize_sd, output_vcf, breakseq=None):
+def ensemble(
+    lumpy,
+    manta,
+    cnvkit,
+    wham,
+    gatk,
+    bam, sample_name, workdir, outdir, isize_mean, isize_sd, output_vcf, breakseq=None):
     return Job(
         [lumpy, manta, cnvkit, wham, breakseq, gatk, bam],
         [output_vcf],
