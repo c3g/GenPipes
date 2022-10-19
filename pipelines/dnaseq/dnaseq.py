@@ -1090,8 +1090,7 @@ END
                                 re.sub(".bam", ".no_unmapped.bam", print_reads_output),
                                 sample_unmapped_bam
                             ],
-                            print_reads_output,
-                            ini_section="sambamba_merge_sam_extract_unmapped"
+                            print_reads_output
                         ),
                         sambamba.index(
                             print_reads_output,
