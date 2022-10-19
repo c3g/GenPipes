@@ -48,7 +48,7 @@ def report(
         [input],
         output,
         [
-            ['remort_cpsr', module],
+            ['report_cpsr', module],
         ],
         command="""\
 {call} {options} \\

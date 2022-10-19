@@ -99,7 +99,7 @@ def tabix_split(
         ],
         command="""\
 tabix -h {input} {chr} \\
-  output} \\
+  {output} \\
         """.format(
         input=" \\\n " + input if input else "",
         chr=chr,
