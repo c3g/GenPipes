@@ -907,7 +907,7 @@ END
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            picard_directory = os.path.join(self.output_dirs['metric'], "dna", sample.name, "picard_metrics")
+            picard_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "picard_metrics")
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
@@ -1686,11 +1686,11 @@ END
             ])
             inputs.append(input)
             
-        output = os.path.join(self.output_dirs['metric'], "dna", "sample.fingerprint")
+        output = os.path.join(self.output_dirs['metrics_directory'], "dna", "sample.fingerprint")
         jobs.append(
             concat_jobs([
                 bash.mkdir(
-                    os.path.join(self.output_dirs['metric'], "dna"),
+                    os.path.join(self.output_dirs['metrics_directory'], "dna"),
                     remove=False
                 ),
                 gatk4.crosscheck_fingerprint(
@@ -1713,10 +1713,10 @@ END
 
         jobs = []
 
-        metrics_directory = os.path.join(self.output_dirs['metric'], "dna")
+        metrics_directory = os.path.join(self.output_dirs['metrics_directory'], "dna")
         input = os.path.join(metrics_directory, "sample.fingerprint")
         
-        output = os.path.join(self.output_dirs['metric'], "dna", "cluster.fingerprints")
+        output = os.path.join(self.output_dirs['metrics_directory'], "dna", "cluster.fingerprints")
         jobs.append(
             concat_jobs([
                 bash.mkdir(
@@ -1751,7 +1751,7 @@ END
         for sample in self.samples:
             inputs.append(os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.vcf.gz"))
 
-        output = os.path.join(self.output_dirs['metric'], "dna", "checkmate")
+        output = os.path.join(self.output_dirs['metrics_directory'], "dna", "checkmate")
         vcf_file = os.path.join(output, 'checkmate.tsv')
 
         jobs.append(concat_jobs([
@@ -1782,7 +1782,7 @@ END
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            output = os.path.join(self.output_dirs['metric'], "dna", sample.name, "verifyBamId")
+            output = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "verifyBamId")
             input = self.select_input_files(
                 [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                  [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
@@ -1817,7 +1817,7 @@ END
             input = os.path.join(alignment_directory, readset.sample.name, readset.name + ".sorted.bam")
             inputs.append(input)
 
-        output = os.path.join(self.output_dirs['metric'], "dna", "readset.fingerprint")
+        output = os.path.join(self.output_dirs['metrics_directory'], "dna", "readset.fingerprint")
 
         job = gatk4.crosscheck_fingerprint(inputs, output)
         job.name = "gatk_crosscheck_fingerprint.readset"
@@ -2340,13 +2340,13 @@ END
                 library="PAIRED_END"
 
 
-        trim_metrics_file = os.path.join(self.output_dirs['metric'], "trimSampleTable.tsv")
-        metrics_file = os.path.join(self.output_dirs['metric'], "SampleMetrics.stats")
+        trim_metrics_file = os.path.join(self.output_dirs['metrics_directory'], "trimSampleTable.tsv")
+        metrics_file = os.path.join(self.output_dirs['metrics_directory'], "SampleMetrics.stats")
         report_metrics_file = os.path.join("report", "sequenceAlignmentTable.tsv")
 
         report_file = os.path.join("report", "DnaSeq.dna_sample_metrics.md")
         job = concat_jobs([
-            bash.mkdir(os.path.join(self.output_dirs['metric'])),
+            bash.mkdir(os.path.join(self.output_dirs['metrics_directory'])),
             metrics.dna_sample_metrics(
                 "alignment",
                 metrics_file,
@@ -3602,7 +3602,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                              [os.path.join(self.output_dirs['alignment'], sample.name, sample.name + ".sorted.dup.bam")],
                                              [os.path.join(self.output_dirs['alignment'], sample.name, sample.name + ".sorted.bam")]])[0]
 
-            isize_file = os.path.join(self.output_dirs['metric'], "dna", sample.name, "picard_metrics.all.metrics.insert_size_metrics")
+            isize_file = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "picard_metrics.all.metrics.insert_size_metrics")
             gatk_vcf = os.path.join(self.output_dirs['alignment'], sample.name, sample.name + ".hc.vcf.gz")
             gatk_pass = os.path.join(self.output_dirs['alignment'], sample.name, sample.name + ".hc.flt.vcf.gz")
             lumpy_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
