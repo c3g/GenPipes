@@ -563,8 +563,8 @@ END
 
         jobs = []
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
+            trim_file_prefix = os.path.join(self.output_dir, "trim", readset.sample.name, readset.name + ".trim.")
+            alignment_directory = os.path.join(self.output_dir, "alignment", readset.sample.name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
@@ -905,7 +905,7 @@ END
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            picard_directory = os.path.join("metrics", "dna", sample.name, "picard_metrics")
+            picard_directory = os.path.join(self.output_dir, "metrics", "dna", sample.name, "picard_metrics")
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
@@ -1080,7 +1080,7 @@ END
             )
 
             # Merge unmapped reads to recal.bam
-            sample_unmapped_bam = os.path.join("alignment", sample.name, sample.name + ".unmapped.bam")
+            sample_unmapped_bam = os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".unmapped.bam")
             print_reads_index_output = re.sub(".bam", ".bam.bai", print_reads_output)
             jobs.append(
                 concat_jobs(
@@ -1189,7 +1189,7 @@ END
         for sample in self.samples:
             picard_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "picard_metrics")
 
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dir, "alignment", sample.name)
             readset = sample.readsets[0]
 
             [input] = self.select_input_files([
@@ -1258,7 +1258,7 @@ END
         jobs = []
         for sample in self.samples:
             qualimap_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "qualimap", sample.name)
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dir, "alignment", sample.name)
             [input] = self.select_input_files([
                 # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
@@ -1637,7 +1637,7 @@ END
 
         jobs = []
 
-        input_prefix = os.path.join("variants", "allSamples")
+        input_prefix = os.path.join(self.output_dir, "variants", "allSamples")
 
         job = vcftools.missing_indv(input_prefix + ".hc.vcf.gz", input_prefix)
         job.name = "vcftools_depth." + "allSamples"
@@ -1653,9 +1653,9 @@ END
     	"""
 
         jobs = []
-
-        input_prefix = os.path.join("variants", "allSamples")
-
+    
+        input_prefix = os.path.join(self.output_dir, "variants", "allSamples")
+    
         job = vcftools.depth(input_prefix + ".hc.vcf.gz", input_prefix)
         job.name = "vcftools_depth." + "allSamples"
         jobs.append(job)
@@ -1683,12 +1683,12 @@ END
                 [os.path.join(alignment_directory, sample.name + ".hc.vcf.gz")]
             ])
             inputs.append(input)
-
-        output = os.path.join("metrics", "dna", "sample.fingerprint")
+            
+        output = os.path.join(self.output_dir, "metrics", "dna", "sample.fingerprint")
         jobs.append(
             concat_jobs([
                 bash.mkdir(
-                    os.path.join("metrics", "dna"),
+                    os.path.join(self.output_dir, "metrics", "dna"),
                     remove=False
                 ),
                 gatk4.crosscheck_fingerprint(
@@ -1711,10 +1711,10 @@ END
 
         jobs = []
 
-        metrics_directory = os.path.join("metrics", "dna")
+        metrics_directory = os.path.join(self.output_dir, "metrics", "dna")
         input = os.path.join(metrics_directory, "sample.fingerprint")
-
-        output = os.path.join("metrics", "dna", "cluster.fingerprints")
+        
+        output = os.path.join(self.output_dir, "metrics", "dna", "cluster.fingerprints")
         jobs.append(
             concat_jobs([
                 bash.mkdir(
@@ -1749,7 +1749,7 @@ END
         for sample in self.samples:
             inputs.append(os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.vcf.gz"))
 
-        output = os.path.join("metrics", "dna", "checkmate")
+        output = os.path.join(self.output_dir, "metrics", "dna", "checkmate")
         vcf_file = os.path.join(output, 'checkmate.tsv')
 
         jobs.append(concat_jobs([
@@ -1780,7 +1780,7 @@ END
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            output = os.path.join("metrics", "dna", sample.name, "verifyBamId")
+            output = os.path.join(self.output_dir, "metrics", "dna", sample.name, "verifyBamId")
             input = self.select_input_files(
                 [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                  [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
@@ -1815,7 +1815,7 @@ END
             input = os.path.join(alignment_directory, readset.sample.name, readset.name + ".sorted.bam")
             inputs.append(input)
 
-        output = os.path.join("metrics", "dna", "readset.fingerprint")
+        output = os.path.join(self.output_dir, "metrics", "dna", "readset.fingerprint")
 
         job = gatk4.crosscheck_fingerprint(inputs, output)
         job.name = "gatk_crosscheck_fingerprint.readset"
@@ -1964,7 +1964,7 @@ END
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
             haplotype_file_prefix = os.path.join(haplotype_directory, sample.name)
-            output_haplotype_file_prefix = os.path.join("alignment", sample.name, sample.name)
+            output_haplotype_file_prefix = os.path.join(self.output_dir, "alignment", sample.name, sample.name)
 
             interval_list = None
 
@@ -2035,7 +2035,7 @@ END
         if coverage_bed:
             interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
 
-        mkdir_job = bash.mkdir("variants")
+        mkdir_job = bash.mkdir(self.output_dir, "variants")
 
         # merge all sample in one shot
         if nb_maxbatches_jobs == 1:
@@ -2045,7 +2045,7 @@ END
                         mkdir_job,
                         gatk4.combine_gvcf(
                             [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
-                            os.path.join("variants", "allSamples.hc.g.vcf.gz")
+                            os.path.join(self.output_dir, "variants", "allSamples.hc.g.vcf.gz")
                                 )
                         ],
                         name="gatk_combine_gvcf.AllSamples",
@@ -2062,15 +2062,15 @@ END
                             mkdir_job,
                             gatk4.combine_gvcf(
                                 [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
-                                os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
+                                os.path.join(self.output_dir, "variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
                                 intervals=sequences
                                 )
                             ],
                             name="gatk_combine_gvcf.AllSample" + "." + str(idx),
                             samples=self.samples,
                             removable_files=[
-                                os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
-                                os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz.tbi"
+                                os.path.join(self.output_dir, "variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
+                                os.path.join(self.output_dir, "variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz.tbi"
                                 ]
                             )
                         )
@@ -2078,13 +2078,13 @@ END
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 job = gatk4.combine_gvcf(
                     [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in self.samples],
-                    os.path.join("variants", "allSamples.others.hc.g.vcf.gz"),
+                    os.path.join(self.output_dir, "variants", "allSamples.others.hc.g.vcf.gz"),
                     exclude_intervals=unique_sequences_per_job_others
                 )
                 job.name = "gatk_combine_gvcf.AllSample" + ".others"
                 job.removable_files = [
-                    os.path.join("variants", "allSamples.others.hc.g.vcf.gz"),
-                    os.path.join("variants", "allSamples.others.hc.g.vcf.gz.tbi")
+                    os.path.join(self.output_dir, "variants", "allSamples.others.hc.g.vcf.gz"),
+                    os.path.join(self.output_dir, "variants", "allSamples.others.hc.g.vcf.gz.tbi")
                 ]
                 job.samples=self.samples
                 jobs.append(job)
@@ -2101,14 +2101,14 @@ END
                             mkdir_job,
                             gatk4.combine_gvcf(
                                 [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in batch],
-                                os.path.join("variants", "allSamples.batch" + str(cpt)+".hc.g.vcf.gz")
+                                os.path.join(self.output_dir, "variants", "allSamples.batch" + str(cpt)+".hc.g.vcf.gz")
                                     )
                             ],
                             name="gatk_combine_gvcf.AllSamples.batch" + str(cpt),
                             samples=batch,
                             removable_files=[
-                                os.path.join("variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.gz"),
-                                os.path.join("variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.gz.tbi")
+                                os.path.join(self.output_dir, "variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.gz"),
+                                os.path.join(self.output_dir, "variants", "allSamples.batch" + str(cpt) + ".hc.g.vcf.gz.tbi")
                                 ]
                             )
                         )
@@ -2122,15 +2122,15 @@ END
                                 mkdir_job,
                                 gatk4.combine_gvcf(
                                     [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in batch],
-                                    os.path.join("variants", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.gz",
+                                    os.path.join(self.output_dir, "variants", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.gz",
                                     intervals=sequences
                                         )
                                 ],
                                 name="gatk_combine_gvcf.AllSample" + ".batch" + str(cpt) + "." + str(idx),
                                 samples=batch,
                                 removable_files=[
-                                    os.path.join("variants", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.gz",
-                                    os.path.join("variants", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.gz.tbi"
+                                    os.path.join(self.output_dir, "variants", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.gz",
+                                    os.path.join(self.output_dir, "variants", "allSamples") + ".batch" + str(cpt) + "." + str(idx) + ".hc.g.vcf.gz.tbi"
                                     ]
                                 )
                             )
@@ -2138,14 +2138,14 @@ END
                     # Create one last job to process the last remaining sequences and 'others' sequences
                     job = gatk4.combine_gvcf(
                         [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)+".hc.g.vcf.gz" for sample in batch],
-                        os.path.join("variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.gz"),
+                        os.path.join(self.output_dir, "variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.gz"),
                         exclude_intervals=unique_sequences_per_job_others
                     )
                     job.name="gatk_combine_gvcf.AllSample" + ".batch" + str(cpt) + ".others"
                     job.samples = batch
                     job.removable_files = [
-                        os.path.join("variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.gz"),
-                        os.path.join("variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.gz.tbi")
+                        os.path.join(self.output_dir, "variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.gz"),
+                        os.path.join(self.output_dir, "variants", "allSamples" + ".batch" + str(cpt) + ".others.hc.g.vcf.gz.tbi")
                     ]
                     job.samples = self.samples
 
@@ -2157,8 +2157,8 @@ END
             #Combine batches altogether
             if nb_haplotype_jobs == 1 or interval_list is not None:
                 job = gatk4.combine_gvcf(
-                    [os.path.join("variants", "allSamples." + batch_idx + ".hc.g.vcf.gz") for batch_idx in batches],
-                    os.path.join("variants", "allSamples.hc.g.vcf.gz")
+                    [os.path.join(self.output_dir, "variants", "allSamples." + batch_idx + ".hc.g.vcf.gz") for batch_idx in batches],
+                    os.path.join(self.output_dir, "variants", "allSamples.hc.g.vcf.gz")
                 )
                 job.name = "gatk_combine_gvcf.AllSamples.batches"
                 job.samples = self.samples
@@ -2171,30 +2171,30 @@ END
                 # Create one separate job for each of the first sequences
                 for idx, sequences in enumerate(unique_sequences_per_job):
                     job=gatk4.combine_gvcf(
-                        [os.path.join("variants", "allSamples." + batch_idx + "." + str(idx) + ".hc.g.vcf.gz") for batch_idx in batches],
-                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
+                        [os.path.join(self.output_dir, "variants", "allSamples." + batch_idx + "." + str(idx) + ".hc.g.vcf.gz") for batch_idx in batches],
+                        os.path.join(self.output_dir, "variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
                         intervals=sequences
                     )
                     job.name = "gatk_combine_gvcf.AllSample" + "." + str(idx)
                     job.samples = self.samples
                     job.removable_files=[
-                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
-                        os.path.join("variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz.tbi"
+                        os.path.join(self.output_dir, "variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz",
+                        os.path.join(self.output_dir, "variants", "allSamples") + "." + str(idx) + ".hc.g.vcf.gz.tbi"
                     ]
 
                     jobs.append(job)
 
                 # Create one last job to process the last remaining sequences and 'others' sequences
                 job = gatk4.combine_gvcf(
-                    [os.path.join("variants", "allSamples." + batch_idx + ".others.hc.g.vcf.gz") for batch_idx in batches],
-                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz"),
+                    [os.path.join(self.output_dir, "variants", "allSamples." + batch_idx + ".others.hc.g.vcf.gz") for batch_idx in batches],
+                    os.path.join(self.output_dir, "variants", "allSamples" + ".others.hc.g.vcf.gz"),
                     exclude_intervals=unique_sequences_per_job_others
                 )
                 job.name = "gatk_combine_gvcf.AllSample" + ".others"
                 job.samples = self.samples
                 job.removable_files = [
-                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz"),
-                    os.path.join("variants", "allSamples" + ".others.hc.g.vcf.gz.tbi")
+                    os.path.join(self.output_dir, "variants", "allSamples" + ".others.hc.g.vcf.gz"),
+                    os.path.join(self.output_dir, "variants", "allSamples" + ".others.hc.g.vcf.gz.tbi")
                 ]
                 jobs.append(job)
 
@@ -2208,9 +2208,9 @@ END
 
         jobs = []
         nb_haplotype_jobs = config.param('gatk_combine_gvcf', 'nb_haplotype', param_type='posint')
-        haplotype_file_prefix = os.path.join("variants", "allSamples")
-        output_haplotype = os.path.join("variants", "allSamples.hc.g.vcf.gz")
-        output_haplotype_genotyped = os.path.join("variants", "allSamples.hc.vcf.gz")
+        haplotype_file_prefix = os.path.join(self.output_dir, "variants", "allSamples")
+        output_haplotype = os.path.join(self.output_dir, "variants", "allSamples.hc.g.vcf.gz")
+        output_haplotype_genotyped = os.path.join(self.output_dir, "variants", "allSamples.hc.vcf.gz")
 
         interval_list = None
 
@@ -2265,7 +2265,7 @@ END
         jobs = []
 
         #generate the recalibration tranche files
-        output_directory = "variants"
+        output_directory = os.path.join(self.output_dir, "variants")
         recal_snps_other_options = config.param('variant_recalibrator', 'tranch_other_options_snps')
         recal_indels_other_options = config.param('variant_recalibrator', 'tranch_other_options_indels')
         variant_recal_snps_prefix = os.path.join(output_directory, "allSamples.hc.snps")
@@ -2338,13 +2338,13 @@ END
                 library="PAIRED_END"
 
 
-        trim_metrics_file = os.path.join("metrics", "trimSampleTable.tsv")
-        metrics_file = os.path.join("metrics", "SampleMetrics.stats")
+        trim_metrics_file = os.path.join(self.output_dir, "metrics", "trimSampleTable.tsv")
+        metrics_file = os.path.join(self.output_dir, "metrics", "SampleMetrics.stats")
         report_metrics_file = os.path.join("report", "sequenceAlignmentTable.tsv")
 
         report_file = os.path.join("report", "DnaSeq.dna_sample_metrics.md")
         job = concat_jobs([
-            bash.mkdir("metrics"),
+            bash.mkdir(os.path.join(self.output_dir, "metrics")),
             metrics.dna_sample_metrics(
                 "alignment",
                 metrics_file,
@@ -2387,10 +2387,10 @@ pandoc \\
             name="dna_sample_metrics",
             samples=readset.sample
         )
-        job.input_files = [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.metrics") for sample in self.samples]
+        job.input_files = [os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.metrics") for sample in self.samples]
 
         if library == "PAIRED_END" :
-            job.input_files += [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.all.metrics.insert_size_metrics") for sample in self.samples]
+            job.input_files += [os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.recal.all.metrics.insert_size_metrics") for sample in self.samples]
 
         return [job]
 
@@ -2404,8 +2404,8 @@ pandoc \\
         nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
 
         for sample in self.samples:
-            mpileup_directory = os.path.join("alignment", sample.name, "mpileup")
-            alignment_directory = os.path.join("alignment", sample.name)
+            mpileup_directory = os.path.join(self.output_dir, "alignment", sample.name, "mpileup")
+            alignment_directory = os.path.join(self.output_dir, "alignment", sample.name)
 
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
@@ -2474,7 +2474,7 @@ pandoc \\
             mpileup_file_prefix = ""
             mpileup_inputs = ""
             if nb_jobs > 1:
-                mpileup_file_prefix = os.path.join("alignment", sample.name, "mpileup", sample.name + ".")
+                mpileup_file_prefix = os.path.join(self.output_dir, "alignment", sample.name, "mpileup", sample.name + ".")
                 mpileup_inputs = [mpileup_file_prefix + sequence['name'] + ".mpileup.gz" for sequence in self.sequence_dictionary if sequence['type'] == 'primary']
 
                 gzip_output = mpileup_file_prefix + "mpileup.gz"
@@ -2498,7 +2498,7 @@ pandoc \\
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dir, "alignment", sample.name)
             [input] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam") for sample in self.samples],
                 [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam") for sample in self.samples],
@@ -3095,12 +3095,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
         for sample in self.samples:
 
-            pair_directory = os.path.join("SVariants", sample.name)
+            pair_directory = os.path.join(self.output_dir, "SVariants", sample.name)
             delly_directory = os.path.join(pair_directory, "rawDelly")
 
-            [input] = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
-                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
-                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])
+            [input] = self.select_input_files([[os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.bam")]])
 
             SV_types = config.param('delly_call_filter', 'sv_types_options').split(",")
 
@@ -3138,8 +3138,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         for sample in self.samples:
         
-            directory = os.path.join("SVariants", sample.name)
-            final_directory = os.path.join("SVariants", sample.name, sample.name)
+            directory = os.path.join(self.output_dir, "SVariants", sample.name)
+            final_directory = os.path.join(self.output_dir, "SVariants", sample.name, sample.name)
             delly_directory = os.path.join(directory, "rawDelly")
             output_vcf = os.path.join(delly_directory, sample.name + ".delly.merge.sort.vcf.gz")
             germline_vcf = os.path.join(directory, sample.name + ".delly.germline.vcf.gz")
@@ -3207,9 +3207,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             output_prefix = os.path.join(pair_directory, sample.name)
 
             input = self.select_input_files(
-                [[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
-                 [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
-                 [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])[0]
+                [[os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+                 [os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.bam")],
+                 [os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.bam")]])[0]
         
             manta_germline_output = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz")
             manta_germline_output_tbi = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz.tbi")
@@ -3241,7 +3241,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 bash.mkdir(manta_directory, remove=True),
                 manta.manta_config(input, None, manta_directory, bed_file),
                 manta.manta_run(manta_directory, output_dep=output_dep),
-                #Job([tmp_directory], [manta_directory], command="mv " + tmp_directory + " " + manta_directory),
                 bash.ln(
                     manta_germline_output,
                     output_prefix + ".manta.germline.vcf.gz",
@@ -3261,10 +3260,15 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
 
         for sample in self.samples:
-            pair_directory = os.path.abspath(os.path.join("SVariants", sample.name, sample.name))
+            pair_directory = os.path.abspath(os.path.join(self.output_dir, "SVariants", sample.name, sample.name))
 
-            jobs.append(concat_jobs([
-                snpeff.compute_effects(pair_directory + ".manta.germline.vcf.gz", pair_directory + ".manta.germline.snpeff.vcf.gz"),
+            jobs.append(
+                concat_jobs(
+                    [
+                        snpeff.compute_effects(
+                            f"{pair_directory}.manta.germline.vcf.gz",
+                            f"{pair_directory}.manta.germline.snpeff.vcf.gz"
+                        ),
             ], name="sv_annotation.manta_germline." + sample.name))
 
         return jobs
@@ -3278,9 +3282,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
     
         for sample in self.samples:
-            pair_directory = os.path.join("SVariants", sample.name)
+            pair_directory = os.path.join(self.output_dir, "SVariants", sample.name)
             lumpy_directory = os.path.join(pair_directory, "rawLumpy")
-            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+            inputNormal = os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
         
             discordants_normal = os.path.join(lumpy_directory, sample.name + ".discordants.sorted.bam")
         
@@ -3366,8 +3370,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
     
         for sample in self.samples:
-            pair_directory = os.path.join("SVariants", sample.name)
-            prefix = os.path.join("SVariants", sample.name, sample.name)
+            pair_directory = os.path.join(self.output_dir, "SVariants", sample.name)
+            prefix = os.path.join(self.output_dir, "SVariants", sample.name, sample.name)
        
             germline_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
         
@@ -3387,10 +3391,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
 
         for sample in self.samples:
-            pair_directory = os.path.join("SVariants", sample.name)
+            pair_directory = os.path.join(self.output_dir, "SVariants", sample.name)
             wham_directory = os.path.join(pair_directory, "rawWham")
-            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
-
+            inputNormal = os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+        
             output_vcf = os.path.join(wham_directory, sample.name + ".wham.vcf")
             merge_vcf = os.path.join(wham_directory, sample.name + ".wham.merged.vcf")
             genotyped_vcf = os.path.join(pair_directory, sample.name + ".wham.merged.genotyped.vcf.gz")
@@ -3432,8 +3436,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
 
         for sample in self.samples:
-            pair_directory = os.path.join("SVariants", sample.name)
-
+            pair_directory = os.path.join(self.output_dir, "SVariants", sample.name)
+            
             germline_vcf = os.path.join(pair_directory, sample.name + ".wham.germline.vcf.gz")
 
             jobs.append(concat_jobs([
@@ -3448,15 +3452,15 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
 
         for sample in self.samples:
-            pair_directory = os.path.join("SVariants", sample.name)
+            pair_directory = os.path.join(self.output_dir, "SVariants", sample.name)
             cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
-            inputNormal = os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
-
+            inputNormal = os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.recal.bam")
+            
             tarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.targetcoverage.cnn")
             antitarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.antitargetcoverage.cnn")
             ref_cnn = os.path.join(cnvkit_dir, sample.name + ".reference.cnn")
 
-            metrics = os.path.join("SVariants", "cnvkit_background")
+            metrics = os.path.join(self.output_dir, "SVariants", "cnvkit_background")
             poolRef = os.path.join(metrics, "pooledReference.cnn")
 
             if os.path.isfile(poolRef):
@@ -3473,12 +3477,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             if coverage_bed:
                 bed = coverage_bed
 
-            gatk_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.vcf.gz")
+            gatk_vcf = os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".hc.vcf.gz")
 
             input_vcf = None
             normal = None
             if os.path.isfile(gatk_vcf):
-                input_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.flt.vcf.gz")
+                input_vcf = os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".hc.flt.vcf.gz")
                 jobs.append(concat_jobs([
                     bcftools.view(gatk_vcf, input_vcf, filter_options="-i '%QUAL>=50'")
                 ], name="cnvkit_batch.vcf_flt." + sample.name))
@@ -3547,7 +3551,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
 
         for sample in self.samples:
-            pair_directory = os.path.join("SVariants", sample.name, sample.name)
+            pair_directory = os.path.join(self.output_dir, "SVariants", sample.name, sample.name)
 
             jobs.append(concat_jobs([
                 snpeff.compute_effects(pair_directory + ".cnvkit.germline.vcf.gz", pair_directory + ".cnvkit.snpeff.vcf"),
@@ -3562,16 +3566,16 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         jobs = []
         for sample in self.samples:
-
-            pair_directory = os.path.join("SVariants", sample.name)
+        
+            pair_directory = os.path.join(self.output_dir, "SVariants", sample.name)
             output_dir = os.path.join(pair_directory, "rawBreakseq2")
             output = os.path.join(pair_directory, "rawBreakseq2", "breakseq.vcf.gz")
             final_vcf = os.path.join(pair_directory, sample.name + ".breakseq.germline.vcf.gz")
-
-            input = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
-                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
-                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])[0]
-
+        
+            input = self.select_input_files([[os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.bam")]])[0]
+            
             jobs.append(concat_jobs([
                 bash.mkdir(output_dir, remove=True),
                 breakseq2.run(input, sample.name, output_dir),
@@ -3589,16 +3593,16 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
 
         for sample in self.samples:
-            pair_directory = os.path.join("SVariants", sample.name)
-            ensemble_directory = os.path.join("SVariants", "ensemble", sample.name)
+            pair_directory = os.path.join(self.output_dir, "SVariants", sample.name)
+            ensemble_directory = os.path.join(self.output_dir, "SVariants", "ensemble", sample.name)
+		
+            inputTumor = self.select_input_files([[os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.bam")]])[0]
 
-            inputTumor = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
-                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
-                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])[0]
-
-            isize_file = os.path.join("metrics", "dna", sample.name, "picard_metrics.all.metrics.insert_size_metrics")
-            gatk_vcf = os.path.join("alignment", sample.name, sample.name + ".hc.vcf.gz")
-            gatk_pass = os.path.join("alignment", sample.name, sample.name + ".hc.flt.vcf.gz")
+            isize_file = os.path.join(self.output_dir, "metrics", "dna", sample.name, "picard_metrics.all.metrics.insert_size_metrics")
+            gatk_vcf = os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".hc.vcf.gz")
+            gatk_pass = os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".hc.flt.vcf.gz")
             lumpy_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
             manta_vcf = os.path.join(pair_directory, sample.name + ".manta.germline.vcf.gz")
             abs_manta = os.path.abspath(manta_vcf)
@@ -3665,7 +3669,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
 
         for sample in self.samples:
-            ensemble_directory = os.path.join("SVariants", "ensemble", sample.name)
+            ensemble_directory = os.path.join(self.output_dir, "SVariants", "ensemble", sample.name)
 
             jobs.append(concat_jobs([
                 snpeff.compute_effects(os.path.join(ensemble_directory, "variants.vcf.gz"),
@@ -3678,12 +3682,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
 
         for sample in self.samples:
-            pair_directory = os.path.join("SVariants", sample.name)
+            pair_directory = os.path.join(self.output_dir, "SVariants", sample.name)
             svaba_directory = os.path.join(pair_directory, "rawSvaba")
 
-            input_normal = self.select_input_files([[os.path.join("alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
-                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.dup.bam")],
-                                             [os.path.join("alignment", sample.name, sample.name + ".sorted.bam")]])[0]
+            input_normal = self.select_input_files([[os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.recal.bam")],
+                                             [os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.dup.bam")],
+                                             [os.path.join(self.output_dir, "alignment", sample.name, sample.name + ".sorted.bam")]])[0]
 
             germline_input = os.path.join(svaba_directory, sample.name + ".svaba.sv.vcf")
             germline_output = os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.vcf.gz")
@@ -3715,7 +3719,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
 
         for sample in self.samples:
-            pair_directory = os.path.join("SVariants", sample.name)
+            pair_directory = os.path.join(self.output_dir, "SVariants", sample.name)
 
             jobs.append(concat_jobs([
                 Job([os.path.abspath(pair_directory) + ".svaba.germline.vcf"], [os.path.abspath(pair_directory) + ".svaba.germline.flt.vcf"],
@@ -3735,12 +3739,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.skewer_trimming,
                 self.bwa_mem_sambamba,
                 self.sambamba_sort,
-                # self.bwa_mem_sambamba_sort_sam,
-                #self.bwakit_picard_sort_sam,
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                #self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.gatk_haplotype_caller,
@@ -3767,8 +3768,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sym_link_fastq,
                 self.sym_link_final_bam,
                 self.metrics_ngscheckmate,
-    	        self.metrics_verify_bam_id,
-    	        self.metrics_vcftools_missing_indiv,
+                self.metrics_verify_bam_id,
+                self.metrics_vcftools_missing_indiv,
                 self.metrics_vcftools_depth_indiv,
                 self.metrics_gatk_sample_fingerprint,
                 self.metrics_gatk_cluster_fingerprint
@@ -3778,11 +3779,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.skewer_trimming,
                 self.bwa_mem_sambamba,
                 self.sambamba_sort,
-                # self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                #self.fix_mate_by_coordinate_samtools,
                 self.picard_mark_duplicates,
                 self.recalibration,
                 self.rawmpileup,
@@ -3804,7 +3803,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.gatk_callable_loci,
                 self.extract_common_snp_freq,
                 self.baf_plot,
-                #self.mpileup_metrics_snv_graph_metrics,
                 self.run_multiqc,
                 self.sym_link_fastq,
                 self.sym_link_final_bam
@@ -3814,7 +3812,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.skewer_trimming,
                 self.bwa_mem_sambamba,
                 self.sambamba_sort,
-                # self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
@@ -3848,7 +3845,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.skewer_trimming,
                 self.bwa_mem_sambamba,
                 self.sambamba_sort,
-                # self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
@@ -3869,9 +3865,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.cnvkit_sv_annotation,
                 self.run_breakseq2,
 	            self.ensemble_metasv,
-                self.metasv_sv_annotation,
-                #self.svaba_assemble,
-                #self.svaba_sv_annotation
+                self.metasv_sv_annotation
             ],
         ]
 
