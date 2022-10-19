@@ -29,15 +29,29 @@ def ensemble(
     manta,
     cnvkit,
     wham,
+    delly,
     gatk,
-    bam, sample_name, workdir, outdir, isize_mean, isize_sd, output_vcf, breakseq=None):
+    bam,
+    sample_name,
+    workdir,
+    outdir,
+    isize_mean,
+    isize_sd,
+    output_vcf,
+    breakseq=None
+    ):
+
+    inputs = [lumpy, manta, cnvkit, wham, breakseq, gatk, bam]
+    if config.param('metasv_ensemble', 'module_metasv').split("/")[2] == "0.5.5":
+        inputs.append(delly)
+
     return Job(
-        [lumpy, manta, cnvkit, wham, breakseq, gatk, bam],
+        inputs,
         [output_vcf],
         [
             ['metasv_ensemble', 'module_spades'],
             ['metasv_ensemble', 'module_age'],
-            ['metasv_ensemble', 'module_python'],
+            ['metasv_ensemble', 'module_metasv'],
             ['metasv_ensemble', 'module_bedtools'],
         ],
         command="""\
@@ -49,6 +63,7 @@ run_metasv.py {options} \\
   {cnvkit} \\
   {wham} \\
   {gatk} \\
+  {delly} \\
   {breakseq} \\
   --bam {bam} \\
   --sample {sample_name} \\
@@ -64,6 +79,7 @@ run_metasv.py {options} \\
         lumpy=lumpy,
         manta=manta,
         wham="--wham_vcf " + wham if wham else "",
+        delly="--delly_vcf " + delly if delly else "",
         gatk="--gatk_vcf " + gatk if gatk else "",
         cnvkit="--cnvkit_vcf " + cnvkit if cnvkit else "",
         breakseq="--breakseq_vcf " + breakseq if breakseq else "",

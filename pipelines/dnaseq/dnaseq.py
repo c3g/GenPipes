@@ -3609,6 +3609,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             manta_vcf = os.path.join(pair_directory, sample.name + ".manta.germline.vcf.gz")
             abs_manta = os.path.abspath(manta_vcf)
             wham_vcf = os.path.join(pair_directory, sample.name + ".wham.germline.vcf.gz")
+            delly_vcf = os.path.join(pair_directory, sample.name + ".delly.germline.vcf.gz")
             cnvkit_vcf = os.path.join(pair_directory, sample.name + ".cnvkit.germline.vcf.gz")
             breakseq_vcf = os.path.join(pair_directory, sample.name + ".breakseq.germline.vcf.gz")
 
@@ -3650,6 +3651,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     abs_manta,
                     input_cnvkit,
                     wham_vcf,
+                    delly_vcf,
                     input_gatk,
                     inputTumor,
                     sample.name,
