@@ -123,10 +123,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
     @property
     def output_dirs(self):
         dirs = {
-            'alignment_directory': 'alignment',
-            'metrics_directory': 'metrics',
-            'paired_variants_directory': 'pairedVariants',
-            'sv_variants_directory': 'SVariants'
+            'raw_reads_directory'       : os.path.join(self.output_dir, 'raw_reads'),
+            'trim_directory'            : os.path.join(self.output_dir, 'trim'),
+            'alignment_directory'       : os.path.join(self.output_dir, 'alignment'),
+            'metrics_directory'         : os.path.join(self.output_dir, 'metrics'),
+            'paired_variants_directory' : os.path.join(self.output_dir, 'pairedVariants'),
+            'sv_variants_directory'     : os.path.join(self.output_dir, 'SVariants')
         }
         return dirs
 
@@ -184,7 +186,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 self.select_input_files(
                     [
                         [readset.fastq1],
-                        [os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")]
+                        [os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair1.fastq.gz")]
                     ]
                 ) for readset in tumor_pair.readsets[tumor_pair.normal.name]
             ][0]
@@ -193,7 +195,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     self.select_input_files(
                         [
                             [readset.fastq2],
-                            [os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")]
+                            [os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair2.fastq.gz")]
                         ]
                     ) for readset in tumor_pair.readsets[tumor_pair.normal.name]
                 ][0][0]
@@ -203,7 +205,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 self.select_input_files(
                     [
                         [readset.fastq1],
-                        [os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair1.fastq.gz")]
+                        [os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair1.fastq.gz")]
                     ]
                 ) for readset in tumor_pair.readsets[tumor_pair.tumor.name]
             ][0]
@@ -212,7 +214,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     self.select_input_files(
                         [
                             [readset.fastq2],
-                            [os.path.join(self.output_dir, "raw_reads", readset.sample.name, readset.name + ".pair2.fastq.gz")]
+                            [os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair2.fastq.gz")]
                         ]
                     ) for readset in tumor_pair.readsets[tumor_pair.tumor.name]
                 ][0][0]

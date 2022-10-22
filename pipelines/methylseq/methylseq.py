@@ -113,6 +113,23 @@ However, if you would like to setup and use dragen in own cluster please refer o
                                     default="bismark")
         super(MethylSeq, self).__init__(protocol)
 
+    @property
+    def output_dirs(self):
+        dirs = {
+            'raw_reads_directory'       : os.path.join(self.output_dir, 'raw_reads'),
+            'trim_directory'            : os.path.join(self.output_dir, 'trim'),
+            'alignment_directory'       : os.path.join(self.output_dir, 'alignment'),
+            'metrics_directory'         : os.path.join(self.output_dir, 'metrics'),
+            'ihec_metrics_directory'    : os.path.join(self.output_dir, 'ihec_metrics'),
+            'variants_directory'        : os.path.join(self.output_dir, 'variants'),
+            'methylation_call_directory': os.path.join(self.output_dir, 'methylation_call'),
+            'methylkit_directory'       : os.path.join(self.output_dir, 'methylkit'),
+            'corrected_umi_directory'   : os.path.join(self.output_dir, 'corrected_umi'),
+            'tracks_directory'          : os.path.join(self.output_dir, 'tracks'),
+            'report_directory'          : os.path.join(self.output_dir, 'report'),
+        }
+        return dirs
+
     def bismark_align(self):
         """
         Align reads with [Bismark](https://www.bioinformatics.babraham.ac.uk/projects/bismark/Bismark_User_Guide.pdf).
@@ -120,8 +137,8 @@ However, if you would like to setup and use dragen in own cluster please refer o
 
         jobs = []
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join("alignment", readset.sample.name)
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name)
             no_readgroup_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")
             output_bam = re.sub("_noRG.bam", ".bam", no_readgroup_bam)
             index_bam = re.sub("_noRG.bam", ".bam.bai", no_readgroup_bam)
@@ -201,10 +218,10 @@ However, if you would like to setup and use dragen in own cluster please refer o
                 ], name="sambamba_flagstat." + readset.name, samples=[readset.sample])
             )
 
-        report_file = os.path.join("report", "MethylSeq.bismark_align.md")
+        report_file = os.path.join(self.output_dirs["report_directory"], "MethylSeq.bismark_align.md")
         jobs.append(
             Job(
-                [os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                [os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
                 [report_file],
                 [['bismark_align', 'module_pandoc']],
                 command="""\
@@ -236,22 +253,23 @@ pandoc --to=markdown \\
         jobs = []
         for readset in self.readsets:
             if readset.umi:
-                alignment_directory = os.path.join("alignment", readset.sample.name)
+                alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name)
                 input_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
                 output_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam")
                 output_bai = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bai")
                 input_umi = readset.umi
-                input_umi_corrected = os.path.join("corrected_umi", readset.name, readset.name + ".corrected.fastq.gz")
+                input_umi_corrected = os.path.join(self.output_dirs["corrected_umi_directory"], readset.name, readset.name + ".corrected.fastq.gz")
 
                 #correct umi fastq name (removing space)
 
                 jobs.append(
-                    concat_jobs([
-                        Job(command="mkdir -p corrected_umi/" + readset.name),
-                        fgbio.correct_readname(
-                            input_umi,
-                            input_umi_corrected
-                        ),
+                    concat_jobs(
+                        [
+                            bash.mkdir(os.path.join(self.output_dirs["corrected_umi_directory"], readset.name)),
+                            fgbio.correct_readname(
+                                input_umi,
+                                input_umi_corrected
+                            ),
                     ], name="fgbio_correct_readname." + readset.name, samples=[readset.sample])
                 )
 
@@ -267,10 +285,10 @@ pandoc --to=markdown \\
                     ], name="fgbio_addumi." + readset.name, samples=[readset.sample])
                 )
 
-        #report_file = os.path.join("report", "MethylSeq.bismark_align.md")
+        #report_file = os.path.join(self.output_dirs["report_directory"], "MethylSeq.bismark_align.md")
         #jobs.append(
             #Job(
-                #[os.path.join("alignment", readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
+                #[os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name, readset.name + ".sorted.bam") for readset in self.readsets],
                 #[report_file],
                 #[['bismark_align', 'module_pandoc']],
                 #command="""\
@@ -304,7 +322,7 @@ pandoc --to=markdown \\
 
         jobs = []
         for sample in self.samples:
-            alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
+            alignment_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".")
             input = alignment_file_prefix + "sorted.bam"
             bam_output = alignment_file_prefix + "sorted.dedup.bam"
             metrics_file = alignment_file_prefix + "sorted.dedup.metrics"
@@ -327,10 +345,10 @@ pandoc --to=markdown \\
             job.samples = [sample]
             jobs.append(job)
 
-        report_file = os.path.join("report", "MethylSeq.picard_remove_duplicates.md")
+        report_file = os.path.join(self.output_dirs["report_directory"], "MethylSeq.picard_remove_duplicates.md")
         jobs.append(
               Job(
-                [os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam") for sample in self.samples],
+                [os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.bam") for sample in self.samples],
                 [report_file],
                 command="""\
 mkdir -p report && \\
@@ -376,7 +394,7 @@ cp \\
         jobs = []
         created_interval_lists = []
         for sample in self.samples:
-            file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
+            file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.")
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
 
             candidate_input_files = [[file_prefix + "bam"]]
@@ -415,11 +433,11 @@ cp \\
             jobs.append(job)
 
             # Get reads# raw and after duplication
-            dedup_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam")
-            raw_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.bam")
+            dedup_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.bam")
+            raw_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.bam")
 
-            count_dedup_output = os.path.join("alignment", sample.name, sample.name + ".dedup.count")
-            count_raw_output = os.path.join("alignment", sample.name, sample.name + ".raw.count")
+            count_dedup_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".dedup.count")
+            count_raw_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".raw.count")
 
 
             job = samtools.mapped_count(
@@ -445,8 +463,8 @@ cp \\
             if coverage_bed:
                 # Get on-target reads (if on-target context is detected) raw and after duplication
 
-                count_dedup_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.dedup.count")
-                count_raw_output = os.path.join("alignment", sample.name, sample.name + ".onTarget.raw.count")
+                count_dedup_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".onTarget.dedup.count")
+                count_raw_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".onTarget.raw.count")
                 job = samtools.mapped_count(
                     raw_bam,
                     count_raw_output,
@@ -477,7 +495,7 @@ cp \\
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
                     created_interval_lists.append(interval_list)
-                file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.")
+                file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.")
                 job = picard.calculate_hs_metrics(
                     file_prefix + "bam",
                     file_prefix + "onTarget.tsv",
@@ -554,11 +572,11 @@ cp \\
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
 
             input_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
 
-            methyl_directory = os.path.join("methylation_call", sample.name)
+            methyl_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
             outputs = [
                 os.path.join(methyl_directory, "CpG_context_" + re.sub( ".bam", ".txt.gz", os.path.basename(input_file))),
                 os.path.join(methyl_directory, re.sub(".bam", ".bedGraph.gz", os.path.basename(input_file))),
@@ -597,18 +615,18 @@ cp \\
         jobs = []
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
 
             # Generation of a bedGraph and a bigWig track to show the genome coverage
             input_bam = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
-            bed_graph_prefix = os.path.join("tracks", sample.name, sample.name)
-            big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
+            bed_graph_prefix = os.path.join(self.output_dirs["tracks_directory"], sample.name, sample.name)
+            big_wig_prefix = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name)
             bed_graph_output = bed_graph_prefix + ".bedGraph"
             big_wig_output = big_wig_prefix + ".coverage.bw"
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig"), removable_files=["tracks"]),
+                    Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], sample.name) + " " + os.path.join(self.output_dirs["tracks_directory"], "bigWig"), removable_files=["tracks"]),
                     bedtools.graph(
                         input_bam,
                         bed_graph_output,
@@ -618,7 +636,7 @@ cp \\
             )
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", "bigWig")),
+                    Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], "bigWig")),
                     ucsc.bedGraphToBigWig(
                         bed_graph_output,
                         big_wig_output,
@@ -628,9 +646,9 @@ cp \\
             )
 
             # Generation of a bigWig from the methylation bedGraph
-            methyl_directory = os.path.join("methylation_call", sample.name)
+            methyl_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
             input_bed_graph = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.bedGraph.gz")
-            output_wiggle = os.path.join("tracks", "bigWig", sample.name + ".methylation.bw")
+            output_wiggle = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".methylation.bw")
 
             jobs.append(
                 concat_jobs([
@@ -652,7 +670,7 @@ cp \\
 
         jobs = []
         for sample in self.samples:
-            methyl_directory = os.path.join("methylation_call", sample.name)
+            methyl_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
 
             cpg_input_file = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_report.txt.gz")
             cpg_profile = re.sub(".CpG_report.txt.gz", ".CpG_profile.strand.combined.csv", cpg_input_file)
@@ -730,13 +748,13 @@ cp \\
         jobs = []
 
         target_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
-        metrics_all_file = os.path.join("metrics", "IHEC.sampleMetrics.stats")
-        report_metrics_file = os.path.join("report", "IHEC.sampleMetricsTable.tsv")
+        metrics_all_file = os.path.join(self.output_dirs["metrics_directory"], "IHEC.sampleMetrics.stats")
+        report_metrics_file = os.path.join(self.output_dirs["report_directory"], "IHEC.sampleMetricsTable.tsv")
 
         if target_bed:
-            report_file = os.path.join("report", "MethylSeq.ihec_sample_metrics_targeted_report.md")
+            report_file = os.path.join(self.output_dirs["report_directory"], "MethylSeq.ihec_sample_metrics_targeted_report.md")
         else:
-            report_file = os.path.join("report", "MethylSeq.ihec_sample_metrics_report.md")
+            report_file = os.path.join(self.output_dirs["report_directory"], "MethylSeq.ihec_sample_metrics_report.md")
 
         # Create the list of input files to handle job dependencies
         sample_list = []
@@ -746,7 +764,7 @@ cp \\
         for sample in self.samples:
             inputs = []
             sample_list.append(sample.name)
-            metrics_file =  os.path.join("ihec_metrics", sample.name + ".read_stats.txt")
+            metrics_file =  os.path.join(self.output_dirs["ihec_metrics_directory"], sample.name + ".read_stats.txt")
 
             metrics_output_list.append(metrics_file)
             #add dependency for previous job in order to fill the allSample output correctly
@@ -754,64 +772,75 @@ cp \\
 
             # Trim log files
             for readset in sample.readsets:
-                inputs.append((os.path.join("trim", sample.name, readset.name + ".trim.log")))
+                inputs.append((os.path.join(self.output_dirs["trim_directory"], sample.name, readset.name + ".trim.log")))
 
             # Aligned pre-deduplicated bam files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.bam"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.bam"))
 
             # Deduplicated bam files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.bam"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.bam"))
 
             # Coverage summary files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.all.coverage.sample_summary"))
 
             # Filtered reads count files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.filtered_reads.counts.txt"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.filtered_reads.counts.txt"))
 
             # GC bias files
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.GCBias_all.txt"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.GCBias_all.txt"))
 
             if self.protocol == "bismark":
                 # Bismark alignment files
                 for readset in sample.readsets:
-                    inputs.append(os.path.join("alignment", sample.name, readset.name,
-                                               readset.name + ".sorted_noRG_bismark_bt2_report.txt"))
+                    inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_report.txt"))
 
             # CpG coverage files
-            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.median_CpG_coverage.txt"))
+            inputs.append(os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".readset_sorted.dedup.median_CpG_coverage.txt"))
 
             # pUC19 methylation files
-            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.pUC19.txt"))
+            inputs.append(os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".readset_sorted.dedup.profile.pUC19.txt"))
 
             # Lambda conversion rate files
-            inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv"))
+            inputs.append(os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".readset_sorted.dedup.profile.lambda.conversion.rate.tsv"))
 
             # CG stat files
             [cgstats_file] = self.select_input_files([
-                [os.path.join("methylation_call", sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
-                [os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
+                [os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".sorted.dedup.profile.cgstats.txt")],
+                [os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".readset_sorted.dedup.profile.cgstats.txt")]
             ])
             inputs.append(cgstats_file)
 
             #Estimated library sizes
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".sorted.dedup.metrics"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.metrics"))
 
             # read count (raw, dedup)
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".dedup.count"))
-            inputs.append(os.path.join("alignment", sample.name, sample.name + ".raw.count"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".dedup.count"))
+            inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".raw.count"))
 
             # read count (raw, dedup)  and CpG_profyle in targeted context
             if target_bed :
-                inputs.append(os.path.join("alignment", sample.name, sample.name + ".onTarget.dedup.count"))
-                inputs.append(os.path.join("alignment", sample.name, sample.name + ".onTarget.raw.count"))
-                inputs.append(os.path.join("methylation_call", sample.name, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count"))
+                inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".onTarget.dedup.count"))
+                inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".onTarget.raw.count"))
+                inputs.append(os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.on_target.count"))
 
 
             jobs.append(
-                concat_jobs([
-                    Job(command="mkdir -p ihec_metrics metrics"),
-                    tools.methylseq_ihec_metrics_report(sample.name, inputs, metrics_file, metrics_all_file, target_bed, counter),
-                ], name="ihec_sample_metrics." + sample.name, samples=[sample])
+                concat_jobs(
+                    [
+                        bash.mkdir(self.output_dirs["ihec_metrics_directory"]),
+                        bash.mkdir(self.output_dirs["metrics_directory"]),
+                        tools.methylseq_ihec_metrics_report(
+                            sample.name,
+                            inputs,
+                            metrics_file,
+                            metrics_all_file,
+                            target_bed,
+                            counter
+                        ),
+                    ],
+                    name="ihec_sample_metrics." + sample.name,
+                    samples=[sample]
+                )
             )
             counter+=1
 
@@ -854,11 +883,11 @@ pandoc \\
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
 
             input_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
 
-            variant_directory = os.path.join("variants", sample.name)
+            variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
             cpg_output_file = os.path.join(variant_directory, sample.name + ".cpg.vcf")
             snp_output_file = os.path.join(variant_directory, sample.name + ".snp.vcf")
 
@@ -882,7 +911,7 @@ pandoc \\
 
         jobs = []
         for sample in self.samples:
-            methyl_directory = os.path.join("methylation_call", sample.name)
+            methyl_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
             input_file = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.csv")
 
             output_file = re.sub("CpG_profile.strand.combined.csv", "filtered.bed", input_file)
@@ -905,10 +934,10 @@ pandoc \\
 
         jobs = []
         for sample in self.samples:
-            methyl_directory = os.path.join("methylation_call", sample.name)
+            methyl_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
             input_file = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.filtered.bed")
 
-            output_directory = os.path.join("methylkit", "inputs")
+            output_directory = os.path.join(self.output_dirs["methylkit_directory"], "inputs")
             output_file = os.path.join(output_directory, re.sub("filtered.bed", "map.input", os.path.basename(input_file)))
 
             jobs.append(
@@ -932,14 +961,14 @@ pandoc \\
         if self.contrasts:
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
-        input_directory = os.path.join("methylkit", "inputs")
+        input_directory = os.path.join(self.output_dirs["methylkit_directory"], "inputs")
         input_files = []
         for contrast in self.contrasts:
             input_files.extend([[os.path.join(input_directory, sample.name + ".readset_sorted.dedup.map.input") for sample in group] for group in [contrast.controls, contrast.treatments]])
 
         input_files = list(itertools.chain.from_iterable(input_files))
 
-        output_directory = os.path.join("methylkit", "results")
+        output_directory = os.path.join(self.output_dirs["methylkit_directory"], "results")
         output_files = [os.path.join(output_directory, "Rdata_files", contrast.name, "perbase.testingresults.txt.gz") for contrast in self.contrasts]
 
         methylkit_job = tools.methylkit_differential_analysis(
@@ -972,8 +1001,8 @@ pandoc \\
         if not (methylseq_protocol == "hybrid" and methylation_protocol == "directional-complement" and mapping_implementation=="single-pass"):
 
             for readset in self.readsets:
-                trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-                alignment_directory = os.path.join("alignment", readset.sample.name)
+                trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
+                alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name)
                 # All the input files should copy to dragen work folder because IO operations with default locations
                 # are really slow or have permission issues. After processing files all the files should move back to
                 # the default GenPipes folder and remove files from dragen work folder
@@ -1084,8 +1113,8 @@ pandoc \\
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            methylation_call_directory = os.path.join("methylation_call", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            methylation_call_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
             dragen_inputfolder = os.path.join(config.param('dragen_align', 'work_folder'), "reads", sample.name)
             dragen_workfolder = os.path.join(config.param('dragen_align', 'work_folder'), "dragen_methylation_call", sample.name)
             dragen_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
@@ -1132,7 +1161,7 @@ pandoc \\
         if duplicate_marking == True:
 
             for sample in self.samples:
-                alignment_directory = os.path.join("alignment", sample.name)
+                alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
 
                 input_file = os.path.join(alignment_directory, sample.name + ".sorted.bam")
                 output_file = os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")
@@ -1183,7 +1212,7 @@ To create combined CSV CpGs should be extracted from the dragen methylation repo
 
 
         for sample in self.samples:
-            methylation_directory = os.path.join("methylation_call", sample.name)
+            methylation_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
 
             input_file = os.path.join(methylation_directory, sample.name + ".CX_report.txt")
             output_file = os.path.join(methylation_directory, sample.name + ".readset_sorted.dedup.CpG_report.txt.gz")
@@ -1212,7 +1241,7 @@ To create combined CSV CpGs should be extracted from the dragen methylation repo
         jobs = []
 
         for sample in self.samples:
-            methylation_directory = os.path.join("methylation_call", sample.name)
+            methylation_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
 
             input_file = os.path.join(methylation_directory, sample.name + ".readset_sorted.dedup.CpG_profile.strand.combined.csv")
             output_file = os.path.join(methylation_directory, sample.name + ".readset_sorted.dedup.bedGraph.gz")

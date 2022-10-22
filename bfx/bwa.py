@@ -47,12 +47,12 @@ bwa mem {other_options} \\
   {read_group} \\
   {idxbase} \\
   {in1fastq}{in2fastq}{out_sam}""".format(
-      other_options=config.param(ini_section, 'bwa_other_options', required=False),
-      read_group=" \\\n  -R " + read_group if read_group else "",
-      idxbase=ref if ref else config.param(ini_section, 'genome_bwa_index', param_type='filepath'),
-      in1fastq=in1fastq,
-      in2fastq=" \\\n  " + in2fastq if in2fastq else "",
-      out_sam=" \\\n  > " + out_sam if out_sam else ""
-      ),
+          other_options=config.param(ini_section, 'bwa_other_options', required=False),
+          read_group=" \\\n  -R " + read_group if read_group else "",
+          idxbase=ref if ref else config.param(ini_section, 'genome_bwa_index', param_type='filepath'),
+          in1fastq=in1fastq,
+          in2fastq=" \\\n  " + in2fastq if in2fastq else "",
+          out_sam=" \\\n  > " + out_sam if out_sam else ""
+        ),
         removable_files=[out_sam]
-        )
+    )

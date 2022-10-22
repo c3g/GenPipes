@@ -90,18 +90,19 @@ class ChipSeq(common.Illumina):
 
     @property
     def output_dirs(self):
-        dirs = {'alignment_output_directory': 'alignment',
-                'report_output_directory': 'report',
-                'metrics_output_directory': 'metrics',
-                'homer_output_directory': 'tags',
-                'graphs_output_directory': 'graphs',
-                'tracks_output_directory': 'tracks',
-                'macs_output_directory': 'peak_call',
-                'anno_output_directory': 'annotation',
-                'ihecA_output_directory': 'ihec_alignment',
-                'ihecM_output_directory': 'ihec_metrics',
-                'dba_output_directory': 'differential_binding'
-                }
+        dirs = {
+            'alignment_output_directory': os.path.join(self.output_dir, 'alignment'),
+            'report_output_directory'   : os.path.join(self.output_dir, 'report'),
+            'metrics_output_directory'  : os.path.join(self.output_dir, 'metrics'),
+            'homer_output_directory'    : os.path.join(self.output_dir, 'tags'),
+            'graphs_output_directory'   : os.path.join(self.output_dir, 'graphs'),
+            'tracks_output_directory'   : os.path.join(self.output_dir, 'tracks'),
+            'macs_output_directory'     : os.path.join(self.output_dir, 'peak_call'),
+            'anno_output_directory'     : os.path.join(self.output_dir, 'annotation'),
+            'ihecA_output_directory'    : os.path.join(self.output_dir, 'ihec_alignment'),
+            'ihecM_output_directory'    : os.path.join(self.output_dir, 'ihec_metrics'),
+            'dba_output_directory'      : os.path.join(self.output_dir, 'differential_binding')
+        }
         return dirs
 
     @property
@@ -1993,10 +1994,10 @@ done""".format(
         for sample in self.samples:
             for mark_name, mark_type in sample.marks.items():
                 if not mark_type == "I":
-                    alignment_directory = os.path.join("alignment", sample.name, mark_name)
+                    alignment_directory = os.path.join(self.output_dirs["alignment_output_directory"], sample.name, mark_name)
                     haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
                     haplotype_file_prefix = os.path.join(haplotype_directory , sample.name +"." +mark_name)
-                    output_haplotype_file_prefix = os.path.join("alignment", sample.name, mark_name, sample.name +"." + mark_name)
+                    output_haplotype_file_prefix = os.path.join(self.output_dirs["alignment_output_directory"], sample.name, mark_name, sample.name +"." + mark_name)
 
                     jobs.append(
                         concat_jobs([

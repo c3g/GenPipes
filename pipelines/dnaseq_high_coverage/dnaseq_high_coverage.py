@@ -67,6 +67,16 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         # Add pipeline specific arguments
         super(DnaSeqHighCoverage, self).__init__(protocol)
 
+    @property
+    def output_dirs(self):
+        dirs = {
+            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
+            'trim_directory'     : os.path.join(self.output_dir, 'trim'),
+            'alignment_directory': os.path.join(self.output_dir, 'alignment'),
+            'variants_directory' : os.path.join(self.output_dir, 'variants')
+        }
+        return dirs
+
     def picard_fixmate(self):
         """
         Verify mate-pair information between mates and fix if needed.
@@ -75,7 +85,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         """
         jobs = []
         for sample in self.samples:
-            sample_directory = os.path.join("alignment", sample.name)
+            sample_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             input_file = os.path.join(sample_directory, sample.name + ".sorted.realigned.bam")
             output_file = os.path.join(sample_directory, sample.name + ".matefixed.sorted.bam")
 
@@ -99,7 +109,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
 
         jobs = []
         for sample in self.samples:
-            input_file_prefix = os.path.join("alignment", sample.name, sample.name + ".matefixed.sorted.")
+            input_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".matefixed.sorted.")
             input = input_file_prefix + "bam"
 
             job = picard2.collect_multiple_metrics(input, input_file_prefix + "all.metrics")
@@ -145,7 +155,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
                     jobs.append(job)
                     created_interval_lists.append(interval_list)
 
-                input_file_prefix = os.path.join("alignment", sample.name, sample.name + ".matefixed.sorted.")
+                input_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".matefixed.sorted.")
                 job = picard2.calculate_hs_metrics(input_file_prefix + "bam", input_file_prefix + "onTarget.tsv", interval_list)
                 job.name = "picard_calculate_hs_metrics." + sample.name
                 job.samples = [sample]
@@ -160,7 +170,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         jobs = []
 
         for sample in self.samples:
-            alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".")
+            alignment_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".")
 
             job = gatk.callable_loci(alignment_file_prefix + "matefixed.sorted.bam", alignment_file_prefix + "callable.bed", alignment_file_prefix + "callable.summary.txt")
             job.name = "gatk_callable_loci." + sample.name
@@ -180,7 +190,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         if nb_jobs > 50:
             log.warning("Number of VarScan jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
-        variants_directory = os.path.join("variants")
+        variants_directory = os.path.join(self.output_dirs["variants_directory"])
         varscan_directory = os.path.join(variants_directory, "rawVarScan")
 
         beds = []
@@ -201,7 +211,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         sampleNames = open(sampleNamesFile, 'w')
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             input = os.path.join(alignment_directory, sample.name + ".matefixed.sorted.bam")
             bams.append(input)
             sampleNames.write("%s\n" % sample.name)
@@ -248,7 +258,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        output_directory = "variants"
+        output_directory = self.output_dirs["variants_directory"]
         prefix = os.path.join(output_directory, "allSamples")
         outputPreprocess = prefix + ".prep.vt.vcf.gz"
         outputFix = prefix + ".prep.vt.fix.vcf.gz"
@@ -278,7 +288,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        output_directory = "variants"
+        output_directory = self.output_dirs["variants_directory"]
         snpeff_prefix = os.path.join(output_directory, "allSamples")
 
         jobs.append(concat_jobs([
@@ -296,7 +306,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        output_directory = "variants"
+        output_directory = self.output_dirs["variants_directory"]
         temp_dir = config.param('DEFAULT', 'tmp_dir')
         gemini_prefix = os.path.join(output_directory, "allSamples")
         gemini_module=config.param("DEFAULT", 'module_gemini').split(".")

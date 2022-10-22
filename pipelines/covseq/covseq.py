@@ -72,6 +72,19 @@ class CoVSeq(dnaseq.DnaSeqRaw):
         # Add pipeline specific arguments
         super(CoVSeq, self).__init__(protocol)
 
+    @property
+    def output_dirs(self):
+        dirs = {
+            'raw_reads_directory'   : os.path.join(self.output_dir, 'raw_reads'),
+            'host_removal_directory': os.path.join(self.output_dir, "host_removal"),
+            'trim_directory'        : os.path.join(self.output_dir, "cleaned_raw_reads"),
+            'alignment_directory'   : os.path.join(self.output_dir, 'alignment'),
+            'metrics_directory'     : os.path.join(self.output_dir, 'metrics'),
+            'variants_directory'    : os.path.join(self.output_dir, 'variant'),
+            'consensus_directory'   : os.path.join(self.output_dir, 'consensus'),
+            'report_directory'      : os.path.join(self.output_dir, 'report')
+        }
+        return dirs
 
     def host_reads_removal(self):
         """
@@ -89,7 +102,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
         jobs = []
         for readset in self.readsets:
             # trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            host_removal_directory = os.path.join("host_removal", readset.sample.name)
+            host_removal_directory = os.path.join(self.output_dirs["host_removal_directory"], readset.sample.name)
             readset_bam = os.path.join(host_removal_directory, readset.name + ".hybrid.sorted.bam")
             readset_bam_host_removed_sorted = os.path.join(host_removal_directory, readset.name + ".host_removed.sorted.bam")
             readset_bam_host_removed_sorted_index = os.path.join(host_removal_directory, readset.name + ".host_removed.sorted.bam.bai")
@@ -191,9 +204,9 @@ class CoVSeq(dnaseq.DnaSeqRaw):
         # TODO: include kraken analysis and output in metrics
         jobs = []
         for readset in self.readsets:
-            host_removal_directory = os.path.join("host_removal", readset.sample.name)
+            host_removal_directory = os.path.join(self.output_dirs["host_removal_directory"], readset.sample.name)
             host_removal_file_prefix = os.path.join(host_removal_directory, readset.name)
-            kraken_directory = os.path.join("metrics", "dna", readset.sample.name, "kraken_metrics")
+            kraken_directory = os.path.join(self.output_dirs["metrics_directory"], "dna", readset.sample.name, "kraken_metrics")
             kraken_out_prefix = os.path.join(kraken_directory, readset.name)
             # readset_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam")
             # index_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam.bai")
@@ -272,9 +285,9 @@ class CoVSeq(dnaseq.DnaSeqRaw):
         jobs = []
 
         for readset in self.readsets:
-            host_removal_directory = os.path.join("host_removal", readset.sample.name)
+            host_removal_directory = os.path.join(self.output_dirs["host_removal_directory"], readset.sample.name)
             host_removal_file_prefix = os.path.join(host_removal_directory, readset.name)
-            trim_directory = os.path.join("cleaned_raw_reads", readset.sample.name)
+            trim_directory = os.path.join(self.output_dirs['trim_directory'], readset.sample.name)
             trim_file_prefix = os.path.join(trim_directory, readset.name)
 
             if readset.run_type == "PAIRED_END":
@@ -334,11 +347,11 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
         jobs = []
         for readset in self.readsets:
-            host_removal_directory = os.path.join("host_removal", readset.sample.name)
+            host_removal_directory = os.path.join(self.output_dirs["host_removal_directory"], readset.sample.name)
             host_removal_file_prefix = os.path.join(host_removal_directory, readset.name)
-            trim_directory = os.path.join("cleaned_raw_reads", readset.sample.name)
+            trim_directory = os.path.join(self.output_dirs['trim_directory'], readset.sample.name)
             trim_file_prefix = os.path.join(trim_directory, readset.name)
-            alignment_directory = os.path.join("alignment", readset.sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
 
@@ -423,7 +436,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
             output_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
 
@@ -484,7 +497,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
             output_bam = os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")
 
@@ -512,7 +525,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
             output_prefix = os.path.join(alignment_directory, re.sub("\.sorted.filtered.bam$", ".primerTrim", os.path.basename(input_bam)))
             output_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")
@@ -546,8 +559,8 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
         jobs = []
         for sample in self.samples:
-            flagstat_directory = os.path.join("metrics", "dna", sample.name, "flagstat")
-            alignment_directory = os.path.join("alignment", sample.name)
+            flagstat_directory = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "flagstat")
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             input_bams = [
                 os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam"),
                 os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam"),
@@ -580,7 +593,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
@@ -619,8 +632,8 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
         jobs = []
         for sample in self.samples:
-            picard_directory = os.path.join("metrics", "dna", sample.name, "picard_metrics")
-            alignment_directory = os.path.join("alignment", sample.name)
+            picard_directory = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "picard_metrics")
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             readset = sample.readsets[0]
 
             input_bams = [
@@ -704,8 +717,8 @@ class CoVSeq(dnaseq.DnaSeqRaw):
         jobs = []
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            variant_directory = os.path.join("variant", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
 
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
@@ -761,8 +774,8 @@ class CoVSeq(dnaseq.DnaSeqRaw):
         jobs = []
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            variant_directory = os.path.join("variant", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
 
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
@@ -854,9 +867,9 @@ class CoVSeq(dnaseq.DnaSeqRaw):
         jobs = []
 
         for sample in self.samples:
-            variant_directory = os.path.join("variant", sample.name)
-            metrics_ivar_prefix = os.path.join("metrics", "dna", sample.name, "snpeff_metrics_ivar", sample.name + ".snpEff")
-            metrics_freebayes_prefix = os.path.join("metrics", "dna", sample.name, "snpeff_metrics_freebayes", sample.name + ".snpEff")
+            variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
+            metrics_ivar_prefix = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "snpeff_metrics_ivar", sample.name + ".snpEff")
+            metrics_freebayes_prefix = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "snpeff_metrics_freebayes", sample.name + ".snpEff")
 
             [ivar_vcf] = self.select_input_files([
                 [os.path.join(variant_directory, sample.name + ".sorted.filtered.primerTrim.vcf.gz")],
@@ -907,8 +920,8 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
         jobs = []
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
-            consensus_directory = os.path.join("consensus", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            consensus_directory = os.path.join(self.output_dirs["consensus_directory"], sample.name)
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
@@ -949,8 +962,8 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
         jobs = []
         for sample in self.samples:
-            consensus_directory = os.path.join("consensus", sample.name)
-            variant_directory = os.path.join("variant", sample.name)
+            consensus_directory = os.path.join(self.output_dirs["consensus_directory"], sample.name)
+            variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
 
 
             input_prefix = os.path.join(variant_directory, sample.name) + ".freebayes_calling"
@@ -1005,14 +1018,14 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
 
         jobs = []
         for sample in self.samples:
-            consensus_directory = os.path.join("consensus", sample.name)
-            ivar_output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics_ivar")
+            consensus_directory = os.path.join(self.output_dirs["consensus_directory"], sample.name)
+            ivar_output_dir = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "quast_metrics_ivar")
             [ivar_consensus] = self.select_input_files([
                 [os.path.join(consensus_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
                 [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
                 [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
             ])
-            freebayes_output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics_freebayes")
+            freebayes_output_dir = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "quast_metrics_freebayes")
             freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.fasta"
 
             jobs.append(
@@ -1044,20 +1057,20 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
         jobs = []
 
         for sample in self.samples:
-            consensus_directory = os.path.join("consensus", sample.name)
+            consensus_directory = os.path.join(self.output_dirs["consensus_directory"], sample.name)
             [ivar_consensus] = self.select_input_files([
                 [os.path.join(consensus_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
                 [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
                 [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
             ])
-            quast_ivar_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics_ivar")
+            quast_ivar_directory = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "quast_metrics_ivar")
             quast_ivar_html = os.path.join(quast_ivar_directory, "report.html")
             quast_ivar_tsv = os.path.join(quast_ivar_directory, "report.tsv")
 
             ivar_output_fa = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
             ivar_output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'sequencing_technology', required=False), status="${IVAR_STATUS}"))
 
-            variant_directory = os.path.join("variant", sample.name)
+            variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
             [ivar_vcf] = self.select_input_files([
                 [os.path.join(variant_directory, sample.name + ".sorted.filtered.primerTrim.vcf.gz")],
                 [os.path.join(variant_directory, sample.name + ".sorted.filtered.vcf.gz")],
@@ -1065,7 +1078,7 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
             ])
             ivar_annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(ivar_vcf)))
 
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
@@ -1130,20 +1143,25 @@ ln -sf {ivar_output_status_fa_basename} {ivar_output_fa}""".format(
         jobs = []
 
         for sample in self.samples:
-            consensus_directory = os.path.join("consensus", sample.name)
+            consensus_directory = os.path.join(self.output_dirs["consensus_directory"], sample.name)
             freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.fasta"
+<<<<<<< HEAD
             quast_freebayes_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics_freebayes")
+=======
+            
+            quast_freebayes_directory = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "quast_metrics_freebayes")
+>>>>>>> Fixes after cit + code standardization
             quast_freebayes_html = os.path.join(quast_freebayes_directory, "report.html")
             quast_freebayes_tsv = os.path.join(quast_freebayes_directory, "report.tsv")
 
             freebayes_output_fa = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.renamed.fasta"
             freebayes_output_status_fa = os.path.join(consensus_directory, """{sample_name}.freebayes_calling.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'sequencing_technology', required=False), status="${FREEBAYES_STATUS}"))
 
-            variant_directory = os.path.join("variant", sample.name)
+            variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
             freebayes_vcf = os.path.join(variant_directory, sample.name) + ".freebayes_calling.fixed.norm.vcf.gz"
             freebayes_annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(freebayes_vcf)))
 
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             [input_bam] = self.select_input_files([
                 [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                 [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
@@ -1203,7 +1221,7 @@ ln -sf {freebayes_output_status_fa_basename} {freebayes_output_fa}""".format(
 
         jobs = []
 
-        metrics_directory = os.path.join("metrics", "dna")
+        metrics_directory = os.path.join(self.output_dirs["metrics_directory"], "dna")
         input_dep = []
         inputs = []
         for sample in self.samples:
@@ -1243,9 +1261,9 @@ ln -sf {freebayes_output_status_fa_basename} {freebayes_output_fa}""".format(
         jobs = []
 
         for sample in self.samples:
-            ncovtools_quickalign_directory = os.path.join("metrics", "dna", sample.name, "ncovtools_quickalign")
+            ncovtools_quickalign_directory = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "ncovtools_quickalign")
             output = os.path.join(ncovtools_quickalign_directory, sample.name + "_ivar_vs_freebayes.vcf")
-            consensus_directory = os.path.join("consensus", sample.name)
+            consensus_directory = os.path.join(self.output_dirs["consensus_directory"], sample.name)
             ivar_consensus = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
             freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.renamed.fasta"
             jobs.append(
@@ -1279,12 +1297,12 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         """
         jobs = []
 
-        metrics_directory = os.path.join("metrics", "dna")
+        metrics_directory = os.path.join(self.output_dirs["metrics_directory"], "dna")
 
         readset_file=os.path.relpath(self.args.readsets.name, self.output_dir)
 
-        run_metadata = os.path.join("report", "run_metadata.csv")
-        software_version = os.path.join("report", "software_versions.csv")
+        run_metadata = os.path.join(self.output_dirs["report_directory"], "run_metadata.csv")
+        software_version = os.path.join(self.output_dirs["report_directory"], "software_versions.csv")
 
         modules = []
         # Retrieve all unique module version values in config files
@@ -1304,7 +1322,7 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
             if readset.run_type == "PAIRED_END":
                 library[readset.sample] = "PAIRED_END"
 
-            kraken_directory = os.path.join("metrics", "dna", readset.sample.name, "kraken_metrics")
+            kraken_directory = os.path.join(self.output_dirs["metrics_directory"], "dna", readset.sample.name, "kraken_metrics")
             kraken_out_prefix = os.path.join(kraken_directory, readset.name)
             kraken_output = kraken_out_prefix + ".kraken2_output"
             kraken_report = kraken_out_prefix + ".kraken2_report"
@@ -1327,7 +1345,7 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         picard_outputs = []
         for sample in self.samples:
             # Finding quast outputs
-            ivar_quast_output_dir = os.path.join("metrics", "dna", sample.name, "quast_metrics_ivar")
+            ivar_quast_output_dir = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "quast_metrics_ivar")
             quast_outputs.extend([
                 os.path.join(ivar_quast_output_dir, "report.html"),
                 os.path.join(ivar_quast_output_dir, "report.pdf"),
@@ -1336,8 +1354,8 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
                 os.path.join(ivar_quast_output_dir, "report.txt")
                 ])
             # Finding flagstat outputs
-            flagstat_directory = os.path.join("metrics", "dna", sample.name, "flagstat")
-            alignment_directory = os.path.join("alignment", sample.name)
+            flagstat_directory = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "flagstat")
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             input_bams = [
                 os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam"),
                 os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam"),
@@ -1353,7 +1371,7 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
             bedgraph_outputs.append(os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(input_bam))))
 
             # Picard collect multiple metrics outputs
-            picard_directory = os.path.join("metrics", "dna", sample.name, "picard_metrics")
+            picard_directory = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "picard_metrics")
             picard_out = os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input_bam)) + ".all.metrics")
 
             if library[sample] == "PAIRED_END":
@@ -1421,10 +1439,10 @@ echo "Software Versions
         readset_file=os.path.relpath(self.args.readsets.name, self.output_dir)
         ivar_readset_file_report="report.readset_ivar.tsv"
 
-        software_version = os.path.join("report", "software_versions.csv")
-        run_metadata = os.path.join("report", "run_metadata.csv")
+        software_version = os.path.join(self.output_dirs["report_directory"], "software_versions.csv")
+        run_metadata = os.path.join(self.output_dirs["report_directory"], "run_metadata.csv")
 
-        ivar_ncovtools_directory = os.path.join("report", "ncov_tools_ivar")
+        ivar_ncovtools_directory = os.path.join(self.output_dirs["report_directory"], "ncov_tools_ivar")
         ivar_metadata = os.path.join(ivar_ncovtools_directory, "metadata.tsv")
         ivar_ncovtools_data_directory = os.path.join(ivar_ncovtools_directory, "data")
         ivar_ncovtools_config = os.path.join(ivar_ncovtools_directory, "config.yaml")
@@ -1453,12 +1471,12 @@ echo -e "sample\\tct\\tdate" > {ivar_metadata}""".format(
             ])
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             filtered_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
             primer_trimmed_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")
-            consensus_directory = os.path.join("consensus", sample.name)
+            consensus_directory = os.path.join(self.output_dirs["consensus_directory"], sample.name)
             ivar_consensus = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
-            variant_directory = os.path.join("variant", sample.name)
+            variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
             ivar_variants = os.path.join(variant_directory, sample.name + ".variants.tsv")
 
             ivar_output_filtered_bam = os.path.join(ivar_ncovtools_data_directory, os.path.basename(filtered_bam))
@@ -1553,36 +1571,38 @@ module load {R_covseqtools}""".format(
         readset_file=os.path.relpath(self.args.readsets.name, self.output_dir)
         freebayes_readset_file_report="report.readset_freebayes.tsv"
 
-        software_version = os.path.join("report", "software_versions.csv")
-        run_metadata = os.path.join("report", "run_metadata.csv")
+        software_version = os.path.join(self.output_dirs["report_directory"], "software_versions.csv")
+        run_metadata = os.path.join(self.output_dirs["report_directory"], "run_metadata.csv")
 
-        freebayes_ncovtools_directory = os.path.join("report", "ncov_tools_freebayes")
+        freebayes_ncovtools_directory = os.path.join(self.output_dirs["report_directory"], "ncov_tools_freebayes")
         freebayes_metadata = os.path.join(freebayes_ncovtools_directory, "metadata.tsv")
         freebayes_ncovtools_data_directory = os.path.join(freebayes_ncovtools_directory, "data")
         freebayes_ncovtools_config = os.path.join(freebayes_ncovtools_directory, "config.yaml")
 
-        job = concat_jobs([
-            bash.mkdir(freebayes_ncovtools_data_directory),
-            Job(
+        job = concat_jobs(
+            [
+                bash.mkdir(freebayes_ncovtools_data_directory),
+                Job(
                     input_files=[],
                     output_files=[freebayes_readset_file_report, freebayes_metadata],
                     command="""\\
 head -n 1 {readset_file} > {freebayes_readset_file_report} && \\
 echo -e "sample\\tct\\tdate" > {freebayes_metadata}""".format(
-    readset_file=readset_file,
-    freebayes_readset_file_report=freebayes_readset_file_report,
-    freebayes_metadata=freebayes_metadata
-    )
-                ),
-            ])
+                        readset_file=readset_file,
+                        freebayes_readset_file_report=freebayes_readset_file_report,
+                        freebayes_metadata=freebayes_metadata
+                    )
+                )
+            ]
+        )
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             filtered_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
             primer_trimmed_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")
-            consensus_directory = os.path.join("consensus", sample.name)
+            consensus_directory = os.path.join(self.output_dirs["consensus_directory"], sample.name)
             freebayes_consensus = os.path.join(consensus_directory, sample.name + ".freebayes_calling.consensus.renamed.fasta")
-            variant_directory = os.path.join("variant", sample.name)
+            variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
             freebayes_variants = os.path.join(variant_directory, sample.name + ".freebayes_calling.consensus.vcf")
 
             freebayes_output_filtered_bam = os.path.join(freebayes_ncovtools_data_directory, os.path.basename(filtered_bam))
@@ -1590,12 +1610,13 @@ echo -e "sample\\tct\\tdate" > {freebayes_metadata}""".format(
             freebayes_output_consensus = os.path.join(freebayes_ncovtools_data_directory, os.path.basename(freebayes_consensus))
             freebayes_output_variants = os.path.join(freebayes_ncovtools_data_directory, os.path.basename(freebayes_variants))
 
-            job = concat_jobs([
-                        job,
-                        Job(
-                            input_files=[filtered_bam, primer_trimmed_bam, freebayes_consensus, freebayes_variants],
-                            output_files=[freebayes_output_filtered_bam, freebayes_output_primer_trimmed_bam, freebayes_output_consensus, freebayes_output_variants],
-                            command="""\\
+            job = concat_jobs(
+                [
+                    job,
+                    Job(
+                        input_files=[filtered_bam, primer_trimmed_bam, freebayes_consensus, freebayes_variants],
+                        output_files=[freebayes_output_filtered_bam, freebayes_output_primer_trimmed_bam, freebayes_output_consensus, freebayes_output_variants],
+                        command="""\\
 echo "Linking files for ncov_tools for sample {sample_name}..." && \\
 if [ "$(ls -1 {filtered_bam})" != "" ] && [ "$(ls -1 {primer_trimmed_bam})" != "" ] && [ "$(ls -1 {freebayes_consensus})" != "" ] && [ "$(ls -1 {freebayes_variants})" != "" ];
   then
@@ -1619,10 +1640,10 @@ fi""".format(
     freebayes_output_variants=freebayes_output_variants,
     freebayes_metadata=freebayes_metadata
     )
-                            )
-                    ],
-                    samples=[sample]
                     )
+                ],
+                samples=[sample]
+            )
 
         jobs.append(
             concat_jobs([

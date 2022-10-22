@@ -544,7 +544,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
 
 def variant_recalibrator(variants, other_options, recal_output,
                          tranches_output, R_output, small_sample_check=False):
-    if config.param('gatk_print_reads', 'module_gatk').split("/")[2] >= "4":
+    if config.param('gatk_variant_recalibrator', 'module_gatk').split("/")[2] >= "4":
         return gatk4.combine_gvcf(variants, other_options, recal_output, tranches_output, R_output)
     else:
 

@@ -229,8 +229,7 @@ class Illumina(MUGQICPipeline):
                     [bam] = self.select_input_files(candidate_input_files)
 
                     rawReadsDirectory = os.path.join(
-                        self.output_dir,
-                        "raw_reads",
+                        self.output_dirs['raw_reads_directory'],
                         readset.sample.name,
                     )
                     if readset.run_type == "PAIRED_END":
@@ -274,7 +273,7 @@ class Illumina(MUGQICPipeline):
         """
         jobs = []
         for readset in self.readsets:
-            trim_directory = os.path.join("trim", readset.sample.name)
+            trim_directory = os.path.join(self.output_dirs["trim_directory"], readset.sample.name)
             trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
             trim_log = trim_file_prefix + "log"
 
@@ -364,15 +363,15 @@ END
         """
 
         read_type = "Paired" if self.run_type == 'PAIRED_END' else "Single"
-        readset_merge_trim_stats = os.path.join("metrics", "trimReadsetTable.tsv")
-        job = concat_jobs([Job(command="mkdir -p metrics"), Job(command="echo 'Sample\tReadset\tRaw {read_type} Reads #\tSurviving {read_type} Reads #\tSurviving {read_type} Reads %' > ".format(read_type=read_type) + readset_merge_trim_stats)])
+        readset_merge_trim_stats = os.path.join(self.output_dirs["metrics_directory"], "trimReadsetTable.tsv")
+        job = concat_jobs([Job(command="mkdir -p metrics"), Job(command=f"echo 'Sample\tReadset\tRaw {read_type} Reads #\tSurviving {read_type} Reads #\tSurviving {read_type} Reads %' > {readset_merge_trim_stats}")])
         for readset in self.readsets:
-            trim_log = os.path.join("trim", readset.sample.name, readset.name + ".trim.log")
+            trim_log = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
                 # Retrieve readset raw and surviving reads from trimmomatic log using ugly Perl regexp
-                perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
+                perl_command = f"perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'"
             elif readset.run_type == "SINGLE_END":
-                perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
+                perl_command = f"perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'"
 
             job = concat_jobs([
                 job,
@@ -394,8 +393,8 @@ awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
                 )
             ])
 
-        sample_merge_trim_stats = os.path.join("metrics", "trimSampleTable.tsv")
-        report_file = os.path.join("report", "Illumina.merge_trimmomatic_stats.md")
+        sample_merge_trim_stats = os.path.join(self.output_dirs["metrics_directory"], "trimSampleTable.tsv")
+        report_file = os.path.join(self.output_dirs["report_directory"], "Illumina.merge_trimmomatic_stats.md")
         return [concat_jobs([
             job,
             Job(
@@ -411,7 +410,7 @@ cut -f1,3- {readset_merge_trim_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{if 
             ),
             Job(
                 [sample_merge_trim_stats],
-                [report_file, os.path.join("report", "trimReadsetTable.tsv"), os.path.join("report", "trimSampleTable.tsv")],
+                [report_file, os.path.join(self.output_dirs["report_directory"], "trimReadsetTable.tsv"), os.path.join(self.output_dirs["report_directory"], "trimSampleTable.tsv")],
                 [['merge_trimmomatic_stats', 'module_pandoc']],
                 command="""\
 mkdir -p report && \\
@@ -587,7 +586,7 @@ pandoc \\
         jobs = []
 
         for sample in self.samples:
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
 
             candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")]] #DNAseq; TumorPair
             candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")]) #DNAseq; ChIPseq; MethylSeq

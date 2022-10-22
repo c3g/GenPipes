@@ -28,7 +28,7 @@ from core.job import Job
 ## functions for awk tools ##
 
 ## functions for python tools ##
-def py_addLengthRay (file_scaffolds_fasta, length_file, output):
+def py_addLengthRay(file_scaffolds_fasta, length_file, output):
     return Job(
         [file_scaffolds_fasta, length_file],
         [output],
@@ -45,7 +45,7 @@ python $PYTHON_TOOLS/addLengthRay.py \\
         )
     )
 
-def py_blastMatchSca (prefix_scaffolds_fasta, blast_file, output):
+def py_blastMatchSca(prefix_scaffolds_fasta, blast_file, output):
     return Job(
         [prefix_scaffolds_fasta + ".fasta", blast_file],
         [output],
@@ -62,7 +62,7 @@ python $PYTHON_TOOLS/blastMatchSca.py \\
         )
     )
 
-def py_equalFastqFile (fastq_ref, fastq, output):
+def py_equalFastqFile(fastq_ref, fastq, output):
     return Job(
         [fastq_ref, fastq],
         [output],
@@ -79,7 +79,7 @@ python $PYTHON_TOOLS/equalFastqFile.py \\
         )
     )
 
-def py_rrnaBAMcount (bam, gtf, output, typ="transcript"):
+def py_rrnaBAMcount(bam, gtf, output, typ="transcript"):
     return Job(
         [bam],
         [output],

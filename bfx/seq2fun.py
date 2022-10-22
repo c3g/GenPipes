@@ -74,7 +74,7 @@ Rscript $R_TOOLS/deseq2.R \\
     ))
 
 
-def ko_pathway_analysis(diff_report, output_prefix,   output_dir):
+def ko_pathway_analysis(diff_report, output_prefix, output_dir):
     fdr = config.param('seq2fun_pathway', 'fdr')
     rds_file = config.param('seq2fun_pathway', 'rds')
     map_list = config.param('seq2fun_pathway', 'user_pathway_list')
