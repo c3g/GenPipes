@@ -113,6 +113,7 @@ class RnaSeqRaw(common.Illumina):
             'DGE_directory'                 : os.path.join(self.output_dir, 'DGE'),
             'raw_counts_directory'          : os.path.join(self.output_dir, 'raw_counts'),
             'tracks_directory'              : os.path.join(self.output_dir, 'tracks'),
+            'exploratory_directory'         : os.path.join(self.output_dir, 'exploratory'),
             'metrics_directory'             : os.path.join(self.output_dir, 'metrics'),
             'report_directory'              : os.path.join(self.output_dir, 'report')
         }
@@ -1049,20 +1050,20 @@ END
                 os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.csv"),
                 "cuffnorm",
                 config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', param_type='filepath'),
-                "exploratory"
+                self.output_dirs["exploratory_directory"]
             )
         ], name="gq_seq_utils_exploratory_analysis_rnaseq"))
 
         # Render Rmarkdown Report
         jobs.append(
             rmarkdown.render(
-                job_input            = os.path.join("exploratory", "index.tsv"),
+                job_input            = os.path.join(self.output_dirs["exploratory_directory"], "index.tsv"),
                 job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
                 input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.Rmd"),
                 samples              = self.samples,
-                render_output_dir    = 'report',
+                render_output_dir    = self.output_dirs['report_directory'],
                 module_section       = 'report', # TODO: this or exploratory?
-                prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+                prerun_r             = f'report_dir="{self.output_dirs["report_directory"]}";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
             )
         )
 

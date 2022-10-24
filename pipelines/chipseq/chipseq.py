@@ -1255,7 +1255,6 @@ done""".format(
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
         else:
             log.info("Comparison column is not defined. Skipping differential binding analysis...")
-        mark_list = []
 
         #if control samples and treatment samples are less than one diff analysis will not be executed
         for contrast in self.contrasts:
@@ -1263,72 +1262,64 @@ done""".format(
             controls_count = len(contrast.controls)
             treatments_count = len(contrast.treatments)
             if controls_count < 2 or treatments_count < 2:
-                log.info(
-                    "At leaset two treatments and  controls should be defined. Skipping differential binding analysis for "+contrast.name +" ...")
+                log.info(f"At leaset two treatments and  controls should be defined. Skipping differential binding analysis for {contrast.name}...")
             else:
                 for control in contrast.controls:
                     control_sample_name, control_mark_name = control.split("-.-")
                     for sample in self.samples:
                         input_file_list = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items() if
-                            mark_type == "I" and sample.name == control_sample_name]
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                            for mark_name, mark_type in sample.marks.items() if mark_type == "I" and sample.name == control_sample_name
+                        ]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                            mark_name, mark_type in sample.marks.items() if
-                            mark_type != "I" and sample.name == control_sample_name and mark_name ==
-                            control_mark_name]
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                            for mark_name, mark_type in sample.marks.items() if mark_type != "I" and sample.name == control_sample_name and mark_name == control_mark_name
+                        ]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
-                            os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                        sample.name + "." + mark_name + "_peaks.xls") for
-                            # os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." +
-                            #                          self.mark_type_conversion[mark_type] + "Peak") for
-                            mark_name, mark_type in sample.marks.items() if
-                            mark_type != "I" and sample.name == control_sample_name and mark_name ==
-                            control_mark_name]
-
+                            os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks.xls")
+                            for mark_name, mark_type in sample.marks.items() if mark_type != "I" and sample.name == control_sample_name and mark_name == control_mark_name
+                        ]
                         bam_list.append(input_file_list)
 
                 for treatment in contrast.treatments:
                     treatment_sample_name, treatment_mark_name = treatment.split("-.-")
                     for sample in self.samples:
                         input_file_list = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                            mark_name, mark_type in sample.marks.items() if
-                            mark_type == "I" and sample.name == treatment_sample_name]
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                            for mark_name, mark_type in sample.marks.items() if mark_type == "I" and sample.name == treatment_sample_name
+                        ]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                            mark_name, mark_type in sample.marks.items() if
-                            mark_type != "I" and sample.name == treatment_sample_name and mark_name ==
-                            treatment_mark_name]
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                            for mark_name, mark_type in sample.marks.items() if mark_type != "I" and sample.name == treatment_sample_name and mark_name == treatment_mark_name
+                        ]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
-                            os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                        sample.name + "." + mark_name + "_peaks.xls") for
-                            #os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." +
-                            #                         self.mark_type_conversion[mark_type] + "Peak") for
-                            mark_name, mark_type in sample.marks.items() if
-                            mark_type != "I" and sample.name == treatment_sample_name and mark_name ==
-                            treatment_mark_name]
-
+                            os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks.xls")
+                            for mark_name, mark_type in sample.marks.items() if mark_type != "I" and sample.name == treatment_sample_name and mark_name == treatment_mark_name
+                        ]
                         bam_list.append(input_file_list)
+
                 bam_list = filter(None, bam_list)
                 bam_list = [item for sublist in bam_list for item in sublist]
-                diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file,
-                                                             self.output_dirs['dba_output_directory'],
-                                                             self.output_dirs['alignment_output_directory'],
-                                                             self.output_dirs['macs_output_directory'], minOverlap,
-                                                             minMembers, method)
+                diffbind_job = differential_binding.diffbind(
+                    bam_list,
+                    contrast.name,
+                    design_file,
+                    readset_file,
+                    self.output_dirs['dba_output_directory'],
+                    self.output_dirs['alignment_output_directory'],
+                    self.output_dirs['macs_output_directory'],
+                    minOverlap,
+                    minMembers,
+                    method
+                )
                 diffbind_job.samples = self.samples
                 diffbind_job.name = "_".join(("differential_binding.diffbind.contrast", contrast.name))
                 jobs.append(diffbind_job)

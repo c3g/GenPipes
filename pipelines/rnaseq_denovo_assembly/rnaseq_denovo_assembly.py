@@ -223,21 +223,22 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
                 [report_file],
                 [['insilico_read_normalization_all', 'module_pandoc']],
                 command="""\
-mkdir -p report && \\
+mkdir -p {report_dir} && \\
 sum_norm=`cut -f2 {normalization_stats_file}` && \\
-normalization_table=`sed '1d' report/trimReadsetTable.tsv | LC_NUMERIC=en_CA awk -v sum_norm=$sum_norm '{{sum_trim+=$4}}END{{print sprintf("%\\47d", sum_trim)"|"sprintf("%\\47d", sum_norm)"|"sprintf("%.2f", sum_norm / sum_trim * 100)}}'` && \\
+normalization_table=`sed '1d' {report_dir}/trimReadsetTable.tsv | LC_NUMERIC=en_CA awk -v sum_norm=$sum_norm '{{sum_trim+=$4}}END{{print sprintf("%\\47d", sum_trim)"|"sprintf("%\\47d", sum_norm)"|"sprintf("%.2f", sum_norm / sum_trim * 100)}}'` && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable read_type="{read_type}" \\
   --variable normalization_table="$normalization_table" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-    report_template_dir=self.report_template_dir,
-    basename_report_file=os.path.basename(report_file),
-    read_type="Paired" if self.run_type == 'PAIRED_END' else "Single",
-    normalization_stats_file=normalization_stats_file,
-    report_file=report_file
-    ),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    read_type="Paired" if self.run_type == 'PAIRED_END' else "Single",
+                    normalization_stats_file=normalization_stats_file,
+                    report_dir=self.output_dirs['report_directory'],
+                    report_file=report_file
+                ),
                 report_files=[report_file],
                 name="insilico_read_normalization_all_report",
                 samples=self.samples)
@@ -292,20 +293,21 @@ pandoc --to=markdown \\
                 [report_file],
                 [['trinity', 'module_pandoc']],
                 command="""\
-mkdir -p report && \\
-cp {trinity_fasta}.zip {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf report/ && \\
+mkdir -p {report_dir} && \\
+cp {trinity_fasta}.zip {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf {report_dir}/ && \\
 assembly_table=`sed '1d' {trinity_stats_prefix}.csv | perl -pe 's/^"([^"]*)",/\\1\t/g' | grep -P "^(Nb. Transcripts|Nb. Components|Total Transcripts Length|Min. Transcript Length|Median Transcript Length|Mean Transcript Length|Max. Transcript Length|N50)" | LC_NUMERIC=en_CA awk -F"\t" '{{print $1"|"sprintf("%\\47d", $2)}}'` && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable assembly_table="$assembly_table" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-    trinity_fasta=trinity_fasta,
-    trinity_stats_prefix=trinity_stats_prefix,
-    report_template_dir=self.report_template_dir,
-    basename_report_file=os.path.basename(report_file),
-    report_file=report_file
-    ),
+                    trinity_fasta=trinity_fasta,
+                    trinity_stats_prefix=trinity_stats_prefix,
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_dir=self.output_dirs['report_directory'],
+                    report_file=report_file
+                ),
                 report_files=[report_file],
                 name="trinity_report",
                 samples=self.samples)
@@ -399,19 +401,20 @@ pandoc --to=markdown \\
                 [report_file],
                 [['blastx_trinity_uniprot_merge', 'module_pandoc']],
                 command="""\
-mkdir -p report && \\
-cp {blast_prefix}{blast_db}.tsv.zip  report/ && \\
+mkdir -p {report_dir} && \\
+cp {blast_prefix}{blast_db}.tsv.zip  {report_dir}/ && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable blast_db="{blast_db}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-    blast_prefix=blast_prefix,
-    blast_db=os.path.basename(swissprot_db),
-    report_template_dir=self.report_template_dir,
-    basename_report_file=os.path.basename(report_file),
-    report_file=report_file
-    ),
+                    blast_prefix=blast_prefix,
+                    blast_db=os.path.basename(swissprot_db),
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_dir=self.output_dirs['report_directory'],
+                    report_file=report_file
+                ),
                 report_files=[report_file],
                 name="blastx_trinity_uniprot_merge_report",
                 samples=self.samples)
@@ -428,7 +431,11 @@ pandoc --to=markdown \\
         transdecoder_directory = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder")
         transdecoder_subdirectory = os.path.join(os.path.basename(trinity_fasta) + ".transdecoder_dir")
 
-        jobs = trinotate.transdecoder(trinity_fasta, transdecoder_directory, transdecoder_subdirectory)
+        jobs = trinotate.transdecoder(
+            trinity_fasta,
+            transdecoder_directory,
+            transdecoder_subdirectory
+        )
         for job in jobs:
             job.samples = self.samples
 
@@ -443,7 +450,11 @@ pandoc --to=markdown \\
         transdecoder_fasta = os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pep")
         transdecoder_pfam = os.path.join(transdecoder_directory, "Trinity.fasta.transdecoder.pfam")
 
-        jobs = trinotate.hmmer(transdecoder_directory, transdecoder_fasta, transdecoder_pfam)
+        jobs = trinotate.hmmer(
+            transdecoder_directory,
+            transdecoder_fasta,
+            transdecoder_pfam
+        )
         for job in jobs:
             job.samples = self.samples
 
@@ -457,7 +468,10 @@ pandoc --to=markdown \\
         trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
         rnammer_directory = os.path.join(self.output_dirs["trinotate_directory"], "rnammer")
 
-        jobs = trinotate.rnammer_transcriptome(trinity_fasta, rnammer_directory)
+        jobs = trinotate.rnammer_transcriptome(
+            trinity_fasta,
+            rnammer_directory
+        )
         for job in jobs:
             job.samples = self.samples
 
@@ -472,7 +486,11 @@ pandoc --to=markdown \\
         transdecoder_fasta = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
         db = config.param("blastp_transdecoder_uniprot", "swissprot_db", param_type='prefixpath')
 
-        jobs = trinotate.blastp_transdecoder_uniprot(blast_directory, transdecoder_fasta, db)
+        jobs = trinotate.blastp_transdecoder_uniprot(
+            blast_directory,
+            transdecoder_fasta,
+            db
+        )
         for job in jobs:
             job.samples = self.samples
 
@@ -486,7 +504,10 @@ pandoc --to=markdown \\
         transdecoder_fasta = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
         signalp_gff = os.path.join(self.output_dirs["trinotate_directory"], "signalp", "signalp.gff")
 
-        jobs = trinotate.signalp(transdecoder_fasta, signalp_gff)
+        jobs = trinotate.signalp(
+            transdecoder_fasta,
+            signalp_gff
+        )
         for job in jobs:
             job.samples = self.samples
 
@@ -500,7 +521,10 @@ pandoc --to=markdown \\
         transdecoder_fasta = os.path.join(self.output_dirs["trinotate_directory"], "transdecoder", "Trinity.fasta.transdecoder.pep")
         tmhmm_output = os.path.join(self.output_dirs["trinotate_directory"], "tmhmm", "tmhmm.out")
 
-        jobs = trinotate.tmhmm(transdecoder_fasta, tmhmm_output)
+        jobs = trinotate.tmhmm(
+            transdecoder_fasta,
+            tmhmm_output
+        )
         for job in jobs:
             job.samples = self.samples
 
@@ -540,7 +564,7 @@ pandoc --to=markdown \\
                 samples=self.samples,
                 render_output_dir=self.output_dirs["report_directory"],
                 module_section='report',
-                prerun_r=f'report_dir={self.output_dirs["trinotate_directory"]}; source_dir={self.output_dirs["trinotate_directory"]};'
+                prerun_r=f'report_dir="{self.output_dirs["trinotate_directory"]}"; source_dir="{self.output_dirs["trinotate_directory"]}";'
             )
         )
 
@@ -552,7 +576,11 @@ pandoc --to=markdown \\
         """
 
         trinity_fasta = os.path.join(self.output_dirs["trinity_out_directory"], "Trinity.fasta")
-        job = trinity.align_and_estimate_abundance(trinity_fasta, output_directory=self.output_dirs["trinity_out_directory"], prep_reference=True)
+        job = trinity.align_and_estimate_abundance(
+            trinity_fasta,
+            output_directory=self.output_dirs["trinity_out_directory"],
+            prep_reference=True
+        )
         job.samples = self.samples
 
         return [job]
@@ -601,19 +629,34 @@ pandoc --to=markdown \\
             count_files = os.path.join(output_directory, item + ".counts.files")
             align_and_estimate_abundance_results = [os.path.join(self.output_dirs["align_and_estimate_abundance_directory"], sample.name, sample.name + "." + item + ".results") for sample in self.samples]
             out_prefix = os.path.join(output_directory, item)
-            jobs.append(concat_jobs([
-                Job(command="mkdir -p " + os.path.join(output_directory, item)),
-                Job(
-                    align_and_estimate_abundance_results,
-                    [count_files],
-                    command="echo -e \"" + "\\n".join(align_and_estimate_abundance_results) + "\" > " + count_files,
-                    samples=self.samples
-                ),
-                # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
-                trinity.abundance_estimates_to_matrix(count_files, matrix, out_prefix),
-                trinity.prepare_abundance_matrix_for_dge(matrix, item),
-                trinity.extract_lengths_from_RSEM_output(align_and_estimate_abundance_results[0], os.path.join(output_directory, item + ".lengths.tsv"))
-            ], name="align_and_estimate_abundance." + item))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.join(output_directory, item)),
+                        Job(
+                            align_and_estimate_abundance_results,
+                            [count_files],
+                            command="echo -e \"" + "\\n".join(align_and_estimate_abundance_results) + "\" > " + count_files,
+                            samples=self.samples
+                        ),
+                        # Create isoforms and genes matrices with counts of RNA-seq fragments per feature using Trinity RSEM utility
+                        trinity.abundance_estimates_to_matrix(
+                            count_files,
+                            matrix,
+                            out_prefix
+                        ),
+                        trinity.prepare_abundance_matrix_for_dge(
+                            matrix,
+                            item
+                        ),
+                        trinity.extract_lengths_from_RSEM_output(
+                            align_and_estimate_abundance_results[0],
+                            os.path.join(output_directory, item + ".lengths.tsv")
+                        )
+                    ],
+                    name="align_and_estimate_abundance." + item
+                )
+            )
 
         # Parse Trinotate results to obtain blast, go annotation and a filtered set of contigs
         isoforms_lengths = os.path.join(output_directory, "isoforms.lengths.tsv")
@@ -663,7 +706,7 @@ pandoc --to=markdown \\
                 samples=self.samples,
                 render_output_dir=self.output_dirs["report_directory"],
                 module_section='report', # TODO: this or exploratory?
-                prerun_r=f'report_dir={self.output_dirs["report_directory"]};' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+                prerun_r=f'report_dir="{self.output_dirs["report_directory"]}";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
              )
         )
 
@@ -685,37 +728,47 @@ pandoc --to=markdown \\
 
         # Use python  to extract selected headers
         jobs.append(
-            concat_jobs([
-                Job(command="mkdir -p " + output_directory),
-                tools.py_filterAssemblyToFastaToTsv(trinity_fasta, trinotate_annotation_report_filtered, 0, trinity_filtered_prefix),
-                Job(
-                    [trinity_filtered],
-                    [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
-                    [['filter_annotated_components', 'module_R'], ['filter_annotated_components', 'module_mugqic_R_packages']],
-                    command="""\
-Rscript -e 'library(gqSeqUtils);dnaFastaStats(filename=\"{trinity_filtered}\",type=\"trinity\",output.prefix=\"{trinity_stats_prefix}\")'""".format(
-    trinity_filtered=trinity_filtered,
-    trinity_stats_prefix=trinity_stats_prefix
-    )
-                ),
-                Job(
-                    [trinity_filtered],
-                    [trinity_filtered + ".zip"],
-                    command="zip -j " + trinity_filtered + ".zip " + trinity_filtered + " " + trinity_filtered_prefix + ".tsv"
-                )
-            ], name="filter_annotated_components", samples=self.samples)
+            concat_jobs(
+                [
+                    bash.mkdir(output_directory),
+                    tools.py_filterAssemblyToFastaToTsv(
+                        trinity_fasta,
+                        trinotate_annotation_report_filtered,
+                        0,
+                        trinity_filtered_prefix
+                    ),
+                    Job(
+                        [trinity_filtered],
+                        [trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
+                        [['filter_annotated_components', 'module_R'], ['filter_annotated_components', 'module_mugqic_R_packages']],
+                        command=f"Rscript -e 'library(gqSeqUtils);dnaFastaStats(filename=\"{trinity_filtered}\",type=\"trinity\",output.prefix=\"{trinity_stats_prefix}\")'"
+                    ),
+                    Job(
+                        [trinity_filtered],
+                        [trinity_filtered + ".zip"],
+                        command=f"zip -j {trinity_filtered}.zip {trinity_filtered} {trinity_filtered_prefix}.tsv"
+                    )
+                ],
+                name="filter_annotated_components",
+                samples=self.samples
+            )
         )
         report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeqDeNovoAssembly.filtered.trinity.md")
 
         jobs.append(
             Job(
-                [trinity_filtered + ".zip", trinity_stats_prefix + ".csv", trinity_stats_prefix + ".jpg", trinity_stats_prefix + ".pdf"],
+                [
+                    trinity_filtered + ".zip",
+                    trinity_stats_prefix + ".csv",
+                    trinity_stats_prefix + ".jpg",
+                    trinity_stats_prefix + ".pdf"
+                ],
                 [report_file],
                 [['trinity', 'module_pandoc']],
                 command="""\
-mkdir -p report && \\
-cp {trinity_filtered}.zip report/{output_directory}.zip && \\
-cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf report/ && \\
+mkdir -p {report_dir} && \\
+cp {trinity_filtered}.zip {report_dir}/{output_directory}.zip && \\
+cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf {report_dir}/ && \\
 assembly_table=`sed '1d' {trinity_stats_prefix}.csv | perl -pe 's/^"([^"]*)",/\\1\t/g' | grep -P "^(Nb. Transcripts|Nb. Components|Total Transcripts Length|Min. Transcript Length|Median Transcript Length|Mean Transcript Length|Max. Transcript Length|N50)" | LC_NUMERIC=en_CA awk -F"\t" '{{print $1"|"sprintf("%\\47d", $2)}}'` && \\
 pandoc --to=markdown \\
 --template {report_template_dir}/{basename_report_file} \\
@@ -723,14 +776,15 @@ pandoc --to=markdown \\
 --variable filter_string="{filter_string}" \\
 {report_template_dir}/{basename_report_file} \\
 > {report_file}""".format(
-    trinity_filtered=trinity_filtered,
-    output_directory=output_directory,
-    trinity_stats_prefix=trinity_stats_prefix,
-    report_template_dir=self.report_template_dir,
-    basename_report_file=os.path.basename(report_file),
-    report_file=report_file,
-    filter_string="" if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False)
-    ),
+                    trinity_filtered=trinity_filtered,
+                    output_directory=output_directory,
+                    trinity_stats_prefix=trinity_stats_prefix,
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_dir=self.output_dirs['report_directory'],
+                    report_file=report_file,
+                    filter_string="" if not config.param('filter_annotated_components', 'filters_trinotate', required=False) else config.param('filter_annotated_components', 'filters_trinotate', required=False)
+                ),
                 name="filter_annotated_components_report",
                 report_files=[report_file],
                 samples=self.samples
@@ -912,8 +966,9 @@ pandoc --to=markdown \\
                 render_output_dir=self.output_dirs["report_directory"],
                 module_section='report',
                 prerun_r=f'design_file="{os.path.relpath(self.args.design.name, self.output_dir)}"; ' +
-                         f'report_dir="{report_dir}"; source_dir="{output_directory}"; top_n_results=10; ' +
-                         f'contrasts=c("{",".join(contrast.name for contrast in self.contrasts)}");'
+                         f'report_dir="{report_dir}"; ' +
+                         f'source_dir="{output_directory}"; ' +
+                         f'top_n_results=10; contrasts=c("{",".join(contrast.name for contrast in self.contrasts)}");'
             )
         )
         return jobs
@@ -992,8 +1047,9 @@ pandoc --to=markdown \\
                 samples=self.samples,
                 render_output_dir=self.output_dirs["report_directory"],
                 module_section='report',
-                prerun_r=f'report_dir="{report_dir}"; source_dir="{output_directory}"; top_n_results=10; ' +
-                         f'contrasts=c("{",".join(contrast.name for contrast in self.contrasts)}");'
+                prerun_r=f'report_dir="{report_dir}"; ' +
+                         f'source_dir="{output_directory}"; ' +
+                         f'top_n_results=10; contrasts=c("{",".join(contrast.name for contrast in self.contrasts)}");'
             )
         )
 

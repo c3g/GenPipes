@@ -662,13 +662,12 @@ IHEC_chipseq_metrics_max.sh \\
     )
 
 def sh_fastq_readname_edit(
-    fastq,
-    working_dir,
-    job_name
+    input_fastq,
+    output_fastq
     ):
     return Job(
-        [fastq],
-        [fastq + ".edited.gz"],
+        [input_fastq],
+        [output_fastq],
         [
             ['fastq_readname_edit', 'module_mugqic_tools'],
         ],
@@ -677,12 +676,11 @@ bash FastqReadNameEdit.sh \\
   -i {input_fastq} \\
   -o {output_fastq} \\
   -p {fastq_abs_path}""".format(
-            input_fastq=fastq if os.path.isabs(fastq) else os.path.join(working_dir, fastq),
-            output_fastq=fastq + ".edited.gz" if os.path.isabs(fastq) else os.path.join(working_dir, fastq + ".edited.gz"),
-            fastq_abs_path=fastq if os.path.isabs(fastq) else os.path.join(working_dir, fastq)
+            input_fastq=input_fastq,
+            output_fastq=output_fastq,
+            fastq_abs_path=os.path.abspath(input_fastq)
         ),
-        name=job_name,
-        removable_files = [fastq + ".edited.gz"]
+        removable_files=[output_fastq]
     )
 
 def sh_create_rmap(genome_digest_input, rmap_output, job_name):

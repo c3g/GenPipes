@@ -1145,12 +1145,8 @@ ln -sf {ivar_output_status_fa_basename} {ivar_output_fa}""".format(
         for sample in self.samples:
             consensus_directory = os.path.join(self.output_dirs["consensus_directory"], sample.name)
             freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.fasta"
-<<<<<<< HEAD
-            quast_freebayes_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics_freebayes")
-=======
             
             quast_freebayes_directory = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "quast_metrics_freebayes")
->>>>>>> Fixes after cit + code standardization
             quast_freebayes_html = os.path.join(quast_freebayes_directory, "report.html")
             quast_freebayes_tsv = os.path.join(quast_freebayes_directory, "report.tsv")
 

@@ -3373,7 +3373,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     Job(
                         [None],
                         [None],
-                        [['lumpy_sv', 'module_lumpy']],
+                        [
+                            ['extract_split_reads', 'module_python'],
+                            ['extract_split_reads', 'module_lumpy']
+                        ],
                         command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"
                     ),
                     samtools.view(

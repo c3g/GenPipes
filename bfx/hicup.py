@@ -66,7 +66,13 @@ def create_hicup_conf(name, fastq1, fastq2, sample_output_dir, genome_digest):
                 )
 
 
-def hicup_run (name, sample_output_dir, fastq1, fastq2, genome_digest):
+def hicup_run (
+    name,
+    sample_output_dir,
+    fastq1,
+    fastq2,
+    genome_digest
+    ):
 
     hicup_config = os.path.join(sample_output_dir, "hicup_align." + name + ".conf")
 
