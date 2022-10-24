@@ -516,7 +516,7 @@ END
 
         return jobs
 
-    def sambamba_sort_index(self):
+    def sambamba_sort(self):
         """
         BWA output BAM files are sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
         This step takes as input files:
@@ -536,15 +536,11 @@ END
                     sambamba.sort(
                         readset_bam,
                         readset_bam_sorted,
-                        tmp_dir=config.param('sambamba_sort_index', 'tmp_dir', required=True),
-                        other_options=config.param('sambamba_sort_index', 'sambamba_sort_options', required=True),
-                        ),
-                    sambamba.index(
-                        readset_bam_sorted,
-                        index_bam
+                        tmp_dir=config.param('sambamba_sort', 'tmp_dir', required=True),
+                        other_options=config.param('sambamba_sort', 'options', required=True),
                         )
                     ],
-                    name="sambamba_sort_index." + readset.name,
+                    name="sambamba_sort." + readset.name,
                     samples=[readset.sample]
                     )
                 )
@@ -3819,7 +3815,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba,
-                self.sambamba_sort_index,
+                self.sambamba_sort,
                 # self.bwa_mem_sambamba_sort_sam,
                 #self.bwakit_picard_sort_sam,
                 self.sambamba_merge_sam_extract_unmapped,
@@ -3851,19 +3847,19 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.cram_output,
                 self.sym_link_fastq,
                 self.sym_link_final_bam,
-	        self.metrics_ngscheckmate,
-	        self.metrics_verify_bam_id,
-	        self.metrics_vcftools_missing_indiv,
+                self.metrics_ngscheckmate,
+    	        self.metrics_verify_bam_id,
+    	        self.metrics_vcftools_missing_indiv,
                 self.metrics_vcftools_depth_indiv,
                 self.metrics_gatk_sample_fingerprint,
-	        self.metrics_gatk_cluster_fingerprint,
-	        #self.metrics_peddy,
+                self.metrics_gatk_cluster_fingerprint,
+                #self.metrics_peddy,
             ],
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba,
-                self.sambamba_sort_index,
+                self.sambamba_sort,
                 # self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
@@ -3899,7 +3895,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba,
-                self.sambamba_sort_index,
+                self.sambamba_sort,
                 # self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
@@ -3933,7 +3929,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
                 self.bwa_mem_sambamba,
-                self.sambamba_sort_index,
+                self.sambamba_sort,
                 # self.bwa_mem_sambamba_sort_sam,
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
