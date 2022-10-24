@@ -532,18 +532,14 @@ END
             jobs.append(
                 concat_jobs([
                     bash.mkdir(os.path.dirname(readset_bam_sorted)),
-                    Job(command="""
-if [ -f "{index_bam}" ]; then
-    rm -f {index_bam}
-fi""".format(index_bam=index_bam)
-                    ),
+                    bash.rm(index_bam, force=True),
                     sambamba.sort(
                         readset_bam,
                         readset_bam_sorted,
                         tmp_dir=config.param('sambamba_sort', 'tmp_dir', required=True),
                         other_options=config.param('sambamba_sort', 'options', required=True),
                         ),
-                    Job(command=f"chmod 664 {index_bam}")
+                    bash.chmod(index_bam, "664")
                     ],
                     name="sambamba_sort." + readset.name,
                     samples=[readset.sample]
