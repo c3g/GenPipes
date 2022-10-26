@@ -247,3 +247,14 @@ gzip {input}{output}""".format(
             output=" > " + output if output else "",
         )
     )
+
+def chmod(file, permission):
+    return Job(
+        [],
+        [file],
+        command="""\
+chmod {permission} {file}""".format(
+    permission=permission,
+    file=file
+    ),
+)
