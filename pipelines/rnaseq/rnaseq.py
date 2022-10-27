@@ -1161,7 +1161,7 @@ cp \\
             # edger_job_batch_corrected = differential_expression.edger(design_file, count_matrix, batch_file, f"{output_directory}_batch_corrected")
             # edger_job_batch_corrected.output_files = [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "edger_results.csv") for contrast in self.contrasts]
 
-            deseq_job_batch_corrected = differential_expression.deseq2(design_file, count_matrix, batch_file, f"{output_directory}_batch_corrected")
+            deseq_job_batch_corrected = differential_expression.deseq2(design_file, count_matrix, f"{output_directory}_batch_corrected", batch_file)
             deseq_job_batch_corrected.output_files = [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "dge_results.csv") for contrast in self.contrasts]
 
         return [
@@ -1279,52 +1279,54 @@ done""".format(
     @property
     def steps(self):
         return [
-            [self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.star,
-            self.picard_merge_sam_files,
-            self.picard_sort_sam,
-            self.picard_mark_duplicates,
-            self.picard_rna_metrics,
-            self.estimate_ribosomal_rna,
-            self.bam_hard_clip,
-            self.rnaseqc,
-            self.wiggle,
-            self.raw_counts,
-            self.raw_counts_metrics,
-            self.stringtie,
-            self.stringtie_merge,
-            self.stringtie_abund,
-            self.ballgown,
-            self.differential_expression,
-            self.cram_output
+            [
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.star,
+                self.picard_merge_sam_files,
+                self.picard_sort_sam,
+                self.picard_mark_duplicates,
+                self.picard_rna_metrics,
+                self.estimate_ribosomal_rna,
+                self.bam_hard_clip,
+                self.rnaseqc,
+                self.wiggle,
+                self.raw_counts,
+                self.raw_counts_metrics,
+                self.stringtie,
+                self.stringtie_merge,
+                self.stringtie_abund,
+                self.ballgown,
+                self.differential_expression,
+                self.cram_output
             ],
-            [self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.star,
-            self.picard_merge_sam_files,
-            self.picard_sort_sam,
-            self.picard_mark_duplicates,
-            self.picard_rna_metrics,
-            self.estimate_ribosomal_rna,
-            self.bam_hard_clip,
-            self.rnaseqc,
-            self.wiggle,
-            self.raw_counts,
-            self.raw_counts_metrics,
-            self.cufflinks,
-            self.cuffmerge,
-            self.cuffquant,
-            self.cuffdiff,
-            self.cuffnorm,
-            self.fpkm_correlation_matrix,
-            self.gq_seq_utils_exploratory_analysis_rnaseq,
-            self.differential_expression,
-            self.differential_expression_goseq,
-            self.ihec_metrics,
-            self.cram_output
+            [
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.star,
+                self.picard_merge_sam_files,
+                self.picard_sort_sam,
+                self.picard_mark_duplicates,
+                self.picard_rna_metrics,
+                self.estimate_ribosomal_rna,
+                self.bam_hard_clip,
+                self.rnaseqc,
+                self.wiggle,
+                self.raw_counts,
+                self.raw_counts_metrics,
+                self.cufflinks,
+                self.cuffmerge,
+                self.cuffquant,
+                self.cuffdiff,
+                self.cuffnorm,
+                self.fpkm_correlation_matrix,
+                self.gq_seq_utils_exploratory_analysis_rnaseq,
+                self.differential_expression,
+                self.differential_expression_goseq,
+                self.ihec_metrics,
+                self.cram_output
             ]
         ]
 class RnaSeq(RnaSeqRaw):

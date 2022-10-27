@@ -86,8 +86,7 @@ Rscript $R_TOOLS/deseq2.R \\
 def edger(
     design_file,
     count_matrix,
-    output_dir,
-    batch_file=None
+    output_dir
     ):
 
     return  Job(

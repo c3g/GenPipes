@@ -936,6 +936,8 @@ pandoc --to=markdown \\
         """
         jobs = []
 
+        design_file = os.path.relpath(self.args.design.name, self.output_dir)
+
         # Parameters from ini file
         gene_id_column = "#gene_id" if not config.param('trinotate', 'gene_column', required=False) else config.param('trinotate', 'gene_column', required=False)
         transcript_id_column = "transcript_id" if not config.param('trinotate', 'transcript_column', required=False) else config.param('trinotate', 'gene_column', required=False)
@@ -946,7 +948,7 @@ pandoc --to=markdown \\
 
         # Perform edgeR
         edger_job = differential_expression.edger(
-            os.path.relpath(self.args.design.name, self.output_dir),
+            design_file,
             matrix + ".symbol",
             os.path.join(output_directory, item)
         )
@@ -954,18 +956,26 @@ pandoc --to=markdown \\
 
         # Perform DESeq
         deseq_job = differential_expression.deseq2(
-            os.path.relpath(self.args.design.name, self.output_dir),
+            design_file,
             matrix + ".symbol",
             os.path.join(output_directory, item)
         )
         deseq_job.output_files = [os.path.join(output_directory, item, contrast.name, "dge_results.csv") for contrast in self.contrasts]
 
+        if self.args.batch:
+            # If provided a batch file, compute DGE with batch effect correction
+            batch_file = os.path.relpath(self.args.batch.name, self.output_dir)
+            deseq_job_batch_corrected = differential_expression.deseq2(design_file, matrix + ".symbol", os.path.join(f"{output_directory}_batch_corrected", item), batch_file)
+            deseq_job_batch_corrected.output_files = [os.path.join(f"{output_directory}_batch_corrected", item, contrast.name, "dge_results.csv") for contrast in self.contrasts]
+
         jobs.append(
             concat_jobs(
                 [
                     bash.mkdir(os.path.join(output_directory, item)),
+                    bash.mkdir(os.path.join(f"{output_directory}_batch_corrected", item)) if self.args.batch else None,
                     edger_job,
                     deseq_job,
+                    deseq_job_batch_corrected if self.args.batch else None
                 ],
                 name="differential_expression.run." + item,
                 samples=self.samples
@@ -1656,6 +1666,12 @@ rm {temp_out2}""".format(
             deseq_job = differential_expression.deseq2(design_file, count_matrix, output_directory)
             deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
 
+            if self.args.batch:
+                # If provided a batch file, compute DGE with batch effect correction
+                batch_file = os.path.relpath(self.args.batch.name, self.output_dir)
+                deseq_job_batch_corrected = differential_expression.deseq2(design_file, count_matrix, f"{output_directory}_batch_corrected", batch_file)
+                deseq_job_batch_corrected.output_files = [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "dge_results.csv") for contrast in self.contrasts]
+
             report_jobs = []
             for contrast in self.contrasts:
                 input_file = os.path.join(output_directory, contrast.name, "dge_results.csv")
@@ -1683,9 +1699,11 @@ rm {temp_out2}""".format(
                     concat_jobs(
                         [
                             bash.mkdir(output_directory),
+                            bash.mkdir(f"{output_directory}_batch_corrected") if self.args.batch else None,
                             prepare_matrix_job,
                             edger_job,
                             deseq_job,
+                            deseq_job_batch_corrected if self.args.batch else None,
                             report_matrix_job
                         ],
                         name="differential_expression.seq2fun",
