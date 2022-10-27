@@ -2608,9 +2608,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
             ])
 
-            mantaIndels = None
-            if os.path.isfile(os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "rawManta", "results", "variants", "candidateSmallIndels.vcf.gz")):
-                mantaIndels = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "rawManta", "results", "variants", "candidateSmallIndels.vcf.gz")
+            mantaIndels = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "rawManta", "results", "variants", "candidateSmallIndels.vcf.gz")
 
             bed_file = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(

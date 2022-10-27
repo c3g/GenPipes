@@ -21,14 +21,12 @@
 
 # Python Standard Modules
 import argparse
-import collections
 import csv
 import logging
 import math
 import os
 import re
 import sys
-import subprocess
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -38,6 +36,7 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 import utils.utils
 
+from bfx import bash_cmd as bash
 from bfx import bedtools
 from bfx import bwa
 from bfx import cufflinks
@@ -76,6 +75,10 @@ class RnaSeqRaw(common.Illumina):
     in the differential analyses. The design file format is described
     [here](https://bitbucket.org/mugqic/mugqic_pipelines/src#markdown-header-design-file)
 
+    The RNAseq pipeline can also take a batch file (optional) which will be used to correct for batch effects
+    in the differential analyses. The batch file format is described
+    [here](https://bitbucket.org/mugqic/mugqic_pipelines/src#markdown-header-batch-file)
+
     The differential gene analysis is followed by a Gene Ontology (GO) enrichment analysis.
     This analysis use the [goseq approach](http://bioconductor.org/packages/release/bioc/html/goseq.html).
     The goseq is based on the use of non-native GO terms (see details in the section 5 of
@@ -100,6 +103,7 @@ class RnaSeqRaw(common.Illumina):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
+        self.argparser.add_argument("-b", "--batch", help="batch file (to peform batch effect correction", type=argparse.FileType('r'))
         super(RnaSeqRaw, self).__init__(protocol)
 
     @property
@@ -110,6 +114,9 @@ class RnaSeqRaw(common.Illumina):
             'alignment_1stPass_directory'   : os.path.join(self.output_dir, 'alignment_1stPass'),
             'alignment_directory'           : os.path.join(self.output_dir, 'alignment'),
             'stringtie_directory'           : os.path.join(self.output_dir, 'stringtie'),
+            'cufflinks_directory'           : os.path.join(self.output_dir, 'cufflinks'),
+            'cuffdiff_directory'            : os.path.join(self.output_dir, 'cuffdiff'),
+            'cuffnorm_directory'            : os.path.join(self.output_dir, 'cuffnorm'),
             'DGE_directory'                 : os.path.join(self.output_dir, 'DGE'),
             'raw_counts_directory'          : os.path.join(self.output_dir, 'raw_counts'),
             'tracks_directory'              : os.path.join(self.output_dir, 'tracks'),
@@ -279,7 +286,7 @@ class RnaSeqRaw(common.Illumina):
                 [report_file],
                 [['star', 'module_pandoc']],
                 command="""\
-mkdir -p report && \\
+mkdir -p {report_dir} && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable scientific_name="{scientific_name}" \\
@@ -290,6 +297,7 @@ pandoc --to=markdown \\
                     assembly=config.param('star', 'assembly'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
+                    report_dir=self.output_dirs["report_directory"],
                     report_file=report_file
                 ),
                 report_files=[report_file],
@@ -526,7 +534,8 @@ pandoc \\
 
             job = concat_jobs(
                 [
-                    Job(command="mkdir -p " + os.path.dirname(readset_bam) + " " + output_folder),
+                    bash.mkdir(os.path.dirname(readset_bam)),
+                    bash.mkdir(output_folder),
                     pipe_jobs(
                         [
                             bvatools.bam2fq(
@@ -557,7 +566,7 @@ pandoc \\
                     tools.py_rrnaBAMcount(
                         bam=readset_metrics_bam,
                         gtf=config.param('bwa_mem_rRNA', 'gtf'),
-                        output=os.path.join(output_folder,readset.name+"rRNA.stats.tsv"),
+                        output=os.path.join(output_folder, readset.name+"rRNA.stats.tsv"),
                         typ="transcript"
                     )
                 ],
@@ -668,23 +677,28 @@ pandoc \\
             # Count reads
             output_count = os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.csv")
             stranded = "no" if config.param('DEFAULT', 'strand_info') == "fr-unstranded" else "reverse"
-            job = concat_jobs([
-                Job(command="mkdir -p raw_counts"),
-                pipe_jobs([
-                        samtools.view(
+            job = concat_jobs(
+                [
+                    bash.mkdir(f"mkdir -p {self.output_dirs['raw_counts_directory']}"),
+                    pipe_jobs(
+                        [
+                            samtools.view(
                                 input_bam,
                                 options="-F 4"
-                        ),
-                        htseq.htseq_count(
-                        "-",
-                        config.param('htseq_count', 'gtf', param_type='filepath'),
-                        output_count,
-                        config.param('htseq_count', 'options'),
-                        stranded
-                        )
-                ])
-            ], name="htseq_count." + sample.name)
-            job.samples = [sample]
+                            ),
+                            htseq.htseq_count(
+                                "-",
+                                config.param('htseq_count', 'gtf', param_type='filepath'),
+                                output_count,
+                                config.param('htseq_count', 'options'),
+                                stranded
+                            )
+                        ]
+                    )
+                ],
+                name="htseq_count." + sample.name,
+                samples=[sample]
+            )
             jobs.append(job)
 
         return jobs
@@ -757,11 +771,19 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         rpkm_directory = self.output_dirs["raw_counts_directory"]
         saturation_directory = os.path.join(self.output_dirs["metrics_directory"], "saturation")
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + saturation_directory),
-            metrics.rpkm_saturation(count_file, gene_size_file, rpkm_directory, saturation_directory)
-        ], name="rpkm_saturation")
-        job.samples = self.samples
+        job = concat_jobs(
+            [
+                bash.mkdir(saturation_directory),
+                metrics.rpkm_saturation(
+                    count_file,
+                    gene_size_file,
+                    rpkm_directory,
+                    saturation_directory
+                )
+            ],
+            name="rpkm_saturation",
+            samples=self.samples
+        )
         jobs.append(job)
 
         report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeq.raw_counts_metrics.md")
@@ -794,7 +816,7 @@ pandoc --to=markdown \\
                 ),
                 report_files=[report_file],
                 name="raw_count_metrics_report",
-                samples = self.samples
+                samples=self.samples
             )
         )
 
@@ -895,11 +917,11 @@ END
 
         for sample in self.samples:
             input_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.hardClip.bam")
-            output_directory = os.path.join("cufflinks", sample.name)
+            output_directory = os.path.join(self.output_dirs["cufflinks_directory"], sample.name)
 
             # De Novo FPKM
             job = cufflinks.cufflinks(input_bam, output_directory, gtf)
-            job.removable_files = ["cufflinks"]
+            job.removable_files = [self.output_dirs["cufflinks_directory"]]
             job.name = "cufflinks."+sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -911,9 +933,9 @@ END
         Merge assemblies into a master transcriptome reference using [cuffmerge](http://cole-trapnell-lab.github.io/cufflinks/cuffmerge/).
         """
 
-        output_directory = os.path.join("cufflinks", "AllSamples")
-        sample_file = os.path.join("cufflinks", "cuffmerge.samples.txt")
-        input_gtfs = [os.path.join("cufflinks", sample.name, "transcripts.gtf") for sample in self.samples]
+        output_directory = os.path.join(self.output_dirs["cufflinks_directory"], "AllSamples")
+        sample_file = os.path.join(self.output_dirs["cufflinks_directory"], "cuffmerge.samples.txt")
+        input_gtfs = [os.path.join(self.output_dirs["cufflinks_directory"], sample.name, "transcripts.gtf") for sample in self.samples]
         gtf = config.param('cuffmerge','gtf', param_type='filepath')
 
 
@@ -938,11 +960,11 @@ END
 
         jobs = []
 
-        gtf = os.path.join("cufflinks", "AllSamples","merged.gtf")
+        gtf = os.path.join(self.output_dirs["cufflinks_directory"], "AllSamples", "merged.gtf")
 
         for sample in self.samples:
             input_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.hardClip.bam")
-            output_directory = os.path.join("cufflinks", sample.name)
+            output_directory = os.path.join(self.output_dirs["cufflinks_directory"], sample.name)
 
             #Quantification
             job = cufflinks.cuffquant(input_bam, output_directory, gtf)
@@ -959,7 +981,7 @@ END
 
         jobs = []
 
-        fpkm_directory = "cufflinks"
+        fpkm_directory = self.output_dirs["cufflinks_directory"]
         gtf = os.path.join(fpkm_directory, "AllSamples","merged.gtf")
 
 
@@ -969,11 +991,11 @@ END
                 # Cuffdiff input is a list of lists of replicate bams per control and per treatment
                 [[os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in group] for group in [contrast.controls, contrast.treatments]],
                 gtf,
-                os.path.join("cuffdiff", contrast.name)
+                os.path.join(self.output_dirs["cuffdiff_directory"], contrast.name)
             )
             for group in [contrast.controls, contrast.treatments]:
                 job.samples = [sample for sample in group]
-            job.removable_files = ["cuffdiff"]
+            job.removable_files = [self.output_dirs["cuffdiff_directory"]]
             job.name = "cuffdiff." + contrast.name
             jobs.append(job)
 
@@ -986,7 +1008,7 @@ END
 
         jobs = []
 
-        fpkm_directory = "cufflinks"
+        fpkm_directory = self.output_dirs["cufflinks_directory"]
         gtf = os.path.join(fpkm_directory, "AllSamples","merged.gtf")
         sample_labels = ",".join([sample.name for sample in self.samples])
 
@@ -994,10 +1016,10 @@ END
         job = cufflinks.cuffnorm(
             [os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in self.samples],
             gtf,
-            "cuffnorm",
+            self.output_dirs["cuffnorm_directory"],
             sample_labels
         )
-        job.removable_files = ["cuffnorm"]
+        job.removable_files = [self.output_dirs["cuffnorm_directory"]]
         job.name = "cuffnorm"
         job.samples = self.samples
         jobs.append(job)
@@ -1008,26 +1030,31 @@ END
         """
         Compute the pearson corrleation matrix of gene and transcripts FPKM. FPKM data are those estimated by cuffnorm.
         """
-        output_directory = "metrics"
+        output_directory = self.output_dirs["metrics_directory"]
         output_transcript = os.path.join(output_directory,"transcripts_fpkm_correlation_matrix.tsv")
-        cuffnorm_transcript = os.path.join("cuffnorm","isoforms.fpkm_table")
+        cuffnorm_transcript = os.path.join(self.output_dirs["cuffnorm_directory"], "isoforms.fpkm_table")
         output_gene = os.path.join(output_directory,"gene_fpkm_correlation_matrix.tsv")
-        cuffnorm_gene = os.path.join("cuffnorm","genes.fpkm_table")
+        cuffnorm_gene = os.path.join(self.output_dirs["cuffnorm_directory"], "genes.fpkm_table")
 
         jobs = []
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + output_directory),
-            utils.utils.fpkm_correlation_matrix(cuffnorm_transcript, output_transcript)
-        ])
-        job.name="fpkm_correlation_matrix_transcript"
-        job.samples = self.samples
-        jobs = jobs + [job]
+        job = concat_jobs(
+            [
+                bash.mkdir(output_directory),
+                utils.utils.fpkm_correlation_matrix(cuffnorm_transcript, output_transcript)
+            ],
+            name="fpkm_correlation_matrix_transcript",
+            samples=self.samples
+        )
+        jobs.append(job)
 
-        job = utils.utils.fpkm_correlation_matrix(cuffnorm_gene, output_gene)
+        job = utils.utils.fpkm_correlation_matrix(
+            cuffnorm_gene,
+            output_gene
+        )
         job.name="fpkm_correlation_matrix_gene"
         job.samples = self.samples
-        jobs = jobs + [job]
+        jobs.append(job)
 
         return jobs
 
@@ -1041,18 +1068,24 @@ END
         # gqSeqUtils function call
         sample_fpkm_readcounts = [[
             sample.name,
-            os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
+            os.path.join(self.output_dirs["cufflinks_directory"], sample.name, "isoforms.fpkm_tracking"),
             os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.csv")
         ] for sample in self.samples]
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p exploratory", samples=self.samples),
-            gq_seq_utils.exploratory_analysis_rnaseq(
-                os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.csv"),
-                "cuffnorm",
-                config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', param_type='filepath'),
-                self.output_dirs["exploratory_directory"]
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(self.output_dirs['exploratory_directory']),
+                    gq_seq_utils.exploratory_analysis_rnaseq(
+                        os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.csv"),
+                        self.output_dirs["cuffnorm_directory"],
+                        config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', param_type='filepath'),
+                        self.output_dirs["exploratory_directory"]
+                    )
+                ],
+                name="gq_seq_utils_exploratory_analysis_rnaseq",
+                samples=self.samples
             )
-        ], name="gq_seq_utils_exploratory_analysis_rnaseq"))
+        )
 
         # Render Rmarkdown Report
         jobs.append(
@@ -1067,23 +1100,24 @@ END
             )
         )
 
-
-
         report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeq.cuffnorm.md")
         jobs.append(
             Job(
-                [os.path.join("cufflinks", "AllSamples","merged.gtf")],
+                [os.path.join(self.output_dirs["cufflinks_directory"], "AllSamples", "merged.gtf")],
                 [report_file],
                 command="""\
-mkdir -p report && \\
-zip -r {report_dir}/cuffAnalysis.zip cufflinks/ cuffdiff/ cuffnorm/ && \\
+mkdir -p {report_dir} && \\
+zip -r {report_dir}/cuffAnalysis.zip {cufflinks_dir}/ {cuffdiff_dir}/ {cuffnorm_dir}/ && \\
 cp \\
   {report_template_dir}/{basename_report_file} \\
   {report_file}""".format(
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
+                    cufflinks_dir=self.output_dirs["cufflinks_directory"],
+                    cuffdiff_dir=self.output_dirs["cuffdiff_directory"],
+                    cuffnorm_dir=self.output_dirs["cuffnorm_directory"],
                     report_dir=self.output_dirs["report_directory"],
-                    report_file=report_file
+                    report_file=report_file,
                 ),
                 report_files=[report_file],
                 name="cuffnorm_report",
@@ -1092,7 +1126,6 @@ cp \\
         )
 
         return jobs
-
 
     def differential_expression(self):
         """
@@ -1103,22 +1136,47 @@ cp \\
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         if self.contrasts:
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
+
         output_directory = self.output_dirs["DGE_directory"]
         count_matrix = os.path.join(output_directory, "rawCountMatrix.csv")
 
-        edger_job = differential_expression.edger(design_file, count_matrix, output_directory)
+        edger_job = differential_expression.edger(
+            design_file,
+            count_matrix,
+            output_directory
+        )
         edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
-        edger_job.samples = self.samples
 
-        deseq_job = differential_expression.deseq2(design_file, count_matrix, output_directory)
+        deseq_job = differential_expression.deseq2(
+            design_file,
+            count_matrix,
+            output_directory
+        )
         deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
-        deseq_job.samples = self.samples
 
-        return [concat_jobs([
-            Job(command="mkdir -p " + output_directory),
-            edger_job,
-            deseq_job
-        ], name="differential_expression")]
+        if self.args.batch:
+            # If provided a batch file, compute DGE with batch effect correction
+            batch_file = os.path.relpath(self.args.batch.name, self.output_dir)
+
+            # edger_job_batch_corrected = differential_expression.edger(design_file, count_matrix, batch_file, f"{output_directory}_batch_corrected")
+            # edger_job_batch_corrected.output_files = [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "edger_results.csv") for contrast in self.contrasts]
+
+            deseq_job_batch_corrected = differential_expression.deseq2(design_file, count_matrix, batch_file, f"{output_directory}_batch_corrected")
+            deseq_job_batch_corrected.output_files = [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "dge_results.csv") for contrast in self.contrasts]
+
+        return [
+            concat_jobs(
+                [
+                    bash.mkdir(output_directory),
+                    bash.mkdir(f"{output_directory}_batch_corrected") if self.args.batch else None,
+                    edger_job,
+                    deseq_job,
+                    deseq_job_batch_corrected if self.args.batch else None
+                ],
+                name="differential_expression",
+                samples=self.samples
+            )
+        ]
 
     def differential_expression_goseq(self):
         """
@@ -1147,8 +1205,8 @@ cp \\
             Job(
                 [os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.csv")] +
                 [os.path.join(self.output_dirs["DGE_directory"], contrast.name, "dge_results.csv") for contrast in self.contrasts] +
-                [os.path.join("cuffdiff", contrast.name, "isoforms.fpkm_tracking") for contrast in self.contrasts] +
-                [os.path.join("cuffdiff", contrast.name, "isoform_exp.diff") for contrast in self.contrasts] +
+                [os.path.join(self.output_dirs["cuffdiff_directory"], contrast.name, "isoforms.fpkm_tracking") for contrast in self.contrasts] +
+                [os.path.join(self.output_dirs["cuffdiff_directory"], contrast.name, "isoform_exp.diff") for contrast in self.contrasts] +
                 [os.path.join(self.output_dirs["DGE_directory"], contrast.name, "gene_ontology_results.csv") for contrast in self.contrasts],
                 [report_file],
                 [['rnaseqc', 'module_python'], ['rnaseqc', 'module_pandoc']],
@@ -1174,7 +1232,7 @@ do
   cp DGE/$contrast/dge_results.csv {report_dir}/DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv
   echo -e "\\nTable: Differential Gene Expression Results (**partial table**; [download full table](DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv))\\n" >> {report_file}
   head -7 {report_dir}/DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
-  sed '1s/^tracking_id/test_id/' cuffdiff/$contrast/isoforms.fpkm_tracking | awk -F"\t" 'FNR==NR{{line[$1]=$0; next}}{{OFS="\t"; print line[$1], $0}}' - cuffdiff/$contrast/isoform_exp.diff | python -c 'import csv,sys; rows_in = csv.DictReader(sys.stdin, delimiter="\t"); rows_out = csv.DictWriter(sys.stdout, fieldnames=["test_id", "gene_id", "tss_id","nearest_ref_id","class_code","gene","locus","length","log2(fold_change)","test_stat","p_value","q_value"], delimiter="\t", extrasaction="ignore"); rows_out.writeheader(); rows_out.writerows(rows_in)' > {report_dir}/DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv
+  sed '1s/^tracking_id/test_id/' {cuffdiff_dir}/$contrast/isoforms.fpkm_tracking | awk -F"\t" 'FNR==NR{{line[$1]=$0; next}}{{OFS="\t"; print line[$1], $0}}' - {cuffdiff_dir}/$contrast/isoform_exp.diff | python -c 'import csv,sys; rows_in = csv.DictReader(sys.stdin, delimiter="\t"); rows_out = csv.DictWriter(sys.stdout, fieldnames=["test_id", "gene_id", "tss_id","nearest_ref_id","class_code","gene","locus","length","log2(fold_change)","test_stat","p_value","q_value"], delimiter="\t", extrasaction="ignore"); rows_out.writeheader(); rows_out.writerows(rows_in)' > {report_dir}/DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv
   echo -e "\\n---\\n\\nTable: Differential Transcript Expression Results (**partial table**; [download full table](DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv))\\n" >> {report_file}
   head -7 {report_dir}/DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
   if [ `wc -l DGE/$contrast/gene_ontology_results.csv | cut -f1 -d\ ` -gt 1 ]
@@ -1190,6 +1248,7 @@ done""".format(
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     adj_pvalue_threshold=config.param('differential_expression_goseq','other_options').split(" ")[1],
+                    cuffdiff_dir=self.output_dirs["cuffdiff_directory"],
                     report_dir=self.output_dirs["report_directory"],
                     report_file=report_file,
                     contrasts=" ".join([contrast.name for contrast in self.contrasts])
@@ -1272,7 +1331,7 @@ class RnaSeq(RnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="RNAseq analysis type", choices=["stringtie","cufflinks"], default="stringtie")
+        self.argparser.add_argument("-t", "--type", help="RNAseq analysis type", choices=["stringtie", "cufflinks"], default="stringtie")
         super(RnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
@@ -1280,4 +1339,4 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        RnaSeq(protocol=['stringtie','cufflinks'])
+        RnaSeq(protocol=['stringtie', 'cufflinks'])

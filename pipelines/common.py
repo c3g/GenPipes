@@ -364,7 +364,7 @@ END
 
         read_type = "Paired" if self.run_type == 'PAIRED_END' else "Single"
         readset_merge_trim_stats = os.path.join(self.output_dirs["metrics_directory"], "trimReadsetTable.tsv")
-        job = concat_jobs([Job(command="mkdir -p metrics"), Job(command=f"echo 'Sample\tReadset\tRaw {read_type} Reads #\tSurviving {read_type} Reads #\tSurviving {read_type} Reads %' > {readset_merge_trim_stats}")])
+        job = concat_jobs([Job(command=f"mkdir -p {self.output_dirs['metrics_directory']}"), Job(command=f"echo 'Sample\tReadset\tRaw {read_type} Reads #\tSurviving {read_type} Reads #\tSurviving {read_type} Reads %' > {readset_merge_trim_stats}")])
         for readset in self.readsets:
             trim_log = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
@@ -373,48 +373,56 @@ END
             elif readset.run_type == "SINGLE_END":
                 perl_command = f"perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'"
 
-            job = concat_jobs([
-                job,
-                Job(
-                    [trim_log],
-                    [readset_merge_trim_stats],
-                    module_entries=[['merge_trimmomatic_stats', 'module_perl']],
-                    # Create readset trimming stats TSV file with paired or single read count using ugly awk
-                    command="""\
-grep ^Input {trim_log} | \\
-{perl_command} | \\
-awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
-  >> {readset_merge_trim_stats}""".format(
-                        trim_log=trim_log,
-                        perl_command=perl_command,
-                        readset_merge_trim_stats=readset_merge_trim_stats
-                    ),
-                    samples=[readset.sample]
-                )
-            ])
+            job = concat_jobs(
+                [
+                    job,
+                    Job(
+                        [trim_log],
+                        [readset_merge_trim_stats],
+                        module_entries=[['merge_trimmomatic_stats', 'module_perl']],
+                        # Create readset trimming stats TSV file with paired or single read count using ugly awk
+                        command="""\
+    grep ^Input {trim_log} | \\
+    {perl_command} | \\
+    awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
+    >> {readset_merge_trim_stats}""".format(
+                            trim_log=trim_log,
+                            perl_command=perl_command,
+                            readset_merge_trim_stats=readset_merge_trim_stats
+                        ),
+                        samples=[readset.sample]
+                    )
+                ]
+            )
 
         sample_merge_trim_stats = os.path.join(self.output_dirs["metrics_directory"], "trimSampleTable.tsv")
         report_file = os.path.join(self.output_dirs["report_directory"], "Illumina.merge_trimmomatic_stats.md")
-        return [concat_jobs([
-            job,
-            Job(
-                [readset_merge_trim_stats],
-                [sample_merge_trim_stats],
-                # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
-                command="""\
+        return [
+            concat_jobs(
+                [
+                    job,
+                    Job(
+                        [readset_merge_trim_stats],
+                        [sample_merge_trim_stats],
+                        # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
+                        command="""\
 cut -f1,3- {readset_merge_trim_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{if ($2=="Raw Paired Reads #") {{paired=1}};print "Sample", "Raw Reads #", "Surviving Reads #", "Surviving %"}} else {{if (paired) {{$2=$2*2; $3=$3*2}}; raw[$1]+=$2; surviving[$1]+=$3}}}}END{{for (sample in raw){{print sample, raw[sample], surviving[sample], surviving[sample] / raw[sample] * 100}}}}' \\
   > {sample_merge_trim_stats}""".format(
-                    readset_merge_trim_stats=readset_merge_trim_stats,
-                    sample_merge_trim_stats=sample_merge_trim_stats
-                )
-            ),
-            Job(
-                [sample_merge_trim_stats],
-                [report_file, os.path.join(self.output_dirs["report_directory"], "trimReadsetTable.tsv"), os.path.join(self.output_dirs["report_directory"], "trimSampleTable.tsv")],
-                [['merge_trimmomatic_stats', 'module_pandoc']],
-                command="""\
-mkdir -p report && \\
-cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/ && \\
+                            readset_merge_trim_stats=readset_merge_trim_stats,
+                            sample_merge_trim_stats=sample_merge_trim_stats
+                        )
+                    ),
+                    Job(
+                        [sample_merge_trim_stats],
+                        [
+                            report_file,
+                            os.path.join(self.output_dirs["report_directory"], "trimReadsetTable.tsv"),
+                            os.path.join(self.output_dirs["report_directory"], "trimSampleTable.tsv")
+                        ],
+                        [['merge_trimmomatic_stats', 'module_pandoc']],
+                        command="""\
+mkdir -p {report_dir} && \\
+cp {readset_merge_trim_stats} {sample_merge_trim_stats} {report_dir}/ && \\
 trim_readset_table_md=`LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:"}} else {{print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5)}}}}' {readset_merge_trim_stats}` && \\
 pandoc \\
   {report_template_dir}/{basename_report_file} \\
@@ -425,17 +433,22 @@ pandoc \\
   --variable trim_readset_table="$trim_readset_table_md" \\
   --to markdown \\
   > {report_file}""".format(
-                    trailing_min_quality=config.param('trimmomatic', 'trailing_min_quality', param_type='int'),
-                    min_length=config.param('trimmomatic', 'min_length', param_type='posint'),
-                    read_type=read_type,
-                    report_template_dir=self.report_template_dir,
-                    readset_merge_trim_stats=readset_merge_trim_stats,
-                    sample_merge_trim_stats=sample_merge_trim_stats,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file
-                ),
-                report_files=[report_file]
-            )], name="merge_trimmomatic_stats")]
+                            trailing_min_quality=config.param('trimmomatic', 'trailing_min_quality', param_type='int'),
+                            min_length=config.param('trimmomatic', 'min_length', param_type='posint'),
+                            read_type=read_type,
+                            report_template_dir=self.report_template_dir,
+                            readset_merge_trim_stats=readset_merge_trim_stats,
+                            sample_merge_trim_stats=sample_merge_trim_stats,
+                            basename_report_file=os.path.basename(report_file),
+                            report_dir=self.output_dirs["report_directory"],
+                            report_file=report_file
+                        ),
+                        report_files=[report_file]
+                    )
+                ],
+                name="merge_trimmomatic_stats"
+            )
+        ]
 
     def sambamba_merge_sam_files(self):
         """

@@ -32,7 +32,9 @@ def run(input, sample_name, output_dir):
 	        ['run_breakseq2', 'module_bwa']
         ],
         command="""\
-run_breakseq2.py {options} --bwa bwa --samtools samtools \\
+bwa_path=`which bwa`; \\
+samtools=`which samtools`; \\
+run_breakseq2.py {options} --bwa $bwa_path --samtools $samtools_path \\
     --nthreads {threads} \\
     --reference {genome}  \\
     --bplib_gff {gff} \\

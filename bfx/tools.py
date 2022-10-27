@@ -700,7 +700,6 @@ bash createRmapFile.sh \\
         name=job_name
     )
 
-
 def sh_create_baitmap(bait, sorted_bait, annotation, output):
     return Job(
         [output + ".tmp", bait],

@@ -3675,15 +3675,22 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                              [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.bam")],
                                              [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.bam")]])[0]
             
-            jobs.append(concat_jobs([
-                bash.mkdir(output_dir, remove=True),
-                breakseq2.run(input, sample.name, output_dir),
-                pipe_jobs([
-                    bcftools.view(output, None, config.param('run_breakseq2', 'bcftools_options')),
-                    htslib.bgzip_tabix(None, final_vcf),
-                ]),
-            ], name="run_breakseq2." + sample.name))
-
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(output_dir, remove=True),
+                        breakseq2.run(input, sample.name, output_dir),
+                        pipe_jobs(
+                            [
+                                bcftools.view(output, None, config.param('run_breakseq2', 'bcftools_options')),
+                                htslib.bgzip_tabix(None, final_vcf),
+                            ]
+                        ),
+                    ],
+                    name="run_breakseq2." + sample.name
+                )
+            )
+    
         return jobs
 
     def ensemble_metasv(self):
