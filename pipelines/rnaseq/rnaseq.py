@@ -1161,7 +1161,12 @@ cp \\
             # edger_job_batch_corrected = differential_expression.edger(design_file, count_matrix, batch_file, f"{output_directory}_batch_corrected")
             # edger_job_batch_corrected.output_files = [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "edger_results.csv") for contrast in self.contrasts]
 
-            deseq_job_batch_corrected = differential_expression.deseq2(design_file, count_matrix, f"{output_directory}_batch_corrected", batch_file)
+            deseq_job_batch_corrected = differential_expression.deseq2(
+                design_file,
+                count_matrix,
+                f"{output_directory}_batch_corrected",
+                batch_file
+            )
             deseq_job_batch_corrected.output_files = [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "dge_results.csv") for contrast in self.contrasts]
 
         return [
