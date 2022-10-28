@@ -3345,75 +3345,127 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             genotype_gzip = os.path.join(pair_directory, sample.name + ".lumpy.genotyped.vcf.gz")
             germline_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
 
-            jobs.append(concat_jobs([
-                bash.mkdir(lumpy_directory, remove=True),
-                pipe_jobs([
-                    samtools.view(
-                        inputNormal,
-                        None,
-                        "-b -F 1294"
-                    ),
-                    sambamba.sort(
-                        "/dev/stdin",
-                        discordants_normal,
-                        lumpy_directory,
-                        config.param('extract_discordant_reads', 'sambamba_options')
-                    ),
-                ]),
-            ], name="extract_discordant_reads." + sample.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(lumpy_directory, remove=True),
+                        pipe_jobs(
+                            [
+                                samtools.view(
+                                    inputNormal,
+                                    None,
+                                    "-b -F 1294"
+                                ),
+                                sambamba.sort(
+                                    "/dev/stdin",
+                                    discordants_normal,
+                                    lumpy_directory,
+                                    config.param('extract_discordant_reads', 'sambamba_options')
+                                ),
+                            ]
+                        ),
+                    ],
+                    name=f"extract_discordant_reads.{sample.name}",
+                    samples=[sample]
+                )
+            )
 
-            jobs.append(concat_jobs([
-                bash.mkdir(lumpy_directory, remove=True),
-                pipe_jobs([
-                    samtools.view(
-                        inputNormal,
-                        None,
-                        "-h"
-                    ),
-                    Job(
-                        [None],
-                        [None],
-                        [
-                            ['extract_split_reads', 'module_python'],
-                            ['extract_split_reads', 'module_lumpy']
-                        ],
-                        command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"
-                    ),
-                    samtools.view(
-                        "-",
-                        None,
-                        " -Sb "
-                    ),
-                    sambamba.sort(
-                        "/dev/stdin",
-                        splitters_normal,
-                        lumpy_directory,
-                        config.param('extract_split_reads', 'sambamba_options')
-                    ),
-                ]),
-            ], name="extract_split_reads." + sample.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(lumpy_directory, remove=True),
+                        pipe_jobs(
+                            [
+                                samtools.view(
+                                    inputNormal,
+                                    None,
+                                    "-h"
+                                ),
+                                Job(
+                                    [None],
+                                    [None],
+                                    [
+                                        ['extract_split_reads', 'module_python'],
+                                        ['extract_split_reads', 'module_lumpy']
+                                    ],
+                                    command="$LUMPY_SCRIPTS/extractSplitReads_BwaMem -i stdin"
+                                ),
+                                samtools.view(
+                                    "-",
+                                    None,
+                                    " -Sb "
+                                ),
+                                sambamba.sort(
+                                    "/dev/stdin",
+                                    splitters_normal,
+                                    lumpy_directory,
+                                    config.param('extract_split_reads', 'sambamba_options')
+                                ),
+                            ]
+                        ),
+                    ],
+                    name=f"extract_split_reads.{sample.name}",
+                    samples=[sample]
+                )
+            )
 
-            jobs.append(concat_jobs([
-                bash.mkdir(lumpy_directory, remove=True),
-                lumpy.lumpyexpress_pair(inputNormal, None, output_vcf, spl_normal=splitters_normal, dis_normal=discordants_normal),
-                htslib.bgzip(output_vcf, gzip_vcf),
-            ], name="lumpy_paired_sv_calls." + sample.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(lumpy_directory, remove=True),
+                        lumpy.lumpyexpress_pair(inputNormal, None, output_vcf, spl_normal=splitters_normal, dis_normal=discordants_normal),
+                        htslib.bgzip(output_vcf, gzip_vcf),
+                    ],
+                    name=f"lumpy_paired_sv_calls.{sample.name}",
+                    samples=[sample]
+                )
+            )
         
-            jobs.append(concat_jobs([
-                pipe_jobs([
-                    Job([gzip_vcf], [None], command="zcat " + gzip_vcf + " | grep -v \"^##contig\""),
-                    bcftools.annotate(None, None, config.param('lumpy_paired_sv_calls', 'header_options')),
-                    vt.sort("-", os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"), "-m full"),
-                ]),
-                svtyper.genotyper(None, inputNormal, os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"), genotype_vcf),
-                htslib.bgzip(genotype_vcf, genotype_gzip),
-                pipe_jobs([
-                    vawk.single_germline(genotype_vcf, sample.name, None),
-                    vt.sort("-", "-", "-m full"),
-                    htslib.bgzip_tabix(None, germline_vcf),
-                ]),
-            ], name="lumpy_paired_sv_calls.genotype." + sample.name))
-    
+            jobs.append(
+                concat_jobs(
+                    [
+                        pipe_jobs(
+                            [
+                                Job(
+                                    [gzip_vcf],
+                                    [None],
+                                    command=f"zcat {gzip_vcf} | grep -v \"^##contig\""
+                                ),
+                                bcftools.annotate(
+                                    None,
+                                    None,
+                                    config.param('lumpy_paired_sv_calls', 'header_options')
+                                ),
+                                vt.sort(
+                                    "-",
+                                    os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"),
+                                    "-m full"
+                                ),
+                            ]
+                        ),
+                        svtyper.genotyper(
+                            None,
+                            inputNormal,
+                            os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"),
+                            genotype_vcf,
+                            ini_section="lumpy_paired_sv_calls"
+                        ),
+                        htslib.bgzip(
+                            genotype_vcf,
+                            genotype_gzip
+                        ),
+                        pipe_jobs(
+                            [
+                                vawk.single_germline(genotype_vcf, sample.name, None),
+                                vt.sort("-", "-", "-m full"),
+                                htslib.bgzip_tabix(None, germline_vcf),
+                            ]
+                        ),
+                    ],
+                    name=f"lumpy_paired_sv_calls.genotype.{sample.name}",
+                    samples=[sample]
+                )
+            )
         return jobs
 
     def lumpy_sv_annotation(self):
@@ -3537,12 +3589,17 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
         for sample in self.samples:
             pair_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
-            germline_vcf = os.path.join(pair_directory, sample.name + ".wham.germline.vcf.gz")
+            germline_vcf = os.path.join(pair_directory, f"{sample.name}.wham.germline.vcf.gz")
 
-            jobs.append(concat_jobs([
-                snpeff.compute_effects(germline_vcf, os.path.join(pair_directory, sample.name + ".wham.germline.snpeff.vcf.gz")),
-            ], name="sv_annotation.wham.germline." + sample.name))
-
+            jobs.append(
+                concat_jobs(
+                    [
+                        snpeff.compute_effects(germline_vcf, os.path.join(pair_directory, f"{sample.name}..wham.germline.snpeff.vcf.gz")),
+                    ],
+                    name=f"sv_annotation.wham.germline.{sample.name}",
+                    samples=[sample]
+                )
+            )
         return jobs
 
     def cnvkit_batch(self):
@@ -3565,14 +3622,12 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             if os.path.isfile(poolRef):
                 pool_ref_cnn = poolRef
                 ref_cnn = None
-
             else:
                 pool_ref_cnn = None
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
 
             bed = None
-
             if coverage_bed:
                 bed = coverage_bed
 
@@ -3582,29 +3637,65 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             normal = None
             if os.path.isfile(gatk_vcf):
                 input_vcf = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.flt.vcf.gz")
-                jobs.append(concat_jobs([
-                    bcftools.view(gatk_vcf, input_vcf, filter_options="-i '%QUAL>=50'")
-                ], name="cnvkit_batch.vcf_flt." + sample.name))
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bcftools.view(gatk_vcf, input_vcf, filter_options="-i '%QUAL>=50'")
+                        ],
+                        name=f"cnvkit_batch.vcf_flt.{sample.name}",
+                        samples=[sample]
+                    )
+                )
                 normal = sample.name
 
             if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples', param_type='posint'):
-                jobs.append(concat_jobs([
-                    bash.mkdir(cnvkit_dir, remove=True),
-                    cnvkit.batch(None, inputNormal, cnvkit_dir, tar_dep=tarcov_cnn, antitar_dep=antitarcov_cnn,
-                                 target_bed=bed, reference=pool_ref_cnn, output_cnn=ref_cnn),
-                ], name="cnvkit_batch." + sample.name))
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(cnvkit_dir, remove=True),
+                            cnvkit.batch(
+                                None,
+                                inputNormal,
+                                cnvkit_dir,
+                                tar_dep=tarcov_cnn,
+                                antitar_dep=antitarcov_cnn,
+                                target_bed=bed,
+                                reference=pool_ref_cnn,
+                                output_cnn=ref_cnn
+                            )
+                        ],
+                        name=f"cnvkit_batch.{sample.name}",
+                        samples=[sample]
+                    )
+                )
 
-                jobs.append(concat_jobs([
-                    bash.mkdir(cnvkit_dir, remove=True),
-                    cnvkit.fix(tarcov_cnn, antitarcov_cnn, os.path.join(cnvkit_dir, sample.name + ".cnr"),
-                               reference=pool_ref_cnn, ref_cnn=ref_cnn),
-                    cnvkit.segment(os.path.join(cnvkit_dir, sample.name + ".cnr"),
-                                   os.path.join(cnvkit_dir, sample.name + ".cns"), vcf=input_vcf,
-                                   sample_id=sample.name),
-                    cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"),
-                                   os.path.join(cnvkit_dir, sample.name + ".cns"),
-                                   os.path.join(metrics, sample.name + ".metrics.tsv")),
-                ], name="cnvkit_batch.correction." + sample.name))
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(cnvkit_dir, remove=True),
+                            cnvkit.fix(
+                                tarcov_cnn,
+                                antitarcov_cnn,
+                                os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                                reference=pool_ref_cnn,
+                                ref_cnn=ref_cnn
+                            ),
+                            cnvkit.segment(
+                                os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                                os.path.join(cnvkit_dir, sample.name + ".cns"),
+                                vcf=input_vcf,
+                                sample_id=sample.name
+                            ),
+                            cnvkit.metrics(
+                                os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                                os.path.join(cnvkit_dir, sample.name + ".cns"),
+                                os.path.join(metrics, sample.name + ".metrics.tsv")
+                            )
+                        ],
+                        name=f"cnvkit_batch.correction.{sample.name}",
+                        samples=[sample]
+                    )
+                )
 
                 background = [os.path.join(metrics, sample.name + ".metrics.tsv") for sample in self.samples]
 
