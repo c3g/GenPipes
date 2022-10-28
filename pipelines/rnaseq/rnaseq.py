@@ -1269,7 +1269,7 @@ done""".format(
         return [
             metrics.ihec_metrics_rnaseq(
                 [f"{self.output_dirs['metrics_directory']}/rnaseqRep/metrics.tsv", f"{self.output_dirs['report_directory']}/trimAlignmentTable.tsv"],
-                [f"{self.output_dirs['report_directory']}report/IHEC_metrics_rnaseq_All.txt"],
+                [f"{self.output_dirs['report_directory']}/IHEC_metrics_rnaseq_All.txt"],
                 genome
             )
         ]
