@@ -679,7 +679,7 @@ pandoc \\
             stranded = "no" if config.param('DEFAULT', 'strand_info') == "fr-unstranded" else "reverse"
             job = concat_jobs(
                 [
-                    bash.mkdir(f"mkdir -p {self.output_dirs['raw_counts_directory']}"),
+                    bash.mkdir(f"{self.output_dirs['raw_counts_directory']}"),
                     pipe_jobs(
                         [
                             samtools.view(
@@ -1266,7 +1266,6 @@ done""".format(
         """
 
         genome = config.param('ihec_metrics', 'assembly')
-
         return [
             metrics.ihec_metrics_rnaseq(
                 [f"{self.output_dirs['metrics_directory']}/rnaseqRep/metrics.tsv", f"{self.output_dirs['report_directory']}/trimAlignmentTable.tsv"],
@@ -1274,7 +1273,6 @@ done""".format(
                 genome
             )
         ]
-
 
     @property
     def steps(self):
