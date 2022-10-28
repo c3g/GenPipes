@@ -33,6 +33,7 @@ from core.config import config
 from core.job import Job, concat_jobs, pipe_jobs
 import utils.utils
 
+from bfx import bash_cmd as bash
 from bfx import bvatools
 from bfx import gatk
 from bfx import igvtools
@@ -200,11 +201,16 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         genome_dictionary = config.param('DEFAULT', 'genome_dictionary', param_type='filepath')
 
         if nb_jobs > 1:
-            bedJob = tools.dict2beds(genome_dictionary, beds)
-            jobs.append(concat_jobs([
-                Job(command="mkdir -p " + varscan_directory),
-                bedJob
-            ], name="varscan.genome.beds"))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(varscan_directory),
+                        tools.dict2beds(genome_dictionary, beds)
+                    ],
+                    name="varscan.genome.beds",
+                    samples=self.samples
+                )
+            )
 
         bams=[]
         sampleNamesFile = 'varscan_samples.tsv'
@@ -219,26 +225,34 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
             #sampleNames.append(sample.name)
 
         if nb_jobs == 1:
-            job = concat_jobs([
-                Job(command="mkdir -p " + varscan_directory, samples=self.samples),
-                pipe_jobs([
-                    samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'), regionFile=bedfile),
-                    varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
-                    htslib.bgzip_tabix(None, os.path.join(variants_directory, "allSamples.vcf.gz"))
-                ])
-            ], name="varscan.single")
-
+            job = concat_jobs(
+                [
+                    bash.mkdir(varscan_directory),
+                    pipe_jobs(
+                        [
+                            samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'), regionFile=bedfile),
+                            varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
+                            htslib.bgzip_tabix(None, os.path.join(variants_directory, "allSamples.vcf.gz"))
+                        ]
+                    )
+                ],
+                name="varscan.single",
+                samples=self.samples
+            )
             jobs.append(job)
 
         else:
             output_vcfs=[]
             for idx in range(nb_jobs):
                 output_vcf = os.path.join(varscan_directory, "allSamples."+str(idx)+".vcf.gz")
-                varScanJob = pipe_jobs([
-                    samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'), regionFile=beds[idx]),
-                    varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
-                    htslib.bgzip_tabix(None, output_vcf)
-                ], name = "varscan." + str(idx))
+                varScanJob = pipe_jobs(
+                    [
+                        samtools.mpileup(bams, None, config.param('varscan', 'mpileup_other_options'), regionFile=beds[idx]),
+                        varscan.mpileupcns(None, None, sampleNamesFile, config.param('varscan', 'other_options')),
+                        htslib.bgzip_tabix(None, output_vcf)
+                    ],
+                    name = "varscan." + str(idx)
+                )
                 varScanJob.samples = self.samples
                 output_vcfs.append(output_vcf)
                 jobs.append(varScanJob)
@@ -260,23 +274,30 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
 
         output_directory = self.output_dirs["variants_directory"]
         prefix = os.path.join(output_directory, "allSamples")
-        outputPreprocess = prefix + ".prep.vt.vcf.gz"
-        outputFix = prefix + ".prep.vt.fix.vcf.gz"
+        outputPreprocess = f"{prefix}.prep.vt.vcf.gz"
+        outputFix = f"{prefix}.prep.vt.fix.vcf.gz"
 
-        jobs.append(concat_jobs([
-            tools.preprocess_varscan( prefix + ".vcf.gz",  prefix + ".prep.vcf.gz" ), 
-            pipe_jobs([
-                    vt.decompose_and_normalize_mnps(prefix + ".prep.vcf.gz", None),
-                    htslib.bgzip_tabix(None, prefix + ".prep.vt.vcf.gz"),
-            ]),
-            Job(
-                [outputPreprocess],
-                [outputFix],
-                command="zless " + outputPreprocess + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFix,
+        jobs.append(
+            concat_jobs(
+                [
+                    tools.preprocess_varscan(f"{prefix}.vcf.gz", f"{prefix}.prep.vcf.gz"),
+                    pipe_jobs(
+                        [
+                            vt.decompose_and_normalize_mnps(f"{prefix}.prep.vcf.gz", None),
+                            htslib.bgzip_tabix(None, f"{prefix}.prep.vt.vcf.gz"),
+                        ]
+                    ),
+                    Job(
+                        [outputPreprocess],
+                        [outputFix],
+                        command="zless " + outputPreprocess + " | grep -v 'ID=AD_O' | awk ' BEGIN {OFS=\"\\t\"; FS=\"\\t\"} {if (NF > 8) {for (i=9;i<=NF;i++) {x=split($i,na,\":\") ; if (x > 1) {tmp=na[1] ; for (j=2;j<x;j++){if (na[j] == \"AD_O\") {na[j]=\"AD\"} ; if (na[j] != \".\") {tmp=tmp\":\"na[j]}};$i=tmp}}};print $0} ' | bgzip -cf >  " + outputFix,
+                    ),
+                    tools.preprocess_varscan(outputFix, f"{prefix}.vt.vcf.gz")
+                ],
+                name="preprocess_vcf.allSamples",
                 samples=self.samples
-            ),
-            tools.preprocess_varscan( outputFix,  prefix + ".vt.vcf.gz" )
-        ], name="preprocess_vcf.allSamples"))
+            )
+        )
 
         return jobs
 
@@ -291,11 +312,17 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         output_directory = self.output_dirs["variants_directory"]
         snpeff_prefix = os.path.join(output_directory, "allSamples")
 
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p " + output_directory, samples=self.samples),
-            snpeff.compute_effects( snpeff_prefix + ".vt.vcf.gz", snpeff_prefix + ".vt.snpeff.vcf", split=True),
-            htslib.bgzip_tabix( snpeff_prefix + ".vt.snpeff.vcf", snpeff_prefix + ".vt.snpeff.vcf.gz")            
-        ], name="compute_effects.allSamples"))
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(output_directory),
+                    snpeff.compute_effects(snpeff_prefix + ".vt.vcf.gz", snpeff_prefix + ".vt.snpeff.vcf", split=True),
+                    htslib.bgzip_tabix( snpeff_prefix + ".vt.snpeff.vcf", snpeff_prefix + ".vt.snpeff.vcf.gz")            
+                ],
+                name="compute_effects.allSamples",
+                samples=self.samples
+            )
+        )
 
         return jobs
 
@@ -312,11 +339,16 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
         gemini_module=config.param("DEFAULT", 'module_gemini').split(".")
         gemini_version = ".".join([gemini_module[-2],gemini_module[-1]])
 
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p " + output_directory, samples=self.samples),
-            gemini.gemini_annotations( gemini_prefix + ".vt.snpeff.vcf.gz", gemini_prefix + ".gemini."+gemini_version+".db", temp_dir)
-        ], name="gemini_annotations.allSamples"))
-
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(output_directory),
+                    gemini.gemini_annotations(gemini_prefix + ".vt.snpeff.vcf.gz", gemini_prefix + ".gemini."+gemini_version+".db", temp_dir)
+                ],
+                name="gemini_annotations.allSamples",
+                samples=self.samples
+            )
+        )
         return jobs
 
     @property
