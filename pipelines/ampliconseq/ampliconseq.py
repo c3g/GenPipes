@@ -783,7 +783,7 @@ pandoc --to=markdown \\
                     bash.mkdir(output_directory),
                     job
                 ],
-                name="qiime_rep_picking." + re.sub("_otus", "", otu_directory)
+                name="qiime_rep_picking." + re.sub("_otus", "", os.path.basename(otu_directory))
             )
         )
         return jobs
@@ -813,11 +813,16 @@ pandoc --to=markdown \\
         )
         job.samples = self.samples
 
-        jobs.append(concat_jobs([
-            # Create an output directory
-            Job(command="mkdir -p " + output_directory),
-            job
-        ], name="qiime_otu_assigning." + re.sub("_otus", "", otu_directory)))
+        jobs.append(
+            concat_jobs(
+                [
+                # Create an output directory
+                    Job(command="mkdir -p " + output_directory),
+                    job
+                ],
+                name="qiime_otu_assigning." + re.sub("_otus", "", os.path.basename(otu_directory))
+            )
+        )
 
         return jobs
 
@@ -908,7 +913,7 @@ $QIIME_HOME/biom summarize-table \\
             )),
             Job(command="mkdir -p " + otu_sample_directory),
             job_sample
-        ], name="qiime_otu_table." + re.sub("_otus", "", otu_directory)))
+        ], name="qiime_otu_table." + re.sub("_otus", "", os.path.basename(otu_directory))))
 
         return jobs
 
@@ -937,7 +942,7 @@ $QIIME_HOME/biom summarize-table \\
         )
         job.samples = self.samples
 
-        job.name = "qiime_otu_alignment." + re.sub("_otus", "", otu_directory)
+        job.name = "qiime_otu_alignment." + re.sub("_otus", "", os.path.basename(otu_directory))
         jobs.append(job)
 
         return jobs
@@ -967,7 +972,7 @@ $QIIME_HOME/biom summarize-table \\
         )
         job.samples = self.samples
 
-        job.name = "qiime_filter_alignment." + re.sub("_otus", "", otu_directory)
+        job.name = "qiime_filter_alignment." + re.sub("_otus", "", os.path.basename(otu_directory))
         jobs.append(job)
 
         return jobs
@@ -1000,7 +1005,7 @@ $QIIME_HOME/biom summarize-table \\
             # Create an output directory
             Job(command="mkdir -p " + output_directory),
             job
-        ], name="qiime_phylogeny." + re.sub("_otus", "", otu_directory)))
+        ], name="qiime_phylogeny." + re.sub("_otus", "", os.path.basename(otu_directory))))
 
         return jobs
 
@@ -1051,7 +1056,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 report_files=[report_file],
-                name="qiime_report." + re.sub("_otus", "", otu_directory),
+                name="qiime_report." + re.sub("_otus", "", os.path.basename(otu_directory)),
                 samples=self.samples
             )
         )
@@ -1090,7 +1095,7 @@ pandoc --to=markdown \\
             # Create an output directory
             Job(command="mkdir -p " + alpha_directory),
             job
-        ], name="qiime_multiple_rarefaction." + re.sub("_otus", "", otu_directory)))
+        ], name="qiime_multiple_rarefaction." + re.sub("_otus", "", os.path.basename(otu_directory))))
 
         return jobs
 
@@ -1117,7 +1122,7 @@ pandoc --to=markdown \\
             alpha_diversity_directory
         )
         job.samples = self.samples
-        job.name = "qiime_alpha_diversity." + re.sub("_alpha_diversity", "", alpha_directory)
+        job.name = "qiime_alpha_diversity." + re.sub("_alpha_diversity", "", os.path.basename(alpha_directory))
 
         jobs.append(job)
 
@@ -1153,7 +1158,7 @@ pandoc --to=markdown \\
         jobs.append(concat_jobs([
             Job(command="mkdir -p " + alpha_diversity_collated_directory),
             job
-        ], name="qiime_collate_alpha." + re.sub("_alpha_diversity", "", alpha_directory)))
+        ], name="qiime_collate_alpha." + re.sub("_alpha_diversity", "", os.path.basename(alpha_directory))))
 
         return jobs
 
@@ -1254,7 +1259,7 @@ pandoc --to=markdown \\
                     )
                 ),
                 job
-            ], name="qiime_sample_rarefaction." + re.sub("_alpha_diversity", ".", alpha_directory) + readset.sample.name))
+            ], name="qiime_sample_rarefaction." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + readset.sample.name))
 
         return jobs
 
@@ -1309,7 +1314,7 @@ pandoc --to=markdown \\
             ),
             report_files=[report_file],
             samples=self.samples,
-            name="qiime_report2." + re.sub("_alpha_diversity", "", alpha_directory))
+            name="qiime_report2." + re.sub("_alpha_diversity", "", os.path.basename(alpha_directory)))
         )
 
         return jobs
@@ -1408,7 +1413,7 @@ pandoc --to=markdown \\
             job_observed_species,
             job_shannon,
             job
-        ], name="qiime_single_rarefaction." + re.sub("_otus", "", otu_directory)))
+        ], name="qiime_single_rarefaction." + re.sub("_otus", "", os.path.basename(otu_directory))))
 
         return jobs
 
@@ -1506,7 +1511,7 @@ pandoc --to=markdown \\
             job_observed_species,
             job_shannon,
             job
-        ], name="qiime_css_normalization." + re.sub("_otus", "", otu_directory)))
+        ], name="qiime_css_normalization." + re.sub("_otus", "", os.path.basename(otu_directory))))
 
         return jobs
 
@@ -1549,7 +1554,7 @@ pandoc --to=markdown \\
             )
             job.samples = self.samples
 
-            job.name = "qiime_rarefaction_plot." + re.sub("_alpha_diversity", ".", alpha_directory[0] + method)
+            job.name = "qiime_rarefaction_plot." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + method
             jobs.append(job)
 
         return jobs
@@ -1595,7 +1600,7 @@ pandoc --to=markdown \\
                 # Create an output directory
                 Job(command="mkdir -p " + alpha_directory),
                 job
-            ], name="qiime_summarize_taxa." + re.sub("_alpha_diversity", ".", alpha_directory) + method))
+            ], name="qiime_summarize_taxa." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + method))
 
         return jobs
 
@@ -1635,7 +1640,7 @@ pandoc --to=markdown \\
             )
             job.samples = self.samples
 
-            job.name = "qiime_plot_taxa." + re.sub("_alpha_diversity", ".", alpha_directory) + method
+            job.name = "qiime_plot_taxa." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + method
             jobs.append(job)
 
         return jobs
@@ -1705,7 +1710,7 @@ pandoc --to=markdown \\
                 Job(command="chmod +x " + heatmap_directory + "/OTU_Phylum_to_R.R"),
                 jobClean,
                 jobR
-            ], name="plot_heatmap." + re.sub("_otus", ".", otu_directory) + method))
+            ], name="plot_heatmap." + re.sub("_otus", ".", os.path.basename(otu_directory)) + method))
 
         return jobs
 
@@ -1763,7 +1768,7 @@ $QIIME_HOME/biom convert -i {otu_normalized_table} \\
                     alpha_diversity_krona_directory=alpha_diversity_krona_directory
                 )),
                 job
-            ], name="krona." + re.sub("_otus", ".", otu_directory) + method))
+            ], name="krona." + re.sub("_otus", ".", os.path.basename(otu_directory)) + method))
         return jobs
 
     def plot_to_alpha(self):
@@ -1847,7 +1852,7 @@ pandoc --to=markdown \\
                     report_file=report_file
                 ),
                 samples=self.samples,
-                name="plot_to_alpha." + re.sub("_alpha_diversity", ".", alpha_directory) + method
+                name="plot_to_alpha." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + method
             ))
 
         return jobs
@@ -1897,7 +1902,7 @@ pandoc --to=markdown \\
                             dm_euclidean_file
                         )
                     ],
-                    name="beta_diversity." + re.sub("_otus", ".", otu_directory) + method,
+                    name="beta_diversity." + re.sub("_otus", ".", os.path.basename(otu_directory)) + method,
                     samples = self.samples
                 )
             )
@@ -1955,7 +1960,7 @@ pandoc --to=markdown \\
                             pcoa_euclidean_file
                         )
                     ],
-                    name="pcoa." + re.sub("_beta_diversity", ".", beta_directory) + method,
+                    name="pcoa." + re.sub("_beta_diversity", ".", os.path.basename(beta_directory)) + method,
                     samples=self.samples
                 )
             )
@@ -2019,7 +2024,7 @@ pandoc --to=markdown \\
                                 pcoa_plot_directory
                             )
                         ],
-                        name="pcoa_plot." + re.sub("_beta_diversity", ".", beta_directory) + method,
+                        name="pcoa_plot." + re.sub("_beta_diversity", ".", os.path.basename(beta_directory)) + method,
                         samples=self.samples
                     )
                 )
@@ -2037,7 +2042,7 @@ pandoc --to=markdown \\
                                 pcoa_plot_directory
                             )
                         ],
-                        name="pcoa_plot." + re.sub("_beta_diversity", ".", beta_directory) + method,
+                        name="pcoa_plot." + re.sub("_beta_diversity", ".", os.path.basename(beta_directory)) + method,
                         samples=self.samples
                     )
                 )
@@ -2111,7 +2116,7 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
                 ),
                 report_files=[report_file],
                 samples=self.samples,
-                name="plot_to_beta." + re.sub("_beta_diversity", ".", beta_directory) + method
+                name="plot_to_beta." + re.sub("_beta_diversity", ".", os.path.basename(beta_directory)) + method
             ))
 
         return jobs
