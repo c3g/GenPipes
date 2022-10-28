@@ -64,15 +64,17 @@ maxFlashOverlap=$(grep {readset} {file} | cut -f 6)""".format(
   -t {threads} \\
   -m {min_overlap} \\
   -M {max_overlap} \\
+  -d {dir_out} \\
   -o {name_out} \\
   {inputs} 2>&1 | tee {log_out}""".format(
-        pre_command=pre_command + "\n" if pre_command else "",
-        threads=config.param('flash', 'threads', param_type='posint'),
-        min_overlap="${minFlashOverlap}" if pre_command else config.param('flash', 'min_overlap', param_type='posint'),
-        max_overlap="${maxFlashOverlap}" if pre_command else config.param('flash', 'max_overlap', param_type='posint'),
-        name_out=re.sub(".extendedFrags.fastq", "", fastq_output),
-        inputs=" \\\n  ".join(inputs[0:2]),
-        log_out=log_output
+            pre_command=pre_command + "\n" if pre_command else "",
+            threads=config.param('flash', 'threads', param_type='posint'),
+            min_overlap="${minFlashOverlap}" if pre_command else config.param('flash', 'min_overlap', param_type='posint'),
+            max_overlap="${maxFlashOverlap}" if pre_command else config.param('flash', 'max_overlap', param_type='posint'),
+            dir_out=os.path.dirname(fastq_output),
+            name_out=re.sub(".extendedFrags.fastq", "", os.path.basename(fastq_output)),
+            inputs=" \\\n  ".join(inputs[0:2]),
+            log_out=log_output
         ),
         removable_files=[fastq_output]
     )

@@ -354,19 +354,17 @@ printf '{sample}\t{readset}\t' \\
 
             # Retrieve merge statistics using re search in python.
             python_command = """\
-module load {module_python}; \\
 python -c 'import re; \\
-import sys; \\
-log_file = open("{flash_log}","r"); \\
-merge_stat=[]; \\
-merge_stat.append([i.split()[3] for i in log_file if re.search("Total pairs",i)][0]); \\
-log_file.seek(0); \\
-merge_stat.append([i.split()[3] for i in log_file if re.search("Combined pairs",i)][0]); \\
-log_file.seek(0); \\
-merge_stat.append([i.split()[3] for i in log_file if re.search("Percent combined",i)][0][:-1]); \\
-log_file.close(); \\
-print "\t".join(merge_stat)'""".format(
-                module_python=config.param('merge_flash_stats', 'module_python'),
+  import sys; \\
+  log_file = open("{flash_log}","r"); \\
+  merge_stat=[]; \\
+  merge_stat.append([i.split()[3] for i in log_file if re.search("Total pairs",i)][0]); \\
+  log_file.seek(0); \\
+  merge_stat.append([i.split()[3] for i in log_file if re.search("Combined pairs",i)][0]); \\
+  log_file.seek(0); \\
+  merge_stat.append([i.split()[3] for i in log_file if re.search("Percent combined",i)][0][:-1]); \\
+  log_file.close(); \\
+  print "\t".join(merge_stat)'""".format(
                 flash_log=flash_log
             )
 
@@ -376,6 +374,7 @@ print "\t".join(merge_stat)'""".format(
                     Job(
                         [flash_log],
                         [readset_merge_flash_stats],
+                        [['merge_flash_stats', 'module_python']],
                         # Create readset merging stats TSV file with paired read count using python.
                         command="""\
 {python_command} \\
