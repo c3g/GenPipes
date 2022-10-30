@@ -1279,10 +1279,9 @@ pandoc --to=markdown \\
         curve_sample = []
         for readset in self.readsets:
             inputs.append(str(readset.sample.name).replace('_','.'))
-            observed_species_file="""\
-{sample}/average_plots/observed_species{readset}.png""".format(
+            observed_species_file="""{sample}/average_plots/observed_species{readset}.png""".format(
                 sample=readset.sample.name,
-                readset=str(readset.sample.name).replace('_','.')
+                readset=str(readset.name).replace('_','.')
             )
             curve_sample.extend(self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], "alpha_rarefaction", observed_species_file)] for alpha_diversity in alpha_diversities))
             num_sample+=1
@@ -1291,11 +1290,12 @@ pandoc --to=markdown \\
 
         fig_src_link = "fig/" + alpha_directory + "/alpha.rarefaction_sample.png"
 
-        jobs.append(Job(
-            curve_sample,
-            [report_file],
-            [['qiime', 'module_pandoc']],
-            command="""\
+        jobs.append(
+            Job(
+                curve_sample,
+                [report_file],
+                [['qiime', 'module_pandoc']],
+                command="""\
 mkdir -p {report_dir}/fig/{alpha_directory}/ && \\
 montage -mode concatenate -tile {plot_dimension} {curve_sample} {report_dir}/fig/{alpha_directory}/alpha.rarefaction_sample.png  && \\
 pandoc --to=markdown \\
@@ -1303,18 +1303,19 @@ pandoc --to=markdown \\
   --variable fig_src_link="{fig_src_link}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                alpha_directory=alpha_directory,
-                plot_dimension=str(math.sqrt(num_sample)+1)+"x",  # "3x"+str((num_sample/3)+1)
-                curve_sample=' '.join(curve_sample),
-                fig_src_link=fig_src_link,
-                report_template_dir=self.report_template_dir,
-                basename_report_file=os.path.basename(report_file),
-                report_dir=self.output_dirs["report_directory"],
-                report_file=report_file
-            ),
-            report_files=[report_file],
-            samples=self.samples,
-            name="qiime_report2." + re.sub("_alpha_diversity", "", os.path.basename(alpha_directory)))
+                    alpha_directory=alpha_directory,
+                    plot_dimension=str(math.sqrt(num_sample)+1)+"x",  # "3x"+str((num_sample/3)+1)
+                    curve_sample=' '.join(curve_sample),
+                    fig_src_link=fig_src_link,
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_dir=self.output_dirs["report_directory"],
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                samples=self.samples,
+                name="qiime_report2." + re.sub("_alpha_diversity", "", os.path.basename(alpha_directory))
+            )
         )
 
         return jobs
@@ -1360,7 +1361,6 @@ pandoc --to=markdown \\
             otu_normalized_table,
             normalization_method
         )
-        job.samples = self.samples
 
         job_chao1 = tools.py_ampliconSeq(
             [chao1_stat],
@@ -1404,16 +1404,22 @@ pandoc --to=markdown \\
             )
         )
 
-        jobs.append(concat_jobs([
-            # Create an output directory
-            Job(command="mkdir -p " + otu_normalized_directory),
-            Job(command="mkdir -p " + alpha_diversity_collated_merge_rarefied_directory),
-            Job(command="touch " + normalization_method),
-            job_chao1,
-            job_observed_species,
-            job_shannon,
-            job
-        ], name="qiime_single_rarefaction." + re.sub("_otus", "", os.path.basename(otu_directory))))
+        jobs.append(
+            concat_jobs(
+                [
+                    # Create an output directory
+                    bash.mkdir(otu_normalized_directory),
+                    bash.mkdir(alpha_diversity_collated_merge_rarefied_directory),
+                    Job(command="touch " + normalization_method),
+                    job_chao1,
+                    job_observed_species,
+                    job_shannon,
+                    job
+                ],
+                name="qiime_single_rarefaction." + re.sub("_otus", "", os.path.basename(otu_directory)),
+                samples=self.samples
+            )
+        )
 
         return jobs
 
@@ -1458,8 +1464,6 @@ pandoc --to=markdown \\
             otu_normalized_table,
             normalization_method
         )
-        job.samples = self.samples
-
         job_chao1 = tools.py_ampliconSeq(
             [chao1_stat],
             [chao1_rarefied_stat],
@@ -1473,7 +1477,6 @@ pandoc --to=markdown \\
                 raremax=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
             )
         )
-
         job_observed_species = tools.py_ampliconSeq(
             [observed_species_stat],
             [observed_species_rarefied_stat],
@@ -1487,7 +1490,6 @@ pandoc --to=markdown \\
                 raremax=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
             )
         )
-
         job_shannon = tools.py_ampliconSeq(
             [shannon_stat],
             [shannon_rarefied_stat],
@@ -1502,16 +1504,22 @@ pandoc --to=markdown \\
             )
         )
 
-        jobs.append(concat_jobs([
-            # Create an output directory
-            Job(command="mkdir -p " + otu_normalized_directory),
-            Job(command="mkdir -p " + alpha_diversity_collated_merge_rarefied_directory),
-            Job(command="touch " + normalization_method),
-            job_chao1,
-            job_observed_species,
-            job_shannon,
-            job
-        ], name="qiime_css_normalization." + re.sub("_otus", "", os.path.basename(otu_directory))))
+        jobs.append(
+            concat_jobs(
+                [
+                    # Create an output directory
+                    bash.mkdir(otu_normalized_directory),
+                    bash.mkdir(alpha_diversity_collated_merge_rarefied_directory),
+                    Job(command="touch " + normalization_method),
+                    job_chao1,
+                    job_observed_species,
+                    job_shannon,
+                    job
+                ],
+                name="qiime_css_normalization." + re.sub("_otus", "", os.path.basename(otu_directory)),
+                samples = self.samples
+            )
+        )
 
         return jobs
 
@@ -1594,13 +1602,18 @@ pandoc --to=markdown \\
                 taxonomic_family,
                 taxonomic_genus
             )
-            job.samples = self.samples
 
-            jobs.append(concat_jobs([
-                # Create an output directory
-                Job(command="mkdir -p " + alpha_directory),
-                job
-            ], name="qiime_summarize_taxa." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + method))
+            jobs.append(
+                concat_jobs(
+                    [
+                        # Create an output directory
+                        Job(command="mkdir -p " + alpha_directory),
+                        job
+                    ],
+                    name="qiime_summarize_taxa." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + method,
+                    samples=self.samples
+                )
+            )
 
         return jobs
 
@@ -1691,7 +1704,6 @@ pandoc --to=markdown \\
                     taxon_lvl=1
                 )
             )
-            job.samples = self.samples
 
             # Create a job that cleans the generated OTU_data.txt i.e. removes the lines with characters
             jobClean = tools.clean_otu(heatmap_otu_data_R)
@@ -1703,14 +1715,20 @@ pandoc --to=markdown \\
                 command="./" +  heatmap_script
             )
 
-            jobs.append(concat_jobs([
-                # Create an output directory
-                Job(command="mkdir -p " + heatmap_directory),
-                job,
-                Job(command="chmod +x " + heatmap_directory + "/OTU_Phylum_to_R.R"),
-                jobClean,
-                jobR
-            ], name="plot_heatmap." + re.sub("_otus", ".", os.path.basename(otu_directory)) + method))
+            jobs.append(
+                concat_jobs(
+                    [
+                        # Create an output directory
+                        bash.mkdir(heatmap_directory),
+                        job,
+                        Job(command="chmod +x " + heatmap_directory + "/OTU_Phylum_to_R.R"),
+                        jobClean,
+                        jobR
+                    ],
+                    name="plot_heatmap." + re.sub("_otus", ".", os.path.basename(otu_directory)) + method,
+                    samples=self.samples
+                )
+            )
 
         return jobs
 
@@ -1741,34 +1759,41 @@ pandoc --to=markdown \\
                 sample_name,
                 alpha_diversity_krona_file,
             )
-            job.samples = self.samples
 
-            jobs.append(concat_jobs([
-                # Create an output directory
-                Job(command="mkdir -p " + alpha_diversity_krona_directory),
-                Job(command="""\
+            jobs.append(
+                concat_jobs(
+                    [
+                        # Create an output directory
+                        bash.mkdir(alpha_diversity_krona_directory),
+                        Job(
+                            command="""\
 $QIIME_HOME/biom convert -i {otu_normalized_table} \\
   -o {alpha_directory}/{method}/table_tax.txt \\
   --table-type="OTU table" \\
   --to-tsv \\
   --header-key taxonomy""".format(
-                    method=method,
-                    alpha_directory=alpha_directory,
-                    otu_normalized_table=otu_normalized_table
-                )),
-                tools.py_ampliconSeq(
-                    [otu_normalized_table],
-                    [],
-                    'krona',
-                    """\
+                                method=method,
+                                alpha_directory=alpha_directory,
+                                otu_normalized_table=otu_normalized_table
+                            )),
+                        tools.py_ampliconSeq(
+                            [otu_normalized_table],
+                            [],
+                            'krona',
+                            """\
   -i {alpha_directory}/{method}/table_tax.txt \\
   -j {alpha_diversity_krona_directory}""".format(
-                    method=method,
-                    alpha_directory=alpha_directory,
-                    alpha_diversity_krona_directory=alpha_diversity_krona_directory
-                )),
-                job
-            ], name="krona." + re.sub("_otus", ".", os.path.basename(otu_directory)) + method))
+                            method=method,
+                            alpha_directory=alpha_directory,
+                            alpha_diversity_krona_directory=alpha_diversity_krona_directory
+                            )
+                        ),
+                        job
+                    ],
+                    name="krona." + re.sub("_otus", ".", os.path.basename(otu_directory)) + method,
+                    samples=self.samples
+                )
+            )
         return jobs
 
     def plot_to_alpha(self):
@@ -1811,11 +1836,12 @@ $QIIME_HOME/biom convert -i {otu_normalized_table} \\
             heatmap_taxon_link = "[download taxon table](fig/" + beta_directory + "/" + method + "/heatmap/taxmat.tsv))](fig/" + beta_directory + "/" + method + "/heatmap/otu_heatmap.png"
             alpha_plots_link = "[Interactive html plots for alpha diversity available here](fig/" + alpha_directory + "/alpha_rarefaction/" + method + "/rarefaction_plots.html)"
 
-            jobs.append(Job(
-                inputs,
-                [report_file],
-                [['plot_to_alpha', 'module_pandoc']],
-                command="""\
+            jobs.append(
+                Job(
+                    inputs,
+                    [report_file],
+                    [['plot_to_alpha', 'module_pandoc']],
+                    command="""\
 mkdir -p {report_dir}/fig/{alpha_directory}/{method}/ && \\
 mkdir -p {report_dir}/fig/{alpha_directory}/alpha_rarefaction/ && \\
 mkdir -p {report_dir}/fig/{beta_directory}/{method}/heatmap/ && \\
@@ -1836,24 +1862,25 @@ pandoc --to=markdown \\
   --variable alpha_plots_link="{alpha_plots_link}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    alpha_directory=alpha_directory,
-                    beta_directory=beta_directory,
-                    method=method,
-                    method_title=method_title,
-                    method_link=method_link,
-                    bar_plot_link=bar_plot_link,
-                    krona_chart_link=krona_chart_link,
-                    heatmap_otu_link=heatmap_otu_link,
-                    heatmap_taxon_link=heatmap_taxon_link,
-                    alpha_plots_link=alpha_plots_link,
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=re.sub('_'+method[:3], '', os.path.basename(report_file)),
-                    report_dir=self.output_dirs["report_directory"],
-                    report_file=report_file
-                ),
-                samples=self.samples,
-                name="plot_to_alpha." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + method
-            ))
+                        alpha_directory=alpha_directory,
+                        beta_directory=beta_directory,
+                        method=method,
+                        method_title=method_title,
+                        method_link=method_link,
+                        bar_plot_link=bar_plot_link,
+                        krona_chart_link=krona_chart_link,
+                        heatmap_otu_link=heatmap_otu_link,
+                        heatmap_taxon_link=heatmap_taxon_link,
+                        alpha_plots_link=alpha_plots_link,
+                        report_template_dir=self.report_template_dir,
+                        basename_report_file=re.sub('_'+method[:3], '', os.path.basename(report_file)),
+                        report_dir=self.output_dirs["report_directory"],
+                        report_file=report_file
+                    ),
+                    samples=self.samples,
+                    name="plot_to_alpha." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + method    
+                )
+            )
 
         return jobs
 
@@ -2087,11 +2114,12 @@ pandoc --to=markdown \\
 
             inputs.append(report_file_alpha)
 
-            jobs.append(Job(
-                inputs,
-                [report_file],
-                [['plot_to_beta', 'module_pandoc']],
-                command="""\
+            jobs.append(
+                Job(
+                    inputs,
+                    [report_file],
+                    [['plot_to_beta', 'module_pandoc']],
+                    command="""\
 mkdir -p {report_dir}/fig/{beta_directory}/{method} && \\
 cp -r {beta_directory}/{method}/2d_plots/ {report_dir}/fig/{beta_directory}/{method}/2d_plots/ && \\
 pandoc --to=markdown \\
@@ -2102,22 +2130,23 @@ pandoc --to=markdown \\
   {report_template_dir}/{basename_report_file_beta} \\
   > {report_file_beta} && \\
 cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
-                    beta_directory=beta_directory,
-                    method=method,
-                    description_metric=description_metric_t,
-                    link_metric1=link_metric1_t,
-                    link_metric2=link_metric2_t,
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file_beta=re.sub('_'+method[:3], '', os.path.basename(report_file_beta)),
-                    report_file_alpha=report_file_alpha,
-                    report_file_beta=report_file_beta,
-                    report_dir=self.output_dirs["report_directory"],
-                    report_file=report_file
-                ),
-                report_files=[report_file],
-                samples=self.samples,
-                name="plot_to_beta." + re.sub("_beta_diversity", ".", os.path.basename(beta_directory)) + method
-            ))
+                        beta_directory=beta_directory,
+                        method=method,
+                        description_metric=description_metric_t,
+                        link_metric1=link_metric1_t,
+                        link_metric2=link_metric2_t,
+                        report_template_dir=self.report_template_dir,
+                        basename_report_file_beta=re.sub('_'+method[:3], '', os.path.basename(report_file_beta)),
+                        report_file_alpha=report_file_alpha,
+                        report_file_beta=report_file_beta,
+                        report_dir=self.output_dirs["report_directory"],
+                        report_file=report_file
+                    ),
+                    report_files=[report_file],
+                    samples=self.samples,
+                    name="plot_to_beta." + re.sub("_beta_diversity", ".", os.path.basename(beta_directory)) + method
+                )
+            )
 
         return jobs
 
