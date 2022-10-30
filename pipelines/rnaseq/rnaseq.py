@@ -413,15 +413,40 @@ awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/
         # Use GTF with transcript_id only otherwise RNASeQC fails
         gtf_transcript_id = config.param('rnaseqc', 'gtf_transcript_id', param_type='filepath')
 
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p " + output_directory, removable_files=[output_directory], samples=self.samples),
-            Job(input_bams, [sample_file], command="""\
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(output_directory),
+                    Job(
+                        input_bams,
+                        [sample_file],
+                        command="""\
 echo "Sample\tBamFile\tNote
 {sample_rows}" \\
-  > {sample_file}""".format(sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]), sample_file=sample_file)),
-            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id, reference=config.param('rnaseqc', 'genome_fasta', param_type='filepath'), ribosomal_interval_file=config.param('rnaseqc', 'ribosomal_fasta', param_type='filepath')),
-            Job([], [output_directory + ".zip"], command="zip -r {output_directory}.zip {output_directory}".format(output_directory=output_directory))
-        ], name="rnaseqc"))
+  > {sample_file}""".format(
+                            sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]),
+                            sample_file=sample_file
+                        )
+                    ),
+                    metrics.rnaseqc(
+                        sample_file,
+                        output_directory,
+                        self.run_type == "SINGLE_END",
+                        gtf_file=gtf_transcript_id,
+                        reference=config.param('rnaseqc', 'genome_fasta', param_type='filepath'),
+                        ribosomal_interval_file=config.param('rnaseqc', 'ribosomal_fasta', param_type='filepath')
+                    ),
+                    Job(
+                        [],
+                        [output_directory + ".zip"],
+                        command=f"zip -r {output_directory}.zip {output_directory}"
+                    )
+                ],
+                name="rnaseqc",
+                removable_files=[output_directory],
+                samples=self.samples
+            )
+        )
 
         trim_metrics_file = os.path.join(self.output_dirs["metrics_directory"], "trimSampleTable.tsv")
         metrics_file = os.path.join(self.output_dirs["metrics_directory"], "rnaseqRep", "metrics.tsv")
@@ -431,7 +456,9 @@ echo "Sample\tBamFile\tNote
             Job(
                 [metrics_file],
                 [report_file, report_metrics_file],
-                [['rnaseqc', 'module_python'], ['rnaseqc', 'module_pandoc']],
+                [
+                    ['rnaseqc', 'module_python'],
+                    ['rnaseqc', 'module_pandoc']],
                 # Ugly awk to merge sample metrics with trim metrics if they exist; knitr may do this better
                 command="""\
 mkdir -p {report_dir} && \\
@@ -1273,8 +1300,14 @@ done""".format(
         genome = config.param('ihec_metrics', 'assembly')
         return [
             metrics.ihec_metrics_rnaseq(
-                [f"{self.output_dirs['metrics_directory']}/rnaseqRep/metrics.tsv", f"{self.output_dirs['report_directory']}/trimAlignmentTable.tsv"],
-                [f"{self.output_dirs['report_directory']}/IHEC_metrics_rnaseq_All.txt"],
+                [
+                    os.path.join(self.output_dirs['metrics_directory'], "rnaseqRep", "metrics.tsv"),
+                    os.path.join(self.output_dirs["report_directory"], "trimAlignmentTable.tsv")
+                ] + [
+                    os.path.join(self.output_dirs["metrics_directory"], readset.sample.name, readset.name, readset.name+"rRNA.stats.tsv")
+                    for readset in self.readsets
+                ],
+                [os.path.join(self.output_dirs['report_directory'], "IHEC_metrics_rnaseq_All.txt")],
                 genome
             )
         ]
