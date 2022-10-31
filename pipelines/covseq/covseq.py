@@ -413,42 +413,66 @@ class CoVSeq(dnaseq.DnaSeqRaw):
         Filter raw bams with [Sambamba](http://lomereiter.github.io/sambamba/index.html) and an awk cmd to filter by insert size
         """
 
+        library = {}
+        for readset in self.readsets:
+            ##check the library status
+            if not readset.sample in library:
+                library[readset.sample] = "SINGLE_END"
+            if readset.run_type == "PAIRED_END":
+                library[readset.sample] = "PAIRED_END"
+
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
             output_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
 
-            jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(output_bam)),
-                    pipe_jobs([
+            if library[sample] == "PAIRED_END":
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(os.path.dirname(output_bam)),
+                        pipe_jobs([
+                            sambamba.view(
+                                input_bam=input_bam,
+                                output_bam=None,
+                                options="-h"
+                                ),
+                            Job(
+                                input_files=[],
+                                output_files=[],
+                                command="""awk 'substr($0,1,1)=="@" ||\\
+($9 >= {min_insert_size} && $9 <= {max_insert_size}) ||\\
+($9 <= -{min_insert_size} && $9 >= -{max_insert_size})'""".format(
+    min_insert_size=config.param('sambamba_filtering', 'min_insert_size', required=False),
+    max_insert_size=config.param('sambamba_filtering', 'max_insert_size', required=False)
+    )
+                                ),
+                            sambamba.view(
+                                input_bam="/dev/stdin",
+                                output_bam=output_bam,
+                                options=config.param('sambamba_filtering', 'sambamba_filtering_other_options', required=False)
+                                )
+                            ]),
+                        ],
+                        name="sambamba_filtering." + sample.name,
+                        samples=[sample]
+                        )
+                    )
+            else:
+                jobs.append(
+                    concat_jobs([
+                        bash.mkdir(os.path.dirname(output_bam)),
                         sambamba.view(
                             input_bam=input_bam,
-                            output_bam=None,
-                            options="-h"
-                            ),
-                        Job(
-                            input_files=[],
-                            output_files=[],
-                            command="""awk 'substr($0,1,1)=="@" ||\\
- ($9 >= {min_insert_size} && $9 <= {max_insert_size}) ||\\
- ($9 <= -{min_insert_size} && $9 >= -{max_insert_size})'""".format(
-     min_insert_size=config.param('sambamba_filtering', 'min_insert_size', required=False),
-     max_insert_size=config.param('sambamba_filtering', 'max_insert_size', required=False)
-     )
-                            ),
-                        sambamba.view(
-                            input_bam="/dev/stdin",
                             output_bam=output_bam,
                             options=config.param('sambamba_filtering', 'sambamba_filtering_other_options', required=False)
-                            )
-                        ]),
-                    ],
-                    name="sambamba_filtering." + sample.name,
-                    samples=[sample]
+                            ),
+                        ],
+                        name="sambamba_filtering." + sample.name,
+                        samples=[sample]
+                        )
                     )
-                )
+
 
         return jobs
 
@@ -1108,7 +1132,6 @@ ln -sf {ivar_output_status_fa_basename} {ivar_output_fa}""".format(
         for sample in self.samples:
             consensus_directory = os.path.join("consensus", sample.name)
             freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.fasta"
-            
             quast_freebayes_directory = os.path.join("metrics", "dna", sample.name, "quast_metrics_freebayes")
             quast_freebayes_html = os.path.join(quast_freebayes_directory, "report.html")
             quast_freebayes_tsv = os.path.join(quast_freebayes_directory, "report.tsv")
