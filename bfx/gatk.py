@@ -265,7 +265,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         options=config.param('gatk_haplotype_caller', 'options'),
         reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
         interval_list=" --intervals " + interval_list if interval_list else "",
-        interval_padding=" \\\n --interval-padding " + str(interval_padding) if interval_padding else "",
+        interval_padding=" \\\n --interval_padding " + str(interval_padding) if interval_padding else "",
         input=" \\\n  ".join(input for input in inputs),
         output=output,
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
@@ -649,7 +649,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
             input=" \\\n  ".join(input for input in inputs),
             output=output,
             intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-            interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",
+            interval_list=" \\\n --interval_padding 100 --intervals " + interval_list if interval_list else "",
             exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
