@@ -2668,7 +2668,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     ],
                     name="strelka2_paired_somatic.call."+tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    input_dependency=[input_normal[0], input_tumor[0]],
+                    input_dependency=[input_normal[0], input_tumor[0], mantaIndels],
                     output_dependency=output_dep
                 )
             )
