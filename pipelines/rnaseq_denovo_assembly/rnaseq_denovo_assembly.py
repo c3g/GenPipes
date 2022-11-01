@@ -821,7 +821,7 @@ pandoc --to=markdown \\
                 [['trinity', 'module_pandoc']],
                 command="""\
 mkdir -p {report_dir} && \\
-cp {trinity_filtered}.zip {report_dir}/{output_directory}.zip && \\
+cp {trinity_filtered}.zip {report_dir}/{output_zip}.zip && \\
 cp {trinity_stats_prefix}.csv {trinity_stats_prefix}.jpg {trinity_stats_prefix}.pdf {report_dir}/ && \\
 assembly_table=`sed '1d' {trinity_stats_prefix}.csv | perl -pe 's/^"([^"]*)",/\\1\t/g' | grep -P "^(Nb. Transcripts|Nb. Components|Total Transcripts Length|Min. Transcript Length|Median Transcript Length|Mean Transcript Length|Max. Transcript Length|N50)" | LC_NUMERIC=en_CA awk -F"\t" '{{print $1"|"sprintf("%\\47d", $2)}}'` && \\
 pandoc --to=markdown \\
@@ -831,7 +831,7 @@ pandoc --to=markdown \\
 {report_template_dir}/{basename_report_file} \\
 > {report_file}""".format(
                     trinity_filtered=trinity_filtered,
-                    output_directory=output_directory,
+                    output_zip=os.path.basename(output_directory),
                     trinity_stats_prefix=trinity_stats_prefix,
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
@@ -842,8 +842,8 @@ pandoc --to=markdown \\
                 name="filter_annotated_components_report",
                 report_files=[report_file],
                 samples=self.samples
-                )
             )
+        )
         return jobs
 
     def gq_seq_utils_exploratory_analysis_rnaseq_denovo_filtered(self):
@@ -855,8 +855,8 @@ pandoc --to=markdown \\
         jobs = []
         exploratory_output_dir = os.path.join(self.output_dirs["filtered_assembly_directory"], "exploratory")
         counts_file = os.path.join(self.output_dirs["filtered_assembly_directory"], "isoforms.counts.matrix")
-        trinotate_annotation_report_filtered = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv" + ".isoforms_filtered.tsv")
-        trinotate_annotation_report_filtered_header = "trinotate/trinotate_annotation_report.tsv.isoforms_filtered_header.tsv"
+        trinotate_annotation_report_filtered = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoforms_filtered.tsv")
+        trinotate_annotation_report_filtered_header = os.path.join(self.output_dirs["trinotate_directory"], "trinotate_annotation_report.tsv.isoforms_filtered_header.tsv")
         lengths_file = os.path.join(self.output_dirs["differential_expression_directory"], "isoforms.lengths.tsv")
         lengths_filtered_file = os.path.join(self.output_dirs["filtered_assembly_directory"], "isoforms.lengths.tsv")
 

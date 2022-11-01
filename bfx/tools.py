@@ -135,10 +135,11 @@ def py_parseMergeCsv(input_files, delimiter, output , common, subset=None, exclu
             ['parse_merg_csv', 'module_python']
         ],
         command="""\
-$PYTHON_TOOLS/parseMergeCsv.py -i {input_files} \\
-      -o {output} \\
-      -c {common_columns} \\
-      -d {delimiter} {subset}{toexclude}{left_outer_join}{sort_by_field}{make_names}{filters}""".format(
+$PYTHON_TOOLS/parseMergeCsv.py \\
+  -i {input_files} \\
+  -o {output} \\
+  -c {common_columns} \\
+  -d {delimiter} {subset}{toexclude}{left_outer_join}{sort_by_field}{make_names}{filters}""".format(
             input_files=" ".join(input_files),
             output=output,
             common_columns=common,
