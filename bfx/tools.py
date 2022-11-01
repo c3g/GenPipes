@@ -126,7 +126,18 @@ $PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_annotation_report} -o {trino
         )
     )
 
-def py_parseMergeCsv(input_files, delimiter, output , common, subset=None, exclude=None, left_join=None, sort_by=None, make_names=None, filters=None):
+def py_parseMergeCsv(
+    input_files,
+    delimiter,
+    output,
+    common,
+    subset=None,
+    exclude=None,
+    left_join=None,
+    sort_by=None,
+    make_names=None,
+    filters=None
+    ):
     return Job(
         input_files,
         [output],
