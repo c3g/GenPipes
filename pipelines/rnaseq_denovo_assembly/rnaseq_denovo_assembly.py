@@ -1638,7 +1638,11 @@ rm {temp_out2}""".format(
         prepare_matrix_job = Job(
             input_files=[count_matrix_temp],
             output_files=[count_matrix],                     
-            command="""awk 'BEGIN{{FS=OFS="\t"}} NF--' {input} | awk '{{if(NR!=2){{print $0}} }}' | awk -v OFS="\t" '{{ print $1,$0}}' > {output}""".format(
+            command="""\
+awk 'BEGIN{{FS=OFS="\t"}} NF--' {input} | \\
+awk '{{if(NR!=2){{print $0}} }}' | \\
+awk -v OFS="\t" '{{ print $1,$0}}' \\
+  > {output}""".format(
                 input = count_matrix_temp,
                 output = count_matrix
             )
