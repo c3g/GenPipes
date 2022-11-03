@@ -164,13 +164,19 @@ $PYTHON_TOOLS/parseMergeCsv.py \\
         )
     )
 
-def py_ampliconSeq(input_files, output_files, function, supplemental_parameters):
+def py_ampliconSeq(
+    input_files,
+    output_files,
+    function,
+    supplemental_parameters,
+    ini_section='py_ampliconSeq'
+    ):
     return Job(
         input_files,
         output_files,
         [
-            ['py_ampliconSeq', 'module_mugqic_tools'],
-            ['py_ampliconSeq', 'module_python']
+            [ini_section, 'module_mugqic_tools'],
+            [ini_section, 'module_python']
         ],
         command="""\
 python $PYTHON_TOOLS/AmpliconSeq_script.py \\

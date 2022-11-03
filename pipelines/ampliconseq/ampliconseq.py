@@ -532,9 +532,7 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
                 [],
                 [],
                 'map_build',
-                """-s {samples}""".format(
-                    samples=','.join(sample_name)
-                )
+                f"-s {','.join(sample_name)}"
             )
             catenate_job = qiime.catenate(
                 input_files,
@@ -579,12 +577,8 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
             [filter_fasta],
             [filter_log],
             'catenate_stat',
-            """\
-  -i {filter_fasta} \\
-  -j {filter_log}""".format(
-                filter_fasta=filter_fasta,
-                filter_log=filter_log)
-            )
+            f"-i {filter_fasta} -j {filter_log}"
+        )
 
         jobs.append(
             concat_jobs(
@@ -645,16 +639,7 @@ printf '{sample}\t{readset}\t' \\
                         [filter_log, flash_log[0]],
                         [readset_merge_uchime_stats],
                         'uchime',
-                        """\
-  -i {filter_log} \\
-  -j {flash_log} \\
-  -s {sample} \\
-  >> {stats}""".format(
-                            filter_log=filter_log,
-                            flash_log=flash_log[0],
-                            sample=str(readset.sample.name),
-                            stats=readset_merge_uchime_stats
-                        )
+                        "-i {filter_log} -j {flash_log[0]} -s {readset.sample.name} >> {readset_merge_uchime_stats}"
                     )
                 ]
             )
@@ -852,7 +837,7 @@ pandoc --to=markdown \\
         otu_sample_directory = os.path.join(otu_directory, "sample")
         sample_name_control = os.path.join(otu_sample_directory, "done.txt")
 
-        job = qiime.otu_table(
+        job_otu_table = qiime.otu_table(
             otu_file,
             tax_assign_file,
             otu_table_file,
@@ -887,23 +872,19 @@ $QIIME_HOME/filter_samples_from_otu_table.py \\
             )
         )
 
-        # Sample remained after filtering.
+        # Sample remaining after filtering.
         job_sample = tools.py_ampliconSeq(
             [otu_table_summary],
             [sample_name_control],
             'sample_name',
-        """\
-  -i {otu_table_summary} \\
-  -j {otu_sample_directory}""".format(
-                otu_table_summary=otu_table_summary,
-                otu_sample_directory=otu_sample_directory
-            )
+            f"-i {otu_table_summary} -j {otu_sample_directory}",
+            ini_section="qiime_otu_table"
         )
 
         jobs.append(
             concat_jobs(
                 [
-                    job,
+                    job_otu_table,
                     job_filter,
                     job_filter2,
                     Job(
@@ -915,7 +896,7 @@ $QIIME_HOME/biom summarize-table \\
                             otu_table_summary=otu_table_summary
                         )
                     ),
-                    Job(command="mkdir -p " + otu_sample_directory),
+                    bash.mkdir(otu_sample_directory),
                     job_sample
                 ],
                 name="qiime_otu_table." + re.sub("_otus", "", os.path.basename(otu_directory)),
@@ -1235,51 +1216,25 @@ pandoc --to=markdown \\
                             [],
                             [sample_map],
                             'map_per_sample',
-                            """\
-  -s {sample} \\
-  -j {sample_map}""".format(
-                                sample=readset.sample.name,
-                                sample_map=sample_map
-                            )
+                            f"-s {readset.sample.name} -j {sample_map}"
                         ),
                         tools.py_ampliconSeq(
                             [chao1_stat],
                             [chao1_dir],
                             'sample_rarefaction',
-                    """\
-  -i {cstat} \\
-  -j {cdir} \\
-  -s {readset}""".format(
-                                cstat=chao1_stat,
-                                cdir=chao1_dir,
-                                readset=readset.sample.name
-                            )
+                            f"-i {chao1_stat} -j {chao1_dir} -s {readset.sample.name}"
                         ),
                         tools.py_ampliconSeq(
                             [observed_species_stat],
                             [observed_species_dir],
                             'sample_rarefaction',
-                            """\
-  -i {ostat} \\
-  -j {odir} \\
-  -s {readset}""".format(
-                                ostat=observed_species_stat,
-                                odir=observed_species_dir,
-                                readset=readset.sample.name
-                            )
+                            f"-i {observed_species_stat} -j {observed_species_dir} -s {readset.sample.name}"
                         ),
                         tools.py_ampliconSeq(
                             [shannon_stat],
                             [shannon_dir],
                             'sample_rarefaction',
-                            """\
-  -i {sstat} \\
-  -j {sdir} \\
-  -s {readset}""".format(
-                                sstat=shannon_stat,
-                                sdir=shannon_dir,
-                                readset=readset.sample.name
-                            )
+                            f"-i {shannon_stat} -j {shannon_dir} -s {readset.sample.name}"
                         ),
                         job
                     ],
@@ -1380,7 +1335,7 @@ pandoc --to=markdown \\
         observed_species_rarefied_stat = os.path.join(alpha_diversity_collated_merge_rarefied_directory, "observed_species.txt")
         shannon_rarefied_stat = os.path.join(alpha_diversity_collated_merge_rarefied_directory, "shannon.txt")
 
-        job = qiime.single_rarefaction(
+        job_single_rarefaction = qiime.single_rarefaction(
             otu_table,
             chao1_rarefied_stat,
             observed_species_rarefied_stat,
@@ -1393,42 +1348,22 @@ pandoc --to=markdown \\
             [chao1_stat],
             [chao1_rarefied_stat],
             'single_rarefaction',
-            """\
-  -i {stat} \\
-  -j {rarefied_stat} \\
-  -s {depth}""".format(
-                stat=chao1_stat,
-                rarefied_stat=chao1_rarefied_stat,
-                depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth')
-            )
+            f"-i {chao1_stat} -j {chao1_rarefied_stat} -s {config.param('qiime_single_rarefaction', 'single_rarefaction_depth')}"
         )
 
         job_observed_species = tools.py_ampliconSeq(
             [observed_species_stat],
             [observed_species_rarefied_stat],
             'single_rarefaction',
-            """\
-  -i {stat} \\
-  -j {rarefied_stat} \\
-  -s {depth}""".format(
-                stat=observed_species_stat,
-                rarefied_stat=observed_species_rarefied_stat,
-                depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth')
-            )
+            f"-i {observed_species_stat} -j {observed_species_rarefied_stat} -s {config.param('qiime_single_rarefaction', 'single_rarefaction_depth')}"
         )
 
         job_shannon = tools.py_ampliconSeq(
             [shannon_stat],
             [shannon_rarefied_stat],
             'single_rarefaction',
-            """\
-  -i {stat} \\
-  -j {rarefied_stat} \\
-  -s {depth}""".format(
-                stat=shannon_stat,
-                rarefied_stat=shannon_rarefied_stat,
-                depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth')
-            )
+            f"-i {shannon_stat} -j {shannon_rarefied_stat} -s {config.param('qiime_single_rarefaction', 'single_rarefaction_depth')}"
+
         )
 
         jobs.append(
@@ -1437,11 +1372,11 @@ pandoc --to=markdown \\
                     # Create an output directory
                     bash.mkdir(otu_normalized_directory),
                     bash.mkdir(alpha_diversity_collated_merge_rarefied_directory),
-                    Job(command="touch " + normalization_method),
+                    bash.touch(normalization_method),
                     job_chao1,
                     job_observed_species,
                     job_shannon,
-                    job
+                    job_single_rarefaction
                 ],
                 name="qiime_single_rarefaction." + re.sub("_otus", "", os.path.basename(otu_directory)),
                 samples=self.samples
@@ -1483,7 +1418,7 @@ pandoc --to=markdown \\
         observed_species_rarefied_stat = os.path.join(alpha_diversity_collated_merge_rarefied_directory, "observed_species.txt")
         shannon_rarefied_stat = os.path.join(alpha_diversity_collated_merge_rarefied_directory, "shannon.txt")
 
-        job = qiime.css_normalization(
+        job_css_normalization = qiime.css_normalization(
             otu_table,
             chao1_rarefied_stat,
             observed_species_rarefied_stat,
@@ -1495,40 +1430,19 @@ pandoc --to=markdown \\
             [chao1_stat],
             [chao1_rarefied_stat],
             'single_rarefaction',
-            """\
-  -i {stat} \\
-  -j {rarefied_stat} \\
-  -s {raremax}""".format(
-                stat=chao1_stat,
-                rarefied_stat=chao1_rarefied_stat,
-                raremax=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
-            )
+            f"-i {chao1_stat} -j {chao1_rarefied_stat} -s {config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')}"
         )
         job_observed_species = tools.py_ampliconSeq(
             [observed_species_stat],
             [observed_species_rarefied_stat],
             'single_rarefaction',
-            """\
-  -i {stat} \\
-  -j {rarefied_stat} \\
-  -s {raremax}""".format(
-                stat=observed_species_stat,
-                rarefied_stat=observed_species_rarefied_stat,
-                raremax=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
-            )
+            f"-i {observed_species_stat} -j {observed_species_rarefied_stat} -s {config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')}"
         )
         job_shannon = tools.py_ampliconSeq(
             [shannon_stat],
             [shannon_rarefied_stat],
             'single_rarefaction',
-            """\
-  -i {stat} \\
-  -j {rarefied_stat} \\
-  -s {raremax}""".format(
-                stat=shannon_stat,
-                rarefied_stat=shannon_rarefied_stat,
-                raremax=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
-            )
+            f"-i {shannon_stat} -j {shannon_rarefied_stat} -s {config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')}"
         )
 
         jobs.append(
@@ -1537,11 +1451,11 @@ pandoc --to=markdown \\
                     # Create an output directory
                     bash.mkdir(otu_normalized_directory),
                     bash.mkdir(alpha_diversity_collated_merge_rarefied_directory),
-                    Job(command="touch " + normalization_method),
+                    bash.touch(normalization_method),
                     job_chao1,
                     job_observed_species,
                     job_shannon,
-                    job
+                    job_css_normalization
                 ],
                 name="qiime_css_normalization." + re.sub("_otus", "", os.path.basename(otu_directory)),
                 samples = self.samples
@@ -1721,14 +1635,7 @@ pandoc --to=markdown \\
                 [taxonomic_phylum],
                 [heatmap_script, heatmap_otu_data_R, heatmap_otu_name_R, heatmap_otu_tax_R],
                 'plot_heatmap',
-                """\
-  -i {taxonomic_phylum} \\
-  -j {heatmap_directory} \\
-  -s {taxon_lvl}""".format(
-                    taxonomic_phylum=taxonomic_phylum,
-                    heatmap_directory=heatmap_directory,
-                    taxon_lvl=1
-                )
+                f"-i {taxonomic_phylum} -j {heatmap_directory} -s 1"
             )
 
             # Create a job that cleans the generated OTU_data.txt i.e. removes the lines with characters
@@ -1780,7 +1687,7 @@ pandoc --to=markdown \\
             for readset in self.readsets:
                 sample_name.append(alpha_diversity_krona_directory+'/'+str(readset.sample.name).replace("_", ".")+'.txt')
 
-            job = krona.krona(
+            job_krona = krona.krona(
                 otu_normalized_table,
                 sample_name,
                 alpha_diversity_krona_file,
@@ -1806,15 +1713,9 @@ $QIIME_HOME/biom convert -i {otu_normalized_table} \\
                             [otu_normalized_table],
                             [],
                             'krona',
-                            """\
-  -i {alpha_directory}/{method}/table_tax.txt \\
-  -j {alpha_diversity_krona_directory}""".format(
-                            method=method,
-                            alpha_directory=alpha_directory,
-                            alpha_diversity_krona_directory=alpha_diversity_krona_directory
-                            )
+                            f"-i {alpha_directory}/{method}/table_tax.txt -j {alpha_diversity_krona_directory}"
                         ),
-                        job
+                        job_krona
                     ],
                     name="krona." + re.sub("_otus", ".", os.path.basename(otu_directory)) + method,
                     samples=self.samples
