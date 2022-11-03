@@ -870,24 +870,24 @@ pandoc --to=markdown \\
                         command="sed '1s/^/ \\n/' " + trinotate_annotation_report_filtered  + " > " + trinotate_annotation_report_filtered_header
                     ),
                     tools.py_parseMergeCsv(
-                        [
+                        inputs=[
                             trinotate_annotation_report_filtered_header,
                             os.path.join(self.output_dirs["differential_expression_directory"], "isoforms.counts.matrix")
                         ],
-                        "\\\\t",
-                        counts_file,
-                        "\'\'",
+                        delimiter="\\\\t",
+                        output=counts_file,
+                        common="\'\'",
                         left_join=True,
                         exclude="\'\'"
                     ),
                     tools.py_parseMergeCsv(
-                        [
+                        inputs=[
                             trinotate_annotation_report_filtered_header,
                             lengths_file
                         ],
-                        "\\\\t",
-                        lengths_filtered_file,
-                        "\'\' transcript_id",
+                        delimiter="\\\\t",
+                        output=lengths_filtered_file,
+                        common="\'\' transcript_id",
                         left_join=True,
                         exclude="\' \'"
                     )
@@ -995,18 +995,19 @@ pandoc --to=markdown \\
                 concat_jobs(
                     [
                         tools.py_parseMergeCsv(
-                            [
+                            inputs=[
                                 os.path.join(output_directory, item, contrast.name, "dge_results.csv"),
                                 trinotate_annotation_report + "." + item + "_blast.tsv"
                             ],
-                            "\\\\t",
-                            os.path.join(output_directory, item, contrast.name, "dge_trinotate_results.csv"),
-                            "id " + "\"" + gene_id_column + "\"" if item == "genes" else "id " + transcript_id_column,
-                            None,
-                            trinotate_columns_to_exclude,
-                            True,
-                            "edger.p.value",
-                            True
+                            delimiter="\\\\t",
+                            output=os.path.join(output_directory, item, contrast.name, "dge_trinotate_results.csv"),
+                            common="id " + "\"" + gene_id_column + "\"" if item == "genes" else "id " + transcript_id_column,
+                            subset=None,
+                            exclude=trinotate_columns_to_exclude,
+                            left_join=True,
+                            sort_by="edger.p.value",
+                            make_names=True,
+                            ini_section="differential_expression"
                         ),
                         # Run GOseq
                         goseq_job
@@ -1105,13 +1106,13 @@ pandoc --to=markdown \\
         for item in "genes", "isoforms":
             matrix = os.path.join(output_directory, item + ".counts.matrix.symbol")
             job = tools.py_parseMergeCsv(
-                [
+                inputs=[
                     trinotate_annotation_report_filtered_header[item],
                     os.path.join(source_directory, item + ".counts.matrix.symbol")
                 ],
-                "\\\\t",
-                matrix,
-                "\'\' " + counts_ids[item],
+                delimiter="\\\\t",
+                output=matrix,
+                common="\'\' " + counts_ids[item],
                 left_join=True,
                 exclude="\' \'"
             )
