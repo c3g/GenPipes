@@ -117,34 +117,64 @@ MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
 
 if [[ $INSTALL_PREFIX_ENV_VARNAME != "MUGQIC_INSTALL_HOME_DEV" ]]
 then
+  if [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="Ubuntu"' ]]; then echo "Ubuntu";  elif [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="CentOS Linux"' ]]; then echo "CentOS"; fi
+
+  # Set path to C3G system libraries
+  #if [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="Ubuntu"' ]]
   if [[ `cat /etc/*-release` == *"Ubuntu"* ]]
   then
-    echo "Ubuntu" > /dev/null
-    C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
-    LIB=lib
-    INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
-    LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB:$INSTALL_DIR/$LIB/R/lib
+    if [[ `cat /etc/*-release` == *"16.04"* ]]
+    then
+      echo "Ubuntu 16.04" > /dev/null
+      C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1604/1.0
+      LIB=lib
+      INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+    elif [[ `cat /etc/*-release` == *"18.04"* ]]
+    then
+      echo "Ubuntu 18.04" > /dev/null
+      C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu1804/1.0
+      LIB=lib
+      INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+    elif [[ `cat /etc/*-release` == *"20.04"* ]]
+    then
+      echo "Ubuntu 20.04" > /dev/null
+      C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu2004/1.0
+      LIB=lib
+      INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+    elif [[ `cat /etc/*-release` == *"21.10"* ]]
+    then
+      echo "Ubuntu 21.0" > /dev/null
+      C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/apt/ubuntu2110/1.0
+      LIB=lib
+      INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      LIBDIR=$C3G_SYSTEM_LIBRARY/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/usr/$LIB/x86_64-linux-gnu:$C3G_SYSTEM_LIBRARY/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB
+    fi
+  #elif [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="CentOS Linux"' ]]
   elif [[ `cat /etc/*-release` == *"CentOS"*"7."* ]]
   then
     echo "CentOS" > /dev/null
     C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos7/1.0
     LIB=lib64
     INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
-    LIBDIR=$INSTALL_DIR/$LIB/R/lib:$INSTALL_DIR/$LIB/R/library:$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/lib64:$C3G_SYSTEM_LIBRARY/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/lib:$C3G_SYSTEM_LIBRARY/usr/lib64/mysql:$C3G_SYSTEM_LIBRARY/$LIB/mysql
+    LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/c3g/rpm/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/local/c3g/compile/lib:$C3G_SYSTEM_LIBRARY/usr/local/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/lib:$C3G_SYSTEM_LIBRARY/usr/lib64/mysql:$C3G_SYSTEM_LIBRARY/$LIB/mysql
+  #elif [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="CentOS Linux"' ]]
   elif [[ `cat /etc/*-release` == *"CentOS"*"8."* ]]
   then
     echo "CentOS" > /dev/null
     C3G_SYSTEM_LIBRARY=/cvmfs/soft.mugqic/yum/centos8/1.0
     LIB=lib64
     INTERPRETER=$C3G_SYSTEM_LIBRARY/$LIB/ld-linux-x86-64.so.2
-    LIBDIR=$INSTALL_DIR/$LIB/R/lib:$INSTALL_DIR/$LIB/R/library:$C3G_SYSTEM_LIBRARY/usr/local/lib64:$C3G_SYSTEM_LIBRARY/usr/lib64:$C3G_SYSTEM_LIBRARY/usr/lib:$C3G_SYSTEM_LIBRARY/usr/lib64/mysql:$C3G_SYSTEM_LIBRARY/$LIB/mysql
+    LIBDIR=$C3G_SYSTEM_LIBRARY/usr/local/$LIB:$C3G_SYSTEM_LIBRARY/usr/$LIB:$C3G_SYSTEM_LIBRARY/usr/lib:$C3G_SYSTEM_LIBRARY/usr/lib64/mysql:$C3G_SYSTEM_LIBRARY/$LIB/mysql
   else
     echo "*** ERROR ***"
-    echo "'"`cat /etc/*-release`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
+    echo "'"`cat /etc/*-release`"' OS detected... should be either 'Ubuntu' or 'CentOS'..."
+  #  echo "'"`lsb_release -i | cut -f 2`"' OS detected... should be either 'Ubuntu' neither 'CentOS'..."
     exit 1
   fi
-else
-  LIB=lib64
+  LIBDIR=$LIBDIR:$INSTALL_DIR/$LIB/R/lib:$INSTALL_DIR/$LIB/R/library
 fi
 
 echo "The software install location is $INSTALL_DIR"
@@ -259,31 +289,32 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     install.packages('udunits2', repos="http://cran.us.r-project.org/", configure.args='--with-udunits2-include=/usr/include/udunits2', lib=.Library)
 
     ## Define the list of packages to standard packages to install.
-    deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "allgown", "annotate", "AnnotationDbi", "AnnotationForge", "annotatr", "ape", "ash", "ASCAT",
+    deps = c("affxparser", "affy", "affyio", "affyPLM", "akima", "annotate", "AnnotationDbi", "AnnotationForge", "annotatr", "ape", "ash", "ASCAT",
     "ballgown", "BatchExperiments", "BatchJobs", "batchtools", "beanplot", "Biobase", "BiocGenerics", "BiocInstaller", "bioDist", "biomaRt", "biomformat", "Biostrings", "biovizBase", "bit",
-    "biovizBase", "bit", "bit64", "bitops", "boot", "brew", "BSgenome", "BSgenome.Hsapiens.1000genomes.hs37d5", "BSgenome.Hsapiens.UCSC.hg19", "bumphunter",
-    "Cairo", "caTools", "celda", "charm", "charmData", "ChIPseeker", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "cn.mops", "codetools", "colorspace",
+    "biovizBase", "bit", "bit64", "bitops", "boot", "brew", "BSgenome", "BSgenome.Hsapiens.1000genomes.hs37d5", "BSgenome.Hsapiens.UCSC.hg19", "BSgenome.Hsapiens.UCSC.hg38", "bumphunter",
+    "Cairo", "caTools", "celda", "charm", "charmData", "ChIPseeker", "chromVAR", "circlize", "class", "cluster", "clusterStab", "clusterProfiler", "cn.mops", "codetools", "colorspace",
     "ConsensusClusterPlus", "corpcor", "crlmm", "ctc", "cummeRbund",
     "dada2", "datasets", "data.table", "DBI", "deconstructSigs", "DESeq", "devtools", "dendextend", "dichromat", "diffHic", "digest", "dmrseq", "DNAcopy", "dplyr", "DSS",
-    "edgeR", "ellipse", "evaluate",
+    "edgeR", "ellipse", "evaluate", "EnsDb.Mmusculus.v79", "EnsDb.Hsapiens.v86",
     "farver", "fastcluster", "fdrtool", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
     "gcrma", "gdata", "genefilter", "genomation", "GenomicFeatures", "GenomicRanges", "GenomeInfoDb", "genoset", "GEOquery", "ggplot2", "ggvis", "googleVis", "goseq",
     "gplots", "graph", "gsalib", "gtable", "gtools", "Gviz",
     "hdrcde", "Hmisc", "hwriter", "HTqPCR", "HTSFilter", "hopach",
     "igraph", "IlluminaHumanMethylation450kmanifest", "IlluminaHumanMethylation450kanno.ilmn12.hg19", "impute", "InteractionSet", "IRanges", "iterators",
+    "JASPAR2020",
     "KernSmooth", "ks",
     "labeling", "lattice", "latticeExtra", "limma", "lme4", "locfit", "lumi", "LVSmiRNA",
     "magrittr", "maps", "markdown", "MASS", "MAST", "Matrix", "matrixStats", "mclust", "memoise", "methyAnalysis", "methylKit", "methylumi", "mgcv", "minfi",
-    "mirbase.db", "misc3d", "monocle", "multtest", "munsell", "mvtnorm",
+    "mirbase.db", "misc3d", "monocle", "multtest", "munsell", "mvtnorm", "motifmatchr",
     "NBPSeq", "nleqslv", "nlme", "NMF", "nnet", "nondetects", "nor1mix", "Nozzle.R1",
     "oligo", "oligoClasses", "optparse", "outliers",
-    "pd.charm.hg18.example", "pheatmap", "phyloseq", "plotrix", "plyr", "preprocessCore", "proto",
+    "pd.charm.hg18.example", "pheatmap", "phyloseq", "plotrix", "plyr", "preprocessCore", "presto", "proto",
     "qqman", "quantreg",
     "R2HTML", "RBGL", "RColorBrewer", "Rcpp", "RcppEigen", "RCurl", "remotes", "rhdf5", "ReportingTools", "reshape", "reshape2", "rgl", "RJSONIO", "Rmisc", "R.methodsS3",
     "rmarkdown", "roxygen2", "rpart", "Rsamtools", "RSQLite", "rtracklayer", "Rtsne",
-    "scales", "sendmailR", "sequenza", "Seurat", "shiny", "ShortRead", "siggenes", "slam", "snow", "SNPchip", "SomaticCancerAlterations", "SomaticSignatures",
+    "scales", "sendmailR", "sequenza", "Seurat", "shiny", "ShortRead", "siggenes", "signac", "slam", "snow", "SNPchip", "SomaticCancerAlterations", "SomaticSignatures",
     "SortableHTMLTables", "spam", "SparseM", "spatial", "spp", "SQN", "statmod", "stringi", "stringr", "survival", "sva",
-    "testthat", "tidyr", "tidyverse", "tweenr", "TxDb.Hsapiens.UCSC.hg19.knownGene", "TxDb.Mmusculus.UCSC.mm10.knownGene",
+    "testthat", "tidyr", "tidyverse", "tweenr", "TxDb.Hsapiens.UCSC.hg19.knownGene", "TxDb.Mmusculus.UCSC.mm10.knownGene", "TFBSTools",
     "vioplot", "vsn",
     "WriteXLS",
     "XML", "xtable",
@@ -341,10 +372,10 @@ then
       echo "GO Done" > /dev/null
     elif [ ${i##*.} == "so" ] || [[ ${i##*/} =~ "so"*(\.[0-9]{1,2})*$ ]]
     then
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-rpath $($MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --print-rpath $i):$LIBDIR $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --force-rpath --set-rpath $($MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --print-rpath $i):$LIBDIR $i
     else
       echo $i
-      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --set-rpath $($MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --print-rpath $i):$LIBDIR $i
+      $MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --set-interpreter $INTERPRETER --force-rpath --set-rpath $($MUGQIC_INSTALL_HOME/software/patchelf/patchelf-0.9/bin/patchelf --print-rpath $i):$LIBDIR $i
     fi
   done
 

@@ -3,36 +3,17 @@
 set -eu -o pipefail
 
 SOFTWARE=java
-
-# JDK 1.8
-VERSION=openjdk-jdk1.8.0_72
-ARCHIVE=jdk-8u72-ea-bin-b05-linux-x64-26_oct_2015.tar.gz
-ARCHIVE_URL=http://download.java.net/jdk8u72/archive/b05/binaries/$ARCHIVE
-
-# JDK 1.7
-#VERSION=openjdk-jdk1.7.0_60
-#ARCHIVE=jdk-7u60-ea-bin-b07-linux-x64-19_feb_2014.tar.gz
-#ARCHIVE_URL=http://download.java.net/jdk7u60/archive/b07/binaries/$ARCHIVE
-
-# JDK 1.6
-#VERSION=openjdk-jdk1.6.0_38
-#ARCHIVE=jdk-6u38-ea-bin-b04-linux-amd64-31_oct_2012.bin
-#ARCHIVE_URL=http://download.java.net/jdk6/6u38/promoted/b04/binaries/$ARCHIVE
-
+VERSION=openjdk-jdk-17
+ARCHIVE=jdk-17_linux-x64_bin.tar.gz
+ARCHIVE_URL=https://download.oracle.com/java/17/latest/$ARCHIVE
 SOFTWARE_DIR=$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  # JDK 1.7 and 1.8
   tar zxvf $ARCHIVE
-  # JDK 1.6
-  #sh $ARCHIVE
 
   # Install software
-  mv -i ${SOFTWARE_DIR/openjdk-/} $INSTALL_DIR/$SOFTWARE_DIR
+  mv -i ${SOFTWARE_DIR/openjdk-/}.0.4.1 $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {

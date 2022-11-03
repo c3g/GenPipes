@@ -3,17 +3,20 @@
 set -eu -o pipefail
 
 SOFTWARE=rnaseqc
-VERSION=2.4.0
-ARCHIVE=RNA-SeQC_v$VERSION.jar
-ARCHIVE_URL=http://www.broadinstitute.org/cancer/cga/tools/rnaseqc/$ARCHIVE
-SOFTWARE_DIR=${ARCHIVE/.jar/}
+VERSION=2.4.2
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=https://github.com/getzlab/${SOFTWARE}/archive/v${VERSION}.tar.gz
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
-  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
-  cp $INSTALL_DOWNLOAD/$ARCHIVE $INSTALL_DIR/$SOFTWARE_DIR/
+    cd $INSTALL_DOWNLOAD
+
+    git clone --recursive https://github.com/getzlab/rnaseqc.git -b v$VERSION $SOFTWARE_DIR
+    cd $SOFTWARE_DIR
+    make
+
+    cd ..
+    mv $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {
@@ -25,7 +28,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          RNASEQC_JAR         \$root/$ARCHIVE
+prepend-path    PATH                \$root
 "
 }
 

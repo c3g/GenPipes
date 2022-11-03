@@ -32,7 +32,7 @@ init_install() {
 then
   INSTALL_HOME=MUGQIC_INSTALL_HOME
 else
-  INSTALL_HOME=MUGQIC_INSTALL_HOME_DEV
+  INSTALL_HOME=MUGQIC_INSTALL_HOME_GENFS
 fi
 
   INSTALL_DIR=${!INSTALL_HOME}/genomes/species/$SPECIES.$ASSEMBLY
@@ -245,14 +245,29 @@ set_urls() {
   elif [[ $SOURCE == "UCSC" ]]
   then
     GENOME_URL=http://hgdownload.soe.ucsc.edu/goldenPath/$ASSEMBLY/bigZips/$ASSEMBLY.2bit
+
+  #
+  # NCBI
+  #
+  elif [[ $SOURCE == "NCBI" ]]
+  then
+    # URL_PREFIX and ACCESSION_ID have to be defined in the species script
+    GENOME_URL=${URL_PREFIX}_genomic.fna.gz
+    CDNA_URL=${URL_PREFIX}_cds_from_genomic.fna.gz
+    GTF_URL=${URL_PREFIX}_genomic.gtf.gz
   fi
 }
 
 download_urls() {
   download_url $GENOME_URL
 
+  if [[ $SOURCE == "NCBI" ]]
+  then
+    download_url $GTF_URL
+    download_url $CDNA_URL
+
   # Annotations are not downloaded for UCSC genomes
-  if [[ $SOURCE != "UCSC" ]]
+  elif [[ $SOURCE != "UCSC" ]]
   then
     download_url $GTF_URL
     download_url $NCRNA_URL
@@ -350,8 +365,8 @@ create_samtools_index() {
     echo "Creating genome SAMtools FASTA index..."
     echo
     module load $module_samtools
-    samtools faidx $GENOME_DIR/$GENOME_FASTA > $LOG_DIR/samtools_$TIMESTAMP.log 2>&1
-    awk '{print $1\t$2}' $GENOME_DIR/$GENOME_FASTA.fai > $GENOME_DIR/$GENOME_FASTA.tsv
+    samtools faidx $GENOME_DIR/$GENOME_FASTA > $LOG_DIR/samtools_$TIMESTAMP.log 2>&1 
+    awk '{print $1"\t"$2}' $GENOME_DIR/$GENOME_FASTA.fai > $GENOME_DIR/$GENOME_FASTA.tsv
   else
     echo
     echo "Genome SAMtools FASTA index up to date... skipping"
@@ -508,7 +523,7 @@ bowtie2-build $BOWTIE2_INDEX_DIR/$GENOME_FASTA $BOWTIE2_INDEX_PREFIX > \$LOG 2> 
 chmod -R ug+rwX,o+rX $BOWTIE2_INDEX_DIR \$LOG \$ERR && \
 mkdir -p $TOPHAT_INDEX_DIR && \
 ln -s -f -t $TOPHAT_INDEX_DIR ../$GTF && \
-module load $module_samtools $module_tophat && \
+module load $module_samtools $module_tophat $module_python && \
 LOG=$LOG_DIR/gtf_tophat_$TIMESTAMP.log && \
 ERR=$LOG_DIR/gtf_tophat_$TIMESTAMP.err && \
 tophat --output-dir $TOPHAT_INDEX_DIR/tophat_out --GTF $TOPHAT_INDEX_DIR/$GTF --transcriptome-index=$TOPHAT_INDEX_PREFIX $BOWTIE2_INDEX_PREFIX > \$LOG 2> \$ERR && \
@@ -806,8 +821,15 @@ copy_files() {
     fi
   fi
 
+  if [[ $SOURCE = "NCBI" ]]
+  then
+    if ! is_up2date $ANNOTATIONS_DIR/$GTF ; then gunzip -c `download_path $GTF_URL` > $ANNOTATIONS_DIR/$GTF ; fi
+    TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
+    if ! is_up2date $TRANSCRIPT_ID_GTF ; then grep -P "(^#|transcript_id)" $ANNOTATIONS_DIR/$GTF > $TRANSCRIPT_ID_GTF ; fi
+    if ! is_up2date $ANNOTATIONS_DIR/$CDNA ; then gunzip -c `download_path $CDNA_URL` > $ANNOTATIONS_DIR/$CDNA ; fi
+
   # Annotations are not installed for UCSC genomes
-  if [[ $SOURCE != "UCSC" ]]
+  elif [[ $SOURCE != "UCSC" ]]
   then
     if ! is_up2date $ANNOTATIONS_DIR/$GTF ; then gunzip -c `download_path $GTF_URL` > $ANNOTATIONS_DIR/$GTF ; fi
     TRANSCRIPT_ID_GTF=$ANNOTATIONS_DIR/${GTF/.gtf/.transcript_id.gtf}
@@ -951,10 +973,13 @@ build_files() {
     echo "You might consider to manually download a gtf file from UCSC table browser (http://genome.ucsc.edu/cgi-bin/hgTables)"
   fi
 
-  # Annotations are not installed for UCSC genomes
+  Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
   then
-    create_go_annotations
+    if [[ $SOURCE != "NCBI" ]]
+    then
+      create_go_annotations
+    fi
   fi
 }
 

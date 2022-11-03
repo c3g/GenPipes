@@ -3,16 +3,20 @@
 set -eu -o pipefail
 
 SOFTWARE=bcftools
-VERSION=1.14
+VERSION=1.10.2
 ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
 ARCHIVE_URL=https://github.com/samtools/bcftools/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=$SOFTWARE-$VERSION
+NOWRAP=1
 
 build() {
   cd $INSTALL_DOWNLOAD
   tar jxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
+  autoheader
+  autoconf
+  ./configure --enable-libgsl --enable-perl-filters
   make -j12
   # Install software
   make -j12 prefix=$INSTALL_DIR/${SOFTWARE_DIR} install

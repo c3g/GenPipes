@@ -4,19 +4,20 @@
 set -eu -o pipefail
 
 SOFTWARE=MetaSV
-VERSION=0.5.4
+VERSION=0.5.5
 ARCHIVE=${SOFTWARE,,}-${VERSION}.tar.gz
-ARCHIVE_URL=https://github.com/bioinform/${SOFTWARE,,}/archive/${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/ehenrion/${SOFTWARE,,}/archive/${VERSION}.tar.gz
 SOFTWARE_DIR=${SOFTWARE,,}-${VERSION}
+PYTHON_VERSION=2.7.14
+PYTHON_SHORT_VERSION=${PYTHON_VERSION%.*}
 
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE
 
   # Install software
-  module load mugqic/python/2.7.14
-  cd $SOFTWARE_DIR
-  pip install --target $INSTALL_DIR/$SOFTWARE_DIR
+  module load mugqic/python/$PYTHON_VERSION
+  pip install --prefix=$INSTALL_DIR/$SOFTWARE_DIR $ARCHIVE_URL
+  ln -s $(which python) $INSTALL_DIR/$SOFTWARE_DIR/bin/python
 }
 
 module_file() {
@@ -27,9 +28,11 @@ proc ModulesHelp { } {
 }
 module-whatis \"$SOFTWARE\"
 
-set              root               $INSTALL_DIR/$SOFTWARE_DIR 
-prepend-path     PATH               \$root
-prepend-path     PYTHONPATH         \$root
+set              root               $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root/bin
+prepend-path    PYTHONPATH          $PYTHONPATH
+prepend-path    PYTHONPATH          \$root/lib/python${PYTHON_SHORT_VERSION}
+prepend-path    PYTHONPATH          \$root/lib/python${PYTHON_SHORT_VERSION}/site-packages
 "
 }
 

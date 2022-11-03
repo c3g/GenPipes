@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 SOFTWARE=purple
-VERSION=2.53
+VERSION=3.4.1
 ARCHIVE=${SOFTWARE}-${VERSION}.jar
-ARCHIVE_URL=https://github.com/hartwigmedical/hmftools/releases/download/${SOFTWARE}-v${VERSION}/$ARCHIVE
+ARCHIVE_URL=https://github.com/hartwigmedical/hmftools/releases/download/${SOFTWARE}-v${VERSION%.*}/${SOFTWARE}_v${VERSION}.jar
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 build() {
