@@ -547,6 +547,7 @@ END
                         ),
                         bash.chmod(index_bam, "664")
                     ],
+                    input_dependency=[readset_bam],
                     name="sambamba_sort." + readset.name,
                     samples=[readset.sample]
                 )
