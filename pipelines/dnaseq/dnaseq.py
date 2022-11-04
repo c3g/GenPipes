@@ -1830,7 +1830,7 @@ END
                     ),
                 ],
                 name="run_checkmate.sample_level",
-                sample=self.samples
+                samples=self.samples
             )
         )
 
@@ -2529,7 +2529,7 @@ pandoc \\
                             )
                         ],
                         name="rawmpileup." + sample.name + ".all",
-                        samples=sample
+                        samples=[sample]
                     )
                 )
 
