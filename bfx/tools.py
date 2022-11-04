@@ -142,8 +142,8 @@ def py_parseMergeCsv(
         input_files,
         [output],
         [
-            ['parse_merg_csv', 'module_mugqic_tools'],
-            ['parse_merg_csv', 'module_python']
+            ['parse_merge_csv', 'module_mugqic_tools'],
+            ['parse_merge_csv', 'module_python']
         ],
         command="""\
 $PYTHON_TOOLS/parseMergeCsv.py \\
