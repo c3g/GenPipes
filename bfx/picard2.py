@@ -139,7 +139,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 def collect_sequencing_artifacts_metrics(input, output, annotation_flat=None,reference_sequence=None):
-        output_dep = output + ".bait_bias_summary_metrics"
+        output_dep = output + ".bait_bias_summary_metrics.txt"
 
         return Job(
             [input],
