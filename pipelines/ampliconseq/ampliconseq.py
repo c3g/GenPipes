@@ -639,7 +639,7 @@ printf '{sample}\t{readset}\t' \\
                         [filter_log, flash_log[0]],
                         [readset_merge_uchime_stats],
                         'uchime',
-                        "-i {filter_log} -j {flash_log[0]} -s {readset.sample.name} >> {readset_merge_uchime_stats}"
+                        f"-i {filter_log} -j {flash_log[0]} -s {readset.sample.name} >> {readset_merge_uchime_stats}"
                     )
                 ]
             )
@@ -1645,7 +1645,7 @@ pandoc --to=markdown \\
                 [heatmap_script, heatmap_otu_data_R, heatmap_otu_name_R, heatmap_otu_tax_R],
                 [heatmap_chart, heatmap_otu_table, heatmap_tax_table],
                 module_entries=[['plot_heatmap', 'module_R']],
-                command="./" +  heatmap_script
+                command=heatmap_script
             )
 
             jobs.append(
