@@ -5913,7 +5913,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             tumor_pair.tumor.name,
                             "LUMPY",
                             prefix + ".lumpy.somatic.prioritize.tsv"
-                        ),
+                        )
                     ],
                     name="sv_annotation.lumpy.somatic." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -5937,7 +5937,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             tumor_pair.tumor.name,
                             "LUMPY",
                             prefix + ".lumpy.germline.prioritize.tsv"
-                        ),
+                        )
                     ],
                     name="sv_annotation.lumpy.germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -5982,7 +5982,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     type="sv",
                                     sample=key,
                                     profyle=self.args.profyle
-                                ),
+                                )
                             ],
                             name="sym_link_lumpy.somatic." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -6022,7 +6022,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     type="sv",
                                     sample=key,
                                     profyle=self.args.profyle
-                                ),
+                                )
                             ],
                             name="sym_link_lumpy.germline." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -6080,7 +6080,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     [None],
                                     [merge_vcf],
                                     command="sed 's/NONE/" + tumor_pair.tumor.name + "/g' | sed -e 's#\"\"#\"#g' > " + merge_vcf
-                                ),
+                                )
                             ]
                         ),
                     ],
@@ -6167,7 +6167,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                 htslib.bgzip_tabix(
                                     None,
                                     prefix + ".wham.somatic.vcf.gz"
-                                ),
+                                )
                             ]
                         ),
                         snpeff.compute_effects(
@@ -6266,7 +6266,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     type="sv",
                                     sample=key,
                                     profyle=self.args.profyle
-                                ),
+                                )
                             ],
                             name="sym_link_wham.somatic." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -6305,7 +6305,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     type="sv",
                                     sample=key,
                                     profyle=self.args.profyle
-                                ),
+                                )
                             ],
                             name="sym_link_wham.germline." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -6495,7 +6495,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         annotations.structural_variants(
                             pair_directory + ".cnvkit.snpeff.vcf",
                             pair_directory + ".cnvkit.snpeff.annot.vcf"
-                        ),
+                        )
                     ],
                     name="sv_annotation.cnvkit." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -6537,7 +6537,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     type="sv",
                                     sample=key,
                                     profyle=self.args.profyle
-                                ),
+                                )
                             ],
                             name="sym_link_cnvkit.somatic." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -6585,7 +6585,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                 gatk_vcf,
                                 gatk_pass,
                                 config.param('metasv_ensemble', 'filter_somatic_options')
-                            ),
+                            )
                         ],
                         name="metasv_ensemble.ensemble_pass." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -6612,7 +6612,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             isize_mean=str(isize_mean),
                             isize_sd=str(isize_sd),
                             output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz")
-                        ),
+                        )
                     ],
                     name="metasv_ensemble." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -6661,7 +6661,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                 gatk_vcf,
                                 gatk_pass,
                                 config.param('metasv_ensemble', 'filter_germline_options')
-                            ),
+                            )
                         ],
                         name="metasv_ensemble.ensemble_pass." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -6688,7 +6688,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             isize_mean=str(isize_mean),
                             isize_sd=str(isize_sd),
                             output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz")
-                        ),
+                        )
                     ],
                     name="metasv_ensemble." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -6714,7 +6714,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         annotations.structural_variants(
                             os.path.join(ensemble_directory, tumor_pair.name + ".metasv.snpeff.vcf"),
                             os.path.join(ensemble_directory, tumor_pair.name + ".metasv.snpeff.annot.vcf")
-                        ),
+                        )
                     ],
                     name="sv_annotation.metasv_ensemble." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -6756,7 +6756,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     type="sv",
                                     sample=key,
                                     profyle=self.args.profyle
-                                ),
+                                )
                             ],
                             name="sym_link_metasv." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -6830,7 +6830,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             [bined_count_file],
                                 command="cat <(head -1 " + bined_count_fix_file + ") <(grep -v \"_\" " + bined_count_fix_file
                                     + " | grep -v \"EBV\" ) > " + bined_count_file
-                        ),
+                        )
                     ],
                     name="bvatools_bincounter." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor]

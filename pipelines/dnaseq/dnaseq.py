@@ -450,7 +450,6 @@ END
             trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], readset.sample.name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".bam")
-            # index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
 
             fastq1 = ""
             fastq2 = ""
@@ -931,13 +930,15 @@ END
             alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
-            [input] = self.select_input_files([
-                [alignment_file_prefix + "sorted.matefixed.bam"],
-                [alignment_file_prefix + "sorted.realigned.bam"],
-                [alignment_file_prefix + "sorted.bam"],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
-            ])
+            [input] = self.select_input_files(
+                [
+                    [alignment_file_prefix + "sorted.matefixed.bam"],
+                    [alignment_file_prefix + "sorted.realigned.bam"],
+                    [alignment_file_prefix + "sorted.bam"],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
+                ]
+            )
             output = alignment_file_prefix + "sorted.dup.bam"
             output_index = alignment_file_prefix + "sorted.dup.bam.bai"
             metrics_file = alignment_file_prefix + "sorted.dup.metrics"
@@ -959,7 +960,7 @@ END
                             [os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")],
                             command="sed -e 's#.realigned##g' " + metrics_file + " > "
                                     + os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")
-                        ),
+                        )
                     ],
                     name="picard_mark_duplicates." + sample.name,
                     samples=[sample]
@@ -1081,7 +1082,7 @@ END
                             input,
                             base_recalibrator_output,
                             intervals=interval_list
-                            )
+                        )
                     ],
                     name="gatk_base_recalibrator." + sample.name,
                     samples=[sample]
@@ -1463,8 +1464,7 @@ END
         job = multiqc.run(
             input_dep,
             output
-            # input_dep
-            )
+        )
         job.name = "multiqc_all_samples"
         job.samples = self.samples
 
@@ -1569,7 +1569,7 @@ END
                         None,
                         coverage_bed,
                         interval_list
-                        )
+                    )
                     job.name = "interval_list." + os.path.basename(coverage_bed)
                     jobs.append(job)
 
@@ -1827,7 +1827,7 @@ END
                     ngscheckmate.run(
                         vcf_file,
                         output
-                    ),
+                    )
                 ],
                 name="run_checkmate.sample_level",
                 samples=self.samples
@@ -2524,7 +2524,7 @@ pandoc \\
                                     Job(output_files=[output],
                                         command="gzip -1 -c > " + output,
                                         samples=[sample]
-                                        ),
+                                    )
                                 ]
                             )
                         ],
@@ -2601,13 +2601,15 @@ pandoc \\
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            [input] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam") for sample in self.samples],
-                [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam") for sample in self.samples],
-                [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam") for sample in self.samples],
-                [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam") for sample in self.samples],
-                [os.path.join(alignment_directory, sample.name + ".sorted.bam") for sample in self.samples]
-            ])
+            [input] = self.select_input_files(
+                [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam") for sample in self.samples],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam") for sample in self.samples],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam") for sample in self.samples],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam") for sample in self.samples],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.bam") for sample in self.samples]
+                ]
+            )
             nb_jobs = config.param('snp_and_indel_bcf', 'approximate_nb_jobs', param_type='posint')
             output_directory = f"{self.output_dirs['variants_directory']}/rawBCF"
 
@@ -2661,8 +2663,8 @@ pandoc \\
                             ],
                             name="snp_and_indel_bcf.allSamples." + re.sub(":", "_", region),
                             samples=self.samples
-                            )
                         )
+                    )
         return jobs
 
     def merge_filter_bcf(self):
@@ -2994,7 +2996,7 @@ pandoc \\
             input_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.vcf.gz",
             output_vcf="variants/allSamples.merged.flt.vt.mil.snpId.snpeff.dbnsfp.vcf",
             job_name="dbnsfp_annotation"
-            ):
+        ):
         """
         Additional SVN annotations. Provides extra information about SVN by using numerous published databases.
         Applicable to human samples. Databases available include Biomart (adds GO annotations based on gene information)
@@ -3353,7 +3355,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 htslib.bgzip(
                                     None,
                                     output_vcf
-                                ),
+                                )
                             ]
                         ),
                         pipe_jobs(
@@ -3366,7 +3368,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 htslib.bgzip_tabix(
                                     None,
                                     germline_vcf
-                                ),
+                                )
                             ]
                         )
                     ],
@@ -3381,7 +3383,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         snpeff.compute_effects(
                             germline_vcf,
                             final_directory + ".delly.germline.snpeff.vcf.gz"
-                        ),
+                        )
                     ],
                     name="sv_annotation.delly.germline." + sample.name,
                     samples=[sample]
@@ -3422,40 +3424,61 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             if coverage_bed and not bed_file:
                 bed_file = coverage_bed + ".gz"
-                jobs.append(concat_jobs([
-                    Job(
-                        [coverage_bed],
-                        [coverage_bed + ".sort"],
-                        command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > "
-                                + coverage_bed + ".sort ; sleep 180"
-                    ),
-                    htslib.bgzip(
-                        coverage_bed + ".sort",
-                        bed_file
-                    ),
-                    htslib.tabix(
-                        coverage_bed + ".gz",
-                        options="-f -p bed"
-                    ),
-                 ],name="bed_index." + sample.name))
+                jobs.append(
+                    concat_jobs(
+                        [
+                            Job(
+                                [coverage_bed],
+                                [coverage_bed + ".sort"],
+                                command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > "
+                                        + coverage_bed + ".sort ; sleep 180"
+                            ),
+                            htslib.bgzip(
+                                coverage_bed + ".sort",
+                                bed_file
+                            ),
+                            htslib.tabix(
+                                coverage_bed + ".gz",
+                                options="-f -p bed"
+                            )
+                        ],
+                        name="bed_index." + sample.name,
+                        samples=[sample]
+                    )
+                )
 
             output_dep = [manta_germline_output, manta_germline_output_tbi]
 
-            jobs.append(concat_jobs([
-                bash.mkdir(manta_directory, remove=True),
-                manta.manta_config(input, None, manta_directory, bed_file),
-                manta.manta_run(manta_directory, output_dep=output_dep),
-                bash.ln(
-                    manta_germline_output,
-                    output_prefix + ".manta.germline.vcf.gz",
-                    self.output_dir
-                ),
-                bash.ln(
-                    manta_germline_output_tbi,
-                    output_prefix + ".manta.germline.vcf.gz.tbi",
-                    self.output_dir
-                ),
-            ], name="manta_sv." + sample.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.rm(manta_directory),
+                        bash.mkdir(manta_directory, remove=True),
+                        manta.manta_config(
+                            input,
+                            None,
+                            manta_directory,
+                            bed_file
+                        ),
+                        manta.manta_run(
+                            manta_directory,
+                            output_dep=output_dep
+                        ),
+                        bash.ln(
+                            manta_germline_output,
+                            output_prefix + ".manta.germline.vcf.gz",
+                            self.output_dir
+                        ),
+                        bash.ln(
+                            manta_germline_output_tbi,
+                            output_prefix + ".manta.germline.vcf.gz.tbi",
+                            self.output_dir
+                        )
+                    ],
+                    name="manta_sv." + sample.name,
+                    samples=[sample]
+                )
+            )
 
         return jobs
 
@@ -3473,7 +3496,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             f"{pair_directory}.manta.germline.vcf.gz",
                             f"{pair_directory}.manta.germline.snpeff.vcf.gz"
                         ),
-            ], name="sv_annotation.manta_germline." + sample.name))
+                    ],
+                    name="sv_annotation.manta_germline." + sample.name,
+                    samples=[sample]
+                )
+            )
 
         return jobs
 
@@ -3596,7 +3623,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     "-",
                                     os.path.join(pair_directory, sample.name + ".lumpy.sorted.vcf"),
                                     "-m full"
-                                ),
+                                )
                             ]
                         ),
                         svtyper.genotyper(
@@ -3616,7 +3643,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 vt.sort("-", "-", "-m full"),
                                 htslib.bgzip_tabix(None, germline_vcf),
                             ]
-                        ),
+                        )
                     ],
                     name=f"lumpy_paired_sv_calls.genotype.{sample.name}",
                     samples=[sample]
@@ -3677,7 +3704,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     command=f"sed 's/NONE/{sample.name}/g' | sed -e 's#\"\"#\"#g' > {merge_vcf}"
                                 )
                             ]
-                        ),
+                        )
                     ],
                     name=f"wham_call_sv.call_merge.{sample.name}",
                     samples=[sample]
@@ -3917,7 +3944,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                     concat_jobs(
                         [
                             bash.mkdir(cnvkit_dir, remove=True),
-                            cnvkit.call(os.path.join(cnvkit_dir, sample.name + ".segmetrics.cns"), os.path.join(cnvkit_dir, sample.name + ".call.cns")),
+                            cnvkit.call(
+                                os.path.join(cnvkit_dir, sample.name + ".segmetrics.cns"),
+                                os.path.join(cnvkit_dir, sample.name + ".call.cns")
+                            ),
                             #cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".call.cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
                             pipe_jobs(
                                 [
@@ -4011,15 +4041,27 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 concat_jobs(
                     [
                         bash.mkdir(output_dir, remove=True),
-                        breakseq2.run(input, sample.name, output_dir),
+                        breakseq2.run(
+                            input,
+                            sample.name,
+                            output_dir
+                        ),
                         pipe_jobs(
                             [
-                                bcftools.view(output, None, config.param('run_breakseq2', 'bcftools_options')),
-                                htslib.bgzip_tabix(None, final_vcf),
+                                bcftools.view(
+                                    output,
+                                    None,
+                                    config.param('run_breakseq2', 'bcftools_options')
+                                ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    final_vcf
+                                )
                             ]
-                        ),
+                        )
                     ],
-                    name="run_breakseq2." + sample.name
+                    name="run_breakseq2." + sample.name,
+                    samples=[sample]
                 )
             )
     
@@ -4080,7 +4122,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             htslib.tabix(
                                 gatk_pass,
                                 options="-pvcf"
-                            ),
+                            )
                         ],
                         name="metasv_ensemble.gatk_pass." + sample.name,
                         samples=[sample]
@@ -4109,7 +4151,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             isize_sd=str(isize_sd),
                             output_vcf=os.path.join(ensemble_directory, "variants.vcf.gz"),
                             breakseq=breakseq_vcf
-                        ),
+                        )
                     ],
                     name="metasv_ensemble." + sample.name,
                     samples=[sample]
@@ -4128,8 +4170,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             jobs.append(
                 concat_jobs(
                     [
-                        snpeff.compute_effects(os.path.join(ensemble_directory, "variants.vcf.gz"),
-                                            os.path.join(ensemble_directory, sample.name + ".metasv.snpeff.vcf")),
+                        snpeff.compute_effects(
+                            os.path.join(ensemble_directory, "variants.vcf.gz"),
+                            os.path.join(ensemble_directory, sample.name + ".metasv.snpeff.vcf")
+                        )
                     ],
                     name="sv_annotation.metasv_ensemble." + sample.name,
                     samples=[sample]
@@ -4155,7 +4199,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             germline_input = os.path.join(svaba_directory, sample.name + ".svaba.sv.vcf")
             germline_output = os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.vcf.gz")
-            #cd_job = Job(command="cd " + svaba_directory)
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 sample.readsets[0]
@@ -4170,7 +4213,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 concat_jobs(
                     [
                         bash.mkdir(svaba_directory, remove=True),
-                        #cd_job,
                         svaba.run(input_normal, os.path.join(svaba_directory, sample.name), None, bed),
                         pipe_jobs(
                             [

@@ -873,24 +873,47 @@ pandoc --to=markdown \\
         Merge assemblies into a master teranscriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
         """
 
+        jobs = []
+
         output_directory = os.path.join(self.output_dirs["stringtie_directory"], "AllSamples")
         sample_file = os.path.join(self.output_dirs["stringtie_directory"], "stringtie-merge.samples.txt")
         input_gtfs = [os.path.join(self.output_dirs["stringtie_directory"], sample.name, "transcripts.gtf") for sample in self.samples]
         gtf = config.param('stringtie','gtf', param_type='filepath')
 
+        if os.path.exists(os.path.join(self.output_dirs["stringtie_directory"], "stringtieAbundDone")) and not self.force_jobs:
+            log.info(f"Stringtie Abund done already... Skipping stringtie_merge step...")
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + output_directory, samples=self.samples),
-            Job(input_gtfs, [sample_file], command="""\
+        else:
+
+            jobs = [
+                concat_jobs(
+                    [
+                        bash.mkdir(output_directory),
+                        Job(
+                            input_gtfs,
+                            [sample_file],
+                            command="""\
 `cat > {sample_file} << END
 {sample_rows}
 END
 
-`""".format(sample_rows="\n".join(input_gtfs), sample_file=sample_file)),
-            stringtie.stringtie_merge(sample_file, output_directory, gtf)],
-            name="stringtie-merge")
+`""".format(
+                                sample_rows="\n".join(input_gtfs),
+                                sample_file=sample_file
+                            )
+                        ),
+                        stringtie.stringtie_merge(
+                            sample_file,
+                            output_directory,
+                            gtf
+                        )
+                    ],
+                    name="stringtie-merge",
+                    samples=self.samples
+                )
+            ]
 
-        return [job]
+        return jobs
 
     def stringtie_abund(self):
         """
@@ -900,14 +923,34 @@ END
 
         gtf = os.path.join(self.output_dirs["stringtie_directory"], "AllSamples", "merged.gtf")
 
+        donejob_input_dep = []
         for sample in self.samples:
             input_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.hardClip.bam")
             output_directory = os.path.join(self.output_dirs["stringtie_directory"], sample.name)
 
-            job = stringtie.stringtie(input_bam, output_directory, gtf, abund=True)
+            job = stringtie.stringtie(
+                input_bam,
+                output_directory,
+                gtf,
+                abund=True
+            )
             job.name = "stringtie_abund." + sample.name
             job.samples = [sample]
+
+            donejob_input_dep.extend(job.output_files)
+
             jobs.append(job)
+
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.touch(os.path.join(self.output_dirs["stringtie_directory"], "stringtieAbundDone")),
+                ],
+                name="stringtie_abund.donefile",
+                samples=self.samples,
+                input_dependency=donejob_input_dep
+            )
+        )
 
         return jobs
 
@@ -966,16 +1009,31 @@ END
         gtf = config.param('cuffmerge','gtf', param_type='filepath')
 
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + output_directory, samples=self.samples),
-            Job(input_gtfs, [sample_file], command="""\
+        job = concat_jobs(
+            [
+                bash.mkdir(output_directory),
+                Job(
+                    input_gtfs,
+                    [sample_file],
+                    command="""\
 `cat > {sample_file} << END
 {sample_rows}
 END
 
-`""".format(sample_rows="\n".join(input_gtfs), sample_file=sample_file)),
-            cufflinks.cuffmerge(sample_file, output_directory, gtf_file=gtf)],
-            name="cuffmerge")
+`""".format(
+                        sample_rows="\n".join(input_gtfs),
+                        sample_file=sample_file
+                    )
+                ),
+                cufflinks.cuffmerge(
+                    sample_file,
+                    output_directory,
+                    gtf_file=gtf
+                )
+            ],
+            name="cuffmerge",
+            samples=self.samples
+        )
 
         return [job]
 
@@ -1009,7 +1067,7 @@ END
         jobs = []
 
         fpkm_directory = self.output_dirs["cufflinks_directory"]
-        gtf = os.path.join(fpkm_directory, "AllSamples","merged.gtf")
+        gtf = os.path.join(fpkm_directory, "AllSamples", "merged.gtf")
 
 
         # Perform cuffdiff on each design contrast
@@ -1036,7 +1094,7 @@ END
         jobs = []
 
         fpkm_directory = self.output_dirs["cufflinks_directory"]
-        gtf = os.path.join(fpkm_directory, "AllSamples","merged.gtf")
+        gtf = os.path.join(fpkm_directory, "AllSamples", "merged.gtf")
         sample_labels = ",".join([sample.name for sample in self.samples])
 
         # Perform cuffnorm using every samples
