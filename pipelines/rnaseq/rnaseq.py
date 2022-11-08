@@ -114,6 +114,7 @@ class RnaSeqRaw(common.Illumina):
             'alignment_1stPass_directory'   : os.path.join(self.output_dir, 'alignment_1stPass'),
             'alignment_directory'           : os.path.join(self.output_dir, 'alignment'),
             'stringtie_directory'           : os.path.join(self.output_dir, 'stringtie'),
+            'ballgown_directory'            : os.path.join(self.output_dir, 'ballgown'),
             'cufflinks_directory'           : os.path.join(self.output_dir, 'cufflinks'),
             'cuffdiff_directory'            : os.path.join(self.output_dir, 'cuffdiff'),
             'cuffnorm_directory'            : os.path.join(self.output_dir, 'cuffnorm'),
@@ -941,14 +942,16 @@ END
 
             jobs.append(job)
 
+        done_file = os.path.join(self.output_dirs["stringtie_directory"], "stringtieAbundDone")
         jobs.append(
             concat_jobs(
                 [
-                    bash.touch(os.path.join(self.output_dirs["stringtie_directory"], "stringtieAbundDone")),
+                    bash.touch(done_file)
                 ],
                 name="stringtie_abund.donefile",
                 samples=self.samples,
-                input_dependency=donejob_input_dep
+                input_dependency=donejob_input_dep,
+                output_dependency=[done_file]
             )
         )
 
@@ -965,10 +968,14 @@ END
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         if self.contrasts:
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
-        output_directory = "ballgown"
+        output_directory = self.output_dirs["ballgown_directory"]
         input_abund = [os.path.join(self.output_dirs["stringtie_directory"], sample.name, "abundance.tab") for sample in self.samples]
 
-        ballgown_job = ballgown.ballgown(input_abund, design_file, output_directory)
+        ballgown_job = ballgown.ballgown(
+            input_abund,
+            design_file,
+            output_directory
+        )
         ballgown_job.name = "ballgown"
         ballgown_job.samples = self.samples
         jobs.append(ballgown_job)
@@ -1228,31 +1235,36 @@ cp \\
         edger_job = differential_expression.edger(
             design_file,
             count_matrix,
-            output_directory
+            output_directory,
+            [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
         )
-        edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
 
         deseq_job = differential_expression.deseq2(
             design_file,
             count_matrix,
-            output_directory
+            output_directory,
+            [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
         )
-        deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
 
         if self.args.batch:
             # If provided a batch file, compute DGE with batch effect correction
             batch_file = os.path.relpath(self.args.batch.name, self.output_dir)
 
-            # edger_job_batch_corrected = differential_expression.edger(design_file, count_matrix, batch_file, f"{output_directory}_batch_corrected")
-            # edger_job_batch_corrected.output_files = [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "edger_results.csv") for contrast in self.contrasts]
+            # edger_job_batch_corrected = differential_expression.edger(
+            #     design_file,
+            #     count_matrix,
+            #     batch_file,
+            #     [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "edger_results.csv") for contrast in self.contrasts]
+            #     f"{output_directory}_batch_corrected"
+            # )
 
             deseq_job_batch_corrected = differential_expression.deseq2(
                 design_file,
                 count_matrix,
                 f"{output_directory}_batch_corrected",
+                [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "deseq2_results.csv") for contrast in self.contrasts],
                 batch_file
             )
-            deseq_job_batch_corrected.output_files = [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "dge_results.csv") for contrast in self.contrasts]
 
         return [
             concat_jobs(

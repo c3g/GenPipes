@@ -56,6 +56,7 @@ def deseq2(
     design_file,
     count_matrix,
     output_dir,
+    outputs,
     batch_file=None
     ):
 
@@ -63,7 +64,7 @@ def deseq2(
 
     return  Job(
         [count_matrix],
-        [os.path.join(output_dir, "deseq_results.csv"), os.path.join(output_dir, "dge_results.csv")],
+        outputs,
         [
             ['differential_expression_deseq', 'module_mugqic_tools'],
             ['differential_expression_deseq', 'module_R']
@@ -86,12 +87,13 @@ Rscript $R_TOOLS/deseq2.R \\
 def edger(
     design_file,
     count_matrix,
-    output_dir
+    output_dir,
+    outputs
     ):
 
     return  Job(
         [count_matrix],
-        [os.path.join(output_dir, "edger_results.csv")],
+        outputs,
         [
             ['differential_expression_edger', 'module_mugqic_tools'],
             ['differential_expression_edger', 'module_R']
