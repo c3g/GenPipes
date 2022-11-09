@@ -974,7 +974,9 @@ END
         ballgown_job = ballgown.ballgown(
             input_abund,
             design_file,
-            output_directory
+            output_directory,
+            [os.path.join(output_directory, contrast.name, "gene_exp.diff") for contrast in self.contrasts] + 
+            [os.path.join(output_directory, contrast.name, "transcript_exp.diff") for contrast in self.contrasts]
         )
         ballgown_job.name = "ballgown"
         ballgown_job.samples = self.samples
