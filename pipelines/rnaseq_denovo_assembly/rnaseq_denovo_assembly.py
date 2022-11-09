@@ -950,23 +950,28 @@ pandoc --to=markdown \\
         edger_job = differential_expression.edger(
             design_file,
             matrix + ".symbol",
-            os.path.join(output_directory, item)
+            os.path.join(output_directory, item),
+            [os.path.join(output_directory, item, contrast.name, "edger_results.csv") for contrast in self.contrasts]
         )
-        edger_job.output_files = [os.path.join(output_directory, item, contrast.name, "edger_results.csv") for contrast in self.contrasts]
 
         # Perform DESeq
         deseq_job = differential_expression.deseq2(
             design_file,
             matrix + ".symbol",
-            os.path.join(output_directory, item)
+            os.path.join(output_directory, item),
+            [os.path.join(output_directory, item, contrast.name, "dge_results.csv") for contrast in self.contrasts]
         )
-        deseq_job.output_files = [os.path.join(output_directory, item, contrast.name, "dge_results.csv") for contrast in self.contrasts]
 
         if self.args.batch:
             # If provided a batch file, compute DGE with batch effect correction
             batch_file = os.path.relpath(self.args.batch.name, self.output_dir)
-            deseq_job_batch_corrected = differential_expression.deseq2(design_file, matrix + ".symbol", os.path.join(f"{output_directory}_batch_corrected", item), batch_file)
-            deseq_job_batch_corrected.output_files = [os.path.join(f"{output_directory}_batch_corrected", item, contrast.name, "dge_results.csv") for contrast in self.contrasts]
+            deseq_job_batch_corrected = differential_expression.deseq2(
+                design_file,
+                matrix + ".symbol",
+                os.path.join(f"{output_directory}_batch_corrected", item),
+                [os.path.join(f"{output_directory}_batch_corrected", item, contrast.name, "dge_results.csv") for contrast in self.contrasts],
+                batch_file
+            )
 
         jobs.append(
             concat_jobs(
@@ -1663,17 +1668,30 @@ awk -v OFS="\t" '{{ print $1,$0}}' \\
                 no_replicates = True
 
         if no_replicates == False:
-            edger_job = differential_expression.edger(design_file, count_matrix, output_directory)
-            edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
+            edger_job = differential_expression.edger(
+                design_file,
+                count_matrix,
+                output_directory,
+                [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
+            )
 
-            deseq_job = differential_expression.deseq2(design_file, count_matrix, output_directory)
-            deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
+            deseq_job = differential_expression.deseq2(
+                design_file,
+                count_matrix,
+                output_directory,
+                [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
+            )
 
             if self.args.batch:
                 # If provided a batch file, compute DGE with batch effect correction
                 batch_file = os.path.relpath(self.args.batch.name, self.output_dir)
-                deseq_job_batch_corrected = differential_expression.deseq2(design_file, count_matrix, f"{output_directory}_batch_corrected", batch_file)
-                deseq_job_batch_corrected.output_files = [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "dge_results.csv") for contrast in self.contrasts]
+                deseq_job_batch_corrected = differential_expression.deseq2(
+                    design_file,
+                    count_matrix,
+                    f"{output_directory}_batch_corrected",
+                    [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "dge_results.csv") for contrast in self.contrasts],
+                    batch_file
+                )
 
             report_jobs = []
             for contrast in self.contrasts:
