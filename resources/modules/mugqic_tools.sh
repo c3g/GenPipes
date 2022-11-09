@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=mugqic_tools
-VERSION=2.10.10
+VERSION=2.11.0
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
 ARCHIVE_URL=https://bitbucket.org/mugqic/$SOFTWARE/downloads/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -32,6 +32,8 @@ prepend-path    PATH                \$root/python-tools
 prepend-path    PATH                \$root/RRNATagger-tools
 prepend-path    PERL5LIB            \$root/perl-tools
 prepend-path    PATH                \$root/multiqc-tools
+prepend-path    PATH                \$root/java-tools
+setenv          JAVA_TOOLS          \$root/java-tools 
 setenv          R_TOOLS             \$root/R-tools
 setenv          PERL_TOOLS          \$root/perl-tools
 setenv          PYTHON_TOOLS        \$root/python-tools
