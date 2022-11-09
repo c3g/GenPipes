@@ -3475,6 +3475,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             self.output_dir
                         )
                     ],
+                    input_dependency=[input],
                     name="manta_sv." + sample.name,
                     samples=[sample]
                 )
