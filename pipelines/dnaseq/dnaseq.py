@@ -3827,7 +3827,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             bcftools.view(
                                 gatk_vcf,
                                 None,
-                                filter_options="-i '%QUAL>=50'"
+                                filter_options="-i '%QUAL>=50' -m2 -M2 -v snps"
                             ),
                             bash.sed(
                                 None,
