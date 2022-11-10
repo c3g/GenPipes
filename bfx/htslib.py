@@ -38,8 +38,8 @@ def bgzip(
 bgzip -cf \\
   {input} > \\
   {output}""".format(
-        input=" \\\n " + input if input else "",
-        output=output
+            input=" \\\n " + input if input else "",
+            output=output
         )
     )
 
@@ -58,8 +58,8 @@ def tabix(
         command="""\
 tabix {options}  \\
   {input}""".format(
-        input=input,
-        options=options,
+            input=input,
+            options=options,
         )
     )
 
@@ -79,9 +79,9 @@ bgzip -cf \\
   {input} > \\
   {output} && \\
 tabix -pvcf {output}""".format(
-        input=" \\\n " + input if input else "",
-        output=output,
-        options=config.param('DEFAULT', 'tabix_options', required=False),
+            input=" \\\n " + input if input else "",
+            output=output,
+            options=config.param('DEFAULT', 'tabix_options', required=False),
         )
     )
 
@@ -101,8 +101,8 @@ def tabix_split(
 tabix -h {input} {chr} \\
   {output} \\
         """.format(
-        input=" \\\n " + input if input else "",
-        chr=chr,
-        output=" > " + output if output else ""
+            input=" \\\n " + input if input else "",
+            chr=chr,
+            output=" > " + output if output else ""
         )
     )

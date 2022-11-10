@@ -3820,14 +3820,24 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             input_vcf = None
             normal = None
             if os.path.isfile(gatk_vcf):
-                input_vcf = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.flt.vcf.gz")
+                input_vcf = gatk_vcf
+                # input_vcf = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.flt.vcf.gz")
                 jobs.append(
                     concat_jobs(
                         [
                             bcftools.view(
                                 gatk_vcf,
-                                input_vcf,
+                                None,
                                 filter_options="-i '%QUAL>=50'"
+                            ),
+                            bash.sed(
+                                None,
+                                None,
+                                "-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
+                            ),
+                            htslib.bgzip_tabix(
+                                None,
+                                input_vcf
                             )
                         ],
                         name=f"cnvkit_batch.vcf_flt.{sample.name}",

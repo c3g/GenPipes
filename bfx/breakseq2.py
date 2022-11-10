@@ -47,6 +47,6 @@ run_breakseq2.py {options} --bwa "$bwa_path" --samtools "$samtools_path" \\
 	        gff=config.param('run_breakseq2','gff', param_type='filepath'),
 	        output=output_dir,
 	        input=input,
-	        sample=sample_name,
+	        sample=sample_name
         )
     )
