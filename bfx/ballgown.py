@@ -27,12 +27,13 @@ from core.job import *
 def ballgown( 
     input_files,
     design_file,
-    output_dir
+    output_dir,
+    outputs
     ):
 
     return  Job(
         input_files + [design_file],
-        [os.path.join(output_dir, "gene_exp.diff"), os.path.join(output_dir, "transcript_exp.diff")],
+        outputs,
         [
             ['ballgown', 'module_mugqic_tools'],
             ['ballgown', 'module_R']
@@ -42,7 +43,8 @@ Rscript $R_TOOLS/ballgown.R \\
   -d {design_file} \\
   -o {output_dir} \\
   """.format(
-        design_file=design_file,
-        output_dir=output_dir,
-    ))
+            design_file=design_file,
+            output_dir=output_dir,
+        )
+    )
 

@@ -169,7 +169,7 @@ for sh_script in "${all_sh[@]}"; do
        trap "rm -rf $chunk_folder/.lockdir" EXIT
        break
       else
-        echo to many jobs, sleeping for $SLEEP_TIME sec
+        echo too many jobs, sleeping for $SLEEP_TIME sec
         sleep $SLEEP_TIME
       fi
     done

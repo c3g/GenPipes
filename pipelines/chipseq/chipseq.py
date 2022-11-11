@@ -90,18 +90,20 @@ class ChipSeq(common.Illumina):
 
     @property
     def output_dirs(self):
-        dirs = {'alignment_output_directory': 'alignment',
-                'report_output_directory': 'report',
-                'metrics_output_directory': 'metrics',
-                'homer_output_directory': 'tags',
-                'graphs_output_directory': 'graphs',
-                'tracks_output_directory': 'tracks',
-                'macs_output_directory': 'peak_call',
-                'anno_output_directory': 'annotation',
-                'ihecA_output_directory': 'ihec_alignment',
-                'ihecM_output_directory': 'ihec_metrics',
-                'dba_output_directory': 'differential_binding'
-                }
+        dirs = {
+            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
+            'alignment_output_directory': os.path.join(self.output_dir, 'alignment'),
+            'report_output_directory': os.path.join(self.output_dir, 'report'),
+            'metrics_output_directory': os.path.join(self.output_dir, 'metrics'),
+            'homer_output_directory': os.path.join(self.output_dir, 'tags'),
+            'graphs_output_directory': os.path.join(self.output_dir, 'graphs'),
+            'tracks_output_directory': os.path.join(self.output_dir, 'tracks'),
+            'macs_output_directory': os.path.join(self.output_dir, 'peak_call'),
+            'anno_output_directory': os.path.join(self.output_dir, 'annotation'),
+            'ihecA_output_directory': os.path.join(self.output_dir, 'ihec_alignment'),
+            'ihecM_output_directory': os.path.join(self.output_dir, 'ihec_metrics'),
+            'dba_output_directory': os.path.join(self.output_dir, 'differential_binding')
+        }
         return dirs
 
     @property
@@ -221,10 +223,8 @@ END
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
-                    candidate_fastq1 = os.path.join(self.output_dir, "raw_reads", readset.sample.name,
-                                                    readset.name + ".pair1.fastq.gz")
-                    candidate_fastq2 = os.path.join(self.output_dir, "raw_reads", readset.sample.name,
-                                                    readset.name + ".pair2.fastq.gz")
+                    candidate_fastq1 = os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair1.fastq.gz")
+                    candidate_fastq2 = os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".pair2.fastq.gz")
                     candidate_input_files.append([candidate_fastq1, candidate_fastq2])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic(
@@ -242,8 +242,7 @@ END
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[readset.fastq1]]
                 if readset.bam:
-                    candidate_input_files.append([os.path.join(self.output_dir, "raw_reads", readset.sample.name,
-                                                               readset.name + ".single.fastq.gz")])
+                    candidate_input_files.append([os.path.join(self.output_dirs["raw_reads_directory"], readset.sample.name, readset.name + ".single.fastq.gz")])
                 [fastq1] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic(
                     fastq1,
@@ -277,7 +276,7 @@ END
         """
 
         read_type = "Paired" if self.run_type == 'PAIRED_END' else "Single"
-        readset_merge_trim_stats = os.path.join("metrics", "trimReadsetTable.tsv")
+        readset_merge_trim_stats = os.path.join(self.output_dirs["metrics_output_directory"], "trimReadsetTable.tsv")
         job = concat_jobs([
             bash.mkdir(self.output_dirs['metrics_output_directory']),
             Job(
@@ -319,7 +318,7 @@ awk '{{OFS="\\t"; print $0, $5 / $4 * 100}}' \\
                 )
             ])
 
-        sample_merge_trim_stats = os.path.join("metrics", "trimSampleTable.tsv")
+        sample_merge_trim_stats = os.path.join(self.output_dirs["metrics_output_directory"], "trimSampleTable.tsv")
         report_file = os.path.join("report", "Illumina.merge_trimmomatic_stats.md")
         return [concat_jobs([
             job,
@@ -339,8 +338,8 @@ cut -f1,3- {readset_merge_trim_stats} | awk -F"\\t" '{{OFS="\\t"; if (NR==1) {{i
                 [report_file],
                 [['merge_trimmomatic_stats', 'module_pandoc']],
                 command="""\
-mkdir -p report && \\
-cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/ && \\
+mkdir -p {report_dir} && \\
+cp {readset_merge_trim_stats} {sample_merge_trim_stats} {report_dir}/ && \\
 trim_readset_table_md=`LC_NUMERIC=en_CA awk -F "\\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----|-----:|-----:|-----:"}} else {{print $1, $2, $3, sprintf("%\\47d", $4), sprintf("%\\47d", $5), sprintf("%.1f", $6)}}}}' {readset_merge_trim_stats}` && \\
 pandoc \\
   {report_template_dir}/{basename_report_file} \\
@@ -358,6 +357,7 @@ pandoc \\
                     readset_merge_trim_stats=readset_merge_trim_stats,
                     sample_merge_trim_stats=sample_merge_trim_stats,
                     basename_report_file=os.path.basename(report_file),
+                    report_dir=self.output_dirs['report_output_directory'],
                     report_file=report_file
                 ),
                 report_files=[report_file]
@@ -385,8 +385,7 @@ pandoc \\
         for readset in self.readsets:
             trim_directory = os.path.join("trim", readset.sample.name, readset.mark_name)
             trim_file_prefix = os.path.join(trim_directory, readset.name)
-            alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name,
-                                               readset.mark_name)
+            alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], readset.sample.name, readset.mark_name)
             readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
             index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
 
@@ -476,8 +475,7 @@ pandoc \\
         jobs = []
         for sample in self.samples:
             for mark_name in sample.marks:
-                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name,
-                                                   mark_name)
+                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
                 readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for
                                 readset in sample.readsets if readset.mark_name == mark_name]
@@ -563,9 +561,10 @@ pandoc \\
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.sambamba_mark_duplicates.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                              sample.name + "." + mark_name + ".sorted.dup.bam") for sample in self.samples for
-                 mark_name in sample.marks],
+                [
+                    os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.bam")
+                    for sample in self.samples for mark_name in sample.marks
+                ],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -578,10 +577,10 @@ cp \\
                     report_dir=self.output_dirs['report_output_directory']
                 ),
                 report_files=[report_file],
+                samples=self.samples,
                 name="sambamba_mark_duplicates_report"#".".join([sample.name for sample in self.samples])
-                )
+            )
         )
-
         return jobs
 
     def sambamba_view_filter(self):
@@ -934,12 +933,13 @@ done""".format(
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
-zip -r {report_dir}/tracks.zip tracks/*/*/*.ucsc.bedGraph.gz && \\
+zip -r {report_dir}/tracks.zip {tracks_dir}/*/*/*.ucsc.bedGraph.gz && \\
 cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     report_file=report_file,
-                    report_dir=self.output_dirs['report_output_directory']
+                    report_dir=self.output_dirs['report_output_directory'],
+                    tracks_dir=self.output_dirs['tracks_output_directory']
                 ),
                 report_files=[report_file],
                 name="homer_make_ucsc_file_report"  # ".".join([sample.name for sample in self.samples])
@@ -1240,7 +1240,7 @@ done""".format(
 
     def differential_binding(self):
         """
-        Performs differential binding analysis using [DiffBind](http://bioconductor.org/packages/release/bioc/html/DESeq.html)
+        Performs differential binding analysis using [DiffBind](http://bioconductor.org/packages/release/bioc/html/DiffBind.html)
         Merge the results of the analysis in a single csv file.
         html report will be generated to QC samples and check how well differential binding analysis was performed.
         """
@@ -1254,7 +1254,6 @@ done""".format(
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
         else:
             log.info("Comparison column is not defined. Skipping differential binding analysis...")
-        mark_list = []
 
         #if control samples and treatment samples are less than one diff analysis will not be executed
         for contrast in self.contrasts:
@@ -1262,72 +1261,64 @@ done""".format(
             controls_count = len(contrast.controls)
             treatments_count = len(contrast.treatments)
             if controls_count < 2 or treatments_count < 2:
-                log.info(
-                    "At leaset two treatments and  controls should be defined. Skipping differential binding analysis for "+contrast.name +" ...")
+                log.info(f"At leaset two treatments and  controls should be defined. Skipping differential binding analysis for {contrast.name}...")
             else:
                 for control in contrast.controls:
                     control_sample_name, control_mark_name = control.split("-.-")
                     for sample in self.samples:
                         input_file_list = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for mark_name, mark_type in sample.marks.items() if
-                            mark_type == "I" and sample.name == control_sample_name]
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                            for mark_name, mark_type in sample.marks.items() if mark_type == "I" and sample.name == control_sample_name
+                        ]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                            mark_name, mark_type in sample.marks.items() if
-                            mark_type != "I" and sample.name == control_sample_name and mark_name ==
-                            control_mark_name]
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                            for mark_name, mark_type in sample.marks.items() if mark_type != "I" and sample.name == control_sample_name and mark_name == control_mark_name
+                        ]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
-                            os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                        sample.name + "." + mark_name + "_peaks.xls") for
-                            # os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." +
-                            #                          self.mark_type_conversion[mark_type] + "Peak") for
-                            mark_name, mark_type in sample.marks.items() if
-                            mark_type != "I" and sample.name == control_sample_name and mark_name ==
-                            control_mark_name]
-
+                            os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks.xls")
+                            for mark_name, mark_type in sample.marks.items() if mark_type != "I" and sample.name == control_sample_name and mark_name == control_mark_name
+                        ]
                         bam_list.append(input_file_list)
 
                 for treatment in contrast.treatments:
                     treatment_sample_name, treatment_mark_name = treatment.split("-.-")
                     for sample in self.samples:
                         input_file_list = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                            mark_name, mark_type in sample.marks.items() if
-                            mark_type == "I" and sample.name == treatment_sample_name]
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                            for mark_name, mark_type in sample.marks.items() if mark_type == "I" and sample.name == treatment_sample_name
+                        ]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                            mark_name, mark_type in sample.marks.items() if
-                            mark_type != "I" and sample.name == treatment_sample_name and mark_name ==
-                            treatment_mark_name]
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                            for mark_name, mark_type in sample.marks.items() if mark_type != "I" and sample.name == treatment_sample_name and mark_name == treatment_mark_name
+                        ]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
-                            os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                        sample.name + "." + mark_name + "_peaks.xls") for
-                            #os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." +
-                            #                         self.mark_type_conversion[mark_type] + "Peak") for
-                            mark_name, mark_type in sample.marks.items() if
-                            mark_type != "I" and sample.name == treatment_sample_name and mark_name ==
-                            treatment_mark_name]
-
+                            os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks.xls")
+                            for mark_name, mark_type in sample.marks.items() if mark_type != "I" and sample.name == treatment_sample_name and mark_name == treatment_mark_name
+                        ]
                         bam_list.append(input_file_list)
+
                 bam_list = filter(None, bam_list)
                 bam_list = [item for sublist in bam_list for item in sublist]
-                diffbind_job = differential_binding.diffbind(bam_list, contrast.name, design_file, readset_file,
-                                                             self.output_dirs['dba_output_directory'],
-                                                             self.output_dirs['alignment_output_directory'],
-                                                             self.output_dirs['macs_output_directory'], minOverlap,
-                                                             minMembers, method)
+                diffbind_job = differential_binding.diffbind(
+                    bam_list,
+                    contrast.name,
+                    design_file,
+                    readset_file,
+                    self.output_dirs['dba_output_directory'],
+                    self.output_dirs['alignment_output_directory'],
+                    self.output_dirs['macs_output_directory'],
+                    minOverlap,
+                    minMembers,
+                    method
+                )
                 diffbind_job.samples = self.samples
                 diffbind_job.name = "_".join(("differential_binding.diffbind.contrast", contrast.name))
                 jobs.append(diffbind_job)
@@ -1694,20 +1685,20 @@ done""".format(
                      for sample in self.samples],
                     [],
                     command="""\
-    declare -A samples_associative_array=({samples_associative_array}) && \\
-    for sample in ${{!samples_associative_array[@]}}
+declare -A samples_associative_array=({samples_associative_array}) && \\
+for sample in ${{!samples_associative_array[@]}}
+do
+    echo -e "Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag)" > {ihec_metrics}/${{sample}}/${{sample}}.crosscor
+    for mark_name in ${{samples_associative_array[$sample]}}
     do
-      echo -e "Filename\\tnumReads\\testFragLen\\tcorr_estFragLen\\tPhantomPeak\\tcorr_phantomPeak\\targmin_corr\\tmin_corr\\tNormalized SCC (NSC)\\tRelative SCC (RSC)\\tQualityTag)" > ihec_metrics/${{sample}}/${{sample}}.crosscor
-      for mark_name in ${{samples_associative_array[$sample]}}
-      do
-        cat ihec_metrics/${{sample}}/${{mark_name}}/${{sample}}.${{mark_name}}.crosscor >> ihec_metrics/${{sample}}/${{sample}}.crosscor
-      done
-    done""".format(
-                        samples_associative_array=" ".join(
-                            ["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in
-                             self.samples])
+    cat {ihec_metrics}/${{sample}}/${{mark_name}}/${{sample}}.${{mark_name}}.crosscor >> {ihec_metrics}/${{sample}}/${{sample}}.crosscor
+    done
+done""".format(
+                        samples_associative_array=" ".join(["[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"" for sample in self.samples]),
+                        ihec_metrics=self.output_dirs['ihecM_output_directory']
                     ),
-                    name="run_spp_report"  # ".".join([sample.name for sample in self.samples])
+                    name="run_spp_report",
+                    samples=self.samples  # ".".join([sample.name for sample in self.samples])
                 )
             )
 
@@ -1993,10 +1984,10 @@ done""".format(
         for sample in self.samples:
             for mark_name, mark_type in sample.marks.items():
                 if not mark_type == "I":
-                    alignment_directory = os.path.join("alignment", sample.name, mark_name)
+                    alignment_directory = os.path.join(self.output_dirs["alignment_output_directory"], sample.name, mark_name)
                     haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
                     haplotype_file_prefix = os.path.join(haplotype_directory , sample.name +"." +mark_name)
-                    output_haplotype_file_prefix = os.path.join("alignment", sample.name, mark_name, sample.name +"." + mark_name)
+                    output_haplotype_file_prefix = os.path.join(self.output_dirs["alignment_output_directory"], sample.name, mark_name, sample.name +"." + mark_name)
 
                     jobs.append(
                         concat_jobs([

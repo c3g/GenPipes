@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=fastp
-VERSION=0.19.7
+VERSION=0.23.2
 ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
 ARCHIVE_URL=https://github.com/OpenGene/${SOFTWARE}/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}
@@ -12,7 +12,7 @@ build() {
   cd $INSTALL_DOWNLOAD
 
   # What follows is the installation from source (often problematic...)
-  git clone --recursive git://github.com/OpenGene/${SOFTWARE}.git -b v$VERSION
+  git clone --recursive https://github.com/OpenGene/${SOFTWARE}.git -b v$VERSION
   cd $SOFTWARE
   make -j12 
   make install

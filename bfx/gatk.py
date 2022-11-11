@@ -265,7 +265,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         options=config.param('gatk_haplotype_caller', 'options'),
         reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
         interval_list=" --intervals " + interval_list if interval_list else "",
-        interval_padding=" \\\n --interval-padding " + str(interval_padding) if interval_padding else "",
+        interval_padding=" \\\n --interval_padding " + str(interval_padding) if interval_padding else "",
         input=" \\\n  ".join(input for input in inputs),
         output=output,
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
@@ -414,7 +414,7 @@ def print_reads(input, output, base_quality_score_recalibration):
     else:
         return Job(
             [input, base_quality_score_recalibration],
-            [output, re.sub(".bam", ".bam.bai", output)],
+            [output],
             [
                 ['gatk_print_reads', 'module_java'],
                 ['gatk_print_reads', 'module_gatk']
@@ -544,7 +544,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
 
 def variant_recalibrator(variants, other_options, recal_output,
                          tranches_output, R_output, small_sample_check=False):
-    if config.param('gatk_print_reads', 'module_gatk').split("/")[2] >= "4":
+    if config.param('gatk_variant_recalibrator', 'module_gatk').split("/")[2] >= "4":
         return gatk4.combine_gvcf(variants, other_options, recal_output, tranches_output, R_output)
     else:
 
@@ -649,7 +649,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
             input=" \\\n  ".join(input for input in inputs),
             output=output,
             intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-            interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",
+            interval_list=" \\\n --interval_padding 100 --intervals " + interval_list if interval_list else "",
             exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )

@@ -37,6 +37,7 @@ from core.job import Job, concat_jobs
 import utils.utils
 
 from pipelines import common
+from bfx import bash_cmd as bash
 from bfx import tools
 from bfx import dada2
 from bfx import flash
@@ -61,6 +62,29 @@ class AmpliconSeq(common.Illumina):
         self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
         super(AmpliconSeq, self).__init__(protocol)
 
+    @property
+    def output_dirs(self):
+        dirs = {
+            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
+            'trim_directory': os.path.join(self.output_dir, 'trim'),
+            'merge_directory': os.path.join(self.output_dir, 'merge'),
+            'catenate_directory': os.path.join(self.output_dir, 'catenate'),
+            'filter_directory': os.path.join(self.output_dir, 'catenate_without_chimeras'),
+            'open_ref_otus_directory': os.path.join(self.output_dir, 'open_ref_otus'),
+            'denovo_otus_directory': os.path.join(self.output_dir, 'denovo_otus'),
+            'closed_ref_otus_directory': os.path.join(self.output_dir, 'closed_ref_otus'),
+            'open_ref_alpha_diversity_directory': os.path.join(self.output_dir, 'open_ref_alpha_diversity'),
+            'open_ref_beta_diversity_directory': os.path.join(self.output_dir, 'open_ref_beta_diversity'),
+            'denovo_alpha_diversity_directory': os.path.join(self.output_dir, 'denovo_alpha_diversity'),
+            'denovo_beta_diversity_directory': os.path.join(self.output_dir, 'denovo_beta_diversity'),
+            'closed_ref_alpha_diversity_directory': os.path.join(self.output_dir, 'closed_ref_alpha_diversity'),
+            'closed_ref_beta_diversity_directory': os.path.join(self.output_dir, 'closed_ref_beta_diversity'),
+            'dada2_analysis_directory': os.path.join(self.output_dir, 'dada2_Analysis'),
+            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
+            'report_directory': os.path.join(self.output_dir, 'report')
+        }
+        return dirs
+
     def trimmomatic16S(self):
         """
         MiSeq raw reads adapter & primers trimming and basic QC is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).
@@ -76,13 +100,12 @@ class AmpliconSeq(common.Illumina):
         #We'll trim the first 5 nucleotides anyway (to account for quality bias)
         headcropValue=5
         for readset in self.readsets:
-            trim_directory = os.path.join("trim", readset.sample.name)
+            trim_directory = os.path.join(self.output_dirs["trim_directory"], readset.sample.name)
             trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
             trim_log = trim_file_prefix + "log"
 
             # Use adapter FASTA in config file if any, else create it from readset file
             adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
-            adapter_job = None
             if not adapter_fasta:
                 adapter_fasta = trim_file_prefix + "adapters.fa"
                 if readset.primer1 and readset.primer2:
@@ -102,7 +125,12 @@ class AmpliconSeq(common.Illumina):
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[readset.fastq1, readset.fastq2]]
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    candidate_input_files.append(
+                        [
+                            re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
+                            re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                        ]
+                    )
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 job = trimmomatic.trimmomatic16S(
                     fastq1,
@@ -137,11 +165,17 @@ class AmpliconSeq(common.Illumina):
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
-            jobs.append(concat_jobs([
-                # Trimmomatic does not create output directory by default
-                Job(command="mkdir -p " + trim_directory, samples=[readset.sample]),
-                job
-            ], name="trimmomatic16S." + readset.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        # Trimmomatic does not create output directory by default
+                        bash.mkdir(trim_directory),
+                        job
+                    ],
+                    name="trimmomatic16S." + readset.name,
+                    samples=[readset.sample]
+                )
+            )
         return jobs
 
     def merge_trimmomatic_stats16S(self):
@@ -150,57 +184,66 @@ class AmpliconSeq(common.Illumina):
         """
 
         read_type = "Paired" if self.run_type == 'PAIRED_END' else "Single"
-        readset_merge_trim_stats = os.path.join("metrics", "trimReadsetTable.tsv")
-        job = concat_jobs([Job(command="mkdir -p metrics"), Job(command="echo 'Sample\tReadset\tRaw {read_type} Reads #\tSurviving {read_type} Reads #\tSurviving {read_type} Reads %' > ".format(read_type=read_type) + readset_merge_trim_stats)])
+        readset_merge_trim_stats = os.path.join(self.output_dirs["metrics_directory"], "trimReadsetTable.tsv")
+        job = concat_jobs(
+            [
+                bash.mkdir(self.output_dirs["metrics_directory"]),
+                Job(command="echo 'Sample\tReadset\tRaw {read_type} Reads #\tSurviving {read_type} Reads #\tSurviving {read_type} Reads %' > ".format(read_type=read_type) + readset_merge_trim_stats)
+            ]
+        )
         for readset in self.readsets:
-            trim_log = os.path.join("trim", readset.sample.name, readset.name + ".trim.log")
+            trim_log = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.log")
             if readset.run_type == "PAIRED_END":
                 # Retrieve readset raw and surviving reads from trimmomatic log using ugly Perl regexp
                 perl_command = "perl -pe 's/^Input Read Pairs: (\d+).*Both Surviving: (\d+).*Forward Only Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
             elif readset.run_type == "SINGLE_END":
                 perl_command = "perl -pe 's/^Input Reads: (\d+).*Surviving: (\d+).*$/{readset.sample.name}\t{readset.name}\t\\1\t\\2/'".format(readset=readset)
 
-            job = concat_jobs([
-                job,
-                Job(
-                    [trim_log],
-                    [readset_merge_trim_stats],
-                    # Create readset trimming stats TSV file with paired or single read count using ugly awk
-                    command="""\
+            job = concat_jobs(
+                [
+                    job,
+                    Job(
+                        [trim_log],
+                        [readset_merge_trim_stats],
+                        # Create readset trimming stats TSV file with paired or single read count using ugly awk
+                        command="""\
 grep ^Input {trim_log} | \\
 {perl_command} | \\
 awk '{{OFS="\t"; print $0, $4 / $3 * 100}}' \\
   >> {readset_merge_trim_stats}""".format(
-                        trim_log=trim_log,
-                        perl_command=perl_command,
-                        readset_merge_trim_stats=readset_merge_trim_stats
-                    ),
-                    samples=[readset.sample]
-                )
-            ])
+                            trim_log=trim_log,
+                            perl_command=perl_command,
+                            readset_merge_trim_stats=readset_merge_trim_stats
+                        ),
+                        samples=[readset.sample]
+                    )
+                ]
+            )
 
-        sample_merge_trim_stats = os.path.join("metrics", "trimSampleTable.tsv")
-        report_file = os.path.join("report", "Illumina.merge_trimmomatic_stats.md")
-        return [concat_jobs([
-            job,
-            Job(
-                [readset_merge_trim_stats],
-                [sample_merge_trim_stats],
-                # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
-                command="""\
+        sample_merge_trim_stats = os.path.join(self.output_dirs["metrics_directory"], "trimSampleTable.tsv")
+        report_file = os.path.join(self.output_dirs["report_directory"], "Illumina.merge_trimmomatic_stats.md")
+        return [
+            concat_jobs(
+                [
+                    job,
+                    Job(
+                        [readset_merge_trim_stats],
+                        [sample_merge_trim_stats],
+                        # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
+                        command="""\
 cut -f1,3- {readset_merge_trim_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{if ($2=="Raw Paired Reads #") {{paired=1}};print "Sample", "Raw Reads #", "Surviving Reads #", "Surviving %"}} else {{if (paired) {{$2=$2*2; $3=$3*2}}; raw[$1]+=$2; surviving[$1]+=$3}}}}END{{for (sample in raw){{print sample, raw[sample], surviving[sample], surviving[sample] / raw[sample] * 100}}}}' \\
   > {sample_merge_trim_stats}""".format(
-                    readset_merge_trim_stats=readset_merge_trim_stats,
-                    sample_merge_trim_stats=sample_merge_trim_stats
-                )
-            ),
-            Job(
-                [sample_merge_trim_stats],
-                [report_file],
-                [['merge_trimmomatic_stats', 'module_pandoc']],
-                command="""\
-mkdir -p report && \\
-cp {readset_merge_trim_stats} {sample_merge_trim_stats} report/ && \\
+                            readset_merge_trim_stats=readset_merge_trim_stats,
+                            sample_merge_trim_stats=sample_merge_trim_stats
+                        )
+                    ),
+                    Job(
+                        [sample_merge_trim_stats],
+                        [report_file],
+                        [['merge_trimmomatic_stats', 'module_pandoc']],
+                        command="""\
+mkdir -p {report_dir} && \\
+cp {readset_merge_trim_stats} {sample_merge_trim_stats} {report_dir}/ && \\
 trim_readset_table_md=`LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:"}} else {{print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5)}}}}' {readset_merge_trim_stats}` && \\
 pandoc \\
   {report_template_dir}/{basename_report_file} \\
@@ -211,15 +254,20 @@ pandoc \\
   --variable trim_readset_table="$trim_readset_table_md" \\
   --to markdown \\
   > {report_file}""".format(
-                    read_type=read_type,
-                    report_template_dir=self.report_template_dir,
-                    readset_merge_trim_stats=readset_merge_trim_stats,
-                    sample_merge_trim_stats=sample_merge_trim_stats,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file
-                ),
-                report_files=[report_file]
-            )], name="merge_trimmomatic_stats16S")]
+                            read_type=read_type,
+                            report_template_dir=self.report_template_dir,
+                            readset_merge_trim_stats=readset_merge_trim_stats,
+                            sample_merge_trim_stats=sample_merge_trim_stats,
+                            basename_report_file=os.path.basename(report_file),
+                            report_dir=self.output_dirs["report_directory"],
+                            report_file=report_file
+                        ),
+                        report_files=[report_file]
+                    )
+                ],
+                name="merge_trimmomatic_stats16S"
+            )
+        ]
 
     def flash(self, flash_stats_file=None):
         """
@@ -228,8 +276,8 @@ pandoc \\
         jobs = []
 
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            merge_directory = os.path.join("merge", readset.sample.name)
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
+            merge_directory = os.path.join(self.output_dirs["merge_directory"], readset.sample.name)
             flash_fastq = os.path.join(merge_directory, readset.name + ".flash_pass2.extendedFrags.fastq") if flash_stats_file else os.path.join(merge_directory, readset.name + ".flash.extendedFrags.fastq")
             flash_log = os.path.join(merge_directory, readset.name + ".flash_pass2.log") if flash_stats_file else os.path.join(merge_directory, readset.name + ".flash.log")
             flash_hist = os.path.join(merge_directory, readset.name + ".flash_pass2.hist") if flash_stats_file else os.path.join(merge_directory, readset.name + ".flash.hist")
@@ -268,7 +316,7 @@ pandoc \\
         return jobs
 
     def flash_pass2(self):
-        flash_stats_file = os.path.join("metrics", "FlashLengths.tsv")
+        flash_stats_file = os.path.join(self.output_dirs["metrics_directory"], "FlashLengths.tsv")
         jobs = self.flash(flash_stats_file)
         return jobs
 
@@ -277,85 +325,92 @@ pandoc \\
         The paired end merge statistics per readset are merged at this step.
         """
 
-        readset_merge_flash_stats = os.path.join("metrics", "mergeReadsetTable.tsv")
-        job = concat_jobs([
-            Job(command="mkdir -p metrics"),
-            Job(command="echo 'Sample\tReadset\tTrim Paired Reads #\tMerged Paired Reads #\tMerged Paired Reads %' > " + readset_merge_flash_stats)
-        ])
+        readset_merge_flash_stats = os.path.join(self.output_dirs["metrics_directory"], "mergeReadsetTable.tsv")
+        job = concat_jobs(
+            [
+                bash.mkdir(self.output_dirs["metrics_directory"]),
+                Job(command="echo 'Sample\tReadset\tTrim Paired Reads #\tMerged Paired Reads #\tMerged Paired Reads %' > " + readset_merge_flash_stats)
+            ]
+        )
 
         for readset in self.readsets:
-            flash_log = os.path.join("merge", readset.sample.name, readset.name + ".flash_pass2.log")
+            flash_log = os.path.join(self.output_dirs["merge_directory"], readset.sample.name, readset.name + ".flash_pass2.log")
 
-            job = concat_jobs([
-                job,
-                Job(
-                    command="""\
+            job = concat_jobs(
+                [
+                    job,
+                    Job(
+                        command="""\
 printf '{sample}\t{readset}\t' \\
   >> {stats}""".format(
-                        sample=readset.sample.name,
-                        readset=readset.name,
-                        stats=readset_merge_flash_stats,
+                            sample=readset.sample.name,
+                            readset=readset.name,
+                            stats=readset_merge_flash_stats,
                         ),
-                    samples=[readset.sample]
-                )
-            ])
+                        samples=[readset.sample]
+                    )
+                ]
+            )
 
             # Retrieve merge statistics using re search in python.
             python_command = """\
-module load {module_python}; \\
 python -c 'import re; \\
-import sys; \\
-log_file = open("{flash_log}","r"); \\
-merge_stat=[]; \\
-merge_stat.append([i.split()[3] for i in log_file if re.search("Total pairs",i)][0]); \\
-log_file.seek(0); \\
-merge_stat.append([i.split()[3] for i in log_file if re.search("Combined pairs",i)][0]); \\
-log_file.seek(0); \\
-merge_stat.append([i.split()[3] for i in log_file if re.search("Percent combined",i)][0][:-1]); \\
-log_file.close(); \\
-print "\t".join(merge_stat)'""".format(
-                module_python=config.param('DEFAULT', 'module_python'),
+  import sys; \\
+  log_file = open("{flash_log}","r"); \\
+  merge_stat=[]; \\
+  merge_stat.append([i.split()[3] for i in log_file if re.search("Total pairs",i)][0]); \\
+  log_file.seek(0); \\
+  merge_stat.append([i.split()[3] for i in log_file if re.search("Combined pairs",i)][0]); \\
+  log_file.seek(0); \\
+  merge_stat.append([i.split()[3] for i in log_file if re.search("Percent combined",i)][0][:-1]); \\
+  log_file.close(); \\
+  print "\t".join(merge_stat)'""".format(
                 flash_log=flash_log
             )
 
-            job = concat_jobs([
-                job,
-                Job(
-                    [flash_log],
-                    [readset_merge_flash_stats],
-                    # Create readset merging stats TSV file with paired read count using python.
-                    command="""\
+            job = concat_jobs(
+                [
+                    job,
+                    Job(
+                        [flash_log],
+                        [readset_merge_flash_stats],
+                        [['merge_flash_stats', 'module_python']],
+                        # Create readset merging stats TSV file with paired read count using python.
+                        command="""\
 {python_command} \\
   >> {readset_merge_flash_stats}""".format(
-                        python_command=python_command,
-                        readset_merge_flash_stats=readset_merge_flash_stats
+                            python_command=python_command,
+                            readset_merge_flash_stats=readset_merge_flash_stats
+                        )
                     )
-                )
-            ])
+                ]
+            )
 
-        sample_merge_flash_stats = os.path.join("metrics", "mergeSampleTable.tsv")
-        report_file = os.path.join("report", "Illumina.flash_stats.md")
-        return [concat_jobs([
-            job,
-            Job(
-                [readset_merge_flash_stats],
-                [sample_merge_flash_stats],
-                # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
-                command="""\
+        sample_merge_flash_stats = os.path.join(self.output_dirs["metrics_directory"], "mergeSampleTable.tsv")
+        report_file = os.path.join(self.output_dirs["report_directory"], "Illumina.flash_stats.md")
+        return [
+            concat_jobs(
+                [
+                    job,
+                    Job(
+                        [readset_merge_flash_stats],
+                        [sample_merge_flash_stats],
+                        # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
+                        command="""\
 cut -f1,3- {readset_merge_flash_stats} | \\
 awk -F"\t" '{{OFS="\t"; if (NR==1) {{if ($2=="Raw Paired Reads #") {{paired=1}};print "Sample", "Trim Reads #", "Merged Reads #", "Merged %"}} else {{if (paired) {{$2=$2*2; $3=$3*2}}; raw[$1]+=$2; surviving[$1]+=$3}}}}END{{for (sample in raw){{print sample, raw[sample], surviving[sample], surviving[sample] / raw[sample] * 100}}}}' \\
   > {sample_merge_flash_stats}""".format(
-                    readset_merge_flash_stats=readset_merge_flash_stats,
-                    sample_merge_flash_stats=sample_merge_flash_stats
-                )
-            ),
-            Job(
-                [sample_merge_flash_stats],
-                [report_file],
-                [['flash', 'module_pandoc']],
-                command="""\
-mkdir -p report && \\
-cp {readset_merge_flash_stats} {sample_merge_flash_stats} report/ && \\
+                            readset_merge_flash_stats=readset_merge_flash_stats,
+                            sample_merge_flash_stats=sample_merge_flash_stats
+                        )
+                    ),
+                    Job(
+                        [sample_merge_flash_stats],
+                        [report_file],
+                        [['flash', 'module_pandoc']],
+                        command="""\
+mkdir -p {report_dir} && \\
+cp {readset_merge_flash_stats} {sample_merge_flash_stats} {report_dir}/ && \\
 merge_readset_table_md=`LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:"}} else {{print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5)}}}}' {readset_merge_flash_stats}` && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
@@ -365,32 +420,40 @@ pandoc --to=markdown \\
   --variable merge_readset_table="$merge_readset_table_md" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    min_overlap=config.param('flash', 'min_overlap', param_type='int'),
-                    max_overlap=config.param('flash', 'max_overlap', param_type='int'),
-                    read_type="Paired",
-                    report_template_dir=self.report_template_dir,
-                    readset_merge_flash_stats=readset_merge_flash_stats,
-                    sample_merge_flash_stats=sample_merge_flash_stats,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file
-                ),
-                report_files=[report_file]
-            )], name="merge_flash_stats", samples=self.samples)]
+                            min_overlap=config.param('flash', 'min_overlap', param_type='int'),
+                            max_overlap=config.param('flash', 'max_overlap', param_type='int'),
+                            read_type="Paired",
+                            report_template_dir=self.report_template_dir,
+                            readset_merge_flash_stats=readset_merge_flash_stats,
+                            sample_merge_flash_stats=sample_merge_flash_stats,
+                            basename_report_file=os.path.basename(report_file),
+                            report_dir=self.output_dirs["report_directory"],
+                            report_file=report_file
+                        ),
+                        report_files=[report_file]
+                    )
+                ],
+                name="merge_flash_stats",
+                samples=self.samples
+            )
+        ]
 
     def ampliconLengthParser(self):
         """
         look at FLASH output to set amplicon lengths input for dada2. As minimum elligible length, a given length needs to have at least 1% of the total number of amplicons
         """
         jobs = []
-        readset_merge_flash_stats = os.path.join("metrics", "FlashLengths.tsv")
+        readset_merge_flash_stats = os.path.join(self.output_dirs["metrics_directory"], "FlashLengths.tsv")
 
-        job = concat_jobs([
-            Job(command="mkdir -p metrics"),
-            Job(command="echo 'Sample\tReadset\tMinimum Amplicon Length\tMaximum Amplicon Length\tMinimum Flash Overlap\tMaximum Flash Overlap' > " + readset_merge_flash_stats)
-        ])
+        job = concat_jobs(
+            [
+                bash.mkdir(self.output_dirs["metrics_directory"]),
+                Job(command="echo 'Sample\tReadset\tMinimum Amplicon Length\tMaximum Amplicon Length\tMinimum Flash Overlap\tMaximum Flash Overlap' > " + readset_merge_flash_stats)
+            ]
+        )
 
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -401,13 +464,14 @@ pandoc --to=markdown \\
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
 
-            flash_hist = os.path.join("merge", readset.sample.name, readset.name + ".flash.hist")
-            job = concat_jobs([
-                job,
-                Job(
-                    [fastq1, flash_hist],
-                    [readset_merge_flash_stats],
-                    command="""\
+            flash_hist = os.path.join(self.output_dirs["merge_directory"], readset.sample.name, readset.name + ".flash.hist")
+            job = concat_jobs(
+                [
+                    job,
+                    Job(
+                        [fastq1, flash_hist],
+                        [readset_merge_flash_stats],
+                        command="""\
 frag_length=$(zless {fastq} | head -n2 | tail -n1 | awk '{{print length($0)}}'; ec=$?; if [ "$ec" -eq 141 ]; then exit 0; else exit "$ec"; fi)
 minCount=$(cut -f2 {hist} | sort -n | awk ' {{ sum+=$1;i++ }} END {{ print sum/100; }}' | cut -d"." -f1)
 minLen=$(awk -F'\t' -v var=$minCount '$2>var' {hist} | cut -f1 | sort -g | head -n1)
@@ -416,24 +480,23 @@ minFlashOverlap=$(( 2 * frag_length - maxLen ))
 maxFlashOverlap=$(( 2 * frag_length - minLen ))
 printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{maxFlashOverlap}}\n" \\
   >> {stats}""".format(
-                        fastq=fastq1,
-                        hist=flash_hist,
-                        sample=readset.sample.name,
-                        readset=readset.name,
-                        stats=readset_merge_flash_stats,
-                        ),
-                    samples=[readset.sample]
-                )
-            ])
+                            fastq=fastq1,
+                            hist=flash_hist,
+                            sample=readset.sample.name,
+                            readset=readset.name,
+                            stats=readset_merge_flash_stats,
+                            ),
+                        samples=[readset.sample]
+                    )
+                ]
+            )
 
-        jobs.append(concat_jobs([
-            job,
-        ], name="ampliconLengthParser.run"))
+        job.name = "ampliconLengthParser.run"
+        jobs.append(job)
 
         return jobs
 
     def catenate(self):
-
         """
         Catenate all the reads in one file for further analysis.
 
@@ -445,10 +508,10 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
         jobs = []
         input_files = []
         sample_name = []
-        catenate_fasta = os.path.join("catenate", "seqs.fna")
+        catenate_fasta = os.path.join(self.output_dirs["catenate_directory"], "seqs.fna")
 
         for readset in self.readsets:
-            merge_directory = os.path.join("merge", readset.sample.name)
+            merge_directory = os.path.join(self.output_dirs["merge_directory"], readset.sample.name)
             merge_file_prefix = os.path.join(merge_directory, readset.name + ".flash_pass2.extendedFrags.fastq")
 
             # Find input readset FASTQs first from previous FLASh job,
@@ -469,9 +532,7 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
                 [],
                 [],
                 'map_build',
-                """-s {samples}""".format(
-                    samples=','.join(sample_name)
-                )
+                f"-s {','.join(sample_name)}"
             )
             catenate_job = qiime.catenate(
                 input_files,
@@ -479,11 +540,15 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
                 catenate_fasta
             )
             catenate_job.samples = self.samples
-            jobs.append(concat_jobs([
-                mapbuild_job,
-                catenate_job
-            ], name="catenate"))
-
+            jobs.append(
+                concat_jobs(
+                    [
+                        mapbuild_job,
+                        catenate_job
+                    ],
+                    name="catenate"
+                )
+            )
         return jobs
 
     def uchime(self):
@@ -497,11 +562,10 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
 
         jobs = []
 
-        cat_sequence_fasta = os.path.join("catenate", "seqs.fna")
+        cat_sequence_fasta = os.path.join(self.output_dirs["catenate_directory"], "seqs.fna")
 
-        filter_directory = "catenate_without_chimeras"
-        filter_fasta = os.path.join(filter_directory, "seqs_chimeras_filtered.fna")
-        filter_log = os.path.join(filter_directory, "seqs_chimeras_filtered.log")
+        filter_fasta = os.path.join(self.output_dirs["filter_directory"], "seqs_chimeras_filtered.fna")
+        filter_log = os.path.join(self.output_dirs["filter_directory"], "seqs_chimeras_filtered.log")
 
         uchime_job = vsearch.uchime(
             cat_sequence_fasta,
@@ -513,18 +577,19 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
             [filter_fasta],
             [filter_log],
             'catenate_stat',
-            """\
-  -i {filter_fasta} \\
-  -j {filter_log}""".format(
-                filter_fasta=filter_fasta,
-                filter_log=filter_log)
-            )
+            f"-i {filter_fasta} -j {filter_log}"
+        )
 
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p " + filter_directory),
-            uchime_job,
-            job_log
-        ], name="uchime"))
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(self.output_dirs["filter_directory"]),
+                    uchime_job,
+                    job_log
+                ],
+                name="uchime"
+            )
+        )
 
         return jobs
 
@@ -533,9 +598,9 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
         The chimeric sequences filtered out statistics per readset are merged at this step.
         """
 
-        readset_merge_uchime_stats = os.path.join("metrics", "uchimeReadsetTable.tsv")
+        readset_merge_uchime_stats = os.path.join(self.output_dirs["metrics_directory"], "uchimeReadsetTable.tsv")
         job = concat_jobs([
-            Job(command="mkdir -p metrics"),
+            bash.mkdir(self.output_dirs["metrics_directory"]),
             Job(command="echo 'Sample\tReadset\tMerged Paired Reads #\tFiltered Paired Reads #\tFiltered Paired Reads %' > " + readset_merge_uchime_stats)
         ])
 
@@ -547,13 +612,12 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
             chimera_db = 'UNITE'
             chimera_ref = 'unite'
 
-        filter_directory = "catenate_without_chimeras"
-        filter_log = os.path.join(filter_directory, "seqs_chimeras_filtered.log")
+        filter_log = os.path.join(self.output_dirs["filter_directory"], "seqs_chimeras_filtered.log")
 
         for readset in self.readsets:
             flash_log = self.select_input_files(
-                [[os.path.join("merge", readset.sample.name, readset.name + ".flash_pass2.log")],
-                 [os.path.join("merge", readset.sample.name, readset.name + ".flash.log")]])
+                [[os.path.join(self.output_dirs["merge_directory"], readset.sample.name, readset.name + ".flash_pass2.log")],
+                 [os.path.join(self.output_dirs["merge_directory"], readset.sample.name, readset.name + ".flash.log")]])
 
             job = concat_jobs([
                 job,
@@ -568,49 +632,43 @@ printf '{sample}\t{readset}\t' \\
                     samples=[readset.sample]
             )])
 
-            job = concat_jobs([
-                job,
-                tools.py_ampliconSeq(
-                    [filter_log, flash_log[0]],
-                    [readset_merge_uchime_stats],
-                    'uchime',
-                    """\
-  -i {filter_log} \\
-  -j {flash_log} \\
-  -s {sample} \\
-  >> {stats}""".format(
-                        filter_log=filter_log,
-                        flash_log=flash_log[0],
-                        sample=str(readset.sample.name),
-                        stats=readset_merge_uchime_stats
+            job = concat_jobs(
+                [
+                    job,
+                    tools.py_ampliconSeq(
+                        [filter_log, flash_log[0]],
+                        [readset_merge_uchime_stats],
+                        'uchime',
+                        f"-i {filter_log} -j {flash_log[0]} -s {readset.sample.name} >> {readset_merge_uchime_stats}"
                     )
-                )
+                ]
+            )
 
-            ])
+        sample_merge_uchime_stats = os.path.join(self.output_dirs["metrics_directory"], "uchimeSampleTable.tsv")
+        report_file = os.path.join(self.output_dirs["report_directory"], "AmpliconSeq.uchime.md")
 
-        sample_merge_uchime_stats = os.path.join("metrics", "uchimeSampleTable.tsv")
-        report_file = os.path.join("report", "AmpliconSeq.uchime.md")
-
-        return [concat_jobs([
-            job,
-            Job(
-                [],
-                [sample_merge_uchime_stats],
-                # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
-                command="""\
+        return [
+            concat_jobs(
+                [
+                    job,
+                    Job(
+                        [],
+                        [sample_merge_uchime_stats],
+                        # Create sample trimming stats TSV file with total read counts (i.e. paired * 2 if applicable) using ugly awk
+                        command="""\
 cut -f1,3- {readset_merge_uchime_stats} | awk -F"\t" '{{OFS="\t"; if (NR==1) {{if ($2=="Raw Paired Reads #") {{paired=1}};print "Sample", "Merged Reads #", "Chimera filtered out Reads #", "Chimera filtered out %"}} else {{if (paired) {{$2=$2*2; $3=$3*2}}; raw[$1]+=$2; surviving[$1]+=$3}}}}END{{for (sample in raw){{print sample, raw[sample], surviving[sample], surviving[sample] / raw[sample] * 100}}}}' \\
   > {sample_merge_uchime_stats}""".format(
-                    readset_merge_uchime_stats=readset_merge_uchime_stats,
-                    sample_merge_uchime_stats=sample_merge_uchime_stats
-                )
-            ),
-            Job(
-                [sample_merge_uchime_stats],
-                [report_file],
-                [['uchime', 'module_pandoc']],
-                command="""\
-mkdir -p report && \\
-cp {readset_merge_uchime_stats} {sample_merge_uchime_stats} report/ && \\
+                            readset_merge_uchime_stats=readset_merge_uchime_stats,
+                            sample_merge_uchime_stats=sample_merge_uchime_stats
+                        )
+                    ),
+                    Job(
+                        [sample_merge_uchime_stats],
+                        [report_file],
+                        [['uchime', 'module_pandoc']],
+                        command="""\
+mkdir -p {report_dir} && \\
+cp {readset_merge_uchime_stats} {sample_merge_uchime_stats} {report_dir}/ && \\
 uchime_readset_table_md=`LC_NUMERIC=en_CA awk -F "\t" '{{OFS="|"; if (NR == 1) {{$1 = $1; print $0; print "-----|-----|-----:|-----:|-----:"}} else {{print $1, $2, sprintf("%\\47d", $3), sprintf("%\\47d", $4), sprintf("%.1f", $5)}}}}' {readset_merge_uchime_stats}` && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
@@ -621,18 +679,24 @@ pandoc --to=markdown \\
   --variable uchime_readset_table="$uchime_readset_table_md" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    read_type="Paired",
-                    report_template_dir=self.report_template_dir,
-                    sequence_max_n=config.param('qiime_catenate', 'sequence_max_n'),
-                    chimera_db=chimera_db,
-                    chimera_ref=chimera_ref,
-                    readset_merge_uchime_stats=readset_merge_uchime_stats,
-                    sample_merge_uchime_stats=sample_merge_uchime_stats,
-                    basename_report_file=os.path.basename(report_file),
-                    report_file=report_file
-                ),
-                report_files=[report_file]
-            )], name="merge_uchime_stats", samples=self.samples)]
+                            read_type="Paired",
+                            report_template_dir=self.report_template_dir,
+                            sequence_max_n=config.param('qiime_catenate', 'sequence_max_n'),
+                            chimera_db=chimera_db,
+                            chimera_ref=chimera_ref,
+                            readset_merge_uchime_stats=readset_merge_uchime_stats,
+                            sample_merge_uchime_stats=sample_merge_uchime_stats,
+                            basename_report_file=os.path.basename(report_file),
+                            report_dir=self.output_dirs["report_directory"],
+                            report_file=report_file
+                        ),
+                        report_files=[report_file]
+                    )
+                ],
+                name="merge_uchime_stats",
+                samples=self.samples
+            )
+        ]
 
     def otu_picking(self):
         """
@@ -648,24 +712,26 @@ pandoc --to=markdown \\
         method = config.param('qiime_otu_picking', 'method')
         otu_picking_method = "otu_" + method + "_picking"
 
-        filter_directory = "catenate_without_chimeras"
-        filter_fastq = os.path.join(filter_directory, "seqs_chimeras_filtered.fna")
+        filter_fastq = os.path.join(self.output_dirs["filter_directory"], "seqs_chimeras_filtered.fna")
 
-        output_directory = method + "_otus/pick_otus"
+        output_directory = os.path.join(self.output_dirs[f"{method}_otus_directory"], "pick_otus")
         otu_file = os.path.join(output_directory, "seqs_chimeras_filtered_otus.txt")
 
-        job = eval("qiime." + otu_picking_method)(
-            filter_fastq,
-            output_directory,
-            otu_file
+        jobs.append(
+            concat_jobs(
+                [
+                    # Create an output directory
+                    bash.mkdir(self.output_dirs["filter_directory"]),
+                    eval("qiime." + otu_picking_method)(
+                        filter_fastq,
+                        output_directory,
+                        otu_file
+                    )
+                ],
+                name="qiime_otu_picking." + method,
+                samples=self.samples
+            )
         )
-        job.samples = self.samples
-
-        jobs.append(concat_jobs([
-            # Create an output directory
-            Job(command="mkdir -p " + method + "_otus/"),
-            job
-        ], name="qiime_otu_picking." + method))
 
         return jobs
 
@@ -681,11 +747,9 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-        otu_file = self.select_input_files([os.path.join(otu_directory, "pick_otus", "seqs_chimeras_filtered_otus.txt")] for otu_directory in otu_directories)[0]
-
-        filter_directory = "catenate_without_chimeras"
-        filter_fasta = os.path.join(filter_directory, "seqs_chimeras_filtered.fna")
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
+        [otu_file] = self.select_input_files([os.path.join(self.output_dirs[f"{otu}_directory"], "pick_otus", "seqs_chimeras_filtered_otus.txt")] for otu in otus)
+        filter_fasta = os.path.join(self.output_dirs["filter_directory"], "seqs_chimeras_filtered.fna")
 
         otu_directory = os.path.dirname(os.path.dirname(otu_file))
         output_directory = os.path.join(otu_directory, "pick_rep_set")
@@ -698,12 +762,16 @@ pandoc --to=markdown \\
         )
         job.samples = self.samples
 
-        jobs.append(concat_jobs([
-            # Create an output directory
-            Job(command="mkdir -p " + output_directory),
-            job
-        ], name="qiime_rep_picking." + re.sub("_otus", "", otu_directory)))
-
+        jobs.append(
+            concat_jobs(
+                [
+                    # Create an output directory
+                    bash.mkdir(output_directory),
+                    job
+                ],
+                name="qiime_rep_picking." + re.sub("_otus", "", os.path.basename(otu_directory))
+            )
+        )
         return jobs
 
     def otu_assigning(self):
@@ -717,8 +785,8 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-        otu_rep_picking_fasta = self.select_input_files([os.path.join(otu_directory, "pick_rep_set", "rep_set.fna")] for otu_directory in otu_directories)[0]
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
+        [otu_rep_picking_fasta] = self.select_input_files([os.path.join(self.output_dirs[f"{otu}_directory"], "pick_rep_set", "rep_set.fna")] for otu in otus)
 
         otu_directory = os.path.dirname(os.path.dirname(otu_rep_picking_fasta))
         output_directory = os.path.join(otu_directory, "taxonomy_assignment")
@@ -731,11 +799,16 @@ pandoc --to=markdown \\
         )
         job.samples = self.samples
 
-        jobs.append(concat_jobs([
-            # Create an output directory
-            Job(command="mkdir -p " + output_directory),
-            job
-        ], name="qiime_otu_assigning." + re.sub("_otus", "", otu_directory)))
+        jobs.append(
+            concat_jobs(
+                [
+                # Create an output directory
+                    Job(command="mkdir -p " + output_directory),
+                    job
+                ],
+                name="qiime_otu_assigning." + re.sub("_otus", "", os.path.basename(otu_directory))
+            )
+        )
 
         return jobs
 
@@ -751,9 +824,9 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-        otu_file = self.select_input_files([os.path.join(otu_directory, "pick_otus", "seqs_chimeras_filtered_otus.txt")] for otu_directory in otu_directories)[0]
-        tax_assign_file = self.select_input_files([os.path.join(otu_directory, "taxonomy_assignment", "rep_set_tax_assignments.txt")] for otu_directory in otu_directories)[0]
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
+        [otu_file] = self.select_input_files([os.path.join(self.output_dirs[f"{otu}_directory"], "pick_otus", "seqs_chimeras_filtered_otus.txt")] for otu in otus)
+        [tax_assign_file] = self.select_input_files([os.path.join(self.output_dirs[f"{otu}_directory"], "taxonomy_assignment", "rep_set_tax_assignments.txt")] for otu in otus)
 
         otu_directory = os.path.dirname(os.path.dirname(otu_file))
         otu_table_file = os.path.join(otu_directory, "otu_table_prefiltered.biom")
@@ -764,13 +837,12 @@ pandoc --to=markdown \\
         otu_sample_directory = os.path.join(otu_directory, "sample")
         sample_name_control = os.path.join(otu_sample_directory, "done.txt")
 
-        job = qiime.otu_table(
+        job_otu_table = qiime.otu_table(
             otu_file,
             tax_assign_file,
             otu_table_file,
             otu_table_summary
         )
-        job.samples = self.samples
 
         # Remove singleton
         job_filter = Job(
@@ -800,33 +872,37 @@ $QIIME_HOME/filter_samples_from_otu_table.py \\
             )
         )
 
-        # Sample remained after filtering.
+        # Sample remaining after filtering.
         job_sample = tools.py_ampliconSeq(
             [otu_table_summary],
             [sample_name_control],
             'sample_name',
-        """\
-  -i {otu_table_summary} \\
-  -j {otu_sample_directory}""".format(
-                otu_table_summary=otu_table_summary,
-                otu_sample_directory=otu_sample_directory
-            )
+            f"-i {otu_table_summary} -j {otu_sample_directory}",
+            ini_section="qiime_otu_table"
         )
 
-        jobs.append(concat_jobs([
-            job,
-            job_filter,
-            job_filter2,
-            Job(command="""\
+        jobs.append(
+            concat_jobs(
+                [
+                    job_otu_table,
+                    job_filter,
+                    job_filter2,
+                    Job(
+                        command="""\
 $QIIME_HOME/biom summarize-table \\
   -i {otu_table_final} \\
   > {otu_table_summary}""".format(
-                otu_table_final=otu_table_final,
-                otu_table_summary=otu_table_summary
-            )),
-            Job(command="mkdir -p " + otu_sample_directory),
-            job_sample
-        ], name="qiime_otu_table." + re.sub("_otus", "", otu_directory)))
+                            otu_table_final=otu_table_final,
+                            otu_table_summary=otu_table_summary
+                        )
+                    ),
+                    bash.mkdir(otu_sample_directory),
+                    job_sample
+                ],
+                name="qiime_otu_table." + re.sub("_otus", "", os.path.basename(otu_directory)),
+                samples=self.samples
+            )
+        )
 
         return jobs
 
@@ -841,8 +917,8 @@ $QIIME_HOME/biom summarize-table \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-        otu_rep_picking_fasta = self.select_input_files([os.path.join(otu_directory, "pick_rep_set", "rep_set.fna")] for otu_directory in otu_directories)[0]
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
+        [otu_rep_picking_fasta] = self.select_input_files([os.path.join(self.output_dirs[f"{otu}_directory"], "pick_rep_set", "rep_set.fna")] for otu in otus)
 
         otu_directory = os.path.dirname(os.path.dirname(otu_rep_picking_fasta))
         output_directory = os.path.join(otu_directory, "align_seq")
@@ -855,7 +931,7 @@ $QIIME_HOME/biom summarize-table \\
         )
         job.samples = self.samples
 
-        job.name = "qiime_otu_alignment." + re.sub("_otus", "", otu_directory)
+        job.name = "qiime_otu_alignment." + re.sub("_otus", "", os.path.basename(otu_directory))
         jobs.append(job)
 
         return jobs
@@ -871,8 +947,8 @@ $QIIME_HOME/biom summarize-table \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-        align_seq_fasta = self.select_input_files([os.path.join(otu_directory, "align_seq", "rep_set_aligned.fasta")] for otu_directory in otu_directories)[0]
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
+        [align_seq_fasta] = self.select_input_files([os.path.join(self.output_dirs[f"{otu}_directory"], "align_seq", "rep_set_aligned.fasta")] for otu in otus)
 
         otu_directory = os.path.dirname(os.path.dirname(align_seq_fasta))
         output_directory = os.path.join(otu_directory, "filter_alignment")
@@ -885,7 +961,7 @@ $QIIME_HOME/biom summarize-table \\
         )
         job.samples = self.samples
 
-        job.name = "qiime_filter_alignment." + re.sub("_otus", "", otu_directory)
+        job.name = "qiime_filter_alignment." + re.sub("_otus", "", os.path.basename(otu_directory))
         jobs.append(job)
 
         return jobs
@@ -901,8 +977,8 @@ $QIIME_HOME/biom summarize-table \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-        filter_align_fasta = self.select_input_files([os.path.join(otu_directory, "filter_alignment", "rep_set_aligned_pfiltered.fasta")] for otu_directory in otu_directories)[0]
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
+        [filter_align_fasta] = self.select_input_files([os.path.join(self.output_dirs[f"{otu}_directory"], "filter_alignment", "rep_set_aligned_pfiltered.fasta")] for otu in otus)
 
         otu_directory = os.path.dirname(os.path.dirname(filter_align_fasta))
         output_directory = os.path.join(otu_directory, "phylogenetic_tree")
@@ -912,13 +988,18 @@ $QIIME_HOME/biom summarize-table \\
             filter_align_fasta,
             phylo_file
         )
-        job.samples = self.samples
 
-        jobs.append(concat_jobs([
-            # Create an output directory
-            Job(command="mkdir -p " + output_directory),
-            job
-        ], name="qiime_phylogeny." + re.sub("_otus", "", otu_directory)))
+        jobs.append(
+            concat_jobs(
+                [
+                    # Create an output directory
+                    bash.mkdir(output_directory),
+                    job
+                ],
+                name="qiime_phylogeny." + re.sub("_otus", "", os.path.basename(otu_directory)),
+                samples=self.samples
+            )
+        )
 
         return jobs
 
@@ -929,13 +1010,13 @@ $QIIME_HOME/biom summarize-table \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-        otu_table = self.select_input_files([os.path.join(otu_directory, "otu_table.biom")] for otu_directory in otu_directories)[0]
-        phylo_file = self.select_input_files([os.path.join(otu_directory, "phylogenetic_tree", "rep_phylo.tre")] for otu_directory in otu_directories)[0]
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
+        [otu_table] = self.select_input_files([os.path.join(self.output_dirs[f"{otu}_directory"], "otu_table.biom")] for otu in otus)
+        [phylo_file] = self.select_input_files([os.path.join(self.output_dirs[f"{otu}_directory"], "phylogenetic_tree", "rep_phylo.tre")] for otu in otus)
 
         otu_directory = os.path.dirname(otu_table)
 
-        report_file = os.path.join("report", "AmpliconSeq.qiime.md")
+        report_file = os.path.join(self.output_dirs["report_directory"], "AmpliconSeq.qiime.md")
 
         if config.param('qiime', 'amplicon_type') == '16S':
             amp_db = 'Greengenes'
@@ -946,12 +1027,13 @@ $QIIME_HOME/biom summarize-table \\
         else:
             amp_db = 'Unknown'
 
-        jobs.append(Job(
-            [otu_table, phylo_file],
-            [report_file],
-            [['qiime', 'module_pandoc']],
-            command="""\
-mkdir -p report && \\
+        jobs.append(
+            Job(
+                [otu_table, phylo_file],
+                [report_file],
+                [['qiime', 'module_pandoc']],
+                command="""\
+mkdir -p {report_dir} && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable amplicon_type="{amplicon_type}" \\
@@ -959,18 +1041,19 @@ pandoc --to=markdown \\
   --variable amplicon_db="{amplicon_db}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                amplicon_type=config.param('qiime', 'amplicon_type'),
-                similarity=config.param('qiime_otu_picking', 'similarity'),
-                amplicon_db=amp_db,
-                report_template_dir=self.report_template_dir,
-                basename_report_file=os.path.basename(report_file),
-                report_file=report_file
-            ),
-            report_files=[report_file],
-            name="qiime_report." + re.sub("_otus", "", otu_directory),
-            samples=self.samples
-        ))
-
+                    amplicon_type=config.param('qiime', 'amplicon_type'),
+                    similarity=config.param('qiime_otu_picking', 'similarity'),
+                    amplicon_db=amp_db,
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_dir=self.output_dirs["report_directory"],
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                name="qiime_report." + re.sub("_otus", "", os.path.basename(otu_directory)),
+                samples=self.samples
+            )
+        )
         return jobs
 
     def multiple_rarefaction(self):
@@ -986,8 +1069,8 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-        otu_table = self.select_input_files([os.path.join(otu_directory, "otu_table.biom")] for otu_directory in otu_directories)[0]
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
+        [otu_table] = self.select_input_files([os.path.join(self.output_dirs[f"{otu}_directory"], "otu_table.biom")] for otu in otus)
 
         otus_input = [otu_table]
 
@@ -999,13 +1082,18 @@ pandoc --to=markdown \\
             otus_input,
             rarefied_otu_directory
         )
-        job.samples = self.samples
 
-        jobs.append(concat_jobs([
-            # Create an output directory
-            Job(command="mkdir -p " + alpha_directory),
-            job
-        ], name="qiime_multiple_rarefaction." + re.sub("_otus", "", otu_directory)))
+        jobs.append(
+            concat_jobs(
+                [
+                    # Create an output directory
+                    bash.mkdir(alpha_directory),
+                    job
+                ],
+                name="qiime_multiple_rarefaction." + re.sub("_otus", "", os.path.basename(otu_directory)),
+                samples=self.samples
+            )
+        )
 
         return jobs
 
@@ -1021,8 +1109,8 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        alpha_directories = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
-        rarefied_otu_directory = self.select_input_files([os.path.join(alpha_directory, "rarefied_otu_tables")] for alpha_directory in alpha_directories)[0]
+        alpha_diversities = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
+        [rarefied_otu_directory] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], "rarefied_otu_tables")] for alpha_diversity in alpha_diversities)
 
         alpha_directory = os.path.dirname(rarefied_otu_directory)
         alpha_diversity_directory = os.path.join(alpha_directory, "alpha_diversity_compute")
@@ -1032,7 +1120,7 @@ pandoc --to=markdown \\
             alpha_diversity_directory
         )
         job.samples = self.samples
-        job.name = "qiime_alpha_diversity." + re.sub("_alpha_diversity", "", alpha_directory)
+        job.name = "qiime_alpha_diversity." + re.sub("_alpha_diversity", "", os.path.basename(alpha_directory))
 
         jobs.append(job)
 
@@ -1046,8 +1134,8 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        alpha_directories = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
-        alpha_diversity_directory = self.select_input_files([os.path.join(alpha_directory, "alpha_diversity_compute")] for alpha_directory in alpha_directories)[0]
+        alpha_diversities = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
+        [alpha_diversity_directory] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], "alpha_diversity_compute")] for alpha_diversity in alpha_diversities)
 
         alpha_directory = os.path.dirname(alpha_diversity_directory)
         alpha_diversity_collated_directory = os.path.join(alpha_directory, "alpha_diversity_collated")
@@ -1063,12 +1151,17 @@ pandoc --to=markdown \\
             observed_species_stat,
             shannon_stat
         )
-        job.samples = self.samples
 
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p " + alpha_diversity_collated_directory),
-            job
-        ], name="qiime_collate_alpha." + re.sub("_alpha_diversity", "", alpha_directory)))
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(alpha_diversity_collated_directory),
+                    job
+                ],
+                name="qiime_collate_alpha." + re.sub("_alpha_diversity", "", os.path.basename(alpha_directory)),
+                samples=self.samples
+            )
+        )
 
         return jobs
 
@@ -1080,8 +1173,8 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        alpha_directories = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
-        chao1_stat = self.select_input_files([os.path.join(alpha_directory, "alpha_diversity_collated", "merge_samples", "chao1.txt")] for alpha_directory in alpha_directories)[0]
+        alpha_diversities = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
+        [chao1_stat] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], "alpha_diversity_collated", "merge_samples", "chao1.txt")] for alpha_diversity in alpha_diversities)
 
         alpha_directory = os.path.dirname(os.path.dirname(os.path.dirname(chao1_stat)))
         alpha_diversity_collated_directory = os.path.dirname(os.path.dirname(chao1_stat))
@@ -1114,62 +1207,41 @@ pandoc --to=markdown \\
                 sample_rarefaction_directory,
                 curve_sample,
             )
-            job.samples = [readset.sample]
 
-            jobs.append(concat_jobs([
-                Job(command="mkdir -p " + sample_collated_directory),
-                tools.py_ampliconSeq(
-                    [],
-                    [sample_map],
-                    'map_per_sample',
-                    """\
-  -s {sample} \\
-  -j {sample_map}""".format(
-                        sample=readset.sample.name,
-                        sample_map=sample_map
-                    )
-                ),
-                tools.py_ampliconSeq(
-                    [chao1_stat],
-                    [chao1_dir],
-                    'sample_rarefaction',
-                    """\
-  -i {cstat} \\
-  -j {cdir} \\
-  -s {readset}""".format(
-                        cstat=chao1_stat,
-                        cdir=chao1_dir,
-                        readset=readset.sample.name
-                    )
-                ),
-                tools.py_ampliconSeq(
-                    [observed_species_stat],
-                    [observed_species_dir],
-                    'sample_rarefaction',
-                    """\
-  -i {ostat} \\
-  -j {odir} \\
-  -s {readset}""".format(
-                        ostat=observed_species_stat,
-                        odir=observed_species_dir,
-                        readset=readset.sample.name
-                    )
-                ),
-                tools.py_ampliconSeq(
-                    [shannon_stat],
-                    [shannon_dir],
-                    'sample_rarefaction',
-                    """\
-  -i {sstat} \\
-  -j {sdir} \\
-  -s {readset}""".format(
-                        sstat=shannon_stat,
-                        sdir=shannon_dir,
-                        readset=readset.sample.name
-                    )
-                ),
-                job
-            ], name="qiime_sample_rarefaction." + re.sub("_alpha_diversity", ".", alpha_directory) + readset.sample.name))
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(sample_collated_directory),
+                        tools.py_ampliconSeq(
+                            [],
+                            [sample_map],
+                            'map_per_sample',
+                            f"-s {readset.sample.name} -j {sample_map}"
+                        ),
+                        tools.py_ampliconSeq(
+                            [chao1_stat],
+                            [chao1_dir],
+                            'sample_rarefaction',
+                            f"-i {chao1_stat} -j {chao1_dir} -s {readset.sample.name}"
+                        ),
+                        tools.py_ampliconSeq(
+                            [observed_species_stat],
+                            [observed_species_dir],
+                            'sample_rarefaction',
+                            f"-i {observed_species_stat} -j {observed_species_dir} -s {readset.sample.name}"
+                        ),
+                        tools.py_ampliconSeq(
+                            [shannon_stat],
+                            [shannon_dir],
+                            'sample_rarefaction',
+                            f"-i {shannon_stat} -j {shannon_dir} -s {readset.sample.name}"
+                        ),
+                        job
+                    ],
+                    name="qiime_sample_rarefaction." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + readset.sample.name,
+                    samples=[readset.sample]
+                )
+            )
 
         return jobs
 
@@ -1180,50 +1252,52 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        alpha_directories = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
+        alpha_diversities = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
 
-        report_file = os.path.join("report", "AmpliconSeq.plot_curve_no_rar.md")
+        report_file = os.path.join(self.output_dirs["report_directory"], "AmpliconSeq.plot_curve_no_rar.md")
         num_sample = 0
 
         inputs = []
         curve_sample = []
         for readset in self.readsets:
             inputs.append(str(readset.sample.name).replace('_','.'))
-            observed_species_file="""\
-{sample}/average_plots/observed_species{readset}.png""".format(
+            observed_species_file="""{sample}/average_plots/observed_species{readset}.png""".format(
                 sample=readset.sample.name,
-                readset=str(readset.sample.name).replace('_','.')
+                readset=str(readset.name).replace('_','.')
             )
-            curve_sample.append(self.select_input_files([os.path.join(alpha_directory, "alpha_rarefaction", observed_species_file)] for alpha_directory in alpha_directories)[0])
+            curve_sample.extend(self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], "alpha_rarefaction", observed_species_file)] for alpha_diversity in alpha_diversities))
             num_sample+=1
 
         alpha_directory = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(curve_sample[0]))))
 
         fig_src_link = "fig/" + alpha_directory + "/alpha.rarefaction_sample.png"
 
-        jobs.append(Job(
-            curve_sample,
-            [report_file],
-            [['qiime', 'module_pandoc']],
-            command="""\
-mkdir -p report/fig/{alpha_directory}/ && \\
-montage -mode concatenate -tile {plot_dimension} {curve_sample} report/fig/{alpha_directory}/alpha.rarefaction_sample.png  && \\
+        jobs.append(
+            Job(
+                curve_sample,
+                [report_file],
+                [['qiime', 'module_pandoc']],
+                command="""\
+mkdir -p {report_dir}/fig/{alpha_directory}/ && \\
+montage -mode concatenate -tile {plot_dimension} {curve_sample} {report_dir}/fig/{alpha_directory}/alpha.rarefaction_sample.png  && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable fig_src_link="{fig_src_link}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                alpha_directory=alpha_directory,
-                plot_dimension=str(math.sqrt(num_sample)+1)+"x",  # "3x"+str((num_sample/3)+1)
-                curve_sample=' '.join(curve_sample),
-                fig_src_link=fig_src_link,
-                report_template_dir=self.report_template_dir,
-                basename_report_file=os.path.basename(report_file),
-                report_file=report_file
-            ),
-            report_files=[report_file],
-            samples=self.samples,
-            name="qiime_report2." + re.sub("_alpha_diversity", "", alpha_directory))
+                    alpha_directory=alpha_directory,
+                    plot_dimension=str(math.sqrt(num_sample)+1)+"x",  # "3x"+str((num_sample/3)+1)
+                    curve_sample=' '.join(curve_sample),
+                    fig_src_link=fig_src_link,
+                    report_template_dir=self.report_template_dir,
+                    basename_report_file=os.path.basename(report_file),
+                    report_dir=self.output_dirs["report_directory"],
+                    report_file=report_file
+                ),
+                report_files=[report_file],
+                samples=self.samples,
+                name="qiime_report2." + re.sub("_alpha_diversity", "", os.path.basename(alpha_directory))
+            )
         )
 
         return jobs
@@ -1240,14 +1314,14 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-        otu_table = self.select_input_files([os.path.join(otu_directory, "otu_table.biom")] for otu_directory in otu_directories)[0]
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
+        [otu_table] = self.select_input_files([os.path.join(self.output_dirs[f"{otu}_directory"], "otu_table.biom")] for otu in otus)
 
         otu_directory = os.path.dirname(otu_table)
 
         otu_normalized_directory = re.sub('otus', 'otu_rarefaction_normalized', otu_directory)
-        otu_normalized_table = os.path.join(otu_normalized_directory,"otu_normalized_table.biom")
-        normalization_method = os.path.join(otu_normalized_directory,"rarefaction.txt")
+        otu_normalized_table = os.path.join(otu_normalized_directory, "otu_normalized_table.biom")
+        normalization_method = os.path.join(otu_normalized_directory, "rarefaction.txt")
 
         alpha_directory = re.sub('otus', 'alpha_diversity', otu_directory)
         alpha_diversity_collated_directory = os.path.join(alpha_directory, "alpha_diversity_collated")
@@ -1261,7 +1335,7 @@ pandoc --to=markdown \\
         observed_species_rarefied_stat = os.path.join(alpha_diversity_collated_merge_rarefied_directory, "observed_species.txt")
         shannon_rarefied_stat = os.path.join(alpha_diversity_collated_merge_rarefied_directory, "shannon.txt")
 
-        job = qiime.single_rarefaction(
+        job_single_rarefaction = qiime.single_rarefaction(
             otu_table,
             chao1_rarefied_stat,
             observed_species_rarefied_stat,
@@ -1269,60 +1343,45 @@ pandoc --to=markdown \\
             otu_normalized_table,
             normalization_method
         )
-        job.samples = self.samples
 
         job_chao1 = tools.py_ampliconSeq(
             [chao1_stat],
             [chao1_rarefied_stat],
             'single_rarefaction',
-            """\
-  -i {stat} \\
-  -j {rarefied_stat} \\
-  -s {depth}""".format(
-                stat=chao1_stat,
-                rarefied_stat=chao1_rarefied_stat,
-                depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth')
-            )
+            f"-i {chao1_stat} -j {chao1_rarefied_stat} -s {config.param('qiime_single_rarefaction', 'single_rarefaction_depth')}"
         )
 
         job_observed_species = tools.py_ampliconSeq(
             [observed_species_stat],
             [observed_species_rarefied_stat],
             'single_rarefaction',
-            """\
-  -i {stat} \\
-  -j {rarefied_stat} \\
-  -s {depth}""".format(
-                stat=observed_species_stat,
-                rarefied_stat=observed_species_rarefied_stat,
-                depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth')
-            )
+            f"-i {observed_species_stat} -j {observed_species_rarefied_stat} -s {config.param('qiime_single_rarefaction', 'single_rarefaction_depth')}"
         )
 
         job_shannon = tools.py_ampliconSeq(
             [shannon_stat],
             [shannon_rarefied_stat],
             'single_rarefaction',
-            """\
-  -i {stat} \\
-  -j {rarefied_stat} \\
-  -s {depth}""".format(
-                stat=shannon_stat,
-                rarefied_stat=shannon_rarefied_stat,
-                depth=config.param('qiime_single_rarefaction', 'single_rarefaction_depth')
-            )
+            f"-i {shannon_stat} -j {shannon_rarefied_stat} -s {config.param('qiime_single_rarefaction', 'single_rarefaction_depth')}"
+
         )
 
-        jobs.append(concat_jobs([
-            # Create an output directory
-            Job(command="mkdir -p " + otu_normalized_directory),
-            Job(command="mkdir -p " + alpha_diversity_collated_merge_rarefied_directory),
-            Job(command="touch " + normalization_method),
-            job_chao1,
-            job_observed_species,
-            job_shannon,
-            job
-        ], name="qiime_single_rarefaction." + re.sub("_otus", "", otu_directory)))
+        jobs.append(
+            concat_jobs(
+                [
+                    # Create an output directory
+                    bash.mkdir(otu_normalized_directory),
+                    bash.mkdir(alpha_diversity_collated_merge_rarefied_directory),
+                    bash.touch(normalization_method),
+                    job_chao1,
+                    job_observed_species,
+                    job_shannon,
+                    job_single_rarefaction
+                ],
+                name="qiime_single_rarefaction." + re.sub("_otus", "", os.path.basename(otu_directory)),
+                samples=self.samples
+            )
+        )
 
         return jobs
 
@@ -1338,8 +1397,8 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-        otu_table = self.select_input_files([os.path.join(otu_directory, "otu_table.biom")] for otu_directory in otu_directories)[0]
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
+        [otu_table] = self.select_input_files([os.path.join(self.output_dirs[f"{otu}_directory"], "otu_table.biom")] for otu in otus)
 
         otu_directory = os.path.dirname(otu_table)
 
@@ -1359,7 +1418,7 @@ pandoc --to=markdown \\
         observed_species_rarefied_stat = os.path.join(alpha_diversity_collated_merge_rarefied_directory, "observed_species.txt")
         shannon_rarefied_stat = os.path.join(alpha_diversity_collated_merge_rarefied_directory, "shannon.txt")
 
-        job = qiime.css_normalization(
+        job_css_normalization = qiime.css_normalization(
             otu_table,
             chao1_rarefied_stat,
             observed_species_rarefied_stat,
@@ -1367,60 +1426,41 @@ pandoc --to=markdown \\
             otu_normalized_table,
             normalization_method
         )
-        job.samples = self.samples
-
         job_chao1 = tools.py_ampliconSeq(
             [chao1_stat],
             [chao1_rarefied_stat],
             'single_rarefaction',
-            """\
-  -i {stat} \\
-  -j {rarefied_stat} \\
-  -s {raremax}""".format(
-                stat=chao1_stat,
-                rarefied_stat=chao1_rarefied_stat,
-                raremax=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
-            )
+            f"-i {chao1_stat} -j {chao1_rarefied_stat} -s {config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')}"
         )
-
         job_observed_species = tools.py_ampliconSeq(
             [observed_species_stat],
             [observed_species_rarefied_stat],
             'single_rarefaction',
-            """\
-  -i {stat} \\
-  -j {rarefied_stat} \\
-  -s {raremax}""".format(
-                stat=observed_species_stat,
-                rarefied_stat=observed_species_rarefied_stat,
-                raremax=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
-            )
+            f"-i {observed_species_stat} -j {observed_species_rarefied_stat} -s {config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')}"
         )
-
         job_shannon = tools.py_ampliconSeq(
             [shannon_stat],
             [shannon_rarefied_stat],
             'single_rarefaction',
-            """\
-  -i {stat} \\
-  -j {rarefied_stat} \\
-  -s {raremax}""".format(
-                stat=shannon_stat,
-                rarefied_stat=shannon_rarefied_stat,
-                raremax=config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')
-            )
+            f"-i {shannon_stat} -j {shannon_rarefied_stat} -s {config.param('qiime_multiple_rarefaction', 'multiple_rarefaction_max')}"
         )
 
-        jobs.append(concat_jobs([
-            # Create an output directory
-            Job(command="mkdir -p " + otu_normalized_directory),
-            Job(command="mkdir -p " + alpha_diversity_collated_merge_rarefied_directory),
-            Job(command="touch " + normalization_method),
-            job_chao1,
-            job_observed_species,
-            job_shannon,
-            job
-        ], name="qiime_css_normalization." + re.sub("_otus", "", otu_directory)))
+        jobs.append(
+            concat_jobs(
+                [
+                    # Create an output directory
+                    bash.mkdir(otu_normalized_directory),
+                    bash.mkdir(alpha_diversity_collated_merge_rarefied_directory),
+                    bash.touch(normalization_method),
+                    job_chao1,
+                    job_observed_species,
+                    job_shannon,
+                    job_css_normalization
+                ],
+                name="qiime_css_normalization." + re.sub("_otus", "", os.path.basename(otu_directory)),
+                samples = self.samples
+            )
+        )
 
         return jobs
 
@@ -1432,13 +1472,13 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        alpha_directories = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
+        alpha_diversities = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
 
         for method in ['css', 'rarefaction']:
 
-            chao1_stat = self.select_input_files([os.path.join(alpha_directory, "alpha_diversity_collated", method, "merge_samples_rarefied", "chao1.txt")] for alpha_directory in alpha_directories)[0]
-            observed_species_stat = self.select_input_files([os.path.join(alpha_directory, "alpha_diversity_collated", method, "merge_samples_rarefied", "observed_species.txt")] for alpha_directory in alpha_directories)[0]
-            shannon_stat = self.select_input_files([os.path.join(alpha_directory, "alpha_diversity_collated", method, "merge_samples_rarefied", "shannon.txt")] for alpha_directory in alpha_directories)[0]
+            [chao1_stat] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], "alpha_diversity_collated", method, "merge_samples_rarefied", "chao1.txt")] for alpha_diversity in alpha_diversities)
+            [observed_species_stat] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], "alpha_diversity_collated", method, "merge_samples_rarefied", "observed_species.txt")] for alpha_diversity in alpha_diversities)
+            [shannon_stat] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], "alpha_diversity_collated", method, "merge_samples_rarefied", "shannon.txt")] for alpha_diversity in alpha_diversities)
 
             alpha_directory = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(chao1_stat))))
             alpha_diversity_collated_merge_rarefied_directory = os.path.dirname(chao1_stat)
@@ -1463,7 +1503,7 @@ pandoc --to=markdown \\
             )
             job.samples = self.samples
 
-            job.name = "qiime_rarefaction_plot." + re.sub("_alpha_diversity", ".", alpha_directory[0] + method)
+            job.name = "qiime_rarefaction_plot." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + method
             jobs.append(job)
 
         return jobs
@@ -1481,11 +1521,10 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
         for method in ['css', 'rarefaction']:
 
-            otu_normalized_table = self.select_input_files([os.path.join(re.sub('otus', 'otu_' + method + '_normalized', otu_directory),"otu_normalized_table.biom")] for otu_directory in otu_directories)[0]
+            [otu_normalized_table] = self.select_input_files([os.path.join(re.sub('otus', 'otu_' + method + '_normalized', self.output_dirs[f"{otu}_directory"]), "otu_normalized_table.biom")] for otu in otus)
 
             alpha_directory = re.sub('otu_' + method + '_normalized', 'alpha_diversity', os.path.dirname(otu_normalized_table))
             taxonomic_directory = os.path.join(alpha_directory, method, "taxonomic_affiliation/")
@@ -1504,13 +1543,18 @@ pandoc --to=markdown \\
                 taxonomic_family,
                 taxonomic_genus
             )
-            job.samples = self.samples
 
-            jobs.append(concat_jobs([
-                # Create an output directory
-                Job(command="mkdir -p " + alpha_directory),
-                job
-            ], name="qiime_summarize_taxa." + re.sub("_alpha_diversity", ".", alpha_directory) + method))
+            jobs.append(
+                concat_jobs(
+                    [
+                        # Create an output directory
+                        Job(command="mkdir -p " + alpha_directory),
+                        job
+                    ],
+                    name="qiime_summarize_taxa." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + method,
+                    samples=self.samples
+                )
+            )
 
         return jobs
 
@@ -1526,15 +1570,15 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        alpha_directories = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
+        alpha_diversities = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
 
         for method in ['css', 'rarefaction']:
 
-            taxonomic_phylum = self.select_input_files([os.path.join(alpha_directory, method, "taxonomic_affiliation", "otu_normalized_table_L2.txt")] for alpha_directory in alpha_directories)[0]
-            taxonomic_class = self.select_input_files([os.path.join(alpha_directory, method, "taxonomic_affiliation", "otu_normalized_table_L3.txt")] for alpha_directory in alpha_directories)[0]
-            taxonomic_order = self.select_input_files([os.path.join(alpha_directory, method, "taxonomic_affiliation", "otu_normalized_table_L4.txt")] for alpha_directory in alpha_directories)[0]
-            taxonomic_family = self.select_input_files([os.path.join(alpha_directory, method, "taxonomic_affiliation", "otu_normalized_table_L5.txt")] for alpha_directory in alpha_directories)[0]
-            taxonomic_genus = self.select_input_files([os.path.join(alpha_directory, method, "taxonomic_affiliation", "otu_normalized_table_L6.txt")] for alpha_directory in alpha_directories)[0]
+            [taxonomic_phylum] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], method, "taxonomic_affiliation", "otu_normalized_table_L2.txt")] for alpha_diversity in alpha_diversities)
+            [taxonomic_class] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], method, "taxonomic_affiliation", "otu_normalized_table_L3.txt")] for alpha_diversity in alpha_diversities)
+            [taxonomic_order] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], method, "taxonomic_affiliation", "otu_normalized_table_L4.txt")] for alpha_diversity in alpha_diversities)
+            [taxonomic_family] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], method, "taxonomic_affiliation", "otu_normalized_table_L5.txt")] for alpha_diversity in alpha_diversities)
+            [taxonomic_genus] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], method, "taxonomic_affiliation", "otu_normalized_table_L6.txt")] for alpha_diversity in alpha_diversities)
 
             taxonomic_directory = os.path.dirname(taxonomic_phylum)
             alpha_directory = os.path.dirname(os.path.dirname(taxonomic_directory))
@@ -1549,8 +1593,7 @@ pandoc --to=markdown \\
                 taxonomic_directory
             )
             job.samples = self.samples
-
-            job.name = "qiime_plot_taxa." + re.sub("_alpha_diversity", ".", alpha_directory) + method
+            job.name = "qiime_plot_taxa." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + method
             jobs.append(job)
 
         return jobs
@@ -1567,12 +1610,11 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
         for method in ['css', 'rarefaction']:
 
-            otu_normalized_table = self.select_input_files([os.path.join(re.sub('otus', 'otu_' + method + '_normalized', otu_directory), "otu_normalized_table.biom")] for otu_directory in otu_directories)[0]
-            taxonomic_phylum = self.select_input_files([os.path.join(re.sub('otus', 'alpha_diversity', otu_directory), method, "taxonomic_affiliation", "otu_normalized_table_L2.txt")] for otu_directory in otu_directories)[0]
+            [otu_normalized_table] = self.select_input_files([os.path.join(re.sub('otus', 'otu_' + method + '_normalized', self.output_dirs[f"{otu}_directory"]), "otu_normalized_table.biom")] for otu in otus)
+            [taxonomic_phylum] = self.select_input_files([os.path.join(re.sub('otus', 'alpha_diversity', self.output_dirs[f"{otu}_directory"]), method, "taxonomic_affiliation", "otu_normalized_table_L2.txt")] for otu in otus)
 
             otu_directory = re.sub('otu_' + method + '_normalized', 'otus', os.path.dirname(otu_normalized_table))
 
@@ -1593,16 +1635,8 @@ pandoc --to=markdown \\
                 [taxonomic_phylum],
                 [heatmap_script, heatmap_otu_data_R, heatmap_otu_name_R, heatmap_otu_tax_R],
                 'plot_heatmap',
-                """\
-  -i {taxonomic_phylum} \\
-  -j {heatmap_directory} \\
-  -s {taxon_lvl}""".format(
-                    taxonomic_phylum=taxonomic_phylum,
-                    heatmap_directory=heatmap_directory,
-                    taxon_lvl=1
-                )
+                f"-i {taxonomic_phylum} -j {heatmap_directory} -s 1"
             )
-            job.samples = self.samples
 
             # Create a job that cleans the generated OTU_data.txt i.e. removes the lines with characters
             jobClean = tools.clean_otu(heatmap_otu_data_R)
@@ -1611,17 +1645,23 @@ pandoc --to=markdown \\
                 [heatmap_script, heatmap_otu_data_R, heatmap_otu_name_R, heatmap_otu_tax_R],
                 [heatmap_chart, heatmap_otu_table, heatmap_tax_table],
                 module_entries=[['plot_heatmap', 'module_R']],
-                command="./" +  heatmap_script
+                command=heatmap_script
             )
 
-            jobs.append(concat_jobs([
-                # Create an output directory
-                Job(command="mkdir -p " + heatmap_directory),
-                job,
-                Job(command="chmod +x " + heatmap_directory + "/OTU_Phylum_to_R.R"),
-                jobClean,
-                jobR
-            ], name="plot_heatmap." + re.sub("_otus", ".", otu_directory) + method))
+            jobs.append(
+                concat_jobs(
+                    [
+                        # Create an output directory
+                        bash.mkdir(heatmap_directory),
+                        job,
+                        Job(command="chmod +x " + heatmap_directory + "/OTU_Phylum_to_R.R"),
+                        jobClean,
+                        jobR
+                    ],
+                    name="plot_heatmap." + re.sub("_otus", ".", os.path.basename(otu_directory)) + method,
+                    samples=self.samples
+                )
+            )
 
         return jobs
 
@@ -1632,13 +1672,12 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
         for method in ['css', 'rarefaction']:
 
             sample_name = []
 
-            otu_normalized_table = self.select_input_files([os.path.join(re.sub('otus', 'otu_' + method + '_normalized', otu_directory), "otu_normalized_table.biom")] for otu_directory in otu_directories)[0]
+            [otu_normalized_table] = self.select_input_files([os.path.join(re.sub('otus', 'otu_' + method + '_normalized', self.output_dirs[f"{otu}_directory"]), "otu_normalized_table.biom")] for otu in otus)
             otu_directory = re.sub('otu_' + method + '_normalized', 'otus', os.path.dirname(otu_normalized_table))
 
             alpha_directory = re.sub('otus', 'alpha_diversity', otu_directory)
@@ -1648,39 +1687,40 @@ pandoc --to=markdown \\
             for readset in self.readsets:
                 sample_name.append(alpha_diversity_krona_directory+'/'+str(readset.sample.name).replace("_", ".")+'.txt')
 
-            job = krona.krona(
+            job_krona = krona.krona(
                 otu_normalized_table,
                 sample_name,
                 alpha_diversity_krona_file,
             )
-            job.samples = self.samples
 
-            jobs.append(concat_jobs([
-                # Create an output directory
-                Job(command="mkdir -p " + alpha_diversity_krona_directory),
-                Job(command="""\
+            jobs.append(
+                concat_jobs(
+                    [
+                        # Create an output directory
+                        bash.mkdir(alpha_diversity_krona_directory),
+                        Job(
+                            command="""\
 $QIIME_HOME/biom convert -i {otu_normalized_table} \\
   -o {alpha_directory}/{method}/table_tax.txt \\
   --table-type="OTU table" \\
   --to-tsv \\
   --header-key taxonomy""".format(
-                    method=method,
-                    alpha_directory=alpha_directory,
-                    otu_normalized_table=otu_normalized_table
-                )),
-                tools.py_ampliconSeq(
-                    [otu_normalized_table],
-                    [],
-                    'krona',
-                    """\
-  -i {alpha_directory}/{method}/table_tax.txt \\
-  -j {alpha_diversity_krona_directory}""".format(
-                    method=method,
-                    alpha_directory=alpha_directory,
-                    alpha_diversity_krona_directory=alpha_diversity_krona_directory
-                )),
-                job
-            ], name="krona." + re.sub("_otus", ".", otu_directory) + method))
+                                method=method,
+                                alpha_directory=alpha_directory,
+                                otu_normalized_table=otu_normalized_table
+                            )),
+                        tools.py_ampliconSeq(
+                            [otu_normalized_table],
+                            [],
+                            'krona',
+                            f"-i {alpha_directory}/{method}/table_tax.txt -j {alpha_diversity_krona_directory}"
+                        ),
+                        job_krona
+                    ],
+                    name="krona." + re.sub("_otus", ".", os.path.basename(otu_directory)) + method,
+                    samples=self.samples
+                )
+            )
         return jobs
 
     def plot_to_alpha(self):
@@ -1690,25 +1730,25 @@ $QIIME_HOME/biom convert -i {otu_normalized_table} \\
 
         jobs = []
 
-        alpha_directories = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
+        alpha_diversities = ['open_ref_alpha_diversity', 'denovo_alpha_diversity', 'closed_ref_alpha_diversity']
 
         for method in ['css', 'rarefaction']:
 
-            alpha_diversity_taxonomy_bar_plot = self.select_input_files([os.path.join(alpha_directory, method, "taxonomic_affiliation", "bar_charts.html")] for alpha_directory in alpha_directories)[0]
-            alpha_diversity_krona_file = self.select_input_files([os.path.join(alpha_directory, method, "krona_chart", "krona_chart.html")] for alpha_directory in alpha_directories)[0]
-            alpha_diversity_rarefaction_file = self.select_input_files([os.path.join(alpha_directory, "alpha_rarefaction", method, "merge_samples_rarefied/rarefaction_plots.html")] for alpha_directory in alpha_directories)[0]
+            [alpha_diversity_taxonomy_bar_plot] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], method, "taxonomic_affiliation", "bar_charts.html")] for alpha_diversity in alpha_diversities)
+            [alpha_diversity_krona_file] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], method, "krona_chart", "krona_chart.html")] for alpha_diversity in alpha_diversities)
+            [alpha_diversity_rarefaction_file] = self.select_input_files([os.path.join(self.output_dirs[f"{alpha_diversity}_directory"], "alpha_rarefaction", method, "merge_samples_rarefied/rarefaction_plots.html")] for alpha_diversity in alpha_diversities)
 
-            beta_diversity_heatmap_plot = self.select_input_files([os.path.join(re.sub('alpha_diversity', 'beta_diversity', alpha_directory), method, "heatmap", "otu_heatmap.png")] for alpha_directory in alpha_directories)[0]
-            beta_diversity_heatmap_otumat = self.select_input_files([os.path.join(re.sub('alpha_diversity', 'beta_diversity', alpha_directory), method, "heatmap", "otumat.tsv")] for alpha_directory in alpha_directories)[0]
-            beta_diversity_heatmap_taxmat = self.select_input_files([os.path.join(re.sub('alpha_diversity', 'beta_diversity', alpha_directory), method, "heatmap", "taxmat.tsv")] for alpha_directory in alpha_directories)[0]
+            [beta_diversity_heatmap_plot] = self.select_input_files([os.path.join(re.sub('alpha_diversity', 'beta_diversity', self.output_dirs[f"{alpha_diversity}_directory"]), method, "heatmap", "otu_heatmap.png")] for alpha_diversity in alpha_diversities)
+            [beta_diversity_heatmap_otumat] = self.select_input_files([os.path.join(re.sub('alpha_diversity', 'beta_diversity', self.output_dirs[f"{alpha_diversity}_directory"]), method, "heatmap", "otumat.tsv")] for alpha_diversity in alpha_diversities)
+            [beta_diversity_heatmap_taxmat] = self.select_input_files([os.path.join(re.sub('alpha_diversity', 'beta_diversity', self.output_dirs[f"{alpha_diversity}_directory"]), method, "heatmap", "taxmat.tsv")] for alpha_diversity in alpha_diversities)
 
-            normalization_method = self.select_input_files([os.path.join(re.sub('alpha_diversity', 'otu_' + method + '_normalized', alpha_directory), method + ".txt")] for alpha_directory in alpha_directories)[0]
+            [normalization_method] = self.select_input_files([os.path.join(re.sub('alpha_diversity', 'otu_' + method + '_normalized', self.output_dirs[f"{alpha_diversity}_directory"]), method + ".txt")] for alpha_diversity in alpha_diversities)
 
             inputs = [alpha_diversity_taxonomy_bar_plot, alpha_diversity_krona_file, alpha_diversity_rarefaction_file, beta_diversity_heatmap_plot, beta_diversity_heatmap_otumat, beta_diversity_heatmap_taxmat, normalization_method]
 
             alpha_directory = re.sub('otu_' + method + '_normalized', 'alpha_diversity', os.path.dirname(normalization_method))
             beta_directory = re.sub('alpha_diversity', 'beta_diversity', alpha_directory)
-            report_file = os.path.join("report", "AmpliconSeq.plot_to_alpha_" + method[:3] + ".md")
+            report_file = os.path.join(self.output_dirs["report_directory"], "AmpliconSeq.plot_to_alpha_" + method[:3] + ".md")
 
             if method == 'rarefaction':
                 method_title = "from rarefaction"
@@ -1723,20 +1763,21 @@ $QIIME_HOME/biom convert -i {otu_normalized_table} \\
             heatmap_taxon_link = "[download taxon table](fig/" + beta_directory + "/" + method + "/heatmap/taxmat.tsv))](fig/" + beta_directory + "/" + method + "/heatmap/otu_heatmap.png"
             alpha_plots_link = "[Interactive html plots for alpha diversity available here](fig/" + alpha_directory + "/alpha_rarefaction/" + method + "/rarefaction_plots.html)"
 
-            jobs.append(Job(
-                inputs,
-                [report_file],
-                [['plot_to_alpha', 'module_pandoc']],
-                command="""\
-mkdir -p report/fig/{alpha_directory}/{method}/ && \\
-mkdir -p report/fig/{alpha_directory}/alpha_rarefaction/ && \\
-mkdir -p report/fig/{beta_directory}/{method}/heatmap/ && \\
-cp -r {alpha_directory}/{method}/taxonomic_affiliation/ report/fig/{alpha_directory}/{method}/taxonomic_affiliation/ && \\
-cp -r {alpha_directory}/{method}/krona_chart/ report/fig/{alpha_directory}/{method}/krona_chart/ && \\
-cp -r {alpha_directory}/alpha_rarefaction/{method}/merge_samples_rarefied/ report/fig/{alpha_directory}/alpha_rarefaction/{method}/ && \\
-cp {beta_directory}/{method}/heatmap/otu_heatmap.png report/fig/{beta_directory}/{method}/heatmap/otu_heatmap.png && \\
-cp {beta_directory}/{method}/heatmap/otumat.tsv report/fig/{beta_directory}/{method}/heatmap/otumat.tsv && \\
-cp {beta_directory}/{method}/heatmap/taxmat.tsv report/fig/{beta_directory}/{method}/heatmap/taxmat.tsv && \\
+            jobs.append(
+                Job(
+                    inputs,
+                    [report_file],
+                    [['plot_to_alpha', 'module_pandoc']],
+                    command="""\
+mkdir -p {report_dir}/fig/{alpha_directory}/{method}/ && \\
+mkdir -p {report_dir}/fig/{alpha_directory}/alpha_rarefaction/ && \\
+mkdir -p {report_dir}/fig/{beta_directory}/{method}/heatmap/ && \\
+cp -r {alpha_directory}/{method}/taxonomic_affiliation/ {report_dir}/fig/{alpha_directory}/{method}/taxonomic_affiliation/ && \\
+cp -r {alpha_directory}/{method}/krona_chart/ {report_dir}/fig/{alpha_directory}/{method}/krona_chart/ && \\
+cp -r {alpha_directory}/alpha_rarefaction/{method}/merge_samples_rarefied/ {report_dir}/fig/{alpha_directory}/alpha_rarefaction/{method}/ && \\
+cp {beta_directory}/{method}/heatmap/otu_heatmap.png {report_dir}/fig/{beta_directory}/{method}/heatmap/otu_heatmap.png && \\
+cp {beta_directory}/{method}/heatmap/otumat.tsv {report_dir}/fig/{beta_directory}/{method}/heatmap/otumat.tsv && \\
+cp {beta_directory}/{method}/heatmap/taxmat.tsv {report_dir}/fig/{beta_directory}/{method}/heatmap/taxmat.tsv && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable method_title="{method_title}" \\
@@ -1748,23 +1789,25 @@ pandoc --to=markdown \\
   --variable alpha_plots_link="{alpha_plots_link}" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
-                    alpha_directory=alpha_directory,
-                    beta_directory=beta_directory,
-                    method=method,
-                    method_title=method_title,
-                    method_link=method_link,
-                    bar_plot_link=bar_plot_link,
-                    krona_chart_link=krona_chart_link,
-                    heatmap_otu_link=heatmap_otu_link,
-                    heatmap_taxon_link=heatmap_taxon_link,
-                    alpha_plots_link=alpha_plots_link,
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=re.sub('_'+method[:3], '', os.path.basename(report_file)),
-                    report_file=report_file
-                ),
-                samples=self.samples,
-                name="plot_to_alpha." + re.sub("_alpha_diversity", ".", alpha_directory) + method
-            ))
+                        alpha_directory=alpha_directory,
+                        beta_directory=beta_directory,
+                        method=method,
+                        method_title=method_title,
+                        method_link=method_link,
+                        bar_plot_link=bar_plot_link,
+                        krona_chart_link=krona_chart_link,
+                        heatmap_otu_link=heatmap_otu_link,
+                        heatmap_taxon_link=heatmap_taxon_link,
+                        alpha_plots_link=alpha_plots_link,
+                        report_template_dir=self.report_template_dir,
+                        basename_report_file=re.sub('_'+method[:3], '', os.path.basename(report_file)),
+                        report_dir=self.output_dirs["report_directory"],
+                        report_file=report_file
+                    ),
+                    samples=self.samples,
+                    name="plot_to_alpha." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + method    
+                )
+            )
 
         return jobs
 
@@ -1782,11 +1825,10 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        otu_directories = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
-
+        otus = ['open_ref_otus', 'denovo_otus', 'closed_ref_otus']
         for method in ['css', 'rarefaction']:
 
-            otu_normalized_table = self.select_input_files([os.path.join(re.sub('otus', 'otu_' + method + '_normalized', otu_directory), "otu_normalized_table.biom")] for otu_directory in otu_directories)[0]
+            [otu_normalized_table] = self.select_input_files([os.path.join(re.sub('otus', 'otu_' + method + '_normalized', self.output_dirs[f"{otu}_directory"]), "otu_normalized_table.biom")] for otu in otus)
 
             otu_directory = re.sub('otu_' + method + '_normalized', 'otus', os.path.dirname(otu_normalized_table))
 
@@ -1799,22 +1841,25 @@ pandoc --to=markdown \\
             dm_weighted_file = os.path.join(dm_directory, "weighted_unifrac_otu_normalized_table.txt")
             dm_euclidean_file = os.path.join(dm_directory, "euclidean_otu_normalized_table.txt")
 
-            job = qiime.beta_diversity(
-                config.param('beta_diversity', 'beta_diversity_metric'),
-                otu_normalized_table,
-                phylogenetic_tree_file,
-                dm_directory,
-                dm_unweighted_file,
-                dm_weighted_file,
-                dm_euclidean_file
+            jobs.append(
+                concat_jobs(
+                    [
+                        # Create an output directory
+                        bash.mkdir(dm_directory),
+                        qiime.beta_diversity(
+                            config.param('beta_diversity', 'beta_diversity_metric'),
+                            otu_normalized_table,
+                            phylogenetic_tree_file,
+                            dm_directory,
+                            dm_unweighted_file,
+                            dm_weighted_file,
+                            dm_euclidean_file
+                        )
+                    ],
+                    name="beta_diversity." + re.sub("_otus", ".", os.path.basename(otu_directory)) + method,
+                    samples = self.samples
+                )
             )
-            job.samples = self.samples
-
-            jobs.append(concat_jobs([
-                # Create an output directory
-                Job(command="mkdir -p " + dm_directory),
-                job
-            ], name="beta_diversity." + re.sub("_otus", ".", otu_directory) + method))
 
         return jobs
 
@@ -1830,19 +1875,19 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        beta_directories = ['open_ref_beta_diversity', 'denovo_beta_diversity', 'closed_ref_beta_diversity']
+        beta_diversities = ['open_ref_beta_diversity', 'denovo_beta_diversity', 'closed_ref_beta_diversity']
 
         for method in ['css', 'rarefaction']:
 
             if config.param('pcoa', 'beta_diversity_metric') == 'unifrac':
-                dm_unweighted_file = self.select_input_files([os.path.join(beta_directory, method, "dissimilarity_matrix", "unweighted_unifrac_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
-                dm_weighted_file = self.select_input_files([os.path.join(beta_directory, method, "dissimilarity_matrix", "weighted_unifrac_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
+                [dm_unweighted_file] = self.select_input_files([os.path.join(self.output_dirs[f"{beta_diversity}_directory"], method, "dissimilarity_matrix", "unweighted_unifrac_otu_normalized_table.txt")] for beta_diversity in beta_diversities)
+                [dm_weighted_file] = self.select_input_files([os.path.join(self.output_dirs[f"{beta_diversity}_directory"], method, "dissimilarity_matrix", "weighted_unifrac_otu_normalized_table.txt")] for beta_diversity in beta_diversities)
                 dm_euclidean_file = ''
                 dm_directory = os.path.dirname(dm_unweighted_file)
             else:
                 dm_unweighted_file = ''
                 dm_weighted_file = ''
-                dm_euclidean_file = self.select_input_files([os.path.join(beta_directory, method, "dissimilarity_matrix", "euclidean_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
+                [dm_euclidean_file] = self.select_input_files([os.path.join(self.output_dirs[f"{beta_diversity}_directory"], method, "dissimilarity_matrix", "euclidean_otu_normalized_table.txt")] for beta_diversity in beta_diversities)
                 dm_directory = os.path.dirname(dm_euclidean_file)
 
             beta_directory = os.path.dirname(os.path.dirname(dm_directory))
@@ -1852,24 +1897,27 @@ pandoc --to=markdown \\
             pcoa_weighted_file = os.path.join(pcoa_directory, "pcoa_weighted_unifrac_otu_normalized_table.txt")
             pcoa_euclidean_file = os.path.join(pcoa_directory, "pcoa_euclidean_otu_normalized_table.txt")
 
-            job = qiime.pcoa(
-                config.param('pcoa', 'beta_diversity_metric'),
-                dm_unweighted_file,
-                dm_weighted_file,
-                dm_euclidean_file,
-                dm_directory,
-                pcoa_directory,
-                pcoa_unweighted_file,
-                pcoa_weighted_file,
-                pcoa_euclidean_file
+            jobs.append(
+                concat_jobs(
+                    [
+                        # Create an output directory
+                        bash.mkdir(pcoa_directory),
+                        qiime.pcoa(
+                            config.param('pcoa', 'beta_diversity_metric'),
+                            dm_unweighted_file,
+                            dm_weighted_file,
+                            dm_euclidean_file,
+                            dm_directory,
+                            pcoa_directory,
+                            pcoa_unweighted_file,
+                            pcoa_weighted_file,
+                            pcoa_euclidean_file
+                        )
+                    ],
+                    name="pcoa." + re.sub("_beta_diversity", ".", os.path.basename(beta_directory)) + method,
+                    samples=self.samples
+                )
             )
-            job.samples = self.samples
-
-            jobs.append(concat_jobs([
-                # Create an output directory
-                Job(command="mkdir -p " + pcoa_directory),
-                job
-            ], name="pcoa." + re.sub("_beta_diversity", ".", beta_directory) + method))
 
         return jobs
 
@@ -1884,19 +1932,19 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        beta_directories = ['open_ref_beta_diversity', 'denovo_beta_diversity', 'closed_ref_beta_diversity']
+        beta_diversities = ['open_ref_beta_diversity', 'denovo_beta_diversity', 'closed_ref_beta_diversity']
 
         for method in ['css', 'rarefaction']:
 
             if config.param('pcoa_plot', 'beta_diversity_metric') == 'unifrac':
-                pcoa_unweighted_file = self.select_input_files([os.path.join(beta_directory, method, "principal_coordinates", "pcoa_unweighted_unifrac_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
-                pcoa_weighted_file = self.select_input_files([os.path.join(beta_directory, method, "principal_coordinates", "pcoa_weighted_unifrac_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
+                [pcoa_unweighted_file] = self.select_input_files([os.path.join(self.output_dirs[f"{beta_diversity}_directory"], method, "principal_coordinates", "pcoa_unweighted_unifrac_otu_normalized_table.txt")] for beta_diversity in beta_diversities)
+                [pcoa_weighted_file] = self.select_input_files([os.path.join(self.output_dirs[f"{beta_diversity}_directory"], method, "principal_coordinates", "pcoa_weighted_unifrac_otu_normalized_table.txt")] for beta_diversity in beta_diversities)
                 pcoa_euclidean_file = ''
                 pcoa_directory = os.path.dirname(pcoa_unweighted_file)
             else:
                 pcoa_unweighted_file = ''
                 pcoa_weighted_file = ''
-                pcoa_euclidean_file = self.select_input_files([os.path.join(beta_directory, method, "principal_coordinates", "pcoa_euclidean_otu_normalized_table.txt")] for beta_directory in beta_directories)[0]
+                [pcoa_euclidean_file] = self.select_input_files([os.path.join(self.output_dirs[f"{beta_diversity}_directory"], method, "principal_coordinates", "pcoa_euclidean_otu_normalized_table.txt")] for beta_diversity in beta_diversities)
                 pcoa_directory = os.path.dirname(pcoa_euclidean_file)
 
             beta_directory = os.path.dirname(os.path.dirname(pcoa_directory))
@@ -1912,44 +1960,46 @@ pandoc --to=markdown \\
                 map_file = "map.txt"
 
             if config.param('pcoa_plot', 'beta_diversity_metric') == 'unifrac':
-
-                job1 = qiime.pcoa_plot(
-                    pcoa_unweighted_file,
-                    map_file,
-                    beta_diversity_pcoa_unweighted,
-                    pcoa_plot_directory
+                jobs.append(
+                    concat_jobs(
+                        [
+                            # Create an output directory
+                            Job(command="mkdir -p " + pcoa_plot_directory),
+                            qiime.pcoa_plot(
+                                pcoa_unweighted_file,
+                                map_file,
+                                beta_diversity_pcoa_unweighted,
+                                pcoa_plot_directory
+                            ),
+                            qiime.pcoa_plot(
+                                pcoa_weighted_file,
+                                map_file,
+                                beta_diversity_pcoa_weighted,
+                                pcoa_plot_directory
+                            )
+                        ],
+                        name="pcoa_plot." + re.sub("_beta_diversity", ".", os.path.basename(beta_directory)) + method,
+                        samples=self.samples
+                    )
                 )
-                job1.samples = self.samples
-
-                job2 = qiime.pcoa_plot(
-                    pcoa_weighted_file,
-                    map_file,
-                    beta_diversity_pcoa_weighted,
-                    pcoa_plot_directory
-                )
-
-                jobs.append(concat_jobs([
-                    # Create an output directory
-                    Job(command="mkdir -p " + pcoa_plot_directory),
-                    job1,
-                    job2
-                ], name="pcoa_plot." + re.sub("_beta_diversity", ".", beta_directory) + method))
 
             else:
-
-                job = qiime.pcoa_plot(
-                    pcoa_euclidean_file,
-                    map_file,
-                    beta_diversity_pcoa_euclidean,
-                    pcoa_plot_directory
+                jobs.append(
+                    concat_jobs(
+                        [
+                            # Create an output directory
+                            bash.mkdir(pcoa_plot_directory),
+                            qiime.pcoa_plot(
+                                pcoa_euclidean_file,
+                                map_file,
+                                beta_diversity_pcoa_euclidean,
+                                pcoa_plot_directory
+                            )
+                        ],
+                        name="pcoa_plot." + re.sub("_beta_diversity", ".", os.path.basename(beta_directory)) + method,
+                        samples=self.samples
+                    )
                 )
-                job.samples = self.samples
-
-                jobs.append(concat_jobs([
-                    # Create an output directory
-                    Job(command="mkdir -p " + pcoa_plot_directory),
-                    job
-                ], name="pcoa_plot." + re.sub("_beta_diversity", ".", beta_directory) + method))
 
         return jobs
 
@@ -1960,13 +2010,13 @@ pandoc --to=markdown \\
 
         jobs = []
 
-        beta_directories = ['open_ref_beta_diversity', 'denovo_beta_diversity', 'closed_ref_beta_diversity']
+        beta_diversities = ['open_ref_beta_diversity', 'denovo_beta_diversity', 'closed_ref_beta_diversity']
 
         for method in ['css', 'rarefaction']:
 
             if config.param('plot_to_beta', 'beta_diversity_metric') == 'unifrac':
-                beta_diversity_pcoa_unweighted = self.select_input_files([os.path.join(beta_directory, method, "2d_plots", "pcoa_unweighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")] for beta_directory in beta_directories)[0]
-                beta_diversity_pcoa_weighted = self.select_input_files([os.path.join(beta_directory, method, "2d_plots", "pcoa_weighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")] for beta_directory in beta_directories)[0]
+                [beta_diversity_pcoa_unweighted] = self.select_input_files([os.path.join(self.output_dirs[f"{beta_diversity}_directory"], method, "2d_plots", "pcoa_unweighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")] for beta_diversity in beta_diversities)
+                [beta_diversity_pcoa_weighted] = self.select_input_files([os.path.join(self.output_dirs[f"{beta_diversity}_directory"], method, "2d_plots", "pcoa_weighted_unifrac_otu_normalized_table_2D_PCoA_plots.html")] for beta_diversity in beta_diversities)
 
                 inputs = [beta_diversity_pcoa_unweighted, beta_diversity_pcoa_weighted]
                 beta_directory = os.path.dirname(os.path.dirname(os.path.dirname(inputs[0])))
@@ -1976,7 +2026,7 @@ pandoc --to=markdown \\
                 link_metric2_t = "Weighted UNIFRAC distance ([Interactive html plots available here](fig/" + beta_directory + "/" + method + "/2d_plots/pcoa_weighted_unifrac_otu_normalized_table_2D_PCoA_plots.html))"
 
             else:
-                beta_diversity_pcoa_euclidean = self.select_input_files([os.path.join(beta_directory, method, "2d_plots", "pcoa_euclidean_otu_normalized_table_2D_PCoA_plots.html")] for beta_directory in beta_directories)[0]
+                [beta_diversity_pcoa_euclidean] = self.select_input_files([os.path.join(self.output_dirs[f"{beta_diversity}_directory"], method, "2d_plots", "pcoa_euclidean_otu_normalized_table_2D_PCoA_plots.html")] for beta_diversity in beta_diversities)
 
                 inputs = [beta_diversity_pcoa_euclidean]
                 beta_directory = os.path.dirname(os.path.dirname(os.path.dirname(inputs[0])))
@@ -1985,19 +2035,20 @@ pandoc --to=markdown \\
                 link_metric1_t = "Euclidean distance ([Interactive html plots available here](fig/" + beta_directory + "/" + method + "/2d_plots/pcoa_euclidean_otu_normalized_table_2D_PCoA_plots.html))"
                 link_metric2_t = " "
 
-            report_file_beta = os.path.join("report", "AmpliconSeq.plot_to_beta_" + method[:3] + ".md")
+            report_file_beta = os.path.join(self.output_dirs["report_directory"], "AmpliconSeq.plot_to_beta_" + method[:3] + ".md")
             report_file_alpha = re.sub("beta", "alpha", report_file_beta)
             report_file = re.sub('plot_to_beta', 'taxonomic_affiliation', report_file_beta)
 
             inputs.append(report_file_alpha)
 
-            jobs.append(Job(
-                inputs,
-                [report_file],
-                [['plot_to_beta', 'module_pandoc']],
-                command="""\
-mkdir -p report/fig/{beta_directory}/{method} && \\
-cp -r {beta_directory}/{method}/2d_plots/ report/fig/{beta_directory}/{method}/2d_plots/ && \\
+            jobs.append(
+                Job(
+                    inputs,
+                    [report_file],
+                    [['plot_to_beta', 'module_pandoc']],
+                    command="""\
+mkdir -p {report_dir}/fig/{beta_directory}/{method} && \\
+cp -r {beta_directory}/{method}/2d_plots/ {report_dir}/fig/{beta_directory}/{method}/2d_plots/ && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file_beta} \\
   --variable description_metric="{description_metric}" \\
@@ -2006,21 +2057,23 @@ pandoc --to=markdown \\
   {report_template_dir}/{basename_report_file_beta} \\
   > {report_file_beta} && \\
 cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
-                    beta_directory=beta_directory,
-                    method=method,
-                    description_metric=description_metric_t,
-                    link_metric1=link_metric1_t,
-                    link_metric2=link_metric2_t,
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file_beta=re.sub('_'+method[:3], '', os.path.basename(report_file_beta)),
-                    report_file_alpha=report_file_alpha,
-                    report_file_beta=report_file_beta,
-                    report_file=report_file
-                ),
-                report_files=[report_file],
-                samples=self.samples,
-                name="plot_to_beta." + re.sub("_beta_diversity", ".", beta_directory) + method
-            ))
+                        beta_directory=beta_directory,
+                        method=method,
+                        description_metric=description_metric_t,
+                        link_metric1=link_metric1_t,
+                        link_metric2=link_metric2_t,
+                        report_template_dir=self.report_template_dir,
+                        basename_report_file_beta=re.sub('_'+method[:3], '', os.path.basename(report_file_beta)),
+                        report_file_alpha=report_file_alpha,
+                        report_file_beta=report_file_beta,
+                        report_dir=self.output_dirs["report_directory"],
+                        report_file=report_file
+                    ),
+                    report_files=[report_file],
+                    samples=self.samples,
+                    name="plot_to_beta." + re.sub("_beta_diversity", ".", os.path.basename(beta_directory)) + method
+                )
+            )
 
         return jobs
 
@@ -2037,11 +2090,9 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
         jobs = []
 
         #Create folders in the output folder
-        dada2_directory = "dada2_Analysis"
+        dada2_directory = self.output_dirs["dada2_analysis_directory"]
         lnkRawReadsFolder = os.path.join(dada2_directory, "trim")
-        ampliconLengthFile = os.path.join("metrics/FlashLengths.tsv")
-
-        mkdir_job = Job(command="mkdir -p " + lnkRawReadsFolder)
+        ampliconLengthFile = os.path.join(self.output_dirs["metrics_directory"], "FlashLengths.tsv")
 
         #We'll link the readset fastq files into the raw_reads folder just created
         raw_reads_jobs = []
@@ -2049,8 +2100,8 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
         for readset in self.readsets:
             readSetPrefix = os.path.join(lnkRawReadsFolder, readset.name)
 
-            trimmedReadsR1 = os.path.join("trim", readset.sample.name, readset.name + ".trim.pair1.fastq.gz")
-            trimmedReadsR2 = os.path.join("trim", readset.sample.name, readset.name + ".trim.pair2.fastq.gz")
+            trimmedReadsR1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.pair1.fastq.gz")
+            trimmedReadsR2 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.pair2.fastq.gz")
 
             if readset.run_type == "PAIRED_END":
                 left_or_single_reads = readSetPrefix + ".pair1.fastq.gz"
@@ -2059,94 +2110,111 @@ cat {report_file_alpha} {report_file_beta} > {report_file}""".format(
                 right_reads = readSetPrefix + ".pair2.fastq.gz"
                 dada2_inputs.append(right_reads)
 
-                raw_reads_jobs.append(concat_jobs([
-                    Job(
-                        [trimmedReadsR1],
-                        [left_or_single_reads],
-                        command="ln -nsf " + os.path.abspath(os.path.join(self.args.output_dir, trimmedReadsR1)) + " " + left_or_single_reads,
-                        samples=[readset.sample]
-                    ),
-                    Job(
-                        [trimmedReadsR2],
-                        [right_reads],
-                        command="ln -nsf " + os.path.abspath(os.path.join(self.args.output_dir, trimmedReadsR2)) + " " + right_reads,
-                        samples=[readset.sample]
+                raw_reads_jobs.append(
+                    concat_jobs(
+                        [
+                            Job(
+                                [trimmedReadsR1],
+                                [left_or_single_reads],
+                                command="ln -nsf " + os.path.abspath(os.path.join(self.args.output_dir, trimmedReadsR1)) + " " + left_or_single_reads,
+                                samples=[readset.sample]
+                            ),
+                            Job(
+                                [trimmedReadsR2],
+                                [right_reads],
+                                command="ln -nsf " + os.path.abspath(os.path.join(self.args.output_dir, trimmedReadsR2)) + " " + right_reads,
+                                samples=[readset.sample]
+                            )
+                        ]
                     )
-                ]))
+                )
 
             #single reads will mainly be for PacBio CCS although I didn't test it yet
             elif readset.run_type == "SINGLE_END":
                 left_or_single_reads = readSetPrefix + ".single.fastq.gz"
-                raw_reads_jobs.append(concat_jobs([
+                raw_reads_jobs.append(
                     Job(
                         [trimmedReadsR1],
                         [left_or_single_reads],
                         command="ln -nsf " + trimmedReadsR1 + " " + left_or_single_reads,
                         samples=[readset.sample]
                     )
-                ]))
+                )
                 dada2_inputs.append(left_or_single_reads)
 
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
-        jobs.append(concat_jobs(
-            [mkdir_job] +
-            raw_reads_jobs +
-            [dada2.dada2(dada2_inputs, ampliconLengthFile, lnkRawReadsFolder, designFile, dada2_directory)], name="dada2.run"))
-
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(lnkRawReadsFolder)
+                ] + raw_reads_jobs + [
+                    dada2.dada2(
+                        dada2_inputs,
+                        ampliconLengthFile,
+                        lnkRawReadsFolder,
+                        designFile,
+                        dada2_directory
+                    )
+                ],
+                name="dada2.run"
+            )
+        )
         return jobs
-
 
     @property
     def steps(self):
         return [
-            [self.trimmomatic16S,
-            self.merge_trimmomatic_stats16S,
-            self.flash_pass1,
-            self.ampliconLengthParser,
-            self.flash_pass2,
-            self.merge_flash_stats,
-            self.catenate,
-            self.uchime,
-            self.merge_uchime_stats,
-            self.otu_picking,
-            self.otu_rep_picking,
-            self.otu_assigning,
-            self.otu_table,
-            self.otu_alignment,
-            self.filter_alignment,
-            self.phylogeny,
-            self.qiime_report,
-            self.multiple_rarefaction,
-            self.alpha_diversity,
-            self.collate_alpha,
-            self.sample_rarefaction_plot,
-            self.qiime_report2,
-            self.single_rarefaction,
-            self.css_normalization,
-            self.rarefaction_plot,
-            self.summarize_taxa,
-            self.plot_taxa,
-            self.plot_heatmap,
-            self.krona,
-            self.plot_to_alpha,
-            self.beta_diversity,
-            self.pcoa,
-            self.pcoa_plot,
-            self.plot_to_beta],
-            [self.trimmomatic16S,
-            self.merge_trimmomatic_stats16S,
-            self.flash_pass1,
-            self.ampliconLengthParser,
-            self.flash_pass2,
-            self.merge_flash_stats,
-            self.asva]
+            [
+                self.trimmomatic16S,
+                self.merge_trimmomatic_stats16S,
+                self.flash_pass1,
+                self.ampliconLengthParser,
+                self.flash_pass2,
+                self.merge_flash_stats,
+                self.catenate,
+                self.uchime,
+                self.merge_uchime_stats,
+                self.otu_picking,
+                self.otu_rep_picking,
+                self.otu_assigning,
+                self.otu_table,
+                self.otu_alignment,
+                self.filter_alignment,
+                self.phylogeny,
+                self.qiime_report,
+                self.multiple_rarefaction,
+                self.alpha_diversity,
+                self.collate_alpha,
+                self.sample_rarefaction_plot,
+                self.qiime_report2,
+                self.single_rarefaction,
+                self.css_normalization,
+                self.rarefaction_plot,
+                self.summarize_taxa,
+                self.plot_taxa,
+                self.plot_heatmap,
+                self.krona,
+                self.plot_to_alpha,
+                self.beta_diversity,
+                self.pcoa,
+                self.pcoa_plot,
+                self.plot_to_beta
+            ],
+            [
+                self.trimmomatic16S,
+                self.merge_trimmomatic_stats16S,
+                self.flash_pass1,
+                self.ampliconLengthParser,
+                self.flash_pass2,
+                self.merge_flash_stats,
+                self.asva
+            ]
         ]
 
 if __name__ == '__main__':
-
     argv = sys.argv
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)

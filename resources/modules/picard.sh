@@ -4,22 +4,18 @@ set -eu -o pipefail
 
 SOFTWARE=picard
 #version 2 or later require JDK1.8
-VERSION=2.26.6
-#ARCHIVE=$SOFTWARE-tools-$VERSION.zip								# for version < 2.6.0
-#ARCHIVE_URL=https://github.com/broadinstitute/picard/releases/download/$VERSION/$ARCHIVE       # for version < 2.6.0
-#SOFTWARE_DIR=$SOFTWARE-tools-$VERSION								# for version < 2.6.0
-ARCHIVE=${SOFTWARE}-${VERSION}.jar								# for version > 2.5.0
-ARCHIVE_URL=https://github.com/broadinstitute/picard/releases/download/$VERSION/${SOFTWARE}.jar	# for version > 2.5.0
-SOFTWARE_DIR=$SOFTWARE-$VERSION									# for version > 2.5.0
+VERSION=2.27.4
+ARCHIVE=${SOFTWARE}-${VERSION}.jar
+ARCHIVE_URL=https://github.com/broadinstitute/picard/releases/download/$VERSION/${SOFTWARE}.jar
+SOFTWARE_DIR=$SOFTWARE-$VERSION
+MODULE_JAVA=mugqic/java/openjdk-jdk-19
 
 build() {
   cd $INSTALL_DOWNLOAD
-#  unzip $ARCHIVE										# for version < 2.6.0
 
   # Install software
-#  mv -i $SOFTWARE_DIR $INSTALL_DIR/                                                            # for version < 2.6.0
-  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR								# for version > 2.5.0
-  cp $ARCHIVE $INSTALL_DIR/$SOFTWARE_DIR/${SOFTWARE}.jar					# for version > 2.5.0
+  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
+  cp $ARCHIVE $INSTALL_DIR/$SOFTWARE_DIR/${SOFTWARE}.jar
 }
 
 module_file() {
@@ -31,7 +27,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE - require JDK1.8\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          PICARD_HOME         \$root
+setenv          PICARD_HOME         \$root/build/libs
 "
 }
 

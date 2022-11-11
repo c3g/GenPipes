@@ -233,6 +233,23 @@ awk {instructions} {input}{append}{output}""".format(
         )
     )
 
+def sed(
+    input,
+    output,
+    instructions
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+sed {instructions} {input} {output}""".format(
+            instructions=instructions,
+            input=input if input else "",
+            output="> " + output if output else "",
+        )
+    )
+
 def gzip(
     input,
     output,

@@ -76,24 +76,24 @@ class EpiQC(common.Illumina):
 
     @property
     def output_dirs(self):
-        dirs = {'bigwiginfo_output_directory': 'bigwiginfo',
-                'chromimpute_output_directory': 'imputation',
-                'bedgraph_converted_directory': 'bedgraph_data',
-                'bedgraph_chr_converted_directory': 'bedgraph_chr_data',
-                'chromimpute_converted_directory': 'converted',
-                'chromimpute_distance_directory': 'distance',
-                'chromimpute_traindata_directory': 'traindata',
-                'chromimpute_predictor_directory': 'predictor',
-                'chromimpute_apply': 'imputed',
-                'chromimpute_eval': 'eval',
-                'signal_to_noise_output_directory': 'signal_to_noise',
-                'epigeec_output_directory': 'epigeec',
-                'epigeec_hdf5': 'hdf5',
-                'epigeec_filtered': 'filtered',
-                'epigeec_output': 'output',
-                'report_dir': 'report'
-                }
-
+        dirs = {
+            'bigwiginfo_output_directory': os.path.join('bigwiginfo'),
+            'chromimpute_output_directory': os.path.join('imputation'),
+            'bedgraph_converted_directory': os.path.join('bedgraph_data'),
+            'bedgraph_chr_converted_directory': os.path.join('bedgraph_chr_data'),
+            'chromimpute_converted_directory': os.path.join('converted'),
+            'chromimpute_distance_directory': os.path.join('distance'),
+            'chromimpute_traindata_directory': os.path.join('traindata'),
+            'chromimpute_predictor_directory': os.path.join('predictor'),
+            'chromimpute_apply': os.path.join('imputed'),
+            'chromimpute_eval': os.path.join('eval'),
+            'signal_to_noise_output_directory': os.path.join('signal_to_noise'),
+            'epigeec_output_directory': os.path.join('epigeec'),
+            'epigeec_hdf5': os.path.join('hdf5'),
+            'epigeec_filtered': os.path.join('filtered'),
+            'epigeec_output': os.path.join('output'),
+            'report_dir': os.path.join('report')
+        }
         return dirs
 
     @property

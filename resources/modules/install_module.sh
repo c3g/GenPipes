@@ -106,7 +106,7 @@ then
   LD_LIBRARY_PATH=
 fi
 
-if [ -z ${NOPATCH+x} ] && [ -z ${NOWRAP+x} ]
+if [ -z ${NOPATCH+x} ] || [ -z ${NOWRAP+x} ]
 then
   if [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="Ubuntu"' ]]; then echo "Ubuntu";  elif [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="CentOS Linux"' ]]; then echo "CentOS"; fi
 

@@ -39,7 +39,7 @@ def svim_ont(input_bam, output_directory):
     return Job(
         [input_bam],
         [os.path.join(output_directory, "final_results.vcf")],
-        [["svim", "module_python3"]],
+        [["svim", "module_python"]],
         command="""\
 mkdir -p {output_directory} && \\
 svim alignment --min_mapq {min_mapq} {other_options} {output_directory} {input_bam} {genome_fasta}

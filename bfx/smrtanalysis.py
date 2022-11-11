@@ -557,7 +557,7 @@ ipdSummary.py {aligned_reads} \\
   --reference {fasta_consensus} \\
   --identify m6A,m4C \\
   --methylFraction \\
-  --paramsPath /cvmfs/soft.mugqic/CentOS6/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/analysis/etc/algorithm_parameters/2015-11/kineticsTools/ \\
+  --paramsPath /cvmfs/soft.mugqic/root/software/smrtanalysis/smrtanalysis_2.3.0.140936.p5/analysis/etc/algorithm_parameters/2015-11/kineticsTools/ \\
   --numWorkers 12 \\
   --outfile {output_gff}'""".format(
             fasta_consensus=os.path.join(mer_size_directory, "polishing" + str(polishing_rounds - 1), "data", "consensus.fasta"),

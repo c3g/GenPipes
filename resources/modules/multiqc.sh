@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=MultiQC
-VERSION=1.9
+VERSION=1.12
 ARCHIVE=${SOFTWARE}-${VERSION}.zip
 ARCHIVE_URL=https://github.com/ewels/$SOFTWARE/archive/v${VERSION}.zip
 SOFTWARE_DIR=${SOFTWARE}-$VERSION

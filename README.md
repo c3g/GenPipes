@@ -516,6 +516,29 @@ Example:
     sampleC H3K4me3 0   2
     sampleD H3K4me3 0   2
 
+
+Batch File
+-----------
+RNA-Seq, RNA-Seq De Novo Assembly pipelines can perform differential expression analysis if they are provided with an input Design File.
+
+The Batch File is a TAB-separated values plain text file with one line per sample and the following columns:
+
+* Sample: first column; must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; the sample name must match a sample name in the readset file; mandatory;
+* Batch: second (and last) column; must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; 
+
+Example:
+
+    Sample	Batch
+    sampleA	1
+    sampleB	1
+    sampleC	2
+    sampleD	2
+    sampleA 3
+    sampleB 3
+    sampleC 3
+    sampleD 3
+
+
 HTML Analysis Report
 --------------------
 While pipelines are run, some jobs create a partial analysis report in [Markdown](http://daringfireball.net/projects/markdown/) format in

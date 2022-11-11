@@ -3,36 +3,21 @@
 set -eu -o pipefail
 
 SOFTWARE=hmmer
-#VERSION=3.1b2
-#VERSION=3.1b1
-VERSION=2.3.2
-
-# Adjust remote download URL according to version first number
-if [[ ${VERSION:0:1} == 3 ]]
-then
-  SUFFIX=3
-  ARCHIVE=$SOFTWARE-$VERSION-linux-intel-x86_64.tar.gz
-else
-  SUFFIX=""
-  ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-fi
-ARCHIVE_URL=http://eddylab.org/software/$SOFTWARE$SUFFIX/$VERSION/$ARCHIVE
-#ARCHIVE_URL=https://selab.janelia.org/software/$SOFTWARE$SUFFIX/$VERSION/$ARCHIVE
+VERSION=3.3.2
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=http://eddylab.org/software/$SOFTWARE/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
-  if [[ ${VERSION:0:1} == 3 ]]; then mv $SOFTWARE-$VERSION-linux-intel-x86_64 $SOFTWARE_DIR; fi
 
   cd $SOFTWARE_DIR
   ./configure --prefix=$INSTALL_DIR/$SOFTWARE_DIR
   make -j12
   make check
   make install
+  cd easel; make install
 }
 
 module_file() {

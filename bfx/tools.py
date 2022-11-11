@@ -28,7 +28,7 @@ from core.job import Job
 ## functions for awk tools ##
 
 ## functions for python tools ##
-def py_addLengthRay (file_scaffolds_fasta, length_file, output):
+def py_addLengthRay(file_scaffolds_fasta, length_file, output):
     return Job(
         [file_scaffolds_fasta, length_file],
         [output],
@@ -45,7 +45,7 @@ python $PYTHON_TOOLS/addLengthRay.py \\
         )
     )
 
-def py_blastMatchSca (prefix_scaffolds_fasta, blast_file, output):
+def py_blastMatchSca(prefix_scaffolds_fasta, blast_file, output):
     return Job(
         [prefix_scaffolds_fasta + ".fasta", blast_file],
         [output],
@@ -62,7 +62,7 @@ python $PYTHON_TOOLS/blastMatchSca.py \\
         )
     )
 
-def py_equalFastqFile (fastq_ref, fastq, output):
+def py_equalFastqFile(fastq_ref, fastq, output):
     return Job(
         [fastq_ref, fastq],
         [output],
@@ -79,7 +79,7 @@ python $PYTHON_TOOLS/equalFastqFile.py \\
         )
     )
 
-def py_rrnaBAMcount (bam, gtf, output, typ="transcript"):
+def py_rrnaBAMcount(bam, gtf, output, typ="transcript"):
     return Job(
         [bam],
         [output],
@@ -126,19 +126,31 @@ $PYTHON_TOOLS/parseTrinotateOutput.py -r {trinotate_annotation_report} -o {trino
         )
     )
 
-def py_parseMergeCsv(input_files, delimiter, output , common, subset=None, exclude=None, left_join=None, sort_by=None, make_names=None, filters=None):
+def py_parseMergeCsv(
+    input_files,
+    delimiter,
+    output,
+    common,
+    subset=None,
+    exclude=None,
+    left_join=None,
+    sort_by=None,
+    make_names=None,
+    filters=None
+    ):
     return Job(
         input_files,
         [output],
         [
-            ['parse_merg_csv', 'module_mugqic_tools'],
-            ['parse_merg_csv', 'module_python']
+            ['parse_merge_csv', 'module_mugqic_tools'],
+            ['parse_merge_csv', 'module_python']
         ],
         command="""\
-$PYTHON_TOOLS/parseMergeCsv.py -i {input_files} \\
-      -o {output} \\
-      -c {common_columns} \\
-      -d {delimiter} {subset}{toexclude}{left_outer_join}{sort_by_field}{make_names}{filters}""".format(
+$PYTHON_TOOLS/parseMergeCsv.py \\
+  -i {input_files} \\
+  -o {output} \\
+  -c {common_columns} \\
+  -d {delimiter} {subset}{toexclude}{left_outer_join}{sort_by_field}{make_names}{filters}""".format(
             input_files=" ".join(input_files),
             output=output,
             common_columns=common,
@@ -152,13 +164,19 @@ $PYTHON_TOOLS/parseMergeCsv.py -i {input_files} \\
         )
     )
 
-def py_ampliconSeq(input_files, output_files, function, supplemental_parameters):
+def py_ampliconSeq(
+    input_files,
+    output_files,
+    function,
+    supplemental_parameters,
+    ini_section='py_ampliconSeq'
+    ):
     return Job(
         input_files,
         output_files,
         [
-            ['py_ampliconSeq', 'module_mugqic_tools'],
-            ['py_ampliconSeq', 'module_python']
+            [ini_section, 'module_mugqic_tools'],
+            [ini_section, 'module_python']
         ],
         command="""\
 python $PYTHON_TOOLS/AmpliconSeq_script.py \\
@@ -662,13 +680,12 @@ IHEC_chipseq_metrics_max.sh \\
     )
 
 def sh_fastq_readname_edit(
-    fastq,
-    working_dir,
-    job_name
+    input_fastq,
+    output_fastq
     ):
     return Job(
-        [fastq],
-        [fastq + ".edited.gz"],
+        [input_fastq],
+        [output_fastq],
         [
             ['fastq_readname_edit', 'module_mugqic_tools'],
         ],
@@ -677,12 +694,11 @@ bash FastqReadNameEdit.sh \\
   -i {input_fastq} \\
   -o {output_fastq} \\
   -p {fastq_abs_path}""".format(
-            input_fastq=fastq if os.path.isabs(fastq) else os.path.join(working_dir, fastq),
-            output_fastq=fastq + ".edited.gz" if os.path.isabs(fastq) else os.path.join(working_dir, fastq + ".edited.gz"),
-            fastq_abs_path=fastq if os.path.isabs(fastq) else os.path.join(working_dir, fastq)
+            input_fastq=input_fastq,
+            output_fastq=output_fastq,
+            fastq_abs_path=os.path.abspath(input_fastq)
         ),
-        name=job_name,
-        removable_files = [fastq + ".edited.gz"]
+        removable_files=[output_fastq]
     )
 
 def sh_create_rmap(genome_digest_input, rmap_output, job_name):
@@ -701,7 +717,6 @@ bash createRmapFile.sh \\
         ),
         name=job_name
     )
-
 
 def sh_create_baitmap(bait, sorted_bait, annotation, output):
     return Job(

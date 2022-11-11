@@ -90,20 +90,26 @@ class HicSeq(common.Illumina):
 
     @property
     def output_dirs(self):
-        dirs = {'hicup_output_directory': 'alignment',
-                'homer_output_directory': 'homer_tag_directory',
-                'bams_output_directory': 'alignment',
-                'matrices_output_directory': 'interaction_matrices',
-                'cmpt_output_directory': 'compartments',
-                'TAD_output_directory': 'TADs',
-                'peaks_output_directory': 'peaks',
-                'hicfiles_output_directory': 'hicFiles',
-                'chicago_input_files': 'input_files',
-                'chicago_output_directory': 'chicago',
-                'intersect_ouput_directory': 'bed_intersect',
-                'reproducible_score_output_directory': 'reproducibility_scores',
-                'quality_score_output_directory': 'quality_scores'
-                }
+        dirs = {
+            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
+            'trim_directory': os.path.join(self.output_dir, 'trim'),
+            'alignment_directory': os.path.join(self.output_dir, 'alignment'),
+            'hicup_output_directory': os.path.join(self.output_dir, 'alignment'),
+            'homer_output_directory': os.path.join(self.output_dir, 'homer_tag_directory'),
+            'bams_output_directory': os.path.join(self.output_dir, 'alignment'),
+            'matrices_output_directory': os.path.join(self.output_dir, 'interaction_matrices'),
+            'cmpt_output_directory': os.path.join(self.output_dir, 'compartments'),
+            'TAD_output_directory': os.path.join(self.output_dir, 'TADs'),
+            'peaks_output_directory': os.path.join(self.output_dir, 'peaks'),
+            'hicfiles_output_directory': os.path.join(self.output_dir, 'hicFiles'),
+            'chicago_input_files': os.path.join(self.output_dir, 'input_files'),
+            'chicago_output_directory': os.path.join(self.output_dir, 'chicago'),
+            'intersect_ouput_directory': os.path.join(self.output_dir, 'bed_intersect'),
+            'reproducible_score_output_directory': os.path.join(self.output_dir, 'reproducibility_scores'),
+            'quality_score_output_directory': os.path.join(self.output_dir, 'quality_scores'),
+            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
+            'report_directory': os.path.join(self.output_dir, 'report')
+        }
         return dirs
 
     @property
@@ -138,7 +144,7 @@ class HicSeq(common.Illumina):
         jobs=[]
 
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
 
             if readset.run_type != "PAIRED_END":
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
@@ -151,11 +157,29 @@ class HicSeq(common.Illumina):
                 candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam.strip())])
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-            job_fastq1 = tools.sh_fastq_readname_edit(fastq1, self.output_dir, "fastq_readName_Edit.fq1." + readset.name)
-            job_fastq1.samples = [readset.sample]
+            job_fastq1 = concat_jobs(
+                [
+                    bash.mkdir(self.output_dirs["trim_directory"]),
+                    tools.sh_fastq_readname_edit(
+                        fastq1,
+                        os.path.join(self.output_dirs["trim_directory"], readset.sample.name,f"{os.path.basename(fastq1)}.edited.gz")
+                    )
+                ],
+                name=f"fastq_readName_Edit.fq1.{readset.name}",
+                samples=[readset.sample]
+            )
 
-            job_fastq2 = tools.sh_fastq_readname_edit(fastq2, self.output_dir, "fastq_readName_Edit.fq2." + readset.name)
-            job_fastq2.samples = [readset.sample]
+            job_fastq2 = concat_jobs(
+                [
+                    bash.mkdir(self.output_dirs["trim_directory"]),
+                    tools.sh_fastq_readname_edit(
+                        fastq2,
+                        os.path.join(self.output_dirs["trim_directory"], readset.sample.name, f"{os.path.basename(fastq2)}.edited.gz")
+                    )
+                ],
+                name=f"fastq_readName_Edit.fq2.{readset.name}",
+                samples=[readset.sample]
+            )
 
             jobs.extend([job_fastq1, job_fastq2])
 
@@ -173,7 +197,7 @@ class HicSeq(common.Illumina):
 
         for readset in self.readsets:
             sample_output_dir = os.path.join(self.output_dirs['hicup_output_directory'], readset.sample.name, readset.name)
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
 
             if readset.run_type != "PAIRED_END":
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
@@ -193,16 +217,16 @@ class HicSeq(common.Illumina):
             job = concat_jobs([
                     bash.mkdir(sample_output_dir),
                     hicup.hicup_run(
-                                readset.name,
-                                sample_output_dir,
-                                fastq1,
-                                fastq2,
-                                self.genome_digest
-                                )
-                    ],
-                    name = "hicup_align." + readset.name,
-                    samples = [readset.sample]
-                )
+                        readset.name,
+                        sample_output_dir,
+                        fastq1,
+                        fastq2,
+                        self.genome_digest
+                    )
+                ],
+                name = "hicup_align." + readset.name,
+                samples = [readset.sample]
+            )
 
             # job = hicup.hicup_run(
             #                     readset.name,
@@ -548,7 +572,6 @@ class HicSeq(common.Illumina):
                     job.name = "_".join(("quality_scores.quasar", "restructuring",sample.name, res, self.enzyme))
 
             jobs.append(job)
-
 
         #Perform the QUASAR-QC analysis using the generated temp files
         #loop through each sample with same enzyme and one or many resolutions user has specified.
@@ -1061,44 +1084,46 @@ class HicSeq(common.Illumina):
     @property
     def steps(self):
         return [
-            [self.samtools_bam_sort,
-            self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.fastq_readName_Edit,
-            self.hicup_align,
-            self.samtools_merge_bams,
-            self.homer_tag_directory,
-            self.interaction_matrices_Chr,
-            self.interaction_matrices_genome,
-            self.identify_compartments,
-            self.identify_TADs_TopDom,
-            self.identify_TADs_RobusTAD,
-            self.identify_peaks,
-            self.create_hic_file,
-            self.reproducibility_scores,
-            self.quality_scores,
-            self.cram_output,
-            self.multiqc_report
+            [
+                self.samtools_bam_sort,
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.fastq_readName_Edit,
+                self.hicup_align,
+                self.samtools_merge_bams,
+                self.homer_tag_directory,
+                self.interaction_matrices_Chr,
+                self.interaction_matrices_genome,
+                self.identify_compartments,
+                self.identify_TADs_TopDom,
+                self.identify_TADs_RobusTAD,
+                self.identify_peaks,
+                self.create_hic_file,
+                self.reproducibility_scores,
+                self.quality_scores,
+                self.cram_output,
+                self.multiqc_report
             ],
-            [self.samtools_bam_sort,
-            self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.fastq_readName_Edit,
-            self.hicup_align,
-            self.samtools_merge_bams,
-            self.create_rmap_file,
-            self.create_baitmap_file,
-            self.create_design_files,
-            self.create_input_files,
-            self.runChicago,
-            self.runChicago_featureOverlap,
-            self.bait_intersect,
-            self.capture_intersect,
-            self.create_hic_file,
-            self.multiqc_report,
-            self.cram_output
+            [
+                self.samtools_bam_sort,
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.fastq_readName_Edit,
+                self.hicup_align,
+                self.samtools_merge_bams,
+                self.create_rmap_file,
+                self.create_baitmap_file,
+                self.create_design_files,
+                self.create_input_files,
+                self.runChicago,
+                self.runChicago_featureOverlap,
+                self.bait_intersect,
+                self.capture_intersect,
+                self.create_hic_file,
+                self.multiqc_report,
+                self.cram_output
             ]
         ]
 

@@ -32,7 +32,9 @@ def run(input, sample_name, output_dir):
 	        ['run_breakseq2', 'module_bwa']
         ],
         command="""\
-run_breakseq2.py {options} --bwa bwa --samtools samtools \\
+bwa_path=`which bwa`; \\
+samtools_path=`which samtools`; \\
+run_breakseq2.py {options} --bwa "$bwa_path" --samtools "$samtools_path" \\
     --nthreads {threads} \\
     --reference {genome}  \\
     --bplib_gff {gff} \\
@@ -45,6 +47,6 @@ run_breakseq2.py {options} --bwa bwa --samtools samtools \\
 	        gff=config.param('run_breakseq2','gff', param_type='filepath'),
 	        output=output_dir,
 	        input=input,
-	        sample=sample_name,
+	        sample=sample_name
         )
     )
