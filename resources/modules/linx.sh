@@ -2,10 +2,10 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=purple
-VERSION=3.7.1
+SOFTWARE=linx
+VERSION=1.22
 ARCHIVE=${SOFTWARE}-${VERSION}.jar
-ARCHIVE_URL=https://github.com/hartwigmedical/hmftools/releases/download/${SOFTWARE}-v${VERSION%.*}/${SOFTWARE}_v${VERSION}.jar
+ARCHIVE_URL=https://github.com/hartwigmedical/hmftools/releases/download/${SOFTWARE}-v${VERSION}/${SOFTWARE}_v${VERSION}.jar
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 build() {
@@ -25,8 +25,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE - require JDK1.8\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          PURPLE_HOME         \$root
-setenv          PURPLE_JAR          \$root/purple.jar
+setenv          LINX_HOME           \$root
+setenv          LINX_JAR            \$root/linx.jar
 "
 }
 

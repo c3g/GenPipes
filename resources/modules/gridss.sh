@@ -2,18 +2,19 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=purple
-VERSION=3.7.1
-ARCHIVE=${SOFTWARE}-${VERSION}.jar
-ARCHIVE_URL=https://github.com/hartwigmedical/hmftools/releases/download/${SOFTWARE}-v${VERSION%.*}/${SOFTWARE}_v${VERSION}.jar
+SOFTWARE=gridss
+VERSION=2.13.2
+ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/PapenfussLab/${SOFTWARE}/releases/download/v${VERSION}/gridss-${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 build() {
   cd $INSTALL_DOWNLOAD
 
   # Install software
-  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR
-  cp $ARCHIVE $INSTALL_DIR/$SOFTWARE_DIR/${SOFTWARE}.jar
+  mkdir -p $SOFTWARE_DIR
+  tar zxvf $ARCHIVE
+  mv $SOFTWARE_DIR $INSTALL_DIR/
 }
 
 module_file() {
@@ -25,8 +26,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE - require JDK1.8\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          PURPLE_HOME         \$root
-setenv          PURPLE_JAR          \$root/purple.jar
+setenv          GRIDSS_HOME         \$root
+setenv          GRIDSS_JAR          \$root/gridss-2.13.2-gridss-jar-with-dependencies.jar
 "
 }
 
