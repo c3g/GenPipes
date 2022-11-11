@@ -3822,7 +3822,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             if os.path.isfile(gatk_vcf):
                 input_vcf = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.flt.vcf.gz")
                 jobs.append(
-                    concat_jobs(
+                    pipe_jobs(
                         [
                             bcftools.view(
                                 gatk_vcf,
