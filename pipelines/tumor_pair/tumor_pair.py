@@ -98,19 +98,19 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
     The Tumor Pair pipeline inherits the initial bam preparation steps of the DNA-Seq pipeline with the exception of the
     indel realignment (IR) step. In the tumor pipeline the IR step utilizes both the normal and tumor bam to further reduce
-    false positives (FPs) in and around indels. The tumor pipeline deviates from the DNA-seq pipeline at the variant calling step. 
-    At this point, a paired caller is used to call SNVs and Indels from the pairs given as input. Additional, muliple cancer callers 
-    are utilized using an ensemble approach and SNVs and Indels seen in at least 2 different callers are retained for further 
+    false positives (FPs) in and around indels. The tumor pipeline deviates from the DNA-seq pipeline at the variant calling step.
+    At this point, a paired caller is used to call SNVs and Indels from the pairs given as input. Additional, muliple cancer callers
+    are utilized using an ensemble approach and SNVs and Indels seen in at least 2 different callers are retained for further
     investigation.
 
     Example command:
     python tumor_pair.py -c a.ini b.base.ini -s x-y,z -r readset.tsv -p pairs.csv
-    
+
     -c ini files: multiple can be specified e.g WGS or exome, or different clusters e.g. base (abacus) or guillimin
 
     -r readset: derived from GQ lims or made yourself. See : https://bitbucket.org/mugqic/mugqic_pipelines#markdown-header-readset-file
 
-    -p pairs : format - patient_name,normal_sample_name,tumor_sample_name 
+    -p pairs : format - patient_name,normal_sample_name,tumor_sample_name
     """
 
     def __init__(self, protocol=None):
@@ -123,12 +123,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory'       : os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory'            : os.path.join(self.output_dir, 'trim'),
-            'alignment_directory'       : os.path.join(self.output_dir, 'alignment'),
-            'metrics_directory'         : os.path.join(self.output_dir, 'metrics'),
-            'paired_variants_directory' : os.path.join(self.output_dir, 'pairedVariants'),
-            'sv_variants_directory'     : os.path.join(self.output_dir, 'SVariants')
+            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
+            'trim_directory': os.path.join(self.output_dir, 'trim'),
+            'alignment_directory': os.path.join(self.output_dir, 'alignment'),
+            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
+            'paired_variants_directory': os.path.join(self.output_dir, 'pairedVariants'),
+            'sv_variants_directory': os.path.join(self.output_dir, 'SVariants')
         }
         return dirs
 
@@ -219,7 +219,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     ) for readset in tumor_pair.readsets[tumor_pair.tumor.name]
                 ][0][0]
             )
-            
+
             for key, input_files in inputs.items():
                 for read, input_file in enumerate(input_files):
                     symlink_pair_job = deliverables.sym_link_pair(
@@ -1531,7 +1531,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 )
             )
 
-            if ffpe == True:
+            if ffpe:
                 jobs.append(
                     concat_jobs(
                         [

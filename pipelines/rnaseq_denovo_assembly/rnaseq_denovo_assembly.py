@@ -123,25 +123,25 @@ class RnaSeqDeNovoAssembly(rnaseq.RnaSeqRaw):
         self.argparser.add_argument("-t", "--type", help="Type of pipeline (default trinity)", choices=["trinity", "seq2fun"], default="trinity")
 
         super(RnaSeqDeNovoAssembly, self).__init__(protocol)
-    
+
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory'                   : os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory'                        : os.path.join(self.output_dir, 'trim'),
+            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
+            'trim_directory': os.path.join(self.output_dir, 'trim'),
             'insilico_read_normalization_directory' : os.path.join(self.output_dir, 'insilico_read_normalization'),
-            'trinity_out_directory'                 : os.path.join(self.output_dir, 'trinity_out_dir'),
-            'trinotate_directory'                   : os.path.join(self.output_dir, 'trinotate'),
-            'blast_directory'                       : os.path.join(self.output_dir, 'blast'),
+            'trinity_out_directory': os.path.join(self.output_dir, 'trinity_out_dir'),
+            'trinotate_directory': os.path.join(self.output_dir, 'trinotate'),
+            'blast_directory': os.path.join(self.output_dir, 'blast'),
             'align_and_estimate_abundance_directory': os.path.join(self.output_dir, 'align_and_estimate_abundance'),
-            'differential_expression_directory'     : os.path.join(self.output_dir, 'differential_expression'),
-            'exploratory_directory'                 : os.path.join(self.output_dir, 'exploratory'),
-            'filtered_assembly_directory'           : os.path.join(self.output_dir, 'filtered_assembly'),
-            'merge_fastq_directory'                 : os.path.join(self.output_dir, 'merge_fastq'),
-            'seq2fun_directory'                     : os.path.join(self.output_dir, 'seq2fun'),
-            'seq2fun_pathway_directory'             : os.path.join(self.output_dir, 'seq2fun_pathway'),
-            'metrics_directory'                     : os.path.join(self.output_dir, 'metrics'),
-            'report_directory'                      : os.path.join(self.output_dir, 'report')
+            'differential_expression_directory': os.path.join(self.output_dir, 'differential_expression'),
+            'exploratory_directory': os.path.join(self.output_dir, 'exploratory'),
+            'filtered_assembly_directory': os.path.join(self.output_dir, 'filtered_assembly'),
+            'merge_fastq_directory': os.path.join(self.output_dir, 'merge_fastq'),
+            'seq2fun_directory': os.path.join(self.output_dir, 'seq2fun'),
+            'seq2fun_pathway_directory': os.path.join(self.output_dir, 'seq2fun_pathway'),
+            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
+            'report_directory': os.path.join(self.output_dir, 'report')
         }
         return dirs
 

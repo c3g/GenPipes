@@ -109,21 +109,21 @@ class RnaSeqRaw(common.Illumina):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory'           : os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory'                : os.path.join(self.output_dir, 'trim'),
-            'alignment_1stPass_directory'   : os.path.join(self.output_dir, 'alignment_1stPass'),
-            'alignment_directory'           : os.path.join(self.output_dir, 'alignment'),
-            'stringtie_directory'           : os.path.join(self.output_dir, 'stringtie'),
-            'ballgown_directory'            : os.path.join(self.output_dir, 'ballgown'),
-            'cufflinks_directory'           : os.path.join(self.output_dir, 'cufflinks'),
-            'cuffdiff_directory'            : os.path.join(self.output_dir, 'cuffdiff'),
-            'cuffnorm_directory'            : os.path.join(self.output_dir, 'cuffnorm'),
-            'DGE_directory'                 : os.path.join(self.output_dir, 'DGE'),
-            'raw_counts_directory'          : os.path.join(self.output_dir, 'raw_counts'),
-            'tracks_directory'              : os.path.join(self.output_dir, 'tracks'),
-            'exploratory_directory'         : os.path.join(self.output_dir, 'exploratory'),
-            'metrics_directory'             : os.path.join(self.output_dir, 'metrics'),
-            'report_directory'              : os.path.join(self.output_dir, 'report')
+            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
+            'trim_directory': os.path.join(self.output_dir, 'trim'),
+            'alignment_1stPass_directory': os.path.join(self.output_dir, 'alignment_1stPass'),
+            'alignment_directory': os.path.join(self.output_dir, 'alignment'),
+            'stringtie_directory': os.path.join(self.output_dir, 'stringtie'),
+            'ballgown_directory': os.path.join(self.output_dir, 'ballgown'),
+            'cufflinks_directory': os.path.join(self.output_dir, 'cufflinks'),
+            'cuffdiff_directory': os.path.join(self.output_dir, 'cuffdiff'),
+            'cuffnorm_directory': os.path.join(self.output_dir, 'cuffnorm'),
+            'DGE_directory': os.path.join(self.output_dir, 'DGE'),
+            'raw_counts_directory': os.path.join(self.output_dir, 'raw_counts'),
+            'tracks_directory': os.path.join(self.output_dir, 'tracks'),
+            'exploratory_directory': os.path.join(self.output_dir, 'exploratory'),
+            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
+            'report_directory': os.path.join(self.output_dir, 'report')
         }
         return dirs
 

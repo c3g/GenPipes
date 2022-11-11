@@ -72,9 +72,9 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
     def output_dirs(self):
         dirs = {
             'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory'     : os.path.join(self.output_dir, 'trim'),
+            'trim_directory': os.path.join(self.output_dir, 'trim'),
             'alignment_directory': os.path.join(self.output_dir, 'alignment'),
-            'variants_directory' : os.path.join(self.output_dir, 'variants')
+            'variants_directory': os.path.join(self.output_dir, 'variants')
         }
         return dirs
 
@@ -317,7 +317,7 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
                 [
                     bash.mkdir(output_directory),
                     snpeff.compute_effects(snpeff_prefix + ".vt.vcf.gz", snpeff_prefix + ".vt.snpeff.vcf", split=True),
-                    htslib.bgzip_tabix( snpeff_prefix + ".vt.snpeff.vcf", snpeff_prefix + ".vt.snpeff.vcf.gz")            
+                    htslib.bgzip_tabix( snpeff_prefix + ".vt.snpeff.vcf", snpeff_prefix + ".vt.snpeff.vcf.gz")
                 ],
                 name="compute_effects.allSamples",
                 samples=self.samples

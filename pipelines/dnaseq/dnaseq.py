@@ -116,12 +116,12 @@ class DnaSeqRaw(common.Illumina):
     def output_dirs(self):
         dirs = {
             'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory'     : os.path.join(self.output_dir, 'trim'),
+            'trim_directory': os.path.join(self.output_dir, 'trim'),
             'alignment_directory': os.path.join(self.output_dir, 'alignment'),
-            'metrics_directory'  : os.path.join(self.output_dir, 'metrics'),
-            'variants_directory' : os.path.join(self.output_dir, 'variants'),
+            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
+            'variants_directory': os.path.join(self.output_dir, 'variants'),
             'SVariants_directory': os.path.join(self.output_dir, 'SVariants'),
-            'report_directory'   : os.path.join(self.output_dir, 'report')
+            'report_directory': os.path.join(self.output_dir, 'report')
         }
         return dirs
 

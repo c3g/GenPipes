@@ -116,17 +116,17 @@ However, if you would like to setup and use dragen in own cluster please refer o
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory'       : os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory'            : os.path.join(self.output_dir, 'trim'),
-            'alignment_directory'       : os.path.join(self.output_dir, 'alignment'),
-            'metrics_directory'         : os.path.join(self.output_dir, 'metrics'),
-            'ihec_metrics_directory'    : os.path.join(self.output_dir, 'ihec_metrics'),
-            'variants_directory'        : os.path.join(self.output_dir, 'variants'),
+            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
+            'trim_directory': os.path.join(self.output_dir, 'trim'),
+            'alignment_directory': os.path.join(self.output_dir, 'alignment'),
+            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
+            'ihec_metrics_directory': os.path.join(self.output_dir, 'ihec_metrics'),
+            'variants_directory': os.path.join(self.output_dir, 'variants'),
             'methylation_call_directory': os.path.join(self.output_dir, 'methylation_call'),
-            'methylkit_directory'       : os.path.join(self.output_dir, 'methylkit'),
-            'corrected_umi_directory'   : os.path.join(self.output_dir, 'corrected_umi'),
-            'tracks_directory'          : os.path.join(self.output_dir, 'tracks'),
-            'report_directory'          : os.path.join(self.output_dir, 'report'),
+            'methylkit_directory': os.path.join(self.output_dir, 'methylkit'),
+            'corrected_umi_directory': os.path.join(self.output_dir, 'corrected_umi'),
+            'tracks_directory': os.path.join(self.output_dir, 'tracks'),
+            'report_directory': os.path.join(self.output_dir, 'report'),
         }
         return dirs
 

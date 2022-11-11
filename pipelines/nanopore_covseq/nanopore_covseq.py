@@ -481,44 +481,29 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
                     Job(
                         input_files=[consensus_artic],
                         output_files=[consensus],
-                        command="""ln -sf {consensus_link} {consensus}""".format(
-                            consensus_link=consensus_link,
-                            consensus=consensus
-                        )
+                        command=f"ln -sf {consensus_link} {consensus}"
                     ),
                     bash.mkdir(variant_directory),
                     Job(
                         input_files=[variant_artic],
                         output_files=[variant],
-                        command="""ln -sf {variant_link} {variant}""".format(
-                            variant_link=variant_link,
-                            variant=variant
-                        )
+                        command=f"ln -sf {variant_link} {variant}"
                     ),
                     Job(
                         input_files=[variant_index_artic],
                         output_files=[variant_index],
-                        command="""ln -sf {variant_index_link} {variant_index}""".format(
-                            variant_index_link=variant_index_link,
-                            variant_index=variant_index
-                        )
+                        command=f"ln -sf {variant_index_link} {variant_index}"
                     ),
                     bash.mkdir(alignment_directory),
                     Job(
                         input_files=[raw_bam_artic],
                         output_files=[raw_bam],
-                        command="""ln -sf {raw_bam_link} {raw_bam}""".format(
-                            raw_bam_link=raw_bam_link,
-                            raw_bam=raw_bam
-                        )
+                        command=f"ln -sf {raw_bam_link} {raw_bam}"
                     ),
                     Job(
                         input_files=[raw_bam_index_artic],
                         output_files=[raw_bam_index],
-                        command="""ln -sf {raw_bam_index_link} {raw_bam_index}""".format(
-                            raw_bam_index_link=raw_bam_index_link,
-                            raw_bam_index=raw_bam_index
-                        )
+                        command=f"ln -sf {raw_bam_index_link} {raw_bam_index}"
                     ),
                     pipe_jobs([
                         sambamba.view(
@@ -583,8 +568,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
             metrics_prefix = os.path.join("metrics", "dna", sample.name, "snpeff_metrics", sample.name + ".snpEff")
 
             input_vcf = os.path.join(variant_directory, sample.name + ".pass.vcf.gz")
-            output_vcf = os.path.join(variant_directory,
-                                      re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
+            output_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
 
             jobs.append(
                 concat_jobs([
@@ -697,17 +681,11 @@ echo "pass_reads" $(grep -c "^@" {pass_fq}) >> {fq_stats} """.format(
             quast_tsv = os.path.join(quast_directory, "report.tsv")
 
             output_fa = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
-            output_status_fa = os.path.join(consensus_directory,
-                                            """{sample_name}.consensus.{technology}.{status}.fasta""".format(
-                                                sample_name=sample.name,
-                                                technology=config.param('rename_consensus_header',
-                                                                        'sequencing_technology', required=False),
-                                                status="${STATUS}"))
+            output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'sequencing_technology', required=False), status="${STATUS}"))
 
             variant_directory = os.path.join("variant", sample.name)
             input_vcf = os.path.join(variant_directory, sample.name + ".pass.vcf.gz")
-            annotated_vcf = os.path.join(variant_directory,
-                                         re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
+            annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
 
             jobs.append(
                 concat_jobs([
@@ -760,9 +738,6 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
 
         readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
         readset_file_report = "report.readset.tsv"
-
-        software_version = os.path.join("report", "software_versions.csv")
-        run_metadata = os.path.join("report", "run_metadata.csv")
 
         ncovtools_directory = os.path.join("report", "ncov_tools")
         metadata = os.path.join(ncovtools_directory, "metadata.tsv")

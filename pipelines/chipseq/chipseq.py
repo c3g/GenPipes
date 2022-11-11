@@ -91,18 +91,18 @@ class ChipSeq(common.Illumina):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory'       : os.path.join(self.output_dir, 'raw_reads'),
+            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
             'alignment_output_directory': os.path.join(self.output_dir, 'alignment'),
-            'report_output_directory'   : os.path.join(self.output_dir, 'report'),
-            'metrics_output_directory'  : os.path.join(self.output_dir, 'metrics'),
-            'homer_output_directory'    : os.path.join(self.output_dir, 'tags'),
-            'graphs_output_directory'   : os.path.join(self.output_dir, 'graphs'),
-            'tracks_output_directory'   : os.path.join(self.output_dir, 'tracks'),
-            'macs_output_directory'     : os.path.join(self.output_dir, 'peak_call'),
-            'anno_output_directory'     : os.path.join(self.output_dir, 'annotation'),
-            'ihecA_output_directory'    : os.path.join(self.output_dir, 'ihec_alignment'),
-            'ihecM_output_directory'    : os.path.join(self.output_dir, 'ihec_metrics'),
-            'dba_output_directory'      : os.path.join(self.output_dir, 'differential_binding')
+            'report_output_directory': os.path.join(self.output_dir, 'report'),
+            'metrics_output_directory': os.path.join(self.output_dir, 'metrics'),
+            'homer_output_directory': os.path.join(self.output_dir, 'tags'),
+            'graphs_output_directory': os.path.join(self.output_dir, 'graphs'),
+            'tracks_output_directory': os.path.join(self.output_dir, 'tracks'),
+            'macs_output_directory': os.path.join(self.output_dir, 'peak_call'),
+            'anno_output_directory': os.path.join(self.output_dir, 'annotation'),
+            'ihecA_output_directory': os.path.join(self.output_dir, 'ihec_alignment'),
+            'ihecM_output_directory': os.path.join(self.output_dir, 'ihec_metrics'),
+            'dba_output_directory': os.path.join(self.output_dir, 'differential_binding')
         }
         return dirs
 

@@ -56,13 +56,13 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory'   : os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory'        : os.path.join(self.output_dir, 'trim'),
-            'kallisto_directory'    : os.path.join(self.output_dir, 'kallisto'),
-            'metrics_directory'     : os.path.join(self.output_dir, 'metrics'),
-            'exploratory_directory' : os.path.join(self.output_dir, 'exploratory'),
-            'sleuth_directory'      : os.path.join(self.output_dir, 'sleuth'),
-            'report_directory'      : os.path.join(self.output_dir, 'report')
+            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
+            'trim_directory': os.path.join(self.output_dir, 'trim'),
+            'kallisto_directory': os.path.join(self.output_dir, 'kallisto'),
+            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
+            'exploratory_directory': os.path.join(self.output_dir, 'exploratory'),
+            'sleuth_directory': os.path.join(self.output_dir, 'sleuth'),
+            'report_directory': os.path.join(self.output_dir, 'report')
         }
         return dirs
 

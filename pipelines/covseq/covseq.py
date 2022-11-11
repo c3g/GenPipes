@@ -75,14 +75,14 @@ class CoVSeq(dnaseq.DnaSeqRaw):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory'   : os.path.join(self.output_dir, 'raw_reads'),
+            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
             'host_removal_directory': os.path.join(self.output_dir, "host_removal"),
-            'trim_directory'        : os.path.join(self.output_dir, "cleaned_raw_reads"),
-            'alignment_directory'   : os.path.join(self.output_dir, 'alignment'),
-            'metrics_directory'     : os.path.join(self.output_dir, 'metrics'),
-            'variants_directory'    : os.path.join(self.output_dir, 'variant'),
-            'consensus_directory'   : os.path.join(self.output_dir, 'consensus'),
-            'report_directory'      : os.path.join(self.output_dir, 'report')
+            'trim_directory': os.path.join(self.output_dir, "cleaned_raw_reads"),
+            'alignment_directory': os.path.join(self.output_dir, 'alignment'),
+            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
+            'variants_directory': os.path.join(self.output_dir, 'variant'),
+            'consensus_directory': os.path.join(self.output_dir, 'consensus'),
+            'report_directory': os.path.join(self.output_dir, 'report')
         }
         return dirs
 

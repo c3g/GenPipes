@@ -91,24 +91,24 @@ class HicSeq(common.Illumina):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory'                   : os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory'                        : os.path.join(self.output_dir, 'trim'),
-            'alignment_directory'                   : os.path.join(self.output_dir, 'alignment'),
-            'hicup_output_directory'                : os.path.join(self.output_dir, 'alignment'),
-            'homer_output_directory'                : os.path.join(self.output_dir, 'homer_tag_directory'),
-            'bams_output_directory'                 : os.path.join(self.output_dir, 'alignment'),
-            'matrices_output_directory'             : os.path.join(self.output_dir, 'interaction_matrices'),
-            'cmpt_output_directory'                 : os.path.join(self.output_dir, 'compartments'),
-            'TAD_output_directory'                  : os.path.join(self.output_dir, 'TADs'),
-            'peaks_output_directory'                : os.path.join(self.output_dir, 'peaks'),
-            'hicfiles_output_directory'             : os.path.join(self.output_dir, 'hicFiles'),
-            'chicago_input_files'                   : os.path.join(self.output_dir, 'input_files'),
-            'chicago_output_directory'              : os.path.join(self.output_dir, 'chicago'),
-            'intersect_ouput_directory'             : os.path.join(self.output_dir, 'bed_intersect'),
-            'reproducible_score_output_directory'   : os.path.join(self.output_dir, 'reproducibility_scores'),
-            'quality_score_output_directory'        : os.path.join(self.output_dir, 'quality_scores'),
-            'metrics_directory'                     : os.path.join(self.output_dir, 'metrics'),
-            'report_directory'                      : os.path.join(self.output_dir, 'report')
+            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
+            'trim_directory': os.path.join(self.output_dir, 'trim'),
+            'alignment_directory': os.path.join(self.output_dir, 'alignment'),
+            'hicup_output_directory': os.path.join(self.output_dir, 'alignment'),
+            'homer_output_directory': os.path.join(self.output_dir, 'homer_tag_directory'),
+            'bams_output_directory': os.path.join(self.output_dir, 'alignment'),
+            'matrices_output_directory': os.path.join(self.output_dir, 'interaction_matrices'),
+            'cmpt_output_directory': os.path.join(self.output_dir, 'compartments'),
+            'TAD_output_directory': os.path.join(self.output_dir, 'TADs'),
+            'peaks_output_directory': os.path.join(self.output_dir, 'peaks'),
+            'hicfiles_output_directory': os.path.join(self.output_dir, 'hicFiles'),
+            'chicago_input_files': os.path.join(self.output_dir, 'input_files'),
+            'chicago_output_directory': os.path.join(self.output_dir, 'chicago'),
+            'intersect_ouput_directory': os.path.join(self.output_dir, 'bed_intersect'),
+            'reproducible_score_output_directory': os.path.join(self.output_dir, 'reproducibility_scores'),
+            'quality_score_output_directory': os.path.join(self.output_dir, 'quality_scores'),
+            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
+            'report_directory': os.path.join(self.output_dir, 'report')
         }
         return dirs
 
