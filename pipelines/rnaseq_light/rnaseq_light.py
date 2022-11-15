@@ -255,7 +255,7 @@ cp \\
             return [
                 concat_jobs(
                     [
-                        Job(command="mkdir -p " + output_directory),
+                        bash.mkdir(output_directory),
                         sleuth_job
                     ],
                     name="sleuth_differential_expression"
