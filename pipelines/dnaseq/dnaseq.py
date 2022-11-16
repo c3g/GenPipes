@@ -3833,10 +3833,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 None,
                                 None,
                                 "-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
-                            ),
-                            htslib.bgzip_tabix(
-                                None,
-                                input_vcf
+                            # ),
+                            # htslib.bgzip_tabix(
+                            #     None,
+                            #     input_vcf
                             )
                         ],
                         name=f"cnvkit_batch.vcf_flt.{sample.name}",
