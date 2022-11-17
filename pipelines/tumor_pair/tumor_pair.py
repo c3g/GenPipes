@@ -7198,13 +7198,13 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 self.sambamba_merge_realigned,
                 self.sambamba_mark_duplicates,
                 self.recalibration,
-                self.strelka2_paired_somatic,
-                self.strelka2_paired_germline, #10
+                self.manta_sv_calls,
+                self.strelka2_paired_somatic, #10
+                self.strelka2_paired_germline,
                 self.metrics_dna_picard_metrics,
                 self.sequenza,
                 self.delly_call_filter,
-                self.delly_sv_annotation,
-                self.manta_sv_calls, #15
+                self.delly_sv_annotation, #15
                 self.manta_sv_annotation,
                 self.lumpy_paired_sv,
                 self.lumpy_sv_annotation,
