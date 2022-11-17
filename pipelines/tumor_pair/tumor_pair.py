@@ -6563,6 +6563,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             lumpy_vcf = os.path.join(self.output_dirs["sv_variants_directory"],tumor_pair.name, tumor_pair.name + ".lumpy.somatic.vcf.gz")
             manta_vcf = os.path.join(pair_directory, tumor_pair.name + ".manta.somatic.vcf.gz")
             wham_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.somatic.vcf.gz")
+            delly_vcf = os.path.join(pair_directory,  tumor_pair.name + ".delly.somatic.vcf.gz")
             cnvkit_vcf = os.path.join(pair_directory, tumor_pair.name + ".cnvkit.vcf.gz")
 
             if os.path.isfile(isize_file):
@@ -6604,6 +6605,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             manta_vcf,
                             cnvkit_vcf,
                             wham_vcf,
+                            delly_vcf,
                             gatk_pass,
                             inputTumor,
                             tumor_pair.tumor.name,
@@ -6637,6 +6639,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             lumpy_vcf = os.path.join(self.output_dirs["sv_variants_directory"], tumor_pair.name, tumor_pair.name + ".lumpy.germline.vcf.gz")
             manta_vcf = os.path.join(pair_directory, tumor_pair.name + ".manta.germline.vcf.gz")
             wham_vcf = os.path.join(pair_directory, tumor_pair.name + ".wham.germline.vcf.gz")
+            delly_vcf= os.path.join(pair_directory, tumor_pair.name + ".delly.germline.vcf.gz")
             cnvkit_vcf = os.path.join(pair_directory, tumor_pair.name + ".cnvkit.vcf.gz")
 
             if os.path.isfile(isize_file):
@@ -6680,6 +6683,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             manta_vcf,
                             cnvkit_vcf,
                             wham_vcf,
+                            delly_vcf,
                             gatk_pass,
                             inputTumor,
                             tumor_pair.tumor.name,
