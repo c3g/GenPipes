@@ -13,7 +13,7 @@ build() {
 
   # Install software
   mkdir -p $SOFTWARE_DIR
-  tar zxvf $ARCHIVE
+  tar zxvf $ARCHIVE -C $SOFTWARE_DIR/
   mv $SOFTWARE_DIR $INSTALL_DIR/
 }
 
