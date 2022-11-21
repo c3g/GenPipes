@@ -81,7 +81,6 @@ from bfx import svtyper
 from bfx import wham
 from bfx import metasv
 from bfx import cnvkit
-from bfx import scones
 from bfx import sequenza
 from bfx import amber
 from bfx import cobalt
@@ -6769,134 +6768,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     
         return jobs
 
-    def scones(self):
-        """
-        This step aims to estimate somatic Copy Number Variation using BVAtools and SCoNEs. BVAtools generate the bined Depth ratio values from the
-        tumor and normal BAM files. SCoNEs is tool to deconvolution the logR signal of the tumor-normal coverage into a mixture of baysian sub-signal
-        for each copy number state. The result is a set of several deconvolution using  0-7 sub-signal. As each tumor sample is unique the choice of
-        the best final model (number of sub-signal) needs to be manually evaluated using the log ratio graphical representation.
-        """
-        window_size = config.param('scones', 'window', required=True)
-        jobs = []
-
-        for tumor_pair in self.tumor_pairs.values():
-            if tumor_pair.multiple_normal == 1:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
-            else:
-                normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name)
-    
-            tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
-            
-            sv_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
-            scones_directory = os.path.join(sv_directory, "SCoNEs")
-            [inputNormal] = self.select_input_files(
-                [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
-                ]
-            )
-            [inputTumor] = self.select_input_files(
-                [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
-                ]
-            )
-
-            bined_count_file = os.path.join(scones_directory, tumor_pair.normal.name + ".bin" + window_size + ".tsv")
-            bined_count_fix_file = os.path.join(scones_directory, tumor_pair.normal.name + ".bin" + window_size + ".fix.tsv")
-
-            output_scones_basename = os.path.join(scones_directory,
-                                                  tumor_pair.normal.name + ".bin" + window_size + "_SCoNEs")
-            scones_best_model_basename = output_scones_basename + "_Model_" + config.param('scones', 'best_model',
-                                                                                           required=True)
-            scones_calls_file = scones_best_model_basename + "_CNVcalls.txt"
-            scones_filtered_file = scones_best_model_basename + "_CNVcalls.filtered.tsv"
-            scones_annotate_basename = scones_best_model_basename + "_CNVcalls.filtered.anotated"
-            scones_annotate_tmp_basename = scones_best_model_basename + "_CNVcalls.filtered.tmp"
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            scones_directory,
-                            remove=True
-                        ),
-                        bvatools.bincounter(
-                            bam=inputTumor,
-                            refbam=inputNormal,
-                            out=bined_count_fix_file,
-                            window=window_size
-                        ),
-                        Job(
-                            [bined_count_fix_file],
-                            [bined_count_file],
-                                command="cat <(head -1 " + bined_count_fix_file + ") <(grep -v \"_\" " + bined_count_fix_file
-                                    + " | grep -v \"EBV\" ) > " + bined_count_file
-                        )
-                    ],
-                    name="bvatools_bincounter." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor]
-                )
-            )
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            scones_directory,
-                            remove=True
-                        ),
-                        scones.scones_pair(
-                            bined_file=bined_count_file,
-                            output_basename=output_scones_basename,
-                            window=window_size
-                        )
-                    ],
-                    name="scones_pair." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor]
-                )
-            )
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            scones_directory,
-                            remove=True
-                        ),
-                        scones.scones_filter(
-                            scones_calls=scones_calls_file,
-                            pair_name=tumor_pair.name,
-                            output=scones_filtered_file
-                        )
-                    ],
-                    name="scones_filter." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor]
-                )
-            )
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            scones_directory,
-                            remove=True
-                        ),
-                        scones.scones_annotate(
-                            scones_calls_filtered=scones_filtered_file,
-                            output_basename=scones_annotate_basename,
-                            tmp_basename=scones_annotate_tmp_basename
-                        )
-                    ],
-                    name="scones_annotate." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor]
-                )
-            )
-
-        return jobs
-
     def svaba_assemble(self):
         """
         SvABA - Structural variation and indel analysis by assembly.
@@ -7216,7 +7087,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 self.wham_sv_annotation, #20
                 self.cnvkit_batch,
                 self.cnvkit_sv_annotation,
-                self.scones,
                 self.svaba_assemble,
                 self.svaba_sv_annotation, #25
                 self.ensemble_metasv_somatic,
