@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-
+# change anything
 ## This script takes the csv project file downloadable from nanuq and creates the readset output tsv file needed to run the mugqic pipelines.
 
 usage <- function (){
