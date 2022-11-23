@@ -742,7 +742,7 @@ pandoc \\
         # Create raw count matrix
         output_directory = self.output_dirs["DGE_directory"]
         read_count_files = [os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.csv") for sample in self.samples]
-        output_matrix = os.path.join(output_directory, "rawCountMatrix.csv")
+        output_matrix = os.path.join(output_directory, "rawCountMatrix.tsv")
 
         job = Job(
             read_count_files,
