@@ -22,7 +22,6 @@ import os
 
 # MUGQIC Modules
 from core.job import Job
-from core.config import config
 
 def mkdir(
     folder,
@@ -31,7 +30,7 @@ def mkdir(
 
     return Job(
         [],
-        [folder],
+        [],
         command="""\
 mkdir -p {directory} && \\
 touch {directory}""".format(
@@ -56,7 +55,7 @@ def ln(
     input=None,
     output=None
     ):
-    
+
     inputs = [input] if input else [target_file]
     outputs = [output] if output else [link]
 
@@ -86,6 +85,7 @@ def mv(
     return Job(
         inputs,
         [target],
+        [],
         command="""\
 mv {force}{source} \\
    {dest}{extra}""".format(
@@ -106,6 +106,7 @@ def cp(
     return Job(
         [source],
         [target],
+        [],
         command="""\
 cp {rec}{upd}'{source}' {dest}""".format(
             source=source,
@@ -117,10 +118,9 @@ cp {rec}{upd}'{source}' {dest}""".format(
 
 def rm(
     source,
-    recursive=True,
-    force=True
+    recursive=False,
+    force=False
     ):
-
     return Job(
         [source],
         [],
@@ -128,14 +128,17 @@ def rm(
 rm {rec}{force}{source}""".format(
             rec="-r " if recursive else "",
             force="-f " if force else "",
-            source=source
+            source=source,
         )
     )
 
-def touch(target):
+def touch(
+    target
+    ):
+
     return Job(
         [],
-        [],
+        [target],
         command="""\
 touch {target}""".format(
             target=target
@@ -145,7 +148,8 @@ touch {target}""".format(
 def md5sum(
     inputs,
     output,
-    check=False
+    check=False,
+    binary=False,
     ):
 
     if not isinstance(inputs, list):
@@ -155,8 +159,9 @@ def md5sum(
         inputs,
         [output],
         command="""\
-md5sum {check}{input}{output}""".format(
+md5sum {check}{binary}{input}{output}""".format(
             check="-c " if check else "",
+            binary="-b " if binary else "",
             input=" ".join(["'"+os.path.abspath(input)+"'" for input in inputs]),
             output=" > " + os.path.abspath(output) if output else ""
         )
@@ -342,6 +347,44 @@ def chmod(file, permission):
 chmod {permission} {file}""".format(
             permission=permission,
             file=file
+       )
+    )
+
+def zip(
+    inputs,
+    zip_output,
+    recursive=False
+    ):
+
+    if isinstance(inputs, list):
+        # all the inputs are supposed to be in the same directory
+        inputs_dir = os.path.dirname(inputs[0])
+        input_string = " ".join([os.path.basename(input_file) for input_file in inputs])
+
+    else:
+        # if the input is a folder path
+        if os.path.isdir(inputs):
+            inputs_dir = inputs
+            inputs = [None]
+            input_string = "*"
+
+        # if the input is a single file
+        else:
+            inputs_dir = os.path.dirname(inputs)
+            inputs = [inputs]
+            input_string = inputs[0]
+
+    return Job(
+        inputs,
+        [zip_output],
+        command="""\
+pushd {archive_dir};\\
+zip {recursive}{output} {inputs};\\
+popd""".format(
+            archive_dir=inputs_dir,
+            recursive="-r " if recursive else "",
+            output=zip_output if zip_output else "",
+            inputs=input_string
         )
     )
 

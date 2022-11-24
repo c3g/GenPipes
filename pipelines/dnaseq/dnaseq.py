@@ -59,7 +59,6 @@ from bfx import ngscheckmate
 from bfx import verify_bam_id
 from bfx import multiqc
 from bfx import deliverables
-
 from bfx import bash_cmd as bash
 
 ##Structural variants
@@ -1388,7 +1387,7 @@ END
             adapter_job = None
 
             if not adapter_file:
-                adapter_file = os.path.join(output_dir, "adapter.tsv")
+                adapter_file = os.path.join(fastqc_directory, "adapter.tsv")
                 adapter_job = adapters.create(
                     sample.readsets[0],
                     adapter_file,

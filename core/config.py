@@ -24,7 +24,6 @@ import logging
 import os
 import re
 import subprocess
-import sys
 import io
 
 log = logging.getLogger(__name__)

@@ -93,6 +93,19 @@ class Sample(metaclass=UniqueName):
         if mark_name not in self.marks:
             self.marks[mark_name] = mark_type
 
+class RunProcessingSample(Sample):
+    """
+    docstring for RunProcessingSample
+    """
+    def readsets_by_name(self, name, lane):
+        return [readset for readset in self.readsets if readset.name == name and readset.lane == lane]
+
+    def add_readset(self, readset):
+        if self.readsets_by_name(readset.name, readset.lane):
+            _raise(SanitycheckError("Sample Error: readset name \"" + readset.name + "\" already exists for sample \"" + self.name + "\" in lane \"" + readset.lane + "\"!"))
+        else:
+            self.readsets.append(readset)
+            readset._sample = self
 
 class NanoporeSample(Sample):
     """docstring for NanoporeSample"""

@@ -24,7 +24,40 @@ import os
 from core.config import *
 from core.job import *
 
-def verify(input_bam, output_prefix):
+def getVersion():
+    v2_module_name_pattern = r'\/2(\.\d+)*$'
+    v1_module_name_pattern = r'\/1(\.\d+)*$'
+    v1_custom_name_pattern = r'\/devMaster_20151216$'
+    module_name = config.param('verify_bam_id', 'module_verify_bam_id')
+    if (re.search(v1_module_name_pattern, module_name)):
+        return 1
+    elif (re.search(v1_custom_name_pattern, module_name)):
+        return 1
+    else:
+        if(not re.search(v2_module_name_pattern, module_name)):
+            log.warning(f"Cannot determine verifyBamID version from module name '{module_name}'. Assuming v2")
+        return 2
+
+def verify(
+    input_bam,
+    output_prefix,
+    var=None,
+    ref=None
+    ):
+
+    if (getVersion() == 1):
+        return verify_v1(input_bam, output_prefix, var)
+    elif (getVersion() == 2):
+        return verify_v2(input_bam, output_prefix, var, ref)
+    else:
+        log.error("Could not determine VerifyBamID version from module name in ini")
+
+def verify_v1(
+    input_bam,
+    output_prefix,
+    var=None
+    ):
+
     return Job(
         [input_bam],
         [output_prefix + ".selfSM"],
@@ -33,13 +66,41 @@ def verify(input_bam, output_prefix):
         ],
         command="""\
 verifyBamID \\
-  --vcf {input_vcf} \\
-  --bam {input_bam} \\
-  --out {output_prefix} \\
-  {other_options}""".format(
-            input_vcf=config.param('verify_bam_id', 'vcf', param_type='filepath'),
+--vcf {vcf} \\
+--bam {input_bam} \\
+--out {output_prefix} \\
+{other_options}""".format(
+            vcf=var if var else config.param('verify_bam_id', 'vcf', param_type='filepath'),
             input_bam=input_bam,
             output_prefix=output_prefix,
-            other_options=config.param('verify_bam_id', 'options')
+            other_options=config.param('verify_bam_id', 'options', required=False)
         )
     )
+
+def verify_v2(
+    input_bam,
+    output_prefix,
+    var=None,
+    ref=None
+    ):
+
+    return Job(
+        [input_bam],
+        [output_prefix + ".selfSM"],
+        [
+            ['verify_bam_id', 'module_verify_bam_id']
+        ],
+        command="""\
+VerifyBamID {other_options} \\
+--SVDPrefix {svdprefix} \\
+--Reference {reference} \\
+--BamFile {input_bam} \\
+--Output {output_prefix} \\
+|| touch {output_prefix}.selfSM""".format(
+            svdprefix=var if var else config.param('verify_bam_id_2', 'svd_dataset'),
+            reference=ref if ref else config.param('verify_bam_id_2', 'genome_fasta', type='filepath'),
+            input_bam=input_bam,
+            output_prefix=output_prefix,
+            other_options=config.param('verify_bam_id_2', 'options', required=False)
+            )
+        )

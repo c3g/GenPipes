@@ -24,7 +24,11 @@ import os
 from core.config import *
 from core.job import *
 
-def run(input, output_dir):
+def run(
+    input,
+    output_dir
+    ):
+
 	output = os.path.join(output_dir, "output_corr_matrix.txt")
 	return Job(
         [input],
@@ -44,5 +48,36 @@ python $CHECKMATE_PATH/ncm.py {options} \\
 	        bed=config.param('run_checkmate','bed', param_type='filepath'),
 	        input=input,
 	        output=output_dir,
+        )
+    )
+
+def fastq(
+    inputfiles,
+    outputfiles,
+    out_dir,
+    inputlist
+    ):
+
+    options = config.param('run_checkmate', 'options')
+
+    return Job(
+
+        inputfiles,
+        outputfiles,
+        [
+            ['run_checkmate', 'module_python'],
+            ['run_checkmate', 'module_ngscheckmate'],
+            ['run_checkmate', 'module_samtools'],
+            ['run_checkmate', 'module_bcftools'],
+            ['run_checkmate', 'module_gatk']
+        ],
+        command="""\
+python $CHECKMATE_PATH/ncm_fastq.py \\
+  -l {inputlist} \\
+  -pt $CHECKMATE_PATH/SNP/SNP.pt \\
+  -O {out_dir} {options}""".format(
+            inputlist=inputlist,
+            out_dir=out_dir,
+            options=options
         )
     )

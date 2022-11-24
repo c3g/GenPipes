@@ -18,15 +18,27 @@
 ################################################################################
 
 # Python Standard Modules
-from collections import namedtuple
+from collections import namedtuple, UserDict
 import csv
 import logging
 import os
 import re
+import xml.etree.ElementTree as Xml
+import sys
+import subprocess
+import json
+from itertools import zip_longest
 
 # MUGQIC Modules
-from bfx.run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner
-from core.sample import Sample, NanoporeSample
+from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner, CellrangerRunProcessingAligner, AtacRunProcessingAligner
+from .sample import Sample, RunProcessingSample, NanoporeSample
+from core.config import config, _raise, SanitycheckError
+
+# Append mugqic_pipelines directory to Python library path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
+
+# MUGQIC Modules
+from core.config import config, _raise, SanitycheckError
 
 log = logging.getLogger(__name__)
 
@@ -88,6 +100,10 @@ class IlluminaReadset(Readset):
             return self._bigwig
 
     @property
+    def gender(self):
+        return self._gender
+
+    @property
     def library(self):
         return self._library
 
@@ -101,11 +117,17 @@ class IlluminaReadset(Readset):
 
     @property
     def adapter1(self):
-        return self._adapter1
+        if not hasattr(self, "_adapter1"):
+            return None
+        else:
+            return self._adapter1
 
     @property
     def adapter2(self):
-        return self._adapter2
+        if not hasattr(self, "_adapter2"):
+            return None
+        else:
+            return self._adapter2
 
     @property
     def primer1(self):
@@ -176,7 +198,7 @@ def parse_illumina_readset_file(illumina_readset_file):
             # Create new sample
             sample = Sample(sample_name)
             samples.append(sample)
-        
+
         # Create readset and add it to sample
         readset = IlluminaReadset(line['Readset'], line['RunType'])
 
@@ -191,7 +213,6 @@ def parse_illumina_readset_file(illumina_readset_file):
 
         readset._bam = line.get('BAM', None)
         readset._umi = line.get('UMI', None)
-        readset._bigwig = line.get('BIGWIG', None)
         readset.fastq1 = line.get('FASTQ1', None)
         readset.fastq2 = line.get('FASTQ2', None)
         readset._library = line.get('Library', None)
@@ -235,8 +256,20 @@ class IlluminaRawReadset(IlluminaReadset):
         super(IlluminaRawReadset, self).__init__(name, run_type)
 
     @property
+    def index_name(self):
+        return self._index_name
+
+    @property
     def index(self):
         return self._index
+
+    @property
+    def indexes(self):
+        return self._indexes
+
+    @property
+    def index_type(self):
+        return self._index_type
 
     @property
     def sample_number(self):
@@ -252,11 +285,30 @@ class IlluminaRawReadset(IlluminaReadset):
 
     @property
     def reference_file(self):
-        return self._reference_file
+        if not hasattr(self, "_reference_file"):
+            return None
+        else:
+            return self._reference_file
+    
+    @property
+    def dictionary_file(self):
+        return self._dictionary_file
 
     @property
     def is_rna(self):
         return self._is_rna
+    
+    @property
+    def is_10x(self):
+        return self._is_10x
+
+    @property
+    def is_atac(self):
+        return self._is_atac
+
+    @property
+    def is_scrna(self):
+        return self._is_scrna
 
     @property
     def annotation_files(self):
@@ -270,12 +322,24 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._genomic_database
 
     @property
+    def species(self):
+        return self._species
+
+    @property
+    def project_id(self):
+        return self._project_id
+
+    @property
     def project(self):
         return self._project
 
     @property
     def library_source(self):
         return self._library_source
+
+    @property
+    def protocol(self):
+        return self._protocol
 
     @property
     def library_type(self):
@@ -298,115 +362,681 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._description
 
     @property
+    def species(self):
+        return self._species
+
+    @property
     def flow_cell(self):
         return self._flow_cell
 
+    @property
+    def report_files(self):
+        if not hasattr(self, "_report_files"):
+            self._report_files = {}
+        return self._report_files
 
-def parse_illumina_raw_readset_files(output_dir, run_type, nanuq_readset_file, casava_sheet_file, lane, genome_root, nb_cycles):
+    @report_files.setter
+    def report_files(self, value):
+        self._report_files = value
+
+def parse_freezeman_readset_files(
+    readset_file,
+    run,
+    run_type,
+    lane,
+    seqtype,
+    read1cycles,
+    read2cycles,
+    index1cycles,
+    index2cycles,
+    output_dir,
+    platform
+    ):
+
     readsets = []
     samples = []
+    skipped_db = []
     GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
 
-    # Parsing Nanuq readset sheet
-    log.info("Parse Nanuq Illumina readset file " + nanuq_readset_file + " ...")
-    readset_csv = csv.DictReader(open(nanuq_readset_file, 'rb'), delimiter=',', quotechar='"')
-    genome_build = None
-    for line in readset_csv:
-        current_lane = line['Region']
+    # Parsing Freezeman event file
+    log.info("Parsing Freezeman event file " + readset_file + " for readset in lane " + lane + "...")
 
-        if int(current_lane) != lane:
+    with open(readset_file, "r") as jff:
+        readset_json = json.load(jff)
+
+    for rdst in readset_json:
+        adapter_file = config.param('DEFAULT', 'adapter_type_file', param_type='filepath', required=False)
+        if not (adapter_file and os.path.isfile(adapter_file)):
+            adapter_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_types.txt')
+        adapter_csv = csv.reader(open(adapter_file, 'r'), delimiter=',', quotechar='"')
+
+        current_lane = rdst['container_coordinates']
+
+        if int(current_lane) != int(lane):
             continue
 
-        sample_name = line['Name']
+        sample_name = rdst['sample_name']
 
         # Always create a new sample
-        sample = Sample(sample_name)
+        sample = RunProcessingSample(sample_name)
         samples.append(sample)
 
         # Create readset and add it to sample
-        readset = IlluminaRawReadset(line['ProcessingSheetId'], run_type)
+        if platform == 'illumina':
+            readset = IlluminaRawReadset(sample_name+"_"+rdst['library_obj_id'], run_type)
+        elif 'mgi' in platform:
+            readset = MGIRawReadset(sample_name+"_"+rdst['library_obj_id'], run_type)
         readset._quality_offset = 33
-        readset._library = line['Library Barcode']
-        readset._library_source = line['Library Source']
-        readset._library_type = line['Library Type']
-        readset._genomic_database = line['Genomic Database']
+        readset._index_name = rdst['index_name']
+        readset._description = rdst['index_set_name']
+        readset._index = [{'INDEX1':index1, 'INDEX2':index2} for index1, index2 in zip_longest(rdst['index_sequence_3_prime'], rdst['index_sequence_3_prime'])]
+        readset._library = rdst['library_obj_id']
+        readset._gender = rdst['expected_sex']
 
-        readset._run = line['Run']
+        readset._protocol = rdst['library_type']
+        readset._library_source = rdst['library_source']
+
+        key = readset.index_name.split('-')[0] if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name) else readset.index_name
+        if readset.index_name:
+            for adapter_line in adapter_csv:
+                if adapter_line:
+                    if adapter_line[0] == key:
+                        readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
+                        readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
+                        break
+            else:
+                _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + " Aborting..."))
+
+        readset._genomic_database = rdst['referemnce']
+        readset._species = rdst['taxon_name']
+
+        readset._run = run
         readset._lane = current_lane
         readset._sample_number = str(len(readsets) + 1)
 
-        readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library"
-                                                                            and re.search("RNA", readset.library_type))
+        readset._flow_cell = rdst['container_barcode']
+        readset._control = "N"
+        readset._recipe = None
+        readset._operator = None
+        readset._project = rdst['project_name']
+        readset._project_id = rdst['project_obj_id']
+        readset._hercules_project = rdst['hercules_project_name']
+        readset._hercules_project_id = rdst['hercules_project_id']
+        readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
+        readset._is_10x = False
+        readset._is_atac = False
+        # if "10x" in readset.protocol:
+        #     readset._is_10x = True
+        # if "ATAC" in readset.protocol:
+        #     readset._is_atac = True
+        if any(s in readset.protocol for s in ["10X_scRNA", "Single Cell RNA"]):
+            readset._is_scrna = True
+        else:
+            readset._is_scrna = False
 
-        if line['BED Files']:
-            readset._beds = line['BED Files'].split(";")
+        if rdst['capture_bed'] and rdst['capture_bed'] != "N/A":
+            readset._beds = rdst['capture_bed'].split(";")[1:]
+            if not rdst['capture_bed'].split(";")[0] == readset.genomic_database:
+                readset._genomic_database = rdst['capture_bed'].split(";")[0]
         else:
             readset._beds = []
 
-        readsets.append(readset)
-        sample.add_readset(readset)
+        fastq_file_pattern = os.path.join(
+            output_dir,
+            "Unaligned." + readset.lane,
+            "Project_" + readset.project_id,
+            "Sample_" + readset.name,
+            readset.name + '_S' + readset.sample_number + "_L00" + readset.lane + "_R{read_number}_001.fastq.gz"
+        )
+        readset.fastq1 = fastq_file_pattern.format(read_number=1)
+        readset.fastq2 = fastq_file_pattern.format(read_number=2) if run_type == "PAIRED_END" else None
+        readset.index_fastq1 = re.sub("_R1_", "_I1_", readset.fastq1) if index1cycles else None
+        readset.index_fastq2 = re.sub("_R2_", "_I2_", readset.fastq2) if index2cycles else None
 
-    # Parsing Casava sheet
-    log.info("Parsing Casava sample sheet " + casava_sheet_file + " ...")
-    casava_csv = csv.DictReader(open(casava_sheet_file, 'rb'), delimiter=',')
-    for line in casava_csv:
-        if int(line['Lane']) != lane:
-            continue
-        processing_sheet_id = line['SampleID']
-        readset = [x for x in readsets if x.name == processing_sheet_id][0]
-        readset._flow_cell = line['FCID']
-        readset._index = line['Index']
-        readset._description = line['Description']
-        readset._control = line['Control']
-        readset._recipe = line['Recipe']
-        readset._operator = line['Operator']
-        readset._project = line['SampleProject']
+        readset._indexes = get_index(readset, index1cycles, index2cycles, seqtype) if index1cycles else None
 
-    # Searching for a matching reference for the specified species
-    for readset in readsets:
+        # Searching for a matching reference for the specified species
+        genome_root = config.param('DEFAULT', 'genome_root', param_type="dirpath")
+
         m = re.search("(?P<build>\w+):(?P<assembly>[\w\.]+)", readset.genomic_database)
         genome_build = None
         if m:
             genome_build = GenomeBuild(m.group('build'), m.group('assembly'))
+        # Setting default human ref if needed
+        elif "Homo sapiens" in readset.species:
+            genome_build = GenomeBuild("Homo_sapiens", "GRCh38")
+        # Setting default mouse ref if needed
+        elif "Mus musculus" in readset.species:
+            genome_build = GenomeBuild("Mus_musculus", "GRCm38")
 
         if genome_build is not None:
             folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
-            current_genome_folder = genome_root + os.sep + folder_name
+            current_genome_folder = os.path.join(genome_root, folder_name)
 
-            if readset.is_rna:
-                readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, nb_cycles)
+            if platform == "illumina":
+                common_platform = "Illumina"
+            elif "mgi" in platform:
+                common_platform = "MGI"
+
+            if readset.is_10x:
+                if readset.is_rna:
+                    readset._aligner = CellrangerRunProcessingAligner(output_dir, current_genome_folder, common_platform)
+                elif readset.is_atac:
+                    readset._aligner = AtacRunProcessingAligner(output_dir, current_genome_folder, common_platform)
+            elif readset.is_rna:
+                if readset.is_scrna:
+                    readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(read2cycles), common_platform)
+                else:
+                    readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(read1cycles), common_platform)                
             else:
-                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder)
+                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder, common_platform)
 
             aligner_reference_index = readset.aligner.get_reference_index()
             annotation_files = readset.aligner.get_annotation_files()
-            reference_file = os.path.join(current_genome_folder,
-                                          "genome",
-                                          folder_name + ".fa")
+            reference_file = readset.aligner.get_reference_file()
+            dictionary_file = readset.aligner.get_dictionary_file()
             if reference_file and os.path.isfile(reference_file):
                 if aligner_reference_index and (os.path.isfile(aligner_reference_index) or os.path.isdir(aligner_reference_index)):
                     readset._aligner_reference_index = aligner_reference_index
                     readset._annotation_files = annotation_files
                     readset._reference_file = reference_file
-                    readset._bam = os.path.join(output_dir,
-                                                "Aligned." + readset.lane,
-                                                'alignment',
-                                                readset.sample.name,
-                                                'run' + readset.run + "_" + readset.lane,
-                                                readset.sample.name + "." + readset.library + ".sorted")
+                    readset._dictionary_file = dictionary_file
+                    readset._bam = os.path.join(
+                        output_dir,
+                        "Aligned." + readset.lane,
+                        'alignment',
+                        sample_name,
+                        'run' + readset.run + "_" + readset.lane,
+                        sample_name + "_" + readset.library + ".sorted"
+                    )
+
                 else:
-                    log.warning("Unable to access the aligner reference file: '" + aligner_reference_index +
-                                "' for aligner: '" + readset.aligner.__class__.__name__ + "'")
+                    log.warning("Unable to access the aligner reference file: '" + aligner_reference_index + "' for aligner: '" + readset.aligner.__class__.__name__ + "'")
             else:
                 log.warning("Unable to access the reference file: '" + reference_file + "'")
 
-        if readset.bam is None and len(readset.genomic_database) > 0:
-            log.info("Skipping alignment for the genomic database: '" + readset.genomic_database + "'")
+        if readset.bam is None and len(readset.genomic_database) > 0 and readset.genomic_database not in skipped_db:
+            skipped_db.append(readset.genomic_database)
 
+        readsets.append(readset)
+        sample.add_readset(readset)
+
+    if len(skipped_db) > 0:
+        log.info("Skipping alignment for the genomic database: '" + "', '".join(skipped_db) + "'")
+    log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
+    log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
+
+    return readsets
+
+def parse_clarity_readset_files(
+    readset_file,
+    run,
+    run_type,
+    lane,
+    seqtype,
+    read1cycles,
+    read2cycles,
+    index1cycles,
+    index2cycles,
+    output_dir,
+    platform
+    ):
+
+    readsets = []
+    samples = []
+    skipped_db = []
+    GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
+
+    # Parsing Clarity event file
+    log.info(f"Parsing Clarity event file {readset_file} for readset in lane {lane}...")
+
+    readset_csv = csv.DictReader(open(readset_file, 'r'), delimiter='\t', quotechar='"')
+
+    for line in readset_csv:
+        protocol_file = config.param('DEFAULT', 'library_protocol_file', param_type='filepath', required=False)
+        if not (protocol_file and os.path.isfile(protocol_file)):
+            protocol_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'library_protocol_list.csv')
+        protocol_csv = csv.DictReader(open(protocol_file, 'r'), delimiter=',', quotechar='"')
+
+        adapter_file = config.param('DEFAULT', 'adapter_type_file', param_type='filepath', required=False)
+        if not (adapter_file and os.path.isfile(adapter_file)):
+            adapter_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_types.txt')
+        adapter_csv = csv.reader(open(adapter_file, 'r'), delimiter=',', quotechar='"')
+
+        index_file = config.param('DEFAULT', 'index_settings_file', param_type='filepath', required=False)
+        if not (index_file and os.path.isfile(index_file)):
+            index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
+        index_csv = csv.reader(open(index_file, 'r'), delimiter=',', quotechar='"')
+
+        current_lane = line['Position'].split(':')[0]
+
+        if int(current_lane) != int(lane):
+            continue
+
+        sample_name = line['SampleName']
+
+        # Always create a new sample
+        sample = RunProcessingSample(sample_name)
+        samples.append(sample)
+
+        # Create readset and add it to sample
+        if platform == 'illumina':
+            readset = IlluminaRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
+        elif 'mgi' in platform:
+            readset = MGIRawReadset(line['SampleName']+"_"+line['LibraryLUID'], run_type)
+        readset._quality_offset = 33
+        readset._description = line['Index'].split(' ')[0]
+        readset._index_name = line['Index']
+        readset._library = line['LibraryLUID']
+        readset._gender = line['Gender'] if line['Gender'] else 'N/A'
+
+        for protocol_line in protocol_csv:
+            if protocol_line['Clarity Step Name'] == line['LibraryProcess']:
+                readset._protocol = line['LibraryProcess']
+                readset._library_source = protocol_line['Processing Protocol Name']
+                readset._library_type = protocol_line['Library Structure']
+
+                if readset.index_name:
+                    # Dual Index
+                    if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name):
+                        key = readset.index_name.split('-')[0]
+                        for idx, index in enumerate(readset.index_name.split("-")):
+                            for index_line in index_csv:
+                                if index_line and index_line[0] == index:
+                                    if idx > 0 and len(index_line[1]) > 0:
+                                        index2 = index_line[1]
+                                    else:
+                                        index1 = index_line[1]
+                                    break
+                            else:
+                                _raise(SanitycheckError("Could not find index " + index + " in index file " + index_file + " Aborting..."))
+                        index_from_lims = [{'INDEX1':index1, 'INDEX2':index2}]
+                    # Single-index (pooled or not)
+                    else:
+                        key = readset.index_name
+                        for index_line in index_csv:
+                            if index_line and index_line[0] == key:
+                                index_from_lims = [{'INDEX1':index, 'INDEX2':""} for index in index_line[1:] if len(index) > 0]
+                                break
+                        else:
+                            _raise(SanitycheckError("Could not find index " + key + " in index file file " + index_file + " Aborting..."))
+                    readset._index = index_from_lims
+
+                    for adapter_line in adapter_csv:
+                        if adapter_line:
+                            if adapter_line[0] == key:
+                                readset._library_type = adapter_line[1]  # TruSeq, Nextera, TenX...
+                                readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
+                                break
+                    else:
+                        _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + " Aborting..."))
+                    # At this point, inedx_file, adapter_file  protocol_file were succesfully parsed, then exit the loop !
+                    break
+        else:
+            _raise(SanitycheckError("Could not find protocol '" + line['LibraryProcess'] + "' (from event file " + readset_file + ") in protocol library file " + protocol_file + " for readset " + readset.name + " Aborting..."))
+
+        readset._genomic_database = line['Reference']
+        readset._species = line['Species']
+
+        readset._run = run
+        readset._lane = current_lane
+        readset._sample_number = str(len(readsets) + 1)
+
+        readset._flow_cell = line['ContainerName']
+        readset._control = "N"
+        readset._recipe = None
+        readset._operator = None
+        readset._project = line['ProjectName']
+        readset._project_id = line['ProjectLUID']
+        readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
+        readset._is_10x = False
+        readset._is_atac = False
+        # if "10x" in readset.protocol:
+        #     readset._is_10x = True
+        # if "ATAC" in readset.protocol:
+        #     readset._is_atac = True
+        if any(s in readset.protocol for s in ["10X_scRNA", "Single Cell RNA"]):
+            readset._is_scrna = True
+        else:
+            readset._is_scrna = False
+
+        if line['Capture REF_BED'] and line['Capture REF_BED'] != "N/A":
+            readset._beds = line['Capture REF_BED'].split(";")[1:]
+            if not line['Capture REF_BED'].split(";")[0] == readset.genomic_database:
+                readset._genomic_database = line['Capture REF_BED'].split(";")[0]
+        else:
+            readset._beds = []
+
+        fastq_file_pattern = os.path.join(
+            output_dir,
+            "Unaligned." + readset.lane,
+            "Project_" + readset.project_id,
+            "Sample_" + readset.name,
+            readset.name + '_S' + readset.sample_number + "_L00" + readset.lane + "_R{read_number}_001.fastq.gz"
+        )
+        readset.fastq1 = fastq_file_pattern.format(read_number=1)
+        readset.fastq2 = fastq_file_pattern.format(read_number=2) if run_type == "PAIRED_END" else None
+        readset.index_fastq1 = re.sub("_R1_", "_I1_", readset.fastq1) if index1cycles else None
+        readset.index_fastq2 = re.sub("_R2_", "_I2_", readset.fastq2) if index2cycles else None
+
+        readset._indexes = get_index(readset, index1cycles, index2cycles, seqtype) if index1cycles else None
+
+        # Searching for a matching reference for the specified species
+        genome_root = config.param('DEFAULT', 'genome_root', param_type="dirpath")
+
+        m = re.search("(?P<build>\w+):(?P<assembly>[\w\.]+)", readset.genomic_database)
+        genome_build = None
+        if m:
+            genome_build = GenomeBuild(m.group('build'), m.group('assembly'))
+        # Setting default human ref if needed
+        elif "Homo sapiens" in readset.species:
+            genome_build = GenomeBuild("Homo_sapiens", "GRCh38")
+        # Setting default mouse ref if needed
+        elif "Mus musculus" in readset.species:
+            genome_build = GenomeBuild("Mus_musculus", "GRCm38")
+
+        if genome_build is not None:
+            folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
+            current_genome_folder = os.path.join(genome_root, folder_name)
+
+            if platform == "illumina":
+                common_platform = "Illumina"
+            elif "mgi" in platform:
+                common_platform = "MGI"
+
+            if readset.is_10x:
+                if readset.is_rna:
+                    readset._aligner = CellrangerRunProcessingAligner(output_dir, current_genome_folder, common_platform)
+                elif readset.is_atac:
+                    readset._aligner = AtacRunProcessingAligner(output_dir, current_genome_folder, common_platform)
+            elif readset.is_rna:
+                if readset.is_scrna:
+                    readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(read2cycles), common_platform)
+                else:
+                    readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(read1cycles), common_platform)                
+            else:
+                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder, common_platform)
+
+            aligner_reference_index = readset.aligner.get_reference_index()
+            annotation_files = readset.aligner.get_annotation_files()
+            reference_file = readset.aligner.get_reference_file()
+            dictionary_file = readset.aligner.get_dictionary_file()
+            if reference_file and os.path.isfile(reference_file):
+                if aligner_reference_index and (os.path.isfile(aligner_reference_index) or os.path.isdir(aligner_reference_index)):
+                    readset._aligner_reference_index = aligner_reference_index
+                    readset._annotation_files = annotation_files
+                    readset._reference_file = reference_file
+                    readset._dictionary_file = dictionary_file
+                    readset._bam = os.path.join(
+                        output_dir,
+                        "Aligned." + readset.lane,
+                        'alignment',
+                        sample_name,
+                        'run' + readset.run + "_" + readset.lane,
+                        sample_name + "_" + readset.library + ".sorted"
+                    )
+
+                else:
+                    log.warning("Unable to access the aligner reference file: '" + aligner_reference_index + "' for aligner: '" + readset.aligner.__class__.__name__ + "'")
+            else:
+                log.warning("Unable to access the reference file: '" + reference_file + "'")
+
+        if readset.bam is None and len(readset.genomic_database) > 0 and readset.genomic_database not in skipped_db:
+            skipped_db.append(readset.genomic_database)
+
+        readsets.append(readset)
+        sample.add_readset(readset)
+
+    if len(skipped_db) > 0:
+        log.info("Skipping alignment for the genomic database: '" + "', '".join(skipped_db) + "'")
     log.info(str(len(readsets)) + " readset" + ("s" if len(readsets) > 1 else "") + " parsed")
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
+class MGIReadset(Readset):
+
+    def __init__(self, name, run_type):
+        super(MGIReadset, self).__init__(name)
+
+        if run_type in ("PAIRED_END", "SINGLE_END"):
+            self._run_type = run_type
+        else:
+            raise Exception("Error: readset run_type \"" + run_type +
+                "\" is invalid (should be \"PAIRED_END\" or \"SINGLE_END\")!")
+
+        self.fastq1 = None
+        self.fastq2 = None
+
+    @property
+    def run_type(self):
+        return self._run_type
+
+    @property
+    def bam(self):
+        if not hasattr(self, "_bam"):
+            return None
+        else:
+            return self._bam
+
+    @property
+    def umi(self):
+        if not hasattr(self, "_umi"):
+            return None
+        else:
+            return self._umi
+
+    @property
+    def gender(self):
+        if not hasattr(self, "_gender"):
+            return None
+        else:
+            return self._gender
+
+    @property
+    def library(self):
+        return self._library
+
+    @property
+    def run(self):
+        return self._run
+
+    @property
+    def lane(self):
+        return self._lane
+
+    @property
+    def adapter1(self):
+        if not hasattr(self, "_adapter1"):
+            return None
+        else:
+            return self._adapter1
+
+    @property
+    def adapter2(self):
+        if not hasattr(self, "_adapter2"):
+            return None
+        else:
+            return self._adapter2
+
+    @property
+    def primer1(self):
+        if not hasattr(self, "_primer1"):
+            return None
+        else:
+            return self._primer1
+
+    @property
+    def primer2(self):
+        if not hasattr(self, "_primer2"):
+            return None
+        else:
+            return self._primer2
+
+    @property
+    def quality_offset(self):
+        return self._quality_offset
+
+    @property
+    def beds(self):
+        return self._beds
+
+def parse_mgi_readset_file(
+    mgi_readset_file
+    ):
+
+    readsets = []
+    samples = []
+
+    log.info("Parsing MGI readset file " + mgi_readset_file + " ...")
+    readset_csv = csv.DictReader(open(mgi_readset_file, 'r'), delimiter='\t')
+    for line in readset_csv:
+        sample_name = line['Sample']
+        sample_names = [sample.name for sample in samples]
+        if sample_name in sample_names:
+            # Sample already exists
+            sample = samples[sample_names.index(sample_name)]
+        else:
+            # Create new sample
+            sample = Sample(sample_name)
+            samples.append(sample)
+
+        # Create readset and add it to sample
+        readset = MGIReadset(line['Readset'], line['RunType'])
+
+        # Readset file paths are either absolute or relative to the readset file
+        # Convert them to absolute paths
+        for format in ("BAM", "FASTQ1", "FASTQ2"):
+            if line.get(format, None):
+                line[format] = os.path.expandvars(line[format])
+                if not os.path.isabs(line[format]):
+                    line[format] = os.path.dirname(os.path.abspath(os.path.expandvars(mgi_readset_file))) + os.sep + line[format]
+                line[format] = os.path.normpath(line[format])
+
+        readset._bam = line.get('BAM', None)
+        readset._umi = line.get('UMI', None)
+        readset.fastq1 = line.get('FASTQ1', None)
+        readset.fastq2 = line.get('FASTQ2', None)
+        readset._library = line.get('Library', None)
+        readset._run = line.get('Run', None)
+        readset._lane = line.get('Lane', None)
+        readset._adapter1 = line.get('Adapter1', None)
+        readset._adapter2 = line.get('Adapter2', None)
+        #ASVA add-on
+        readset._primer1 = line.get('primer1', None)
+        readset._primer2 = line.get('primer2', None)
+        #remove the adapter from the primer sequences
+        if readset._primer1 :
+            readset._primer1 = readset._primer1.replace(readset._adapter1,"")
+        if readset._primer2 :
+            readset._primer2 = readset._primer2.replace(readset._adapter2,"")
+
+        readset._quality_offset = int(line['QualityOffset']) if line.get('QualityOffset', None) else None
+        readset._beds = line['BED'].split(";") if line.get('BED', None) else []
+
+        readsets.append(readset)
+        sample.add_readset(readset)
+
+class MGIRawReadset(MGIReadset):
+
+    def __init__(self, name, run_type):
+        super(MGIRawReadset, self).__init__(name, run_type)
+
+    @property
+    def index_name(self):
+        return self._index_name
+
+    @property
+    def index(self):
+        return self._index
+
+    @property
+    def indexes(self):
+        return self._indexes
+
+    @property
+    def index_number(self):
+        return self._index_number
+
+    @property
+    def index_type(self):
+        return self._index_type
+
+    @property
+    def sample_number(self):
+        return self._sample_number
+
+    @property
+    def aligner(self):
+        return self._aligner
+
+    @property
+    def aligner_reference_index(self):
+        return self._aligner_reference_index
+
+    @property
+    def reference_file(self):
+        return self._reference_file
+
+    @property
+    def is_rna(self):
+        return self._is_rna
+
+    @property
+    def is_scrna(self):
+        return self._is_scrna
+
+    @property
+    def library_source(self):
+        return self._library_source
+
+    @property
+    def is_mgi_index(self):
+       return self._is_mgi_index
+
+    @property
+    def library_type(self):
+        return self._library_type
+
+    @property
+    def protocol(self):
+        return self._protocol
+
+    @property
+    def annotation_files(self):
+        if not hasattr(self, "_annotation_files"):
+            return None
+        else:
+            return self._annotation_files
+
+    @property
+    def genomic_database(self):
+        return self._genomic_database
+
+    @property
+    def species(self):
+        return self._species
+
+    @property
+    def project_id(self):
+        return self._project_id
+
+    @property
+    def project(self):
+        return self._project
+
+    @property
+    def flow_cell(self):
+        return self._flow_cell
+
+    @property
+    def report_files(self):
+        if not hasattr(self, "_report_files"):
+            self._report_files = {}
+        return self._report_files
+
+    @report_files.setter
+    def report_files(self, value):
+        self._report_files = value
 
 class PacBioReadset(Readset):
 
@@ -446,7 +1076,7 @@ def parse_pacbio_readset_file(pacbio_readset_file):
     samples = []
 
     log.info("Parse PacBio readset file " + pacbio_readset_file + " ...")
-    readset_csv = csv.DictReader(open(pacbio_readset_file, 'rb'), delimiter='\t')
+    readset_csv = csv.DictReader(open(pacbio_readset_file, 'r'), delimiter='\t')
     for line in readset_csv:
         sample_name = line['Sample']
         sample_names = [sample.name for sample in samples]
@@ -637,3 +1267,174 @@ def checkDuplicateReadsets(readset_file):
 
     return execption_message
 
+def get_index(
+    readset,
+    index1cycles,
+    index2cycles,
+    seqtype
+    ):
+    """
+    Builds an array of dict defining all the indexes of the readset
+    """
+
+    indexes = []
+    index1 = ""
+    index2 = ""
+    index1seq = ""
+    index2seq = ""
+
+    index_file = config.param('DEFAULT', 'index_settings_file', param_type='filepath', required=False)
+    if not (index_file and os.path.isfile(index_file)):
+        index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
+
+    index_str_pattern = "grep '%s,' %s | head -n1"
+    if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name):
+        index1 = readset.index_name.split("-")[0]
+        index2 = readset.index_name.split("-")[1]
+        index1_str = subprocess.check_output(index_str_pattern % (index1, index_file), shell=True, text=True).strip()
+        index2_str = subprocess.check_output(index_str_pattern % (index2, index_file), shell=True, text=True).strip()
+        index1_seq = index1_str.split(",")[1:]
+        index2_seq = index2_str.split(",")[1:]
+        if len(index1_seq) == len(index2_seq):
+            for (index1seq, index2seq) in zip(index1_seq, index2_seq):
+                [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = sub_get_index(readset, index1seq, index2seq, index1cycles, index2cycles, seqtype)
+                indexes.append({
+                    'SAMPLESHEET_NAME': readset.name,
+                    'LIBRARY': readset.library,
+                    'PROJECT': readset.project_id,
+                    'INDEX_NAME': readset.index_name,
+                    'INDEX1': actual_index1seq,
+                    'INDEX2': actual_index2seq,
+                    'ADAPTERi7' : adapteri7,
+                    'ADAPTERi5' : adapteri5
+                })
+        else:
+            error_msg = "Error: BAD INDEX DEFINITION for " + readset.name + "...\nDUALINDEX barcodes do not contain the same number of index sequences :\n"
+            error_msg += index1 + " : " + ",".join(index1_seq) + "\n"
+            error_msg += index2 + " : " + ",".join(index2_seq)
+            _raise(SanitycheckError(error_msg))
+
+    else:
+        index = readset.index_name
+        index_str = subprocess.check_output(index_str_pattern % (index, index_file), shell=True, text=True).strip()
+        index_seq = index_str.split(",")[1:]
+        char = ord("A")
+        for seq in index_seq:
+            if readset.library_type == "tenX_sc_RNA_v1" or readset.library_type == "TELL-Seq" or readset.library_type == "SHARE-Seq_ATAC" or readset.library_type == "SHARE-Seq_RNA":
+                index2seq = seq
+            else:
+                index1seq = seq
+            [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = sub_get_index(readset, index1seq, index2seq, index1cycles, index2cycles, seqtype)
+            indexes.append({
+                'SAMPLESHEET_NAME': readset.name if len(index_seq) == 1 else readset.name + "_" + chr(char),
+                'LIBRARY': readset.library,
+                'PROJECT': readset.project_id,
+                'INDEX_NAME': readset.index_name,
+                'INDEX1': actual_index1seq,
+                'INDEX2': actual_index2seq,
+                'ADAPTERi7' : adapteri7,
+                'ADAPTERi5' : adapteri5
+            })
+            char += 1
+
+    return indexes
+
+def sub_get_index(
+    readset,
+    index1seq,
+    index2seq,
+    index1cycles,
+    index2cycles,
+    seqtype
+    ):
+    """
+    Constructs the actual sequence of the indexes
+    """
+    index_file = config.param('DEFAULT', 'index_settings_file', param_type='filepath', required=False)
+    if not (index_file and os.path.isfile(index_file)):
+        index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
+
+    index_fh = open(index_file, 'r')
+    index_line = index_fh.readline()
+    while index_line:
+        if (len(index_line.split(', ')) > 0) and (seqtype in index_line.split(', ')):
+            readt1_def = index_fh.readline()
+            readt2_def = index_fh.readline()
+            indext1_def = index_fh.readline().split(' - ')[1]
+            indext2_def = index_fh.readline().split(' - ')[1]
+            readn1_def = index_fh.readline()
+            readn2_def = index_fh.readline()
+            indexn1_def = index_fh.readline().split(' - ')[1]
+            indexn2_def = index_fh.readline().split(' - ')[1]
+            [indext1_primer, indext1_primeroffset] = indext1_def.split(',')
+            [indext2_primer, indext2_primeroffset] = indext2_def.split(',')
+            [indexn1_primer, indexn1_primeroffset] = indexn1_def.split(',')
+            [indexn2_primer, indexn2_primeroffset] = indexn2_def.split(',')
+            break
+        else:
+            index_line = index_fh.readline()
+
+    actual_index1seq=''
+    actual_index2seq=''
+
+    # Get the main sequence patterns
+    while index_line:
+        if index_line.startswith("##"):
+            library_type_def = index_fh.readline()
+            if library_type_def.split(':')[0] == readset.library_type:
+                empty_line = index_fh.readline()
+                fwd_line_def = index_fh.readline()
+                index1_main_seq = re.sub("[\s|\-|']", '', re.sub("3'", "", re.sub("5'", "", fwd_line_def)))
+                adapteri7 = index1_main_seq.split("[i7]")[0].split("]")[-1]
+                if indext1_primer in fwd_line_def:
+                    index1_primer = indext1_primer
+                    index1_primeroffset = int(indext1_primeroffset)
+                else:
+                    index1_primer = indexn1_primer
+                    index1_primeroffset = int(indexn1_primeroffset)
+
+                rev_line_def = index_fh.readline()
+                index2_main_seq = re.sub("[\s|\-|']", '', re.sub("3'", "", re.sub("5'", "", rev_line_def)))
+                adapteri5 = index2_main_seq.split("[i5c]")[1].split("[")[0][::-1]
+                if (indext2_primer in fwd_line_def) or (indext2_primer in rev_line_def):
+                    index2_primer = indext2_primer
+                    index2_primeroffset = int(indext2_primeroffset)
+                    if indext2_primer in fwd_line_def:
+                        index2_main_seq = index1_main_seq
+                        adapteri5 = index2_main_seq.split("[i5]")[1].split("[")[0].replace("A", "T").replace("C", "G").replace("T", "A").replace("G", "C")[::-1]
+                else:
+                    index2_primer = indexn2_primer
+                    index2_primeroffset = int(indexn2_primeroffset)
+                    
+                break
+        else:
+            index_line = index_fh.readline()
+    index_fh.close()
+
+    if index1cycles:
+        if len(index1seq) < int(index1cycles):
+            index1_primer_seq = index1_primer[:len(index1seq)-int(index1cycles)]
+        else:
+            index1_primer_seq = index1_primer
+        index1_primer_seq = index1_primer
+        if index1_primer_seq:
+            if readset.library_type == 'tenX_sc_RNA_v1' or readset.library_type == 'TELL-Seq' or readset.library_type == "SHARE-Seq_ATAC" or readset.library_type == "SHARE-Seq_RNA":
+                actual_index1seq = ""
+            elif seqtype in ["dnbseqg400", "dnbseqt7"] and readset.run_type == "PAIRED_END":
+                actual_index1seq = re.sub("\[", "", re.sub("\]", "", re.sub("i7", index1seq, index1_main_seq.split(index1_primer_seq)[1])))[index1_primeroffset:index1_primeroffset+int(index1cycles)].replace("A", "T").replace("C", "G").replace("T", "A").replace("G", "C")[::-1]
+            else:
+                actual_index1seq = re.sub("\[", "", re.sub("\]", "", re.sub("i7", index1seq, index1_main_seq.split(index1_primer_seq)[1])))[index1_primeroffset:index1_primeroffset+int(index1cycles)]
+
+    if index2cycles:
+        if len(index2seq) < int(index2cycles):
+            index2_primer_seq = index2_primer[:len(index2seq)-int(index2cycles)]
+        else:
+            index2_primer_seq = index2_primer
+        index2_primer_seq = index2_primer
+        if index2_primer_seq:
+            if seqtype in ["hiseqx", "hiseq4000", "iSeq"] or (seqtype in ["dnbseqg400", "dnbseqt7"] and readset.run_type == "PAIRED_END"):
+                actual_index2seq = re.sub("\[", "", re.sub("\]", "", re.sub("i5c", index2seq.replace("A", "t").replace("C", "g").replace("T", "a").replace("G", "c").upper(), index2_main_seq.split(index2_primer_seq)[0])))[::-1][index2_primeroffset:index2_primeroffset+int(index2cycles)]
+            else:
+                actual_index2seq = re.sub("\[", "", re.sub("\]", "", re.sub("i5", index2seq, index2_main_seq.split(index2_primer_seq)[1])))[index2_primeroffset:index2_primeroffset+int(index2cycles)]
+
+    return [actual_index1seq, actual_index2seq, adapteri7, adapteri5]

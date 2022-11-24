@@ -24,7 +24,12 @@ import os
 from core.config import *
 from core.job import *
 
-def dna_sample_metrics(input_directory, output, experiment_type="unknown"):
+def dna_sample_metrics(
+    input_directory,
+    output,
+    experiment_type="unknown"
+    ):
+
     return Job(
         [input_directory],
         [output],
@@ -44,13 +49,14 @@ Rscript $R_TOOLS/DNAsampleMetrics.R \\
     )
 
 def rnaseqc(
-        sample_file,
-        output_directory,
-        is_single_end=False,
-        gtf_file=None,
-        reference=None,
-        ribosomal_interval_file=None):
-    
+    sample_file,
+    output_directory,
+    is_single_end=False,
+    gtf_file=None,
+    reference=None,
+    ribosomal_interval_file=None
+    ):
+
     return Job(
         [
             sample_file
@@ -88,7 +94,13 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $RNASEQC_JAR
         removable_files=["dummy_rRNA.fa"]
     )
 
-def rpkm_saturation(count_file, gene_size_file, rpkm_directory, saturation_directory):
+def rpkm_saturation(
+    count_file,
+    gene_size_file,
+    rpkm_directory,
+    saturation_directory
+    ):
+
     return Job(
         [count_file],
         [saturation_directory + ".zip"],
@@ -115,7 +127,11 @@ zip -r {saturation_directory}.zip {saturation_directory}""".format(
         removable_files=[saturation_directory]
     )
 
-def snv_graph_metrics(list, output_basename):
+def snv_graph_metrics(
+    list,
+    output_basename
+    ):
+
     return Job(
         [list],
         [output_basename + ".snvGraphMetrics_listFiles.txt"],
@@ -132,7 +148,12 @@ Rscript $R_TOOLS/snvGraphMetrics.R \\
         )
     )
 
-def vcf_stats(input, output, list):
+def vcf_stats(
+    input,
+    output,
+    list
+    ):
+
     return Job(
         [input],
         [output, list],
@@ -153,7 +174,11 @@ python $PYTHON_TOOLS/vcfStats.py \\
         )
     )
 
-def gc_bias(input, output):
+def gc_bias(
+    input,
+    output
+    ):
+
     return Job(
         [input],
         [output],

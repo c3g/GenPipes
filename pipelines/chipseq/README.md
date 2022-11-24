@@ -298,4 +298,13 @@ The mfold parameter used in the model building step is estimated from a peak enr
 The estimated mfold lower bound is 10 and the estimated upper bound can vary between 15 and 100.
 The default mfold parameter of MACS2 is [10,30].
 
+gatk_haplotype_caller
+-------------------------
+GATK haplotype caller for snps and small indels.
+
+merge_and_call_individual_gvcf
+--------------------------
+
+Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
+
 

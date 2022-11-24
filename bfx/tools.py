@@ -20,10 +20,14 @@
 # Python Standard Modules
 import os
 import re
+import logging
+import json
 
 # MUGQIC Modules
 from core.config import config
 from core.job import Job
+
+log = logging.getLogger(__name__)
 
 ## functions for awk tools ##
 
@@ -259,6 +263,70 @@ python3 $PYTHON_TOOLS/fixVS2VCF.py {options} {input} \\
         )
     )
 
+def index_validation(
+    index_json_file,
+    index_metrics_file,
+    bcl2fastq_html_report,
+    lane,
+    mismatches
+    ):
+
+    output_json = os.path.join(os.path.dirname(index_json_file), "index_validation_report.json")
+    return Job(
+        [index_metrics_file, bcl2fastq_html_report],
+        [output_json],
+        [
+            ['index_validation', 'module_mugqic_tools'],
+            ['index_validation', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/runProcessingIndexValidation.py \\
+  -j {index_json} \\
+  -f {index_file} \\
+  -r {bcl2fastq_html_report} \\
+  -l {lane} \\
+  -m {mismatches}""".format(
+            index_json=index_json_file,
+            index_file=index_metrics_file,
+            bcl2fastq_html_report=bcl2fastq_html_report,
+            lane=lane,
+            mismatches=mismatches
+        )
+    )
+
+def run_processing_metrics_to_json(
+    json_file,
+    step,
+    platform,
+    metrics_files,
+    readset=None
+    ):
+
+    if not isinstance(metrics_files, list):
+        metrics_files=[metrics_files]
+
+    return Job(
+        [json_file] + metrics_files,
+        [json_file],
+        [
+            ['metrics_to_json', 'module_mugqic_tools'],
+            ['metrics_to_json', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/runProcessingMetricsToJson.py \\
+  -j {json} \\
+  -s {step} \\
+  -p {platform} \\
+  {inputs} \\
+  {readset}""".format(
+            json=json_file,
+            step=step,
+            platform=platform,
+            inputs="-i " + " -i ".join(metrics_files),
+            readset="-r " + readset if readset else ""
+        )
+    )
+
 def fix_genotypes_strelka(input, output, normal, tumor):
         return Job(
             [input],
@@ -308,9 +376,10 @@ python3 $PYTHON_TOOLS/format2pcgr.py \\
 
 def bed2interval_list(
     bed,
-    output
+    output,
+    ref_dict=None,
     ):
-    
+
     return Job(
         [bed],
         [output],
@@ -323,7 +392,7 @@ bed2IntervalList.pl \\
   --dict {dictionary} \\
   --bed {bed} \\
   > {output}""".format(
-            dictionary=config.param('bed2interval_list', 'genome_dictionary', param_type='filepath'),
+            dictionary=ref_dict if ref_dict else config.param('bed2interval_list', 'genome_dictionary', param_type='filepath'),
             bed=bed,
             output=output
         )
@@ -619,6 +688,82 @@ Rscript $R_TOOLS/methylKit.R \\
 
 
 ## functions for bash tools ##
+
+def sh_sample_tag_summary(
+    fastq_in,
+    output_dir
+    ):
+
+    nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', param_type='int', required=True)
+    align_size = config.param('sample_tag', 'align_size', param_type='int', required=True)
+    mismatches = config.param('sample_tag', 'mismatches', param_type='int', required=True)
+    identity = config.param('sample_tag', 'identity', param_type='float', required=True)
+    database_file = config.param('sample_tag', 'database', param_type='filepath', required=True)
+
+    output_base_name = os.path.basename(fastq_in) + ".subSampled_" + str(nreads_sample_tag) + ".blast.tsv."+ str(align_size) + "bp_" + str(mismatches) + "MM_" + str(int(100*identity)) + "id.tsv.summary.tsv"
+    output_file = os.path.join(output_dir, output_base_name)
+    return Job(
+        [fastq_in],
+        [output_file],
+        [
+            ['sample_tag', 'module_mugqic_tools'],
+            ['sample_tag', 'module_blast'],
+            ['sample_tag', 'module_R']
+        ],
+        command="""\
+bash $TOOLS/estimateSpikeInCount.sh \\
+  {nreads_sample_tag} \\
+  {output_dir} \\
+  {fastq} \\
+  {db} \\
+  {align_size} \\
+  {mismatches} \\
+  {identity}""".format(
+            nreads_sample_tag=nreads_sample_tag,
+            output_dir=output_dir,
+            fastq=fastq_in,
+            db=config.param('sample_tag', 'database', param_type='filepath', required=True),
+            align_size=align_size,
+            mismatches=mismatches,
+            identity=identity
+        )
+    )
+
+def sh_sample_tag_stats(
+    fastq_in,
+    output_dir,
+    sample_tag,
+    readset_name
+    ):
+
+    input_prefix = os.path.join(output_dir, os.path.basename(fastq_in))
+
+    nreads_sample_tag = config.param('sample_tag', 'nreads_sample_tag', param_type='int', required=True)
+    align_size = config.param('sample_tag', 'align_size', param_type='int', required=True)
+    mismatches = config.param('sample_tag', 'mismatches', param_type='int', required=True)
+    identity = int(100 * config.param('sample_tag', 'identity', param_type='float', required=True))
+
+    input_file = input_prefix + ".subSampled_" + str(nreads_sample_tag) + ".blast.tsv." + str(align_size) + "bp_" + str(mismatches) + "MM_" + str(identity) + "id.tsv.summary.tsv"
+    output_file = os.path.join(output_dir, readset_name + ".sample_tag_stats.csv")
+
+    return Job(
+        [fastq_in],
+        [output_file],
+        [
+            ['sample_tag', 'module_mugqic_tools']
+        ],
+        command="""\
+bash $TOOLS/createSampleTagStats.sh \\
+  {input} \\
+  {output} \\
+  {tag} \\
+  {readset}""".format(
+            input=input_file,
+            output=output_file,
+            tag=sample_tag,
+            readset=readset_name
+        )
+    )
 
 def sh_ihec_rna_metrics(input_bam, input_name, input_picard_dup, output_dir):
     output_metrics=os.path.join(output_dir, input_name+".read_stats.txt")

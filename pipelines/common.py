@@ -22,7 +22,7 @@ import argparse
 import os
 import socket
 import sys
-import collections
+from collections import OrderedDict
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
@@ -66,7 +66,7 @@ class MUGQICPipeline(Pipeline):
     @property
     def samples(self):
         if not hasattr(self, "_samples"):
-            self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
+            self._samples = list(OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
         return self._samples
 
     def mugqic_log(self):
@@ -74,7 +74,17 @@ class MUGQICPipeline(Pipeline):
             return None
         server = "http://mugqic.hpc.mcgill.ca/cgi-bin/pipeline.cgi"
         listName = {}
-        for readset in self.readsets:
+
+        # In case of run processing pipelines, self.readsets is actually a dict of list
+        if isinstance(self.readsets, dict):
+            readset_list = []
+            for r_list in self.readsets.values():
+                readset_list.extend(r_list)
+        # In all other pipelines, self.readsets is a list
+        else:
+            readset_list = self.readsets
+
+        for readset in readset_list:
             if readset.sample.name in listName:
                 listName[readset.sample.name]+="."+readset.name
             else:
@@ -107,8 +117,8 @@ class MUGQICPipeline(Pipeline):
 # Call home with pipeline statistics
 {separator_line}
 LOG_MD5=$(echo $USER-'{uniqueIdentifier}' | md5sum | awk '{{ print $1 }}')
-if test -t 1; then ncolors=$(tput colors); if test -n "$ncolors" && test $ncolors -ge 8; then bold="$(tput bold)"; normal="$(tput sgr0)"; yellow="$(tput setaf 3)"; fi; fi
-wget --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to mugqic.hpc.mcgill.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
+if test -t 1; then ncolors=$(tput colors); if test -n "$ncolors" && test $ncolors -ge 8; then bold="$(tput bold)"; normal="$(tput sgr0)"; yellow="$(tput setaf 3)"; else bold="";normal="";yellow=""; fi; fi
+wget --timeout=20 --quiet '{server}?{request}&md5=$LOG_MD5' -O /dev/null || echo "${{bold}}${{yellow}}Warning:${{normal}}${{yellow}} Genpipes ran successfully but was not send telemetry to mugqic.hpc.mcgill.ca. This error will not affect genpipes jobs you have submitted.${{normal}}"
 """.format(separator_line = "#" + "-" * 79, server=server, request=request, uniqueIdentifier=uniqueIdentifier))
 
     def submit_jobs(self):
@@ -138,7 +148,7 @@ class Illumina(MUGQICPipeline):
     @property
     def samples(self):
         if not hasattr(self, "_samples"):
-            self._samples = list(collections.OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
+            self._samples = list(OrderedDict.fromkeys([readset.sample for readset in self.readsets]))
         return self._samples
 
     @property
