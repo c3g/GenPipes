@@ -24,8 +24,8 @@ import sys
 import configparser
 
 # MUGQIC Modules
-from core.job import Job, concat_jobs, pipe_jobs
-from core.config import config, _raise, SanitycheckError
+from .job import Job, concat_jobs, pipe_jobs
+from .config import config, _raise, SanitycheckError
 from bfx import bvatools
 from bfx import verify_bam_id
 from bfx import bwa

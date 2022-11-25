@@ -42,7 +42,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 
-from bfx.readset import parse_clarity_readset_files
+from core.readset import parse_clarity_readset_files
 from bfx import bvatools
 from bfx import picard
 from bfx import fastp
