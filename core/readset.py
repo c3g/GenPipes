@@ -32,13 +32,10 @@ from itertools import zip_longest
 # MUGQIC Modules
 from .run_processing_aligner import BwaRunProcessingAligner, StarRunProcessingAligner, CellrangerRunProcessingAligner, AtacRunProcessingAligner
 from .sample import Sample, RunProcessingSample, NanoporeSample
-from core.config import config, _raise, SanitycheckError
+from .config import config, _raise, SanitycheckError
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
-
-# MUGQIC Modules
-from core.config import config, _raise, SanitycheckError
 
 log = logging.getLogger(__name__)
 
@@ -975,11 +972,26 @@ class MGIRawReadset(MGIReadset):
 
     @property
     def reference_file(self):
-        return self._reference_file
+        if not hasattr(self, "_reference_file"):
+            return None
+        else:
+            return self._reference_file
+
+    @property
+    def dictionary_file(self):
+        return self._dictionary_file
 
     @property
     def is_rna(self):
         return self._is_rna
+
+    @property
+    def is_10x(self):
+        return self._is_10x
+
+    @property
+    def is_atac(self):
+        return self._is_atac
 
     @property
     def is_scrna(self):
@@ -1357,7 +1369,7 @@ def sub_get_index(
     index_fh = open(index_file, 'r')
     index_line = index_fh.readline()
     while index_line:
-        if (len(index_line.split(', ')) > 0) and (seqtype in index_line.split(', ')):
+        if (len(index_line.strip().split(', ')) > 1) and (seqtype in index_line.strip().split(', ')):
             readt1_def = index_fh.readline()
             readt2_def = index_fh.readline()
             indext1_def = index_fh.readline().split(' - ')[1]

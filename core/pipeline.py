@@ -41,7 +41,6 @@ from .scheduler import create_scheduler
 from .step import Step
 
 from bfx import jsonator
-from bfx.sample import Sample
 
 log = logging.getLogger(__name__)
 
