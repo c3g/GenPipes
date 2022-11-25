@@ -881,28 +881,31 @@ $QIIME_HOME/filter_samples_from_otu_table.py \\
             ini_section="qiime_otu_table"
         )
 
-        jobs.append(
-            concat_jobs(
-                [
-                    job_otu_table,
-                    job_filter,
-                    job_filter2,
-                    Job(
-                        command="""\
+        if os.path.exists(sample_name_control) and not self.force_jobs:
+            log.info(f"QIIME OTU table done already... Skipping qiime_otu_table step...")
+        else:
+            jobs.append(
+                concat_jobs(
+                    [
+                        job_otu_table,
+                        job_filter,
+                        job_filter2,
+                        Job(
+                            command="""\
 $QIIME_HOME/biom summarize-table \\
-  -i {otu_table_final} \\
-  > {otu_table_summary}""".format(
-                            otu_table_final=otu_table_final,
-                            otu_table_summary=otu_table_summary
-                        )
-                    ),
-                    bash.mkdir(otu_sample_directory),
-                    job_sample
-                ],
-                name="qiime_otu_table." + re.sub("_otus", "", os.path.basename(otu_directory)),
-                samples=self.samples
+-i {otu_table_final} \\
+> {otu_table_summary}""".format(
+                                otu_table_final=otu_table_final,
+                                otu_table_summary=otu_table_summary
+                            )
+                        ),
+                        bash.mkdir(otu_sample_directory),
+                        job_sample
+                    ],
+                    name="qiime_otu_table." + re.sub("_otus", "", os.path.basename(otu_directory)),
+                    samples=self.samples
+                )
             )
-        )
 
         return jobs
 
