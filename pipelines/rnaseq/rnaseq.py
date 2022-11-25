@@ -1164,7 +1164,7 @@ END
         sample_fpkm_readcounts = [[
             sample.name,
             os.path.join(self.output_dirs["cufflinks_directory"], sample.name, "isoforms.fpkm_tracking"),
-            os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.csv")
+            os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.tsv")
         ] for sample in self.samples]
         jobs.append(
             concat_jobs(
