@@ -795,7 +795,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
 
         # RPKM and Saturation
-        count_file = os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.csv")
+        count_file = os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.tsv")
         gene_size_file = config.param('rpkm_saturation', 'gene_size', param_type='filepath')
         rpkm_directory = self.output_dirs["raw_counts_directory"]
         saturation_directory = os.path.join(self.output_dirs["metrics_directory"], "saturation")
@@ -1171,7 +1171,7 @@ END
                 [
                     bash.mkdir(self.output_dirs['exploratory_directory']),
                     gq_seq_utils.exploratory_analysis_rnaseq(
-                        os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.csv"),
+                        os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.tsv"),
                         self.output_dirs["cuffnorm_directory"],
                         config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', param_type='filepath'),
                         self.output_dirs["exploratory_directory"]
@@ -1233,7 +1233,7 @@ cp \\
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
         output_directory = self.output_dirs["DGE_directory"]
-        count_matrix = os.path.join(output_directory, "rawCountMatrix.csv")
+        count_matrix = os.path.join(output_directory, "rawCountMatrix.tsv")
 
         edger_job = differential_expression.edger(
             design_file,
@@ -1308,7 +1308,7 @@ cp \\
         report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeq.differential_expression.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.csv")] +
+                [os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.tsv")] +
                 [os.path.join(self.output_dirs["DGE_directory"], contrast.name, "dge_results.csv") for contrast in self.contrasts] +
                 [os.path.join(self.output_dirs["cuffdiff_directory"], contrast.name, "isoforms.fpkm_tracking") for contrast in self.contrasts] +
                 [os.path.join(self.output_dirs["cuffdiff_directory"], contrast.name, "isoform_exp.diff") for contrast in self.contrasts] +
@@ -1321,12 +1321,12 @@ cp \\
 set -eu -o pipefail && \\
 mkdir -p {report_dir} && \\
 cp {design_file} {report_dir}/design.tsv && \\
-cp DGE/rawCountMatrix.csv {report_dir}/ && \\
+cp DGE/rawCountMatrix.tsv {report_dir}/ && \\
 pandoc \\
   {report_template_dir}/{basename_report_file} \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable design_table="`head -7 {report_dir}/design.tsv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
-  --variable raw_count_matrix_table="`head -7 {report_dir}/rawCountMatrix.csv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
+  --variable raw_count_matrix_table="`head -7 {report_dir}/rawCountMatrix.tsv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
   --variable adj_pvalue_threshold={adj_pvalue_threshold} \\
   --to markdown \\
   > {report_file} && \\
