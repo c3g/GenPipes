@@ -1729,14 +1729,10 @@ done""".format(
                     if mark_type != "I":
                         mark_list.append(mark_name)
 
-                        chip_bam = os.path.join(alignment_dir, sample.name, mark_name,
-                                                sample.name + "." + mark_name + ".sorted.dup.bam")
-                        chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name,
-                                                sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[
-                                                    mark_type] + "Peak.bed")
+                        chip_bam = os.path.join(alignment_dir, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.bam")
+                        chip_bed = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "_peaks." + self.mark_type_conversion[mark_type] + "Peak.bed")
                         output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name)
-                        crosscor_input = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name,
-                                                      sample.name + ".crosscor")
+                        crosscor_input = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, sample.name + ".crosscor")
                         genome = config.param('IHEC_chipseq_metrics', 'assembly')
 
                         if not input_file:
@@ -1744,31 +1740,30 @@ done""".format(
                             input_bam = None
                         else:
                             input_name = input_file[sample.name]  # "".join(input_file.keys())
-                            input_bam = os.path.join(alignment_dir, sample.name, input_name,
-                                                     sample.name + "." + input_name + ".sorted.dup.bam")  # input_file[sample.name]
+                            input_bam = os.path.join(alignment_dir, sample.name, input_name, sample.name + "." + input_name + ".sorted.dup.bam")  # input_file[sample.name]
 
                         jobs.append(
-                            concat_jobs([
-                                bash.mkdir(output_dir),
-                                tools.sh_ihec_chip_metrics(
-                                    chip_bam=chip_bam,
-                                    input_bam=input_bam,
-                                    sample_name=sample.name,
-                                    input_name=input_name,
-                                    chip_name=mark_name,
-                                    chip_type=self.mark_type_conversion[mark_type],
-                                    chip_bed=chip_bed,
-                                    output_dir=output_dir,
-                                    assembly=genome,
-                                    crosscor_input=crosscor_input
-                                )
-                            ],
+                            concat_jobs(
+                                [
+                                    bash.mkdir(output_dir),
+                                    tools.sh_ihec_chip_metrics(
+                                        chip_bam=chip_bam,
+                                        input_bam=input_bam,
+                                        sample_name=sample.name,
+                                        input_name=input_name,
+                                        chip_name=mark_name,
+                                        chip_type=self.mark_type_conversion[mark_type],
+                                        chip_bed=chip_bed,
+                                        output_dir=output_dir,
+                                        assembly=genome,
+                                        crosscor_input=crosscor_input
+                                    )
+                                ],
                                 name="IHEC_chipseq_metrics." + sample.name + "." + mark_name,
                                 removable_files=[output_dir]
                             )
                         )
-                        metrics_to_merge.append(os.path.join(output_dir, mark_name,
-                                                             "IHEC_chipseq_metrics." + sample.name + "." + mark_name + ".tsv"))
+                        metrics_to_merge.append(os.path.join(output_dir, mark_name, "IHEC_chipseq_metrics." + sample.name + "." + mark_name + ".tsv"))
 
             metrics_merged = "IHEC_chipseq_metrics_AllSamples.tsv"
             metrics_merged_out = os.path.join(self.output_dirs['ihecM_output_directory'], metrics_merged)
