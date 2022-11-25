@@ -882,7 +882,7 @@ $QIIME_HOME/filter_samples_from_otu_table.py \\
         )
 
         if os.path.exists(sample_name_control) and not self.force_jobs:
-            log.info(f"QIIME OTU table done already... Skipping qiime_otu_table step...")
+            log.info(f"QIIME OTU table done already... Skipping otu_table step...")
         else:
             jobs.append(
                 concat_jobs(
@@ -1081,17 +1081,21 @@ pandoc --to=markdown \\
         alpha_directory = re.sub('otus', 'alpha_diversity', otu_directory)
         rarefied_otu_directory = os.path.join(alpha_directory, "rarefied_otu_tables")
 
-        job = qiime.multiple_rarefaction(
-            otus_input,
-            rarefied_otu_directory
-        )
+        multiple_rarefaction_done = os.path.join(alpha_directory, "multipleRarefactionDone.txt")
 
-        jobs.append(
+        if os.path.exists(multiple_rarefaction_done) and not self.force_jobs:
+            log.info(f"QIIME multiple rarefaction done already... Skipping multiple_rarefaction step...")
+        else:
+            jobs.append(
             concat_jobs(
                 [
                     # Create an output directory
                     bash.mkdir(alpha_directory),
-                    job
+                    qiime.multiple_rarefaction(
+                        otus_input,
+                        rarefied_otu_directory
+                    ),
+                    bash.touch(multiple_rarefaction_done)
                 ],
                 name="qiime_multiple_rarefaction." + re.sub("_otus", "", os.path.basename(otu_directory)),
                 samples=self.samples
@@ -1182,7 +1186,7 @@ pandoc --to=markdown \\
         alpha_directory = os.path.dirname(os.path.dirname(os.path.dirname(chao1_stat)))
         alpha_diversity_collated_directory = os.path.dirname(os.path.dirname(chao1_stat))
 
-        curve_sample=[]
+        curve_samples=[]
         alpha_diversity_collated_merge_directory = os.path.join(alpha_diversity_collated_directory, "merge_samples")
         alpha_diversity_rarefaction_directory = os.path.join(alpha_directory, "alpha_rarefaction")
 
@@ -1195,21 +1199,11 @@ pandoc --to=markdown \\
             sample_map = os.path.join(sample_collated_general_directory, "map.txt")
             sample_collated_directory = os.path.join(sample_collated_general_directory, "stat")
             sample_rarefaction_directory = os.path.join(alpha_diversity_rarefaction_directory, readset.sample.name)
-            chao1_dir = os.path.join(sample_collated_directory, "chao1.txt")
-            observed_species_dir = os.path.join(sample_collated_directory, "observed_species.txt")
-            shannon_dir = os.path.join(sample_collated_directory, "shannon.txt")
-            observed_species_file = """{}/average_plots/observed_species{}.png""".format(readset.sample.name,str(readset.sample.name).replace('_','.'))
-            curve_sample.append(os.path.join(alpha_diversity_rarefaction_directory,observed_species_file))
-
-            job = qiime.sample_rarefaction_plot(
-                chao1_stat,
-                observed_species_stat,
-                shannon_stat,
-                sample_collated_directory,
-                sample_map,
-                sample_rarefaction_directory,
-                curve_sample,
-            )
+            chao1 = os.path.join(sample_collated_directory, "chao1.txt")
+            observed_species = os.path.join(sample_collated_directory, "observed_species.txt")
+            shannon = os.path.join(sample_collated_directory, "shannon.txt")
+            observed_species_file = os.path.join(readset.sample.name, "average_plots", f"observed_species{str(readset.sample.name).replace('_', '.')}.png")
+            curve_samples.append(os.path.join(alpha_diversity_rarefaction_directory, observed_species_file))
 
             jobs.append(
                 concat_jobs(
@@ -1223,26 +1217,39 @@ pandoc --to=markdown \\
                         ),
                         tools.py_ampliconSeq(
                             [chao1_stat],
-                            [chao1_dir],
+                            [chao1],
                             'sample_rarefaction',
-                            f"-i {chao1_stat} -j {chao1_dir} -s {readset.sample.name}"
+                            f"-i {chao1_stat} -j {chao1} -s {readset.sample.name}"
                         ),
                         tools.py_ampliconSeq(
                             [observed_species_stat],
-                            [observed_species_dir],
+                            [observed_species],
                             'sample_rarefaction',
-                            f"-i {observed_species_stat} -j {observed_species_dir} -s {readset.sample.name}"
+                            f"-i {observed_species_stat} -j {observed_species} -s {readset.sample.name}"
                         ),
                         tools.py_ampliconSeq(
                             [shannon_stat],
-                            [shannon_dir],
+                            [shannon],
                             'sample_rarefaction',
-                            f"-i {shannon_stat} -j {shannon_dir} -s {readset.sample.name}"
+                            f"-i {shannon_stat} -j {shannon} -s {readset.sample.name}"
                         ),
-                        job
+                        qiime.sample_rarefaction_plot(
+                            chao1_stat,
+                            observed_species_stat,
+                            shannon_stat,
+                            sample_collated_directory,
+                            sample_map,
+                            sample_rarefaction_directory,
+                            curve_samples,
+                        )
                     ],
                     name="qiime_sample_rarefaction." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + readset.sample.name,
-                    samples=[readset.sample]
+                    samples=[readset.sample],
+                    output_dependency=[
+                        chao1,
+                        observed_species,
+                        shannon
+                    ] + curve_samples
                 )
             )
 
@@ -1537,25 +1544,30 @@ pandoc --to=markdown \\
             taxonomic_family = os.path.join(taxonomic_directory, "otu_normalized_table_L5.txt")
             taxonomic_genus = os.path.join(taxonomic_directory, "otu_normalized_table_L6.txt")
 
-            job = qiime.summarize_taxa(
-                otu_normalized_table,
-                taxonomic_directory,
-                taxonomic_phylum,
-                taxonomic_class,
-                taxonomic_order,
-                taxonomic_family,
-                taxonomic_genus
-            )
-
             jobs.append(
                 concat_jobs(
                     [
                         # Create an output directory
-                        Job(command="mkdir -p " + alpha_directory),
-                        job
+                        bash.mkdir(alpha_directory),
+                        qiime.summarize_taxa(
+                            otu_normalized_table,
+                            taxonomic_directory,
+                            taxonomic_phylum,
+                            taxonomic_class,
+                            taxonomic_order,
+                            taxonomic_family,
+                            taxonomic_genus
+                        )
                     ],
                     name="qiime_summarize_taxa." + re.sub("_alpha_diversity", ".", os.path.basename(alpha_directory)) + method,
-                    samples=self.samples
+                    samples=self.samples,
+                    output_dependency=[
+                        taxonomic_phylum,
+                        taxonomic_class,
+                        taxonomic_order,
+                        taxonomic_family,
+                        taxonomic_genus
+                    ]
                 )
             )
 
