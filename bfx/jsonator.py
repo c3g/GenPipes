@@ -25,7 +25,6 @@ import json
 
 # MUGQIC Modules
 from core.config import config
-from bfx import sample
 
 log = logging.getLogger(__name__)
 
