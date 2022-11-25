@@ -704,7 +704,7 @@ pandoc \\
             input_bam = alignment_file_prefix + ".QueryNameSorted.bam"
 
             # Count reads
-            output_count = os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.csv")
+            output_count = os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.tsv")
             stranded = "no" if config.param('DEFAULT', 'strand_info') == "fr-unstranded" else "reverse"
             job = concat_jobs(
                 [
