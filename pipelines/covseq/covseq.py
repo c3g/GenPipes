@@ -1451,20 +1451,22 @@ echo "Software Versions
                 if re.search("^module_", name) and value not in modules:
                     modules.append(value)
 
-        job = concat_jobs([
-            bash.mkdir(ivar_ncovtools_data_directory),
-            Job(
+        job = concat_jobs(
+            [
+                bash.mkdir(ivar_ncovtools_data_directory),
+                Job(
                     input_files=[],
                     output_files=[ivar_readset_file_report, ivar_metadata],
                     command="""\\
 head -n 1 {readset_file} > {ivar_readset_file_report} && \\
 echo -e "sample\\tct\\tdate" > {ivar_metadata}""".format(
-    readset_file=readset_file,
-    ivar_readset_file_report=ivar_readset_file_report,
-    ivar_metadata=ivar_metadata
-    )
-                ),
-            ])
+                        readset_file=readset_file,
+                        ivar_readset_file_report=ivar_readset_file_report,
+                        ivar_metadata=ivar_metadata
+                    )
+                )
+            ]
+        )
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
@@ -1480,80 +1482,97 @@ echo -e "sample\\tct\\tdate" > {ivar_metadata}""".format(
             ivar_output_consensus = os.path.join(ivar_ncovtools_data_directory, os.path.basename(ivar_consensus))
             ivar_output_variants = os.path.join(ivar_ncovtools_data_directory, os.path.basename(ivar_variants))
 
-            job = concat_jobs([
-                        job,
-                        Job(
-                            input_files=[filtered_bam, primer_trimmed_bam, ivar_consensus, ivar_variants],
-                            output_files=[ivar_output_filtered_bam, ivar_output_primer_trimmed_bam, ivar_output_consensus, ivar_output_variants],
-                            command="""\\
+            job = concat_jobs(
+                [
+                    job,
+                    Job(
+                        input_files=[
+                            filtered_bam,
+                            primer_trimmed_bam,
+                            ivar_consensus,
+                            ivar_variants
+                        ],
+                        output_files=[
+                            ivar_output_filtered_bam,
+                            ivar_output_primer_trimmed_bam,
+                            ivar_output_consensus,
+                            ivar_output_variants
+                        ],
+                        command="""\\
 echo "Linking files for ncov_tools for sample {sample_name}..." && \\
 if [ "$(ls -1 {filtered_bam})" != "" ] && [ "$(ls -1 {primer_trimmed_bam})" != "" ] && [ "$(ls -1 {ivar_consensus})" != "" ] && [ "$(ls -1 {ivar_variants})" != "" ];
   then
-    ln -fs $(pwd -P )/$(ls -1 {filtered_bam}) {ivar_output_filtered_bam} && \\
-    ln -fs $(pwd -P )/$(ls -1 {primer_trimmed_bam}) {ivar_output_primer_trimmed_bam} && \\
-    ln -fs $(pwd -P )/$(ls -1 {ivar_consensus}) {ivar_output_consensus} && \\
-    ln -fs $(pwd -P )/$(ls -1 {ivar_variants}) {ivar_output_variants} && \\
+    ln -fs {rel_filtered_bam} {ivar_output_filtered_bam} && \\
+    ln -fs {rel_primer_trimmed_bam} {ivar_output_primer_trimmed_bam} && \\
+    ln -fs {rel_ivar_consensus} {ivar_output_consensus} && \\
+    ln -fs {rel_ivar_variants} {ivar_output_variants} && \\
     grep {sample_name} {readset_file} >> {ivar_readset_file_report} && \\
     echo -e "{sample_name}\\tNA\\tNA" >> {ivar_metadata}
 fi""".format(
-    readset_file=readset_file,
-    ivar_readset_file_report=ivar_readset_file_report,
-    filtered_bam=filtered_bam,
-    primer_trimmed_bam=primer_trimmed_bam,
-    ivar_consensus=ivar_consensus,
-    ivar_variants=ivar_variants,
-    ivar_output_filtered_bam=ivar_output_filtered_bam,
-    ivar_output_primer_trimmed_bam=ivar_output_primer_trimmed_bam,
-    ivar_output_consensus=ivar_output_consensus,
-    ivar_output_variants=ivar_output_variants,
-    sample_name=sample.name,
-    ivar_metadata=ivar_metadata
-    )
-                            )
-                    ],
-                    samples=[sample]
+                            readset_file=readset_file,
+                            ivar_readset_file_report=ivar_readset_file_report,
+                            filtered_bam=filtered_bam,
+                            primer_trimmed_bam=primer_trimmed_bam,
+                            ivar_consensus=ivar_consensus,
+                            ivar_variants=ivar_variants,
+                            rel_filtered_bam=os.path.relpath(filtered_bam, os.path.dirname(ivar_output_filtered_bam)),
+                            rel_primer_trimmed_bam=os.path.relpath(primer_trimmed_bam, os.path.dirname(ivar_output_primer_trimmed_bam)),
+                            rel_ivar_consensus=os.path.relpath(ivar_consensus, os.path.dirname(ivar_output_consensus)),
+                            rel_ivar_variants=os.path.relpath(ivar_variants, os.path.dirname(ivar_output_variants)),
+                            ivar_output_filtered_bam=ivar_output_filtered_bam,
+                            ivar_output_primer_trimmed_bam=ivar_output_primer_trimmed_bam,
+                            ivar_output_consensus=ivar_output_consensus,
+                            ivar_output_variants=ivar_output_variants,
+                            sample_name=sample.name,
+                            ivar_metadata=ivar_metadata
+                        )
                     )
+                ],
+                samples=[sample]
+            )
         jobs.append(
-            concat_jobs([
-                job,
-                ncovtools.run_ncovtools(
-                    ivar_output_filtered_bam,
-                    ivar_output_primer_trimmed_bam,
-                    ivar_output_consensus,
-                    ivar_output_variants,
-                    readset_file,
-                    ivar_metadata,
-                    ivar_ncovtools_directory,
-                    ivar_ncovtools_config,
-                    self.output_dir
+            concat_jobs(
+                [
+                    job,
+                    ncovtools.run_ncovtools(
+                        ivar_output_filtered_bam,
+                        ivar_output_primer_trimmed_bam,
+                        ivar_output_consensus,
+                        ivar_output_variants,
+                        readset_file,
+                        ivar_metadata,
+                        ivar_ncovtools_directory,
+                        ivar_ncovtools_config,
+                        self.output_dir
                     ),
-                Job(input_files=[],
-                    output_files=[],
-                    module_entries=[
-                        ['prepare_report', 'module_R'],
-                        ['prepare_report', 'module_CoVSeQ_tools'],
-                        ['prepare_report', 'module_pandoc']
-                    ],
-                    command="""\\
+                    Job(
+                        input_files=[],
+                        output_files=[],
+                        module_entries=[
+                            ['prepare_report', 'module_R'],
+                            ['prepare_report', 'module_CoVSeQ_tools'],
+                            ['prepare_report', 'module_pandoc']
+                        ],
+                        command="""\
 module purge && \\
 module load {R_covseqtools}""".format(
-    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools') + " " + config.param('prepare_report', 'module_pandoc'),
-    output_dir=self.output_dir)
+                            R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools') + " " + config.param('prepare_report', 'module_pandoc'),
+                            output_dir=self.output_dir)
                     ),
-                covseq_tools.generate_report_tables(
-                    ivar_readset_file_report,
-                    output_name_pattern=os.path.join("report", "report_metrics_ivar")
+                    covseq_tools.generate_report_tables(
+                        ivar_readset_file_report,
+                        output_name_pattern=os.path.join("report", "report_metrics_ivar")
                     ),
-                covseq_tools.render_report(
-                    software_version,
-                    run_metadata,
-                    output_name_pattern=os.path.join("report", "report_metrics_ivar"),
-                    caller="ivar"
+                    covseq_tools.render_report(
+                        software_version,
+                        run_metadata,
+                        output_name_pattern=os.path.join("report", "report_metrics_ivar"),
+                        caller="ivar"
                     )
                 ],
                 name="prepare_report." + config.param('prepare_report', 'run_name', required=True)
-                )
             )
+        )
 
         return jobs
 
@@ -1612,79 +1631,84 @@ echo -e "sample\\tct\\tdate" > {freebayes_metadata}""".format(
                     Job(
                         input_files=[filtered_bam, primer_trimmed_bam, freebayes_consensus, freebayes_variants],
                         output_files=[freebayes_output_filtered_bam, freebayes_output_primer_trimmed_bam, freebayes_output_consensus, freebayes_output_variants],
-                        command="""\\
+                        command="""\
 echo "Linking files for ncov_tools for sample {sample_name}..." && \\
 if [ "$(ls -1 {filtered_bam})" != "" ] && [ "$(ls -1 {primer_trimmed_bam})" != "" ] && [ "$(ls -1 {freebayes_consensus})" != "" ] && [ "$(ls -1 {freebayes_variants})" != "" ];
   then
-    ln -fs $(pwd -P )/$(ls -1 {filtered_bam}) {freebayes_output_filtered_bam} && \\
-    ln -fs $(pwd -P )/$(ls -1 {primer_trimmed_bam}) {freebayes_output_primer_trimmed_bam} && \\
-    ln -fs $(pwd -P )/$(ls -1 {freebayes_consensus}) {freebayes_output_consensus} && \\
-    ln -fs $(pwd -P )/$(ls -1 {freebayes_variants}) {freebayes_output_variants} && \\
+    ln -fs {rel_filtered_bam} {freebayes_output_filtered_bam} && \\
+    ln -fs {rel_primer_trimmed_bam} {freebayes_output_primer_trimmed_bam} && \\
+    ln -fs {rel_freebayes_consensus} {freebayes_output_consensus} && \\
+    ln -fs {rel_freebayes_variants} {freebayes_output_variants} && \\
     grep {sample_name} {readset_file} >> {freebayes_readset_file_report} && \\
     echo -e "{sample_name}\\tNA\\tNA" >> {freebayes_metadata}
 fi""".format(
-    readset_file=readset_file,
-    freebayes_readset_file_report=freebayes_readset_file_report,
-    filtered_bam=filtered_bam,
-    primer_trimmed_bam=primer_trimmed_bam,
-    sample_name=sample.name,
-    freebayes_consensus=freebayes_consensus,
-    freebayes_variants=freebayes_variants,
-    freebayes_output_filtered_bam=freebayes_output_filtered_bam,
-    freebayes_output_primer_trimmed_bam=freebayes_output_primer_trimmed_bam,
-    freebayes_output_consensus=freebayes_output_consensus,
-    freebayes_output_variants=freebayes_output_variants,
-    freebayes_metadata=freebayes_metadata
-    )
+                            sample_name=sample.name,
+                            filtered_bam=filtered_bam,
+                            primer_trimmed_bam=primer_trimmed_bam,
+                            freebayes_consensus=freebayes_consensus,
+                            freebayes_variants=freebayes_variants,
+                            rel_filtered_bam=os.path.relpath(filtered_bam, os.path.dirname(freebayes_output_filtered_bam)),
+                            rel_primer_trimmed_bam=os.path.relpath(primer_trimmed_bam, os.path.dirname(freebayes_output_primer_trimmed_bam)),
+                            rel_freebayes_consensus=os.path.relpath(freebayes_consensus, os.path.dirname(freebayes_output_consensus)),
+                            rel_freebayes_variants=os.path.relpath(freebayes_variants, os.path.dirname(freebayes_output_variants)),
+                            freebayes_output_filtered_bam=freebayes_output_filtered_bam,
+                            freebayes_output_primer_trimmed_bam=freebayes_output_primer_trimmed_bam,
+                            freebayes_output_consensus=freebayes_output_consensus,
+                            freebayes_output_variants=freebayes_output_variants,
+                            readset_file=readset_file,
+                            freebayes_readset_file_report=freebayes_readset_file_report,
+                            freebayes_metadata=freebayes_metadata
+                        )
                     )
                 ],
                 samples=[sample]
             )
 
         jobs.append(
-            concat_jobs([
-                job,
-                ncovtools.run_ncovtools(
-                    freebayes_output_filtered_bam,
-                    freebayes_output_primer_trimmed_bam,
-                    freebayes_output_consensus,
-                    freebayes_output_variants,
-                    readset_file,
-                    freebayes_metadata,
-                    freebayes_ncovtools_directory,
-                    freebayes_ncovtools_config,
-                    self.output_dir
+            concat_jobs(
+                [
+                    job,
+                    ncovtools.run_ncovtools(
+                        freebayes_output_filtered_bam,
+                        freebayes_output_primer_trimmed_bam,
+                        freebayes_output_consensus,
+                        freebayes_output_variants,
+                        readset_file,
+                        freebayes_metadata,
+                        freebayes_ncovtools_directory,
+                        freebayes_ncovtools_config,
+                        self.output_dir
                     ),
-                Job(input_files=[],
-                    output_files=[],
-                    module_entries=[
-                        ['prepare_report', 'module_R'],
-                        ['prepare_report', 'module_CoVSeQ_tools'],
-                        ['prepare_report', 'module_pandoc']
-                    ],
-                    command="""\\
+                    Job(
+                        input_files=[],
+                        output_files=[],
+                        module_entries=[
+                            ['prepare_report', 'module_R'],
+                            ['prepare_report', 'module_CoVSeQ_tools'],
+                            ['prepare_report', 'module_pandoc']
+                        ],
+                        command="""\\
 module purge && \\
 module load {R_covseqtools}""".format(
-    R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools') + " " + config.param('prepare_report', 'module_pandoc'),
-    output_dir=self.output_dir)
+                            R_covseqtools=config.param('prepare_report', 'module_R') + " " + config.param('prepare_report', 'module_CoVSeQ_tools') + " " + config.param('prepare_report', 'module_pandoc'),
+                            output_dir=self.output_dir
+                        )
                     ),
-                covseq_tools.generate_report_tables(
-                    freebayes_readset_file_report,
-                    output_name_pattern=os.path.join("report", "report_metrics_freebayes")
+                    covseq_tools.generate_report_tables(
+                        freebayes_readset_file_report,
+                        output_name_pattern=os.path.join("report", "report_metrics_freebayes")
                     ),
-                covseq_tools.render_report(
-                    software_version,
-                    run_metadata,
-                    output_name_pattern=os.path.join("report", "report_metrics_freebayes"),
-                    caller="freebayes"
+                    covseq_tools.render_report(
+                        software_version,
+                        run_metadata,
+                        output_name_pattern=os.path.join("report", "report_metrics_freebayes"),
+                        caller="freebayes"
                     )
                 ],
                 name="prepare_report." + config.param('prepare_report', 'run_name', required=True)
-                )
             )
-
+        )
         return jobs
-
 
     @property
     def steps(self):
