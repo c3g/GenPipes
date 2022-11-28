@@ -900,36 +900,43 @@ done""".format(
                 big_wig_output = os.path.join(bedgraph_dir, "bigWig", sample.name + "." + mark_name + ".bw")
 
                 jobs.append(
-                    concat_jobs([
-                        bash.mkdir(bedgraph_dir),
-                        homer.makeUCSCfile(
-                            tag_dir,
-                            bedgraph_file
-                        )
-                    ],
+                    concat_jobs(
+                        [
+                            bash.mkdir(bedgraph_dir),
+                            homer.makeUCSCfile(
+                                tag_dir,
+                                bedgraph_file
+                            )
+                        ],
                         name="homer_make_ucsc_file." + sample.name + "." + mark_name,
+                        samoples=[sample],
                         removable_files=[bedgraph_dir]
                     )
                 )
 
                 jobs.append(
-                    concat_jobs([
-                        bash.mkdir(os.path.join(bedgraph_dir, "bigWig")),
-                        ucsc.bedGraphToBigWig(
-                            bedgraph_file,
-                            big_wig_output,
-                            header=True,
-                            ini_section="homer_make_ucsc_file")
-                    ],
-                        name="homer_make_ucsc_file_bigWig." + sample.name + "." + mark_name)
+                    concat_jobs(
+                        [
+                            bash.mkdir(os.path.join(bedgraph_dir, "bigWig")),
+                            ucsc.bedGraphToBigWig(
+                                bedgraph_file,
+                                big_wig_output,
+                                header=True,
+                                ini_section="homer_make_ucsc_file")
+                        ],
+                        name="homer_make_ucsc_file_bigWig." + sample.name + "." + mark_name,
+                        samples=[sample]
+                    )
                 )
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.homer_make_ucsc_file.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['tracks_output_directory'], sample.name, mark_name,
-                              sample.name + "." + mark_name + ".ucsc.bedGraph.gz") for sample in self.samples for
-                 mark_name in sample.marks],
+                [
+                    os.path.join(self.output_dirs['tracks_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".ucsc.bedGraph.gz")
+                        for sample in self.samples
+                            for mark_name in sample.marks
+                ],
                 [report_file],
                 command="""\
 mkdir -p {report_dir} && \\
@@ -945,7 +952,6 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                 name="homer_make_ucsc_file_report"  # ".".join([sample.name for sample in self.samples])
             )
         )
-
         return jobs
 
     def macs2_callpeak(self):
@@ -1353,54 +1359,52 @@ done""".format(
                         genome_size = config.param('homer_annotate_peaks', 'genome_size', required=False) if config.param('homer_annotate_peaks', 'genome_size', required=False) else self.mappable_genome_size()
 
                         jobs.append(
-                            concat_jobs([
-                                bash.mkdir(output_dir),
-                                homer.annotatePeaks(
-                                    peak_file,
-                                    genome,
-                                    output_dir,
-                                    annotation_file,
-                                    genome_size
-                                ),
-                                Job(
-                                    [annotation_file],
-                                    [
-                                        output_prefix + ".tss.stats.csv",
-                                        output_prefix + ".exon.stats.csv",
-                                        output_prefix + ".intron.stats.csv",
-                                        output_prefix + ".tss.distance.csv"
-                                    ],
-                                    [['homer_annotate_peaks', 'module_perl'],
-                                     ['homer_annotate_peaks', 'module_mugqic_tools']],
-                                    command="""\
-    perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
-      "{annotation_file}",
-      "{output_prefix}",
-      {proximal_distance},
-      {distal_distance},
-      {distance5d_lower},
-      {distance5d_upper},
-      {gene_desert_size}
-    )'""".format(
-                                        annotation_file=annotation_file,
-                                        output_prefix=output_prefix,
-                                        proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance',
-                                                                       param_type='int'),
-                                        distal_distance=config.param('homer_annotate_peaks', 'distal_distance',
-                                                                     param_type='int'),
-                                        distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower',
-                                                                      param_type='int'),
-                                        distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper',
-                                                                      param_type='int'),
-                                        gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size',
-                                                                      param_type='int')
+                            concat_jobs(
+                                [
+                                    bash.mkdir(output_dir),
+                                    homer.annotatePeaks(
+                                        peak_file,
+                                        genome,
+                                        output_dir,
+                                        annotation_file,
+                                        genome_size
                                     ),
-                                    removable_files=[
-                                        os.path.join(self.output_dirs['anno_output_directory'], sample.name,
-                                                     mark_name)],
-                                )
-                            ],
-                                name="homer_annotate_peaks." + sample.name + "." + mark_name)
+                                    Job(
+                                        [annotation_file],
+                                        [
+                                            output_prefix + ".tss.stats.csv",
+                                            output_prefix + ".exon.stats.csv",
+                                            output_prefix + ".intron.stats.csv",
+                                            output_prefix + ".tss.distance.csv"
+                                        ],
+                                        [
+                                            ['homer_annotate_peaks', 'module_perl'],
+                                            ['homer_annotate_peaks', 'module_mugqic_tools']
+                                        ],
+                                        command="""\
+perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
+  "{annotation_file}",
+  "{output_prefix}",
+  {proximal_distance},
+  {distal_distance},
+  {distance5d_lower},
+  {distance5d_upper},
+  {gene_desert_size}
+)'""".format(
+                                            annotation_file=annotation_file,
+                                            output_prefix=output_prefix,
+                                            proximal_distance=config.param('homer_annotate_peaks', 'proximal_distance', param_type='int'),
+                                            distal_distance=config.param('homer_annotate_peaks', 'distal_distance', param_type='int'),
+                                            distance5d_lower=config.param('homer_annotate_peaks', 'distance5d_lower', param_type='int'),
+                                            distance5d_upper=config.param('homer_annotate_peaks', 'distance5d_upper', param_type='int'),
+                                            gene_desert_size=config.param('homer_annotate_peaks', 'gene_desert_size', param_type='int')
+                                        ),
+                                        removable_files=[os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)],
+                                    )
+                                ],
+                                name="homer_annotate_peaks." + sample.name + "." + mark_name,
+                                sample=[sample]
+                            )
                         )
 
                     else:
@@ -1436,7 +1440,6 @@ done""".format(
                     name="homer_annotate_peaks_report"  # ".".join([sample.name for sample in self.samples])
                 )
             )
-
             return jobs
 
     def homer_find_motifs_genome(self):
@@ -1466,18 +1469,17 @@ done""".format(
                         genome = config.param('homer_annotate_peaks', 'genome', required=False) if config.param('homer_annotate_peaks', 'genome', required=False) else self.ucsc_genome
 
                         jobs.append(
-                            concat_jobs([
-                                bash.mkdir(output_dir),
-                                homer.findMotifsGenome(
-                                    peak_file,
-                                    genome,
-                                    output_dir,
-                                    config.param('homer_find_motifs_genome', 'threads', param_type='posint')
-                                )
-                            ],
+                            concat_jobs(
+                                [
+                                    bash.mkdir(output_dir),
+                                    homer.findMotifsGenome(
+                                        peak_file,
+                                        genome,
+                                        output_dir
+                                    )
+                                ],
                                 name="homer_find_motifs_genome." + sample.name + "." + mark_name,
-                                removable_files=[
-                                    os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)]
+                                removable_files=[os.path.join(self.output_dirs['anno_output_directory'], sample.name, mark_name)]
                             )
                         )
                         counter = counter + 1

@@ -75,9 +75,8 @@ def bgzip_tabix(
             ['htslib_bgziptabix', 'module_htslib'],
         ],
         command="""\
-bgzip -cf \\
-  {input} > \\
-  {output} && \\
+bgzip -cf {input}\\
+  > {output} && \\
 tabix -pvcf {output}""".format(
             input=" \\\n " + input if input else "",
             output=output,

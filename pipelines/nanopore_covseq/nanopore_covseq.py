@@ -466,7 +466,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
             jobs.append(
                 concat_jobs([
                     bash.mkdir(artic_nanopolish_directory),
-                    bash.chgdir(artic_nanopolish_directory),
+                    bash.chdir(artic_nanopolish_directory),
                     artic.nanopolish_ont(
                         reads_fastq_dir,
                         sample.run,
@@ -476,7 +476,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
                         artic_nanopolish_directory,
                         ini_section="artic_nanopolish"
                     ),
-                    bash.chgdir(self.output_dir),
+                    bash.chdir(self.output_dir),
                     bash.mkdir(consensus_directory),
                     Job(
                         input_files=[consensus_artic],

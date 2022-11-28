@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -39,14 +39,14 @@ touch {directory}""".format(
         removable_files=[folder] if remove else []
     )
 
-def chgdir(folder):
+def chdir(folder):
     return Job(
         [],
         [folder],
         command="""\
 cd {directory}""".format(
             directory=folder
-        ),
+        )
     )
 
 def ln(
@@ -71,18 +71,23 @@ ln -s -f \\
 def mv(
     source,
     target,
-    force=False
+    force=False,
+    extra=None
     ):
-
+    if isinstance(source, list):
+        inputs = source
+    else: 
+        inputs = [source]
     return Job(
-        [source],
+        inputs,
         [target],
         command="""\
 mv {force}{source} \\
-   {dest}""".format(
+   {dest}{extra}""".format(
             force="-f " if force else "",
             source=source,
-            dest=target
+            dest=f"-t {target}" if os.path.isdir(target) else target,
+            extra=extra if extra else ""
         )
     )
 

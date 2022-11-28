@@ -305,17 +305,50 @@ class HicSeq(common.Illumina):
             tagDirName = "_".join(("HTD", sample.name, self.enzyme))
             sample_output_dir = os.path.join(self.output_dirs['homer_output_directory'], tagDirName)
             hicup_file_output = os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam")
+
+            # For hic, input bam is provided twice : {input_bam},{input_bam}
             input_bam = ",".join([hicup_file_output, hicup_file_output])
 
-            tagDir_job = homer.makeTagDir(sample_output_dir, input_bam, genome, self.restriction_site, PEflag, makeDirTag_hic_other_options)
-            QcPlots_job = homer.hic_tagDirQcPlots(sample.name, sample_output_dir, chrlist)
-            archive_job = homer.archive_contigs(sample_output_dir)
-
-            job = concat_jobs([tagDir_job, QcPlots_job, archive_job])
-            job.name = "homer_tag_directory." + sample.name
-            job.samples = [sample]
-
+            job = concat_jobs(
+                [
+                    homer.makeTagDir(
+                        sample_output_dir,
+                        input_bam,
+                        genome,
+                        self.restriction_site,
+                        PEflag,
+                        makeDirTag_hic_other_options
+                    ),
+                    homer.hic_tagDirQcPlots(
+                        sample.name,
+                        sample_output_dir,
+                        chrlist,
+                        os.path.join(sample_output_dir, "HomerQcPlots")
+                    ),
+                    bash.mkdir(os.path.join(sample_output_dir, "archive")),
+                    bash.chdir(sample_output_dir),
+                    bash.mv(
+                        ["*random*.tsv", "*chrUn*.tsv", "*hap*.tsv", "chrM*.tsv", "MT*.tsv", "*Y*.tsv", "*EBV*.tsv", "*GL*.tsv", "NT_*.tsv"],
+                        os.path.join(sample_output_dir, "archive"),
+                        extra='|| echo "not all files found"'
+                    ),
+                    bash.chdir(self.output_dir)
+                ],
+                name="homer_tag_directory." + sample.name,
+                samples=[sample],
+                input_dependency=[hicup_file_output],
+                output_dependency=[
+                    os.path.join(sample_output_dir, "tagInfo.txt"),
+                    os.path.join(sample_output_dir, "tagGCcontent.txt"),
+                    os.path.join(sample_output_dir, "genomeGCcontent.txt"),
+                    os.path.join(sample_output_dir, "tagLengthDistribution.txt"),
+                    os.path.join(sample_output_dir, "tagLengthDistribution.txt"),
+                    os.path.join(sample_output_dir, "HomerQcPlots"),
+                    os.path.join(sample_output_dir, "archive")
+                ]
+            )
             jobs.append(job)
+
         return jobs
 
     def interaction_matrices_Chr(self):
@@ -350,8 +383,22 @@ class HicSeq(common.Illumina):
                     fileNamePlot = os.path.join(sample_output_dir_chr, "".join((tagDirName,"_", chr,"_", res, "_raw-", chr, "\'.ofBins(0-\'*\')\'.", str(int(res)//1000), "K.jpeg")))
                     newFileNamePlot = os.path.join(sample_output_dir_chr, "".join((tagDirName,"_", chr,"_", res, "_raw-", chr, ".all.", str(int(res)//1000), "K.jpeg")))
 
-                    jobMatrix = homer.hic_interactionMatrix_chr(sample.name, sample_output_dir_chr, homer_output_dir, res, chr, fileName, fileNameRN)
-                    jobMatrix.samples = [sample]
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(sample_output_dir_chr),
+                                homer.hic_interactionMatrix_chr(
+                                    homer_output_dir,
+                                    res,
+                                    chr,
+                                    fileName,
+                                    fileNameRN
+                                )
+                            ],
+                            name=f"interaction_matrices_Chr.{sample.name}_{chr}_res{res}",
+                            samples=[sample]
+                        )
+                    )
 
                     jobPlot = hicplotter.intra_chrom_matrix_plot(
                         fileNameRN,
@@ -362,8 +409,9 @@ class HicSeq(common.Illumina):
                         fileNamePlot,
                         newFileNamePlot
                     )
+                    jobPlot.name = f"interaction_matrices_Chr.plotting.{sample.name}_{chr}_res{res}"
                     jobPlot.samples = [sample]
-                    jobs.extend([jobMatrix, jobPlot])
+                    jobs.append(jobPlot)
 
         return jobs
 
@@ -635,8 +683,21 @@ class HicSeq(common.Illumina):
                 fileName = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"raw.txt")))
                 fileNameRN = os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide_Res", res,"rawRN.txt")))
 
-                jobMatrix = homer.hic_interactionMatrix_genome(sample.name, sample_output_dir_genome, homer_output_dir, res, fileName, fileNameRN)
-                jobMatrix.samples = [sample]
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(sample_output_dir_genome),
+                            homer.hic_interactionMatrix_genome(
+                                homer_output_dir,
+                                res,
+                                fileName,
+                                fileNameRN
+                            )
+                        ],
+                        name=f"interaction_matrices_genome.{sample.name}_res{res}",
+                        samples=[sample]
+                    )
+                )
 
                 jobPlot = hicplotter.genome_wide_matrix_plot(
                     fileNameRN,
@@ -645,9 +706,9 @@ class HicSeq(common.Illumina):
                     os.path.join(sample_output_dir_genome, "_".join((tagDirName, "genomewide", "raw"))),
                     os.path.join(sample_output_dir_genome, tagDirName + "_genomewide_raw-WholeGenome-" + str(int(res)//1000) + "K.jpeg")
                 )
+                jobPlot.name = f"interaction_matrices_genome.plotting.{sample.name}_res{res}"
                 jobPlot.samples = [sample]
-
-                jobs.extend([jobMatrix, jobPlot])
+                jobs.append(jobPlot)
 
         return jobs
 
@@ -670,11 +731,23 @@ class HicSeq(common.Illumina):
             fileName_PC1 = os.path.join(sample_output_dir, sample.name + "_homerPCA_Res" + res + ".PC1.txt")
             fileName_Comp = os.path.join(sample_output_dir, sample.name + "_homerPCA_Res" + res + "_compartments")
 
-            job = homer.hic_compartments(sample.name, sample_output_dir, fileName, homer_output_dir, res, genome, fileName_PC1, fileName_Comp, 3)
-            job.samples = [sample]
-
-            jobs.append(job)
-
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(sample_output_dir),
+                        homer.hic_compartments(
+                            fileName,
+                            homer_output_dir,
+                            res,
+                            genome,
+                            fileName_PC1,
+                            fileName_Comp
+                        )
+                    ],
+                    name="identify_compartments." + sample.name + "_res" + res,
+                    samples=[sample]
+                )
+            )
         return jobs
 
     def identify_TADs_TopDom(self):
@@ -785,11 +858,22 @@ class HicSeq(common.Illumina):
             fileName = os.path.join(sample_output_dir, sample.name + "IntraChrInteractionsRes" + res + ".txt")
             fileName_anno = os.path.join(sample_output_dir, sample.name + "IntraChrInteractionsRes" + res + "_Annotated")
 
-            job = homer.hic_peaks(sample.name, sample_output_dir, homer_output_dir, res, genome, fileName, fileName_anno, 3)
-            job.samples = [sample]
-
-            jobs.append(job)
-
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(sample_output_dir),
+                        homer.hic_peaks(
+                            homer_output_dir,
+                            res,
+                            genome,
+                            fileName,
+                            fileName_anno
+                        )
+                    ],
+                    name="identify_peaks." + sample.name + "_res" + res,
+                    samples=[sample]
+                )
+            )
         return jobs
 
     def create_hic_file(self):

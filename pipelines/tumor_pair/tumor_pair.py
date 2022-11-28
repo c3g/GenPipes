@@ -296,7 +296,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         pair_directory,
                         remove=True
                     ),
-                    bash.chgdir(
+                    bash.chdir(
                         pair_directory
                     ),
                     gatk.realigner_target_creator(
@@ -378,7 +378,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             tumor_realign_directory,
                             remove=True
                         ),
-                        bash.chgdir(
+                        bash.chdir(
                             pair_directory
                         ),
                         gatk.realigner_target_creator(
@@ -448,7 +448,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         tumor_realign_directory,
                         remove=True
                     ),
-                    bash.chgdir(
+                    bash.chdir(
                         pair_directory
                     ),
                     gatk.realigner_target_creator(
