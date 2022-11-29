@@ -717,8 +717,9 @@ pandoc \\
                 Deeptools.bamcoverage(
                     input_bam,
                     output_file,
-                    name=f"{sample.name}.bw",
-                    samples=[sample.name]),
+                    ),
+                name=sample.name+".bw",
+                samples=[sample]
             )
         return jobs
 
