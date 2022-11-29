@@ -53,6 +53,8 @@ from bfx import bvatools
 from bfx import rmarkdown
 from bfx import tools
 from bfx import ucsc
+from bfx import Deeptools
+
 
 from pipelines import common
 import utils
@@ -609,6 +611,89 @@ pandoc \\
         return jobs
 
 
+    # def wiggle(self):
+    #     """
+    #     Generate wiggle tracks suitable for multiple browsers.
+    #     """
+
+    #     jobs = []
+
+    #     ##check the library status
+    #     library = {}
+    #     for readset in self.readsets:
+    #         if not readset.sample in library:
+    #             library[readset.sample]="PAIRED_END"
+    #         if readset.run_type == "SINGLE_END" :
+    #             library[readset.sample]="SINGLE_END"
+
+    #     for sample in self.samples:
+    #         bam_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.")
+    #         input_bam = bam_file_prefix + "bam"
+    #         bed_graph_prefix = os.path.join(self.output_dirs["tracks_directory"], sample.name, sample.name)
+    #         big_wig_prefix = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name)
+
+    #         if (config.param('DEFAULT', 'strand_info') != 'fr-unstranded') and library[sample] == "PAIRED_END":
+    #             input_bam_f1 = bam_file_prefix + "tmp1.forward.bam"
+    #             input_bam_f2 = bam_file_prefix + "tmp2.forward.bam"
+    #             input_bam_r1 = bam_file_prefix + "tmp1.reverse.bam"
+    #             input_bam_r2 = bam_file_prefix + "tmp2.reverse.bam"
+    #             output_bam_f = bam_file_prefix + "forward.bam"
+    #             output_bam_r = bam_file_prefix + "reverse.bam"
+
+    #             bam_f_job = concat_jobs([
+    #                 samtools.view(input_bam, input_bam_f1, "-bh -F 256 -f 81"),
+    #                 samtools.view(input_bam, input_bam_f2, "-bh -F 256 -f 161"),
+    #                 picard.merge_sam_files([input_bam_f1, input_bam_f2], output_bam_f),
+    #                 Job(command="rm " + input_bam_f1 + " " + input_bam_f2)
+    #             ], name="wiggle." + sample.name + ".forward_strandspec")
+    #             bam_f_job.samples = [sample]
+    #             # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
+    #             bam_f_job.output_files.remove(input_bam_f1)
+    #             bam_f_job.output_files.remove(input_bam_f2)
+
+    #             bam_r_job = concat_jobs([
+    #                 Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], sample.name) + " " + os.path.join(self.output_dirs["tracks_directory"], "bigWig")),
+    #                 samtools.view(input_bam, input_bam_r1, "-bh -F 256 -f 97"),
+    #                 samtools.view(input_bam, input_bam_r2, "-bh -F 256 -f 145"),
+    #                 picard.merge_sam_files([input_bam_r1, input_bam_r2], output_bam_r),
+    #                 Job(command="rm " + input_bam_r1 + " " + input_bam_r2)
+    #             ], name="wiggle." + sample.name + ".reverse_strandspec")
+    #             bam_r_job.samples = [sample]
+    #             # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
+    #             bam_r_job.output_files.remove(input_bam_r1)
+    #             bam_r_job.output_files.remove(input_bam_r2)
+
+    #             jobs.extend([bam_f_job, bam_r_job])
+
+    #             outputs = [
+    #                 [bed_graph_prefix + ".forward.bedGraph", big_wig_prefix + ".forward.bw"],
+    #                 [bed_graph_prefix + ".reverse.bedGraph", big_wig_prefix + ".reverse.bw"],
+    #             ]
+    #         else:
+    #             outputs = [[bed_graph_prefix + ".bedGraph", big_wig_prefix + ".bw"]]
+
+    #         for bed_graph_output, big_wig_output in outputs:
+    #             if "forward" in bed_graph_output:
+    #                 in_bam = bam_file_prefix + "forward.bam"    # same as output_bam_f from previous picard job
+    #             elif "reverse" in bed_graph_output:
+    #                 in_bam = bam_file_prefix + "reverse.bam"    # same as output_bam_r from previous picard job
+    #             else:
+    #                 in_bam = input_bam
+    #             jobs.append(
+    #                 concat_jobs([
+    #                     Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], sample.name) + " ", removable_files=[self.output_dirs["tracks_directory"]], samples=[sample]),
+    #                     bedtools.graph(in_bam, bed_graph_output, library[sample])
+    #                 ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+    #             )
+    #             jobs.append(
+    #                 concat_jobs([
+    #                     Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], "bigWig"), samples=[sample]),
+    #                     ucsc.bedGraphToBigWig(bed_graph_output, big_wig_output, False)
+    #                 ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)))
+    #             )
+
+    #     return jobs
+
     def wiggle(self):
         """
         Generate wiggle tracks suitable for multiple browsers.
@@ -618,78 +703,22 @@ pandoc \\
 
         ##check the library status
         library = {}
-        for readset in self.readsets:
-            if not readset.sample in library:
-                library[readset.sample]="PAIRED_END"
-            if readset.run_type == "SINGLE_END" :
-                library[readset.sample]="SINGLE_END"
 
         for sample in self.samples:
             bam_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.")
             input_bam = bam_file_prefix + "bam"
-            bed_graph_prefix = os.path.join(self.output_dirs["tracks_directory"], sample.name, sample.name)
             big_wig_prefix = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name)
+            output_file = big_wig_prefix + sample.name
 
-            if (config.param('DEFAULT', 'strand_info') != 'fr-unstranded') and library[sample] == "PAIRED_END":
-                input_bam_f1 = bam_file_prefix + "tmp1.forward.bam"
-                input_bam_f2 = bam_file_prefix + "tmp2.forward.bam"
-                input_bam_r1 = bam_file_prefix + "tmp1.reverse.bam"
-                input_bam_r2 = bam_file_prefix + "tmp2.reverse.bam"
-                output_bam_f = bam_file_prefix + "forward.bam"
-                output_bam_r = bam_file_prefix + "reverse.bam"
-
-                bam_f_job = concat_jobs([
-                    samtools.view(input_bam, input_bam_f1, "-bh -F 256 -f 81"),
-                    samtools.view(input_bam, input_bam_f2, "-bh -F 256 -f 161"),
-                    picard.merge_sam_files([input_bam_f1, input_bam_f2], output_bam_f),
-                    Job(command="rm " + input_bam_f1 + " " + input_bam_f2)
-                ], name="wiggle." + sample.name + ".forward_strandspec")
-                bam_f_job.samples = [sample]
-                # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
-                bam_f_job.output_files.remove(input_bam_f1)
-                bam_f_job.output_files.remove(input_bam_f2)
-
-                bam_r_job = concat_jobs([
-                    Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], sample.name) + " " + os.path.join(self.output_dirs["tracks_directory"], "bigWig")),
-                    samtools.view(input_bam, input_bam_r1, "-bh -F 256 -f 97"),
-                    samtools.view(input_bam, input_bam_r2, "-bh -F 256 -f 145"),
-                    picard.merge_sam_files([input_bam_r1, input_bam_r2], output_bam_r),
-                    Job(command="rm " + input_bam_r1 + " " + input_bam_r2)
-                ], name="wiggle." + sample.name + ".reverse_strandspec")
-                bam_r_job.samples = [sample]
-                # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
-                bam_r_job.output_files.remove(input_bam_r1)
-                bam_r_job.output_files.remove(input_bam_r2)
-
-                jobs.extend([bam_f_job, bam_r_job])
-
-                outputs = [
-                    [bed_graph_prefix + ".forward.bedGraph", big_wig_prefix + ".forward.bw"],
-                    [bed_graph_prefix + ".reverse.bedGraph", big_wig_prefix + ".reverse.bw"],
-                ]
-            else:
-                outputs = [[bed_graph_prefix + ".bedGraph", big_wig_prefix + ".bw"]]
-
-            for bed_graph_output, big_wig_output in outputs:
-                if "forward" in bed_graph_output:
-                    in_bam = bam_file_prefix + "forward.bam"    # same as output_bam_f from previous picard job
-                elif "reverse" in bed_graph_output:
-                    in_bam = bam_file_prefix + "reverse.bam"    # same as output_bam_r from previous picard job
-                else:
-                    in_bam = input_bam
-                jobs.append(
-                    concat_jobs([
-                        Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], sample.name) + " ", removable_files=[self.output_dirs["tracks_directory"]], samples=[sample]),
-                        bedtools.graph(in_bam, bed_graph_output, library[sample])
-                    ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+            job= concat_jobs(
+                bash.mkdir(f"{self.output_dir['tracks']}"),
+                bash.mkdir(f"{self.output_dirs["tracks_directory"], "bigWig"}"),
+                bash.mkdir(f"{big_wig_prefix}"),## Correct?
+                deeptools.bamcoverage(
+                    input_bam,
+                    output_file
                 )
-                jobs.append(
-                    concat_jobs([
-                        Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], "bigWig"), samples=[sample]),
-                        ucsc.bedGraphToBigWig(bed_graph_output, big_wig_output, False)
-                    ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)))
-                )
-
+            )
         return jobs
 
     def raw_counts(self):
