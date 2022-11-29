@@ -707,13 +707,15 @@ pandoc \\
         for sample in self.samples:
             bam_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.")
             input_bam = bam_file_prefix + "bam"
+            tracks_dir =os.path.join(self.output_dirs["tracks_directory"])
+            big_wig = os.path.join(self.output_dirs['tracks'], "bigWig")
             big_wig_prefix = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name)
             output_file = big_wig_prefix + sample.name
 
             job= concat_jobs(
-                bash.mkdir(f"{self.output_dir['tracks']}"),
-                bash.mkdir(f"{self.output_dirs['tracks'], "bigWig"}"),
-                bash.mkdir(f"{big_wig_prefix}"),## Correct?
+                bash.mkdir(tracks_dir),
+                bash.mkdir(big_wig),
+                bash.mkdir(big_wig_prefix),## Correct?
                 deeptools.bamcoverage(
                     input_bam,
                     output_file
