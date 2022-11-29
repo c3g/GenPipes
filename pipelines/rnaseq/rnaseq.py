@@ -709,13 +709,11 @@ pandoc \\
             input_bam = bam_file_prefix + "bam"
             tracks_dir = os.path.join(self.output_dirs["tracks_directory"])
             big_wig = os.path.join(self.output_dirs['tracks_directory'], "bigWig")
-            big_wig_prefix = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name)
-            output_file = big_wig_prefix + sample.name
+            output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name)
 
             job= concat_jobs(
                 bash.mkdir(tracks_dir),
                 bash.mkdir(big_wig),
-                bash.mkdir(big_wig_prefix),## Correct?
                 Deeptools.bamcoverage(
                     input_bam,
                     output_file
