@@ -91,18 +91,18 @@ class ChipSeq(common.Illumina):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
-            'alignment_output_directory': os.path.join(self.output_dir, 'alignment'),
-            'report_output_directory': os.path.join(self.output_dir, 'report'),
-            'metrics_output_directory': os.path.join(self.output_dir, 'metrics'),
-            'homer_output_directory': os.path.join(self.output_dir, 'tags'),
-            'graphs_output_directory': os.path.join(self.output_dir, 'graphs'),
-            'tracks_output_directory': os.path.join(self.output_dir, 'tracks'),
-            'macs_output_directory': os.path.join(self.output_dir, 'peak_call'),
-            'anno_output_directory': os.path.join(self.output_dir, 'annotation'),
-            'ihecA_output_directory': os.path.join(self.output_dir, 'ihec_alignment'),
-            'ihecM_output_directory': os.path.join(self.output_dir, 'ihec_metrics'),
-            'dba_output_directory': os.path.join(self.output_dir, 'differential_binding')
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
+            'alignment_output_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'report_output_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir),
+            'metrics_output_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
+            'homer_output_directory': os.path.relpath(os.path.join(self.output_dir, 'tags'), self.output_dir),
+            'graphs_output_directory': os.path.relpath(os.path.join(self.output_dir, 'graphs'), self.output_dir),
+            'tracks_output_directory': os.path.relpath(os.path.join(self.output_dir, 'tracks'), self.output_dir),
+            'macs_output_directory': os.path.relpath(os.path.join(self.output_dir, 'peak_call'), self.output_dir),
+            'anno_output_directory': os.path.relpath(os.path.join(self.output_dir, 'annotation'), self.output_dir),
+            'ihecA_output_directory': os.path.relpath(os.path.join(self.output_dir, 'ihec_alignment'), self.output_dir),
+            'ihecM_output_directory': os.path.relpath(os.path.join(self.output_dir, 'ihec_metrics'), self.output_dir),
+            'dba_output_directory': os.path.relpath(os.path.join(self.output_dir, 'differential_binding'), self.output_dir)
         }
         return dirs
 
@@ -909,7 +909,7 @@ done""".format(
                             )
                         ],
                         name="homer_make_ucsc_file." + sample.name + "." + mark_name,
-                        samoples=[sample],
+                        samples=[sample],
                         removable_files=[bedgraph_dir]
                     )
                 )
@@ -1403,7 +1403,7 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
                                     )
                                 ],
                                 name="homer_annotate_peaks." + sample.name + "." + mark_name,
-                                sample=[sample]
+                                samples=[sample]
                             )
                         )
 

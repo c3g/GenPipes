@@ -182,7 +182,8 @@ class Nanopore(common.MUGQICPipeline):
                     )
                 ],
                 name="minimap2_align." + readset.name,
-                samples=[readset.sample]
+                samples=[readset.sample],
+                input_dependency=[reads_fastq_dir]
             )
             jobs.append(job)
 

@@ -258,9 +258,19 @@ def scatter(
     normal=None,
     tumor=None
     ):
+
     inputs = [input_cnr, input_cns]
     if vcf:
         inputs.append(vcf)
+
+    sample_id = None
+    normal_id = None
+    if tumor:
+        sample_id = "-i " + tumor
+        normal_id = "-n " + normal if normal else ""
+    elif normal:
+        sample_id = "-i " + normal
+
     return Job(
         inputs,
         [output],
@@ -272,14 +282,14 @@ def scatter(
 cnvkit.py scatter {options} \\
   {input_cnr} \\
   -s {input_cns} \\
-  -o {output} {vcf} {tumor} {normal}""".format(
+  -o {output} {vcf} {sample_id} {normal_id}""".format(
             options=config.param('cnvkit_batch','scatter_options'),
             input_cnr=input_cnr,
             input_cns=input_cns,
             output=output,
             vcf="-v " + vcf if vcf else "",
-            tumor="-i " + tumor if tumor else "",
-            normal="-n " + normal if normal else "",
+            sample_id=sample_id,
+            normal_id=normal_id,
         )
     )
 

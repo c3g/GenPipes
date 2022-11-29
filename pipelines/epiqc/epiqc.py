@@ -77,22 +77,22 @@ class EpiQC(common.Illumina):
     @property
     def output_dirs(self):
         dirs = {
-            'bigwiginfo_output_directory': os.path.join('bigwiginfo'),
-            'chromimpute_output_directory': os.path.join('imputation'),
-            'bedgraph_converted_directory': os.path.join('bedgraph_data'),
-            'bedgraph_chr_converted_directory': os.path.join('bedgraph_chr_data'),
-            'chromimpute_converted_directory': os.path.join('converted'),
-            'chromimpute_distance_directory': os.path.join('distance'),
-            'chromimpute_traindata_directory': os.path.join('traindata'),
-            'chromimpute_predictor_directory': os.path.join('predictor'),
-            'chromimpute_apply': os.path.join('imputed'),
-            'chromimpute_eval': os.path.join('eval'),
-            'signal_to_noise_output_directory': os.path.join('signal_to_noise'),
-            'epigeec_output_directory': os.path.join('epigeec'),
-            'epigeec_hdf5': os.path.join('hdf5'),
-            'epigeec_filtered': os.path.join('filtered'),
-            'epigeec_output': os.path.join('output'),
-            'report_dir': os.path.join('report')
+            'bigwiginfo_output_directory': os.path.relpath(os.path.join('bigwiginfo'), self.output_dir),
+            'chromimpute_output_directory': os.path.relpath(os.path.join('imputation'), self.output_dir),
+            'bedgraph_converted_directory': os.path.relpath(os.path.join('bedgraph_data'), self.output_dir),
+            'bedgraph_chr_converted_directory': os.path.relpath(os.path.join('bedgraph_chr_data'), self.output_dir),
+            'chromimpute_converted_directory': os.path.relpath(os.path.join('converted'), self.output_dir),
+            'chromimpute_distance_directory': os.path.relpath(os.path.join('distance'), self.output_dir),
+            'chromimpute_traindata_directory': os.path.relpath(os.path.join('traindata'), self.output_dir),
+            'chromimpute_predictor_directory': os.path.relpath(os.path.join('predictor'), self.output_dir),
+            'chromimpute_apply': os.path.relpath(os.path.join('imputed'), self.output_dir),
+            'chromimpute_eval': os.path.relpath(os.path.join('eval'), self.output_dir),
+            'signal_to_noise_output_directory': os.path.relpath(os.path.join('signal_to_noise'), self.output_dir),
+            'epigeec_output_directory': os.path.relpath(os.path.join('epigeec'), self.output_dir),
+            'epigeec_hdf5': os.path.relpath(os.path.join('hdf5'), self.output_dir),
+            'epigeec_filtered': os.path.relpath(os.path.join('filtered'), self.output_dir),
+            'epigeec_output': os.path.relpath(os.path.join('output'), self.output_dir),
+            'report_dir': os.path.relpath(os.path.join('report'), self.output_dir)
         }
         return dirs
 

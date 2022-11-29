@@ -116,17 +116,17 @@ However, if you would like to setup and use dragen in own cluster please refer o
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory': os.path.join(self.output_dir, 'trim'),
-            'alignment_directory': os.path.join(self.output_dir, 'alignment'),
-            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
-            'ihec_metrics_directory': os.path.join(self.output_dir, 'ihec_metrics'),
-            'variants_directory': os.path.join(self.output_dir, 'variants'),
-            'methylation_call_directory': os.path.join(self.output_dir, 'methylation_call'),
-            'methylkit_directory': os.path.join(self.output_dir, 'methylkit'),
-            'corrected_umi_directory': os.path.join(self.output_dir, 'corrected_umi'),
-            'tracks_directory': os.path.join(self.output_dir, 'tracks'),
-            'report_directory': os.path.join(self.output_dir, 'report'),
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
+            'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
+            'ihec_metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'ihec_metrics'), self.output_dir),
+            'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir),
+            'methylation_call_directory': os.path.relpath(os.path.join(self.output_dir, 'methylation_call'), self.output_dir),
+            'methylkit_directory': os.path.relpath(os.path.join(self.output_dir, 'methylkit'), self.output_dir),
+            'corrected_umi_directory': os.path.relpath(os.path.join(self.output_dir, 'corrected_umi'), self.output_dir),
+            'tracks_directory': os.path.relpath(os.path.join(self.output_dir, 'tracks'), self.output_dir),
+            'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
         }
         return dirs
 

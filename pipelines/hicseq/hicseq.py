@@ -91,24 +91,24 @@ class HicSeq(common.Illumina):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory': os.path.join(self.output_dir, 'trim'),
-            'alignment_directory': os.path.join(self.output_dir, 'alignment'),
-            'hicup_output_directory': os.path.join(self.output_dir, 'alignment'),
-            'homer_output_directory': os.path.join(self.output_dir, 'homer_tag_directory'),
-            'bams_output_directory': os.path.join(self.output_dir, 'alignment'),
-            'matrices_output_directory': os.path.join(self.output_dir, 'interaction_matrices'),
-            'cmpt_output_directory': os.path.join(self.output_dir, 'compartments'),
-            'TAD_output_directory': os.path.join(self.output_dir, 'TADs'),
-            'peaks_output_directory': os.path.join(self.output_dir, 'peaks'),
-            'hicfiles_output_directory': os.path.join(self.output_dir, 'hicFiles'),
-            'chicago_input_files': os.path.join(self.output_dir, 'input_files'),
-            'chicago_output_directory': os.path.join(self.output_dir, 'chicago'),
-            'intersect_ouput_directory': os.path.join(self.output_dir, 'bed_intersect'),
-            'reproducible_score_output_directory': os.path.join(self.output_dir, 'reproducibility_scores'),
-            'quality_score_output_directory': os.path.join(self.output_dir, 'quality_scores'),
-            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
-            'report_directory': os.path.join(self.output_dir, 'report')
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
+            'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'hicup_output_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'homer_output_directory': os.path.relpath(os.path.join(self.output_dir, 'homer_tag_directory'), self.output_dir),
+            'bams_output_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'matrices_output_directory': os.path.relpath(os.path.join(self.output_dir, 'interaction_matrices'), self.output_dir),
+            'cmpt_output_directory': os.path.relpath(os.path.join(self.output_dir, 'compartments'), self.output_dir),
+            'TAD_output_directory': os.path.relpath(os.path.join(self.output_dir, 'TADs'), self.output_dir),
+            'peaks_output_directory': os.path.relpath(os.path.join(self.output_dir, 'peaks'), self.output_dir),
+            'hicfiles_output_directory': os.path.relpath(os.path.join(self.output_dir, 'hicFiles'), self.output_dir),
+            'chicago_input_files': os.path.relpath(os.path.join(self.output_dir, 'input_files'), self.output_dir),
+            'chicago_output_directory': os.path.relpath(os.path.join(self.output_dir, 'chicago'), self.output_dir),
+            'intersect_ouput_directory': os.path.relpath(os.path.join(self.output_dir, 'bed_intersect'), self.output_dir),
+            'reproducible_score_output_directory': os.path.relpath(os.path.join(self.output_dir, 'reproducibility_scores'), self.output_dir),
+            'quality_score_output_directory': os.path.relpath(os.path.join(self.output_dir, 'quality_scores'), self.output_dir),
+            'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
+            'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
         }
         return dirs
 
@@ -156,7 +156,6 @@ class HicSeq(common.Illumina):
             if readset.bam:
                 candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam.strip())])
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-
             job_fastq1 = concat_jobs(
                 [
                     bash.mkdir(self.output_dirs["trim_directory"]),
@@ -168,7 +167,6 @@ class HicSeq(common.Illumina):
                 name=f"fastq_readName_Edit.fq1.{readset.name}",
                 samples=[readset.sample]
             )
-
             job_fastq2 = concat_jobs(
                 [
                     bash.mkdir(self.output_dirs["trim_directory"]),
@@ -180,9 +178,7 @@ class HicSeq(common.Illumina):
                 name=f"fastq_readName_Edit.fq2.{readset.name}",
                 samples=[readset.sample]
             )
-
             jobs.extend([job_fastq1, job_fastq2])
-
         return jobs
 
     def hicup_align(self):
@@ -210,11 +206,8 @@ class HicSeq(common.Illumina):
                 candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-            # job_confFile = hicup.create_hicup_conf(readset.name, fastq1, fastq2, sample_output_dir, self.genome_digest)
-
-            # job_hicup = hicup.hicup_run(readset.name, "hicup_align." + readset.name + ".conf", sample_output_dir, fastq1, fastq2, self.genome_digest)
-
-            job = concat_jobs([
+            job = concat_jobs(
+                [
                     bash.mkdir(sample_output_dir),
                     hicup.hicup_run(
                         readset.name,
@@ -227,17 +220,7 @@ class HicSeq(common.Illumina):
                 name = "hicup_align." + readset.name,
                 samples = [readset.sample]
             )
-
-            # job = hicup.hicup_run(
-            #                     readset.name,
-            #                     sample_output_dir,
-            #                     fastq1,
-            #                     fastq2,
-            #                     self.genome_digest
-            #                     )
-
             jobs.append(job)
-
         return jobs
 
     def samtools_merge_bams(self):
@@ -262,26 +245,29 @@ class HicSeq(common.Illumina):
                 else:
                     target_readset_bam = os.path.relpath(readset_bam, os.path.dirname(sample_output))
 
-                job = concat_jobs([
-                    mkdir_job,
-                    Job(
-                        readset_bams,
-                        [sample_output],
-                        command="ln -s -f " + target_readset_bam + " " + sample_output
-                    )
-                ], name="symlink_readset_sample_bam." + sample.name)
+                job = concat_jobs(
+                    [
+                        mkdir_job,
+                        Job(
+                            readset_bams,
+                            [sample_output],
+                            command="ln -s -f " + target_readset_bam + " " + sample_output
+                        )
+                    ],
+                    name="symlink_readset_sample_bam." + sample.name,
+                    samples=[sample]
+                )
 
             elif len(sample.readsets) > 1:
-
                 samtools_merge = samtools.merge(sample_output, readset_bams)
-
-                job = concat_jobs([
-                    mkdir_job,
-                    samtools_merge
-                ])
-                job.name = "samtools_merge_bams." + sample.name
-
-            job.samples = [sample]
+                job = concat_jobs(
+                    [
+                        mkdir_job,
+                        samtools_merge
+                    ],
+                    name="samtools_merge_bams." + sample.name,
+                    samples=[sample]
+                )
             jobs.append(job)
 
         return jobs
@@ -416,7 +402,6 @@ class HicSeq(common.Illumina):
         return jobs
 
     def reproducibility_scores(self):
-
         """
         hic-rep is a R package for calculating the inter-chromosomal reproducibility score.
         Pairwise reproducibility scores for each chromosome pair in each sample pair are calculated using
@@ -440,7 +425,6 @@ class HicSeq(common.Illumina):
         down_sampling = config.param('reproducibility_scores', 'down_sampling')
         smooth = config.param('reproducibility_scores', 'h')
         corr = config.param('reproducibility_scores', 'corr')
-
 
         #Get the pairwise combinations of each sample (return an object list)
         pairwise_sample_combination = list(itertools.combinations(self.samples, 2))
@@ -476,78 +460,80 @@ class HicSeq(common.Illumina):
                             sample[0].name,
                             "chromosomeMatrices",
                             "_".join(("HTD", sample[0].name, self.enzyme, chromosome, res, "rawRN.txt"))
-                            )
+                        )
 
                         input_sample2_file_path = os.path.join(self.output_dirs['matrices_output_directory'],
                             sample[1].name,
                             "chromosomeMatrices",
                             "_".join(("HTD", sample[1].name, self.enzyme, chromosome, res, "rawRN.txt"))
-                            )
+                        )
                         out_dir = os.path.join(
                             output_dir,
                             temp_dir,
                            "_".join((sample[0].name, "vs",  sample[1].name))
-                           )
+                        )
 
                         output_file = os.path.join(out_dir, "hicrep_" + sample[0].name + "_vs_" + sample[1].name + "_" + chromosome + "_" + res + "_res_" + smooth + "_" + bound_width + "_" + down_sampling + ".tmp")
 
-                        job_chr = concat_jobs([
-                            bash.mkdir(out_dir),
-                            hicrep.calculate_reproducible_score(
-                                output_file,
-                                sample[0].name,
-                                sample[1].name,
-                                input_sample1_file_path,
-                                input_sample2_file_path,
-                                chromosome,
-                                res,
-                                bound_width,
-                                weights,
-                                corr,
-                                down_sampling,
-                                smooth
+                        job_chr = concat_jobs(
+                            [
+                                bash.mkdir(out_dir),
+                                hicrep.calculate_reproducible_score(
+                                    output_file,
+                                    sample[0].name,
+                                    sample[1].name,
+                                    input_sample1_file_path,
+                                    input_sample2_file_path,
+                                    chromosome,
+                                    res,
+                                    bound_width,
+                                    weights,
+                                    corr,
+                                    down_sampling,
+                                    smooth
                                 )
-                            ])
-
-                        job_chr.samples = sample
-
+                            ],
+                            samples=[sample],
+                            removable_files=[output_file]
+                        )
                         input_files_for_merging.append(output_file)
                         job_all_chr.append(job_chr)
-                        job = concat_jobs(job_all_chr)
-                        job.name = "_".join(("reproducibility_scores.hicrep", sample[0].name, "vs", sample[1].name, res))
-                        job.removable_files = [output_file]
+
+                    job = concat_jobs(job_all_chr)
+                    job.name = "_".join(("reproducibility_scores.hicrep", sample[0].name, "vs", sample[1].name, res))
 
                     jobs.append(job)
                     tsv_output = os.path.join(
                         output_dir,
                         temp_dir,
                         ".".join(("_".join((sample[0].name,"vs",sample[1].name, "res", res, smooth, bound_width, down_sampling)), "tsv"))
-                        )
+                    )
                     #Storing output files for next step in a list
                     tsv_files_for_merging.append(tsv_output)
-                #create a job for merginh .tsv file with individual reproducibnility score for each pairwise comparison
+
+                #create a job for merging .tsv file with individual reproducibnility score for each pairwise comparison
                 job_merge = hicrep.merge_tmp_files(
-                                                    input_files_for_merging,
-                                                    tsv_files_for_merging,
-                                                    output_dir,
-                                                    res,
-                                                    smooth,
-                                                    bound_width,
-                                                    down_sampling,
-                                                    temp_dir
-                                                    )
+                    input_files_for_merging,
+                    tsv_files_for_merging,
+                    output_dir,
+                    res,
+                    smooth,
+                    bound_width,
+                    down_sampling,
+                    temp_dir
+                )
                 job_merge.samples = self.samples
                 job_merge.name = "merge_hicrep_scores." + res
                 jobs.append(job_merge)
 
-            #finally all the .tsv files are merged and create a one file (.csv) with all the values
+            #finally all the .tsv files are merged into one .csv file with all the values
             output_csv_file = "hicrep_combined_reproducibility_scores.csv"
             job_tsv_merge = hicrep.merge_tsv(
                 tsv_files_for_merging,
                 output_dir,
                 output_csv_file,
                 temp_dir
-                )
+            )
             job_tsv_merge.name = "merge_hicrep_scores"
             job_tsv_merge.samples = self.samples
             job_tsv_merge.removable_files = [os.path.join(output_dir, temp_dir)]
@@ -601,24 +587,27 @@ class HicSeq(common.Illumina):
             job_restructure = []
             for res in res_chr:
                 for chromosome in chrs:
-
-                    input_file_path = os.path.join(self.output_dirs['matrices_output_directory'],
-                                                          sample.name,
-                                                          "chromosomeMatrices",
-                                                          "_".join((
-                                                              "HTD", sample.name, self.enzyme, chromosome, res,
-                                                              "rawRN.txt")))
-                    output_file_path = os.path.join(output_dir, temp_dir, "_".join((
-                                                              "HTD", sample.name, self.enzyme, chromosome, res,
-                                                              "rawRN.txt.temp")))
+                    input_file_path = os.path.join(
+                        self.output_dirs['matrices_output_directory'],
+                        sample.name,
+                        "chromosomeMatrices",
+                        "_".join(("HTD", sample.name, self.enzyme, chromosome, res, "rawRN.txt")))
+                    output_file_path = os.path.join(
+                        output_dir,
+                        temp_dir,
+                        "_".join(("HTD", sample.name, self.enzyme, chromosome, res, "rawRN.txt.temp")))
                     quasr_temp_files.append(output_file_path)
-                    job_matrix_restucture = quasar_qc.restructure_matrix( input_file_path, output_file_path,  output_dir, res, temp_dir)
-
+                    job_matrix_restucture = quasar_qc.restructure_matrix(
+                        input_file_path,
+                        output_file_path,
+                        output_dir,
+                        res,
+                        temp_dir
+                    )
                     job_matrix_restucture.samples = [sample]
                     job_restructure.append(job_matrix_restucture)
-                    job = concat_jobs(job_restructure)
-                    job.name = "_".join(("quality_scores.quasar", "restructuring",sample.name, res, self.enzyme))
-
+                job = concat_jobs(job_restructure)
+                job.name = "_".join(("quality_scores.quasar", "restructuring",sample.name, res, self.enzyme))
             jobs.append(job)
 
         #Perform the QUASAR-QC analysis using the generated temp files
@@ -633,16 +622,27 @@ class HicSeq(common.Illumina):
 
         for sample in self.samples:
             for res in res_chr:
-                input_files = os.path.join(output_dir, temp_dir, "_".join((
-                                                          "HTD", sample.name, self.enzyme, "*", res,
-                                                          "rawRN.txt.temp")))
+                input_files = os.path.join(
+                    output_dir,
+                    temp_dir,
+                    "_".join(("HTD", sample.name, self.enzyme, "*", res, "rawRN.txt.temp")))
 
-                output_file_path = os.path.join(output_dir, temp_dir, "_".join((
-                    sample.name, quasr_prefix ,res, self.enzyme)))
+                output_file_path = os.path.join(
+                    output_dir,
+                    temp_dir,
+                    "_".join((sample.name, quasr_prefix ,res, self.enzyme)))
                 output_report_file = "_".join((output_file_path, "report.txt"))
                 quasr_report_files.append(output_report_file)
-                job_qusarqc = quasar_qc.quality_analysis(quasr_temp_files, input_files, output_file_path, output_dir, output_fend_file, quasr_res, quasr_coverage, output_report_file)
-
+                job_qusarqc = quasar_qc.quality_analysis(
+                    quasr_temp_files,
+                    input_files,
+                    output_file_path,
+                    output_dir,
+                    output_fend_file,
+                    quasr_res,
+                    quasr_coverage,
+                    output_report_file
+                )
                 job_qusarqc.samples = [sample]
                 job_qusarqc.name = "_".join(("quality_scores.quasarqc",sample.name, res, self.enzyme))
                 jobs.append(job_qusarqc)
@@ -652,9 +652,17 @@ class HicSeq(common.Illumina):
                 q_res = int(q_res)/1000
                 q_res = "".join((str(q_res) , "Kb" ))
                 input_files = [s for s in quasr_report_files if "_".join((quasr_prefix, res, self.enzyme)) in s]
-                output_file = ".".join((os.path.join(output_dir, "_".join((
-                    "quasar_qc_final_report_res", res, "quasarqc_res", q_res, self.enzyme))), "tsv"))
-                job_qusarqc_final_report = quasar_qc.merge_all_reports(output_dir, input_files, output_file, res, self.enzyme, quasr_prefix, temp_dir, q_res)
+                output_file = ".".join((os.path.join(output_dir, "_".join(("quasar_qc_final_report_res", res, "quasarqc_res", q_res, self.enzyme))), "tsv"))
+                job_qusarqc_final_report = quasar_qc.merge_all_reports(
+                    output_dir,
+                    input_files,
+                    output_file,
+                    res,
+                    self.enzyme,
+                    quasr_prefix,
+                    temp_dir,
+                    q_res
+                )
                 job_qusarqc_final_report.samples = self.samples
                 job_qusarqc_final_report.name ="_".join(("quality_scores_merge.quasarqc_final_report","res", res, "quasar_res", q_res))
                 job_qusarqc_final_report.removable_files = [os.path.join(output_dir,temp_dir)]
@@ -791,10 +799,12 @@ class HicSeq(common.Illumina):
                     job_TADs.name = "identify_TADs.TopDom_call_TADs." + sample.name + "_" + chr + "_res" + res
                     job_TADs.samples = [sample]
 
-                    jobs.extend([
-                        job_inputFile,
-                        job_TADs
-                    ])
+                    jobs.extend(
+                        [
+                            job_inputFile,
+                            job_TADs
+                        ]
+                    )
 
         return jobs
 
@@ -828,13 +838,14 @@ class HicSeq(common.Illumina):
                 output_Scores = os.path.join(sample_output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , str(int(res)//1000) ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5.txt")))
                 output_calls = os.path.join(sample_output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)//1000) ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5_threshold0.2.txt")))
 
-                job = concat_jobs([
-                    bash.mkdir(sample_output_dir),
-                    robustad.call_TADs(input_matrix, sample_output_dir, res, minwin, maxwin)
-                ])
-                job.name = "identify_TADs.RobusTAD." + sample.name + "_" + chr
-                job.samples = [sample]
-
+                job = concat_jobs(
+                    [
+                        bash.mkdir(sample_output_dir),
+                        robustad.call_TADs(input_matrix, sample_output_dir, res, minwin, maxwin)
+                    ],
+                    name="identify_TADs.RobusTAD." + sample.name + "_" + chr,
+                    samples=[sample]
+                )
                 jobs.append(job)
 
         return jobs
@@ -912,7 +923,7 @@ class HicSeq(common.Illumina):
                 ],
                 name="create_hic_file." + sample.name,
                 samples=[sample]
-                )
+            )
 
             jobs.append(job)
 
@@ -929,9 +940,11 @@ class HicSeq(common.Illumina):
 
         yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
         input_files = [os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam") for sample in self.samples]
-        job = multiqc.mutliqc_run(yamlFile, input_files)
+        job = multiqc.mutliqc_run(
+            yamlFile,
+            input_files
+        )
         job.samples = self.samples
-
         jobs.append(job)
 
         return jobs
@@ -948,11 +961,13 @@ class HicSeq(common.Illumina):
         sorted_output = re.sub("\.Initialrmap", ".sorted.rmap", output)
         input_file = self.genome_digest
 
-        job = concat_jobs([
-            bash.mkdir(self.output_dirs['chicago_input_files']),
-            tools.sh_create_rmap(input_file, output, "create_rmap_file." + self.enzyme),
-            bedops.sort_bed(output, sorted_output)
-        ])
+        job = concat_jobs(
+            [
+                bash.mkdir(self.output_dirs['chicago_input_files']),
+                tools.sh_create_rmap(input_file, output, "create_rmap_file." + self.enzyme),
+                bedops.sort_bed(output, sorted_output)
+            ]
+        )
         job.name = "create_rmap_file." + os.path.basename(input_file)
         job.samples = self.samples
 
@@ -971,11 +986,13 @@ class HicSeq(common.Illumina):
         output_file = os.path.join(self.output_dirs['chicago_input_files'], output_file_name)
         annotation = config.param('create_baitmap_file', "annotation")
 
-        job = concat_jobs([
-            bedops.sort_bed(input_bait, sorted_input_bait),
-            bedtools.intersect_beds(input_rmap, sorted_input_bait, output_file + ".tmp", "-wa -u"),
-            tools.sh_create_baitmap(input_bait, sorted_input_bait, annotation, output_file)
-        ])
+        job = concat_jobs(
+            [
+                bedops.sort_bed(input_bait, sorted_input_bait),
+                bedtools.intersect_beds(input_rmap, sorted_input_bait, output_file + ".tmp", "-wa -u"),
+                tools.sh_create_baitmap(input_bait, sorted_input_bait, annotation, output_file)
+            ]
+        )
         job.name = "create_baitmap_file." + output_file_name
         job.samples = self.samples
 

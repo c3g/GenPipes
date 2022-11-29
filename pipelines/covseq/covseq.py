@@ -75,14 +75,14 @@ class CoVSeq(dnaseq.DnaSeqRaw):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
-            'host_removal_directory': os.path.join(self.output_dir, "host_removal"),
-            'trim_directory': os.path.join(self.output_dir, "cleaned_raw_reads"),
-            'alignment_directory': os.path.join(self.output_dir, 'alignment'),
-            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
-            'variants_directory': os.path.join(self.output_dir, 'variant'),
-            'consensus_directory': os.path.join(self.output_dir, 'consensus'),
-            'report_directory': os.path.join(self.output_dir, 'report')
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
+            'host_removal_directory': os.path.relpath(os.path.join(self.output_dir, "host_removal"), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, "cleaned_raw_reads"), self.output_dir),
+            'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
+            'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variant'), self.output_dir),
+            'consensus_directory': os.path.relpath(os.path.join(self.output_dir, 'consensus'), self.output_dir),
+            'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
         }
         return dirs
 

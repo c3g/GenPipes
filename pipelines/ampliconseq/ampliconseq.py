@@ -65,23 +65,23 @@ class AmpliconSeq(common.Illumina):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory': os.path.join(self.output_dir, 'trim'),
-            'merge_directory': os.path.join(self.output_dir, 'merge'),
-            'catenate_directory': os.path.join(self.output_dir, 'catenate'),
-            'filter_directory': os.path.join(self.output_dir, 'catenate_without_chimeras'),
-            'open_ref_otus_directory': os.path.join(self.output_dir, 'open_ref_otus'),
-            'denovo_otus_directory': os.path.join(self.output_dir, 'denovo_otus'),
-            'closed_ref_otus_directory': os.path.join(self.output_dir, 'closed_ref_otus'),
-            'open_ref_alpha_diversity_directory': os.path.join(self.output_dir, 'open_ref_alpha_diversity'),
-            'open_ref_beta_diversity_directory': os.path.join(self.output_dir, 'open_ref_beta_diversity'),
-            'denovo_alpha_diversity_directory': os.path.join(self.output_dir, 'denovo_alpha_diversity'),
-            'denovo_beta_diversity_directory': os.path.join(self.output_dir, 'denovo_beta_diversity'),
-            'closed_ref_alpha_diversity_directory': os.path.join(self.output_dir, 'closed_ref_alpha_diversity'),
-            'closed_ref_beta_diversity_directory': os.path.join(self.output_dir, 'closed_ref_beta_diversity'),
-            'dada2_analysis_directory': os.path.join(self.output_dir, 'dada2_Analysis'),
-            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
-            'report_directory': os.path.join(self.output_dir, 'report')
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
+            'merge_directory': os.path.relpath(os.path.join(self.output_dir, 'merge'), self.output_dir),
+            'catenate_directory': os.path.relpath(os.path.join(self.output_dir, 'catenate'), self.output_dir),
+            'filter_directory': os.path.relpath(os.path.join(self.output_dir, 'catenate_without_chimeras'), self.output_dir),
+            'open_ref_otus_directory': os.path.relpath(os.path.join(self.output_dir, 'open_ref_otus'), self.output_dir),
+            'denovo_otus_directory': os.path.relpath(os.path.join(self.output_dir, 'denovo_otus'), self.output_dir),
+            'closed_ref_otus_directory': os.path.relpath(os.path.join(self.output_dir, 'closed_ref_otus'), self.output_dir),
+            'open_ref_alpha_diversity_directory': os.path.relpath(os.path.join(self.output_dir, 'open_ref_alpha_diversity'), self.output_dir),
+            'open_ref_beta_diversity_directory': os.path.relpath(os.path.join(self.output_dir, 'open_ref_beta_diversity'), self.output_dir),
+            'denovo_alpha_diversity_directory': os.path.relpath(os.path.join(self.output_dir, 'denovo_alpha_diversity'), self.output_dir),
+            'denovo_beta_diversity_directory': os.path.relpath(os.path.join(self.output_dir, 'denovo_beta_diversity'), self.output_dir),
+            'closed_ref_alpha_diversity_directory': os.path.relpath(os.path.join(self.output_dir, 'closed_ref_alpha_diversity'), self.output_dir),
+            'closed_ref_beta_diversity_directory': os.path.relpath(os.path.join(self.output_dir, 'closed_ref_beta_diversity'), self.output_dir),
+            'dada2_analysis_directory': os.path.relpath(os.path.join(self.output_dir, 'dada2_Analysis'), self.output_dir),
+            'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
+            'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
         }
         return dirs
 

@@ -71,10 +71,10 @@ class DnaSeqHighCoverage(dnaseq.DnaSeqRaw):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory': os.path.join(self.output_dir, 'trim'),
-            'alignment_directory': os.path.join(self.output_dir, 'alignment'),
-            'variants_directory': os.path.join(self.output_dir, 'variants')
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
+            'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir)
         }
         return dirs
 

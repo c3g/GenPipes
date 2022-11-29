@@ -115,13 +115,13 @@ class DnaSeqRaw(common.Illumina):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory': os.path.join(self.output_dir, 'trim'),
-            'alignment_directory': os.path.join(self.output_dir, 'alignment'),
-            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
-            'variants_directory': os.path.join(self.output_dir, 'variants'),
-            'SVariants_directory': os.path.join(self.output_dir, 'SVariants'),
-            'report_directory': os.path.join(self.output_dir, 'report')
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
+            'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
+            'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir),
+            'SVariants_directory': os.path.relpath(os.path.join(self.output_dir, 'SVariants'), self.output_dir),
+            'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
         }
         return dirs
 
@@ -3882,11 +3882,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 os.path.join(cnvkit_dir, sample.name + ".cns"),
                                 vcf=input_vcf,
                                 sample_id=sample.name
-                            ),
-                            cnvkit.metrics(
-                                os.path.join(cnvkit_dir, sample.name + ".cnr"),
-                                os.path.join(cnvkit_dir, sample.name + ".cns"),
-                                os.path.join(metrics, sample.name + ".metrics.tsv")
                             )
                         ],
                         name=f"cnvkit_batch.correction.{sample.name}",
@@ -3938,11 +3933,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 os.path.join(cnvkit_dir, sample.name + ".cnr"),
                                 os.path.join(cnvkit_dir, sample.name + ".cns"),
                                 os.path.join(cnvkit_dir, sample.name + ".segmetrics.cns")
-                            ),
-                            cnvkit.metrics(
-                                os.path.join(cnvkit_dir, sample.name + ".cnr"),
-                                os.path.join(cnvkit_dir, sample.name + ".cns"),
-                                os.path.join(metrics, sample.name + ".metrics.tsv")
                             )
                         ],
                         name="cnvkit_batch.correction." + sample.name,
@@ -3958,7 +3948,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 os.path.join(cnvkit_dir, sample.name + ".segmetrics.cns"),
                                 os.path.join(cnvkit_dir, sample.name + ".call.cns")
                             ),
-                            #cnvkit.metrics(os.path.join(cnvkit_dir, sample.name + ".cnr"), os.path.join(cnvkit_dir, sample.name + ".call.cns"), os.path.join(metrics, sample.name + ".metrics.tsv")),
                             pipe_jobs(
                                 [
                                     cnvkit.export(
@@ -3992,7 +3981,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 os.path.join(cnvkit_dir, sample.name + ".call.cns"),
                                 os.path.join(cnvkit_dir, sample.name + ".scatter.pdf"),
                                 input_vcf,
-                                normal
+                                normal,
                             ),
                             cnvkit.diagram(
                                 os.path.join(cnvkit_dir, sample.name + ".cnr"),

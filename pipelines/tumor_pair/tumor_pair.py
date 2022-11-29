@@ -122,12 +122,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
     @property
     def output_dirs(self):
         dirs = {
-            'raw_reads_directory': os.path.join(self.output_dir, 'raw_reads'),
-            'trim_directory': os.path.join(self.output_dir, 'trim'),
-            'alignment_directory': os.path.join(self.output_dir, 'alignment'),
-            'metrics_directory': os.path.join(self.output_dir, 'metrics'),
-            'paired_variants_directory': os.path.join(self.output_dir, 'pairedVariants'),
-            'sv_variants_directory': os.path.join(self.output_dir, 'SVariants')
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
+            'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
+            'paired_variants_directory': os.path.relpath(os.path.join(self.output_dir, 'pairedVariants'), self.output_dir),
+            'sv_variants_directory': os.path.relpath(os.path.join(self.output_dir, 'SVariants'), self.output_dir)
         }
         return dirs
 
