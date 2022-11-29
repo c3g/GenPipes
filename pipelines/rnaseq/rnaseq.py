@@ -716,7 +716,7 @@ pandoc \\
                 bash.mkdir(big_wig),
                 Deeptools.bamcoverage(
                     input_bam,
-                    output_file
+                    output_file,
                     name=f"{sample.name}.bw",
                     samples=[sample.name]),
             )
