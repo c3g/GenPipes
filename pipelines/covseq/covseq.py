@@ -1433,7 +1433,7 @@ echo "Software Versions
         jobs = []
 
         readset_file=os.path.relpath(self.args.readsets.name, self.output_dir)
-        ivar_readset_file_report="report.readset_ivar.tsv"
+        ivar_readset_file_report=os.path.join(self.output_dirs["report_directory"], "report.readset_ivar.tsv")
 
         software_version = os.path.join(self.output_dirs["report_directory"], "software_versions.csv")
         run_metadata = os.path.join(self.output_dirs["report_directory"], "run_metadata.csv")
@@ -1456,7 +1456,10 @@ echo "Software Versions
                 bash.mkdir(ivar_ncovtools_data_directory),
                 Job(
                     input_files=[],
-                    output_files=[ivar_readset_file_report, ivar_metadata],
+                    output_files=[
+                        ivar_readset_file_report,
+                        ivar_metadata
+                    ],
                     command="""\\
 head -n 1 {readset_file} > {ivar_readset_file_report} && \\
 echo -e "sample\\tct\\tdate" > {ivar_metadata}""".format(
@@ -1584,7 +1587,7 @@ module load {R_covseqtools}""".format(
         jobs = []
 
         readset_file=os.path.relpath(self.args.readsets.name, self.output_dir)
-        freebayes_readset_file_report="report.readset_freebayes.tsv"
+        freebayes_readset_file_report=os.path.join(self.output_dirs["report_directory"], "report.readset_freebayes.tsv")
 
         software_version = os.path.join(self.output_dirs["report_directory"], "software_versions.csv")
         run_metadata = os.path.join(self.output_dirs["report_directory"], "run_metadata.csv")
@@ -1599,7 +1602,10 @@ module load {R_covseqtools}""".format(
                 bash.mkdir(freebayes_ncovtools_data_directory),
                 Job(
                     input_files=[],
-                    output_files=[freebayes_readset_file_report, freebayes_metadata],
+                    output_files=[
+                        freebayes_readset_file_report,
+                        freebayes_metadata
+                    ],
                     command="""\\
 head -n 1 {readset_file} > {freebayes_readset_file_report} && \\
 echo -e "sample\\tct\\tdate" > {freebayes_metadata}""".format(
@@ -1629,8 +1635,18 @@ echo -e "sample\\tct\\tdate" > {freebayes_metadata}""".format(
                 [
                     job,
                     Job(
-                        input_files=[filtered_bam, primer_trimmed_bam, freebayes_consensus, freebayes_variants],
-                        output_files=[freebayes_output_filtered_bam, freebayes_output_primer_trimmed_bam, freebayes_output_consensus, freebayes_output_variants],
+                        input_files=[
+                            filtered_bam,
+                            primer_trimmed_bam,
+                            freebayes_consensus,
+                            freebayes_variants
+                        ],
+                        output_files=[
+                            freebayes_output_filtered_bam,
+                            freebayes_output_primer_trimmed_bam,
+                            freebayes_output_consensus,
+                            freebayes_output_variants
+                        ],
                         command="""\
 echo "Linking files for ncov_tools for sample {sample_name}..." && \\
 if [ "$(ls -1 {filtered_bam})" != "" ] && [ "$(ls -1 {primer_trimmed_bam})" != "" ] && [ "$(ls -1 {freebayes_consensus})" != "" ] && [ "$(ls -1 {freebayes_variants})" != "" ];
