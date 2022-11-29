@@ -712,7 +712,7 @@ pandoc \\
 
             job= concat_jobs(
                 bash.mkdir(f"{self.output_dir['tracks']}"),
-                bash.mkdir(f"{self.output_dirs["tracks_directory"], "bigWig"}"),
+                bash.mkdir(f"{self.output_dirs['tracks'], "bigWig"}"),
                 bash.mkdir(f"{big_wig_prefix}"),## Correct?
                 deeptools.bamcoverage(
                     input_bam,
@@ -720,7 +720,7 @@ pandoc \\
                 )
             )
         return jobs
-
+self.
     def raw_counts(self):
         """
         Count reads in features using [htseq-count](http://www-huber.embl.de/users/anders/HTSeq/doc/count.html).
