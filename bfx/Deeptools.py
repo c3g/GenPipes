@@ -43,7 +43,6 @@ bamCoverage --verbose \\
     --outFileName ${output_file}.bw """.format(
         output_file=output_file,
         input_bam=input_bam,
-        # samplename=sample.name, 
         other_options=config.param('wiggle', 'other_options', required=True),
         )
   )

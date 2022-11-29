@@ -712,12 +712,14 @@ pandoc \\
             output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name)
 
             job= concat_jobs(
-                bash.mkdir(f{tracks_dir}),
-                bash.mkdir(f{big_wig}),
+                bash.mkdir(tracks_dir),
+                bash.mkdir(big_wig),
                 Deeptools.bamcoverage(
                     input_bam,
                     output_file
                 )
+                name=f"{sample.name}.bw",
+                samples=[sample.name]
             )
         return jobs
 
