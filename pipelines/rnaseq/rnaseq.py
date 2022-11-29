@@ -712,15 +712,18 @@ pandoc \\
             output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name)
 
             job= concat_jobs(
-                bash.mkdir(tracks_dir),
-                bash.mkdir(big_wig),
-                Deeptools.bamcoverage(
-                    input_bam,
-                    output_file,
-                    ),
+                [
+                    bash.mkdir(tracks_dir),
+                    bash.mkdir(big_wig),
+                    Deeptools.bamcoverage(
+                        input_bam,
+                        output_file,
+                    )
+                ],
                 name=sample.name+".bw",
-                samples=[sample]
+                samples=[sample]  
             )
+            jobs.append(job)
         return jobs
 
     def raw_counts(self):
