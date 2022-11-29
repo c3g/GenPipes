@@ -716,7 +716,7 @@ pandoc \\
                 bash.mkdir(tracks_dir),
                 bash.mkdir(big_wig),
                 bash.mkdir(big_wig_prefix),## Correct?
-                deeptools.bamcoverage(
+                Deeptools.bamcoverage(
                     input_bam,
                     output_file
                 )
