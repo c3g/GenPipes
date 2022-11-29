@@ -39,7 +39,7 @@ def bamcoverage(input_bam, output_file):
 bamCoverage --verbose \\
     --outFileFormat bigwig \\
     {other_options} \\
-    --bam ${bam_in} \\
+    --bam ${input_bam} \\
     --outFileName ${output_file}.bw """.format(
         output_file=output_file,
         input_bam=input_bam,
