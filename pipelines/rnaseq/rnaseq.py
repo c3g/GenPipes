@@ -722,7 +722,7 @@ pandoc \\
                 )
             )
         return jobs
-self.
+
     def raw_counts(self):
         """
         Count reads in features using [htseq-count](http://www-huber.embl.de/users/anders/HTSeq/doc/count.html).
