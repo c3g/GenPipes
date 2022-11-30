@@ -709,8 +709,7 @@ pandoc \\
             input_bam = bam_file_prefix + "bam"
             tracks_dir = os.path.join(self.output_dirs["tracks_directory"])
             big_wig = os.path.join(self.output_dirs['tracks_directory'], "bigWig")
-            output_file = sample.name + ".bw"
-            output_location = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".bw")
+            output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".bw")
 
             job= concat_jobs(
                 [
@@ -719,10 +718,9 @@ pandoc \\
                     Deeptools.bamcoverage(
                         input_bam,
                         output_file,
-                    ),
-                    bash.mv(output_file, output_location)
+                    )
                 ],
-                name="bam-to-bw_"+sample.name,
+                name="bamcoverage_"+sample.name,
                 samples=[sample]  
             )
             jobs.append(job)
@@ -890,7 +888,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         # Create Wiggle tracks archive
         library = {}
-        
+
         wiggle_directory = os.path.join(self.output_dirs["tracks_directory"], "bigWig")
         wiggle_archive = os.path.join(self.output_dir, "tracks.zip")
         wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]

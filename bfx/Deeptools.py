@@ -39,8 +39,8 @@ def bamcoverage(input_bam, output_file):
 bamCoverage --verbose \\
     --outFileFormat bigwig \\
     {other_options} \\
-    --bam ${input_bam} \\
-    --outFileName ${output_file}.bw """.format(
+    --bam {input_bam} \\
+    --outFileName {output_file} """.format(
         output_file=output_file,
         input_bam=input_bam,
         other_options=config.param('wiggle', 'other_options', required=True)
