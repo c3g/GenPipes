@@ -890,7 +890,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 
         # Create Wiggle tracks archive
         library = {}
-        for readset in self.readsets:
+        for sample in self.samples:
 
         wiggle_directory = os.path.join(self.output_dirs["tracks_directory"], "bigWig")
         wiggle_archive = os.path.join(self.output_dir, "tracks.zip")
