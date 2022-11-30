@@ -318,14 +318,14 @@ END
                             adapter_file
                         ),
                         bash.ln(
-                            trim_file_prefix + "-trimmed-pair1.fastq.gz",
+                            os.path.relpath(trim_file_prefix + "-trimmed-pair1.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair1.fastq.gz")),
                             trim_file_prefix + ".trim.pair1.fastq.gz",
-                            self.output_dir
+                            input=trim_file_prefix + "-trimmed-pair1.fastq.gz"
                         ),
                         bash.ln(
-                            trim_file_prefix + "-trimmed-pair2.fastq.gz",
+                            os.path.relpath(trim_file_prefix + "-trimmed-pair2.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair2.fastq.gz")),
                             trim_file_prefix + ".trim.pair2.fastq.gz",
-                            self.output_dir
+                            input=trim_file_prefix + "-trimmed-pair2.fastq.gz"
                         )
                     ],
                     name="skewer_trimming." + readset.name,
@@ -715,10 +715,10 @@ END
                             ),
                             # Create sample realign symlink since no merging is required
                             bash.ln(
-                                realign_prefix + ".bam",
+                                os.path.relpath(realign_prefix + ".bam", os.path.dirname(sample_output_bam)),
                                 sample_output_bam,
-                                self.output_dir,
-                                )
+                                input=realign_prefix + ".bam",
+                            )
                         ],
                         name="gatk_indel_realigner." + sample.name,
                         samples=[sample]
@@ -2057,14 +2057,14 @@ END
                     concat_jobs(
                         [
                             bash.ln(
-                                haplotype_file_prefix + ".hc.g.vcf.gz",
+                                os.path.relpath(haplotype_file_prefix + ".hc.g.vcf.gz", os.path.dirname(output_haplotype_file_prefix + ".hc.g.vcf.gz")),
                                 output_haplotype_file_prefix + ".hc.g.vcf.gz",
-                                self.output_dir
+                                input=haplotype_file_prefix + ".hc.g.vcf.gz"
                             ),
                             bash.ln(
-                                haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
+                                os.path.relpath(haplotype_file_prefix + ".hc.g.vcf.gz.tbi", os.path.dirname(output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi")),
                                 output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
-                                self.output_dir
+                                input=haplotype_file_prefix + ".hc.g.vcf.gz.tbi"
                             ),
                             gatk4.genotype_gvcf(
                                 output_haplotype_file_prefix + ".hc.g.vcf.gz",
@@ -3465,14 +3465,14 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             output_dep=output_dep
                         ),
                         bash.ln(
-                            manta_germline_output,
+                            os.path.relpath(manta_germline_output, os.path.dirname(output_prefix + ".manta.germline.vcf.gz")),
                             output_prefix + ".manta.germline.vcf.gz",
-                            self.output_dir
+                            input=manta_germline_output
                         ),
                         bash.ln(
-                            manta_germline_output_tbi,
+                            os.path.relpath(manta_germline_output_tbi, os.path.dirname(output_prefix + ".manta.germline.vcf.gz.tbi")),
                             output_prefix + ".manta.germline.vcf.gz.tbi",
-                            self.output_dir
+                            input=manta_germline_output_tbi
                         )
                     ],
                     input_dependency=[input],
@@ -3816,34 +3816,29 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 bed = coverage_bed
 
             gatk_vcf = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.vcf.gz")
-
-            input_vcf = None
-            normal = None
-            if os.path.isfile(gatk_vcf):
-                input_vcf = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.flt.vcf.gz")
-                jobs.append(
-                    pipe_jobs(
-                        [
-                            bcftools.view(
-                                gatk_vcf,
-                                None,
-                                filter_options="-i '%QUAL>=50' -m2 -M2 -v snps"
-                            ),
-                            bash.sed(
-                                None,
-                                None,
-                                "-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
-                            ),
-                            htslib.bgzip_tabix(
-                                None,
-                                input_vcf
-                            )
-                        ],
-                        name=f"cnvkit_batch.vcf_flt.{sample.name}",
-                        samples=[sample]
-                    )
+            flt_vcf = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.flt.vcf.gz")
+            jobs.append(
+                pipe_jobs(
+                    [
+                        bcftools.view(
+                            gatk_vcf,
+                            None,
+                            filter_options="-i '%QUAL>=50' -m2 -M2 -v snps"
+                        ),
+                        bash.sed(
+                            None,
+                            None,
+                            "-e 's/^\#\#INFO=<ID=AF,Number=A,.*\">/##INFO=<ID=AF,Number=1,Type=Float,Description=\"Allele Frequency of the ALT allele\">/'"
+                        ),
+                        htslib.bgzip_tabix(
+                            None,
+                            flt_vcf
+                        )
+                    ],
+                    name=f"cnvkit_batch.vcf_flt.{sample.name}",
+                    samples=[sample]
                 )
-                normal = sample.name
+            )
 
             if len(self.samples) > config.param('cnvkit_batch', 'min_background_samples', param_type='posint'):
                 jobs.append(
@@ -3880,8 +3875,13 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             cnvkit.segment(
                                 os.path.join(cnvkit_dir, sample.name + ".cnr"),
                                 os.path.join(cnvkit_dir, sample.name + ".cns"),
-                                vcf=input_vcf,
+                                vcf=flt_vcf,
                                 sample_id=sample.name
+                            ),
+                            cnvkit.metrics(
+                                os.path.join(cnvkit_dir, sample.name + ".cnr"),
+                                os.path.join(cnvkit_dir, sample.name + ".cns"),
+                                os.path.join(metrics, sample.name + ".metrics.tsv")
                             )
                         ],
                         name=f"cnvkit_batch.correction.{sample.name}",
@@ -3926,7 +3926,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                             cnvkit.segment(
                                 os.path.join(cnvkit_dir, sample.name + ".cnr"),
                                 os.path.join(cnvkit_dir, sample.name + ".cns"),
-                                vcf=input_vcf,
+                                vcf=flt_vcf,
                                 sample_id=sample.name
                             ),
                             cnvkit.segmetrics(
@@ -3980,8 +3980,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                 os.path.join(cnvkit_dir, sample.name + ".cnr"),
                                 os.path.join(cnvkit_dir, sample.name + ".call.cns"),
                                 os.path.join(cnvkit_dir, sample.name + ".scatter.pdf"),
-                                input_vcf,
-                                normal,
+                                vcf=flt_vcf,
+                                normal=sample.name,
                             ),
                             cnvkit.diagram(
                                 os.path.join(cnvkit_dir, sample.name + ".cnr"),

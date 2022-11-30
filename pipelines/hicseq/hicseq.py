@@ -248,10 +248,10 @@ class HicSeq(common.Illumina):
                 job = concat_jobs(
                     [
                         mkdir_job,
-                        Job(
-                            readset_bams,
-                            [sample_output],
-                            command="ln -s -f " + target_readset_bam + " " + sample_output
+                        bash.ln(
+                            target_readset_bam,
+                            sample_output,
+                            input=readset_bam
                         )
                     ],
                     name="symlink_readset_sample_bam." + sample.name,
@@ -295,46 +295,46 @@ class HicSeq(common.Illumina):
             # For hic, input bam is provided twice : {input_bam},{input_bam}
             input_bam = ",".join([hicup_file_output, hicup_file_output])
 
-            job = concat_jobs(
-                [
-                    homer.makeTagDir(
-                        sample_output_dir,
-                        input_bam,
-                        genome,
-                        self.restriction_site,
-                        PEflag,
-                        makeDirTag_hic_other_options
-                    ),
-                    homer.hic_tagDirQcPlots(
-                        sample.name,
-                        sample_output_dir,
-                        chrlist,
-                        os.path.join(sample_output_dir, "HomerQcPlots")
-                    ),
-                    bash.mkdir(os.path.join(sample_output_dir, "archive")),
-                    bash.chdir(sample_output_dir),
-                    bash.mv(
-                        ["*random*.tsv", "*chrUn*.tsv", "*hap*.tsv", "chrM*.tsv", "MT*.tsv", "*Y*.tsv", "*EBV*.tsv", "*GL*.tsv", "NT_*.tsv"],
-                        os.path.join(sample_output_dir, "archive"),
-                        extra='|| echo "not all files found"'
-                    ),
-                    bash.chdir(self.output_dir)
-                ],
-                name="homer_tag_directory." + sample.name,
-                samples=[sample],
-                input_dependency=[hicup_file_output],
-                output_dependency=[
-                    os.path.join(sample_output_dir, "tagInfo.txt"),
-                    os.path.join(sample_output_dir, "tagGCcontent.txt"),
-                    os.path.join(sample_output_dir, "genomeGCcontent.txt"),
-                    os.path.join(sample_output_dir, "tagLengthDistribution.txt"),
-                    os.path.join(sample_output_dir, "tagLengthDistribution.txt"),
-                    os.path.join(sample_output_dir, "HomerQcPlots"),
-                    os.path.join(sample_output_dir, "archive")
-                ]
+            jobs.append(
+                concat_jobs(
+                    [
+                        homer.makeTagDir(
+                            sample_output_dir,
+                            input_bam,
+                            genome,
+                            self.restriction_site,
+                            PEflag,
+                            makeDirTag_hic_other_options
+                        ),
+                        homer.hic_tagDirQcPlots(
+                            sample.name,
+                            sample_output_dir,
+                            chrlist,
+                            os.path.join(sample_output_dir, "HomerQcPlots")
+                        ),
+                        bash.mkdir(os.path.join(sample_output_dir, "archive")),
+                        bash.chdir(sample_output_dir),
+                        bash.mv(
+                            ["*random*.tsv", "*chrUn*.tsv", "*hap*.tsv", "chrM*.tsv", "MT*.tsv", "*Y*.tsv", "*EBV*.tsv", "*GL*.tsv", "NT_*.tsv"],
+                            os.path.join(sample_output_dir, "archive"),
+                            extra='|| echo "not all files found"'
+                        ),
+                        bash.chdir(self.output_dir)
+                    ],
+                    name="homer_tag_directory." + sample.name,
+                    samples=[sample],
+                    input_dependency=[hicup_file_output],
+                    output_dependency=[
+                        os.path.join(sample_output_dir, "tagInfo.txt"),
+                        os.path.join(sample_output_dir, "tagGCcontent.txt"),
+                        os.path.join(sample_output_dir, "genomeGCcontent.txt"),
+                        os.path.join(sample_output_dir, "tagLengthDistribution.txt"),
+                        os.path.join(sample_output_dir, "tagLengthDistribution.txt"),
+                        os.path.join(sample_output_dir, "HomerQcPlots"),
+                        os.path.join(sample_output_dir, "archive")
+                    ]
+                )
             )
-            jobs.append(job)
-
         return jobs
 
     def interaction_matrices_Chr(self):

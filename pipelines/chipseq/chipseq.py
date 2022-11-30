@@ -488,21 +488,22 @@ pandoc \\
                     sample_index = re.sub("\.bam$", ".bam.bai", sample_bam)
 
                     jobs.append(
-                        concat_jobs([
-                            bash.mkdir(
-                                os.path.dirname(sample_bam)
-                            ),
-                            bash.ln(
-                                readset_bam,
-                                sample_bam,
-                                self.output_dir
-                            ),
-                            bash.ln(
-                                readset_index,
-                                sample_index,
-                                self.output_dir
-                            )
-                        ],
+                        concat_jobs(
+                            [
+                                bash.mkdir(
+                                    os.path.dirname(sample_bam)
+                                ),
+                                bash.ln(
+                                    os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
+                                    sample_bam,
+                                    input=readset_bam
+                                ),
+                                bash.ln(
+                                    os.path.relpath(readset_index, os.path.dirname(sample_index)),
+                                    sample_index,
+                                    input=readset_index
+                                )
+                            ],
                             name="symlink_readset_sample_bam." + sample.name + "." + mark_name,
                             samples=[sample]
                         )
@@ -1987,23 +1988,24 @@ done""".format(
                     output_haplotype_file_prefix = os.path.join(self.output_dirs["alignment_output_directory"], sample.name, mark_name, sample.name +"." + mark_name)
 
                     jobs.append(
-                        concat_jobs([
-                            bash.ln(
-                                haplotype_file_prefix + ".hc.g.vcf.gz",
-                                output_haplotype_file_prefix + ".hc.g.vcf.gz",
-                                self.output_dir
-                            ),
-                            bash.ln(
-                                haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
-                                output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
-                                self.output_dir
-                            ),
-                            gatk4.genotype_gvcf(
-                                output_haplotype_file_prefix + ".hc.g.vcf.gz",
-                                output_haplotype_file_prefix + ".hc.vcf.gz",
-                                config.param('gatk_genotype_gvcf', 'options')
-                            )
-                        ],
+                        concat_jobs(
+                            [
+                                bash.ln(
+                                    os.path.relpath(haplotype_file_prefix + ".hc.g.vcf.gz", os.path.dirname(output_haplotype_file_prefix + ".hc.g.vcf.gz")),
+                                    output_haplotype_file_prefix + ".hc.g.vcf.gz",
+                                    input=haplotype_file_prefix + ".hc.g.vcf.gz"
+                                ),
+                                bash.ln(
+                                    os.path.relpath(haplotype_file_prefix + ".hc.g.vcf.gz.tbi", os.path.dirname(output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi")),
+                                    output_haplotype_file_prefix + ".hc.g.vcf.gz.tbi",
+                                    input=haplotype_file_prefix + ".hc.g.vcf.gz.tbi"
+                                ),
+                                gatk4.genotype_gvcf(
+                                    output_haplotype_file_prefix + ".hc.g.vcf.gz",
+                                    output_haplotype_file_prefix + ".hc.vcf.gz",
+                                    config.param('gatk_genotype_gvcf', 'options')
+                                )
+                            ],
                             name="merge_and_call_individual_gvcf.call." + sample.name +"_"+ mark_name,
                             samples=[sample]
                         )

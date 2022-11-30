@@ -1058,11 +1058,13 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
 
         for sample in self.samples:
             consensus_directory = os.path.join(self.output_dirs["consensus_directory"], sample.name)
-            [ivar_consensus] = self.select_input_files([
-                [os.path.join(consensus_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
-                [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
-                [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
-            ])
+            [ivar_consensus] = self.select_input_files(
+                [
+                    [os.path.join(consensus_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
+                    [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
+                    [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
+                ]
+            )
             quast_ivar_directory = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "quast_metrics_ivar")
             quast_ivar_html = os.path.join(quast_ivar_directory, "report.html")
             quast_ivar_tsv = os.path.join(quast_ivar_directory, "report.tsv")
@@ -1071,28 +1073,33 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
             ivar_output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'sequencing_technology', required=False), status="${IVAR_STATUS}"))
 
             variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
-            [ivar_vcf] = self.select_input_files([
-                [os.path.join(variant_directory, sample.name + ".sorted.filtered.primerTrim.vcf.gz")],
-                [os.path.join(variant_directory, sample.name + ".sorted.filtered.vcf.gz")],
-                [os.path.join(variant_directory, sample.name + ".sorted.vcf.gz")]
-            ])
+            [ivar_vcf] = self.select_input_files(
+                [
+                    [os.path.join(variant_directory, sample.name + ".sorted.filtered.primerTrim.vcf.gz")],
+                    [os.path.join(variant_directory, sample.name + ".sorted.filtered.vcf.gz")],
+                    [os.path.join(variant_directory, sample.name + ".sorted.vcf.gz")]
+                ]
+            )
             ivar_annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(ivar_vcf)))
 
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
-            [input_bam] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
-            ])
+            [input_bam] = self.select_input_files(
+                [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                ]
+            )
 
             bedgraph_file = os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(input_bam)))
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(ivar_output_fa)),
-                    Job(
-                        input_files=[quast_ivar_tsv, quast_ivar_html],
-                        output_files=[],
-                        command="""\\
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.dirname(ivar_output_fa)),
+                        Job(
+                            input_files=[quast_ivar_tsv, quast_ivar_html],
+                            output_files=[],
+                            command="""\\
 ivar_cons_len=`grep -oP "Total length \(>= 0 bp\)\\t\K.*?(?=$)" {quast_ivar_tsv}`
 ivar_N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\[\K.*?(?=])" {quast_ivar_html}`
 ivar_cons_perc_N=`echo "scale=2; 100*$ivar_N_count/$ivar_cons_len" | bc -l`
@@ -1102,38 +1109,37 @@ bam_cov50X=`awk '{{if ($4 > 50) {{count = count + $3-$2}}}} END {{if (count) {{p
 bam_cov50X=`echo "scale=2; 100*$bam_cov50X/$genome_size" | bc -l`
 IVAR_STATUS=`awk -v bam_cov50X=$bam_cov50X -v ivar_frameshift=$ivar_frameshift -v ivar_cons_perc_N=$ivar_cons_perc_N 'BEGIN {{ if (ivar_cons_perc_N < 5 && ivar_frameshift != "FLAG" && bam_cov50X >= 90) {{print "pass"}}  else if (ivar_cons_perc_N > 10) {{print "rej"}} else if ((ivar_cons_perc_N >= 5 && ivar_cons_perc_N <= 10) || ivar_frameshift == "FLAG" || bam_cov50X < 90) {{print "flag"}} }}'`
 export IVAR_STATUS""".format(
-    quast_ivar_html=quast_ivar_html,
-    quast_ivar_tsv=quast_ivar_tsv,
-    genome_file=config.param('DEFAULT', 'igv_genome', required=False),
-    ivar_annotated_vcf=ivar_annotated_vcf,
-    bedgraph_file=bedgraph_file
-    )
+                                quast_ivar_html=quast_ivar_html,
+                                quast_ivar_tsv=quast_ivar_tsv,
+                                genome_file=config.param('DEFAULT', 'igv_genome', required=False),
+                                ivar_annotated_vcf=ivar_annotated_vcf,
+                                bedgraph_file=bedgraph_file
+                            )
                         ),
-                    Job(
-                        input_files=[ivar_consensus],
-                        output_files=[ivar_output_fa],
-                        command="""\\
+                        Job(
+                            input_files=[ivar_consensus],
+                            output_files=[ivar_output_fa],
+                            command="""\\
 awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:ivar|snv_call_method:ivar"; next}}{{print}}' < {ivar_consensus} > {ivar_output_status_fa} && \\
 ln -sf {ivar_output_status_fa_basename} {ivar_output_fa}""".format(
-    country=config.param('rename_consensus_header', 'country', required=False),
-    province=config.param('rename_consensus_header', 'province', required=False),
-    year=config.param('rename_consensus_header', 'year', required=False),
-    seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
-    sample=sample.name,
-    ivar_consensus=ivar_consensus,
-    ivar_output_status_fa_basename=os.path.basename(ivar_output_status_fa),
-    ivar_output_status_fa=ivar_output_status_fa,
-    ivar_output_fa=ivar_output_fa
-    )
+                                country=config.param('rename_consensus_header', 'country', required=False),
+                                province=config.param('rename_consensus_header', 'province', required=False),
+                                year=config.param('rename_consensus_header', 'year', required=False),
+                                seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
+                                sample=sample.name,
+                                ivar_consensus=ivar_consensus,
+                                ivar_output_status_fa_basename=os.path.basename(ivar_output_status_fa),
+                                ivar_output_status_fa=ivar_output_status_fa,
+                                ivar_output_fa=ivar_output_fa
+                            )
                         )
-                ],
-                name="rename_consensus_header." + sample.name,
-                samples=[sample]
+                    ],
+                    name="rename_consensus_header." + sample.name,
+                    samples=[sample]
                 )
             )
 
         return jobs
-
 
     def rename_consensus_header_freebayes(self):
         """
@@ -1158,20 +1164,23 @@ ln -sf {ivar_output_status_fa_basename} {ivar_output_fa}""".format(
             freebayes_annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(freebayes_vcf)))
 
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
-            [input_bam] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
-            ])
+            [input_bam] = self.select_input_files(
+                [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                ]
+            )
 
             bedgraph_file = os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(input_bam)))
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(freebayes_output_fa)),
-                    Job(
-                        input_files=[quast_freebayes_tsv, quast_freebayes_html],
-                        output_files=[],
-                        command="""\\
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.dirname(freebayes_output_fa)),
+                        Job(
+                            input_files=[quast_freebayes_tsv, quast_freebayes_html],
+                            output_files=[],
+                            command="""\\
 freebayes_cons_len=`grep -oP "Total length \(>= 0 bp\)\\t\K.*?(?=$)" {quast_freebayes_tsv}`
 freebayes_N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\[\K.*?(?=])" {quast_freebayes_html}`
 freebayes_cons_perc_N=`echo "scale=2; 100*$freebayes_N_count/$freebayes_cons_len" | bc -l`
@@ -1181,33 +1190,33 @@ bam_cov50X=`awk '{{if ($4 > 50) {{count = count + $3-$2}}}} END {{if (count) {{p
 bam_cov50X=`echo "scale=2; 100*$bam_cov50X/$genome_size" | bc -l`
 FREEBAYES_STATUS=`awk -v bam_cov50X=$bam_cov50X -v freebayes_frameshift=$freebayes_frameshift -v freebayes_cons_perc_N=$freebayes_cons_perc_N 'BEGIN {{ if (freebayes_cons_perc_N < 5 && freebayes_frameshift != "FLAG" && bam_cov50X >= 90) {{print "pass"}}  else if (freebayes_cons_perc_N > 10) {{print "rej"}} else if ((freebayes_cons_perc_N >= 5 && freebayes_cons_perc_N <= 10) || freebayes_frameshift == "FLAG" || bam_cov50X < 90) {{print "flag"}} }}'`
 export FREEBAYES_STATUS""".format(
-    quast_freebayes_html=quast_freebayes_html,
-    quast_freebayes_tsv=quast_freebayes_tsv,
-    genome_file=config.param('DEFAULT', 'igv_genome', required=False),
-    freebayes_annotated_vcf=freebayes_annotated_vcf,
-    bedgraph_file=bedgraph_file
-    )
+                                quast_freebayes_html=quast_freebayes_html,
+                                quast_freebayes_tsv=quast_freebayes_tsv,
+                                genome_file=config.param('DEFAULT', 'igv_genome', required=False),
+                                freebayes_annotated_vcf=freebayes_annotated_vcf,
+                                bedgraph_file=bedgraph_file
+                            )
                         ),
-                    Job(
-                        input_files=[freebayes_consensus],
-                        output_files=[freebayes_output_fa],
-                        command="""\\
+                        Job(
+                            input_files=[freebayes_consensus],
+                            output_files=[freebayes_output_fa],
+                            command="""\\
 awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:bcftools|snv_call_method:freebayes"; next}}{{print}}' < {freebayes_consensus} > {freebayes_output_status_fa} && \\
 ln -sf {freebayes_output_status_fa_basename} {freebayes_output_fa}""".format(
-    country=config.param('rename_consensus_header', 'country', required=False),
-    province=config.param('rename_consensus_header', 'province', required=False),
-    year=config.param('rename_consensus_header', 'year', required=False),
-    seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
-    sample=sample.name,
-    freebayes_consensus=freebayes_consensus,
-    freebayes_output_status_fa_basename=os.path.basename(freebayes_output_status_fa),
-    freebayes_output_status_fa=freebayes_output_status_fa,
-    freebayes_output_fa=freebayes_output_fa
-    )
+                                country=config.param('rename_consensus_header', 'country', required=False),
+                                province=config.param('rename_consensus_header', 'province', required=False),
+                                year=config.param('rename_consensus_header', 'year', required=False),
+                                seq_method=config.param('rename_consensus_header', 'seq_method', required=False),
+                                sample=sample.name,
+                                freebayes_consensus=freebayes_consensus,
+                                freebayes_output_status_fa_basename=os.path.basename(freebayes_output_status_fa),
+                                freebayes_output_status_fa=freebayes_output_status_fa,
+                                freebayes_output_fa=freebayes_output_fa
+                            )
                         )
-                ],
-                name="rename_consensus_header." + sample.name,
-                samples=[sample]
+                    ],
+                    name="rename_consensus_header." + sample.name,
+                    samples=[sample]
                 )
             )
 

@@ -77,22 +77,22 @@ class EpiQC(common.Illumina):
     @property
     def output_dirs(self):
         dirs = {
-            'bigwiginfo_output_directory': os.path.relpath(os.path.join('bigwiginfo'), self.output_dir),
-            'chromimpute_output_directory': os.path.relpath(os.path.join('imputation'), self.output_dir),
-            'bedgraph_converted_directory': os.path.relpath(os.path.join('bedgraph_data'), self.output_dir),
-            'bedgraph_chr_converted_directory': os.path.relpath(os.path.join('bedgraph_chr_data'), self.output_dir),
-            'chromimpute_converted_directory': os.path.relpath(os.path.join('converted'), self.output_dir),
-            'chromimpute_distance_directory': os.path.relpath(os.path.join('distance'), self.output_dir),
-            'chromimpute_traindata_directory': os.path.relpath(os.path.join('traindata'), self.output_dir),
-            'chromimpute_predictor_directory': os.path.relpath(os.path.join('predictor'), self.output_dir),
-            'chromimpute_apply': os.path.relpath(os.path.join('imputed'), self.output_dir),
-            'chromimpute_eval': os.path.relpath(os.path.join('eval'), self.output_dir),
-            'signal_to_noise_output_directory': os.path.relpath(os.path.join('signal_to_noise'), self.output_dir),
-            'epigeec_output_directory': os.path.relpath(os.path.join('epigeec'), self.output_dir),
-            'epigeec_hdf5': os.path.relpath(os.path.join('hdf5'), self.output_dir),
-            'epigeec_filtered': os.path.relpath(os.path.join('filtered'), self.output_dir),
-            'epigeec_output': os.path.relpath(os.path.join('output'), self.output_dir),
-            'report_dir': os.path.relpath(os.path.join('report'), self.output_dir)
+            'bigwiginfo_output_directory': os.path.relpath(os.path.join(self.output_dir, 'bigwiginfo'), self.output_dir),
+            'chromimpute_output_directory': os.path.relpath(os.path.join(self.output_dir, 'imputation'), self.output_dir),
+            'chromimpute_converted_directory': os.path.relpath(os.path.join(self.output_dir, 'imputation', 'converted'), self.output_dir),
+            'chromimpute_distance_directory': os.path.relpath(os.path.join(self.output_dir, 'imputation', 'distance'), self.output_dir),
+            'chromimpute_traindata_directory': os.path.relpath(os.path.join(self.output_dir, 'imputation', 'traindata'), self.output_dir),
+            'chromimpute_predictor_directory': os.path.relpath(os.path.join(self.output_dir, 'imputation', 'predictor'), self.output_dir),
+            'chromimpute_apply': os.path.relpath(os.path.join(self.output_dir, 'imputation', 'imputed'), self.output_dir),
+            'chromimpute_eval': os.path.relpath(os.path.join(self.output_dir, 'imputation', 'eval'), self.output_dir),
+            'bedgraph_converted_directory': os.path.relpath(os.path.join(self.output_dir, 'bedgraph_data'), self.output_dir),
+            'bedgraph_chr_converted_directory': os.path.relpath(os.path.join(self.output_dir, 'bedgraph_chr_data'), self.output_dir),
+            'signal_to_noise_output_directory': os.path.relpath(os.path.join(self.output_dir, 'signal_to_noise'), self.output_dir),
+            'epigeec_output_directory': os.path.relpath(os.path.join(self.output_dir, 'epigeec'), self.output_dir),
+            'epigeec_hdf5': os.path.relpath(os.path.join(self.output_dir, 'epigeec', 'hdf5'), self.output_dir),
+            'epigeec_filtered': os.path.relpath(os.path.join(self.output_dir, 'epigeec', 'filtered'), self.output_dir),
+            'epigeec_output': os.path.relpath(os.path.join(self.output_dir, 'epigeec', 'output'), self.output_dir),
+            'report_dir': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
         }
         return dirs
 
@@ -103,24 +103,28 @@ class EpiQC(common.Illumina):
 
     @property
     def bigwiginfo_output(self):
-        file_name = {'prefix': 'bigwiginfo',
-                     'extension': '.txt'}
+        file_name = {
+            'prefix': 'bigwiginfo',
+            'extension': '.txt'
+        }
         return file_name
 
     @property
     def chipseq_bigwig(self):
-        file_name = { 'tracks_dir' : 'tracks',
-        'bigwig_dir': 'bigWig',
-        'extension': '.bw'
+        file_name = {
+            'tracks_dir' : 'tracks',
+            'bigwig_dir': 'bigWig',
+            'extension': '.bw'
         }
         return file_name
 
     @property
     def mark_type_conversion(self):
-        dirs = {'N': 'narrow',
-                'B': 'broad',
-                'I': 'Input'
-                }
+        dirs = {
+            'N': 'narrow',
+            'B': 'broad',
+            'I': 'Input'
+        }
         return dirs
 
     @property
@@ -145,10 +149,10 @@ class EpiQC(common.Illumina):
 
     @property
     def chromosome_file(self):
-        file_name = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'],
-                                      "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT',
-                                                                                                         'assembly'),
-                                                "chrom_sizes.txt")))
+        file_name = os.path.join(
+            self.output_dirs['chromimpute_output_directory'],
+            "_".join((config.param('DEFAULT', 'scientific_name'), config.param('DEFAULT', 'assembly'), "chrom_sizes.txt"))
+        )
         return file_name
 
     @property
@@ -200,17 +204,29 @@ class EpiQC(common.Illumina):
                     if readset.bigwig: # Check if the readset has a BIGWIG column != None
                         bigwig_file = readset.bigwig
                     else:                      # If not, we search for the path from a chipseq pipeline
-                          # Find path to chipseq folder
-                        bigwig_file = os.path.join(self.prefix_path, self.chipseq_bigwig['tracks_dir'], sample.name,
-                                                   readset.mark_name, self.chipseq_bigwig['bigwig_dir'],
-                                                   sample.name +"."+ readset.mark_name+ self.chipseq_bigwig['extension']) # Create path to bigwig file
+                        # Find path to chipseq folder
+                        bigwig_file = os.path.join(
+                            self.prefix_path,
+                            self.chipseq_bigwig['tracks_dir'],
+                            sample.name,
+                            readset.mark_name,
+                            self.chipseq_bigwig['bigwig_dir'],
+                            sample.name +"."+ readset.mark_name+ self.chipseq_bigwig['extension']
+                        ) # Create path to bigwig file
 
-                    output_file = os.path.join(output_dir,
-                                          self.bigwiginfo_output['prefix'] + "_" + os.path.basename(bigwig_file) + self.bigwiginfo_output['extension'])
-                    job = concat_jobs([
-                            Job(command="mkdir -p " + output_dir),
-                            bigwiginfo.bigWigInfo(bigwig_file, output_file)
-                        ])
+                    output_file = os.path.join(
+                        output_dir,
+                        self.bigwiginfo_output['prefix'] + "_" + os.path.basename(bigwig_file) + self.bigwiginfo_output['extension']
+                    )
+                    job = concat_jobs(
+                        [
+                            bash.mkdir(output_dir),
+                            bigwiginfo.bigWigInfo(
+                                bigwig_file,
+                                output_file
+                            )
+                        ]
+                    )
                     job.name = "bigwiginfo." + readset.name
                     job.samples = [readset.sample]
                     jobs.append(job)
@@ -231,22 +247,34 @@ class EpiQC(common.Illumina):
                         bigwig_file = readset.bigwig
                     else:  # If not, we search for the path from a chipseq pipeline
                           # Find path to chipseq folder
-                        bigwig_file = os.path.join(self.prefix_path, self.chipseq_bigwig['tracks_dir'], sample.name,
-                                                   readset.mark_name, self.chipseq_bigwig['bigwig_dir'],
-                                                   sample.name + "." + readset.mark_name + self.chipseq_bigwig[
-                                                       'extension'])  # Create path to bigwig file
-                    output_bedgraph = os.path.join(self.output_dirs['bedgraph_converted_directory'],
-                                                   sample.name + "_" + readset.mark_name + ".bedgraph")
-                    output_bedgraph_gz = os.path.join(self.output_dirs['bedgraph_converted_directory'],
-                                                      sample.name + "_" + readset.mark_name + ".bedgraph.gz")
+                        bigwig_file = os.path.join(
+                            self.prefix_path,
+                            self.chipseq_bigwig['tracks_dir'],
+                            sample.name,
+                            readset.mark_name,
+                            self.chipseq_bigwig['bigwig_dir'],
+                            sample.name + "." + readset.mark_name + self.chipseq_bigwig['extension']
+                        )  # Create path to bigwig file
+                    output_bedgraph = os.path.join(self.output_dirs['bedgraph_converted_directory'], sample.name + "_" + readset.mark_name + ".bedgraph")
+                    output_bedgraph_gz = os.path.join(self.output_dirs['bedgraph_converted_directory'], sample.name + "_" + readset.mark_name + ".bedgraph.gz")
                     # one job for each sample and each jobs has a job for create the folder if not exist
-                    job = concat_jobs([
-                        Job(command="mkdir -p " + self.output_dirs['bedgraph_converted_directory']),
-                        bigwiginfo.bigWigToBedGraph(bigwig_file, output_bedgraph),
-                        Job(output_files=[output_bedgraph_gz], command="gzip -f " + output_bedgraph)
-                    ])
-                    job.name = "bigwig_to_bedgraph." + sample.name + "_" + readset.mark_name
-                    job.samples = [readset.sample]
+                    job = concat_jobs(
+                        [
+                            bash.mkdir(self.output_dirs['bedgraph_converted_directory']),
+                            bigwiginfo.bigWigToBedGraph(
+                                bigwig_file,
+                                output_bedgraph
+                            ),
+                            bash.gzip(
+                                output_bedgraph,
+                                output_bedgraph_gz,
+                                options="-f "
+                            )
+                        ],
+                        name="bigwig_to_bedgraph." + sample.name + "_" + readset.mark_name,
+                        samples=[readset.sample],
+                        input_dependency=[bigwig_file]
+                    )
                     jobs.append(job)
 
         return jobs
@@ -265,7 +293,7 @@ class EpiQC(common.Illumina):
         # there should be a way to define it in the readset file. or use a specific readset file for epiqc
         # for now pipeline does not support that
         jobs = []
-        inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+        inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
 
         bedgraph_converted_files = []
 
@@ -274,26 +302,20 @@ class EpiQC(common.Illumina):
             for readset in sample.readsets:
                 if readset.mark_type != "I":
                     bedgraph_converted_files.append(
-                        os.path.join(self.output_dirs['bedgraph_converted_directory'],
-                                     sample.name + "_" + readset.mark_name + ".bedgraph.gz"))
+                        os.path.join(self.output_dirs['bedgraph_converted_directory'], sample.name + "_" + readset.mark_name + ".bedgraph.gz")
+                    )
 
-        job_folder_create = Job(input_files=bedgraph_converted_files,
-                                command="""\
-mkdir -p \\
-{output_dir}/{converteddir} \\
-{output_dir}/{compute_global_dist} \\
-{output_dir}/{generate_train_data} \\
-{output_dir}/{train} \\
-{output_dir}/{apply} \\
-{output_dir}/{eval}""".format(
-                                    output_dir=self.output_dirs['chromimpute_output_directory'],
-                                    converteddir=self.output_dirs['chromimpute_converted_directory'],
-                                    compute_global_dist=self.output_dirs['chromimpute_distance_directory'],
-                                    generate_train_data=self.output_dirs['chromimpute_traindata_directory'],
-                                    train=self.output_dirs['chromimpute_predictor_directory'],
-                                    apply=self.output_dirs['chromimpute_apply'],
-                                    eval=self.output_dirs['chromimpute_eval'])
-                                )
+        job_folder_create = concat_jobs(
+            [
+                bash.mkdir(self.output_dirs['chromimpute_converted_directory']),
+                bash.mkdir(self.output_dirs['chromimpute_distance_directory']),
+                bash.mkdir(self.output_dirs['chromimpute_traindata_directory']),
+                bash.mkdir(self.output_dirs['chromimpute_predictor_directory']),
+                bash.mkdir(self.output_dirs['chromimpute_apply']),
+                bash.mkdir(self.output_dirs['chromimpute_eval'])
+            ],
+            input_dependency=bedgraph_converted_files
+        )
 
         # load inputinfo file path from ini file. this file is stored in CVMFS and currently, file stored in user directory is not supported
         # because there is a prefix file path which called CVMFS directory
@@ -318,20 +340,14 @@ mkdir -p \\
             for sample in self.samples:
                 for readset in sample.readsets:
                     if readset.mark_type != "I":
-                        inputinfo.write("{sample}\t{histone}\t{file}\n".format(
-                            sample=sample.name,
-                            histone=readset.mark_name,
-                            file=sample.name + "_" + readset.mark_name + ".bedgraph.gz"))
-
+                        inputinfo.write(f"{sample.name}\t{readset.mark_name}\t{sample.name}_{readset.mark_name}.bedgraph.gz\n")
 
         #train_user_data = config.param('DEFAULT', 'train_only_user_data')
         train_user_data = "F"
         chr_sizes_file = self.chromosome_file
+        converteddir = self.output_dirs['chromimpute_converted_directory']
 
-        converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                    self.output_dirs['chromimpute_converted_directory'])
-
-        inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+        inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
 
         #gather converted file paths in CVMFS as they needed to feed into the job as input files
         converted_simlinks = []
@@ -342,16 +358,15 @@ mkdir -p \\
                     with open(inputinfofile, "r") as inputinfo:
                         for inputinfoline in inputinfo:
                             # if histone mark in inputinfo file present in readset file it only includes as an input fileof the convert global distance step
+                            converted_simlinks.append(os.path.join(converteddir, "%s_%s.wig.gz" % (chr_name, inputinfoline.strip().split("\t")[2])))
 
-                            converted_simlinks.append(os.path.join(converteddir,
-                                                                "%s_%s.wig.gz" %
-                                                                (chr_name,
-                                                                 inputinfoline.strip().split("\t")[2])))
-
-
-        job = []
         #add chr_sizes_file and inputinfo file to list of input files
-        converted_simlinks.extend([chr_sizes_file, inputinfofile])
+        converted_simlinks.extend(
+            [
+                chr_sizes_file,
+                inputinfofile
+            ]
+        )
 
         #job to create simlinks for converted signal tracks in IHEC data set stored in CVMFS
         #these will be used in ChromImpute
@@ -362,21 +377,28 @@ mkdir -p \\
     rm {output_dir}/{user_converteddir}/*
     fi &&
     ln -s {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
-            output_dir=self.output_dirs['chromimpute_output_directory'],
-            user_converteddir=self.output_dirs['chromimpute_converted_directory'],
-            ihec_converteddir=config.param('chromimpute', 'IHEC_data') )
+                output_dir=self.output_dirs['chromimpute_output_directory'],
+                user_converteddir=os.path.basename(self.output_dirs['chromimpute_converted_directory']),
+                ihec_converteddir=config.param('chromimpute', 'IHEC_data')
+            )
         )
 
-
-        jobs.append(concat_jobs([job_folder_create, job_create_simlinks ],
-                                name="chromimpute_preprocess"))
+        jobs.append(
+            concat_jobs(
+                [
+                    job_folder_create,
+                    job_create_simlinks
+                ],
+                name="chromimpute_preprocess",
+                samples=self.samples
+            )
+        )
 
         return jobs
 
     def create_chr_sizes(self):
 
-        output_dir = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'])
-
+        output_dir = self.output_dirs['chromimpute_output_directory']
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         #get environment variable to generate the path of the chromosome file. different from usual ini file path.
@@ -403,8 +425,8 @@ mkdir -p \\
                 for chr_line in chr_sizes_genome:
                     if chr == chr_line.strip().split("\t")[0]:
                         chr_size = chr_line.strip().split("\t")[1]
-                        chr_sizes_file_name = open(chr_sizes_file, "a")
-                        chr_sizes_file_name.write("%s\t%i\n" % (chr, int(chr_size)))
+                        chr_sizes_file_name = open(os.path.abspath(chr_sizes_file), "w")
+                        chr_sizes_file_name.write("{chr}\t{int(chr_size)}\n")
 
     def chromimpute_convert(self):
         """
@@ -416,7 +438,7 @@ mkdir -p \\
         """
         jobs = []
 
-        inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+        inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
 
         # check ini file whether user has requested specific chromosoems instead All chromosomes. Then change the input folder accordingly
         chrs = config.param('chromimpute_preprocess', 'chromosomes')
@@ -428,8 +450,7 @@ mkdir -p \\
             all_chrs = config.param('chromimpute_preprocess', 'chromosomes').split(",")
 
         input_dir = self.output_dirs['bedgraph_converted_directory']
-        output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                  self.output_dirs['chromimpute_converted_directory'])
+        output_dir = self.output_dirs['chromimpute_converted_directory']
         chr_sizes_file = self.chromosome_file
 
         for sample in self.samples:
@@ -439,11 +460,18 @@ mkdir -p \\
                     for chr in all_chrs:
                         output_files.append(os.path.join(output_dir, chr + "_" + sample.name + "_" + readset.mark_name +".bedgraph.gz.wig.gz"))
 
-                    input_file = os.path.join(input_dir,
-                                     sample.name + "_" + readset.mark_name + ".bedgraph.gz")
+                    input_file = os.path.join(input_dir, sample.name + "_" + readset.mark_name + ".bedgraph.gz")
 
-                    job = chromimpute.convert(input_dir, input_file, output_dir, output_files, inputinfofile,
-                                              readset.mark_name, sample.name, chr_sizes_file)
+                    job = chromimpute.convert(
+                        input_dir,
+                        input_file,
+                        output_dir,
+                        output_files,
+                        inputinfofile,
+                        readset.mark_name,
+                        sample.name,
+                        chr_sizes_file
+                    )
                     job.samples = [sample]
                     jobs.append(job)
         return jobs
@@ -457,11 +485,9 @@ mkdir -p \\
         jobs = []
         chr_sizes_file = self.chromosome_file
 
-        inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
-        converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                    self.output_dirs['chromimpute_converted_directory'])
-        output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                  self.output_dirs['chromimpute_distance_directory'])
+        inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+        converteddir = self.output_dirs['chromimpute_converted_directory']
+        output_dir = self.output_dirs['chromimpute_distance_directory']
 
         histone_marks = []
         # create a job for each histone maek in inputinfor file together with user's histone marks
@@ -470,8 +496,6 @@ mkdir -p \\
             for line in histone_marks_total:
                 histone_marks.append(line.strip().split("\t")[1])
         histone_marks = list(set(histone_marks))
-
-
 
         # this check all the converted files for converted step as input file
         # so it takes time
@@ -489,11 +513,9 @@ mkdir -p \\
         #                                     self.output_dirs['chromimpute_converted_directory'], "%s_%s.wig.gz" %
         #                                             (line.strip().split("\t")[0], inputinfoline.strip().split("\t")[2])))
         #
-        #                 output_files.append(
-        #                     os.path.join(output_dir, "%s_%s.txt" % (inputinfoline.split("\t")[0], histone)))
+        #                 output_files.append( os.path.join(output_dir, "%s_%s.txt" % (inputinfoline.split("\t")[0], histone)))
         #
-        #     job = chromimpute.compute_global_dist(input_files, output_dir, output_files, converteddir, inputinfofile,
-        #                                           histone, chr_sizes_file)
+        #     job = chromimpute.compute_global_dist(input_files, output_dir, output_files, converteddir, inputinfofile, histone, chr_sizes_file)
 
         # this only get first line in the chromosome file(i.e chr1) as inputs to the converted step. if u want to get
         # all the chrms uncomment above comment and comment below code
@@ -512,18 +534,26 @@ mkdir -p \\
                         # if histone mark in inputinfo file present in design file it only includes as an input fileof the convert global distance step
                         if inputinfoline.split("\t")[1] == histone:
 
-                            input_files.append(os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                                            self.output_dirs['chromimpute_converted_directory'],
-                                                            "%s_%s.wig.gz" %
-                                                            (line.strip().split("\t")[0],
-                                                             inputinfoline.strip().split("\t")[2])))
+                            input_files.append(
+                                os.path.join(
+                                    self.output_dirs['chromimpute_converted_directory'],
+                                    "%s_%s.wig.gz" % (line.strip().split('\t')[0], inputinfoline.strip().split('\t')[2])
+                                )
+                            )
 
-                            output_files.append(
-                                os.path.join(output_dir, "%s_%s.txt" % (inputinfoline.split("\t")[0], histone)))
+                            output_files.append(os.path.join(output_dir, "%s_%s.txt" % (inputinfoline.split('\t')[0], histone)))
 
-            job = chromimpute.compute_global_dist(input_files, output_dir, output_files, converteddir, inputinfofile,
-                                                  histone, chr_sizes_file)
-            jobs.append(job)
+            jobs.append(
+                chromimpute.compute_global_dist(
+                    input_files,
+                    output_dir,
+                    output_files,
+                    converteddir,
+                    inputinfofile,
+                    histone,
+                    chr_sizes_file
+                )
+            )
 
         return jobs
 
@@ -537,17 +567,12 @@ mkdir -p \\
         # since the inputinfo file is called when generating job scripts, the prefix to identify the working
         # directory is necessary.
 
-        inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
-        temp2_inputinfofile_path = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'],
-                                                "temp2_" + self.inputinfo_file)
-        temp_inputinfofile_path = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'],
-                                               "temp_" + self.inputinfo_file)
-        distancedir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                   self.output_dirs['chromimpute_distance_directory'])
-        converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                    self.output_dirs['chromimpute_converted_directory'])
-        output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                  self.output_dirs['chromimpute_traindata_directory'])
+        inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+        temp2_inputinfofile_path = os.path.join(self.output_dirs['chromimpute_output_directory'], "temp2_" + self.inputinfo_file)
+        temp_inputinfofile_path = os.path.join(self.output_dirs['chromimpute_output_directory'], "temp_" + self.inputinfo_file)
+        distancedir = self.output_dirs['chromimpute_distance_directory']
+        converteddir = self.output_dirs['chromimpute_converted_directory']
+        output_dir = self.output_dirs['chromimpute_traindata_directory']
         chr_sizes_file = self.chromosome_file
         #get all the unique histone marks in user's readset file
 
@@ -594,24 +619,21 @@ mkdir -p \\
                     if (i == 1):
                         sample = inputinfoline.split("\t")[0]
                         index_i = i - 1
-                        temp_inputinfofile.write("%s\t%i%s" % (inputinfoline.strip(), index_i, os.linesep))
+                        temp_inputinfofile.write(f"{inputinfoline.strip()}\t{index_i}{os.linesep}")
                         i += 1
                     else:
                         if sample == inputinfoline.split("\t")[0]:
-                            temp_inputinfofile.write("%s\t%i%s" % (inputinfoline.strip(), index_i, os.linesep))
+                            temp_inputinfofile.write(f"{inputinfoline.strip()}\t{index_i}{os.linesep}")
                             i += 1
                         else:
                             sample = inputinfoline.split("\t")[0]
                             index_i += 1
-                            temp_inputinfofile.write("%s\t%i%s" % (inputinfoline.strip(), index_i, os.linesep))
+                            temp_inputinfofile.write(f"{inputinfoline.strip()}\t{index_i}{os.linesep}")
                             i += 1
             os.remove(temp2_inputinfofile_path)
             temp_inputinfofile.close()
+
             if train_data_path == "":
-
-                #        jobs.append(chromimpute.generate_train_data(input_files, output_dir, output_files, converteddir,
-                #        distancedir, inputinfofile, contrast.real_name))
-
                 for histone in histone_marks:
                     with open(chr_sizes_file, "r") as chrominfofile:
                         for line in chrominfofile:
@@ -624,46 +646,53 @@ mkdir -p \\
 
                                     # if histone mark in inputinfo file present in readset file it only includes as an input fileof the convert global distance step
                                     if inputinfoline.split("\t")[1] == histone:
-                                        input_files.append(os.path.join(distancedir, "%s_%s.txt" % (
-                                            inputinfoline.split("\t")[0], histone)))
+                                        input_files.append(os.path.join(distancedir, "%s_%s.txt" % (inputinfoline.split('\t')[0], histone)))
                                         # to make this job step independent of global distance step we need to correctly
                                         # specify all the dependency input files
                                         with open(inputinfofile, "r") as inputinfo2:
                                             for inpputinfo2line in inputinfo2:
-                                                input_files.append(os.path.join(distancedir, "%s_%s.txt" % (
-                                                inpputinfo2line.split("\t")[0], inpputinfo2line.split("\t")[1])))
+                                                input_files.append(os.path.join(distancedir, "%s_%s.txt" % (inpputinfo2line.split('\t')[0], inpputinfo2line.split('\t')[1])))
                                         # distance files generated for user histone marks
-                                        input_files.append(os.path.join(converteddir,
-                                                                        "%s_%s.wig.gz" %
-                                                                        (chr_name,
-                                                                         inputinfoline.strip().split("\t")[2])))
+                                        input_files.append(os.path.join(converteddir, "%s_%s.wig.gz" % (chr_name, inputinfoline.strip().split('\t')[2])))
 
-                                        output_files.append(
-                                            os.path.join(output_dir, "%s_traindata_%s_%i_0.txt.gz" % (
-                                                chr_name, histone, int(inputinfoline.strip().split("\t")[3]))))
-                                        output_files.append(
-                                            os.path.join(output_dir, "attributes_%s_%i_0.txt.gz" % (
-                                                histone, int(inputinfoline.strip().split("\t")[3]))))
-
+                                        output_files.append(os.path.join(output_dir, "%s_traindata_%s_%i_0.txt.gz" % (chr_name, histone, int(inputinfoline.strip().split('\t')[3]))))
+                                        output_files.append(os.path.join(output_dir, "attributes_%s_%i_0.txt.gz" % (histone, int(inputinfoline.strip().split('\t')[3]))))
 
                     # input_files.append(temp_inputinfofile)
-                    job = chromimpute.generate_train_data(input_files, output_dir, output_files, converteddir,
-                                                          distancedir,
-                                                          inputinfofile, histone, chr_sizes_file, chr_name)
-                    jobs.append(job)
+                    jobs.append(
+                        chromimpute.generate_train_data(
+                            input_files,
+                            output_dir,
+                            output_files,
+                            converteddir,
+                            distancedir,
+                            inputinfofile,
+                            histone,
+                            chr_sizes_file,
+                            chr_name
+                        )
+                    )
 
             else:
-                job_create_simlinks = Job(command="""\
-                    if [ "$(ls -A {output_dir}/{usertraindatadir})" ]; then
-                    rm {output_dir}/{usertraindatadir}/*
-                    fi &&
-                    ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
-                    output_dir=self.output_dirs['chromimpute_output_directory'],
-                    usertraindatadir=self.output_dirs['chromimpute_traindata_directory'],
-                    ihec_traindatadir=train_data_path)
+                job_create_simlinks = Job(
+                    command="""\
+if [ "$(ls -A {output_dir}/{usertraindatadir})" ]; then
+  rm {output_dir}/{usertraindatadir}/*
+fi &&
+ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
+                        output_dir=self.output_dirs['chromimpute_output_directory'],
+                        usertraindatadir=os.path.basename(self.output_dirs['chromimpute_traindata_directory']),
+                        ihec_traindatadir=train_data_path
+                    )
                 )
                 jobs.append(
-                    concat_jobs([job_create_simlinks], name="chromimpute_generate_train_data.use_pre_trained_data"))
+                    concat_jobs(
+                        [
+                            job_create_simlinks
+                        ],
+                        name="chromimpute_generate_train_data.use_pre_trained_data"
+                    )
+                )
         else:
             log.info("Currently, only training user data is not supported. Skipping ....")
             # todo
@@ -699,14 +728,10 @@ mkdir -p \\
         """
         jobs = []
 
-        temp_inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'],
-                                          "temp_" + self.inputinfo_file)
-        inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'],
-                                     self.inputinfo_file)
-        traindatadir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                    self.output_dirs['chromimpute_traindata_directory'])
-        output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                  self.output_dirs['chromimpute_predictor_directory'])
+        temp_inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], "temp_" + self.inputinfo_file)
+        inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+        traindatadir = self.output_dirs['chromimpute_traindata_directory']
+        output_dir = self.output_dirs['chromimpute_predictor_directory']
 
         for sample in self.samples:
             for readset in sample.readsets:
@@ -719,16 +744,21 @@ mkdir -p \\
                             inputinfo_sample = inputinfoline.strip().split("\t")[0]
                             if readset.mark_name == inputinfo_histone:
                                 if sample.name != inputinfo_sample:
-                                    output_files.append(os.path.join(output_dir, "useattributes_%s_%s_%i_0.txt.gz" % (
-                                        sample.name, readset.mark_name, int(inputinfoline.strip().split("\t")[3]))))
+                                    output_files.append(os.path.join(output_dir, "useattributes_%s_%s_%i_0.txt.gz" % (sample.name, readset.mark_name, int(inputinfoline.strip().split('\t')[3]))))
 
-                                input_files.append(
-                                    os.path.join(traindatadir, "attributes_%s_%i_0.txt.gz" % (
-                                        readset.mark_name, int(inputinfoline.strip().split("\t")[3]))))
+                                input_files.append(os.path.join(traindatadir, "attributes_%s_%i_0.txt.gz" % (readset.mark_name, int(inputinfoline.strip().split('\t')[3]))))
 
                     jobs.append(
-                    chromimpute.train(input_files, output_dir, output_files, traindatadir, inputinfofile, sample.name,
-                                      readset.mark_name))
+                        chromimpute.train(
+                            input_files,
+                            output_dir,
+                            output_files,
+                            traindatadir,
+                            inputinfofile,
+                            sample.name,
+                            readset.mark_name
+                        )
+                    )
 
         return jobs
 
@@ -739,18 +769,12 @@ mkdir -p \\
         """
         jobs = []
 
-        temp_inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'],
-                                          "temp_" + self.inputinfo_file)
-        inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'],
-                                     self.inputinfo_file)
-        converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                    self.output_dirs['chromimpute_converted_directory'])
-        distancedir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                   self.output_dirs['chromimpute_distance_directory'])
-        predictordir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                    self.output_dirs['chromimpute_predictor_directory'])
-        output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                  self.output_dirs['chromimpute_apply'])
+        temp_inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], "temp_" + self.inputinfo_file)
+        inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+        converteddir = self.output_dirs['chromimpute_converted_directory']
+        distancedir = self.output_dirs['chromimpute_distance_directory']
+        predictordir = self.output_dirs['chromimpute_predictor_directory']
+        output_dir = self.output_dirs['chromimpute_apply']
         chr_sizes_file = self.chromosome_file
 
         for sample in self.samples:
@@ -768,20 +792,25 @@ mkdir -p \\
                                     if readset.mark_name == inputinfo_histone:
                                         if sample.name != inputinfo_sample:
                                             input_files.append(
-                                                os.path.join(predictordir, "useattributes_%s_%s_%i_0.txt.gz" % (
-                                                    sample.name, readset.mark_name,
-                                                    int(inputinfoline.strip().split("\t")[3]))))
+                                                os.path.join(predictordir, "useattributes_%s_%s_%i_0.txt.gz" % (sample.name, readset.mark_name, int(inputinfoline.strip().split('\t')[3]))))
 
-                                # output_files.append(os.path.join(output_dir, "classifier_%s_%s_%i_0.txt.gz" % (
-                                #   sample.name, contrast.real_name, int(inputinfoline.strip().split("\t")[3]))))
-                            output_files.append(
-                                os.path.join(output_dir, "%s_impute_%s_%s.wig.gz" % (chr_name, sample.name,
-                                                                                     readset.mark_name)))
+                            output_files.append(os.path.join(output_dir, f"{chr_name}_impute_{sample.name}_{readset.mark_name}.wig.gz"))
 
                             jobs.append(
-                                chromimpute.apply(input_files, output_dir, converteddir, distancedir, predictordir,
-                                                  inputinfofile, sample.name, readset.mark_name, chr_name,
-                                                  chr_sizes_file, output_files))
+                                chromimpute.apply(
+                                    input_files,
+                                    output_dir,
+                                    converteddir,
+                                    distancedir,
+                                    predictordir,
+                                    inputinfofile,
+                                    sample.name,
+                                    readset.mark_name,
+                                    chr_name,
+                                    chr_sizes_file,
+                                    output_files
+                                )
+                            )
 
         return jobs
 
@@ -792,16 +821,13 @@ mkdir -p \\
         """
         jobs = []
 
-        converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                    self.output_dirs['chromimpute_converted_directory'])
-        imputeddir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                  self.output_dirs['chromimpute_apply'])
+        converteddir = self.output_dirs['chromimpute_converted_directory']
+        imputeddir = self.output_dirs['chromimpute_apply']
         chr_sizes_file = self.chromosome_file
 
         percent1 = config.param('chromimpute_eval', 'percent1')
         percent2 = config.param('chromimpute_eval', 'percent2')
-        output_dir = os.path.join(self.output_dirs['chromimpute_output_directory'], self.output_dirs[
-            'chromimpute_eval'])
+        output_dir = self.output_dirs['chromimpute_eval']
 
         for sample in self.samples:
             for readset in sample.readsets:
@@ -811,24 +837,28 @@ mkdir -p \\
                         line = chrominfofile.readline()
                         chr_name = line.strip().split("\t")[0]
 
-                        input_files.append(os.path.join(imputeddir, "%s_impute_%s_%s.wig.gz" % (
-                        chr_name, sample.name, readset.mark_name)))
+                        input_files.append(os.path.join(imputeddir, f"{chr_name}_impute_{sample.name}_{readset.mark_name}.wig.gz"))
+                        input_files.append(os.path.join(converteddir, f"{chr_name}_{sample.name}_{readset.mark_name}.bedgraph.gz.wig.gz"))
+                        imputed_file = f"impute_{sample.name}_{readset.mark_name}.wig.gz"
+                        converted_file = f"{sample.name}_{readset.mark_name}.bedgraph.gz.wig.gz"
 
-                        input_files.append(os.path.join(converteddir, "%s_%s_%s.bedgraph.gz.wig.gz" % (
-                        chr_name, sample.name, readset.mark_name)))
+                    output_file = os.path.join(output_dir, f"eval_{sample.name}_{readset.mark_name}.tsv")
 
-                        imputed_file = "impute_%s_%s.wig.gz" % (
-                        sample.name, readset.mark_name)
-
-                        converted_file = "%s_%s.bedgraph.gz.wig.gz" % (
-                        sample.name, readset.mark_name)
-
-                    output_file = os.path.join(output_dir, "eval_%s_%s.tsv" % (sample.name,
-                                                                               readset.mark_name))
-
-                    jobs.append(chromimpute.eval(input_files, imputed_file, converted_file, output_file, converteddir,
-                                                  imputeddir, percent1, percent2, chr_sizes_file, sample.name,
-                                                  readset.mark_name))
+                    jobs.append(
+                        chromimpute.eval(
+                            input_files,
+                            imputed_file,
+                            converted_file,
+                            output_file,
+                            converteddir,
+                            imputeddir,
+                            percent1,
+                            percent2,
+                            chr_sizes_file,
+                            sample.name,
+                            readset.mark_name
+                        )
+                    )
 
         return jobs
 
@@ -861,8 +891,7 @@ mkdir -p \\
         output_dir = self.output_dirs['signal_to_noise_output_directory']
         chr_sizes_file = self.chromosome_file
 
-        converteddir = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                    self.output_dirs['chromimpute_converted_directory'])
+        converteddir = self.output_dirs['chromimpute_converted_directory']
 
         self.create_chr_sizes()
 
@@ -874,33 +903,48 @@ mkdir -p \\
                         for line in chrominfofile:
                             chr_name = line.strip().split("\t")[0]
                             # If not, we search for the path from a chipseq pipeline
-                            converted_bedgraph_file = os.path.join(converteddir,
-                                                                   "%s_%s_%s.bedgraph.gz.wig.gz" % (chr_name, sample.name, readset.mark_name))
+                            converted_bedgraph_file = os.path.join(
+                                converteddir,
+                                f"{chr_name}_{sample.name}_{readset.mark_name}.bedgraph.gz.wig.gz"
+                            )
 
-                            output_file = os.path.join(output_dir,
-                                                       "%s_%s_%s.tsv" % (chr_name, sample.name, readset.mark_name))
-                            signal_noise_folder = Job(
-                                command="mkdir -p {output_dir}".format(
-                                    output_dir=output_dir
-                                ))
+                            output_file = os.path.join(
+                                output_dir,
+                                f"{chr_name}_{sample.name}_{readset.mark_name}.tsv"
+                            )
+                            signal_noise_folder = bash.mkdir(output_dir)
                             signal_noise_job = Job(
-                                [converted_bedgraph_file, chr_sizes_file],
+                                [
+                                    converted_bedgraph_file,
+                                    chr_sizes_file
+                                ],
                                 [output_file],
-                                [['signal_noise', 'module_python'],
-                                 ['signal_noise', 'module_mugqic_tools']],
+                                [
+                                    ['signal_noise', 'module_python'],
+                                    ['signal_noise', 'module_mugqic_tools']
+                                ],
                                 command="""\
 python $PYTHON_TOOLS/signal_noise.py \\
--i {input_file} \\
--p1 {percent1} \\
--p2 {percent2} \\
--o {output_dir}""".format(
+  -i {input_file} \\
+  -p1 {percent1} \\
+  -p2 {percent2} \\
+  -o {output_dir}""".format(
                                     input_file=converted_bedgraph_file,
                                     percent1=config.param('signal_noise', 'percent1'),
                                     percent2=config.param('signal_noise', 'percent2'),
                                     output_dir=output_file
-                                ))
+                                )
+                            )
 
-                            jobs.append(concat_jobs([signal_noise_folder, signal_noise_job], name='signal_noise.' + "%s_%s_%s.tsv" % (chr_name, sample.name, readset.mark_name)))
+                            jobs.append(
+                                concat_jobs(
+                                    [
+                                        signal_noise_folder,
+                                        signal_noise_job
+                                    ],
+                                    name=f"signal_noise.{chr_name}_{sample.name}_{readset.mark_name}.tsv"
+                                )
+                            )
 
         return jobs
 
@@ -910,12 +954,10 @@ python $PYTHON_TOOLS/signal_noise.py \\
         jobs = []
 
         input_dir = 'epigeec'
-        output_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_hdf5'])
+        output_dir = self.output_dirs['epigeec_hdf5']
         job_epigeec_hdf5 =[]
-        hdf5_folder = Job(
-            command="mkdir -p {output_dir}".format(
-                output_dir=output_dir
-            ))
+        hdf5_folder = bash.mkdir(output_dir)
+
         for sample in self.samples:
             for readset in sample.readsets:
                 input_files = []
@@ -924,12 +966,28 @@ python $PYTHON_TOOLS/signal_noise.py \\
                         bigwig_file = readset.bigwig
                     else:  # If not, we search for the path from a chipseq pipeline
                           # Find path to chipseq folder
-                        bigwig_file = os.path.join(self.prefix_path, "tracks", sample.name, readset.mark_name, "bigWig",
-                                                   sample.name + "." + readset.mark_name + ".bw")  # Create path to bigwig file
+                        bigwig_file = os.path.join(
+                            self.prefix_path,
+                            "tracks",
+                            sample.name,
+                            readset.mark_name,
+                            "bigWig",
+                            sample.name + "." + readset.mark_name + ".bw"
+                        )  # Create path to bigwig file
 
                     job_epigeec_hdf5.append(epigeec.tohdf5(output_dir, bigwig_file))
                     jobs_epigeec_hdf5 = concat_jobs(job_epigeec_hdf5)
-        jobs.append(concat_jobs([hdf5_folder, jobs_epigeec_hdf5],name = "epigeec_tohdf5"))
+
+        jobs.append(
+            concat_jobs(
+                [
+                    hdf5_folder,
+                    jobs_epigeec_hdf5
+                ],
+                name="epigeec_tohdf5",
+                samples=self.samples
+            )
+        )
 
         return jobs
 
@@ -938,21 +996,25 @@ python $PYTHON_TOOLS/signal_noise.py \\
         # filter regions from hdf5 files
         jobs = []
         filter_job = []
-        input_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_hdf5'])
-        output_dir = os.path.join(self.output_dirs['epigeec_output_directory'], self.output_dirs['epigeec_filtered'])
-        filter_folder_job = Job(
-            command="mkdir -p {output_dir}".format(
-                output_dir=output_dir
-            ))
-
-
+        input_dir = self.output_dirs['epigeec_hdf5']
+        output_dir =self.output_dirs['epigeec_filtered']
+        filter_folder_job = bash.mkdir(output_dir)
 
         for hdf5_file in hdf5_files:
             path_to_hdf5_file = os.path.join(input_dir, hdf5_file)
             filter_job.append(epigeec.filter(output_dir, path_to_hdf5_file))
             filter_jobs = concat_jobs(filter_job)
 
-        jobs.append(concat_jobs([filter_folder_job, filter_jobs],name="epigeec_filter"))
+        jobs.append(
+            concat_jobs(
+                [
+                    filter_folder_job,
+                    filter_jobs
+                ],
+                name="epigeec_filter",
+                samples=self.samples
+            )
+        )
 
         return jobs
 
@@ -961,46 +1023,57 @@ python $PYTHON_TOOLS/signal_noise.py \\
         #create the correlate matrix file
         jobs=[]
         job=[]
-        hdf5_file_list_name = os.path.join(self.output_dirs['epigeec_output_directory'],
-                                                 "hdf5_list.txt")
+        hdf5_file_list_name = os.path.join(self.output_dirs['epigeec_output_directory'], "hdf5_list.txt")
 
         input_files =[]
-        output_dir = os.path.join(self.output_dirs['epigeec_output_directory'],
-                                                 self.output_dirs['epigeec_output'])
-        output_folder_job = Job(
-            command="mkdir -p {output_dir}".format(
-                output_dir=output_dir
-            ))
+        output_dir = self.output_dirs['epigeec_output']
+        output_folder_job = bash.mkdir(output_dir)
 
         job_create_hdf5_list_file = Job(
             output_files=[hdf5_file_list_name],
             command="""\
-        if test -f "{hdf5_file_list_name}"; then
-        rm {hdf5_file_list_name} &&
-        touch {hdf5_file_list_name}
-        else
-            touch {hdf5_file_list_name}
-        fi""".format(
-            hdf5_file_list_name=hdf5_file_list_name)
+if test -f "{hdf5_file_list_name}"; then
+  rm {hdf5_file_list_name} &&
+  touch {hdf5_file_list_name}
+else
+  touch {hdf5_file_list_name}
+fi""".format(
+                hdf5_file_list_name=hdf5_file_list_name
+            )
         )
 
         for hdf5_file in hdf5_files:
             if skip_filter_step:
-                path_to_hdf5_file = os.path.join(self.output_dirs['epigeec_output_directory'],
-                                                 self.output_dirs['epigeec_hdf5'], hdf5_file)
+                path_to_hdf5_file = os.path.join(self.output_dirs['epigeec_hdf5'], hdf5_file)
                 input_files.append(path_to_hdf5_file)
             else:
-                path_to_hdf5_file = os.path.join(self.output_dirs['epigeec_output_directory'],
-                                                 self.output_dirs['epigeec_filtered'], hdf5_file)
+                path_to_hdf5_file = os.path.join(self.output_dirs['epigeec_filtered'], hdf5_file)
                 input_files.append(path_to_hdf5_file)
 
-            job_hdf5_list_file = epigeec.generate_hdf5_list(hdf5_file_list_name, path_to_hdf5_file)
+            job_hdf5_list_file = epigeec.generate_hdf5_list(
+                hdf5_file_list_name,
+                path_to_hdf5_file
+            )
             job.append(job_hdf5_list_file)
             jobs_hdf5_list_file = concat_jobs(job)
 
-
-        job_matrix = epigeec.correlate(input_files, output_dir, hdf5_file_list_name)
-        jobs.append(concat_jobs([output_folder_job, job_create_hdf5_list_file, jobs_hdf5_list_file, job_matrix], name="epigeec_correlate"))
+        job_matrix = epigeec.correlate(
+            input_files,
+            output_dir,
+            hdf5_file_list_name
+        )
+        jobs.append(
+            concat_jobs(
+                [
+                    output_folder_job,
+                    job_create_hdf5_list_file,
+                    jobs_hdf5_list_file,
+                    job_matrix
+                ],
+                name="epigeec_correlate",
+                samples=self.samples
+            )
+        )
 
         return jobs
 
@@ -1031,17 +1104,21 @@ python $PYTHON_TOOLS/signal_noise.py \\
                         bigwig_file = readset.bigwig
                     else:  # If not, we search for the path from a chipseq pipeline
                         prefix_path = "/".join(self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
-                        bigwig_file = os.path.join(prefix_path, "tracks", sample.name, readset.mark_name, "bigWig",
-                                                   sample.name + "." + readset.mark_name + ".bw")  # Create path to bigwig file
+                        bigwig_file = os.path.join(
+                            prefix_path,
+                            "tracks",
+                            sample.name,
+                            readset.mark_name,
+                            "bigWig",
+                            sample.name + "." + readset.mark_name + ".bw"
+                        )  # Create path to bigwig file
 
                     hdf5_files.append(os.path.basename(bigwig_file) + ".hdf5")
 
         jobs.extend(self.epigeec_tohdf5())
 
         if not skip_filter_step:  # We skip this step if there are no filter files
-
             jobs.extend(self.epigeec_filter(hdf5_files))
-
 
         jobs.extend(self.epigeec_correlate(skip_filter_step, hdf5_files))
 
@@ -1053,7 +1130,7 @@ python $PYTHON_TOOLS/signal_noise.py \\
         This step is performed to generate report on bigwiginfo result
         """
         jobs = []
-        job = []
+        bigwig_jobs = []
         for sample in self.samples:
             for readset in sample.readsets:
                 if readset.mark_type != "I":
@@ -1061,34 +1138,43 @@ python $PYTHON_TOOLS/signal_noise.py \\
                         bigwig_file = readset.bigwig
 
                     else:  # If not, we search for the path from a chipseq pipeline
-                        prefix_path = "/".join(
-                            self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
-                        bigwig_file = os.path.join(prefix_path, self.chipseq_bigwig['tracks_dir'], sample.name,
-                                                   readset.mark_name, self.chipseq_bigwig['bigwig_dir'],
-                                                   sample.name + "." + readset.mark_name + self.chipseq_bigwig[
-                                                       'extension'])  # Create path to bigwig file
+                        prefix_path = "/".join(self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
+                        bigwig_file = os.path.join(
+                            prefix_path,
+                            self.chipseq_bigwig['tracks_dir'],
+                            sample.name,
+                            readset.mark_name,
+                            self.chipseq_bigwig['bigwig_dir'],
+                            sample.name + "." + readset.mark_name + self.chipseq_bigwig['extension']
+                        )  # Create path to bigwig file
 
-                    bigwiginfo_file = os.path.join(self.output_dirs['bigwiginfo_output_directory'],
-                                                   self.bigwiginfo_output['prefix'] + "_" + os.path.basename(
-                                                       bigwig_file) +
-                                                   self.bigwiginfo_output['extension'])
-                    report_file = os.path.join(self.output_dirs['report_dir'], sample.name,
-                                                               readset.mark_name,
-                                               "BigWigInfo_report_" + sample.name + "_" + readset.mark_name + ".txt")
+                    bigwiginfo_file = os.path.join(
+                        self.output_dirs['bigwiginfo_output_directory'],
+                        self.bigwiginfo_output['prefix'] + "_" + os.path.basename(bigwig_file) + self.bigwiginfo_output['extension']
+                    )
+                    report_file = os.path.join(
+                        self.output_dirs['report_dir'],
+                        sample.name,
+                        readset.mark_name,
+                        "BigWigInfo_report_" + sample.name + "_" + readset.mark_name + ".txt"
+                    )
 
-                    bigwig_job = concat_jobs([
-                        Job(command="mkdir -p " + os.path.join(self.output_dirs['report_dir'], sample.name,
-                                                               readset.mark_name)),
-                        epiqc_reports.bigwiginfo_report(bigwiginfo_file, report_file)
-                    ])
+                    bigwig_jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(os.path.join(self.output_dirs['report_dir'], sample.name, readset.mark_name)),
+                                epiqc_reports.bigwiginfo_report(bigwiginfo_file, report_file)
+                            ]
+                        )
+                    )
 
-                    job.append(bigwig_job)
-                    bigwiginfo_report = concat_jobs(job)
-
-        job = concat_jobs([  bigwiginfo_report])
-        job.samples = self.samples
-        job.name = "epiqc_report.bigwig_info"
-        jobs.append(job)
+        jobs.append(
+            concat_jobs(
+                bigwig_jobs,
+                name="epiqc_report.bigwig_info",
+                samples=self.samples
+            )
+        )
         return jobs
 
     def signal_to_noise_report(self):
@@ -1096,45 +1182,47 @@ python $PYTHON_TOOLS/signal_noise.py \\
         This step is performed to generate report on signal_to_noise result
         """
         jobs = []
-        chr_job = []
+        chr_jobs = []
 
         chr_sizes_file = self.chromosome_file
-        report_folder_job = Job(
-            command="mkdir -p {output_dir}".format(
-                output_dir=self.output_dirs['report_dir']
-            ))
-
         signal_noise_output_dir = self.output_dirs['signal_to_noise_output_directory']
 
         for sample in self.samples:
             for readset in sample.readsets:
                 if readset.mark_type != "I":
 
-                    report_file = os.path.join(self.output_dirs['report_dir'], sample.name, readset.mark_name,
-                                               "SignalToNoise_report_" + sample.name + "_" + readset.mark_name + ".txt")
+                    report_file = os.path.join(
+                        self.output_dirs['report_dir'],
+                        sample.name,
+                        readset.mark_name,
+                        "SignalToNoise_report_" + sample.name + "_" + readset.mark_name + ".txt"
+                    )
 
                     with open(chr_sizes_file, "r") as chrominfofile:
                         for line in chrominfofile:
                             chr_name = line.strip().split("\t")[0]
-                            signal_noise_file = os.path.join(signal_noise_output_dir,
-                                                             "%s_%s_%s.tsv" % (
-                                                             chr_name, sample.name, readset.mark_name))
+                            signal_noise_file = os.path.join(
+                                signal_noise_output_dir,
+                                f"{chr_name}_{sample.name}_{readset.mark_name}.tsv"
+                            )
                             #run through all the chrs since a signal_to_noise file has created for each chr
 
-                            signalnoise_job = concat_jobs([
-                                Job(command="mkdir -p " + os.path.join(self.output_dirs['report_dir'], sample.name,
-                                                                       readset.mark_name)),
-                                epiqc_reports.signal_to_noise_report(signal_noise_file, report_file, chr_name)
-                            ])
+                            chr_jobs.append(
+                                concat_jobs(
+                                    [
+                                        bash.mkdir(os.path.join(self.output_dirs['report_dir'], sample.name, readset.mark_name)),
+                                        epiqc_reports.signal_to_noise_report(signal_noise_file, report_file, chr_name)
+                                    ]
+                                )
+                            )
 
-                            chr_job.append(signalnoise_job)
-
-                            signal_to_noise_report = concat_jobs(chr_job)
-
-        job = concat_jobs([ signal_to_noise_report])
-        job.samples = self.samples
-        job.name = "epiqc_report.signal_to_noise"
-        jobs.append(job)
+        jobs.append(
+            concat_jobs(
+                chr_jobs,
+                name="epiqc_report.signal_to_noise",
+                samples=self.samples
+            )
+        )
         return jobs
 
     def chromimpute_report(self):
@@ -1143,32 +1231,38 @@ python $PYTHON_TOOLS/signal_noise.py \\
         track and input signal track (in bedgraph format).
         """
         jobs = []
-        impute_job = []
-
+        impute_jobs = []
 
         for sample in self.samples:
             for readset in sample.readsets:
                 if readset.mark_type != "I":
 
-                    report_file = os.path.join(self.output_dirs['report_dir'], sample.name, readset.mark_name,
-                                               "ChromImpute_report_" + sample.name + "_" + readset.mark_name + ".txt")
+                    report_file = os.path.join(
+                        self.output_dirs['report_dir'],
+                        sample.name,
+                        readset.mark_name,
+                        "ChromImpute_report_" + sample.name + "_" + readset.mark_name + ".txt"
+                    )
                     eval_file = "eval_" + sample.name + "_" + readset.mark_name + ".tsv"
-                    eval_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                             self.output_dirs['chromimpute_eval'], eval_file)
+                    eval_file = os.path.join(self.output_dirs['chromimpute_eval'], eval_file)
 
-                    chroimpute_job = concat_jobs([
-                        Job(command="mkdir -p " + os.path.join(self.output_dirs['report_dir'], sample.name,
-                                                               readset.mark_name)),
-                        epiqc_reports.chromimpute_report(eval_file, report_file)
-                    ])
+                    impute_jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(os.path.join(self.output_dirs['report_dir'], sample.name, readset.mark_name)),
+                                epiqc_reports.chromimpute_report(eval_file, report_file)
+                            ]
+                        )
+                    )
 
-                    impute_job.append(chroimpute_job)
+        jobs.append(
+            concat_jobs(
+                impute_jobs,
+                name = "epiqc_report.chromimpute",
+                samples = self.samples
+            )
+        )
 
-                    chromimpute_report = concat_jobs(impute_job)
-        job = concat_jobs([chromimpute_report])
-        job.samples = self.samples
-        job.name = "epiqc_report.chromimpute"
-        jobs.append(job)
         return jobs
 
     def epigeec_report(self):
@@ -1177,28 +1271,35 @@ python $PYTHON_TOOLS/signal_noise.py \\
         """
         jobs = []
 
-        report_folder_job = Job(
-            command="mkdir -p {output_dir}".format(
-                output_dir=self.output_dirs['report_dir']
-            ))
+        report_folder_job = bash.mkdir(self.output_dirs['report_dir'])
 
-        input_dir = os.path.join(self.output_dirs['epigeec_output_directory'],
-                                 self.output_dirs['epigeec_output'])
+        input_dir = self.output_dirs['epigeec_output']
         report_dir = os.path.join(self.output_dirs['report_dir'])
         output_heatmap_file = os.path.join(report_dir, "correlation_matrix.png")
         input_matrix_file = os.path.join(input_dir, "correlation_matrix.tsv")
-        epigeec_report = epiqc_reports.epigeec_report(input_matrix_file, output_heatmap_file, report_dir)
-        job = concat_jobs([report_folder_job, epigeec_report])
-        job.samples = self.samples
-        job.name = "epiqc_report.epigeec"
-        jobs.append(job)
+
+        epigeec_report = epiqc_reports.epigeec_report(
+            input_matrix_file,
+            output_heatmap_file,
+            report_dir
+        )
+
+        jobs.append(
+            concat_jobs(
+                [
+                    report_folder_job,
+                    epigeec_report
+                ],
+                name="epiqc_report.epigeec",
+                samples=self.samples
+            )
+        )
         return jobs
 
 
     def epiqc_report(self):
 
         jobs = []
-        chr_job = []
 
         chr_sizes_file = self.chromosome_file
 
@@ -1211,95 +1312,101 @@ python $PYTHON_TOOLS/signal_noise.py \\
                         bigwig_file = readset.bigwig
 
                     else:  # If not, we search for the path from a chipseq pipeline
-                        prefix_path = "/".join(
-                            self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
-                        bigwig_file = os.path.join(prefix_path, self.chipseq_bigwig['tracks_dir'], sample.name,
-                                                   readset.mark_name, self.chipseq_bigwig['bigwig_dir'],
-                                                   sample.name + "." + readset.mark_name + self.chipseq_bigwig[
-                                                       'extension'])  # Create path to bigwig file
+                        prefix_path = "/".join(self.args.readsets.name.split("/")[:-1])  # Find path to chipseq folder
+                        bigwig_file = os.path.join(
+                            prefix_path,
+                            self.chipseq_bigwig['tracks_dir'],
+                            sample.name,
+                            readset.mark_name,
+                            self.chipseq_bigwig['bigwig_dir'],
+                            sample.name + "." + readset.mark_name + self.chipseq_bigwig['extension']
+                        )  # Create path to bigwig file
 
-                    bigwiginfo_file = os.path.join(self.output_dirs['bigwiginfo_output_directory'],
-                                                   self.bigwiginfo_output['prefix'] + "_" + os.path.basename(
-                                                       bigwig_file) +
-                                                   self.bigwiginfo_output['extension'])
-                    report_file = os.path.join(self.output_dirs['report_dir'],
-                                               "report_" + sample.name + "_" + readset.mark_name + ".txt")
-                    report_folder_job = Job(
-                        command="mkdir -p {output_dir}".format(
-                            output_dir=self.output_dirs['report_dir']
-                        ))
+                    bigwiginfo_file = os.path.join(
+                        self.output_dirs['bigwiginfo_output_directory'],
+                        self.bigwiginfo_output['prefix'] + "_" + os.path.basename(bigwig_file) + self.bigwiginfo_output['extension']
+                    )
+                    report_file = os.path.join(
+                        self.output_dirs['report_dir'],
+                        "report_" + sample.name + "_" + readset.mark_name + ".txt"
+                    )
+                    report_folder_job = bash.mkdir(self.output_dirs['report_dir'])
 
-                    bigwiginfo_report = epiqc_reports.bigwiginfo_report(bigwiginfo_file,report_file)
+                    bigwiginfo_report = epiqc_reports.bigwiginfo_report(
+                        bigwiginfo_file,
+                        report_file
+                    )
 
+                    chr_jobs = []
                     with open(chr_sizes_file, "r") as chrominfofile:
                         for line in chrominfofile:
                             chr_name = line.strip().split("\t")[0]
-                            signal_noise_file = os.path.join(signal_noise_output_dir,
-                                                             "%s_%s_%s.tsv" % (
-                                                             chr_name, sample.name, readset.mark_name))
+                            signal_noise_file = os.path.join(
+                                signal_noise_output_dir,
+                                f"{chr_name}_{sample.name}_{ readset.mark_name}.tsv"
+                            )
                             #run through all the chrs since a signal_to_noise file has created for each chr
-                            chr_job.append(epiqc_reports.signal_to_noise_report(signal_noise_file, report_file, chr_name))
-                            signal_to_noise_report = concat_jobs(chr_job)
+                            chr_jobs.append(
+                                epiqc_reports.signal_to_noise_report(
+                                    signal_noise_file,
+                                    report_file,
+                                    chr_name
+                                )
+                            )
 
                     eval_file = "eval_" + sample.name + "_" + readset.mark_name + ".tsv"
-                    eval_file = os.path.join(self.output_dirs['chromimpute_output_directory'],
-                                             self.output_dirs['chromimpute_eval'], eval_file)
-                    chromimpute_report = epiqc_reports.chromimpute_report(eval_file, report_file)
+                    eval_file = os.path.join(self.output_dirs['chromimpute_eval'], eval_file)
+                    chromimpute_report = epiqc_reports.chromimpute_report(
+                        eval_file,
+                        report_file
+                    )
 
-                    job = concat_jobs(
-                        [report_folder_job, bigwiginfo_report, signal_to_noise_report, chromimpute_report])
-                    job.name = "epiqc_report." + readset.name + "_" + readset.mark_name
-                    job.samples = self.samples
-                    jobs.append(job)
+                    jobs.append(
+                        concat_jobs(
+                            [
+                                report_folder_job,
+                                bigwiginfo_report,
+                                concat_jobs(chr_jobs),
+                                chromimpute_report
+                            ],
+                            name="epiqc_report." + readset.name + "_" + readset.mark_name,
+                            samples=self.samples
+                        )
+                    )
 
-        input_dir = os.path.join(self.output_dirs['epigeec_output_directory'],
-                                 self.output_dirs['epigeec_output'])
+        input_dir = self.output_dirs['epigeec_output']
         report_dir = os.path.join(self.output_dirs['report_dir'])
         output_heatmap_file = os.path.join(report_dir, "correlation_matrix.png")
         input_matrix_file = os.path.join(input_dir, "correlation_matrix.tsv")
-        epigeec_report = epiqc_reports.epigeec_report(input_matrix_file, output_heatmap_file, report_dir)
+        epigeec_report = epiqc_reports.epigeec_report(
+            input_matrix_file,
+            output_heatmap_file,
+            report_dir
+        )
         jobs.append(epigeec_report)
         return jobs
 
     def epiqc_final_report(self):
-
         """
-               Creates a report file for each bigwig file.
+            Creates a report file for each bigwig file.
 
-               Alert levels :
-                   High Level Alert:
-                       Chromosome count is under 23
-                   Medium Level Alert:
-                       Whole genome bases covered under 25,000,000
-                       GeEC average correlation score under 50% within the same consortium tracks
-                       Signal in top 10% bins below 30%
-                       ChromImpute OBSERVED_1.0_IMPUTE_5.0 below 30%
-                   Low Level Alert:
-                       Whole genome bases covered under 75,000,000
-                       Signal in top 5% bins below 20%
-                       ChromImpute BOTH_1.0 below 20%
-           """
+            Alert levels :
+                High Level Alert:
+                    Chromosome count is under 23
+                Medium Level Alert:
+                    Whole genome bases covered under 25,000,000
+                    GeEC average correlation score under 50% within the same consortium tracks
+                    Signal in top 10% bins below 30%
+                    ChromImpute OBSERVED_1.0_IMPUTE_5.0 below 30%
+                Low Level Alert:
+                    Whole genome bases covered under 75,000,000
+                    Signal in top 5% bins below 20%
+                    ChromImpute BOTH_1.0 below 20%
+        """
+
         jobs = []
-        final_report = os.path.join(self.output_dirs['report_dir'],
-                                    "epiqc_report" + ".tsv")
-        report_jobs =[]
 
-        for sample in self.samples:
-            for readset in sample.readsets:
-                if readset.mark_type != "I":
-                    bigwiginfo_report = os.path.join(self.output_dirs['report_dir'], sample.name, readset.mark_name,
-                                                      "BigWigInfo_report_" + sample.name + "_" + readset.mark_name + ".txt")
-                    chromimpute_report = os.path.join(self.output_dirs['report_dir'], sample.name, readset.mark_name,
-                                               "ChromImpute_report_" + sample.name + "_" + readset.mark_name + ".txt")
-                    signalnoise_report = os.path.join(self.output_dirs['report_dir'], sample.name, readset.mark_name,
-                                 "SignalToNoise_report_" + sample.name + "_" + readset.mark_name + ".txt")
-                    report_job = concat_jobs([
-                        epiqc_reports.final_report(bigwiginfo_report, chromimpute_report, signalnoise_report, final_report, sample.name, readset.mark_name)
-                    ])
-                    report_jobs.append(report_job)
-
-                    epiqc_report = concat_jobs(report_jobs)
-
+        final_report = os.path.join( self.output_dirs['report_dir'], "epiqc_report" + ".tsv")
 
         report_file = Job(
             output_files=[final_report],
@@ -1310,13 +1417,58 @@ else
 touch {final_report} &&
 echo -e "Sample_name\tHistone_mark\tDecision" >> {final_report}
 fi""".format(
-                final_report=final_report)
+                final_report=final_report
+            )
         )
-        job = concat_jobs([report_file, epiqc_report])
-        job.samples = self.samples
-        job.name = "epiqc_report.final_report"
-        jobs.append(job)
 
+        report_jobs =[]
+        for sample in self.samples:
+            for readset in sample.readsets:
+                if readset.mark_type != "I":
+                    bigwiginfo_report = os.path.join(
+                        self.output_dirs['report_dir'],
+                        sample.name,
+                        readset.mark_name,
+                        "BigWigInfo_report_" + sample.name + "_" + readset.mark_name + ".txt"
+                    )
+                    chromimpute_report = os.path.join(
+                        self.output_dirs['report_dir'],
+                        sample.name,
+                        readset.mark_name,
+                        "ChromImpute_report_" + sample.name + "_" + readset.mark_name + ".txt"
+                    )
+                    signalnoise_report = os.path.join(
+                        self.output_dirs['report_dir'],
+                        sample.name,
+                        readset.mark_name,
+                        "SignalToNoise_report_" + sample.name + "_" + readset.mark_name + ".txt"
+                    )
+                        
+                    report_jobs.append(
+                        concat_jobs(
+                            [
+                                epiqc_reports.final_report(
+                                    bigwiginfo_report,
+                                    chromimpute_report,
+                                    signalnoise_report,
+                                    final_report,
+                                    sample.name,
+                                    readset.mark_name
+                                )
+                            ]
+                        )
+                    )
+
+        jobs.append(
+            concat_jobs(
+                [
+                    report_file,
+                    concat_jobs(report_jobs)
+                ],
+                name="epiqc_report.final_report",
+                samples=self.samples
+            )
+        )
         return jobs
 
     @property

@@ -788,7 +788,7 @@ bash extractCaptureBed.sh \\
 def sh_blastQC_ONT(output_directory, reads_fastq_dir, readset_name):
     return Job(
         [reads_fastq_dir],
-        [os.path.join(output_directory, readset_name + "blastHit_20MF_species.txt")],
+        [os.path.join(output_directory, readset_name + ".blastHit_20MF_species.txt")],
         [
             ["blastqc", "module_mugqic_tools"],
             ["blastqc", "module_blast"],
@@ -804,11 +804,13 @@ bash runBlastQC_ONT.sh \\
             readset_name=readset_name
         ),
         name="blastQC." + readset_name,
-        removable_files=[os.path.join(output_directory, "subsample_input.trim.blastres"),
-                         os.path.join(output_directory, "subsample_input.trim.fasta"),
-                         os.path.join(output_directory, "subsample_input.trim.fastq"),
-                         os.path.join(output_directory, "subsample_input.trim.qual"),
-                         os.path.join(output_directory, "subsample_input.fastq")]
+        removable_files=[
+            os.path.join(output_directory, "subsample_input.trim.blastres"),
+            os.path.join(output_directory, "subsample_input.trim.fasta"),
+            os.path.join(output_directory, "subsample_input.trim.fastq"),
+            os.path.join(output_directory, "subsample_input.trim.qual"),
+            os.path.join(output_directory, "subsample_input.fastq")
+        ]
     )
 
 def clean_otu(otu_table):

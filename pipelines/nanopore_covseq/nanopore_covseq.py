@@ -464,68 +464,70 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
                 sequencing_summary = os.path.join("basecall", "sequencing_summary.txt")
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(artic_nanopolish_directory),
-                    bash.chdir(artic_nanopolish_directory),
-                    artic.nanopolish_ont(
-                        reads_fastq_dir,
-                        sample.run,
-                        sample.name,
-                        sample.fast5_files,
-                        sequencing_summary,
-                        artic_nanopolish_directory,
-                        ini_section="artic_nanopolish"
-                    ),
-                    bash.chdir(self.output_dir),
-                    bash.mkdir(consensus_directory),
-                    Job(
-                        input_files=[consensus_artic],
-                        output_files=[consensus],
-                        command=f"ln -sf {consensus_link} {consensus}"
-                    ),
-                    bash.mkdir(variant_directory),
-                    Job(
-                        input_files=[variant_artic],
-                        output_files=[variant],
-                        command=f"ln -sf {variant_link} {variant}"
-                    ),
-                    Job(
-                        input_files=[variant_index_artic],
-                        output_files=[variant_index],
-                        command=f"ln -sf {variant_index_link} {variant_index}"
-                    ),
-                    bash.mkdir(alignment_directory),
-                    Job(
-                        input_files=[raw_bam_artic],
-                        output_files=[raw_bam],
-                        command=f"ln -sf {raw_bam_link} {raw_bam}"
-                    ),
-                    Job(
-                        input_files=[raw_bam_index_artic],
-                        output_files=[raw_bam_index],
-                        command=f"ln -sf {raw_bam_index_link} {raw_bam_index}"
-                    ),
-                    pipe_jobs([
-                        sambamba.view(
-                            primer_trimmed_bam_artic,
-                            None,
-                            "-f bam -F \"not supplementary and not secondary_alignment\""
+                concat_jobs(
+                    [
+                        bash.mkdir(artic_nanopolish_directory),
+                        bash.chdir(artic_nanopolish_directory),
+                        artic.nanopolish_ont(
+                            reads_fastq_dir,
+                            sample.run,
+                            sample.name,
+                            sample.fast5_files,
+                            sequencing_summary,
+                            artic_nanopolish_directory,
+                            ini_section="artic_nanopolish"
                         ),
-                        sambamba.sort(
-                            "/dev/stdin",
+                        bash.chdir(self.output_dir),
+                        bash.mkdir(consensus_directory),
+                        bash.ln(
+                            consensus_link,
+                            consensus,
+                            input=consensus_artic,
+                        ),
+                        bash.mkdir(variant_directory),
+                        bash.ln(
+                            variant_link,
+                            variant,
+                            input=variant_artic
+                        ),
+                        bash.ln(
+                            variant_index_link,
+                            variant_index,
+                            input=variant_index_artic
+                        ),
+                        bash.mkdir(alignment_directory),
+                        bash.ln(
+                            raw_bam_link,
+                            raw_bam,
+                            input=raw_bam_artic
+                        ),
+                        bash.ln(
+                            raw_bam_index_link,
+                            raw_bam_index,
+                            input=raw_bam_index_artic
+                        ),
+                        pipe_jobs(
+                            [
+                                sambamba.view(
+                                    primer_trimmed_bam_artic,
+                                    None,
+                                    "-f bam -F \"not supplementary and not secondary_alignment\""
+                                ),
+                                sambamba.sort(
+                                    "/dev/stdin",
+                                    primer_trimmed_bam,
+                                    tmp_dir=config.param('artic_nanopolish', 'tmp_dir', required=True)
+                                )
+                            ]
+                        ),
+                        sambamba.index(
                             primer_trimmed_bam,
-                            tmp_dir=config.param('artic_nanopolish', 'tmp_dir', required=True)
+                            primer_trimmed_bam_index
                         )
-                    ]),
-                    sambamba.index(
-                        primer_trimmed_bam,
-                        primer_trimmed_bam_index
-                    )
-                ],
+                    ],
                     name="artic_nanopolish." + sample.name
-                ),
+                )
             )
-
         return jobs
 
     def wub_metrics(self):

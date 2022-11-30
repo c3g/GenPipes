@@ -268,12 +268,13 @@ class RnaSeqRaw(common.Illumina):
                 job = concat_jobs(
                     [
                         job,
-                        Job(
-                            [readset_bam],
-                            [sample_bam],
-                            command="ln -s -f " + os.path.relpath(readset_bam, os.path.dirname(sample_bam)) + " " + sample_bam, removable_files=[sample_bam]
+                        bash.ln(
+                            os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
+                            sample_bam,
+                            input=readset_bam
                         )
-                    ]
+                    ],
+                    removable_files=[sample_bam]
                 )
 
             job.name = "star_align.2." + readset.name

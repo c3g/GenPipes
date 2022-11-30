@@ -263,8 +263,8 @@ def scatter(
     if vcf:
         inputs.append(vcf)
 
-    sample_id = None
-    normal_id = None
+    sample_id = ""
+    normal_id = ""
     if tumor:
         sample_id = "-i " + tumor
         normal_id = "-n " + normal if normal else ""

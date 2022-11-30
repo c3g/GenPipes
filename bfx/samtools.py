@@ -117,8 +117,8 @@ samtools merge \\
   {input_bams}""".format(
             sample_output=sample_output,
             input_bams=" ".join(map(str.strip, input_bams))
-            )
         )
+    )
 
 def bcftools_mpileup(inputs, output, options, region=None, regionFile=None, ini_section='rawmpileup'):
 

@@ -52,18 +52,22 @@ cd {directory}""".format(
 def ln(
     target_file,
     link,
-    out_dir=None
+    input=None,
+    output=None
     ):
     
+    inputs = [input] if input else [target_file]
+    outputs = [output] if output else [link]
+
     return Job(
-        [target_file],
-        [link],
+        inputs,
+        outputs,
         command="""\
 ln -s -f \\
   {target_file} \\
   {link}""".format(
-            target_file=os.path.join(out_dir, target_file) if out_dir else target_file,
-            link=os.path.join(out_dir, link) if out_dir else link
+            target_file=target_file,
+            link=link
         ),
         removable_files=[link]
     )
@@ -258,13 +262,15 @@ sed {instructions} {input} {output}""".format(
 def gzip(
     input,
     output,
+    options=None
     ):
 
     return Job(
         [input],
         [output],
         command="""\
-gzip {input}{output}""".format(
+gzip {options}{input}{output}""".format(
+            options=options if options else "",
             input=input if input else "",
             output=" > " + output if output else "",
         )

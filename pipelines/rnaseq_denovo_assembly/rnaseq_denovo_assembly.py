@@ -384,7 +384,8 @@ pandoc --to=markdown \\
                             bash.mkdir(blast_directory),
                             bash.ln(
                                 os.path.relpath(trinity_chunk, os.path.dirname(query_chunk)),
-                                query_chunk
+                                query_chunk,
+                                input=trinity_chunk
                             ),
                             blast.parallel_blast(trinity_chunk, query_chunk, blast_chunk, program, db, cpu),
                         ],
