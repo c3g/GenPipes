@@ -719,7 +719,7 @@ pandoc \\
                     Deeptools.bamcoverage(
                         input_bam,
                         output_file,
-                    )
+                    ),
                     bash.mv(output_file, output_location)
                 ],
                 name="bam-to-bw_"+sample.name,
