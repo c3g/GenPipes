@@ -709,7 +709,8 @@ pandoc \\
             input_bam = bam_file_prefix + "bam"
             tracks_dir = os.path.join(self.output_dirs["tracks_directory"])
             big_wig = os.path.join(self.output_dirs['tracks_directory'], "bigWig")
-            output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name)
+            output_file = sample.name + ".bw"
+            output_location = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".bw")
 
             job= concat_jobs(
                 [
@@ -719,8 +720,9 @@ pandoc \\
                         input_bam,
                         output_file,
                     )
+                    bash.mv(output_file, output_location)
                 ],
-                name=sample.name+".bw",
+                name="bam-to-bw_"+sample.name,
                 samples=[sample]  
             )
             jobs.append(job)
@@ -809,23 +811,90 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         job.samples = self.samples
         jobs.append(job)
 
+#         # Create Wiggle tracks archive
+#         library = {}
+#         for readset in self.readsets:
+#             if not readset.sample in library:
+#                 library[readset.sample]="PAIRED_END"
+#             if readset.run_type == "SINGLE_END" :
+#                 library[readset.sample]="SINGLE_END"
+
+#         wiggle_directory = os.path.join(self.output_dirs["tracks_directory"], "bigWig")
+#         wiggle_archive = os.path.join(self.output_dir, "tracks.zip")
+#         if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
+#             wiggle_files = []
+#             for sample in self.samples:
+#                 if library[sample] == "PAIRED_END":
+#                     wiggle_files.extend([os.path.join(wiggle_directory, sample.name) + ".forward.bw", os.path.join(wiggle_directory, sample.name) + ".reverse.bw"])
+#         else:
+#             wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
+#         jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
+
+#         # RPKM and Saturation
+#         count_file = os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.tsv")
+#         gene_size_file = config.param('rpkm_saturation', 'gene_size', param_type='filepath')
+#         rpkm_directory = self.output_dirs["raw_counts_directory"]
+#         saturation_directory = os.path.join(self.output_dirs["metrics_directory"], "saturation")
+
+#         job = concat_jobs(
+#             [
+#                 bash.mkdir(saturation_directory),
+#                 metrics.rpkm_saturation(
+#                     count_file,
+#                     gene_size_file,
+#                     rpkm_directory,
+#                     saturation_directory
+#                 )
+#             ],
+#             name="rpkm_saturation",
+#             samples=self.samples
+#         )
+#         jobs.append(job)
+
+#         report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeq.raw_counts_metrics.md")
+#         jobs.append(
+#             Job(
+#                 [
+#                     wiggle_archive,
+#                     saturation_directory + ".zip",
+#                     f"{self.output_dirs['metrics_directory']}/rnaseqRep/corrMatrixSpearman.txt"
+#                 ],
+#                 [report_file],
+#                 [['raw_counts_metrics', 'module_pandoc']],
+#                 command="""\
+# mkdir -p {report_dir} && \\
+# cp {metrics_dir}/rnaseqRep/corrMatrixSpearman.txt {report_dir}/corrMatrixSpearman.tsv && \\
+# cp {wiggle_archive} {report_dir}/ && \\
+# cp {saturation_archive} {report_dir}/ && \\
+# pandoc --to=markdown \\
+#   --template {report_template_dir}/{basename_report_file} \\
+#   --variable corr_matrix_spearman_table="`head -16 {report_dir}/corrMatrixSpearman.tsv | cut -f-16| awk -F"\t" '{{OFS="\t"; if (NR==1) {{$0="Vs"$0; print; gsub(/[^\t]/, "-"); print}} else {{printf $1; for (i=2; i<=NF; i++) {{printf "\t"sprintf("%.2f", $i)}}; print ""}}}}' | sed 's/\t/|/g'`" \\
+#   {report_template_dir}/{basename_report_file} \\
+#   > {report_file}""".format(
+#                     wiggle_archive=wiggle_archive,
+#                     saturation_archive=saturation_directory + ".zip",
+#                     report_template_dir=self.report_template_dir,
+#                     basename_report_file=os.path.basename(report_file),
+#                     metrics_dir=self.output_dirs["metrics_directory"],
+#                     report_dir=self.output_dirs["report_directory"],
+#                     report_file=report_file
+#                 ),
+#                 report_files=[report_file],
+#                 name="raw_count_metrics_report",
+#                 samples=self.samples
+#             )
+#         )
+
+#         return jobs
+
+
         # Create Wiggle tracks archive
         library = {}
         for readset in self.readsets:
-            if not readset.sample in library:
-                library[readset.sample]="PAIRED_END"
-            if readset.run_type == "SINGLE_END" :
-                library[readset.sample]="SINGLE_END"
 
         wiggle_directory = os.path.join(self.output_dirs["tracks_directory"], "bigWig")
         wiggle_archive = os.path.join(self.output_dir, "tracks.zip")
-        if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
-            wiggle_files = []
-            for sample in self.samples:
-                if library[sample] == "PAIRED_END":
-                    wiggle_files.extend([os.path.join(wiggle_directory, sample.name) + ".forward.bw", os.path.join(wiggle_directory, sample.name) + ".reverse.bw"])
-        else:
-            wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
+        wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
         jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
 
         # RPKM and Saturation
@@ -884,6 +953,7 @@ pandoc --to=markdown \\
         )
 
         return jobs
+
 
     def stringtie(self):
         """
