@@ -131,7 +131,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         output_dir = os.path.join(self.output_dirs["kallisto_directory"], "All_readsets")
 
         #per trancripts
-        input_abundance_files_transcripts = [os.path.join(self.output_dir, self.output_dirs["kallisto_directory"], readset.sample.name, "abundance_transcripts.tsv") for readset in self.readsets]
+        input_abundance_files_transcripts = [os.path.join(self.output_dirs["kallisto_directory"], readset.sample.name, "abundance_transcripts.tsv") for readset in self.readsets]
         job_name_transcripts="kallisto_count_matrix.transcripts"
         data_type_transcripts="transcripts"
         job=tools.r_create_kallisto_count_matrix(
@@ -156,7 +156,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         job.samples = self.samples
         jobs.append(job)
 
-        report_dir = os.path.join(self.output_dir, "report")
+        report_dir = self.output_dirs["report_directory"]
         #copy tx2genes file
         jobs.append(
             concat_jobs(
@@ -169,8 +169,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                         ],
                         [],
                         command="""\
-cp \\
-  {tx2genes_file} \\
+cp {tx2genes_file} \\
   {report_dir}""".format(
                             tx2genes_file=config.param('kallisto', 'transcript2genes', param_type="filepath"),
                             report_dir=report_dir
