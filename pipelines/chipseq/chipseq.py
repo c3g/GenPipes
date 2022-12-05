@@ -100,7 +100,6 @@ class ChipSeq(common.Illumina):
             'tracks_output_directory': os.path.relpath(os.path.join(self.output_dir, 'tracks'), self.output_dir),
             'macs_output_directory': os.path.relpath(os.path.join(self.output_dir, 'peak_call'), self.output_dir),
             'anno_output_directory': os.path.relpath(os.path.join(self.output_dir, 'annotation'), self.output_dir),
-            'ihecA_output_directory': os.path.relpath(os.path.join(self.output_dir, 'ihec_alignment'), self.output_dir),
             'ihecM_output_directory': os.path.relpath(os.path.join(self.output_dir, 'ihec_metrics'), self.output_dir),
             'dba_output_directory': os.path.relpath(os.path.join(self.output_dir, 'differential_binding'), self.output_dir)
         }
@@ -108,10 +107,11 @@ class ChipSeq(common.Illumina):
 
     @property
     def mark_type_conversion(self):
-        dirs = {'N': 'narrow',
-                'B': 'broad',
-                'I': 'Input'
-                }
+        dirs = {
+            'N': 'narrow',
+            'B': 'broad',
+            'I': 'Input'
+        }
         return dirs
 
     @property
@@ -894,8 +894,7 @@ done""".format(
 
         for sample in self.samples:
             for mark_name in sample.marks:
-                tag_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name,
-                                       sample.name + "." + mark_name)
+                tag_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name)
                 bedgraph_dir = os.path.join(self.output_dirs['tracks_output_directory'], sample.name, mark_name)
                 bedgraph_file = os.path.join(bedgraph_dir, sample.name + "." + mark_name + ".ucsc.bedGraph")
                 big_wig_output = os.path.join(bedgraph_dir, "bigWig", sample.name + "." + mark_name + ".bw")

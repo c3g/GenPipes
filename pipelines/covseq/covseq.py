@@ -380,44 +380,47 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(readset_bam)),
-                    pipe_jobs([
-                        bwa.mem(
-                            fastq1,
-                            fastq2,
-                            read_group="'@RG" + \
-                                "\\tID:" + readset.name + \
-                                "\\tSM:" + readset.sample.name + \
-                                "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
-                                ("\\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                                ("\\tCN:" + config.param('mapping_bwa_mem_sambamba', 'sequencing_center') if config.param('mapping_bwa_mem_sambamba', 'sequencing_center', required=False) else "") + \
-                                ("\\tPL:" + config.param('mapping_bwa_mem_sambamba', 'sequencing_technology') if config.param('mapping_bwa_mem_sambamba', 'sequencing_technology', required=False) else "Illumina") + \
-                                "'",
-                                ini_section='mapping_bwa_mem_sambamba'
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.dirname(readset_bam)),
+                        pipe_jobs(
+                            [
+                                bwa.mem(
+                                    fastq1,
+                                    fastq2,
+                                    read_group="'@RG" + \
+                                        "\\tID:" + readset.name + \
+                                        "\\tSM:" + readset.sample.name + \
+                                        "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
+                                        ("\\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                                        ("\\tCN:" + config.param('mapping_bwa_mem_sambamba', 'sequencing_center') if config.param('mapping_bwa_mem_sambamba', 'sequencing_center', required=False) else "") + \
+                                        ("\\tPL:" + config.param('mapping_bwa_mem_sambamba', 'sequencing_technology') if config.param('mapping_bwa_mem_sambamba', 'sequencing_technology', required=False) else "Illumina") + \
+                                        "'",
+                                    ini_section='mapping_bwa_mem_sambamba'
                                 ),
-                        sambamba.view(
-                            "/dev/stdin",
-                            None,
-                            options=config.param('mapping_bwa_mem_sambamba', 'sambamba_view_other_options')
-                            ),
-                        sambamba.sort(
-                            "/dev/stdin",
+                                sambamba.view(
+                                    "/dev/stdin",
+                                    None,
+                                    options=config.param('mapping_bwa_mem_sambamba', 'sambamba_view_other_options')
+                                ),
+                                sambamba.sort(
+                                    "/dev/stdin",
+                                    readset_bam,
+                                    tmp_dir=config.param('mapping_bwa_mem_sambamba', 'tmp_dir', required=True),
+                                    other_options=config.param('mapping_bwa_mem_sambamba', 'sambamba_sort_other_options', required=False)
+                                )
+                            ]
+                        ),
+                        sambamba.index(
                             readset_bam,
-                            tmp_dir=config.param('mapping_bwa_mem_sambamba', 'tmp_dir', required=True),
-                            other_options=config.param('mapping_bwa_mem_sambamba', 'sambamba_sort_other_options', required=False)
-                            )
-                        ]),
-                    sambamba.index(
-                        readset_bam,
-                        index_bam,
-                        other_options=config.param('mapping_bwa_mem_sambamba', 'sambamba_index_other_options', required=False)
+                            index_bam,
+                            other_options=config.param('mapping_bwa_mem_sambamba', 'sambamba_index_other_options', required=False)
                         )
                     ],
                     name="mapping_bwa_mem_sambamba." + readset.name,
                     samples=[readset.sample]
-                    )
-                )
+                 )
+             )
 
         return jobs
 
@@ -1744,7 +1747,6 @@ module load {R_covseqtools}""".format(
             self.mapping_bwa_mem_sambamba,
             self.sambamba_merge_sam_files,
             self.sambamba_filtering,
-            # self.fgbio_trim_primers,
             self.ivar_trim_primers,
             self.covseq_metrics,
             self.freebayes_calling,

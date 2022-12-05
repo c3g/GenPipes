@@ -426,7 +426,7 @@ class EpiQC(common.Illumina):
                     if chr == chr_line.strip().split("\t")[0]:
                         chr_size = chr_line.strip().split("\t")[1]
                         chr_sizes_file_name = open(os.path.abspath(chr_sizes_file), "w")
-                        chr_sizes_file_name.write("{chr}\t{int(chr_size)}\n")
+                        chr_sizes_file_name.write(f"{chr}\t{int(chr_size)}\n")
 
     def chromimpute_convert(self):
         """

@@ -391,20 +391,20 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --targetIntervals {target_intervals} \\
   {known_mills}{output}{intervals}{exclude_intervals} \\
   --maxReadsInMemory {max_reads_in_memory}""".format(
-        tmp_dir=config.param('gatk_indel_realigner', 'tmp_dir'),
-        java_other_options=config.param('gatk_indel_realigner', 'java_other_options'),
-        ram=config.param('gatk_indel_realigner', 'ram'),
-        other_options=config.param('gatk_indel_realigner', 'other_options'),
-        reference_sequence=config.param('gatk_indel_realigner', 'genome_fasta', param_type='filepath'),
-        optional="--nWayOut " + optional if optional else "",
-        input=os.path.join(output_dir, input),
-        input2="--input_file " + os.path.join(output_dir, input2) if input2 else "",
-        target_intervals=os.path.join(output_dir, target_intervals),
-        known_mills=" \\\n  --knownAlleles " + config.param('gatk_realigner_target_creator', 'known_mills', param_type='filepath') if config.param('gatk_realigner_target_creator', 'known_mills', param_type='filepath') else "",
-        output=" \\\n  --out " + os.path.join(output_dir,output) if output else "",
-        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-        exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
-        max_reads_in_memory=config.param('gatk_indel_realigner', 'max_reads_in_memory')
+            tmp_dir=config.param('gatk_indel_realigner', 'tmp_dir'),
+            java_other_options=config.param('gatk_indel_realigner', 'java_other_options'),
+            ram=config.param('gatk_indel_realigner', 'ram'),
+            other_options=config.param('gatk_indel_realigner', 'other_options'),
+            reference_sequence=config.param('gatk_indel_realigner', 'genome_fasta', param_type='filepath'),
+            optional="--nWayOut " + optional if optional else "",
+            input=os.path.join(output_dir, input),
+            input2="--input_file " + os.path.join(output_dir, input2) if input2 else "",
+            target_intervals=os.path.join(output_dir, target_intervals),
+            known_mills=" \\\n  --knownAlleles " + config.param('gatk_realigner_target_creator', 'known_mills', param_type='filepath') if config.param('gatk_realigner_target_creator', 'known_mills', param_type='filepath') else "",
+            output=" \\\n  --out " + os.path.join(output_dir,output) if output else "",
+            intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
+            max_reads_in_memory=config.param('gatk_indel_realigner', 'max_reads_in_memory')
         )
     )
 

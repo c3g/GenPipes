@@ -137,7 +137,7 @@ class HicSeq(common.Illumina):
         genome_digest = os.path.expandvars(config.param('hicup_align', "genome_digest_" + self.enzyme))
         return genome_digest
 
-    def fastq_readName_Edit(self):
+    def fastq_readname_edit(self):
         """
         Removes the added /1 and /2 by picard's sam_to_fastq transformation to avoid issues with downstream software like HOMER.
         """
@@ -150,21 +150,36 @@ class HicSeq(common.Illumina):
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END for Hi-C analysis)!"))
 
-            candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+            candidate_input_files = [
+                [
+                    trim_file_prefix + "pair1.fastq.gz",
+                    trim_file_prefix + "pair2.fastq.gz"
+                ]
+            ]
             if readset.fastq1 and readset.fastq2:
-                candidate_input_files.append([readset.fastq1, readset.fastq2])
+                candidate_input_files.append(
+                    [
+                        readset.fastq1,
+                        readset.fastq2
+                    ]
+                )
             if readset.bam:
-                candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam.strip())])
+                candidate_input_files.append(
+                    [
+                        re.sub("\.bam$", ".pair1.fastq.gz", readset.bam.strip()),
+                        re.sub("\.bam$", ".pair2.fastq.gz", readset.bam.strip())
+                    ]
+                )
             [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             job_fastq1 = concat_jobs(
                 [
                     bash.mkdir(self.output_dirs["trim_directory"]),
                     tools.sh_fastq_readname_edit(
                         fastq1,
-                        os.path.join(self.output_dirs["trim_directory"], readset.sample.name,f"{os.path.basename(fastq1)}.edited.gz")
+                        os.path.join(self.output_dirs["trim_directory"], readset.sample.name, f"{os.path.basename(fastq1)}.edited.gz")
                     )
                 ],
-                name=f"fastq_readName_Edit.fq1.{readset.name}",
+                name=f"fastq_readname_edit.fq1.{readset.name}",
                 samples=[readset.sample]
             )
             job_fastq2 = concat_jobs(
@@ -175,7 +190,7 @@ class HicSeq(common.Illumina):
                         os.path.join(self.output_dirs["trim_directory"], readset.sample.name, f"{os.path.basename(fastq2)}.edited.gz")
                     )
                 ],
-                name=f"fastq_readName_Edit.fq2.{readset.name}",
+                name=f"fastq_readname_edit.fq2.{readset.name}",
                 samples=[readset.sample]
             )
             jobs.extend([job_fastq1, job_fastq2])
@@ -1190,7 +1205,7 @@ class HicSeq(common.Illumina):
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
-                self.fastq_readName_Edit,
+                self.fastq_readname_edit,
                 self.hicup_align,
                 self.samtools_merge_bams,
                 self.homer_tag_directory,
@@ -1211,7 +1226,7 @@ class HicSeq(common.Illumina):
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
-                self.fastq_readName_Edit,
+                self.fastq_readname_edit,
                 self.hicup_align,
                 self.samtools_merge_bams,
                 self.create_rmap_file,

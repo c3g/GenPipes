@@ -677,7 +677,6 @@ END
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             realign_directory = os.path.join(alignment_directory, "realign")
-            # alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
             readset = sample.readsets[0]
 
             [input] = self.select_input_files(

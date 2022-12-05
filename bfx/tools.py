@@ -693,10 +693,10 @@ def sh_fastq_readname_edit(
 bash FastqReadNameEdit.sh \\
   -i {input_fastq} \\
   -o {output_fastq} \\
-  -p {fastq_abs_path}""".format(
+  -p {fastq_rel_path}""".format(
             input_fastq=input_fastq,
             output_fastq=output_fastq,
-            fastq_abs_path=os.path.abspath(input_fastq)
+            fastq_rel_path=os.path.relpath(input_fastq, os.path.dirname(output_fastq))
         ),
         removable_files=[output_fastq]
     )

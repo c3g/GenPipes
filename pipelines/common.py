@@ -486,14 +486,14 @@ pandoc \\
                         [
                             mkdir_job,
                             bash.ln(
-                                readset_bam,
+                                os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
                                 sample_bam,
-                                self.output_dir
+                                input=readset_bam
                             ),
                             bash.ln(
-                                readset_index,
+                                os.path.relpath(readset_index, os.path.dirname(sample_index)),
                                 sample_index,
-                                self.output_dir
+                                input=readset_index
                             )
                         ],
                         name="symlink_readset_sample_bam." + sample.name,

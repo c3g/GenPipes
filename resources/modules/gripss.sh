@@ -25,8 +25,8 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE - require JDK1.8\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          GRIPPS_HOME         \$root
-setenv          GRIPPS_JAR          \$root/gripps.jar
+setenv          GRIPSS_HOME         \$root
+setenv          GRIPSS_JAR          \$root/gripss.jar
 "
 }
 
