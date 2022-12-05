@@ -5273,10 +5273,11 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             tumor_pair.tumor.name,
                             "DELLY",
                             final_directory + ".delly.somatic.prioritize.tsv"
-                        ),
+                        )
                     ],
                     name="sv_annotation.delly.somatic." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor]
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    input_dependency=[output_flt_vcf]
                 )
             )
 
