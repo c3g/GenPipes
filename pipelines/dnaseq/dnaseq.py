@@ -3403,8 +3403,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         bed_file = None
         for sample in self.samples:
-            pair_directory = os.path.abspath(os.path.join(self.output_dirs["SVariants_directory"], sample.name))
-            #tmp_directory = os.path.join(str(config.param("manta_sv", 'tmp_dir')), "SVariants", sample.name)
+            pair_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
             manta_directory = os.path.join(pair_directory, "rawManta")
             output_prefix = os.path.join(pair_directory, sample.name)
 
@@ -3487,7 +3486,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
 
         for sample in self.samples:
-            pair_directory = os.path.abspath(os.path.join(self.output_dirs["SVariants_directory"], sample.name, sample.name))
+            pair_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name, sample.name)
 
             jobs.append(
                 concat_jobs(
@@ -3495,7 +3494,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         snpeff.compute_effects(
                             f"{pair_directory}.manta.germline.vcf.gz",
                             f"{pair_directory}.manta.germline.snpeff.vcf.gz"
-                        ),
+                        )
                     ],
                     name="sv_annotation.manta_germline." + sample.name,
                     samples=[sample]
