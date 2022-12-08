@@ -41,7 +41,7 @@ usage: hicseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  {DpnII,HindIII,NcoI,MboI,Arima} [-t {hic,capture}]
                  [-r READSETS] [-v]
 
-Version: 4.3.1
+Version: 4.3.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -110,7 +110,7 @@ hic:
 2- picard_sam_to_fastq
 3- trimmomatic
 4- merge_trimmomatic_stats
-5- fastq_readName_Edit
+5- fastq_readname_edit
 6- hicup_align
 7- samtools_merge_bams
 8- homer_tag_directory
@@ -135,7 +135,7 @@ capture:
 2- picard_sam_to_fastq
 3- trimmomatic
 4- merge_trimmomatic_stats
-5- fastq_readName_Edit
+5- fastq_readname_edit
 6- hicup_align
 7- samtools_merge_bams
 8- create_rmap_file
@@ -180,7 +180,7 @@ merge_trimmomatic_stats
 -----------------------
 The trim statistics per readset are merged at this step.
 
-fastq_readName_Edit
+fastq_readname_edit
 -------------------
 Removes the added /1 and /2 by picard's sam_to_fastq transformation to avoid issues with downstream software like HOMER.
 

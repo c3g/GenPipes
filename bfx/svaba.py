@@ -35,8 +35,7 @@ def run(tumor, patient_name, normal, bed):
         [tumor, normal],
         outputs,
         [
-            ['svaba_run', 'module_svaba'],
-#            ['svaba_run', 'module_gcc']
+            ['svaba_run', 'module_svaba']
         ],
         command="""\
 svaba run {options} \\

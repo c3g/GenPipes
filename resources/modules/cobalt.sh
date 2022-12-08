@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=cobalt
-VERSION=1.11
+VERSION=1.13
 ARCHIVE=${SOFTWARE}-${VERSION}.jar
 ARCHIVE_URL=https://github.com/hartwigmedical/hmftools/releases/download/${SOFTWARE}-v${VERSION}/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION

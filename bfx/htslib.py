@@ -23,7 +23,10 @@
 from core.config import *
 from core.job import *
 
-def bgzip(input, output):
+def bgzip(
+    input,
+    output
+    ):
 
     return Job(
         [input],
@@ -33,14 +36,18 @@ def bgzip(input, output):
         ],
         command="""\
 bgzip -cf \\
-{input} > \\
-{output}""".format(
-        input=" \\\n " + input if input else "",
-        output=output
+  {input} > \\
+  {output}""".format(
+            input=" \\\n " + input if input else "",
+            output=output
         )
     )
 
-def tabix(input, options=None):
+def tabix(
+    input,
+    options=None
+    ):
+
     output = input + ".tbi"
     return Job(
         [input],
@@ -50,13 +57,16 @@ def tabix(input, options=None):
         ],
         command="""\
 tabix {options}  \\
-{input}""".format(
-        input=input,
-        options=options,
+  {input}""".format(
+            input=input,
+            options=options,
         )
     )
 
-def bgzip_tabix(input, output):
+def bgzip_tabix(
+    input,
+    output
+    ):
 
     return Job(
         [input],
@@ -65,17 +75,20 @@ def bgzip_tabix(input, output):
             ['htslib_bgziptabix', 'module_htslib'],
         ],
         command="""\
-bgzip -cf \\
-{input} > \\
-{output} && \\
+bgzip -cf {input}\\
+  > {output} && \\
 tabix -pvcf {output}""".format(
-        input=" \\\n " + input if input else "",
-        output=output,
-        options=config.param('DEFAULT', 'tabix_options', required=False),
+            input=" \\\n " + input if input else "",
+            output=output,
+            options=config.param('DEFAULT', 'tabix_options', required=False),
         )
     )
 
-def tabix_split(input, output, chr):
+def tabix_split(
+    input,
+    output,
+    chr
+    ):
 
     return Job(
         [input],
@@ -85,10 +98,10 @@ def tabix_split(input, output, chr):
         ],
         command="""\
 tabix -h {input} {chr} \\
-         {output} \\
+  {output} \\
         """.format(
-        input=" \\\n " + input if input else "",
-        chr=chr,
-        output=" > " + output if output else ""
+            input=" \\\n " + input if input else "",
+            chr=chr,
+            output=" > " + output if output else ""
         )
     )

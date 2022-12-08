@@ -3,29 +3,21 @@
 set -eu -o pipefail
 
 SOFTWARE=bowtie
-VERSION=1.2.2
-#ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE=$SOFTWARE-$VERSION.zip
-#ARCHIVE_URL=https://github.com/BenLangmead/${SOFTWARE}/archive/v${VERSION}.tar.gz
-#ARCHIVE_URL=https://github.com/BenLangmead/${SOFTWARE}/releases/download/v${VERSION}.0/${SOFTWARE}-${VERSION}-src.zip
-ARCHIVE_URL=https://sourceforge.net/projects/${SOFTWARE}-bio/files/${SOFTWARE}/${VERSION}/${SOFTWARE}-${VERSION}-src.zip
+VERSION=1.3.1
+ARCHIVE=$SOFTWARE-$VERSION.tar.gz
+ARCHIVE_URL=https://github.com/BenLangmead/${SOFTWARE}/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-#  tar xzvf $ARCHIVE
-  unzip $ARCHIVE
+  tar xzvf $ARCHIVE
 
-  cd $SOFTWARE_DIR
-  sed -i "s|EXTRA_CXXFLAGS =|EXTRA_CXXFLAGS = -std=c++03|" Makefile
-  gmake -j12
+  cd ${SOFTWARE_DIR}
+  make -j12
 
   # Install software
   cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  mv -i ${SOFTWARE_DIR} $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {

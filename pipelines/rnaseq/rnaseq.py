@@ -21,14 +21,12 @@
 
 # Python Standard Modules
 import argparse
-import collections
 import csv
 import logging
 import math
 import os
 import re
 import sys
-import subprocess
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -38,6 +36,7 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 import utils.utils
 
+from bfx import bash_cmd as bash
 from bfx import bedtools
 from bfx import bwa
 from bfx import cufflinks
@@ -76,6 +75,10 @@ class RnaSeqRaw(common.Illumina):
     in the differential analyses. The design file format is described
     [here](https://bitbucket.org/mugqic/mugqic_pipelines/src#markdown-header-design-file)
 
+    The RNAseq pipeline can also take a batch file (optional) which will be used to correct for batch effects
+    in the differential analyses. The batch file format is described
+    [here](https://bitbucket.org/mugqic/mugqic_pipelines/src#markdown-header-batch-file)
+
     The differential gene analysis is followed by a Gene Ontology (GO) enrichment analysis.
     This analysis use the [goseq approach](http://bioconductor.org/packages/release/bioc/html/goseq.html).
     The goseq is based on the use of non-native GO terms (see details in the section 5 of
@@ -100,7 +103,29 @@ class RnaSeqRaw(common.Illumina):
         self._protocol=protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
+        self.argparser.add_argument("-b", "--batch", help="batch file (to peform batch effect correction", type=argparse.FileType('r'))
         super(RnaSeqRaw, self).__init__(protocol)
+
+    @property
+    def output_dirs(self):
+        dirs = {
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
+            'alignment_1stPass_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment_1stPass'), self.output_dir),
+            'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'stringtie_directory': os.path.relpath(os.path.join(self.output_dir, 'stringtie'), self.output_dir),
+            'ballgown_directory': os.path.relpath(os.path.join(self.output_dir, 'ballgown'), self.output_dir),
+            'cufflinks_directory': os.path.relpath(os.path.join(self.output_dir, 'cufflinks'), self.output_dir),
+            'cuffdiff_directory': os.path.relpath(os.path.join(self.output_dir, 'cuffdiff'), self.output_dir),
+            'cuffnorm_directory': os.path.relpath(os.path.join(self.output_dir, 'cuffnorm'), self.output_dir),
+            'DGE_directory': os.path.relpath(os.path.join(self.output_dir, 'DGE'), self.output_dir),
+            'raw_counts_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_counts'), self.output_dir),
+            'tracks_directory': os.path.relpath(os.path.join(self.output_dir, 'tracks'), self.output_dir),
+            'exploratory_directory': os.path.relpath(os.path.join(self.output_dir, 'exploratory'), self.output_dir),
+            'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
+            'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
+        }
+        return dirs
 
     def star_genome_length(self):
         """
@@ -124,14 +149,14 @@ class RnaSeqRaw(common.Illumina):
 
         jobs = []
         project_index_directory = "reference.Merged"
-        project_junction_file = os.path.join("alignment_1stPass", "AllSamples.SJ.out.tab")
+        project_junction_file = os.path.join(self.output_dirs["alignment_1stPass_directory"], "AllSamples.SJ.out.tab")
         individual_junction_list=[]
         genome_length = self.star_genome_length()
         ######
         #pass 1 -alignment
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_1stPass_directory = os.path.join("alignment_1stPass", readset.sample.name, readset.name)
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
+            alignment_1stPass_directory = os.path.join(self.output_dirs["alignment_1stPass_directory"], readset.sample.name, readset.name)
             individual_junction_list.append(os.path.join(alignment_1stPass_directory,"SJ.out.tab"))
 
             if readset.run_type == "PAIRED_END":
@@ -190,8 +215,8 @@ class RnaSeqRaw(common.Illumina):
         ######
         #Pass 2 - alignment
         for readset in self.readsets:
-            trim_file_prefix = os.path.join("trim", readset.sample.name, readset.name + ".trim.")
-            alignment_2ndPass_directory = os.path.join("alignment", readset.sample.name, readset.name)
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
+            alignment_2ndPass_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name)
 
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
@@ -239,22 +264,31 @@ class RnaSeqRaw(common.Illumina):
             # remove older symlink before otherwise it raise an error if the link already exist (in case of redo)
             if len(readset.sample.readsets) == 1:
                 readset_bam = os.path.join(alignment_2ndPass_directory, "Aligned.sortedByCoord.out.bam")
-                sample_bam = os.path.join("alignment", readset.sample.name ,readset.sample.name + ".sorted.bam")
-                job = concat_jobs([
-                    job,
-                    Job([readset_bam], [sample_bam], command="ln -s -f " + os.path.relpath(readset_bam, os.path.dirname(sample_bam)) + " " + sample_bam, removable_files=[sample_bam])])
+                sample_bam = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.sample.name + ".sorted.bam")
+                job = concat_jobs(
+                    [
+                        job,
+                        bash.ln(
+                            os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
+                            sample_bam,
+                            input=readset_bam
+                        )
+                    ],
+                    removable_files=[sample_bam]
+                )
 
             job.name = "star_align.2." + readset.name
+            job.samples = [readset.sample]
             jobs.append(job)
 
-        report_file = os.path.join("report", "RnaSeq.star.md")
+        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeq.star.md")
         jobs.append(
             Job(
-                [os.path.join("alignment", readset.sample.name, readset.name, "Aligned.sortedByCoord.out.bam") for readset in self.readsets],
+                [os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name, "Aligned.sortedByCoord.out.bam") for readset in self.readsets],
                 [report_file],
                 [['star', 'module_pandoc']],
                 command="""\
-mkdir -p report && \\
+mkdir -p {report_dir} && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable scientific_name="{scientific_name}" \\
@@ -265,6 +299,7 @@ pandoc --to=markdown \\
                     assembly=config.param('star', 'assembly'),
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
+                    report_dir=self.output_dirs["report_directory"],
                     report_file=report_file
                 ),
                 report_files=[report_file],
@@ -284,7 +319,7 @@ pandoc --to=markdown \\
         for sample in self.samples:
             # Skip samples with one readset only, since symlink has been created at align step
             if len(sample.readsets) > 1:
-                alignment_directory = os.path.join("alignment", sample.name)
+                alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
                 inputs = [os.path.join(alignment_directory, readset.name, "Aligned.sortedByCoord.out.bam") for readset in sample.readsets]
                 output = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
@@ -301,7 +336,7 @@ pandoc --to=markdown \\
 
         jobs = []
         for sample in self.samples:
-            alignment_file_prefix = os.path.join("alignment", sample.name, sample.name)
+            alignment_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name)
 
             job = picard.sort_sam(
                 alignment_file_prefix + ".sorted.bam",
@@ -322,7 +357,7 @@ pandoc --to=markdown \\
 
         jobs = []
         for sample in self.samples:
-            alignment_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.")
+            alignment_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.")
 
             job = picard.mark_duplicates(
                 [alignment_file_prefix + "bam"],
@@ -341,8 +376,8 @@ pandoc --to=markdown \\
 
         jobs = []
         for sample in self.samples:
-            alignment_input = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
-            alignment_output = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
+            alignment_input = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.bam")
+            alignment_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.hardClip.bam")
             job=pipe_jobs([
                 samtools.view(
                     alignment_input,
@@ -373,36 +408,63 @@ awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/
         """
 
         jobs = []
-        sample_file = os.path.join("alignment", "rnaseqc.samples.txt")
-        sample_rows = [[sample.name, os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam"), "RNAseq"] for sample in self.samples]
+        sample_file = os.path.join(self.output_dirs["alignment_directory"], "rnaseqc.samples.txt")
+        sample_rows = [[sample.name, os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.bam"), "RNAseq"] for sample in self.samples]
         input_bams = [sample_row[1] for sample_row in sample_rows]
-        output_directory = os.path.join("metrics", "rnaseqRep")
+        output_directory = os.path.join(self.output_dirs["metrics_directory"], "rnaseqRep")
         # Use GTF with transcript_id only otherwise RNASeQC fails
         gtf_transcript_id = config.param('rnaseqc', 'gtf_transcript_id', param_type='filepath')
 
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p " + output_directory, removable_files=[output_directory], samples=self.samples),
-            Job(input_bams, [sample_file], command="""\
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(output_directory),
+                    Job(
+                        input_bams,
+                        [sample_file],
+                        command="""\
 echo "Sample\tBamFile\tNote
 {sample_rows}" \\
-  > {sample_file}""".format(sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]), sample_file=sample_file)),
-            metrics.rnaseqc(sample_file, output_directory, self.run_type == "SINGLE_END", gtf_file=gtf_transcript_id, reference=config.param('rnaseqc', 'genome_fasta', param_type='filepath'), ribosomal_interval_file=config.param('rnaseqc', 'ribosomal_fasta', param_type='filepath')),
-            Job([], [output_directory + ".zip"], command="zip -r {output_directory}.zip {output_directory}".format(output_directory=output_directory))
-        ], name="rnaseqc"))
+  > {sample_file}""".format(
+                            sample_rows="\n".join(["\t".join(sample_row) for sample_row in sample_rows]),
+                            sample_file=sample_file
+                        )
+                    ),
+                    metrics.rnaseqc(
+                        sample_file,
+                        output_directory,
+                        self.run_type == "SINGLE_END",
+                        gtf_file=gtf_transcript_id,
+                        reference=config.param('rnaseqc', 'genome_fasta', param_type='filepath'),
+                        ribosomal_interval_file=config.param('rnaseqc', 'ribosomal_fasta', param_type='filepath')
+                    ),
+                    Job(
+                        [],
+                        [output_directory + ".zip"],
+                        command=f"zip -r {output_directory}.zip {output_directory}"
+                    )
+                ],
+                name="rnaseqc",
+                removable_files=[output_directory],
+                samples=self.samples
+            )
+        )
 
-        trim_metrics_file = os.path.join("metrics", "trimSampleTable.tsv")
-        metrics_file = os.path.join("metrics", "rnaseqRep", "metrics.tsv")
-        report_metrics_file = os.path.join("report", "trimAlignmentTable.tsv")
-        report_file = os.path.join("report", "RnaSeq.rnaseqc.md")
+        trim_metrics_file = os.path.join(self.output_dirs["metrics_directory"], "trimSampleTable.tsv")
+        metrics_file = os.path.join(self.output_dirs["metrics_directory"], "rnaseqRep", "metrics.tsv")
+        report_metrics_file = os.path.join(self.output_dirs["report_directory"], "trimAlignmentTable.tsv")
+        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeq.rnaseqc.md")
         jobs.append(
             Job(
                 [metrics_file],
                 [report_file, report_metrics_file],
-                [['rnaseqc', 'module_python'], ['rnaseqc', 'module_pandoc']],
+                [
+                    ['rnaseqc', 'module_python'],
+                    ['rnaseqc', 'module_pandoc']],
                 # Ugly awk to merge sample metrics with trim metrics if they exist; knitr may do this better
                 command="""\
-mkdir -p report && \\
-cp {output_directory}.zip report/reportRNAseqQC.zip && \\
+mkdir -p {report_dir} && \\
+cp {output_directory}.zip {report_dir}/reportRNAseqQC.zip && \\
 python -c 'import csv; csv_in = csv.DictReader(open("{metrics_file}"), delimiter="\t")
 print "\t".join(["Sample", "Aligned Reads", "Alternative Alignments", "%", "rRNA Reads", "Coverage", "Exonic Rate", "Genes"])
 print "\\n".join(["\t".join([
@@ -438,6 +500,7 @@ pandoc \\
                     trim_metrics_file=trim_metrics_file,
                     metrics_file=metrics_file,
                     basename_report_file=os.path.basename(report_file),
+                    report_dir=self.output_dirs["report_directory"],
                     report_metrics_file=report_metrics_file,
                     report_file=report_file
                 ),
@@ -458,15 +521,27 @@ pandoc \\
         jobs = []
         reference_file = config.param('picard_rna_metrics', 'genome_fasta', param_type='filepath')
         for sample in self.samples:
-                alignment_file = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.bam")
-                output_directory = os.path.join("metrics", sample.name)
+            alignment_file = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.bam")
+            output_directory = os.path.join(self.output_dirs["metrics_directory"], sample.name)
 
-                job = concat_jobs([
+            job = concat_jobs(
+                [
                     Job(command="mkdir -p " + output_directory, removable_files=[output_directory], samples=[sample]),
-                    picard.collect_multiple_metrics(alignment_file, os.path.join(output_directory, sample.name), reference_file, library_type=sample.readsets[0].run_type),
-                    picard.collect_rna_metrics(alignment_file, os.path.join(output_directory, sample.name+".picard_rna_metrics"))
-                ],name="picard_rna_metrics."+ sample.name)
-                jobs.append(job)
+                    picard.collect_multiple_metrics(
+                        alignment_file,
+                        os.path.join(output_directory, sample.name),
+                        reference_file,
+                        library_type=sample.readsets[0].run_type
+                    ),
+                    picard.collect_rna_metrics(
+                        alignment_file,
+                        os.path.join(output_directory, sample.name+".picard_rna_metrics")
+                    )
+                ],
+                name=f"picard_rna_metrics.{sample.name}",
+                samples=[sample]
+            )
+            jobs.append(job)
 
         return jobs
 
@@ -482,43 +557,51 @@ pandoc \\
 
         jobs = []
         for readset in self.readsets:
-            readset_bam = os.path.join("alignment", readset.sample.name, readset.name , "Aligned.sortedByCoord.out.bam")
-            output_folder = os.path.join("metrics",readset.sample.name, readset.name)
-            readset_metrics_bam = os.path.join(output_folder,readset.name +"rRNA.bam")
+            readset_bam = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name , "Aligned.sortedByCoord.out.bam")
+            output_folder = os.path.join(self.output_dirs["metrics_directory"], readset.sample.name, readset.name)
+            readset_metrics_bam = os.path.join(output_folder, readset.name +"rRNA.bam")
 
-
-            job = concat_jobs([
-                Job(command="mkdir -p " + os.path.dirname(readset_bam) + " " + output_folder),
-                pipe_jobs([
-                    bvatools.bam2fq(
-                        readset_bam
+            job = concat_jobs(
+                [
+                    bash.mkdir(os.path.dirname(readset_bam)),
+                    bash.mkdir(output_folder),
+                    pipe_jobs(
+                        [
+                            bvatools.bam2fq(
+                                readset_bam
+                            ),
+                            bwa.mem(
+                                "/dev/stdin",
+                                None,
+                                read_group="'@RG" + \
+                                    "\tID:" + readset.name + \
+                                    "\tSM:" + readset.sample.name + \
+                                    ("\tLB:" + readset.library if readset.library else "") + \
+                                    ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                                    ("\tCN:" + config.param('bwa_mem_rRNA', 'sequencing_center') if config.param('bwa_mem_rRNA', 'sequencing_center', required=False) else "") + \
+                                    "\tPL:Illumina" + \
+                                    "'",
+                                ref=config.param('bwa_mem_rRNA', 'ribosomal_fasta'),
+                                ini_section='bwa_mem_rRNA'
+                            ),
+                            picard.sort_sam(
+                                "/dev/stdin",
+                                readset_metrics_bam,
+                                "coordinate",
+                                ini_section='picard_sort_sam_rrna'
+                            )
+                        ]
                     ),
-                    bwa.mem(
-                        "/dev/stdin",
-                        None,
-                        read_group="'@RG" + \
-                            "\tID:" + readset.name + \
-                            "\tSM:" + readset.sample.name + \
-                            ("\tLB:" + readset.library if readset.library else "") + \
-                            ("\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                            ("\tCN:" + config.param('bwa_mem_rRNA', 'sequencing_center') if config.param('bwa_mem_rRNA', 'sequencing_center', required=False) else "") + \
-                            "\tPL:Illumina" + \
-                            "'",
-                        ref=config.param('bwa_mem_rRNA', 'ribosomal_fasta'),
-                        ini_section='bwa_mem_rRNA'
-                    ),
-                    picard.sort_sam(
-                        "/dev/stdin",
-                        readset_metrics_bam,
-                        "coordinate",
-                        ini_section='picard_sort_sam_rrna'
+                    tools.py_rrnaBAMcount(
+                        bam=readset_metrics_bam,
+                        gtf=config.param('bwa_mem_rRNA', 'gtf'),
+                        output=os.path.join(output_folder, readset.name+"rRNA.stats.tsv"),
+                        typ="transcript"
                     )
-                ]),
-                tools.py_rrnaBAMcount (
-                    bam=readset_metrics_bam,
-                    gtf=config.param('bwa_mem_rRNA', 'gtf'),
-                    output=os.path.join(output_folder,readset.name+"rRNA.stats.tsv"),
-                    typ="transcript")], name="bwa_mem_rRNA." + readset.name )
+                ],
+                name=f"bwa_mem_rRNA.{readset.name}",
+                samples=[readset.sample]
+            )
 
             job.removable_files=[readset_metrics_bam]
             job.samples = [readset.sample]
@@ -542,10 +625,10 @@ pandoc \\
                 library[readset.sample]="SINGLE_END"
 
         for sample in self.samples:
-            bam_file_prefix = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.")
+            bam_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.")
             input_bam = bam_file_prefix + "bam"
-            bed_graph_prefix = os.path.join("tracks", sample.name, sample.name)
-            big_wig_prefix = os.path.join("tracks", "bigWig", sample.name)
+            bed_graph_prefix = os.path.join(self.output_dirs["tracks_directory"], sample.name, sample.name)
+            big_wig_prefix = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name)
 
             if (config.param('DEFAULT', 'strand_info') != 'fr-unstranded') and library[sample] == "PAIRED_END":
                 input_bam_f1 = bam_file_prefix + "tmp1.forward.bam"
@@ -567,7 +650,7 @@ pandoc \\
                 bam_f_job.output_files.remove(input_bam_f2)
 
                 bam_r_job = concat_jobs([
-                    Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " " + os.path.join("tracks", "bigWig")),
+                    Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], sample.name) + " " + os.path.join(self.output_dirs["tracks_directory"], "bigWig")),
                     samtools.view(input_bam, input_bam_r1, "-bh -F 256 -f 97"),
                     samtools.view(input_bam, input_bam_r2, "-bh -F 256 -f 145"),
                     picard.merge_sam_files([input_bam_r1, input_bam_r2], output_bam_r),
@@ -596,13 +679,13 @@ pandoc \\
                     in_bam = input_bam
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + os.path.join("tracks", sample.name) + " ", removable_files=["tracks"], samples=[sample]),
+                        Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], sample.name) + " ", removable_files=[self.output_dirs["tracks_directory"]], samples=[sample]),
                         bedtools.graph(in_bam, bed_graph_output, library[sample])
                     ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
                 )
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + os.path.join("tracks", "bigWig"), samples=[sample]),
+                        Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], "bigWig"), samples=[sample]),
                         ucsc.bedGraphToBigWig(bed_graph_output, big_wig_output, False)
                     ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)))
                 )
@@ -617,29 +700,34 @@ pandoc \\
         jobs = []
 
         for sample in self.samples:
-            alignment_file_prefix = os.path.join("alignment", sample.name, sample.name)
+            alignment_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name)
             input_bam = alignment_file_prefix + ".QueryNameSorted.bam"
 
             # Count reads
-            output_count = os.path.join("raw_counts", sample.name + ".readcounts.csv")
+            output_count = os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.csv")
             stranded = "no" if config.param('DEFAULT', 'strand_info') == "fr-unstranded" else "reverse"
-            job = concat_jobs([
-                Job(command="mkdir -p raw_counts"),
-                pipe_jobs([
-                        samtools.view(
+            job = concat_jobs(
+                [
+                    bash.mkdir(f"{self.output_dirs['raw_counts_directory']}"),
+                    pipe_jobs(
+                        [
+                            samtools.view(
                                 input_bam,
                                 options="-F 4"
-                        ),
-                        htseq.htseq_count(
-                        "-",
-                        config.param('htseq_count', 'gtf', param_type='filepath'),
-                        output_count,
-                        config.param('htseq_count', 'options'),
-                        stranded
-                        )
-                ])
-            ], name="htseq_count." + sample.name)
-            job.samples = [sample]
+                            ),
+                            htseq.htseq_count(
+                                "-",
+                                config.param('htseq_count', 'gtf', param_type='filepath'),
+                                output_count,
+                                config.param('htseq_count', 'options'),
+                                stranded
+                            )
+                        ]
+                    )
+                ],
+                name="htseq_count." + sample.name,
+                samples=[sample]
+            )
             jobs.append(job)
 
         return jobs
@@ -652,12 +740,16 @@ pandoc \\
         jobs = []
 
         # Create raw count matrix
-        output_directory = "DGE"
-        read_count_files = [os.path.join("raw_counts", sample.name + ".readcounts.csv") for sample in self.samples]
+        output_directory = self.output_dirs["DGE_directory"]
+        read_count_files = [os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.csv") for sample in self.samples]
         output_matrix = os.path.join(output_directory, "rawCountMatrix.csv")
 
-        job = Job(read_count_files, [output_matrix], [['raw_counts_metrics', 'module_mugqic_tools']], name="metrics.matrix")
-
+        job = Job(
+            read_count_files,
+            [output_matrix],
+            [['raw_counts_metrics', 'module_mugqic_tools']],
+            name="metrics.matrix"
+        )
         job.command = """\
 mkdir -p {output_directory} && \\
 gtf2tmpMatrix.awk \\
@@ -691,8 +783,8 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
             if readset.run_type == "SINGLE_END" :
                 library[readset.sample]="SINGLE_END"
 
-        wiggle_directory = os.path.join("tracks", "bigWig")
-        wiggle_archive = "tracks.zip"
+        wiggle_directory = os.path.join(self.output_dirs["tracks_directory"], "bigWig")
+        wiggle_archive = os.path.join(self.output_dir, "tracks.zip")
         if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
             wiggle_files = []
             for sample in self.samples:
@@ -703,43 +795,57 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
 
         # RPKM and Saturation
-        count_file = os.path.join("DGE", "rawCountMatrix.csv")
+        count_file = os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.csv")
         gene_size_file = config.param('rpkm_saturation', 'gene_size', param_type='filepath')
-        rpkm_directory = "raw_counts"
-        saturation_directory = os.path.join("metrics", "saturation")
+        rpkm_directory = self.output_dirs["raw_counts_directory"]
+        saturation_directory = os.path.join(self.output_dirs["metrics_directory"], "saturation")
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + saturation_directory),
-            metrics.rpkm_saturation(count_file, gene_size_file, rpkm_directory, saturation_directory)
-        ], name="rpkm_saturation")
-        job.samples = self.samples
+        job = concat_jobs(
+            [
+                bash.mkdir(saturation_directory),
+                metrics.rpkm_saturation(
+                    count_file,
+                    gene_size_file,
+                    rpkm_directory,
+                    saturation_directory
+                )
+            ],
+            name="rpkm_saturation",
+            samples=self.samples
+        )
         jobs.append(job)
 
-        report_file = os.path.join("report", "RnaSeq.raw_counts_metrics.md")
+        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeq.raw_counts_metrics.md")
         jobs.append(
             Job(
-                [wiggle_archive, saturation_directory + ".zip","metrics/rnaseqRep/corrMatrixSpearman.txt"],
+                [
+                    wiggle_archive,
+                    saturation_directory + ".zip",
+                    f"{self.output_dirs['metrics_directory']}/rnaseqRep/corrMatrixSpearman.txt"
+                ],
                 [report_file],
                 [['raw_counts_metrics', 'module_pandoc']],
                 command="""\
-mkdir -p report && \\
-cp metrics/rnaseqRep/corrMatrixSpearman.txt report/corrMatrixSpearman.tsv && \\
-cp {wiggle_archive} report/ && \\
-cp {saturation_archive} report/ && \\
+mkdir -p {report_dir} && \\
+cp {metrics_dir}/rnaseqRep/corrMatrixSpearman.txt {report_dir}/corrMatrixSpearman.tsv && \\
+cp {wiggle_archive} {report_dir}/ && \\
+cp {saturation_archive} {report_dir}/ && \\
 pandoc --to=markdown \\
   --template {report_template_dir}/{basename_report_file} \\
-  --variable corr_matrix_spearman_table="`head -16 report/corrMatrixSpearman.tsv | cut -f-16| awk -F"\t" '{{OFS="\t"; if (NR==1) {{$0="Vs"$0; print; gsub(/[^\t]/, "-"); print}} else {{printf $1; for (i=2; i<=NF; i++) {{printf "\t"sprintf("%.2f", $i)}}; print ""}}}}' | sed 's/\t/|/g'`" \\
+  --variable corr_matrix_spearman_table="`head -16 {report_dir}/corrMatrixSpearman.tsv | cut -f-16| awk -F"\t" '{{OFS="\t"; if (NR==1) {{$0="Vs"$0; print; gsub(/[^\t]/, "-"); print}} else {{printf $1; for (i=2; i<=NF; i++) {{printf "\t"sprintf("%.2f", $i)}}; print ""}}}}' | sed 's/\t/|/g'`" \\
   {report_template_dir}/{basename_report_file} \\
   > {report_file}""".format(
                     wiggle_archive=wiggle_archive,
                     saturation_archive=saturation_directory + ".zip",
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
+                    metrics_dir=self.output_dirs["metrics_directory"],
+                    report_dir=self.output_dirs["report_directory"],
                     report_file=report_file
                 ),
                 report_files=[report_file],
                 name="raw_count_metrics_report",
-                samples = self.samples
+                samples=self.samples
             )
         )
 
@@ -754,8 +860,8 @@ pandoc --to=markdown \\
         gtf = config.param('stringtie','gtf', param_type='filepath')
 
         for sample in self.samples:
-            input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
-            output_directory = os.path.join("stringtie", sample.name)
+            input_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.hardClip.bam")
+            output_directory = os.path.join(self.output_dirs["stringtie_directory"], sample.name)
 
             job = stringtie.stringtie(input_bam, output_directory, gtf)
             job.name = "stringtie." + sample.name
@@ -769,24 +875,47 @@ pandoc --to=markdown \\
         Merge assemblies into a master teranscriptome reference using [stringtie](https://ccb.jhu.edu/software/stringtie/index.shtml).
         """
 
-        output_directory = os.path.join("stringtie", "AllSamples")
-        sample_file = os.path.join("stringtie", "stringtie-merge.samples.txt")
-        input_gtfs = [os.path.join("stringtie", sample.name, "transcripts.gtf") for sample in self.samples]
+        jobs = []
+
+        output_directory = os.path.join(self.output_dirs["stringtie_directory"], "AllSamples")
+        sample_file = os.path.join(self.output_dirs["stringtie_directory"], "stringtie-merge.samples.txt")
+        input_gtfs = [os.path.join(self.output_dirs["stringtie_directory"], sample.name, "transcripts.gtf") for sample in self.samples]
         gtf = config.param('stringtie','gtf', param_type='filepath')
 
+        if os.path.exists(os.path.join(self.output_dirs["stringtie_directory"], "stringtieAbundDone")) and not self.force_jobs:
+            log.info(f"Stringtie Abund done already... Skipping stringtie_merge step...")
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + output_directory, samples=self.samples),
-            Job(input_gtfs, [sample_file], command="""\
+        else:
+
+            jobs = [
+                concat_jobs(
+                    [
+                        bash.mkdir(output_directory),
+                        Job(
+                            input_gtfs,
+                            [sample_file],
+                            command="""\
 `cat > {sample_file} << END
 {sample_rows}
 END
 
-`""".format(sample_rows="\n".join(input_gtfs), sample_file=sample_file)),
-            stringtie.stringtie_merge(sample_file, output_directory, gtf)],
-            name="stringtie-merge")
+`""".format(
+                                sample_rows="\n".join(input_gtfs),
+                                sample_file=sample_file
+                            )
+                        ),
+                        stringtie.stringtie_merge(
+                            sample_file,
+                            output_directory,
+                            gtf
+                        )
+                    ],
+                    name="stringtie-merge",
+                    samples=self.samples
+                )
+            ]
 
-        return [job]
+        return jobs
 
     def stringtie_abund(self):
         """
@@ -794,16 +923,38 @@ END
         """
         jobs = []
 
-        gtf = os.path.join("stringtie", "AllSamples", "merged.gtf")
+        gtf = os.path.join(self.output_dirs["stringtie_directory"], "AllSamples", "merged.gtf")
 
+        donejob_input_dep = []
         for sample in self.samples:
-            input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
-            output_directory = os.path.join("stringtie", sample.name)
+            input_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.hardClip.bam")
+            output_directory = os.path.join(self.output_dirs["stringtie_directory"], sample.name)
 
-            job = stringtie.stringtie(input_bam, output_directory, gtf, abund=True)
+            job = stringtie.stringtie(
+                input_bam,
+                output_directory,
+                gtf,
+                abund=True
+            )
             job.name = "stringtie_abund." + sample.name
             job.samples = [sample]
+
+            donejob_input_dep.extend(job.output_files)
+
             jobs.append(job)
+
+        done_file = os.path.join(self.output_dirs["stringtie_directory"], "stringtieAbundDone")
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.touch(done_file)
+                ],
+                name="stringtie_abund.donefile",
+                samples=self.samples,
+                input_dependency=donejob_input_dep,
+                output_dependency=[done_file]
+            )
+        )
 
         return jobs
 
@@ -818,10 +969,16 @@ END
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         if self.contrasts:
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
-        output_directory = "ballgown"
-        input_abund = [os.path.join("stringtie", sample.name, "abundance.tab") for sample in self.samples]
+        output_directory = self.output_dirs["ballgown_directory"]
+        input_abund = [os.path.join(self.output_dirs["stringtie_directory"], sample.name, "abundance.tab") for sample in self.samples]
 
-        ballgown_job = ballgown.ballgown(input_abund, design_file, output_directory)
+        ballgown_job = ballgown.ballgown(
+            input_abund,
+            design_file,
+            output_directory,
+            [os.path.join(output_directory, contrast.name, "gene_exp.diff") for contrast in self.contrasts] + 
+            [os.path.join(output_directory, contrast.name, "transcript_exp.diff") for contrast in self.contrasts]
+        )
         ballgown_job.name = "ballgown"
         ballgown_job.samples = self.samples
         jobs.append(ballgown_job)
@@ -839,12 +996,12 @@ END
         gtf = config.param('cufflinks','gtf', param_type='filepath')
 
         for sample in self.samples:
-            input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
-            output_directory = os.path.join("cufflinks", sample.name)
+            input_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.hardClip.bam")
+            output_directory = os.path.join(self.output_dirs["cufflinks_directory"], sample.name)
 
             # De Novo FPKM
             job = cufflinks.cufflinks(input_bam, output_directory, gtf)
-            job.removable_files = ["cufflinks"]
+            job.removable_files = [self.output_dirs["cufflinks_directory"]]
             job.name = "cufflinks."+sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -856,22 +1013,37 @@ END
         Merge assemblies into a master transcriptome reference using [cuffmerge](http://cole-trapnell-lab.github.io/cufflinks/cuffmerge/).
         """
 
-        output_directory = os.path.join("cufflinks", "AllSamples")
-        sample_file = os.path.join("cufflinks", "cuffmerge.samples.txt")
-        input_gtfs = [os.path.join("cufflinks", sample.name, "transcripts.gtf") for sample in self.samples]
+        output_directory = os.path.join(self.output_dirs["cufflinks_directory"], "AllSamples")
+        sample_file = os.path.join(self.output_dirs["cufflinks_directory"], "cuffmerge.samples.txt")
+        input_gtfs = [os.path.join(self.output_dirs["cufflinks_directory"], sample.name, "transcripts.gtf") for sample in self.samples]
         gtf = config.param('cuffmerge','gtf', param_type='filepath')
 
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + output_directory, samples=self.samples),
-            Job(input_gtfs, [sample_file], command="""\
+        job = concat_jobs(
+            [
+                bash.mkdir(output_directory),
+                Job(
+                    input_gtfs,
+                    [sample_file],
+                    command="""\
 `cat > {sample_file} << END
 {sample_rows}
 END
 
-`""".format(sample_rows="\n".join(input_gtfs), sample_file=sample_file)),
-            cufflinks.cuffmerge(sample_file, output_directory, gtf_file=gtf)],
-            name="cuffmerge")
+`""".format(
+                        sample_rows="\n".join(input_gtfs),
+                        sample_file=sample_file
+                    )
+                ),
+                cufflinks.cuffmerge(
+                    sample_file,
+                    output_directory,
+                    gtf_file=gtf
+                )
+            ],
+            name="cuffmerge",
+            samples=self.samples
+        )
 
         return [job]
 
@@ -883,11 +1055,11 @@ END
 
         jobs = []
 
-        gtf = os.path.join("cufflinks", "AllSamples","merged.gtf")
+        gtf = os.path.join(self.output_dirs["cufflinks_directory"], "AllSamples", "merged.gtf")
 
         for sample in self.samples:
-            input_bam = os.path.join("alignment", sample.name, sample.name + ".sorted.mdup.hardClip.bam")
-            output_directory = os.path.join("cufflinks", sample.name)
+            input_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.hardClip.bam")
+            output_directory = os.path.join(self.output_dirs["cufflinks_directory"], sample.name)
 
             #Quantification
             job = cufflinks.cuffquant(input_bam, output_directory, gtf)
@@ -904,8 +1076,8 @@ END
 
         jobs = []
 
-        fpkm_directory = "cufflinks"
-        gtf = os.path.join(fpkm_directory, "AllSamples","merged.gtf")
+        fpkm_directory = self.output_dirs["cufflinks_directory"]
+        gtf = os.path.join(fpkm_directory, "AllSamples", "merged.gtf")
 
 
         # Perform cuffdiff on each design contrast
@@ -914,11 +1086,11 @@ END
                 # Cuffdiff input is a list of lists of replicate bams per control and per treatment
                 [[os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in group] for group in [contrast.controls, contrast.treatments]],
                 gtf,
-                os.path.join("cuffdiff", contrast.name)
+                os.path.join(self.output_dirs["cuffdiff_directory"], contrast.name)
             )
             for group in [contrast.controls, contrast.treatments]:
                 job.samples = [sample for sample in group]
-            job.removable_files = ["cuffdiff"]
+            job.removable_files = [self.output_dirs["cuffdiff_directory"]]
             job.name = "cuffdiff." + contrast.name
             jobs.append(job)
 
@@ -931,18 +1103,18 @@ END
 
         jobs = []
 
-        fpkm_directory = "cufflinks"
-        gtf = os.path.join(fpkm_directory, "AllSamples","merged.gtf")
+        fpkm_directory = self.output_dirs["cufflinks_directory"]
+        gtf = os.path.join(fpkm_directory, "AllSamples", "merged.gtf")
         sample_labels = ",".join([sample.name for sample in self.samples])
 
         # Perform cuffnorm using every samples
         job = cufflinks.cuffnorm(
             [os.path.join(fpkm_directory, sample.name, "abundances.cxb") for sample in self.samples],
             gtf,
-            "cuffnorm",
+            self.output_dirs["cuffnorm_directory"],
             sample_labels
         )
-        job.removable_files = ["cuffnorm"]
+        job.removable_files = [self.output_dirs["cuffnorm_directory"]]
         job.name = "cuffnorm"
         job.samples = self.samples
         jobs.append(job)
@@ -953,26 +1125,31 @@ END
         """
         Compute the pearson corrleation matrix of gene and transcripts FPKM. FPKM data are those estimated by cuffnorm.
         """
-        output_directory = "metrics"
+        output_directory = self.output_dirs["metrics_directory"]
         output_transcript = os.path.join(output_directory,"transcripts_fpkm_correlation_matrix.tsv")
-        cuffnorm_transcript = os.path.join("cuffnorm","isoforms.fpkm_table")
+        cuffnorm_transcript = os.path.join(self.output_dirs["cuffnorm_directory"], "isoforms.fpkm_table")
         output_gene = os.path.join(output_directory,"gene_fpkm_correlation_matrix.tsv")
-        cuffnorm_gene = os.path.join("cuffnorm","genes.fpkm_table")
+        cuffnorm_gene = os.path.join(self.output_dirs["cuffnorm_directory"], "genes.fpkm_table")
 
         jobs = []
 
-        job = concat_jobs([
-            Job(command="mkdir -p " + output_directory),
-            utils.utils.fpkm_correlation_matrix(cuffnorm_transcript, output_transcript)
-        ])
-        job.name="fpkm_correlation_matrix_transcript"
-        job.samples = self.samples
-        jobs = jobs + [job]
+        job = concat_jobs(
+            [
+                bash.mkdir(output_directory),
+                utils.utils.fpkm_correlation_matrix(cuffnorm_transcript, output_transcript)
+            ],
+            name="fpkm_correlation_matrix_transcript",
+            samples=self.samples
+        )
+        jobs.append(job)
 
-        job = utils.utils.fpkm_correlation_matrix(cuffnorm_gene, output_gene)
+        job = utils.utils.fpkm_correlation_matrix(
+            cuffnorm_gene,
+            output_gene
+        )
         job.name="fpkm_correlation_matrix_gene"
         job.samples = self.samples
-        jobs = jobs + [job]
+        jobs.append(job)
 
         return jobs
 
@@ -986,48 +1163,56 @@ END
         # gqSeqUtils function call
         sample_fpkm_readcounts = [[
             sample.name,
-            os.path.join("cufflinks", sample.name, "isoforms.fpkm_tracking"),
-            os.path.join("raw_counts", sample.name + ".readcounts.csv")
+            os.path.join(self.output_dirs["cufflinks_directory"], sample.name, "isoforms.fpkm_tracking"),
+            os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.csv")
         ] for sample in self.samples]
-        jobs.append(concat_jobs([
-            Job(command="mkdir -p exploratory", samples=self.samples),
-            gq_seq_utils.exploratory_analysis_rnaseq(
-                os.path.join("DGE", "rawCountMatrix.csv"),
-                "cuffnorm",
-                config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', param_type='filepath'),
-                "exploratory"
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(self.output_dirs['exploratory_directory']),
+                    gq_seq_utils.exploratory_analysis_rnaseq(
+                        os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.csv"),
+                        self.output_dirs["cuffnorm_directory"],
+                        config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', param_type='filepath'),
+                        self.output_dirs["exploratory_directory"]
+                    )
+                ],
+                name="gq_seq_utils_exploratory_analysis_rnaseq",
+                samples=self.samples
             )
-        ], name="gq_seq_utils_exploratory_analysis_rnaseq"))
+        )
 
         # Render Rmarkdown Report
         jobs.append(
             rmarkdown.render(
-                job_input            = os.path.join("exploratory", "index.tsv"),
+                job_input            = os.path.join(self.output_dirs["exploratory_directory"], "index.tsv"),
                 job_name             = "gq_seq_utils_exploratory_analysis_rnaseq_report",
                 input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeq.gq_seq_utils_exploratory_analysis_rnaseq.Rmd"),
                 samples              = self.samples,
-                render_output_dir    = 'report',
+                render_output_dir    = self.output_dirs['report_directory'],
                 module_section       = 'report', # TODO: this or exploratory?
-                prerun_r             = 'report_dir="report";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
+                prerun_r             = f'report_dir="{self.output_dirs["report_directory"]}";' # TODO: really necessary or should be hard-coded in exploratory.Rmd?
             )
         )
 
-
-
-        report_file = os.path.join("report", "RnaSeq.cuffnorm.md")
+        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeq.cuffnorm.md")
         jobs.append(
             Job(
-                [os.path.join("cufflinks", "AllSamples","merged.gtf")],
+                [os.path.join(self.output_dirs["cufflinks_directory"], "AllSamples", "merged.gtf")],
                 [report_file],
                 command="""\
-mkdir -p report && \\
-zip -r report/cuffAnalysis.zip cufflinks/ cuffdiff/ cuffnorm/ && \\
+mkdir -p {report_dir} && \\
+zip -r {report_dir}/cuffAnalysis.zip {cufflinks_dir}/ {cuffdiff_dir}/ {cuffnorm_dir}/ && \\
 cp \\
   {report_template_dir}/{basename_report_file} \\
   {report_file}""".format(
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
-                    report_file=report_file
+                    cufflinks_dir=self.output_dirs["cufflinks_directory"],
+                    cuffdiff_dir=self.output_dirs["cuffdiff_directory"],
+                    cuffnorm_dir=self.output_dirs["cuffnorm_directory"],
+                    report_dir=self.output_dirs["report_directory"],
+                    report_file=report_file,
                 ),
                 report_files=[report_file],
                 name="cuffnorm_report",
@@ -1036,7 +1221,6 @@ cp \\
         )
 
         return jobs
-
 
     def differential_expression(self):
         """
@@ -1047,22 +1231,57 @@ cp \\
         # If --design <design_file> option is missing, self.contrasts call will raise an Exception
         if self.contrasts:
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
-        output_directory = "DGE"
+
+        output_directory = self.output_dirs["DGE_directory"]
         count_matrix = os.path.join(output_directory, "rawCountMatrix.csv")
 
-        edger_job = differential_expression.edger(design_file, count_matrix, output_directory)
-        edger_job.output_files = [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
-        edger_job.samples = self.samples
+        edger_job = differential_expression.edger(
+            design_file,
+            count_matrix,
+            output_directory,
+            [os.path.join(output_directory, contrast.name, "edger_results.csv") for contrast in self.contrasts]
+        )
 
-        deseq_job = differential_expression.deseq2(design_file, count_matrix, output_directory)
-        deseq_job.output_files = [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
-        deseq_job.samples = self.samples
+        deseq_job = differential_expression.deseq2(
+            design_file,
+            count_matrix,
+            output_directory,
+            [os.path.join(output_directory, contrast.name, "dge_results.csv") for contrast in self.contrasts]
+        )
 
-        return [concat_jobs([
-            Job(command="mkdir -p " + output_directory),
-            edger_job,
-            deseq_job
-        ], name="differential_expression")]
+        if self.args.batch:
+            # If provided a batch file, compute DGE with batch effect correction
+            batch_file = os.path.relpath(self.args.batch.name, self.output_dir)
+
+            # edger_job_batch_corrected = differential_expression.edger(
+            #     design_file,
+            #     count_matrix,
+            #     batch_file,
+            #     [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "edger_results.csv") for contrast in self.contrasts]
+            #     f"{output_directory}_batch_corrected"
+            # )
+
+            deseq_job_batch_corrected = differential_expression.deseq2(
+                design_file,
+                count_matrix,
+                f"{output_directory}_batch_corrected",
+                [os.path.join(f"{output_directory}_batch_corrected", contrast.name, "deseq2_results.csv") for contrast in self.contrasts],
+                batch_file
+            )
+
+        return [
+            concat_jobs(
+                [
+                    bash.mkdir(output_directory),
+                    bash.mkdir(f"{output_directory}_batch_corrected") if self.args.batch else None,
+                    edger_job,
+                    deseq_job,
+                    deseq_job_batch_corrected if self.args.batch else None
+                ],
+                name="differential_expression",
+                samples=self.samples
+            )
+        ]
 
     def differential_expression_goseq(self):
         """
@@ -1075,9 +1294,9 @@ cp \\
         for contrast in self.contrasts:
             # goseq for differential gene expression results
             job = differential_expression.goseq(
-                os.path.join("DGE", contrast.name, "dge_results.csv"),
+                os.path.join(self.output_dirs["DGE_directory"], contrast.name, "dge_results.csv"),
                 config.param("differential_expression_goseq", "dge_input_columns"),
-                os.path.join("DGE", contrast.name, "gene_ontology_results.csv")
+                os.path.join(self.output_dirs["DGE_directory"], contrast.name, "gene_ontology_results.csv")
             )
             job.name = "differential_expression_goseq.dge." + contrast.name
             for group in contrast.controls, contrast.treatments:
@@ -1086,46 +1305,46 @@ cp \\
 
 
 ###################
-        report_file = os.path.join("report", "RnaSeq.differential_expression.md")
+        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeq.differential_expression.md")
         jobs.append(
             Job(
-                [os.path.join("DGE", "rawCountMatrix.csv")] +
-                [os.path.join("DGE", contrast.name, "dge_results.csv") for contrast in self.contrasts] +
-                [os.path.join("cuffdiff", contrast.name, "isoforms.fpkm_tracking") for contrast in self.contrasts] +
-                [os.path.join("cuffdiff", contrast.name, "isoform_exp.diff") for contrast in self.contrasts] +
-                [os.path.join("DGE", contrast.name, "gene_ontology_results.csv") for contrast in self.contrasts],
+                [os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.csv")] +
+                [os.path.join(self.output_dirs["DGE_directory"], contrast.name, "dge_results.csv") for contrast in self.contrasts] +
+                [os.path.join(self.output_dirs["cuffdiff_directory"], contrast.name, "isoforms.fpkm_tracking") for contrast in self.contrasts] +
+                [os.path.join(self.output_dirs["cuffdiff_directory"], contrast.name, "isoform_exp.diff") for contrast in self.contrasts] +
+                [os.path.join(self.output_dirs["DGE_directory"], contrast.name, "gene_ontology_results.csv") for contrast in self.contrasts],
                 [report_file],
                 [['rnaseqc', 'module_python'], ['rnaseqc', 'module_pandoc']],
                 # Ugly awk to format differential expression results into markdown for genes, transcripts and GO if any; knitr may do this better
                 # Ugly awk and python to merge cuffdiff fpkm and isoforms into transcript expression results
                 command="""\
 set -eu -o pipefail && \\
-mkdir -p report && \\
-cp {design_file} report/design.tsv && \\
-cp DGE/rawCountMatrix.csv report/ && \\
+mkdir -p {report_dir} && \\
+cp {design_file} {report_dir}/design.tsv && \\
+cp DGE/rawCountMatrix.csv {report_dir}/ && \\
 pandoc \\
   {report_template_dir}/{basename_report_file} \\
   --template {report_template_dir}/{basename_report_file} \\
-  --variable design_table="`head -7 report/design.tsv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
-  --variable raw_count_matrix_table="`head -7 report/rawCountMatrix.csv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
+  --variable design_table="`head -7 {report_dir}/design.tsv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
+  --variable raw_count_matrix_table="`head -7 {report_dir}/rawCountMatrix.csv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
   --variable adj_pvalue_threshold={adj_pvalue_threshold} \\
   --to markdown \\
   > {report_file} && \\
 for contrast in {contrasts}
 do
-  mkdir -p report/DiffExp/$contrast/
+  mkdir -p {report_dir}/DiffExp/$contrast/
   echo -e "\\n#### $contrast Results\\n" >> {report_file}
-  cp DGE/$contrast/dge_results.csv report/DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv
+  cp DGE/$contrast/dge_results.csv {report_dir}/DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv
   echo -e "\\nTable: Differential Gene Expression Results (**partial table**; [download full table](DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv))\\n" >> {report_file}
-  head -7 report/DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
-  sed '1s/^tracking_id/test_id/' cuffdiff/$contrast/isoforms.fpkm_tracking | awk -F"\t" 'FNR==NR{{line[$1]=$0; next}}{{OFS="\t"; print line[$1], $0}}' - cuffdiff/$contrast/isoform_exp.diff | python -c 'import csv,sys; rows_in = csv.DictReader(sys.stdin, delimiter="\t"); rows_out = csv.DictWriter(sys.stdout, fieldnames=["test_id", "gene_id", "tss_id","nearest_ref_id","class_code","gene","locus","length","log2(fold_change)","test_stat","p_value","q_value"], delimiter="\t", extrasaction="ignore"); rows_out.writeheader(); rows_out.writerows(rows_in)' > report/DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv
+  head -7 {report_dir}/DiffExp/$contrast/${{contrast}}_Genes_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
+  sed '1s/^tracking_id/test_id/' {cuffdiff_dir}/$contrast/isoforms.fpkm_tracking | awk -F"\t" 'FNR==NR{{line[$1]=$0; next}}{{OFS="\t"; print line[$1], $0}}' - {cuffdiff_dir}/$contrast/isoform_exp.diff | python -c 'import csv,sys; rows_in = csv.DictReader(sys.stdin, delimiter="\t"); rows_out = csv.DictWriter(sys.stdout, fieldnames=["test_id", "gene_id", "tss_id","nearest_ref_id","class_code","gene","locus","length","log2(fold_change)","test_stat","p_value","q_value"], delimiter="\t", extrasaction="ignore"); rows_out.writeheader(); rows_out.writerows(rows_in)' > {report_dir}/DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv
   echo -e "\\n---\\n\\nTable: Differential Transcript Expression Results (**partial table**; [download full table](DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv))\\n" >> {report_file}
-  head -7 report/DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
+  head -7 {report_dir}/DiffExp/$contrast/${{contrast}}_Transcripts_DE_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
   if [ `wc -l DGE/$contrast/gene_ontology_results.csv | cut -f1 -d\ ` -gt 1 ]
   then
-    cp DGE/$contrast/gene_ontology_results.csv report/DiffExp/$contrast/${{contrast}}_Genes_GO_results.tsv
+    cp DGE/$contrast/gene_ontology_results.csv {report_dir}/DiffExp/$contrast/${{contrast}}_Genes_GO_results.tsv
     echo -e "\\n---\\n\\nTable: GO Results of the Differentially Expressed Genes (**partial table**; [download full table](DiffExp/${{contrast}}/${{contrast}}_Genes_GO_results.tsv))\\n" >> {report_file}
-    head -7 report/DiffExp/${{contrast}}/${{contrast}}_Genes_GO_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
+    head -7 {report_dir}/DiffExp/${{contrast}}/${{contrast}}_Genes_GO_results.tsv | cut -f-8 | sed '2i ---\t---\t---\t---\t---\t---\t---\t---' | sed 's/\t/|/g' >> {report_file}
   else
     echo -e "\\nNo FDR adjusted GO enrichment was significant (p-value too high) based on the differentially expressed gene results for this design.\\n" >> {report_file}
   fi
@@ -1134,6 +1353,8 @@ done""".format(
                     report_template_dir=self.report_template_dir,
                     basename_report_file=os.path.basename(report_file),
                     adj_pvalue_threshold=config.param('differential_expression_goseq','other_options').split(" ")[1],
+                    cuffdiff_dir=self.output_dirs["cuffdiff_directory"],
+                    report_dir=self.output_dirs["report_directory"],
                     report_file=report_file,
                     contrasts=" ".join([contrast.name for contrast in self.contrasts])
                 ),
@@ -1150,66 +1371,78 @@ done""".format(
         """
 
         genome = config.param('ihec_metrics', 'assembly')
-
-        return [metrics.ihec_metrics_rnaseq(genome)]
-
+        return [
+            metrics.ihec_metrics_rnaseq(
+                [
+                    os.path.join(self.output_dirs['metrics_directory'], "rnaseqRep", "metrics.tsv"),
+                    os.path.join(self.output_dirs["report_directory"], "trimAlignmentTable.tsv")
+                ] + [
+                    os.path.join(self.output_dirs["metrics_directory"], readset.sample.name, readset.name, readset.name+"rRNA.stats.tsv")
+                    for readset in self.readsets
+                ],
+                [os.path.join(self.output_dirs['report_directory'], "IHEC_metrics_rnaseq_All.txt")],
+                genome
+            )
+        ]
 
     @property
     def steps(self):
         return [
-            [self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.star,
-            self.picard_merge_sam_files,
-            self.picard_sort_sam,
-            self.picard_mark_duplicates,
-            self.picard_rna_metrics,
-            self.estimate_ribosomal_rna,
-            self.bam_hard_clip,
-            self.rnaseqc,
-            self.wiggle,
-            self.raw_counts,
-            self.raw_counts_metrics,
-            self.stringtie,
-            self.stringtie_merge,
-            self.stringtie_abund,
-            self.ballgown,
-            self.differential_expression,
-            self.cram_output
+            [
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.star,
+                self.picard_merge_sam_files,
+                self.picard_sort_sam,
+                self.picard_mark_duplicates,
+                self.picard_rna_metrics,
+                self.estimate_ribosomal_rna,
+                self.bam_hard_clip,
+                self.rnaseqc,
+                self.wiggle,
+                self.raw_counts,
+                self.raw_counts_metrics,
+                self.stringtie,
+                self.stringtie_merge,
+                self.stringtie_abund,
+                self.ballgown,
+                self.differential_expression,
+                self.cram_output
             ],
-            [self.picard_sam_to_fastq,
-            self.trimmomatic,
-            self.merge_trimmomatic_stats,
-            self.star,
-            self.picard_merge_sam_files,
-            self.picard_sort_sam,
-            self.picard_mark_duplicates,
-            self.picard_rna_metrics,
-            self.estimate_ribosomal_rna,
-            self.bam_hard_clip,
-            self.rnaseqc,
-            self.wiggle,
-            self.raw_counts,
-            self.raw_counts_metrics,
-            self.cufflinks,
-            self.cuffmerge,
-            self.cuffquant,
-            self.cuffdiff,
-            self.cuffnorm,
-            self.fpkm_correlation_matrix,
-            self.gq_seq_utils_exploratory_analysis_rnaseq,
-            self.differential_expression,
-            self.differential_expression_goseq,
-            self.ihec_metrics,
-            self.cram_output
+            [
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.star,
+                self.picard_merge_sam_files,
+                self.picard_sort_sam,
+                self.picard_mark_duplicates,
+                self.picard_rna_metrics,
+                self.estimate_ribosomal_rna,
+                self.bam_hard_clip,
+                self.rnaseqc,
+                self.wiggle,
+                self.raw_counts,
+                self.raw_counts_metrics,
+                self.cufflinks,
+                self.cuffmerge,
+                self.cuffquant,
+                self.cuffdiff,
+                self.cuffnorm,
+                self.fpkm_correlation_matrix,
+                self.gq_seq_utils_exploratory_analysis_rnaseq,
+                self.differential_expression,
+                self.differential_expression_goseq,
+                self.ihec_metrics,
+                self.cram_output
             ]
         ]
 class RnaSeq(RnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="RNAseq analysis type", choices=["stringtie","cufflinks"], default="stringtie")
+        self.argparser.add_argument("-t", "--type", help="RNAseq analysis type", choices=["stringtie", "cufflinks"], default="stringtie")
         super(RnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
@@ -1217,4 +1450,4 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        RnaSeq(protocol=['stringtie','cufflinks'])
+        RnaSeq(protocol=['stringtie', 'cufflinks'])

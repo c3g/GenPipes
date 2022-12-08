@@ -14,9 +14,9 @@ usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                  [--container {wrapper, singularity} <IMAGE PATH>]
                  [--genpipes_file GENPIPES_FILE] [-t {stringtie,cufflinks}]
-                 [-d DESIGN] [-r READSETS] [-v]
+                 [-d DESIGN] [-b BATCH] [-r READSETS] [-v]
 
-Version: 4.3.1
+Version: 4.3.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -67,6 +67,8 @@ optional arguments:
                         RNAseq analysis type
   -d DESIGN, --design DESIGN
                         design file
+  -b BATCH, --batch BATCH
+                        batch file (to peform batch effect correction
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit

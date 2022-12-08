@@ -83,6 +83,16 @@ class Nanopore(common.MUGQICPipeline):
         super(Nanopore, self).__init__(protocol)
 
     @property
+    def output_dirs(self):
+        dirs = {
+            'blastqc_directory': os.path.relpath(os.path.join(self.output_dir, 'blastQC'), self.output_dir),
+            'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'pycoqc_directory': os.path.relpath(os.path.join(self.output_dir, 'pycoQC'), self.output_dir),
+            'svim_directory': os.path.relpath(os.path.join(self.output_dir, 'svim'), self.output_dir)
+        }
+        return dirs
+
+    @property
     def readsets(self):
         if not hasattr(self, "_readsets"):
             if self.args.readsets:
@@ -116,14 +126,18 @@ class Nanopore(common.MUGQICPipeline):
 
         for readset in self.readsets:
 
-            blast_directory = os.path.join("blastQC", readset.name)
+            blast_directory = os.path.join(self.output_dirs["blastqc_directory"], readset.name)
 
             if readset.fastq_files:
                 reads_fastq_dir = readset.fastq_files
             else:
                 _raise(SanitycheckError("Error: FASTQ file not available for readset \"" + readset.name + "\"!"))
 
-            job = tools.sh_blastQC_ONT(blast_directory, reads_fastq_dir, readset.name)
+            job = tools.sh_blastQC_ONT(
+                blast_directory,
+                reads_fastq_dir,
+                readset.name
+            )
             job.samples = [readset.sample]
             jobs.append(job)
 
@@ -138,7 +152,7 @@ class Nanopore(common.MUGQICPipeline):
 
         for readset in self.readsets:
 
-            alignment_directory = os.path.join("alignment", readset.sample.name, readset.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name)
             out_bam = os.path.join(alignment_directory, readset.name + ".sorted.bam")
             out_bai = re.sub("\.bam$", ".bam.bai", out_bam)
 
@@ -182,7 +196,8 @@ class Nanopore(common.MUGQICPipeline):
                     )
                 ],
                 name="minimap2_align." + readset.name,
-                samples=[readset.sample]
+                samples=[readset.sample],
+                input_dependency=[reads_fastq_dir]
             )
             jobs.append(job)
 
@@ -197,14 +212,14 @@ class Nanopore(common.MUGQICPipeline):
 
         for readset in self.readsets:
 
-            pycoqc_directory = os.path.join("pycoQC", readset.name)
+            pycoqc_directory = os.path.join(self.output_dirs["pycoqc_directory"], readset.name)
 
             if readset.summary_file:
                 in_summary = readset.summary_file
             else:
                 _raise(SanitycheckError("Error: summary file not available for readset \"" + readset.name + "\"!"))
 
-            align_directory = os.path.join("alignment", readset.sample.name, readset.name)
+            align_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name)
             in_bam = os.path.join(align_directory, readset.name + ".sorted.bam")
 
             jobs.append(
@@ -237,7 +252,7 @@ class Nanopore(common.MUGQICPipeline):
 
         for sample in self.samples:
 
-            alignment_directory = os.path.join("alignment", sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
 
             # Find input readset BAMs first from previous minimap2_align job,
             readset_bams = self.select_input_files([
@@ -259,12 +274,14 @@ class Nanopore(common.MUGQICPipeline):
                     [
                         mkdir_job,
                         bash.ln(
-                            readset_bam,
-                            sample_bam
+                            os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
+                            sample_bam,
+                            input=readset_bam
                         ),
                         bash.ln(
-                            readset_index,
-                            sample_index
+                            os.path.relpath(readset_index, os.path.dirname(sample_index)),
+                            sample_index,
+                            input=readset_index
                         )
                     ],
                     name="symlink_readset_sample_bam." + sample.name,
@@ -295,10 +312,10 @@ class Nanopore(common.MUGQICPipeline):
 
         for sample in self.samples:
 
-            align_directory = os.path.join("alignment", sample.name)
+            align_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             in_bam = os.path.join(align_directory, sample.name + ".sorted.bam")
 
-            svim_directory = os.path.join("svim", sample.name)
+            svim_directory = os.path.join(self.output_dirs["svim_directory"], sample.name)
 
             job = svim.svim_ont(in_bam, svim_directory)
             job.name = "svim." + sample.name

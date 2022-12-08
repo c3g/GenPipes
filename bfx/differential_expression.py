@@ -45,23 +45,26 @@ Rscript $R_TOOLS/deseq.R \\
   -c {count_matrix} \\
   -o {output_dir} \\
   {localfit}""".format(
-        design_file=design_file,
-        count_matrix=count_matrix,
-        output_dir=output_dir,
-        localfit=localfit
-    ))
+            design_file=design_file,
+            count_matrix=count_matrix,
+            output_dir=output_dir,
+            localfit=localfit
+        )
+    )
 
 def deseq2(
     design_file,
     count_matrix,
-    output_dir
+    output_dir,
+    outputs,
+    batch_file=None
     ):
 
     localfit = "-l" if config.param('differential_expression_deseq', 'localfit') else ""
 
     return  Job(
         [count_matrix],
-        [os.path.join(output_dir, "deseq_results.csv"), os.path.join(output_dir, "dge_results.csv")],
+        outputs,
         [
             ['differential_expression_deseq', 'module_mugqic_tools'],
             ['differential_expression_deseq', 'module_R']
@@ -70,23 +73,27 @@ def deseq2(
 Rscript $R_TOOLS/deseq2.R \\
   -d {design_file} \\
   -c {count_matrix} \\
+  {batch_file} \\
   -o {output_dir} \\
   {localfit}""".format(
-        design_file=design_file,
-        count_matrix=count_matrix,
-        output_dir=output_dir,
-        localfit=localfit
-    ))
+            design_file=design_file,
+            count_matrix=count_matrix,
+            batch_file=f"-b {batch_file}" if batch_file else "",
+            output_dir=output_dir,
+            localfit=localfit
+        )
+    )
 
 def edger(
     design_file,
     count_matrix,
-    output_dir
+    output_dir,
+    outputs
     ):
 
     return  Job(
         [count_matrix],
-        [os.path.join(output_dir, "edger_results.csv")],
+        outputs,
         [
             ['differential_expression_edger', 'module_mugqic_tools'],
             ['differential_expression_edger', 'module_R']
@@ -96,10 +103,11 @@ Rscript $R_TOOLS/edger.R \\
   -d {design_file} \\
   -c {count_matrix} \\
   -o {output_dir}""".format(
-        design_file=design_file,
-        count_matrix=count_matrix,
-        output_dir=output_dir
-    ))
+            design_file=design_file,
+            count_matrix=count_matrix,
+            output_dir=output_dir
+        )
+    )
 
 def goseq(
     input_file,
@@ -123,13 +131,14 @@ Rscript $R_TOOLS/goseq.R {other_options} \\
   -d {input_file} \\
   -c {input_columns} \\
   -o {output_file}""".format(
-        other_options=config.param('differential_expression_goseq','other_options'),
-        gene_size_file=gene_size_file if gene_size_file else config.param('differential_expression_goseq', 'gene_size', param_type='filepath'),
-        gene_ontology_file=gene_ontology_file if gene_ontology_file else config.param('differential_expression_goseq', 'gene_ontology', param_type='filepath'),
-        input_file=input_file,
-        input_columns=input_columns,
-        output_file=output_file
-    ))
+            other_options=config.param('differential_expression_goseq','other_options'),
+            gene_size_file=gene_size_file if gene_size_file else config.param('differential_expression_goseq', 'gene_size', param_type='filepath'),
+            gene_ontology_file=gene_ontology_file if gene_ontology_file else config.param('differential_expression_goseq', 'gene_ontology', param_type='filepath'),
+            input_file=input_file,
+            input_columns=input_columns,
+            output_file=output_file
+        )
+    )
 
 def sleuth(
     design_file,
@@ -150,7 +159,8 @@ Rscript $R_TOOLS/sleuth.R \\
   -d {design_file} \\
   -t {tx2gene_file} \\
   -o {output_dir}""".format(
-          design_file=design_file,
-          tx2gene_file=tx2gene_file,
-          output_dir=output_dir
-    ))
+            design_file=design_file,
+            tx2gene_file=tx2gene_file,
+            output_dir=output_dir
+        )
+    )

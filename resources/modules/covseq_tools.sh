@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=CoVSeQ_tools
-VERSION=1.2.0
+VERSION=1.2.1
 ARCHIVE=${SOFTWARE,,}-$VERSION.tar.gz
 ARCHIVE_URL=https://bitbucket.org/mugqic/${SOFTWARE}/downloads/$ARCHIVE
 SOFTWARE_DIR=${SOFTWARE,,}-$VERSION

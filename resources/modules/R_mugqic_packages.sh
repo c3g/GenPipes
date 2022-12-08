@@ -5,16 +5,16 @@ me=`basename $0`
 
 ## Repo infos
 REPO="rpackages" # in case the name of the repo changes
-PCKGS="gqData gqUtils gqMicroarrays gqSeqUtils" # determines the order of installation (dependencies)
+PCKGS="gqUtils gqSeqUtils" # determines the order of installation (dependencies)
 SOFTWARE="mugqic_R_packages" # in case we don't like the name
 
 ## Default arg values
 #REF="master"
-REF=1.0.6
+REF=1.0.7
 INSTALL_PREFIX_ENV_VARNAME=""
-MODULEFILE_DIR="$MUGQIC_INSTALL_HOME_DEV/modulefiles/mugqic_dev"
-INSTALL_DIR="$MUGQIC_INSTALL_HOME_DEV/software"
-R_MODULE="mugqic_dev/R_Bioconductor"
+MODULEFILE_DIR="$MUGQIC_INSTALL_HOME/modulefiles/mugqic"
+INSTALL_DIR="$MUGQIC_INSTALL_HOME/software"
+R_MODULE="mugqic/R_Bioconductor"
 
 ## Parse arguments
 usage()

@@ -3,15 +3,15 @@
 set -eu -o pipefail
 
 SOFTWARE=gemBS 
-VERSION=3.2.13
+VERSION=3.5.1_IHEC
 ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/heathsc/${SOFTWARE}/archive/v3.2.0.tar.gz
+ARCHIVE_URL=https://github.com/heathsc/${SOFTWARE}/archive/v${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
-PYTHON_MODULE=mugqic/python/3.6.5
+PYTHON_MODULE=mugqic/python/3.10.4
 
 build() {
   cd $INSTALL_DOWNLOAD
-  git clone --recursive https://github.com/heathsc/gemBS.git
+  git clone --recursive https://github.com/heathsc/gemBS.git -b v${VERSION}
   mv $SOFTWARE $SOFTWARE_DIR
   cd $SOFTWARE_DIR
 

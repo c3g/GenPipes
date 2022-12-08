@@ -25,26 +25,39 @@ from core.config import *
 from core.job import *
 
 
-def report(input, output_dir, tumor_id):
+def report(
+    input,
+    output_dir,
+    tumor_id
+    ):
+
     assembly = config.param('report_cpsr', 'assembly')
     output = [
         os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".json.gz"),
         os.path.join(output_dir, tumor_id + ".cpsr." + assembly + ".html")
     ]
-    
+
+    if config.param('report_cpsr', 'module_pcgr').split("/")[2] >= "1":
+        call = 'cpsr'
+        module = 'module_pcgr'
+    else:
+        call = 'cpsr.py'
+        module = 'module_cpsr'
+
     return Job(
         [input],
         output,
         [
-            ['report_cpsr', 'module_cpsr'],
+            ['report_cpsr', module],
         ],
         command="""\
-cpsr.py {options} \\
+{call} {options} \\
     --input_vcf {input} \\
     --pcgr_dir $PCGR_DATA \\
     --output_dir {output_dir} \\
     --genome_assembly {assembly} \\
     --sample_id {tumor_id}""".format(
+            call=call,
             options=config.param('report_cpsr', 'options'),
             input=input,
             output_dir=output_dir,

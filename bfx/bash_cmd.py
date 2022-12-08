@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2015 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -39,31 +39,35 @@ touch {directory}""".format(
         removable_files=[folder] if remove else []
     )
 
-def chgdir(folder):
+def chdir(folder):
     return Job(
         [],
         [folder],
         command="""\
 cd {directory}""".format(
             directory=folder
-        ),
+        )
     )
 
 def ln(
     target_file,
     link,
-    out_dir=None
+    input=None,
+    output=None
     ):
     
+    inputs = [input] if input else [target_file]
+    outputs = [output] if output else [link]
+
     return Job(
-        [target_file],
-        [link],
+        inputs,
+        outputs,
         command="""\
 ln -s -f \\
   {target_file} \\
   {link}""".format(
-            target_file=os.path.join(out_dir, target_file) if out_dir else target_file,
-            link=os.path.join(out_dir, link) if out_dir else link
+            target_file=target_file,
+            link=link
         ),
         removable_files=[link]
     )
@@ -71,18 +75,23 @@ ln -s -f \\
 def mv(
     source,
     target,
-    force=False
+    force=False,
+    extra=None
     ):
-
+    if isinstance(source, list):
+        inputs = source
+    else: 
+        inputs = [source]
     return Job(
-        [source],
+        inputs,
         [target],
         command="""\
 mv {force}{source} \\
-   {dest}""".format(
+   {dest}{extra}""".format(
             force="-f " if force else "",
             source=source,
-            dest=target
+            dest=f"-t {target}" if os.path.isdir(target) else target,
+            extra=extra if extra else ""
         )
     )
 
@@ -233,17 +242,47 @@ awk {instructions} {input}{append}{output}""".format(
         )
     )
 
-def gzip(
+def sed(
     input,
     output,
+    instructions
     ):
 
     return Job(
         [input],
         [output],
         command="""\
-gzip {input}{output}""".format(
+sed {instructions} {input} {output}""".format(
+            instructions=instructions,
+            input=input if input else "",
+            output="> " + output if output else "",
+        )
+    )
+
+def gzip(
+    input,
+    output,
+    options=None
+    ):
+
+    return Job(
+        [input],
+        [output],
+        command="""\
+gzip {options}{input}{output}""".format(
+            options=options if options else "",
             input=input if input else "",
             output=" > " + output if output else "",
         )
     )
+
+def chmod(file, permission):
+    return Job(
+        [],
+        [file],
+        command="""\
+chmod {permission} {file}""".format(
+    permission=permission,
+    file=file
+    ),
+)
