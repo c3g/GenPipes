@@ -1096,7 +1096,7 @@ def collect_sequencing_artifacts_metrics(
     reference_sequence=None
     ):
 
-    output_dep = output + ".bait_bias_summary_metrics"
+    output_dep = output + ".bait_bias_summary_metrics.txt"
     
     if config.param('picard_collect_sequencing_artifacts_metrics', 'module_gatk').split("/")[2] < "4":
         return picard2.collect_sequencing_artifacts_metrics(

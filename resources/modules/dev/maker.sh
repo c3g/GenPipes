@@ -9,7 +9,7 @@
 
 MODULES="mugqic/blast/2.3.0+ mugqic/exonerate/2.2.0  postgresql/9.5.0 bioinformatics/RepeatMasker/4-0-6 mugqic_dev/augustus/2.7 gcc/4.7.0 openmpi_gcc64/1.6.4" # mugqic/perl/5.18.2  
 module load  $MODULES
-export PATH="$PATH:/cvmfs/soft.mugqic/CentOS6/software/snap/snap-2013-11-29/"
+export PATH="$PATH:/cvmfs/soft.mugqic/root/software/snap/snap-2013-11-29/"
 ld_preload_path="/opt/mpi/gcc/openmpi-1.6.4/lib64/libmpi.so"
 export LD_PRELOAD="$ld_preload_path"
 

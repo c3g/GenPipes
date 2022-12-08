@@ -1,0 +1,20 @@
+#!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
+
+SPECIES=Homo_sapiens
+COMMON_NAME="Human"
+ASSEMBLY=T2T-CHM13v2.0
+ASSEMBLY_SYNONYMS=
+SOURCE=NCBI
+VERSION=2022-01-24
+ACCESSION_ID=GCF_009914755.1
+URL_PREFIX=https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/009/914/755/${ACCESSION_ID}_${ASSEMBLY}/${ACCESSION_ID}_${ASSEMBLY}
+
+GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
+
+install_genome "$SPECIES" "$COMMON_NAME" "$ASSEMBLY" "$ASSEMBLY_SYNONYMS" "$SOURCE" "$VERSION"
+
+################################################################################
+# Write below all commands to install additional data files specific to this genome assembly

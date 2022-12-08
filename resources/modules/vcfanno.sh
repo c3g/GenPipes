@@ -3,9 +3,9 @@
 set -eu -o pipefail
 
 SOFTWARE=vcfanno
-VERSION=0.2.9
+VERSION=0.3.3
 ARCHIVE=${SOFTWARE}-${VERSION}_linux64	# the archive is actually the binary file
-ARCHIVE_URL=https://github.com/brentp/vcfanno/releases/download/v0.2.9/vcfanno_linux64
+ARCHIVE_URL=https://github.com/brentp/vcfanno/releases/download/v${VERSION}/vcfanno_linux64
 SOFTWARE_DIR=${SOFTWARE}-$VERSION
 
 build() {

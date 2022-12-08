@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=amber
-VERSION=3.5
+VERSION=3.9
 ARCHIVE=${SOFTWARE}-${VERSION}.jar
 ARCHIVE_URL=https://github.com/hartwigmedical/hmftools/releases/download/${SOFTWARE}-v${VERSION}/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION

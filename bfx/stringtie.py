@@ -40,8 +40,10 @@ def stringtie(input_bam, output_directory, gtf=None, abund=False):
 
     ## Define output files depending on whether or not abundances will be calculated
     if abund: 
-        out_files = [os.path.join(output_directory , "transcripts.gtf"),
-        os.path.join(output_directory , "abundance.tab")]
+        out_files = [
+            os.path.join(output_directory , "transcripts.gtf"),
+            os.path.join(output_directory , "abundance.tab")
+        ]
     else:
         out_files = [os.path.join(output_directory ,"transcripts.gtf")] 
 
@@ -75,15 +77,15 @@ def stringtie_merge(gtf_list, output_prefix, gtf=None):
         [os.path.join(output_prefix, "merged.gtf")],
         [["stringtie", "module_stringtie"]],
         command="""\
-mkdir -p {output_directory} &&\\
+mkdir -p {output_directory} && \\
 stringtie --merge {other_options}{gtf} \\
   -o {outfile} \\
   {gtf_list}""".format(
-      output_directory=os.path.dirname(output_prefix),
-      other_options=config.param('stringtie_merge','other_options', required=False),
-      gtf="\\\n -G " + gtf if gtf else "", 
-      outfile=os.path.join(output_prefix, "merged.gtf"), 
-      gtf_list=gtf_list
+            output_directory=os.path.dirname(output_prefix),
+            other_options=config.param('stringtie_merge','other_options', required=False),
+            gtf="\\\n -G " + gtf if gtf else "", 
+            outfile=os.path.join(output_prefix, "merged.gtf"), 
+            gtf_list=gtf_list
         )
     )
 

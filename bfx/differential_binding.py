@@ -26,11 +26,22 @@ from core.job import *
 
 #This function is used to render R file and create a html output using knitr and spin
 #This is a new feature introduced to Genpipes in 2021
-def diffbind( input_files, comparison, design, readset, output_dir, alignment_dir, peak_dir, minOverlap, minMembers, method):
+def diffbind(
+    input_files,
+    comparison,
+    design,
+    readset,
+    output_dir,
+    alignment_dir,
+    peak_dir,
+    minOverlap,
+    minMembers,
+    method
+    ):
 
-    output_file =  "".join((output_dir, "_".join(("/diffbind",comparison, method, "dba.txt"))))
-    html_output = "".join((output_dir, "_".join(("/diffbind", comparison, method, "dba.html"))))
-    R_filename = "".join((output_dir, "_".join(("/diffbind", comparison, method, "dba.R"))))
+    output_file = os.path.join(output_dir, f"diffbind_{comparison}_{method}_dba.txt")
+    html_output = os.path.join(output_dir, f"diffbind_{comparison}_{method}_dba.html")
+    R_filename = os.path.join(output_dir, f"diffbind_{comparison}_{method}_dba.R")
 
     th = config.param('differential_binding', 'th')
     bUsePval = config.param('differential_binding', 'bUsePval')
@@ -49,22 +60,23 @@ def diffbind( input_files, comparison, design, readset, output_dir, alignment_di
 cp $R_TOOLS/DiffBind.R {R_filename} &&
 Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("{R_filename}",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap={minOverlap},minMembers={minMembers},method="{method}",th={th},bUsePval={bUsePval},contrastnb={contrastnb}),output_file=file.path(cur_dir,"{html_output}"));' &&
 rm {R_filename}""".format(
-        design=design,
-        comparison=comparison,
-        output_file=output_file,
-        output_dir=output_dir,
-        readset=readset,
-        alignment_dir=alignment_dir,
-        peak_dir=peak_dir,
-        minOverlap=minOverlap,
-        minMembers=minMembers,
-        html_output=html_output,
-        R_filename=R_filename,
-        method=method,
-        th=th,
-        bUsePval=bUsePval,
-        contrastnb=contrastnb
-    ))
+            design=design,
+            comparison=comparison,
+            output_file=output_file,
+            output_dir=output_dir,
+            readset=readset,
+            alignment_dir=alignment_dir,
+            peak_dir=peak_dir,
+            minOverlap=minOverlap,
+            minMembers=minMembers,
+            html_output=html_output,
+            R_filename=R_filename,
+            method=method,
+            th=th,
+            bUsePval=bUsePval,
+            contrastnb=contrastnb
+        )
+    )
 
 
 ###The below function is not currently used. But if you want to use the old way to call Rscript passing paramters, use and modify this method.

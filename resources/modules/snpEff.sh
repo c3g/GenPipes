@@ -3,32 +3,32 @@
 set -eu -o pipefail
 
 SOFTWARE=snpEff
-VERSION=4.5covid19
+VERSION=5.1
 # Replace "." in official version number by "_" in archive version number
 ARCHIVE=${SOFTWARE}_v${VERSION//./_}_core.zip
-ARCHIVE_URL=http://sourceforge.net/projects/snpeff/files/$ARCHIVE
+ARCHIVE_URL=https://snpeff.blob.core.windows.net/versions/${ARCHIVE}
 SOFTWARE_DIR=${SOFTWARE}_${VERSION//./_}
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
 
   # Install databases
-#  echo "Installing GRCh37.75 database"
+  echo "Installing GRCh37.87 database"
 #  java -jar $SOFTWARE/snpEff.jar download GRCh37.75 -verbose
-#  echo "Installing GRCh37.75 database"
+  java -jar $SOFTWARE/snpEff.jar download GRCh37.87 -verbose
+  echo "Installing GRCh38.99 database"
 #  java -jar $SOFTWARE/snpEff.jar download GRCh38.86 -verbose
-#  echo "Installing GRCm38.75 database"
-#  java -jar $SOFTWARE/snpEff.jar download GRCm38.86 -verbose
-#  echo "Installing hg19 database"
-#  java -jar $SOFTWARE/snpEff.jar download hg19 -verbose
-#  echo "Installing hg19 database"
-#  java -jar $SOFTWARE/snpEff.jar download hg38 -verbose
-#  echo "Installing hg19 database"
-#  java -jar $SOFTWARE/snpEff.jar download mm10 -verbose
+  java -jar $SOFTWARE/snpEff.jar download GRCh38.99 -verbose
+  echo "Installing GRCm38.99 database"
+#  java -jar $SOFTWARE/snpEff.jar download GRCm38.86 -verbose  
+  java -jar $SOFTWARE/snpEff.jar download GRCm38.99 -verbose
+  echo "Installing hg19 database"
+  java -jar $SOFTWARE/snpEff.jar download hg19 -verbose
+  echo "Installing hg38 database"
+  java -jar $SOFTWARE/snpEff.jar download hg38 -verbose
+  echo "Installing mm10 database"
+  java -jar $SOFTWARE/snpEff.jar download mm10 -verbose
 
   # Install software
   mv -i $SOFTWARE $INSTALL_DIR/$SOFTWARE_DIR

@@ -23,7 +23,15 @@
 from core.config import *
 from core.job import *
 
-def intra_chrom_matrix_plot(fileNameRN, sample_name, chrom, res, output_dir, fileNamePlot, newFileNamePlot):
+def intra_chrom_matrix_plot(
+    fileNameRN,
+    sample_name,
+    chrom,
+    res,
+    output_dir,
+    fileNamePlot,
+    newFileNamePlot
+    ):
     return Job(
         [fileNameRN],
         [newFileNamePlot],
@@ -50,11 +58,16 @@ mv {fileNamePlot} {newFileNamePlot}""".format(
             hmc=config.param('interaction_matrices_Chr', 'hmc'),
             fileNamePlot=fileNamePlot,
             newFileNamePlot=newFileNamePlot
-        ),
-        name="interaction_matrices_Chr.plotting."+sample_name+"_"+chrom+"_res"+res
+        )
     )
 
-def genome_wide_matrix_plot(fileNameRN, sample_name, res, output_dir, output_file):
+def genome_wide_matrix_plot(
+    fileNameRN,
+    sample_name,
+    res,
+    output_dir,
+    output_file
+    ):
     return Job(
         [fileNameRN],
         [output_file],
@@ -78,6 +91,5 @@ HiCPlotter.py \\
             name=sample_name, 
             output_dir=output_dir,
             hmc=config.param('interaction_matrices_Chr', 'hmc')
-        ),
-        name="interaction_matrices_genome.plotting."+sample_name+"_res"+res
+        )
     )

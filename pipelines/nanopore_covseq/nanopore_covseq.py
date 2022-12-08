@@ -464,83 +464,70 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
                 sequencing_summary = os.path.join("basecall", "sequencing_summary.txt")
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(artic_nanopolish_directory),
-                    bash.chgdir(artic_nanopolish_directory),
-                    artic.nanopolish_ont(
-                        reads_fastq_dir,
-                        sample.run,
-                        sample.name,
-                        sample.fast5_files,
-                        sequencing_summary,
-                        artic_nanopolish_directory,
-                        ini_section="artic_nanopolish"
-                    ),
-                    bash.chgdir(self.output_dir),
-                    bash.mkdir(consensus_directory),
-                    Job(
-                        input_files=[consensus_artic],
-                        output_files=[consensus],
-                        command="""ln -sf {consensus_link} {consensus}""".format(
-                            consensus_link=consensus_link,
-                            consensus=consensus
-                        )
-                    ),
-                    bash.mkdir(variant_directory),
-                    Job(
-                        input_files=[variant_artic],
-                        output_files=[variant],
-                        command="""ln -sf {variant_link} {variant}""".format(
-                            variant_link=variant_link,
-                            variant=variant
-                        )
-                    ),
-                    Job(
-                        input_files=[variant_index_artic],
-                        output_files=[variant_index],
-                        command="""ln -sf {variant_index_link} {variant_index}""".format(
-                            variant_index_link=variant_index_link,
-                            variant_index=variant_index
-                        )
-                    ),
-                    bash.mkdir(alignment_directory),
-                    Job(
-                        input_files=[raw_bam_artic],
-                        output_files=[raw_bam],
-                        command="""ln -sf {raw_bam_link} {raw_bam}""".format(
-                            raw_bam_link=raw_bam_link,
-                            raw_bam=raw_bam
-                        )
-                    ),
-                    Job(
-                        input_files=[raw_bam_index_artic],
-                        output_files=[raw_bam_index],
-                        command="""ln -sf {raw_bam_index_link} {raw_bam_index}""".format(
-                            raw_bam_index_link=raw_bam_index_link,
-                            raw_bam_index=raw_bam_index
-                        )
-                    ),
-                    pipe_jobs([
-                        sambamba.view(
-                            primer_trimmed_bam_artic,
-                            None,
-                            "-f bam -F \"not supplementary and not secondary_alignment\""
+                concat_jobs(
+                    [
+                        bash.mkdir(artic_nanopolish_directory),
+                        bash.chdir(artic_nanopolish_directory),
+                        artic.nanopolish_ont(
+                            reads_fastq_dir,
+                            sample.run,
+                            sample.name,
+                            sample.fast5_files,
+                            sequencing_summary,
+                            artic_nanopolish_directory,
+                            ini_section="artic_nanopolish"
                         ),
-                        sambamba.sort(
-                            "/dev/stdin",
+                        bash.chdir(self.output_dir),
+                        bash.mkdir(consensus_directory),
+                        bash.ln(
+                            consensus_link,
+                            consensus,
+                            input=consensus_artic,
+                        ),
+                        bash.mkdir(variant_directory),
+                        bash.ln(
+                            variant_link,
+                            variant,
+                            input=variant_artic
+                        ),
+                        bash.ln(
+                            variant_index_link,
+                            variant_index,
+                            input=variant_index_artic
+                        ),
+                        bash.mkdir(alignment_directory),
+                        bash.ln(
+                            raw_bam_link,
+                            raw_bam,
+                            input=raw_bam_artic
+                        ),
+                        bash.ln(
+                            raw_bam_index_link,
+                            raw_bam_index,
+                            input=raw_bam_index_artic
+                        ),
+                        pipe_jobs(
+                            [
+                                sambamba.view(
+                                    primer_trimmed_bam_artic,
+                                    None,
+                                    "-f bam -F \"not supplementary and not secondary_alignment\""
+                                ),
+                                sambamba.sort(
+                                    "/dev/stdin",
+                                    primer_trimmed_bam,
+                                    tmp_dir=config.param('artic_nanopolish', 'tmp_dir', required=True)
+                                )
+                            ]
+                        ),
+                        sambamba.index(
                             primer_trimmed_bam,
-                            tmp_dir=config.param('artic_nanopolish', 'tmp_dir', required=True)
+                            primer_trimmed_bam_index
                         )
-                    ]),
-                    sambamba.index(
-                        primer_trimmed_bam,
-                        primer_trimmed_bam_index
-                    )
-                ],
+                    ],
                     name="artic_nanopolish." + sample.name
-                ),
+                )
             )
-
         return jobs
 
     def wub_metrics(self):
@@ -583,8 +570,7 @@ class NanoporeCoVSeq(common.MUGQICPipeline):
             metrics_prefix = os.path.join("metrics", "dna", sample.name, "snpeff_metrics", sample.name + ".snpEff")
 
             input_vcf = os.path.join(variant_directory, sample.name + ".pass.vcf.gz")
-            output_vcf = os.path.join(variant_directory,
-                                      re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
+            output_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
 
             jobs.append(
                 concat_jobs([
@@ -697,17 +683,11 @@ echo "pass_reads" $(grep -c "^@" {pass_fq}) >> {fq_stats} """.format(
             quast_tsv = os.path.join(quast_directory, "report.tsv")
 
             output_fa = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
-            output_status_fa = os.path.join(consensus_directory,
-                                            """{sample_name}.consensus.{technology}.{status}.fasta""".format(
-                                                sample_name=sample.name,
-                                                technology=config.param('rename_consensus_header',
-                                                                        'sequencing_technology', required=False),
-                                                status="${STATUS}"))
+            output_status_fa = os.path.join(consensus_directory, """{sample_name}.consensus.{technology}.{status}.fasta""".format(sample_name=sample.name, technology=config.param('rename_consensus_header', 'sequencing_technology', required=False), status="${STATUS}"))
 
             variant_directory = os.path.join("variant", sample.name)
             input_vcf = os.path.join(variant_directory, sample.name + ".pass.vcf.gz")
-            annotated_vcf = os.path.join(variant_directory,
-                                         re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
+            annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
 
             jobs.append(
                 concat_jobs([
@@ -760,9 +740,6 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
 
         readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
         readset_file_report = "report.readset.tsv"
-
-        software_version = os.path.join("report", "software_versions.csv")
-        run_metadata = os.path.join("report", "run_metadata.csv")
 
         ncovtools_directory = os.path.join("report", "ncov_tools")
         metadata = os.path.join(ncovtools_directory, "metadata.tsv")

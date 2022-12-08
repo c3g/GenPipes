@@ -395,16 +395,19 @@ class PBSScheduler(Scheduler):
 
         mem_info = self.memory(job_name_prefix, info=True)
         if adapt and mem_info:
-            adapt = int(adapt)
-            mem = int(re.search("[0-9]+", mem_info[1]).group())
-            if 'G' in mem_info[1]:
+            adapt_mem = int(re.search("[0-9]+", adapt).group())
+            if 'G' in adapt:
+                adapt_mem = adapt_mem * 1024
+
+            [per_cpu, mem_str] = mem_info
+            mem = int(re.search("[0-9]+", mem_str).group())
+            if 'G' in mem_str:
                 mem = mem * 1024
-            if mem_info[0]:
+            if per_cpu:
                 mem = mem * cpu
-            else:
-                mem = mem_info[1]
+
             import math
-            cpu_ = math.ceil(mem/adapt)
+            cpu_ = math.ceil(mem/adapt_mem)
             cpu = max(cpu, cpu_)
 
         node = self.node(job_name_prefix)

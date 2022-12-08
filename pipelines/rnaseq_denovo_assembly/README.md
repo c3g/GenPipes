@@ -80,10 +80,10 @@ usage: rnaseq_denovo_assembly.py [-h] [--help] [-c CONFIG [CONFIG ...]]
                                  [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                                  [--container {wrapper, singularity} <IMAGE PATH>]
                                  [--genpipes_file GENPIPES_FILE]
-                                 [-t {trinity,seq2fun}] [-d DESIGN]
+                                 [-t {trinity,seq2fun}] [-d DESIGN] [-b BATCH]
                                  [-r READSETS] [-v]
 
-Version: 4.3.1
+Version: 4.3.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -134,6 +134,8 @@ optional arguments:
                         Type of pipeline (default trinity)
   -d DESIGN, --design DESIGN
                         design file
+  -b BATCH, --batch BATCH
+                        batch file (to peform batch effect correction
   -r READSETS, --readsets READSETS
                         readset file
   -v, --version         show the version information and exit
@@ -293,7 +295,7 @@ Differential Expression and GOSEQ analysis based on filtered transcripts and gen
 
 merge_fastq
 -----------
-this step is performed to merge fastq files if multiple readset files for one sample is present
+This step is performed to merge fastq files if multiple readset files for one sample is present
 
 This step takes as input files:
 

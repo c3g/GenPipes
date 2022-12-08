@@ -39,20 +39,22 @@ multiqc -f {options} \\
             options=config.param(ini_section, 'options', required=False),
             input=" ".join([" \\\n  " + input for input in inputs]),
             output=output,
-            )
         )
+    )
 
-def mutliqc_run(yamlFile, input_files):
-
-
-    command = """export MULTIQC_CONFIG_PATH={yamlFile} && \\
-    multiqc .""".format(
-        yamlFile = yamlFile)
+def mutliqc_run(
+    yamlFile,
+    input_files
+    ):
     ## for now multiqc will run after hicup alignments are complete. Once Homer is added to mutliqc, the input must change to refect homer tag dirs
-
-    return Job(input_files = input_files,
-            output_files = ["Analysis_Summary_Report.html"],
-            module_entries = [["multiqc_report", "module_multiqc"]],
-            name = "multiqc_report",
-            command = command
-            )
+    return Job(
+        input_files = input_files,
+        output_files = ["Analysis_Summary_Report.html"],
+        module_entries = [["multiqc_report", "module_multiqc"]],
+        name = "multiqc_report",
+        command = """\
+export MULTIQC_CONFIG_PATH={yamlFile} && \\
+  multiqc .""".format(
+            yamlFile = yamlFile
+        )
+    )

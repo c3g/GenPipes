@@ -29,13 +29,13 @@ def somatic_config(
     mantaIndels=None
     ):
 
-    output=[
-        os.path.join(output_dir, "runWorkflow.py"),
-        os.path.join(output_dir, "results", "variants", "somatic.snvs.vcf.gz"),
-        os.path.join(output_dir, "results", "variants", "somatic.indels.vcf.gz")
-    ]
+    inputs = [input_normal, input_tumor]
+    if callRegions:
+        inputs.append(callRegions)
+    if mantaIndels:
+        inputs.append(mantaIndels)
     return Job(
-        [input_normal, input_tumor],
+        inputs,
         [os.path.join(output_dir, "runWorkflow.py")],
         [
             ['strelka2_paired_somatic', 'module_python'],

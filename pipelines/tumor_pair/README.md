@@ -6,9 +6,9 @@ Tumor Pair Pipeline
 
 The Tumor Pair pipeline inherits the initial bam preparation steps of the DNA-Seq pipeline with the exception of the
 indel realignment (IR) step. In the tumor pipeline the IR step utilizes both the normal and tumor bam to further reduce
-false positives (FPs) in and around indels. The tumor pipeline deviates from the DNA-seq pipeline at the variant calling step. 
-At this point, a paired caller is used to call SNVs and Indels from the pairs given as input. Additional, muliple cancer callers 
-are utilized using an ensemble approach and SNVs and Indels seen in at least 2 different callers are retained for further 
+false positives (FPs) in and around indels. The tumor pipeline deviates from the DNA-seq pipeline at the variant calling step.
+At this point, a paired caller is used to call SNVs and Indels from the pairs given as input. Additional, muliple cancer callers
+are utilized using an ensemble approach and SNVs and Indels seen in at least 2 different callers are retained for further
 investigation.
 
 Example command:
@@ -18,7 +18,7 @@ python tumor_pair.py -c a.ini b.base.ini -s x-y,z -r readset.tsv -p pairs.csv
 
 -r readset: derived from GQ lims or made yourself. See : https://bitbucket.org/mugqic/mugqic_pipelines#markdown-header-readset-file
 
--p pairs : format - patient_name,normal_sample_name,tumor_sample_name 
+-p pairs : format - patient_name,normal_sample_name,tumor_sample_name
 
 
 Usage
@@ -35,7 +35,7 @@ usage: tumor_pair.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                      [--genpipes_file GENPIPES_FILE] [-p PAIRS] [--profyle]
                      [-t {fastpass,ensemble,sv}] [-r READSETS] [-v]
 
-Version: 4.3.1
+Version: 4.3.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -103,28 +103,29 @@ Steps:
 fastpass:
 1- picard_sam_to_fastq
 2- skewer_trimming
-3- bwa_mem_sambamba_sort_sam
-4- sambamba_merge_sam_files
-5- gatk_indel_realigner
-6- sambamba_merge_realigned
-7- sambamba_mark_duplicates
-8- recalibration
-9- manta_sv_calls
-10- rawmpileup_panel
-11- paired_varscan2_panel
-12- merge_varscan2_panel
-13- preprocess_vcf_panel
-14- snp_effect_panel
-15- gemini_annotations_panel
-16- conpair_concordance_contamination
-17- metrics_dna_picard_metrics
-18- metrics_dna_sample_qualimap
-19- metrics_dna_fastqc
-20- sequenza
-21- run_pair_multiqc
-22- sym_link_report
-23- sym_link_fastq_pair
-24- sym_link_panel
+3- bwa_mem_sambamba
+4- sambamba_sort
+5- sambamba_merge_sam_files
+6- gatk_indel_realigner
+7- sambamba_merge_realigned
+8- sambamba_mark_duplicates
+9- recalibration
+10- manta_sv_calls
+11- rawmpileup_panel
+12- paired_varscan2_panel
+13- merge_varscan2_panel
+14- preprocess_vcf_panel
+15- snp_effect_panel
+16- gemini_annotations_panel
+17- conpair_concordance_contamination
+18- metrics_dna_picard_metrics
+19- metrics_dna_sample_qualimap
+20- metrics_dna_fastqc
+21- sequenza
+22- run_pair_multiqc
+23- sym_link_report
+24- sym_link_fastq_pair
+25- sym_link_panel
 ----
 ```
 ![tumor_pair ensemble workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_tumor_pair_ensemble.resized.png)
@@ -133,45 +134,46 @@ fastpass:
 ensemble:
 1- picard_sam_to_fastq
 2- skewer_trimming
-3- bwa_mem_sambamba_sort_sam
-4- sambamba_merge_sam_files
-5- gatk_indel_realigner
-6- sambamba_merge_realigned
-7- sambamba_mark_duplicates
-8- recalibration
-9- conpair_concordance_contamination
-10- metrics_dna_picard_metrics
-11- metrics_dna_sample_qualimap
-12- metrics_dna_fastqc
-13- sequenza
-14- manta_sv_calls
-15- strelka2_paired_somatic
-16- strelka2_paired_germline
-17- strelka2_paired_germline_snpeff
-18- purple
-19- rawmpileup
-20- paired_varscan2
-21- merge_varscan2
-22- paired_mutect2
-23- merge_mutect2
-24- vardict_paired
-25- merge_filter_paired_vardict
-26- ensemble_somatic
-27- gatk_variant_annotator_somatic
-28- merge_gatk_variant_annotator_somatic
-29- ensemble_germline_loh
-30- gatk_variant_annotator_germline
-31- merge_gatk_variant_annotator_germline
-32- cnvkit_batch
-33- filter_ensemble_germline
-34- filter_ensemble_somatic
-35- report_cpsr
-36- report_pcgr
-37- run_pair_multiqc
-38- sym_link_fastq_pair
-39- sym_link_final_bam
-40- sym_link_report
-41- sym_link_ensemble
+3- bwa_mem_sambamba
+4- sambamba_sort
+5- sambamba_merge_sam_files
+6- gatk_indel_realigner
+7- sambamba_merge_realigned
+8- sambamba_mark_duplicates
+9- recalibration
+10- conpair_concordance_contamination
+11- metrics_dna_picard_metrics
+12- metrics_dna_sample_qualimap
+13- metrics_dna_fastqc
+14- sequenza
+15- manta_sv_calls
+16- strelka2_paired_somatic
+17- strelka2_paired_germline
+18- strelka2_paired_germline_snpeff
+19- purple
+20- rawmpileup
+21- paired_varscan2
+22- merge_varscan2
+23- paired_mutect2
+24- merge_mutect2
+25- vardict_paired
+26- merge_filter_paired_vardict
+27- ensemble_somatic
+28- gatk_variant_annotator_somatic
+29- merge_gatk_variant_annotator_somatic
+30- ensemble_germline_loh
+31- gatk_variant_annotator_germline
+32- merge_gatk_variant_annotator_germline
+33- cnvkit_batch
+34- filter_ensemble_germline
+35- filter_ensemble_somatic
+36- report_cpsr
+37- report_pcgr
+38- run_pair_multiqc
+39- sym_link_fastq_pair
+40- sym_link_final_bam
+41- sym_link_report
+42- sym_link_ensemble
 ----
 ```
 ![tumor_pair sv workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_tumor_pair_sv.resized.png)
@@ -180,27 +182,27 @@ ensemble:
 sv:
 1- picard_sam_to_fastq
 2- skewer_trimming
-3- bwa_mem_sambamba_sort_sam
-4- sambamba_merge_sam_files
-5- gatk_indel_realigner
-6- sambamba_merge_realigned
-7- sambamba_mark_duplicates
-8- recalibration
-9- strelka2_paired_somatic
-10- strelka2_paired_germline
-11- metrics_dna_picard_metrics
-12- sequenza
-13- delly_call_filter
-14- delly_sv_annotation
-15- manta_sv_calls
-16- manta_sv_annotation
-17- lumpy_paired_sv
-18- lumpy_sv_annotation
-19- wham_call_sv
-20- wham_sv_annotation
-21- cnvkit_batch
-22- cnvkit_sv_annotation
-23- scones
+3- bwa_mem_sambamba
+4- sambamba_sort
+5- sambamba_merge_sam_files
+6- gatk_indel_realigner
+7- sambamba_merge_realigned
+8- sambamba_mark_duplicates
+9- recalibration
+10- manta_sv_calls
+11- strelka2_paired_somatic
+12- strelka2_paired_germline
+13- metrics_dna_picard_metrics
+14- sequenza
+15- delly_call_filter
+16- delly_sv_annotation
+17- manta_sv_annotation
+18- lumpy_paired_sv
+19- lumpy_sv_annotation
+20- wham_call_sv
+21- wham_sv_annotation
+22- cnvkit_batch
+23- cnvkit_sv_annotation
 24- svaba_assemble
 25- svaba_sv_annotation
 26- ensemble_metasv_somatic
@@ -225,16 +227,21 @@ skewer_trimming
 ---------------
 Trimming using [skewer](https://sourceforge.net/projects/skewer/)
 
-bwa_mem_sambamba_sort_sam
--------------------------
+bwa_mem_sambamba
+----------------
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
 The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
 This step takes as input files:
 
 1. Trimmed FASTQ files if available
 2. Else, FASTQ files from the readset file if available
 3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
+sambamba_sort
+-------------
+BWA output BAM files are sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
+This step takes as input files:
+BAM file from bwa mem alignment compressed by sambamba
 
 sambamba_merge_sam_files
 ------------------------
@@ -509,13 +516,6 @@ wham_sv_annotation
 ------------------
 cnvkit_sv_annotation
 --------------------
-scones
-------
-This step aims to estimate somatic Copy Number Variation using BVAtools and SCoNEs. BVAtools generate the bined Depth ratio values from the
-tumor and normal BAM files. SCoNEs is tool to deconvolution the logR signal of the tumor-normal coverage into a mixture of baysian sub-signal
-for each copy number state. The result is a set of several deconvolution using  0-7 sub-signal. As each tumor sample is unique the choice of
-the best final model (number of sub-signal) needs to be manually evaluated using the log ratio graphical representation.
-
 svaba_assemble
 --------------
 SvABA - Structural variation and indel analysis by assembly.

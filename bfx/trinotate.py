@@ -164,21 +164,39 @@ tmhmm --short \\
 
 
 # Perform transcriptome functional annotation and analysis using [Trinotate](http://trinotate.sourceforge.net/). All functional annotation data is integrated into a SQLite database and a whole annotation report is created.
-def trinotate(swissprot_db, trinity_fasta, swissprot_blastx, transdecoder_pep, transdecoder_pfam, swissprot_blastp, rnammer, signalp, tmhmm, trinotate_sqlite, trinotate_report):
-    return concat_jobs([
-        Job(command="mkdir -p trinotate"),
-        Job(
-            [trinity_fasta,
-                swissprot_blastx,
-                transdecoder_pep,
-                transdecoder_pfam,
-                swissprot_blastp,
-                rnammer,
-                signalp,
-                tmhmm],
-            [trinotate_sqlite, trinotate_report],
-            [['trinotate', 'module_perl'], ['trinotate', 'module_trinity'], ['trinotate', 'module_trinotate']],
-            command="""\
+def trinotate(
+    trinity_fasta,
+    swissprot_blastx,
+    transdecoder_pep,
+    transdecoder_pfam,
+    swissprot_blastp,
+    rnammer,
+    signalp,
+    tmhmm,
+    trinotate_sqlite,
+    trinotate_report
+    ):
+    return Job(
+        [
+            trinity_fasta,
+            swissprot_blastx,
+            transdecoder_pep,
+            transdecoder_pfam,
+            swissprot_blastp,
+            rnammer,
+            signalp,
+            tmhmm
+        ],
+        [
+            trinotate_sqlite,
+            trinotate_report
+        ],
+        [
+            ['trinotate', 'module_perl'],
+            ['trinotate', 'module_trinity'],
+            ['trinotate', 'module_trinotate']
+        ],
+        command="""\
 cp $TRINOTATE_SQLITE {trinotate_sqlite} && \\
 $TRINITY_HOME/util/support_scripts/get_Trinity_gene_to_trans_map.pl \\
 {trinity_fasta} \\
@@ -195,16 +213,17 @@ Trinotate {trinotate_sqlite} LOAD_signalp {signalp} && \\
 Trinotate {trinotate_sqlite} LOAD_rnammer {rnammer} && \\
 Trinotate {trinotate_sqlite} report -E {evalue} --pfam_cutoff {pfam_cutoff} \\
 > {trinotate_report}""".format(
-                trinity_fasta=trinity_fasta,
-                trinotate_sqlite=trinotate_sqlite,
-                transdecoder_pep=transdecoder_pep,
-                swissprot_blastx=swissprot_blastx,
-                swissprot_blastp=swissprot_blastp,
-                transdecoder_pfam=transdecoder_pfam,
-                tmhmm=tmhmm,
-                signalp=signalp,
-                rnammer=rnammer,
-                evalue=config.param('trinotate', 'evalue'),
-                pfam_cutoff=config.param('trinotate', 'pfam_cutoff'),
-                trinotate_report=trinotate_report
-        ))], name="trinotate")
+            trinity_fasta=trinity_fasta,
+            trinotate_sqlite=trinotate_sqlite,
+            transdecoder_pep=transdecoder_pep,
+            swissprot_blastx=swissprot_blastx,
+            swissprot_blastp=swissprot_blastp,
+            transdecoder_pfam=transdecoder_pfam,
+            tmhmm=tmhmm,
+            signalp=signalp,
+            rnammer=rnammer,
+            evalue=config.param('trinotate', 'evalue'),
+            pfam_cutoff=config.param('trinotate', 'pfam_cutoff'),
+            trinotate_report=trinotate_report
+        )
+    )

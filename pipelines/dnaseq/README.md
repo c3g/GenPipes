@@ -16,7 +16,7 @@ usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--genpipes_file GENPIPES_FILE]
                  [-t {mugqic,mpileup,light,sv}] [-r READSETS] [-v]
 
-Version: 4.3.1
+Version: 4.3.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -80,41 +80,42 @@ Steps:
 mugqic:
 1- picard_sam_to_fastq
 2- skewer_trimming
-3- bwa_mem_sambamba_sort_sam
-4- sambamba_merge_sam_extract_unmapped
-5- gatk_indel_realigner
-6- sambamba_merge_realigned
-7- picard_mark_duplicates
-8- recalibration
-9- gatk_haplotype_caller
-10- merge_and_call_individual_gvcf
-11- combine_gvcf
-12- merge_and_call_combined_gvcf
-13- variant_recalibrator
-14- haplotype_caller_decompose_and_normalize
-15- haplotype_caller_flag_mappability
-16- haplotype_caller_snp_id_annotation
-17- haplotype_caller_snp_effect
-18- haplotype_caller_dbnsfp_annotation
-19- haplotype_caller_gemini_annotations
-20- metrics_dna_picard_metrics
-21- metrics_dna_sample_qualimap
-22- metrics_dna_fastqc
-23- picard_calculate_hs_metrics
-24- metrics
-25- gatk_callable_loci
-26- extract_common_snp_freq
-27- baf_plot
-28- run_multiqc
-29- cram_output
-30- sym_link_fastq
-31- sym_link_final_bam
-32- metrics_ngscheckmate
-33- metrics_verify_bam_id
-34- metrics_vcftools_missing_indiv
-35- metrics_vcftools_depth_indiv
-36- metrics_gatk_sample_fingerprint
-37- metrics_gatk_cluster_fingerprint
+3- bwa_mem_sambamba
+4- sambamba_sort
+5- sambamba_merge_sam_extract_unmapped
+6- gatk_indel_realigner
+7- sambamba_merge_realigned
+8- picard_mark_duplicates
+9- recalibration
+10- gatk_haplotype_caller
+11- merge_and_call_individual_gvcf
+12- combine_gvcf
+13- merge_and_call_combined_gvcf
+14- variant_recalibrator
+15- haplotype_caller_decompose_and_normalize
+16- haplotype_caller_flag_mappability
+17- haplotype_caller_snp_id_annotation
+18- haplotype_caller_snp_effect
+19- haplotype_caller_dbnsfp_annotation
+20- haplotype_caller_gemini_annotations
+21- metrics_dna_picard_metrics
+22- metrics_dna_sample_qualimap
+23- metrics_dna_fastqc
+24- picard_calculate_hs_metrics
+25- metrics
+26- gatk_callable_loci
+27- extract_common_snp_freq
+28- baf_plot
+29- run_multiqc
+30- cram_output
+31- sym_link_fastq
+32- sym_link_final_bam
+33- metrics_ngscheckmate
+34- metrics_verify_bam_id
+35- metrics_vcftools_missing_indiv
+36- metrics_vcftools_depth_indiv
+37- metrics_gatk_sample_fingerprint
+38- metrics_gatk_cluster_fingerprint
 ----
 ```
 ![dnaseq mpileup workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_mpileup.resized.png)
@@ -123,34 +124,35 @@ mugqic:
 mpileup:
 1- picard_sam_to_fastq
 2- skewer_trimming
-3- bwa_mem_sambamba_sort_sam
-4- sambamba_merge_sam_extract_unmapped
-5- gatk_indel_realigner
-6- sambamba_merge_realigned
-7- picard_mark_duplicates
-8- recalibration
-9- rawmpileup
-10- rawmpileup_cat
-11- snp_and_indel_bcf
-12- merge_filter_bcf
-13- mpileup_decompose_and_normalize
-14- mpileup_flag_mappability
-15- mpileup_snp_id_annotation
-16- mpileup_snp_effect
-17- mpileup_dbnsfp_annotation
-18- mpileup_gemini_annotations
-19- mpileup_metrics_vcf_stats
-20- cram_output
-21- metrics_dna_picard_metrics
-22- metrics_dna_sample_qualimap
-23- metrics_dna_fastqc
-24- picard_calculate_hs_metrics
-25- gatk_callable_loci
-26- extract_common_snp_freq
-27- baf_plot
-28- run_multiqc
-29- sym_link_fastq
-30- sym_link_final_bam
+3- bwa_mem_sambamba
+4- sambamba_sort
+5- sambamba_merge_sam_extract_unmapped
+6- gatk_indel_realigner
+7- sambamba_merge_realigned
+8- picard_mark_duplicates
+9- recalibration
+10- rawmpileup
+11- rawmpileup_cat
+12- snp_and_indel_bcf
+13- merge_filter_bcf
+14- mpileup_decompose_and_normalize
+15- mpileup_flag_mappability
+16- mpileup_snp_id_annotation
+17- mpileup_snp_effect
+18- mpileup_dbnsfp_annotation
+19- mpileup_gemini_annotations
+20- mpileup_metrics_vcf_stats
+21- cram_output
+22- metrics_dna_picard_metrics
+23- metrics_dna_sample_qualimap
+24- metrics_dna_fastqc
+25- picard_calculate_hs_metrics
+26- gatk_callable_loci
+27- extract_common_snp_freq
+28- baf_plot
+29- run_multiqc
+30- sym_link_fastq
+31- sym_link_final_bam
 ----
 ```
 ![dnaseq light workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_light.resized.png)
@@ -159,34 +161,35 @@ mpileup:
 light:
 1- picard_sam_to_fastq
 2- skewer_trimming
-3- bwa_mem_sambamba_sort_sam
-4- sambamba_merge_sam_extract_unmapped
-5- gatk_indel_realigner
-6- sambamba_merge_realigned
-7- picard_mark_duplicates
-8- recalibration
-9- sym_link_final_bam
-10- metrics_dna_picard_metrics
-11- metrics_dna_sample_qualimap
-12- metrics_dna_sambamba_flagstat
-13- metrics_dna_fastqc
-14- picard_calculate_hs_metrics
-15- gatk_callable_loci
-16- extract_common_snp_freq
-17- baf_plot
-18- gatk_haplotype_caller
-19- merge_and_call_individual_gvcf
-20- combine_gvcf
-21- merge_and_call_combined_gvcf
-22- variant_recalibrator
-23- haplotype_caller_decompose_and_normalize
-24- haplotype_caller_flag_mappability
-25- haplotype_caller_snp_id_annotation
-26- haplotype_caller_snp_effect
-27- haplotype_caller_dbnsfp_annotation
-28- haplotype_caller_gemini_annotations
-29- run_multiqc
-30- cram_output
+3- bwa_mem_sambamba
+4- sambamba_sort
+5- sambamba_merge_sam_extract_unmapped
+6- gatk_indel_realigner
+7- sambamba_merge_realigned
+8- picard_mark_duplicates
+9- recalibration
+10- sym_link_final_bam
+11- metrics_dna_picard_metrics
+12- metrics_dna_sample_qualimap
+13- metrics_dna_sambamba_flagstat
+14- metrics_dna_fastqc
+15- picard_calculate_hs_metrics
+16- gatk_callable_loci
+17- extract_common_snp_freq
+18- baf_plot
+19- gatk_haplotype_caller
+20- merge_and_call_individual_gvcf
+21- combine_gvcf
+22- merge_and_call_combined_gvcf
+23- variant_recalibrator
+24- haplotype_caller_decompose_and_normalize
+25- haplotype_caller_flag_mappability
+26- haplotype_caller_snp_id_annotation
+27- haplotype_caller_snp_effect
+28- haplotype_caller_dbnsfp_annotation
+29- haplotype_caller_gemini_annotations
+30- run_multiqc
+31- cram_output
 ----
 ```
 ![dnaseq sv workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_dnaseq_sv.resized.png)
@@ -195,28 +198,29 @@ light:
 sv:
 1- picard_sam_to_fastq
 2- skewer_trimming
-3- bwa_mem_sambamba_sort_sam
-4- sambamba_merge_sam_extract_unmapped
-5- gatk_indel_realigner
-6- sambamba_merge_realigned
-7- picard_mark_duplicates
-8- recalibration
-9- gatk_haplotype_caller
-10- merge_and_call_individual_gvcf
-11- metrics_dna_picard_metrics
-12- delly_call_filter
-13- delly_sv_annotation
-14- manta_sv_calls
-15- manta_sv_annotation
-16- lumpy_paired_sv
-17- lumpy_sv_annotation
-18- wham_call_sv
-19- wham_sv_annotation
-20- cnvkit_batch
-21- cnvkit_sv_annotation
-22- run_breakseq2
-23- ensemble_metasv
-24- metasv_sv_annotation
+3- bwa_mem_sambamba
+4- sambamba_sort
+5- sambamba_merge_sam_extract_unmapped
+6- gatk_indel_realigner
+7- sambamba_merge_realigned
+8- picard_mark_duplicates
+9- recalibration
+10- gatk_haplotype_caller
+11- merge_and_call_individual_gvcf
+12- metrics_dna_picard_metrics
+13- delly_call_filter
+14- delly_sv_annotation
+15- manta_sv_calls
+16- manta_sv_annotation
+17- lumpy_paired_sv
+18- lumpy_sv_annotation
+19- wham_call_sv
+20- wham_sv_annotation
+21- cnvkit_batch
+22- cnvkit_sv_annotation
+23- run_breakseq2
+24- ensemble_metasv
+25- metasv_sv_annotation
 
 ```
 
@@ -229,16 +233,21 @@ skewer_trimming
 ---------------
 Trimming using [skewer](https://sourceforge.net/projects/skewer/)
 
-bwa_mem_sambamba_sort_sam
--------------------------
+bwa_mem_sambamba
+----------------
 The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
 The alignment software used is [BWA](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
-BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
 This step takes as input files:
 
 1. Trimmed FASTQ files if available
 2. Else, FASTQ files from the readset file if available
 3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+
+sambamba_sort
+-------------
+BWA output BAM files are sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
+This step takes as input files:
+BAM file from bwa mem alignment compressed by sambamba
 
 sambamba_merge_sam_extract_unmapped
 -----------------------------------
