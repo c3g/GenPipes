@@ -519,7 +519,7 @@ Example:
 
 Batch File
 -----------
-RNA-Seq, RNA-Seq De Novo Assembly pipelines can perform differential expression analysis if they are provided with an input Design File.
+RNA-Seq, RNA-Seq De Novo Assembly pipelines can perform batch effect correction if they are provided with an input Batch File.
 
 The Batch File is a TAB-separated values plain text file with one line per sample and the following columns:
 

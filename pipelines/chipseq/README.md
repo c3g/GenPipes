@@ -33,7 +33,7 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [--genpipes_file GENPIPES_FILE] [-d DESIGN]
                   [-t {chipseq,atacseq}] [-r READSETS] [-v]
 
-Version: 4.3.1
+Version: 4.3.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -254,7 +254,7 @@ runs spp to estimate NSC and RSC ENCODE metrics. For more information: https://g
 
 differential_binding
 --------------------
-Performs differential binding analysis using [DiffBind](http://bioconductor.org/packages/release/bioc/html/DESeq.html)
+Performs differential binding analysis using [DiffBind](http://bioconductor.org/packages/release/bioc/html/DiffBind.html)
 Merge the results of the analysis in a single csv file.
 html report will be generated to QC samples and check how well differential binding analysis was performed.
 
