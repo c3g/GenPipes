@@ -107,6 +107,7 @@ class RnaSeqRaw(common.Illumina):
         self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
         self.argparser.add_argument("-b", "--batch", help="batch file (to peform batch effect correction", type=argparse.FileType('r'))
         super(RnaSeqRaw, self).__init__(protocol)
+        #self.argparser.add_argument("-w", "--wiggle", help="OPTIONAL, option to separate trackfiles into forward and reverse", type=argparse.FileType('r'))
 
     @property
     def output_dirs(self):
