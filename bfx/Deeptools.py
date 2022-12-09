@@ -38,6 +38,7 @@ def bamcoverage(input_bam, output_file):
         command="""\
 bamCoverage --verbose \\
     --outFileFormat bigwig \\
+    --numberOfProcessors 4 \\
     {other_options} \\
     --bam {input_bam} \\
     --outFileName {output_file} """.format(
