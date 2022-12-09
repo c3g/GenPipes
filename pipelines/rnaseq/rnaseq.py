@@ -720,7 +720,7 @@ pandoc \\
                 [
                     bash.mkdir(tracks_dir),
                     bash.mkdir(big_wig),
-                    Deeptools.bamcoverage(
+                    deeptools.bamcoverage(
                         input_bam,
                         output_file,
                     )

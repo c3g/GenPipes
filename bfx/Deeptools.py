@@ -32,7 +32,7 @@ def bamcoverage(input_bam, output_file):
     return Job(
         input_files=[input_bam],
         output_files=[output_file],
-        module_entries=[['wiggle', 'module_deeptools'] # need to add deeptools to the .ini***
+        module_entries=[['default', 'module_deeptools'] # need to add deeptools to the .ini***
         ],
         # name=job_name,
         command="""\
@@ -48,21 +48,23 @@ bamCoverage --verbose \\
         )
   )
 
-def bamcoverage_f(input_bam, output_file):
+def bamcoverage_f(input_bam, output_file, strand=None):
     return Job(
         input_files=[input_bam],
         output_files=[output_file],
-        module_entries=[['wiggle', 'module_deeptools'] # need to add deeptools to the .ini***
+        module_entries=[['default', 'module_deeptools'] # need to add deeptools to the .ini***
         ],
         # name=job_name,
         command="""\
 bamCoverage --verbose \\
     --outFileFormat bigwig \\
-    --filterRNAstrand forward \\
-    --numberOfProcessors 4 \\
+    {strand} \\
+    --numberOfProcessors {cpu}\\
     {other_options} \\
     --bam {input_bam} \\
     --outFileName {output_file} """.format(
+        strand="--filterRNAstrand "+strand if strand else "",
+        cpu=config.param('wiggle', 'cluster_cpu', required=True)
         output_file=output_file,
         input_bam=input_bam,
         other_options=config.param('wiggle', 'other_options', required=True)
@@ -73,7 +75,7 @@ def bamcoverage_r(input_bam, output_file):
     return Job(
         input_files=[input_bam],
         output_files=[output_file],
-        module_entries=[['wiggle', 'module_deeptools'] # need to add deeptools to the .ini***
+        module_entries=[['default', 'module_deeptools'] # need to add deeptools to the .ini***
         ],
         # name=job_name,
         command="""\
