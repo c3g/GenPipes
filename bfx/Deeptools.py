@@ -47,3 +47,45 @@ bamCoverage --verbose \\
         other_options=config.param('wiggle', 'other_options', required=True)
         )
   )
+
+def bamcoverage_f(input_bam, output_file):
+    return Job(
+        input_files=[input_bam],
+        output_files=[output_file],
+        module_entries=[['wiggle', 'module_deeptools'] # need to add deeptools to the .ini***
+        ],
+        # name=job_name,
+        command="""\
+bamCoverage --verbose \\
+    --outFileFormat bigwig \\
+    --filterRNAstrand forward \\
+    --numberOfProcessors 4 \\
+    {other_options} \\
+    --bam {input_bam} \\
+    --outFileName {output_file} """.format(
+        output_file=output_file,
+        input_bam=input_bam,
+        other_options=config.param('wiggle', 'other_options', required=True)
+        )
+  )
+
+def bamcoverage_r(input_bam, output_file):
+    return Job(
+        input_files=[input_bam],
+        output_files=[output_file],
+        module_entries=[['wiggle', 'module_deeptools'] # need to add deeptools to the .ini***
+        ],
+        # name=job_name,
+        command="""\
+bamCoverage --verbose \\
+    --outFileFormat bigwig \\
+    --filterRNAstrand reverse \\
+    --numberOfProcessors 4 \\
+    {other_options} \\
+    --bam {input_bam} \\
+    --outFileName {output_file} """.format(
+        output_file=output_file,
+        input_bam=input_bam,
+        other_options=config.param('wiggle', 'other_options', required=True)
+        )
+  )
