@@ -710,6 +710,10 @@ pandoc \\
             input_bam = bam_file_prefix + "bam"
             tracks_dir = os.path.join(self.output_dirs["tracks_directory"])
             big_wig = os.path.join(self.output_dirs['tracks_directory'], "bigWig")
+
+            ## Add here If else loop. taking into consideration -w option.   
+            ## must rename output file to Forward && reverse
+
             output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".bw")
 
             job= concat_jobs(
