@@ -2,8 +2,8 @@
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=linx
-VERSION=1.22
+SOFTWARE=sv-prep
+VERSION=1.0.1
 ARCHIVE=${SOFTWARE}-${VERSION}.jar
 ARCHIVE_URL=https://github.com/hartwigmedical/hmftools/releases/download/${SOFTWARE}-v${VERSION}/${SOFTWARE}_v${VERSION}.jar
 SOFTWARE_DIR=$SOFTWARE-$VERSION
@@ -25,9 +25,9 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE - require JDK1.8\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          LINX_HOME           \$root
-setenv          LINX_JAR            \$root/linx.jar
-setenv          LINX_DATA           /cvmfs/ref.mugqic/genomes/hmftools
+setenv          SVPREP_HOME         \$root
+setenv          SVPREP_JAR          \$root/sv-prep.jar
+setenv          SVPREP_DATA         /cvmfs/ref.mugqic/genomes/hmftools
 "
 }
 
