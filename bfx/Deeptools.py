@@ -50,7 +50,6 @@ bamCoverage --verbose \\
     {strand}""".format(
         output_file=output_file,
         input_bam=input_bam,
-        other_options=config.param('wiggle', 'other_options', required=True), 
         cpu=config.param('wiggle', 'cluster_cpu', required=True), 
         bs=config.param('wiggle', 'bin_size', required=True),
         nu=config.param('wiggle', 'norm_using', required=True),
