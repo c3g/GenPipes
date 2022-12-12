@@ -937,9 +937,9 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
             wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
         else:
             strand="forward"
-            wiggle_files = [os.path.join(wiggle_directory, sample.name + strand +".bw") & for sample in self.samples]
+            wiggle_files = [os.path.join(wiggle_directory, sample.name + strand +".bw") for sample in self.samples]
             strand="reverse"
-            wiggle_files = wiggle_files + [os.path.join(wiggle_directory, sample.name + strand +".bw") & for sample in self.samples]
+            wiggle_files = wiggle_files + [os.path.join(wiggle_directory, sample.name + strand +".bw") for sample in self.samples]
 
 
         jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
