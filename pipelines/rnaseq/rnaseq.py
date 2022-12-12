@@ -711,8 +711,7 @@ pandoc \\
             tracks_dir = os.path.join(self.output_dirs["tracks_directory"])
             big_wig = os.path.join(self.output_dirs['tracks_directory'], "bigWig")
 
-            if (config.param('wiggle', 'separate_strand') == 'NO') ## begining of the loop ****** make sure it is fixed.    
-                ## must rename output file to Forward && reverse
+            if (config.param('wiggle', 'separate_strand') == 'NO')
 
                 output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".bw")
 
@@ -767,7 +766,7 @@ pandoc \\
                     samples=[sample]  
                 )
                 jobs.append(job)
-                
+
         return jobs
 
     def raw_counts(self):
