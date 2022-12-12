@@ -711,7 +711,7 @@ pandoc \\
             tracks_dir = os.path.join(self.output_dirs["tracks_directory"])
             big_wig = os.path.join(self.output_dirs['tracks_directory'], "bigWig")
 
-            if (config.param('wiggle', 'separate_strand') == 'NO')
+            if (config.param('wiggle', 'separate_strand') == 'NO'):
 
                 output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".bw")
 
