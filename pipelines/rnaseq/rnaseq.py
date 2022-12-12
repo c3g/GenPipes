@@ -53,7 +53,7 @@ from bfx import bvatools
 from bfx import rmarkdown
 from bfx import tools
 from bfx import ucsc
-from bfx import Deeptools
+from bfx import deeptools
 
 
 from pipelines import common
