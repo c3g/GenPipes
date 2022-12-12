@@ -28,66 +28,32 @@ log = logging.getLogger(__name__)
 
 ### Start from here ###
 
-def bamcoverage(input_bam, output_file):
+def bamcoverage(input_bam, output_file, strand=None):
     return Job(
         input_files=[input_bam],
         output_files=[output_file],
-        module_entries=[['default', 'module_deeptools'] # need to add deeptools to the .ini***
+        strand=[strand],
+        module_entries=[['default', 'module_deeptools'] 
         ],
-        # name=job_name,
+        # need to add option for clusters, 
+        # each other_option individually & 
+        # no need to have forward and reverse commands, all in one, dependent on the ini. 
+        # 
         command="""\
 bamCoverage --verbose \\
     --outFileFormat bigwig \\
-    --numberOfProcessors 4 \\
-    {other_options} \\
+    --numberOfProcessors {cpu} \\ 
+    --binSize {bs} \\
+    --normalizeUsing {nu} \\
     --bam {input_bam} \\
-    --outFileName {output_file} """.format(
+    --outFileName {output_file} 
+    {strand}""".format(
         output_file=output_file,
         input_bam=input_bam,
-        other_options=config.param('wiggle', 'other_options', required=True)
-        )
-  )
-
-def bamcoverage_f(input_bam, output_file, strand=None):
-    return Job(
-        input_files=[input_bam],
-        output_files=[output_file],
-        module_entries=[['default', 'module_deeptools'] # need to add deeptools to the .ini***
-        ],
-        # name=job_name,
-        command="""\
-bamCoverage --verbose \\
-    --outFileFormat bigwig \\
-    {strand} \\
-    --numberOfProcessors {cpu}\\
-    {other_options} \\
-    --bam {input_bam} \\
-    --outFileName {output_file} """.format(
-        strand="--filterRNAstrand "+strand if strand else "",
-        cpu=config.param('wiggle', 'cluster_cpu', required=True)
-        output_file=output_file,
-        input_bam=input_bam,
-        other_options=config.param('wiggle', 'other_options', required=True)
-        )
-  )
-
-def bamcoverage_r(input_bam, output_file):
-    return Job(
-        input_files=[input_bam],
-        output_files=[output_file],
-        module_entries=[['default', 'module_deeptools'] # need to add deeptools to the .ini***
-        ],
-        # name=job_name,
-        command="""\
-bamCoverage --verbose \\
-    --outFileFormat bigwig \\
-    --filterRNAstrand reverse \\
-    --numberOfProcessors 4 \\
-    {other_options} \\
-    --bam {input_bam} \\
-    --outFileName {output_file} """.format(
-        output_file=output_file,
-        input_bam=input_bam,
-        other_options=config.param('wiggle', 'other_options', required=True)
+        other_options=config.param('wiggle', 'other_options', required=True), 
+        cpu=config.param('wiggle', 'cluster_cpu', required=True), 
+        bs=config.param('wiggle', 'bin_size', required=True),
+        nu=config.param('wiggle', 'norm_using', required=True),
+        strand="--filterRNAstrand " + strand if strand else "", 
         )
   )

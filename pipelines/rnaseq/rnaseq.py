@@ -711,24 +711,63 @@ pandoc \\
             tracks_dir = os.path.join(self.output_dirs["tracks_directory"])
             big_wig = os.path.join(self.output_dirs['tracks_directory'], "bigWig")
 
-            ## Add here If else loop. taking into consideration -w option.   
-            ## must rename output file to Forward && reverse
+            if (config.param('wiggle', 'separate_strand') == 'NO') ## begining of the loop ****** make sure it is fixed.    
+                ## must rename output file to Forward && reverse
 
-            output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".bw")
+                output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".bw")
 
-            job= concat_jobs(
-                [
-                    bash.mkdir(tracks_dir),
-                    bash.mkdir(big_wig),
-                    deeptools.bamcoverage(
-                        input_bam,
-                        output_file,
-                    )
-                ],
-                name="bamcoverage_"+sample.name,
-                samples=[sample]  
-            )
-            jobs.append(job)
+                job= concat_jobs(
+                    [
+                        bash.mkdir(tracks_dir),
+                        bash.mkdir(big_wig),
+                        deeptools.bamcoverage(
+                            input_bam,
+                            output_file,
+
+                        )
+                    ],
+                    name="bamcoverage_"+ sample.name,
+                    samples=[sample]  
+                )
+                jobs.append(job)
+
+            else:
+                strand="forward"
+                output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + strand + ".bw")
+
+                job= concat_jobs(
+                    [
+                        bash.mkdir(tracks_dir),
+                        bash.mkdir(big_wig),
+                        deeptools.bamcoverage(
+                            input_bam,
+                            output_file,
+                            strand
+                        )
+                    ],
+                    name="bamcoverage_"+sample.name+strand,
+                    samples=[sample]  
+                )
+                jobs.append(job)
+
+                strand="reverse"
+                output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + strand + ".bw")
+
+                job= concat_jobs(
+                    [
+                        bash.mkdir(tracks_dir),
+                        bash.mkdir(big_wig),
+                        deeptools.bamcoverage(
+                            input_bam,
+                            output_file,
+                            strand
+                        )
+                    ],
+                    name="bamcoverage_"+sample.name+strand,
+                    samples=[sample]  
+                )
+                jobs.append(job)
+                
         return jobs
 
     def raw_counts(self):
