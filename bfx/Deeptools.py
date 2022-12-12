@@ -32,7 +32,6 @@ def bamcoverage(input_bam, output_file, strand=None):
     return Job(
         input_files=[input_bam],
         output_files=[output_file],
-        strand=[strand],
         module_entries=[['default', 'module_deeptools'] 
         ],
         # need to add option for clusters, 
