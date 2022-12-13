@@ -956,7 +956,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         else:
             wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
             strand="forward"
-            wiggle_files = wiggle_file + [os.path.join(wiggle_directory, sample.name+"_"+strand +".bw") for sample in self.samples]
+            wiggle_files = wiggle_files + [os.path.join(wiggle_directory, sample.name+"_"+strand +".bw") for sample in self.samples]
             strand="reverse"
             wiggle_files = wiggle_files + [os.path.join(wiggle_directory, sample.name+"_"+strand +".bw") for sample in self.samples]
 
