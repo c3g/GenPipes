@@ -731,8 +731,26 @@ pandoc \\
                 jobs.append(job)
 
             else:
+
+                output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".bw")
+
+                job= concat_jobs(
+                    [
+                        bash.mkdir(tracks_dir),
+                        bash.mkdir(big_wig),
+                        deeptools.bamcoverage(
+                            input_bam,
+                            output_file,
+
+                        )
+                    ],
+                    name="bamcoverage_"+ sample.name,
+                    samples=[sample]  
+                )
+                jobs.append(job)
+
                 strand="forward"
-                output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + strand + ".bw")
+                output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name+"_"+strand + ".bw")
 
                 job= concat_jobs(
                     [
@@ -743,13 +761,13 @@ pandoc \\
                             output_file
                         )
                     ],
-                    name="bamcoverage_"+sample.name+strand,
+                    name="bamcoverage_"+sample.name+"_"+strand,
                     samples=[sample]  
                 )
                 jobs.append(job)
 
                 strand="reverse"
-                output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + strand + ".bw")
+                output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name+"_"+strand + ".bw")
 
                 job= concat_jobs(
                     [
@@ -760,7 +778,7 @@ pandoc \\
                             output_file
                         )
                     ],
-                    name="bamcoverage_"+sample.name+strand,
+                    name="bamcoverage_"+sample.name+"_"+strand,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -936,10 +954,11 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         if (config.param('wiggle', 'separate_strand') == 'NO'):
             wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
         else:
+            wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
             strand="forward"
-            wiggle_files = [os.path.join(wiggle_directory, sample.name + strand +".bw") for sample in self.samples]
+            wiggle_files = wiggle_file + [os.path.join(wiggle_directory, sample.name+"_"+strand +".bw") for sample in self.samples]
             strand="reverse"
-            wiggle_files = wiggle_files + [os.path.join(wiggle_directory, sample.name + strand +".bw") for sample in self.samples]
+            wiggle_files = wiggle_files + [os.path.join(wiggle_directory, sample.name+"_"+strand +".bw") for sample in self.samples]
 
 
         jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
