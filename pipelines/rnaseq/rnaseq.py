@@ -725,7 +725,7 @@ pandoc \\
 
                         )
                     ],
-                    name="bamcoverage_"+ sample.name,
+                    name="wiggle_"+ sample.name,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -744,7 +744,7 @@ pandoc \\
 
                         )
                     ],
-                    name="bamcoverage_"+ sample.name,
+                    name="wiggle_"+ sample.name,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -761,7 +761,7 @@ pandoc \\
                             output_file
                         )
                     ],
-                    name="bamcoverage_"+sample.name+"_"+strand,
+                    name="wiggle_"+sample.name+"_"+strand,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -778,7 +778,7 @@ pandoc \\
                             output_file
                         )
                     ],
-                    name="bamcoverage_"+sample.name+"_"+strand,
+                    name="wiggle_"+sample.name+"_"+strand,
                     samples=[sample]  
                 )
                 jobs.append(job)
