@@ -758,7 +758,8 @@ pandoc \\
                         bash.mkdir(big_wig),
                         deeptools.bamcoverage(
                             input_bam,
-                            output_file
+                            output_file,
+                            strand
                         )
                     ],
                     name="wiggle_"+sample.name+"_"+strand,
@@ -775,7 +776,8 @@ pandoc \\
                         bash.mkdir(big_wig),
                         deeptools.bamcoverage(
                             input_bam,
-                            output_file
+                            output_file,
+                            strand
                         )
                     ],
                     name="wiggle_"+sample.name+"_"+strand,
