@@ -45,8 +45,7 @@ bamCoverage --verbose \\
     --binSize {bs} \\
     --normalizeUsing {nu} \\
     --bam {input_bam} \\
-    --outFileName {output_file} 
-    {strand}""".format(
+    --outFileName {output_file} {strand}""".format(
         output_file=output_file,
         input_bam=input_bam,
         cpu=config.param('wiggle', 'cluster_cpu', required=True), 
