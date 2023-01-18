@@ -4086,7 +4086,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             gatk_pass = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.flt.vcf.gz")
             lumpy_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
             manta_vcf = os.path.join(pair_directory, sample.name + ".manta.germline.vcf.gz")
-            abs_manta = os.path.abspath(manta_vcf)
+            # abs_manta = os.path.abspath(manta_vcf)
             wham_vcf = os.path.join(pair_directory, sample.name + ".wham.germline.vcf.gz")
             delly_vcf = os.path.join(pair_directory, sample.name + ".delly.germline.vcf.gz")
             cnvkit_vcf = os.path.join(pair_directory, sample.name + ".cnvkit.germline.vcf.gz")
@@ -4135,7 +4135,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         ),
                         metasv.ensemble(
                             lumpy_vcf,
-                            abs_manta,
+                            manta_vcf,
                             input_cnvkit,
                             wham_vcf,
                             delly_vcf,
