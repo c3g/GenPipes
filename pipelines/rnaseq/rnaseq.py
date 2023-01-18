@@ -53,6 +53,8 @@ from bfx import bvatools
 from bfx import rmarkdown
 from bfx import tools
 from bfx import ucsc
+from bfx import deeptools
+
 
 from pipelines import common
 import utils
@@ -105,6 +107,7 @@ class RnaSeqRaw(common.Illumina):
         self.argparser.add_argument("-d", "--design", help="design file", type=argparse.FileType('r'))
         self.argparser.add_argument("-b", "--batch", help="batch file (to peform batch effect correction", type=argparse.FileType('r'))
         super(RnaSeqRaw, self).__init__(protocol)
+        #self.argparser.add_argument("-w", "--wiggle", help="OPTIONAL, option to separate trackfiles into forward and reverse", type=argparse.FileType('r'))
 
     @property
     def output_dirs(self):
@@ -609,6 +612,89 @@ pandoc \\
         return jobs
 
 
+    # def wiggle(self):
+    #     """
+    #     Generate wiggle tracks suitable for multiple browsers.
+    #     """
+
+    #     jobs = []
+
+    #     ##check the library status
+    #     library = {}
+    #     for readset in self.readsets:
+    #         if not readset.sample in library:
+    #             library[readset.sample]="PAIRED_END"
+    #         if readset.run_type == "SINGLE_END" :
+    #             library[readset.sample]="SINGLE_END"
+
+    #     for sample in self.samples:
+    #         bam_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.")
+    #         input_bam = bam_file_prefix + "bam"
+    #         bed_graph_prefix = os.path.join(self.output_dirs["tracks_directory"], sample.name, sample.name)
+    #         big_wig_prefix = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name)
+
+    #         if (config.param('DEFAULT', 'strand_info') != 'fr-unstranded') and library[sample] == "PAIRED_END":
+    #             input_bam_f1 = bam_file_prefix + "tmp1.forward.bam"
+    #             input_bam_f2 = bam_file_prefix + "tmp2.forward.bam"
+    #             input_bam_r1 = bam_file_prefix + "tmp1.reverse.bam"
+    #             input_bam_r2 = bam_file_prefix + "tmp2.reverse.bam"
+    #             output_bam_f = bam_file_prefix + "forward.bam"
+    #             output_bam_r = bam_file_prefix + "reverse.bam"
+
+    #             bam_f_job = concat_jobs([
+    #                 samtools.view(input_bam, input_bam_f1, "-bh -F 256 -f 81"),
+    #                 samtools.view(input_bam, input_bam_f2, "-bh -F 256 -f 161"),
+    #                 picard.merge_sam_files([input_bam_f1, input_bam_f2], output_bam_f),
+    #                 Job(command="rm " + input_bam_f1 + " " + input_bam_f2)
+    #             ], name="wiggle." + sample.name + ".forward_strandspec")
+    #             bam_f_job.samples = [sample]
+    #             # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
+    #             bam_f_job.output_files.remove(input_bam_f1)
+    #             bam_f_job.output_files.remove(input_bam_f2)
+
+    #             bam_r_job = concat_jobs([
+    #                 Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], sample.name) + " " + os.path.join(self.output_dirs["tracks_directory"], "bigWig")),
+    #                 samtools.view(input_bam, input_bam_r1, "-bh -F 256 -f 97"),
+    #                 samtools.view(input_bam, input_bam_r2, "-bh -F 256 -f 145"),
+    #                 picard.merge_sam_files([input_bam_r1, input_bam_r2], output_bam_r),
+    #                 Job(command="rm " + input_bam_r1 + " " + input_bam_r2)
+    #             ], name="wiggle." + sample.name + ".reverse_strandspec")
+    #             bam_r_job.samples = [sample]
+    #             # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
+    #             bam_r_job.output_files.remove(input_bam_r1)
+    #             bam_r_job.output_files.remove(input_bam_r2)
+
+    #             jobs.extend([bam_f_job, bam_r_job])
+
+    #             outputs = [
+    #                 [bed_graph_prefix + ".forward.bedGraph", big_wig_prefix + ".forward.bw"],
+    #                 [bed_graph_prefix + ".reverse.bedGraph", big_wig_prefix + ".reverse.bw"],
+    #             ]
+    #         else:
+    #             outputs = [[bed_graph_prefix + ".bedGraph", big_wig_prefix + ".bw"]]
+
+    #         for bed_graph_output, big_wig_output in outputs:
+    #             if "forward" in bed_graph_output:
+    #                 in_bam = bam_file_prefix + "forward.bam"    # same as output_bam_f from previous picard job
+    #             elif "reverse" in bed_graph_output:
+    #                 in_bam = bam_file_prefix + "reverse.bam"    # same as output_bam_r from previous picard job
+    #             else:
+    #                 in_bam = input_bam
+    #             jobs.append(
+    #                 concat_jobs([
+    #                     Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], sample.name) + " ", removable_files=[self.output_dirs["tracks_directory"]], samples=[sample]),
+    #                     bedtools.graph(in_bam, bed_graph_output, library[sample])
+    #                 ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+    #             )
+    #             jobs.append(
+    #                 concat_jobs([
+    #                     Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], "bigWig"), samples=[sample]),
+    #                     ucsc.bedGraphToBigWig(bed_graph_output, big_wig_output, False)
+    #                 ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)))
+    #             )
+
+    #     return jobs
+
     def wiggle(self):
         """
         Generate wiggle tracks suitable for multiple browsers.
@@ -618,77 +704,86 @@ pandoc \\
 
         ##check the library status
         library = {}
-        for readset in self.readsets:
-            if not readset.sample in library:
-                library[readset.sample]="PAIRED_END"
-            if readset.run_type == "SINGLE_END" :
-                library[readset.sample]="SINGLE_END"
 
         for sample in self.samples:
             bam_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.")
             input_bam = bam_file_prefix + "bam"
-            bed_graph_prefix = os.path.join(self.output_dirs["tracks_directory"], sample.name, sample.name)
-            big_wig_prefix = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name)
+            tracks_dir = os.path.join(self.output_dirs["tracks_directory"])
+            big_wig = os.path.join(self.output_dirs['tracks_directory'], "bigWig")
 
-            if (config.param('DEFAULT', 'strand_info') != 'fr-unstranded') and library[sample] == "PAIRED_END":
-                input_bam_f1 = bam_file_prefix + "tmp1.forward.bam"
-                input_bam_f2 = bam_file_prefix + "tmp2.forward.bam"
-                input_bam_r1 = bam_file_prefix + "tmp1.reverse.bam"
-                input_bam_r2 = bam_file_prefix + "tmp2.reverse.bam"
-                output_bam_f = bam_file_prefix + "forward.bam"
-                output_bam_r = bam_file_prefix + "reverse.bam"
+            if (config.param('wiggle', 'separate_strand') == 'NO'):
 
-                bam_f_job = concat_jobs([
-                    samtools.view(input_bam, input_bam_f1, "-bh -F 256 -f 81"),
-                    samtools.view(input_bam, input_bam_f2, "-bh -F 256 -f 161"),
-                    picard.merge_sam_files([input_bam_f1, input_bam_f2], output_bam_f),
-                    Job(command="rm " + input_bam_f1 + " " + input_bam_f2)
-                ], name="wiggle." + sample.name + ".forward_strandspec")
-                bam_f_job.samples = [sample]
-                # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
-                bam_f_job.output_files.remove(input_bam_f1)
-                bam_f_job.output_files.remove(input_bam_f2)
+                output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".bw")
 
-                bam_r_job = concat_jobs([
-                    Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], sample.name) + " " + os.path.join(self.output_dirs["tracks_directory"], "bigWig")),
-                    samtools.view(input_bam, input_bam_r1, "-bh -F 256 -f 97"),
-                    samtools.view(input_bam, input_bam_r2, "-bh -F 256 -f 145"),
-                    picard.merge_sam_files([input_bam_r1, input_bam_r2], output_bam_r),
-                    Job(command="rm " + input_bam_r1 + " " + input_bam_r2)
-                ], name="wiggle." + sample.name + ".reverse_strandspec")
-                bam_r_job.samples = [sample]
-                # Remove temporary-then-deleted files from job output files, otherwise job is never up to date
-                bam_r_job.output_files.remove(input_bam_r1)
-                bam_r_job.output_files.remove(input_bam_r2)
+                job= concat_jobs(
+                    [
+                        bash.mkdir(tracks_dir),
+                        bash.mkdir(big_wig),
+                        deeptools.bamcoverage(
+                            input_bam,
+                            output_file,
 
-                jobs.extend([bam_f_job, bam_r_job])
+                        )
+                    ],
+                    name="wiggle_"+ sample.name,
+                    samples=[sample]  
+                )
+                jobs.append(job)
 
-                outputs = [
-                    [bed_graph_prefix + ".forward.bedGraph", big_wig_prefix + ".forward.bw"],
-                    [bed_graph_prefix + ".reverse.bedGraph", big_wig_prefix + ".reverse.bw"],
-                ]
             else:
-                outputs = [[bed_graph_prefix + ".bedGraph", big_wig_prefix + ".bw"]]
 
-            for bed_graph_output, big_wig_output in outputs:
-                if "forward" in bed_graph_output:
-                    in_bam = bam_file_prefix + "forward.bam"    # same as output_bam_f from previous picard job
-                elif "reverse" in bed_graph_output:
-                    in_bam = bam_file_prefix + "reverse.bam"    # same as output_bam_r from previous picard job
-                else:
-                    in_bam = input_bam
-                jobs.append(
-                    concat_jobs([
-                        Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], sample.name) + " ", removable_files=[self.output_dirs["tracks_directory"]], samples=[sample]),
-                        bedtools.graph(in_bam, bed_graph_output, library[sample])
-                    ], name="bed_graph." + re.sub(".bedGraph", "", os.path.basename(bed_graph_output)))
+                output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name + ".bw")
+
+                job= concat_jobs(
+                    [
+                        bash.mkdir(tracks_dir),
+                        bash.mkdir(big_wig),
+                        deeptools.bamcoverage(
+                            input_bam,
+                            output_file,
+
+                        )
+                    ],
+                    name="wiggle_"+ sample.name,
+                    samples=[sample]  
                 )
-                jobs.append(
-                    concat_jobs([
-                        Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], "bigWig"), samples=[sample]),
-                        ucsc.bedGraphToBigWig(bed_graph_output, big_wig_output, False)
-                    ], name="wiggle." + re.sub(".bw", "", os.path.basename(big_wig_output)))
+                jobs.append(job)
+
+                strand="forward"
+                output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name+"_"+strand + ".bw")
+
+                job= concat_jobs(
+                    [
+                        bash.mkdir(tracks_dir),
+                        bash.mkdir(big_wig),
+                        deeptools.bamcoverage(
+                            input_bam,
+                            output_file,
+                            strand
+                        )
+                    ],
+                    name="wiggle_"+sample.name+"_"+strand,
+                    samples=[sample]  
                 )
+                jobs.append(job)
+
+                strand="reverse"
+                output_file = os.path.join(self.output_dirs["tracks_directory"], "bigWig", sample.name+"_"+strand + ".bw")
+
+                job= concat_jobs(
+                    [
+                        bash.mkdir(tracks_dir),
+                        bash.mkdir(big_wig),
+                        deeptools.bamcoverage(
+                            input_bam,
+                            output_file,
+                            strand
+                        )
+                    ],
+                    name="wiggle_"+sample.name+"_"+strand,
+                    samples=[sample]  
+                )
+                jobs.append(job)
 
         return jobs
 
@@ -704,7 +799,7 @@ pandoc \\
             input_bam = alignment_file_prefix + ".QueryNameSorted.bam"
 
             # Count reads
-            output_count = os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.csv")
+            output_count = os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.tsv")
             stranded = "no" if config.param('DEFAULT', 'strand_info') == "fr-unstranded" else "reverse"
             job = concat_jobs(
                 [
@@ -741,8 +836,8 @@ pandoc \\
 
         # Create raw count matrix
         output_directory = self.output_dirs["DGE_directory"]
-        read_count_files = [os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.csv") for sample in self.samples]
-        output_matrix = os.path.join(output_directory, "rawCountMatrix.csv")
+        read_count_files = [os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.tsv") for sample in self.samples]
+        output_matrix = os.path.join(output_directory, "rawCountMatrix.tsv")
 
         job = Job(
             read_count_files,
@@ -775,27 +870,103 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         job.samples = self.samples
         jobs.append(job)
 
+#         # Create Wiggle tracks archive
+#         library = {}
+#         for readset in self.readsets:
+#             if not readset.sample in library:
+#                 library[readset.sample]="PAIRED_END"
+#             if readset.run_type == "SINGLE_END" :
+#                 library[readset.sample]="SINGLE_END"
+
+#         wiggle_directory = os.path.join(self.output_dirs["tracks_directory"], "bigWig")
+#         wiggle_archive = os.path.join(self.output_dir, "tracks.zip")
+#         if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
+#             wiggle_files = []
+#             for sample in self.samples:
+#                 if library[sample] == "PAIRED_END":
+#                     wiggle_files.extend([os.path.join(wiggle_directory, sample.name) + ".forward.bw", os.path.join(wiggle_directory, sample.name) + ".reverse.bw"])
+#         else:
+#             wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
+#         jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
+
+#         # RPKM and Saturation
+#         count_file = os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.tsv")
+#         gene_size_file = config.param('rpkm_saturation', 'gene_size', param_type='filepath')
+#         rpkm_directory = self.output_dirs["raw_counts_directory"]
+#         saturation_directory = os.path.join(self.output_dirs["metrics_directory"], "saturation")
+
+#         job = concat_jobs(
+#             [
+#                 bash.mkdir(saturation_directory),
+#                 metrics.rpkm_saturation(
+#                     count_file,
+#                     gene_size_file,
+#                     rpkm_directory,
+#                     saturation_directory
+#                 )
+#             ],
+#             name="rpkm_saturation",
+#             samples=self.samples
+#         )
+#         jobs.append(job)
+
+#         report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeq.raw_counts_metrics.md")
+#         jobs.append(
+#             Job(
+#                 [
+#                     wiggle_archive,
+#                     saturation_directory + ".zip",
+#                     f"{self.output_dirs['metrics_directory']}/rnaseqRep/corrMatrixSpearman.txt"
+#                 ],
+#                 [report_file],
+#                 [['raw_counts_metrics', 'module_pandoc']],
+#                 command="""\
+# mkdir -p {report_dir} && \\
+# cp {metrics_dir}/rnaseqRep/corrMatrixSpearman.txt {report_dir}/corrMatrixSpearman.tsv && \\
+# cp {wiggle_archive} {report_dir}/ && \\
+# cp {saturation_archive} {report_dir}/ && \\
+# pandoc --to=markdown \\
+#   --template {report_template_dir}/{basename_report_file} \\
+#   --variable corr_matrix_spearman_table="`head -16 {report_dir}/corrMatrixSpearman.tsv | cut -f-16| awk -F"\t" '{{OFS="\t"; if (NR==1) {{$0="Vs"$0; print; gsub(/[^\t]/, "-"); print}} else {{printf $1; for (i=2; i<=NF; i++) {{printf "\t"sprintf("%.2f", $i)}}; print ""}}}}' | sed 's/\t/|/g'`" \\
+#   {report_template_dir}/{basename_report_file} \\
+#   > {report_file}""".format(
+#                     wiggle_archive=wiggle_archive,
+#                     saturation_archive=saturation_directory + ".zip",
+#                     report_template_dir=self.report_template_dir,
+#                     basename_report_file=os.path.basename(report_file),
+#                     metrics_dir=self.output_dirs["metrics_directory"],
+#                     report_dir=self.output_dirs["report_directory"],
+#                     report_file=report_file
+#                 ),
+#                 report_files=[report_file],
+#                 name="raw_count_metrics_report",
+#                 samples=self.samples
+#             )
+#         )
+
+#         return jobs
+
+
         # Create Wiggle tracks archive
         library = {}
-        for readset in self.readsets:
-            if not readset.sample in library:
-                library[readset.sample]="PAIRED_END"
-            if readset.run_type == "SINGLE_END" :
-                library[readset.sample]="SINGLE_END"
 
         wiggle_directory = os.path.join(self.output_dirs["tracks_directory"], "bigWig")
         wiggle_archive = os.path.join(self.output_dir, "tracks.zip")
-        if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
-            wiggle_files = []
-            for sample in self.samples:
-                if library[sample] == "PAIRED_END":
-                    wiggle_files.extend([os.path.join(wiggle_directory, sample.name) + ".forward.bw", os.path.join(wiggle_directory, sample.name) + ".reverse.bw"])
+        
+        if (config.param('wiggle', 'separate_strand') == 'NO'):
+            wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
         else:
             wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
+            strand="forward"
+            wiggle_files = wiggle_files + [os.path.join(wiggle_directory, sample.name+"_"+strand +".bw") for sample in self.samples]
+            strand="reverse"
+            wiggle_files = wiggle_files + [os.path.join(wiggle_directory, sample.name+"_"+strand +".bw") for sample in self.samples]
+
+
         jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
 
         # RPKM and Saturation
-        count_file = os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.csv")
+        count_file = os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.tsv")
         gene_size_file = config.param('rpkm_saturation', 'gene_size', param_type='filepath')
         rpkm_directory = self.output_dirs["raw_counts_directory"]
         saturation_directory = os.path.join(self.output_dirs["metrics_directory"], "saturation")
@@ -850,6 +1021,7 @@ pandoc --to=markdown \\
         )
 
         return jobs
+
 
     def stringtie(self):
         """
@@ -1164,14 +1336,14 @@ END
         sample_fpkm_readcounts = [[
             sample.name,
             os.path.join(self.output_dirs["cufflinks_directory"], sample.name, "isoforms.fpkm_tracking"),
-            os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.csv")
+            os.path.join(self.output_dirs["raw_counts_directory"], sample.name + ".readcounts.tsv")
         ] for sample in self.samples]
         jobs.append(
             concat_jobs(
                 [
                     bash.mkdir(self.output_dirs['exploratory_directory']),
                     gq_seq_utils.exploratory_analysis_rnaseq(
-                        os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.csv"),
+                        os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.tsv"),
                         self.output_dirs["cuffnorm_directory"],
                         config.param('gq_seq_utils_exploratory_analysis_rnaseq', 'genes', param_type='filepath'),
                         self.output_dirs["exploratory_directory"]
@@ -1233,7 +1405,7 @@ cp \\
             design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
         output_directory = self.output_dirs["DGE_directory"]
-        count_matrix = os.path.join(output_directory, "rawCountMatrix.csv")
+        count_matrix = os.path.join(output_directory, "rawCountMatrix.tsv")
 
         edger_job = differential_expression.edger(
             design_file,
@@ -1308,7 +1480,7 @@ cp \\
         report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeq.differential_expression.md")
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.csv")] +
+                [os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.tsv")] +
                 [os.path.join(self.output_dirs["DGE_directory"], contrast.name, "dge_results.csv") for contrast in self.contrasts] +
                 [os.path.join(self.output_dirs["cuffdiff_directory"], contrast.name, "isoforms.fpkm_tracking") for contrast in self.contrasts] +
                 [os.path.join(self.output_dirs["cuffdiff_directory"], contrast.name, "isoform_exp.diff") for contrast in self.contrasts] +
@@ -1321,12 +1493,12 @@ cp \\
 set -eu -o pipefail && \\
 mkdir -p {report_dir} && \\
 cp {design_file} {report_dir}/design.tsv && \\
-cp DGE/rawCountMatrix.csv {report_dir}/ && \\
+cp DGE/rawCountMatrix.tsv {report_dir}/ && \\
 pandoc \\
   {report_template_dir}/{basename_report_file} \\
   --template {report_template_dir}/{basename_report_file} \\
   --variable design_table="`head -7 {report_dir}/design.tsv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
-  --variable raw_count_matrix_table="`head -7 {report_dir}/rawCountMatrix.csv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
+  --variable raw_count_matrix_table="`head -7 {report_dir}/rawCountMatrix.tsv | cut -f-8 | awk -F"\t" '{{OFS="\t"; if (NR==1) {{print; gsub(/[^\t]/, "-")}} print}}' | sed 's/\t/|/g'`" \\
   --variable adj_pvalue_threshold={adj_pvalue_threshold} \\
   --to markdown \\
   > {report_file} && \\
