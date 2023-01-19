@@ -67,10 +67,11 @@ sambamba index {options} \\
         )
     )
 
-def merge(input_bams,
-          output_bam,
-          ini_section='sambamba_merge_sam_files'
-          ):
+def merge(
+    input_bams,
+    output_bam,
+    ini_section='sambamba_merge_sam_files'
+    ):
 
     return Job(
         input_bams,

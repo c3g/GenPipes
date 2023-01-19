@@ -351,6 +351,10 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._recipe
 
     @property
+    def pool_fraction(self):
+        return self._pool_fraction
+
+    @property
     def control(self):
         return self._control
 
@@ -376,7 +380,11 @@ class IlluminaRawReadset(IlluminaReadset):
     def report_files(self, value):
         self._report_files = value
 
-def parse_freezeman_readset_files(
+class MGIRawReadset(IlluminaRawReadset):
+    def __init__(self, name, run_type):
+        super(MGIRawReadset, self).__init__(name, run_type)
+
+def parse_freezeman_readset_file(
     readset_file,
     run,
     run_type,
@@ -395,19 +403,32 @@ def parse_freezeman_readset_files(
     skipped_db = []
     GenomeBuild = namedtuple('GenomeBuild', 'species assembly')
 
+    if platform == "illumina":
+        platform = "Illumina"
+    elif 'mgi' in platform:
+        platform = "MGI"
+    else:
+        _raise(SanitycheckError("Unknow sequencing platform : " + platform + ". Aborting..."))
+
+
     # Parsing Freezeman event file
-    log.info("Parsing Freezeman event file " + readset_file + " for readset in lane " + lane + "...")
+    log.info("Parsing Freezeman info file " + readset_file + " for readset in lane " + lane + "...")
 
     with open(readset_file, "r") as jff:
         readset_json = json.load(jff)
 
-    for rdst in readset_json:
+    for rdst in readset_json['samples']:
         adapter_file = config.param('DEFAULT', 'adapter_type_file', param_type='filepath', required=False)
         if not (adapter_file and os.path.isfile(adapter_file)):
             adapter_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_types.txt')
         adapter_csv = csv.reader(open(adapter_file, 'r'), delimiter=',', quotechar='"')
 
-        current_lane = rdst['container_coordinates']
+        protocol_file = config.param('DEFAULT', 'library_protocol_file', param_type='filepath', required=False)
+        if not (protocol_file and os.path.isfile(protocol_file)):
+            protocol_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'library_protocol_list.csv')
+        protocol_csv = csv.DictReader(open(protocol_file, 'r'), delimiter=',', quotechar='"')
+
+        current_lane = str(rdst['lane'])
 
         if int(current_lane) != int(lane):
             continue
@@ -418,20 +439,33 @@ def parse_freezeman_readset_files(
         sample = RunProcessingSample(sample_name)
         samples.append(sample)
 
+        library = str(rdst['derived_sample_obj_id'])
         # Create readset and add it to sample
-        if platform == 'illumina':
-            readset = IlluminaRawReadset(sample_name+"_"+rdst['library_obj_id'], run_type)
-        elif 'mgi' in platform:
-            readset = MGIRawReadset(sample_name+"_"+rdst['library_obj_id'], run_type)
+        if readset_json['platform'] == 'ILLUMINA':
+            if not platform == "Illumina":
+                _raise(SanitycheckError(f"Platform conflict ({platform}) ! Are you sur you provided an Illumina info file ?"))
+            readset = IlluminaRawReadset(sample_name+"_"+library, run_type)
+        elif readset_json['platform'] == 'DNBSEQ':
+            if not platform == "MGI":
+                _raise(SanitycheckError(f"Platform conflict ({platform}) ! Are you sur you provided an MGI info file ?"))
+            readset = MGIRawReadset(sample_name+"_"+library, run_type)
+        else:
+            _raise(SanitycheckError("Unknow sequencing platform in info file : " + readset_json['platform'] + ". Aborting..."))
         readset._quality_offset = 33
         readset._index_name = rdst['index_name']
         readset._description = rdst['index_set_name']
         readset._index = [{'INDEX1':index1, 'INDEX2':index2} for index1, index2 in zip_longest(rdst['index_sequence_3_prime'], rdst['index_sequence_3_prime'])]
-        readset._library = rdst['library_obj_id']
+        readset._library = library
         readset._gender = rdst['expected_sex']
+        readset._pool_fraction = rdst['pool_volume_ratio']
 
         readset._protocol = rdst['library_type']
-        readset._library_source = rdst['library_source']
+        for protocol_line in protocol_csv:
+            if protocol_line['Clarity Step Name'] == readset.protocol:
+                readset._library_source = protocol_line['Processing Protocol Name']
+                break
+        else:
+            _raise(SanitycheckError("Could not find protocol '" + readset.protocol + "' (from event file " + readset_file + ") in protocol library file " + protocol_file + " for readset " + readset.name + " Aborting..."))
 
         key = readset.index_name.split('-')[0] if re.search("-", readset.index_name) and not re.search("SI-", readset.index_name) else readset.index_name
         if readset.index_name:
@@ -442,21 +476,21 @@ def parse_freezeman_readset_files(
                         readset._index_type = adapter_line[2]    # SINGLEINDEX or DUALINDEX
                         break
             else:
-                _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + " Aborting..."))
+                _raise(SanitycheckError("Could not find adapter " + key + " in adapter file " + adapter_file + ". Aborting..."))
 
-        readset._genomic_database = rdst['referemnce']
+        readset._genomic_database = rdst['reference'] if 'reference' in rdst else None
         readset._species = rdst['taxon_name']
 
         readset._run = run
         readset._lane = current_lane
         readset._sample_number = str(len(readsets) + 1)
 
-        readset._flow_cell = rdst['container_barcode']
+        readset._flow_cell = readset_json['container_barcode']
         readset._control = "N"
         readset._recipe = None
         readset._operator = None
         readset._project = rdst['project_name']
-        readset._project_id = rdst['project_obj_id']
+        readset._project_id = str(rdst['project_obj_id'])
         readset._hercules_project = rdst['hercules_project_name']
         readset._hercules_project_id = rdst['hercules_project_id']
         readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
@@ -471,7 +505,7 @@ def parse_freezeman_readset_files(
         else:
             readset._is_scrna = False
 
-        if rdst['capture_bed'] and rdst['capture_bed'] != "N/A":
+        if 'capture_bed' in rdst and rdst['capture_bed'] and rdst['capture_bed'] != "N/A":
             readset._beds = rdst['capture_bed'].split(";")[1:]
             if not rdst['capture_bed'].split(";")[0] == readset.genomic_database:
                 readset._genomic_database = rdst['capture_bed'].split(";")[0]
@@ -495,7 +529,7 @@ def parse_freezeman_readset_files(
         # Searching for a matching reference for the specified species
         genome_root = config.param('DEFAULT', 'genome_root', param_type="dirpath")
 
-        m = re.search("(?P<build>\w+):(?P<assembly>[\w\.]+)", readset.genomic_database)
+        m = re.search("(?P<build>\w+):(?P<assembly>[\w\.]+)", readset.genomic_database) if readset.genomic_database else None
         genome_build = None
         if m:
             genome_build = GenomeBuild(m.group('build'), m.group('assembly'))
@@ -510,23 +544,18 @@ def parse_freezeman_readset_files(
             folder_name = os.path.join(genome_build.species + "." + genome_build.assembly)
             current_genome_folder = os.path.join(genome_root, folder_name)
 
-            if platform == "illumina":
-                common_platform = "Illumina"
-            elif "mgi" in platform:
-                common_platform = "MGI"
-
             if readset.is_10x:
                 if readset.is_rna:
-                    readset._aligner = CellrangerRunProcessingAligner(output_dir, current_genome_folder, common_platform)
+                    readset._aligner = CellrangerRunProcessingAligner(output_dir, current_genome_folder, platform)
                 elif readset.is_atac:
-                    readset._aligner = AtacRunProcessingAligner(output_dir, current_genome_folder, common_platform)
+                    readset._aligner = AtacRunProcessingAligner(output_dir, current_genome_folder, platform)
             elif readset.is_rna:
                 if readset.is_scrna:
-                    readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(read2cycles), common_platform)
+                    readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(read2cycles), platform)
                 else:
-                    readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(read1cycles), common_platform)                
+                    readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(read1cycles), platform)                
             else:
-                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder, common_platform)
+                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder, platform)
 
             aligner_reference_index = readset.aligner.get_reference_index()
             annotation_files = readset.aligner.get_annotation_files()
@@ -565,7 +594,7 @@ def parse_freezeman_readset_files(
 
     return readsets
 
-def parse_clarity_readset_files(
+def parse_clarity_readset_file(
     readset_file,
     run,
     run_type,
@@ -678,13 +707,14 @@ def parse_clarity_readset_files(
         readset._run = run
         readset._lane = current_lane
         readset._sample_number = str(len(readsets) + 1)
-
         readset._flow_cell = line['ContainerName']
         readset._control = "N"
         readset._recipe = None
         readset._operator = None
         readset._project = line['ProjectName']
         readset._project_id = line['ProjectLUID']
+        readset._pool_fraction = float(line['Pool Fraction'])
+
         readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
         readset._is_10x = False
         readset._is_atac = False
@@ -790,265 +820,265 @@ def parse_clarity_readset_files(
     log.info(str(len(samples)) + " sample" + ("s" if len(samples) > 1 else "") + " parsed\n")
     return readsets
 
-class MGIReadset(Readset):
+# class MGIReadset(Readset):
 
-    def __init__(self, name, run_type):
-        super(MGIReadset, self).__init__(name)
+#     def __init__(self, name, run_type):
+#         super(MGIReadset, self).__init__(name)
 
-        if run_type in ("PAIRED_END", "SINGLE_END"):
-            self._run_type = run_type
-        else:
-            raise Exception("Error: readset run_type \"" + run_type +
-                "\" is invalid (should be \"PAIRED_END\" or \"SINGLE_END\")!")
+#         if run_type in ("PAIRED_END", "SINGLE_END"):
+#             self._run_type = run_type
+#         else:
+#             raise Exception("Error: readset run_type \"" + run_type +
+#                 "\" is invalid (should be \"PAIRED_END\" or \"SINGLE_END\")!")
 
-        self.fastq1 = None
-        self.fastq2 = None
+#         self.fastq1 = None
+#         self.fastq2 = None
 
-    @property
-    def run_type(self):
-        return self._run_type
+#     @property
+#     def run_type(self):
+#         return self._run_type
 
-    @property
-    def bam(self):
-        if not hasattr(self, "_bam"):
-            return None
-        else:
-            return self._bam
+#     @property
+#     def bam(self):
+#         if not hasattr(self, "_bam"):
+#             return None
+#         else:
+#             return self._bam
 
-    @property
-    def umi(self):
-        if not hasattr(self, "_umi"):
-            return None
-        else:
-            return self._umi
+#     @property
+#     def umi(self):
+#         if not hasattr(self, "_umi"):
+#             return None
+#         else:
+#             return self._umi
 
-    @property
-    def gender(self):
-        if not hasattr(self, "_gender"):
-            return None
-        else:
-            return self._gender
+#     @property
+#     def gender(self):
+#         if not hasattr(self, "_gender"):
+#             return None
+#         else:
+#             return self._gender
 
-    @property
-    def library(self):
-        return self._library
+#     @property
+#     def library(self):
+#         return self._library
 
-    @property
-    def run(self):
-        return self._run
+#     @property
+#     def run(self):
+#         return self._run
 
-    @property
-    def lane(self):
-        return self._lane
+#     @property
+#     def lane(self):
+#         return self._lane
 
-    @property
-    def adapter1(self):
-        if not hasattr(self, "_adapter1"):
-            return None
-        else:
-            return self._adapter1
+#     @property
+#     def adapter1(self):
+#         if not hasattr(self, "_adapter1"):
+#             return None
+#         else:
+#             return self._adapter1
 
-    @property
-    def adapter2(self):
-        if not hasattr(self, "_adapter2"):
-            return None
-        else:
-            return self._adapter2
+#     @property
+#     def adapter2(self):
+#         if not hasattr(self, "_adapter2"):
+#             return None
+#         else:
+#             return self._adapter2
 
-    @property
-    def primer1(self):
-        if not hasattr(self, "_primer1"):
-            return None
-        else:
-            return self._primer1
+#     @property
+#     def primer1(self):
+#         if not hasattr(self, "_primer1"):
+#             return None
+#         else:
+#             return self._primer1
 
-    @property
-    def primer2(self):
-        if not hasattr(self, "_primer2"):
-            return None
-        else:
-            return self._primer2
+#     @property
+#     def primer2(self):
+#         if not hasattr(self, "_primer2"):
+#             return None
+#         else:
+#             return self._primer2
 
-    @property
-    def quality_offset(self):
-        return self._quality_offset
+#     @property
+#     def quality_offset(self):
+#         return self._quality_offset
 
-    @property
-    def beds(self):
-        return self._beds
+#     @property
+#     def beds(self):
+#         return self._beds
 
-def parse_mgi_readset_file(
-    mgi_readset_file
-    ):
+# def parse_mgi_readset_file(
+#     mgi_readset_file
+#     ):
 
-    readsets = []
-    samples = []
+#     readsets = []
+#     samples = []
 
-    log.info("Parsing MGI readset file " + mgi_readset_file + " ...")
-    readset_csv = csv.DictReader(open(mgi_readset_file, 'r'), delimiter='\t')
-    for line in readset_csv:
-        sample_name = line['Sample']
-        sample_names = [sample.name for sample in samples]
-        if sample_name in sample_names:
-            # Sample already exists
-            sample = samples[sample_names.index(sample_name)]
-        else:
-            # Create new sample
-            sample = Sample(sample_name)
-            samples.append(sample)
+#     log.info("Parsing MGI readset file " + mgi_readset_file + " ...")
+#     readset_csv = csv.DictReader(open(mgi_readset_file, 'r'), delimiter='\t')
+#     for line in readset_csv:
+#         sample_name = line['Sample']
+#         sample_names = [sample.name for sample in samples]
+#         if sample_name in sample_names:
+#             # Sample already exists
+#             sample = samples[sample_names.index(sample_name)]
+#         else:
+#             # Create new sample
+#             sample = Sample(sample_name)
+#             samples.append(sample)
 
-        # Create readset and add it to sample
-        readset = MGIReadset(line['Readset'], line['RunType'])
+#         # Create readset and add it to sample
+#         readset = MGIReadset(line['Readset'], line['RunType'])
 
-        # Readset file paths are either absolute or relative to the readset file
-        # Convert them to absolute paths
-        for format in ("BAM", "FASTQ1", "FASTQ2"):
-            if line.get(format, None):
-                line[format] = os.path.expandvars(line[format])
-                if not os.path.isabs(line[format]):
-                    line[format] = os.path.dirname(os.path.abspath(os.path.expandvars(mgi_readset_file))) + os.sep + line[format]
-                line[format] = os.path.normpath(line[format])
+#         # Readset file paths are either absolute or relative to the readset file
+#         # Convert them to absolute paths
+#         for format in ("BAM", "FASTQ1", "FASTQ2"):
+#             if line.get(format, None):
+#                 line[format] = os.path.expandvars(line[format])
+#                 if not os.path.isabs(line[format]):
+#                     line[format] = os.path.dirname(os.path.abspath(os.path.expandvars(mgi_readset_file))) + os.sep + line[format]
+#                 line[format] = os.path.normpath(line[format])
 
-        readset._bam = line.get('BAM', None)
-        readset._umi = line.get('UMI', None)
-        readset.fastq1 = line.get('FASTQ1', None)
-        readset.fastq2 = line.get('FASTQ2', None)
-        readset._library = line.get('Library', None)
-        readset._run = line.get('Run', None)
-        readset._lane = line.get('Lane', None)
-        readset._adapter1 = line.get('Adapter1', None)
-        readset._adapter2 = line.get('Adapter2', None)
-        #ASVA add-on
-        readset._primer1 = line.get('primer1', None)
-        readset._primer2 = line.get('primer2', None)
-        #remove the adapter from the primer sequences
-        if readset._primer1 :
-            readset._primer1 = readset._primer1.replace(readset._adapter1,"")
-        if readset._primer2 :
-            readset._primer2 = readset._primer2.replace(readset._adapter2,"")
+#         readset._bam = line.get('BAM', None)
+#         readset._umi = line.get('UMI', None)
+#         readset.fastq1 = line.get('FASTQ1', None)
+#         readset.fastq2 = line.get('FASTQ2', None)
+#         readset._library = line.get('Library', None)
+#         readset._run = line.get('Run', None)
+#         readset._lane = line.get('Lane', None)
+#         readset._adapter1 = line.get('Adapter1', None)
+#         readset._adapter2 = line.get('Adapter2', None)
+#         #ASVA add-on
+#         readset._primer1 = line.get('primer1', None)
+#         readset._primer2 = line.get('primer2', None)
+#         #remove the adapter from the primer sequences
+#         if readset._primer1 :
+#             readset._primer1 = readset._primer1.replace(readset._adapter1,"")
+#         if readset._primer2 :
+#             readset._primer2 = readset._primer2.replace(readset._adapter2,"")
 
-        readset._quality_offset = int(line['QualityOffset']) if line.get('QualityOffset', None) else None
-        readset._beds = line['BED'].split(";") if line.get('BED', None) else []
+#         readset._quality_offset = int(line['QualityOffset']) if line.get('QualityOffset', None) else None
+#         readset._beds = line['BED'].split(";") if line.get('BED', None) else []
 
-        readsets.append(readset)
-        sample.add_readset(readset)
+#         readsets.append(readset)
+#         sample.add_readset(readset)
 
-class MGIRawReadset(MGIReadset):
+# class MGIRawReadset(MGIReadset):
 
-    def __init__(self, name, run_type):
-        super(MGIRawReadset, self).__init__(name, run_type)
+#     def __init__(self, name, run_type):
+#         super(MGIRawReadset, self).__init__(name, run_type)
 
-    @property
-    def index_name(self):
-        return self._index_name
+#     @property
+#     def index_name(self):
+#         return self._index_name
 
-    @property
-    def index(self):
-        return self._index
+#     @property
+#     def index(self):
+#         return self._index
 
-    @property
-    def indexes(self):
-        return self._indexes
+#     @property
+#     def indexes(self):
+#         return self._indexes
 
-    @property
-    def index_number(self):
-        return self._index_number
+#     @property
+#     def index_number(self):
+#         return self._index_number
 
-    @property
-    def index_type(self):
-        return self._index_type
+#     @property
+#     def index_type(self):
+#         return self._index_type
 
-    @property
-    def sample_number(self):
-        return self._sample_number
+#     @property
+#     def sample_number(self):
+#         return self._sample_number
 
-    @property
-    def aligner(self):
-        return self._aligner
+#     @property
+#     def aligner(self):
+#         return self._aligner
 
-    @property
-    def aligner_reference_index(self):
-        return self._aligner_reference_index
+#     @property
+#     def aligner_reference_index(self):
+#         return self._aligner_reference_index
 
-    @property
-    def reference_file(self):
-        if not hasattr(self, "_reference_file"):
-            return None
-        else:
-            return self._reference_file
+#     @property
+#     def reference_file(self):
+#         if not hasattr(self, "_reference_file"):
+#             return None
+#         else:
+#             return self._reference_file
 
-    @property
-    def dictionary_file(self):
-        return self._dictionary_file
+#     @property
+#     def dictionary_file(self):
+#         return self._dictionary_file
 
-    @property
-    def is_rna(self):
-        return self._is_rna
+#     @property
+#     def is_rna(self):
+#         return self._is_rna
 
-    @property
-    def is_10x(self):
-        return self._is_10x
+#     @property
+#     def is_10x(self):
+#         return self._is_10x
 
-    @property
-    def is_atac(self):
-        return self._is_atac
+#     @property
+#     def is_atac(self):
+#         return self._is_atac
 
-    @property
-    def is_scrna(self):
-        return self._is_scrna
+#     @property
+#     def is_scrna(self):
+#         return self._is_scrna
 
-    @property
-    def library_source(self):
-        return self._library_source
+#     @property
+#     def library_source(self):
+#         return self._library_source
 
-    @property
-    def is_mgi_index(self):
-       return self._is_mgi_index
+#     @property
+#     def is_mgi_index(self):
+#        return self._is_mgi_index
 
-    @property
-    def library_type(self):
-        return self._library_type
+#     @property
+#     def library_type(self):
+#         return self._library_type
 
-    @property
-    def protocol(self):
-        return self._protocol
+#     @property
+#     def protocol(self):
+#         return self._protocol
 
-    @property
-    def annotation_files(self):
-        if not hasattr(self, "_annotation_files"):
-            return None
-        else:
-            return self._annotation_files
+#     @property
+#     def annotation_files(self):
+#         if not hasattr(self, "_annotation_files"):
+#             return None
+#         else:
+#             return self._annotation_files
 
-    @property
-    def genomic_database(self):
-        return self._genomic_database
+#     @property
+#     def genomic_database(self):
+#         return self._genomic_database
 
-    @property
-    def species(self):
-        return self._species
+#     @property
+#     def species(self):
+#         return self._species
 
-    @property
-    def project_id(self):
-        return self._project_id
+#     @property
+#     def project_id(self):
+#         return self._project_id
 
-    @property
-    def project(self):
-        return self._project
+#     @property
+#     def project(self):
+#         return self._project
 
-    @property
-    def flow_cell(self):
-        return self._flow_cell
+#     @property
+#     def flow_cell(self):
+#         return self._flow_cell
 
-    @property
-    def report_files(self):
-        if not hasattr(self, "_report_files"):
-            self._report_files = {}
-        return self._report_files
+#     @property
+#     def report_files(self):
+#         if not hasattr(self, "_report_files"):
+#             self._report_files = {}
+#         return self._report_files
 
-    @report_files.setter
-    def report_files(self, value):
-        self._report_files = value
+#     @report_files.setter
+#     def report_files(self, value):
+#         self._report_files = value
 
 class PacBioReadset(Readset):
 
@@ -1310,16 +1340,18 @@ def get_index(
         if len(index1_seq) == len(index2_seq):
             for (index1seq, index2seq) in zip(index1_seq, index2_seq):
                 [actual_index1seq, actual_index2seq, adapteri7, adapteri5] = sub_get_index(readset, index1seq, index2seq, index1cycles, index2cycles, seqtype)
-                indexes.append({
-                    'SAMPLESHEET_NAME': readset.name,
-                    'LIBRARY': readset.library,
-                    'PROJECT': readset.project_id,
-                    'INDEX_NAME': readset.index_name,
-                    'INDEX1': actual_index1seq,
-                    'INDEX2': actual_index2seq,
-                    'ADAPTERi7' : adapteri7,
-                    'ADAPTERi5' : adapteri5
-                })
+                indexes.append(
+                    {
+                        'SAMPLESHEET_NAME': readset.name,
+                        'LIBRARY': readset.library,
+                        'PROJECT': readset.project_id,
+                        'INDEX_NAME': readset.index_name,
+                        'INDEX1': actual_index1seq,
+                        'INDEX2': actual_index2seq,
+                        'ADAPTERi7' : adapteri7,
+                        'ADAPTERi5' : adapteri5
+                    }
+                )
         else:
             error_msg = "Error: BAD INDEX DEFINITION for " + readset.name + "...\nDUALINDEX barcodes do not contain the same number of index sequences :\n"
             error_msg += index1 + " : " + ",".join(index1_seq) + "\n"
@@ -1365,7 +1397,6 @@ def sub_get_index(
     index_file = config.param('DEFAULT', 'index_settings_file', param_type='filepath', required=False)
     if not (index_file and os.path.isfile(index_file)):
         index_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", 'adapter_settings_format.txt')
-
     index_fh = open(index_file, 'r')
     index_line = index_fh.readline()
     while index_line:
@@ -1413,7 +1444,7 @@ def sub_get_index(
                     index2_primeroffset = int(indext2_primeroffset)
                     if indext2_primer in fwd_line_def:
                         index2_main_seq = index1_main_seq
-                        adapteri5 = index2_main_seq.split("[i5]")[1].split("[")[0].replace("A", "T").replace("C", "G").replace("T", "A").replace("G", "C")[::-1]
+                        adapteri5 = index2_main_seq.split("[i5]")[1].split("[")[0].replace("A", "t").replace("C", "g").replace("T", "a").replace("G", "c").upper()[::-1]
                 else:
                     index2_primer = indexn2_primer
                     index2_primeroffset = int(indexn2_primeroffset)
@@ -1433,7 +1464,7 @@ def sub_get_index(
             if readset.library_type == 'tenX_sc_RNA_v1' or readset.library_type == 'TELL-Seq' or readset.library_type == "SHARE-Seq_ATAC" or readset.library_type == "SHARE-Seq_RNA":
                 actual_index1seq = ""
             elif seqtype in ["dnbseqg400", "dnbseqt7"] and readset.run_type == "PAIRED_END":
-                actual_index1seq = re.sub("\[", "", re.sub("\]", "", re.sub("i7", index1seq, index1_main_seq.split(index1_primer_seq)[1])))[index1_primeroffset:index1_primeroffset+int(index1cycles)].replace("A", "T").replace("C", "G").replace("T", "A").replace("G", "C")[::-1]
+                actual_index1seq = re.sub("\[", "", re.sub("\]", "", re.sub("i7", index1seq, index1_main_seq.split(index1_primer_seq)[1])))[index1_primeroffset:index1_primeroffset+len(index1seq)].replace("A", "t").replace("C", "g").replace("T", "a").replace("G", "c").upper()[::-1][:int(index1cycles)]
             else:
                 actual_index1seq = re.sub("\[", "", re.sub("\]", "", re.sub("i7", index1seq, index1_main_seq.split(index1_primer_seq)[1])))[index1_primeroffset:index1_primeroffset+int(index1cycles)]
 

@@ -32,7 +32,6 @@ import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as Xml
-# from Bio.Seq import Seq
 from collections import Counter, OrderedDict
 
 # Append genpipes directory to Python library path
@@ -42,7 +41,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 
-from core.readset import parse_clarity_readset_files
+from core.readset import parse_clarity_readset_file, parse_freezeman_readset_file
 from bfx import bvatools
 from bfx import picard
 from bfx import fastp
@@ -349,7 +348,10 @@ class RunProcessing(common.MUGQICPipeline):
             if self.lane_number:
                 self._lanes = [str(self.lane_number)]
             else:
-                self._lanes = [lane for lane in list(set([line['Position'].split(":")[0] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))]
+                if is_json(self.readset_file):
+                    self._lanes = [str(lane) for lane in list(set([sample['lane'] for sample in json.load(open(self.readset_file, 'r'))['samples']]))]
+                else:
+                    self._lanes = [lane for lane in list(set([line['Position'].split(":")[0] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))]
             for lane in self._lanes:
                 self.copy_job_inputs[lane] = []
         return self._lanes
@@ -550,7 +552,10 @@ class RunProcessing(common.MUGQICPipeline):
         Get year of the from sample sheet
         """
         if not hasattr(self, "_year"):
-            dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))])
+            if is_json(self.readset_file):
+                dates = [json.load(open(self.readset_file, 'r'))['run_start_date']]
+            else:
+                dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))])
             if len(list(dates)) > 1:
                 _raise(SanitycheckError(f"More than one date were found in the sample sheet for the run \"{self.run_id}\""))
             else:
@@ -563,7 +568,10 @@ class RunProcessing(common.MUGQICPipeline):
         Get whole date of the run from sample sheet
         """
         if not hasattr(self, "_date"):
-            dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))])
+            if is_json(self.readset_file):
+                dates = [json.load(open(self.readset_file, 'r'))['run_start_date']]
+            else:
+                dates = set([date for date in list(set([line['Start Date'] for line in csv.DictReader(open(self.readset_file, 'r'), delimiter='\t', quotechar='"')]))])
             if len(list(dates)) > 1:
                 _raise(SanitycheckError(f"More than one date were found in the sample sheet for the run \"{self.run_id}\""))
             else:
@@ -577,7 +585,7 @@ class RunProcessing(common.MUGQICPipeline):
             self._report_hash = {}
             for lane in self.lanes:
                 self._report_hash[lane] = {
-                    "version" : "4.0",
+                    "version" : "3.0",
                     "run" : self.run_id,
                     "instrument" : self.instrument,
                     "flowcell" : self.flowcell_id,
@@ -585,21 +593,25 @@ class RunProcessing(common.MUGQICPipeline):
                     "seqtype" : self.seqtype,
                     "sequencing_method" : "PAIRED_END" if self.is_paired_end[lane] else "SINGLE_END",
                     "steps" : [],
-                    "readsets" : dict([
-                        (
-                            readset.name,
-                            {
-                                "sample_name": readset.sample.name,
-                                "barcodes": readset.indexes,
-                                "species": readset.species,
-                                "reported_sex": readset.gender,
-                                "fastq_1": readset.fastq1,
-                                "fastq_2": readset.fastq2 if self.is_paired_end[lane] else None,
-                                "bam": readset.bam + ".bam" if readset.bam else None,
-                                "bai": readset.bam + ".bai" if readset.bam else None
-                            }
-                        ) for readset in self.readsets[lane]
-                    ])
+                    "readsets" : dict(
+                        [
+                            (
+                                readset.name,
+                                {
+                                    "sample_name": readset.sample.name,
+                                    "barcodes": readset.indexes,
+                                    "species": readset.species,
+                                    "reported_sex": readset.gender,
+                                    "pool_fraction": readset.pool_fraction,
+                                    "library_type": readset.protocol,
+                                    "fastq_1": readset.fastq1,
+                                    "fastq_2": readset.fastq2 if self.is_paired_end[lane] else None,
+                                    "bam": readset.bam + ".bam" if readset.bam else None,
+                                    "bai": readset.bam + ".bai" if readset.bam else None
+                                }
+                            ) for readset in self.readsets[lane]
+                        ]
+                    )
                 }
         return self._report_hash
 
@@ -808,7 +820,7 @@ class RunProcessing(common.MUGQICPipeline):
                     )],
                     name=f"index.{self.run_id}.{lane}",
                     samples=self.samples[lane],
-                    # report_files=[output]
+                    report_files=[output]
                 ))
 
                 # for readset in self.readsets[lane]:
@@ -1216,6 +1228,7 @@ class RunProcessing(common.MUGQICPipeline):
                         lane_jobs.append(
                             concat_jobs(
                                 [
+                                    link_raw_fastq_job if (ini_section == 'fastq_g400') else None,
                                     bash.mkdir(
                                         tmp_output_dir,
                                         remove=True
@@ -1228,7 +1241,7 @@ class RunProcessing(common.MUGQICPipeline):
                                 ],
                                 name=f"{ini_section}.demultiplex.{self.run_id}.{lane}",
                                 samples=self.samples[lane],
-                                input_dependency=demultiplex_job.input_files,
+                                input_dependency=link_raw_fastq_job.input_files if (ini_section == 'fastq_g400') else demultiplex_job.input_files,
                                 output_dependency=demuxfastqs_outputs + [tmp_output_dir],
                                 report_files=[metrics_file]
                             )
@@ -1265,6 +1278,7 @@ class RunProcessing(common.MUGQICPipeline):
 
         return jobs
 
+    ## DEPRECATED
     def qc_graphs(self):
         """
         Generate some QC Graphics and a summary XML file for each sample using
@@ -1334,6 +1348,7 @@ class RunProcessing(common.MUGQICPipeline):
         else:
             return self.throttle_jobs(jobs)
 
+    ## DEPRECATED
     def fastqc(self):
         """
         """
@@ -1419,6 +1434,35 @@ class RunProcessing(common.MUGQICPipeline):
 
         for lane in self.lanes:
             lane_jobs = []
+            if 'mgi' in self.args.type:
+                unaligned_dir = os.path.join(self.output_dir, f"Unaligned.{lane}")
+                raw_fastq_dir = os.path.join(unaligned_dir, "raw_fastq")
+                raw_name_prefix = f"{self.raw_fastq_prefix}_L0{lane}"
+                raw_reads_input1 = os.path.join(raw_fastq_dir, f"{raw_name_prefix}_read_1.fq.gz")
+                raw_reads_input2 = os.path.join(raw_fastq_dir, f"{raw_name_prefix}_read_2.fq.gz")
+                raw_reads_output_json_path = os.path.join(raw_fastq_dir, "fastp", f"{raw_name_prefix}.raw_reads.fastp.json")
+                raw_reads_output_html_path = os.path.join(raw_fastq_dir, "fastp", f"{raw_name_prefix}.raw_reads.fastp.html")
+                lane_jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                os.path.dirname(raw_reads_output_json_path),
+                                remove=True
+                            ),
+                            fastp.basic_qc(
+                                input1,
+                                input2,
+                                raw_reads_output_json_path,
+                                raw_reads_output_html_path
+                            )
+                        ],
+                        name=f"fastp.raw_reads.{self.run_id}.{lane}",
+                        samples=[readset.sample],
+                        output_dependency=[raw_reads_output_json_path, raw_reads_output_html_path],
+                        report_files=[raw_reads_output_json_path]
+                    )
+                )
+
             for readset in self.readsets[lane]:
                 output_json_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.name + ".fastp.json")
                 output_html_path = os.path.join(os.path.dirname(readset.fastq1), "fastp", readset.name + ".fastp.html")
@@ -1434,7 +1478,7 @@ class RunProcessing(common.MUGQICPipeline):
                                 readset.fastq2,
                                 output_json_path,
                                 output_html_path
-                            ),
+                            )
                         ],
                         name=f"fastp.{readset.name}.{self.run_id}.{lane}",
                         samples=[readset.sample],
@@ -1443,6 +1487,29 @@ class RunProcessing(common.MUGQICPipeline):
                     )
                 )
                 readset.report_files['fastp'] = [output_json_path]
+
+                barcode_output_json_path = re.sub(".fastp.json", ".barcodes.fastp.json", output_json_path)
+                barcode_output_html_path = re.sub(".fastp.html", ".barcodes.fastp.html", output_html_path)
+                lane_jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                os.path.dirname(barcode_output_json_path),
+                                remove=True
+                            ),
+                            fastp.basic_qc(
+                                readset.index_fastq1,
+                                readset.index_fastq2,
+                                barcode_output_json_path,
+                                barcode_output_html_path
+                            )
+                        ],
+                        name=f"fastp.barcodes.{readset.name}.{self.run_id}.{lane}",
+                        samples=[readset.sample],
+                        output_dependency=[barcode_output_json_path, barcode_output_html_path],
+                        report_files=[barcode_output_json_path]
+                    )
+                )
             self.add_to_report_hash("fastp", lane, lane_jobs)
             jobs.extend(lane_jobs)
         return jobs
@@ -1975,7 +2042,7 @@ class RunProcessing(common.MUGQICPipeline):
                         if nb_jobs == 1:
                             job = concat_jobs(
                                 [
-                                    Job(command="mkdir -p " + alignment_dir),
+                                    bash.mkdir(alignment_dir),
                                     gatk.split_n_cigar_reads(
                                         bam,
                                         split_file_prefix + "sorted.dup.split.bam",
@@ -1996,7 +2063,7 @@ class RunProcessing(common.MUGQICPipeline):
                                 job = concat_jobs(
                                     [
                                         # Create output directory since it is not done by default by GATK tools
-                                        Job(command="mkdir -p " + split_dir),
+                                        bash.mkdir(split_dir),
                                         gatk.split_n_cigar_reads(
                                             bam,
                                             split_file_prefix + "sorted.dup.split." + str(idx) + ".bam",
@@ -2011,7 +2078,7 @@ class RunProcessing(common.MUGQICPipeline):
 
                             job = concat_jobs(
                                 [
-                                    Job(command="mkdir -p " + alignment_dir),
+                                    bash.mkdir(alignment_dir),
                                     gatk.split_n_cigar_reads(
                                         bam,
                                         split_file_prefix + "sorted.dup.split.others.bam",
@@ -2056,14 +2123,18 @@ class RunProcessing(common.MUGQICPipeline):
                         output = os.path.join(alignment_directory, readset.name + ".sorted.dup.split.bam")
 
                         if nb_jobs > 1:
-                            unique_sequences_per_job,unique_sequences_per_job_others = split_by_size(parse_sequence_dictionary_file(sequence_dictionary), nb_jobs - 1)
+                            unique_sequences_per_job,_ = split_by_size(parse_sequence_dictionary_file(sequence_dictionary), nb_jobs - 1)
 
                             inputs = []
-                            for idx,sequences in enumerate(unique_sequences_per_job):
+                            for idx,_ in enumerate(unique_sequences_per_job):
                                 inputs.append(os.path.join(split_file_prefix + "sorted.dup.split." + str(idx) + ".bam"))
                             inputs.append(os.path.join(split_file_prefix + "sorted.dup.split.others.bam"))
 
-                            job = sambamba.merge(inputs, output)
+                            job = sambamba.merge(
+                                inputs,
+                                output,
+                                ini_section="sambamba_merge_splitNtrim_files"
+                            )
                             job.name = "sambamba_merge_splitNtrim_files." + readset.name
                             job.samples = [readset.sample]
                             job.removable_files = [output]
@@ -2083,7 +2154,6 @@ class RunProcessing(common.MUGQICPipeline):
         species_list = list(set([readset.species for lane in self.lanes for readset in self.readsets[lane]]))
 
         for species in species_list:
-            species_jobs = []
             reference = None
 
             species_name = species.replace(" ", "_")
@@ -2415,8 +2485,8 @@ class RunProcessing(common.MUGQICPipeline):
                 else:
                     for readset in self.readsets[lane]:
                         if step.name in readset.report_files:
-                            if step.name == 'fastp':
-                                log.error(readset.report_files[step.name])
+                            # if step.name == 'fastp':
+                            #     log.error(readset.report_files[step.name])
                             report_job = tools.run_processing_metrics_to_json(
                                 self.run_validation_report_json[lane],
                                 step.name,
@@ -2426,7 +2496,7 @@ class RunProcessing(common.MUGQICPipeline):
                             )
                             report_job.name = f"report." + step.name + "." + readset.name + "." + self.run_id + "." + lane
                             report_job.samples = self.samples[lane]
-                            log.error(report_job.output_files)
+                            # log.error(report_job.output_files)
                             report_step_jobs.append(report_job)
 
                 lane_jobs.extend(self.throttle_jobs(report_step_jobs, f"{step.name}.{lane}"))
@@ -2521,16 +2591,18 @@ class RunProcessing(common.MUGQICPipeline):
                 destination=full_destination_folder
             )
 
-            jobs_to_concat.append(concat_jobs(
-                [
-                    Job(
-                        command=copy_command_output_folder
-                    ),
-                    bash.touch(copy_output)
-                ],
-                input_dependency=inputs,
-                output_dependency=[copy_output]
-            ))
+            jobs_to_concat.append(
+                concat_jobs(
+                    [
+                        Job(
+                            command=copy_command_output_folder
+                        ),
+                        bash.touch(copy_output)
+                    ],
+                    input_dependency=inputs,
+                    output_dependency=[copy_output]
+                )
+            )
 
         job = concat_jobs(
             jobs_to_concat,
@@ -3283,7 +3355,7 @@ class RunProcessing(common.MUGQICPipeline):
         for readset in self.readsets[lane]:
             for idx, readset_index in enumerate(readset.indexes):
                 # Barcode sequence should only match with the barcode cycles defined in the mask
-                # so we adjust thw lenght of the index sequences accordingly for the "Sample_Barcode" field
+                # so we adjust the length of the index sequences accordingly for the "Sample_Barcode" field
                 if int(self.index2cycles[lane]):
                     sample_barcode = readset_index['INDEX2'][0:index_lengths[0]] + readset_index['INDEX1'][0:index_lengths[1]]
                 else:
@@ -3372,6 +3444,7 @@ class RunProcessing(common.MUGQICPipeline):
                     if step.name in readset.report_files:
                         self.report_hash[lane]["multiqc_inputs"].extend([os.path.relpath(path, self.report_dir[lane]) for path in readset.report_files[step.name]])
         self.report_hash[lane]["multiqc_inputs"] = list(set(self.report_hash[lane]["multiqc_inputs"]))
+        self.report_hash[lane]["multiqc_inputs"].append(os.path.join(self.report_dir[lane], f"{self.run_id}.{lane}.run_validation_report.json"))
 
         if not os.path.exists(os.path.dirname(self.run_validation_report_json[lane])):
              os.makedirs(os.path.dirname(self.run_validation_report_json[lane]))
@@ -3844,6 +3917,7 @@ class RunProcessing(common.MUGQICPipeline):
         cleanjob_deps = []
         output_dir = os.path.join(self.output_dir, "Unaligned." + lane)
 
+        index_lengths = self.get_smallest_index_length(lane)
         for readset in self.readsets[lane]:
             readset_r1_outputs = []
             readset_r2_outputs = []
@@ -4003,12 +4077,10 @@ class RunProcessing(common.MUGQICPipeline):
                 unaligned_i1
             ]
             unexpected_barcode_counts_i1 = re.sub(".fastq.gz", ".counts.txt", unaligned_i1)
-#            demuxfastqs_outputs.append(unexpected_barcode_counts_i1)
             if self.is_dual_index[lane]:
                 unaligned_i2 = os.path.join(output_dir, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
                 outputs.append(unaligned_i2)
                 unexpected_barcode_counts_i2 = re.sub(".fastq.gz", ".counts.txt", unaligned_i2)
-#                demuxfastqs_outputs.append(unexpected_barcode_counts_i2)
 
             postprocessing_jobs.append(
                 pipe_jobs(
@@ -4032,45 +4104,69 @@ class RunProcessing(common.MUGQICPipeline):
             cleanjob_deps.extend(outputs)
 
         if unaligned_i1:
+            index1length = index_lengths[1] if unaligned_i2 else index_lengths[0]
+            if index1length:
+                postprocessing_jobs.append(
+                    concat_jobs(
+                        [
+                            bash.cat(
+                                unaligned_i1,
+                                None,
+                                zip=True
+                            ),
+                            bash.awk(
+                                None,
+                                unexpected_barcode_counts_i1,
+                                f"'NR%4==2 {{print substr($0,1,{index1length})}}' | sort | uniq -c | sort -nr"
+                            )
+                        ],
+                        name="fastq_countbarcodes.I1.unmatched." + self.run_id + "." + lane,
+                        samples=self.samples[lane]
+                    )
+                )
+                cleanjob_deps.append(unexpected_barcode_counts_i1)
+        if unaligned_i2:
+            index1length = index_lengths[1]
+            index2length = index_lengths[0]
+            if index2length:
+                postprocessing_jobs.append(
+                    concat_jobs(
+                        [
+                            bash.cat(
+                                unaligned_i2,
+                                None,
+                                zip=True
+                            ),
+                            bash.awk(
+                                None,
+                                unexpected_barcode_counts_i2,
+                                f"'NR%4==2 {{print substr($0,1,{index2length})}}' | sort | uniq -c | sort -nr"
+                            )
+                        ],
+                        name="fastq_countbarcodes.I2.unmatched." + self.run_id + "." + lane,
+                        samples=self.samples[lane]
+                    )
+                )
+                cleanjob_deps.append(unexpected_barcode_counts_i2)
+            unexpected_barcode_counts_i1i2 = re.sub("_I1_", "_I1I2_", unexpected_barcode_counts_i1)
             postprocessing_jobs.append(
                 concat_jobs(
                     [
-                        bash.cat(
-                            unaligned_i1,
+                        bash.paste(
                             None,
-                            zip=True
-                        ),
-                        bash.awk(
-                            None,
-                            unexpected_barcode_counts_i1,
-                            "'NR%4==2' | sort | uniq -c | sort -nr"
+                            unexpected_barcode_counts_i1i2,
+                            options=f"-d '' <(zcat {unaligned_i1} | awk 'NR%4==2 {{print substr($0,1,{index1length})}}') <(zcat {unaligned_i2} | awk 'NR%4==2 {{print substr($0,1,{index2length})}}') | sort | uniq -c | sort -nr"
                         )
                     ],
-                    name="fastq_countbarcodes.I1.unmatched." + self.run_id + "." + lane,
+                    input_dependency=[
+                        unaligned_i1,
+                        unaligned_i2
+                    ],
+                    name="fastq_countbarcodes.I1I2.unmatched." + self.run_id + "." + lane,
                     samples=self.samples[lane]
                 )
             )
             cleanjob_deps.append(unexpected_barcode_counts_i1)
-        if unaligned_i2:
-            postprocessing_jobs.append(
-                concat_jobs(
-                    [
-                        bash.cat(
-                            unaligned_i2,
-                            None,
-                            zip=True
-                        ),
-                        bash.awk(
-                            None,
-                            unexpected_barcode_counts_i2,
-                            "'NR%4==2' | sort | uniq -c | sort -nr"
-                        )
-                    ],
-                    name="fastq_countbarcodes.I2.unmatched." + self.run_id + "." + lane,
-                    samples=self.samples[lane]
-                )
-            )
-            cleanjob_deps.append(unexpected_barcode_counts_i2)
 
         return demuxfastqs_outputs, postprocessing_jobs, cleanjob_deps
 
@@ -4271,19 +4367,34 @@ class RunProcessing(common.MUGQICPipeline):
         Parse the sample sheet and return a list of readsets.
         """
         seqtype = "hiseqx" if (self.seqtype == "novaseq" and self.sbs_consumable_version == '3') else self.seqtype
-        return parse_clarity_readset_files(
-            self.readset_file,
-            self.run_id,
-            "PAIRED_END" if self.is_paired_end[lane] else "SINGLE_END",
-            lane,
-            seqtype,
-            int(self.read1cycles[lane]),
-            int(self.read2cycles[lane]),
-            int(self.index1cycles[lane]),
-            int(self.index2cycles[lane]),
-            self.output_dir,
-            self.args.type
-        )
+        if is_json(self.readset_file):
+            return parse_freezeman_readset_file(
+                self.readset_file,
+                self.run_id,
+                "PAIRED_END" if self.is_paired_end[lane] else "SINGLE_END",
+                lane,
+                seqtype,
+                int(self.read1cycles[lane]),
+                int(self.read2cycles[lane]),
+                int(self.index1cycles[lane]),
+                int(self.index2cycles[lane]),
+                self.output_dir,
+                self.args.type
+            )
+        else:
+            return parse_clarity_readset_file(
+                self.readset_file,
+                self.run_id,
+                "PAIRED_END" if self.is_paired_end[lane] else "SINGLE_END",
+                lane,
+                seqtype,
+                int(self.read1cycles[lane]),
+                int(self.read2cycles[lane]),
+                int(self.index1cycles[lane]),
+                int(self.index2cycles[lane]),
+                self.output_dir,
+                self.args.type
+            )
 
     def submit_jobs(self):
         super(RunProcessing, self).submit_jobs()
@@ -4343,6 +4454,17 @@ def distance(
     Returns the hamming distance. http://code.activestate.com/recipes/499304-hamming-distance/#c2
     """
     return sum(map(str.__ne__, str1, str2))
+
+def is_json(filepath):
+    """
+    Checks wether a file is a JSON file or not.
+    Returns True of False
+    """
+    with open(filepath) as f:
+        if f.read(1) in '{[':
+            return True
+        else:
+            return False
 
 if __name__ == '__main__':
 
