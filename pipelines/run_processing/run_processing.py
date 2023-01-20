@@ -1242,7 +1242,7 @@ class RunProcessing(common.MUGQICPipeline):
                                 name=f"{ini_section}.demultiplex.{self.run_id}.{lane}",
                                 samples=self.samples[lane],
                                 input_dependency=link_raw_fastq_job.input_files if (ini_section == 'fastq_g400') else demultiplex_job.input_files,
-                                output_dependency=demuxfastqs_outputs + [tmp_output_dir],
+                                output_dependency=demuxfastqs_outputs + [tmp_output_dir] + link_raw_fastq_job.output_files if (ini_section == 'fastq_g400') else demuxfastqs_outputs + [tmp_output_dir],
                                 report_files=[metrics_file]
                             )
                         )
@@ -1450,14 +1450,14 @@ class RunProcessing(common.MUGQICPipeline):
                                 remove=True
                             ),
                             fastp.basic_qc(
-                                input1,
-                                input2,
+                                raw_reads_input1,
+                                raw_reads_input2,
                                 raw_reads_output_json_path,
                                 raw_reads_output_html_path
                             )
                         ],
                         name=f"fastp.raw_reads.{self.run_id}.{lane}",
-                        samples=[readset.sample],
+                        samples=self.samples[lane],
                         output_dependency=[raw_reads_output_json_path, raw_reads_output_html_path],
                         report_files=[raw_reads_output_json_path]
                     )

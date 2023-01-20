@@ -399,7 +399,7 @@ class Pipeline(object):
                 if not job.name:
                     _raise(SanitycheckError("Error: job \"" + job.command + "\" has no name!"))
 
-                log.debug("Job name: " + job.name)
+                log.debug("\nJob name: " + job.name)
                 log.debug("Job input files:\n  " + "\n  ".join(job.input_files))
                 log.debug("Job output files:\n  " + "\n  ".join(job.output_files) + "\n")
 
