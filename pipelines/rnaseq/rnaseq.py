@@ -155,12 +155,75 @@ class RnaSeqRaw(common.Illumina):
         project_junction_file = os.path.join(self.output_dirs["alignment_1stPass_directory"], "AllSamples.SJ.out.tab")
         individual_junction_list=[]
         genome_length = self.star_genome_length()
+        mapping = config.param("star_align", "mapping", required=False) # option to skip 2-pass mapping with star aligner and only do one pass
         ######
-        #pass 1 -alignment
+ 
+        if not mapping or mapping == "2-pass": # if mapping is not explicitely set in config file or is set to 2-pass, start 1st pass alignment, otherwise skip to next pass
+            #pass 1 -alignment
+            for readset in self.readsets:
+                trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
+                alignment_1stPass_directory = os.path.join(self.output_dirs["alignment_1stPass_directory"], readset.sample.name, readset.name)
+                individual_junction_list.append(os.path.join(alignment_1stPass_directory,"SJ.out.tab"))
+    
+                if readset.run_type == "PAIRED_END":
+                    candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                    if readset.fastq1 and readset.fastq2:
+                        candidate_input_files.append([readset.fastq1, readset.fastq2])
+                    if readset.bam:
+                        candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                elif readset.run_type == "SINGLE_END":
+                    candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                    if readset.fastq1:
+                        candidate_input_files.append([readset.fastq1])
+                    if readset.bam:
+                        candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    [fastq1] = self.select_input_files(candidate_input_files)
+                    fastq2 = None
+                else:
+                    _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+    
+                rg_platform = config.param('star_align', 'platform', required=False)
+                rg_center = config.param('star_align', 'sequencing_center', required=False)
+    
+                job = star.align(
+                    reads1=fastq1,
+                    reads2=fastq2,
+                    output_directory=alignment_1stPass_directory,
+                    genome_index_folder=None,
+                    rg_id=readset.name,
+                    rg_sample=readset.sample.name,
+                    rg_library=readset.library if readset.library else "",
+                    rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
+                    rg_platform=rg_platform if rg_platform else "",
+                    rg_center=rg_center if rg_center else ""
+                )
+                job.name = "star_align.1." + readset.name
+                job.samples = [readset.sample]
+                jobs.append(job)
+    
+            ######
+            jobs.append(concat_jobs([
+                #pass 1 - contatenate junction
+                Job(samples=self.samples),
+                star.concatenate_junction(
+                    input_junction_files_list=individual_junction_list,
+                    output_junction_file=project_junction_file
+                ),
+                #pass 1 - genome indexing
+                star.index(
+                    genome_index_folder=project_index_directory,
+                    junction_file=project_junction_file,
+                    genome_length=genome_length
+            )], name = "star_index.AllSamples", samples=self.samples))
+    
+        ######
+        #Single Pass or Pass 2 - alignment
+        #This is the only pass if 1-pass option is specified in config file, pass 2 if not specified or 2-pass option specified 
         for readset in self.readsets:
             trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
-            alignment_1stPass_directory = os.path.join(self.output_dirs["alignment_1stPass_directory"], readset.sample.name, readset.name)
-            individual_junction_list.append(os.path.join(alignment_1stPass_directory,"SJ.out.tab"))
+            alignment_pass_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name)
 
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
@@ -187,67 +250,8 @@ class RnaSeqRaw(common.Illumina):
             job = star.align(
                 reads1=fastq1,
                 reads2=fastq2,
-                output_directory=alignment_1stPass_directory,
-                genome_index_folder=None,
-                rg_id=readset.name,
-                rg_sample=readset.sample.name,
-                rg_library=readset.library if readset.library else "",
-                rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
-                rg_platform=rg_platform if rg_platform else "",
-                rg_center=rg_center if rg_center else ""
-            )
-            job.name = "star_align.1." + readset.name
-            job.samples = [readset.sample]
-            jobs.append(job)
-
-        ######
-        jobs.append(concat_jobs([
-            #pass 1 - contatenate junction
-            Job(samples=self.samples),
-            star.concatenate_junction(
-                input_junction_files_list=individual_junction_list,
-                output_junction_file=project_junction_file
-            ),
-            #pass 1 - genome indexing
-            star.index(
-                genome_index_folder=project_index_directory,
-                junction_file=project_junction_file,
-                genome_length=genome_length
-        )], name = "star_index.AllSamples", samples=self.samples))
-
-        ######
-        #Pass 2 - alignment
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
-            alignment_2ndPass_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name)
-
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-            else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
-
-            rg_platform = config.param('star_align', 'platform', required=False)
-            rg_center = config.param('star_align', 'sequencing_center', required=False)
-
-            job = star.align(
-                reads1=fastq1,
-                reads2=fastq2,
-                output_directory=alignment_2ndPass_directory,
-                genome_index_folder=project_index_directory,
+                output_directory=alignment_pass_directory,
+                genome_index_folder=project_index_directory if not mapping or mapping=="2-pass" else None,
                 rg_id=readset.name,
                 rg_sample=readset.sample.name,
                 rg_library=readset.library if readset.library else "",
@@ -260,13 +264,14 @@ class RnaSeqRaw(common.Illumina):
                 sort_bam=True
             )
             job.samples = [readset.sample]
-            job.input_files.append(os.path.join(project_index_directory, "SAindex"))
+            if not mapping or mapping == "2-pass":
+                job.input_files.append(os.path.join(project_index_directory, "SAindex"))
 
             # If this readset is unique for this sample, further BAM merging is not necessary.
             # Thus, create a sample BAM symlink to the readset BAM.
             # remove older symlink before otherwise it raise an error if the link already exist (in case of redo)
             if len(readset.sample.readsets) == 1:
-                readset_bam = os.path.join(alignment_2ndPass_directory, "Aligned.sortedByCoord.out.bam")
+                readset_bam = os.path.join(alignment_pass_directory, "Aligned.sortedByCoord.out.bam")
                 sample_bam = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.sample.name + ".sorted.bam")
                 job = concat_jobs(
                     [
@@ -280,7 +285,7 @@ class RnaSeqRaw(common.Illumina):
                     removable_files=[sample_bam]
                 )
 
-            job.name = "star_align.2." + readset.name
+            job.name = "star_align.2." + readset.name if not mapping or mapping == "2-pass" else "star_align." + readset.name
             job.samples = [readset.sample]
             jobs.append(job)
 
