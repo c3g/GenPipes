@@ -41,16 +41,16 @@ def bamcoverage(input_bam, output_file, strand=None):
         command="""\
 bamCoverage --verbose \\
     --outFileFormat bigwig \\
-    --numberOfProcessors {cpu} \\ 
+    --numberOfProcessors {cpu} \\
     --binSize {bs} \\
     --normalizeUsing {nu} \\
     --bam {input_bam} \\
     --outFileName {output_file} {strand}""".format(
-        output_file=output_file,
-        input_bam=input_bam,
-        cpu=config.param('wiggle', 'cluster_cpu', required=True), 
-        bs=config.param('wiggle', 'bin_size', required=True),
-        nu=config.param('wiggle', 'norm_using', required=True),
-        strand="--filterRNAstrand " + strand if strand else "", 
+            output_file=output_file,
+            input_bam=input_bam,
+            cpu=config.param('wiggle', 'cluster_cpu', required=True), 
+            bs=config.param('wiggle', 'bin_size', required=True),
+            nu=config.param('wiggle', 'norm_using', required=True),
+            strand="--filterRNAstrand " + strand if strand else "", 
         )
   )
