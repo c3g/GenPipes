@@ -409,6 +409,10 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     intervals=intervals,
                                     optional=bam_postfix
                                 ),
+                                bash.chdir(
+                                    self.output_dir
+                                ),
+                                # Move sample realign
                                 bash.ln(
                                     os.path.relpath(normal_bam, os.path.dirname(normal_output_bam)),
                                     normal_output_bam,
@@ -484,6 +488,9 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 target_intervals=realign_intervals,
                                 exclude_intervals=unique_sequences_per_job_others,
                                 optional=bam_postfix
+                            ),
+                            bash.chdir(
+                                self.output_dir
                             ),
                             bash.ln(
                                 os.path.relpath(normal_bam, os.path.dirname(normal_output_bam)),
