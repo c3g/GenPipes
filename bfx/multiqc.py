@@ -29,8 +29,7 @@ def run(inputs, output, ini_section='multiqc'):
         inputs,
         [output],
         [
-            [ini_section, 'module_python'],
-            [ini_section, 'module_multiqc'],
+            [ini_section, 'module_multiqc']
         ],
         command="""\
 multiqc -f {options} \\
