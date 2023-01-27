@@ -816,7 +816,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
     
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
             
-            metrics_directory = os.path.join(self.output_dirs['metrics_directory'])
+            metrics_directory = self.output_dirs['metrics_directory']
 
             input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")
             input_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")
@@ -826,36 +826,54 @@ class TumorPair(dnaseq.DnaSeqRaw):
             concordance_out = os.path.join(metrics_directory, tumor_pair.tumor.name + ".concordance.tsv")
             contamination_out = os.path.join(metrics_directory, tumor_pair.tumor.name + ".contamination.tsv")
 
-            jobs.append(concat_jobs([
-                conpair.pileup(
-                    input_normal,
-                    pileup_normal
-                ),
-            ], name="conpair_concordance_contamination.pileup." + tumor_pair.name + "." + tumor_pair.normal.name))
-
-            jobs.append(concat_jobs([
-                conpair.pileup(
-                    input_tumor,
-                    pileup_tumor
-                ),
-            ], name="conpair_concordance_contamination.pileup." + tumor_pair.name + "." + tumor_pair.tumor.name))
-
-            jobs.append(concat_jobs([
-                bash.mkdir(
-                    metrics_directory,
-                    remove=False
-                ),
-                conpair.concordance(
-                    pileup_normal,
-                    pileup_tumor,
-                    concordance_out
-                ),
-                conpair.contamination(
-                    pileup_normal,
-                    pileup_tumor,
-                    contamination_out
+            jobs.append(
+                concat_jobs(
+                    [
+                        conpair.pileup(
+                            input_normal,
+                            pileup_normal
+                        )
+                    ],
+                    name="conpair_concordance_contamination.pileup." + tumor_pair.name + "." + tumor_pair.normal.name,
+                    samples=[tumor_pair.normal]
                 )
-            ], name="conpair_concordance_contamination." + tumor_pair.name))
+            )
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        conpair.pileup(
+                            input_tumor,
+                            pileup_tumor
+                        )
+                    ],
+                    name="conpair_concordance_contamination.pileup." + tumor_pair.name + "." + tumor_pair.tumor.name,
+                    samples=[tumor_pair.tumor]
+                )
+            )
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            metrics_directory,
+                            remove=False
+                        ),
+                        conpair.concordance(
+                            pileup_normal,
+                            pileup_tumor,
+                            concordance_out
+                        ),
+                        conpair.contamination(
+                            pileup_normal,
+                            pileup_tumor,
+                            contamination_out
+                        )
+                    ],
+                    name="conpair_concordance_contamination." + tumor_pair.name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor]
+                )
+            )
 
         return jobs
 
@@ -1604,10 +1622,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
-            normal_qualimap_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", normal_metrics,
-                                                     "qualimap", tumor_pair.normal.name)
-            tumor_qualimap_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.tumor.name,
-                                                     "qualimap", tumor_pair.tumor.name)
+            normal_qualimap_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", normal_metrics, "qualimap", tumor_pair.normal.name)
+            tumor_qualimap_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", tumor_pair.tumor.name, "qualimap", tumor_pair.tumor.name)
 
             [normal_input] = self.select_input_files(
                 [
@@ -1805,13 +1821,10 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             else:
                 normal_directory = os.path.join(metrics_directory, tumor_pair.normal.name)
     
-            tumor_directory = os.path.join(metrics_directory, tumor_pair.tumor.name)
-
             input_normal_oxog = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".oxog_metrics.txt")
             input_normal_qcbias = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name +".qcbias_metrics.txt")
             input_normal_all_picard = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".all.metrics.quality_distribution.pdf")
             input_normal_qualimap = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "genome_results.txt")
-            
             [input_normal_fastqc] = self.select_input_files(
                 [
                     [os.path.join(normal_directory, "fastqc", tumor_pair.normal.name + ".sorted.dup_fastqc.zip")],
@@ -1819,17 +1832,23 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 ]
             )
 
+            tumor_directory = os.path.join(metrics_directory, tumor_pair.tumor.name)
+
             input_tumor_oxog = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".oxog_metrics.txt")
             input_tumor_qcbias = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".qcbias_metrics.txt")
             input_tumor_all_picard = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all.metrics.quality_distribution.pdf")
             input_tumor_qualimap = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "genome_results.txt")
-
             [input_tumor_fastqc] = self.select_input_files(
                 [
                     [os.path.join(tumor_directory, "fastqc", tumor_pair.tumor.name + ".sorted.dup_fastqc.zip")],
                     [os.path.join(tumor_directory, "fastqc", tumor_pair.tumor.name + "_fastqc.zip")],
                 ]
             )
+
+            input_concordance_out = os.path.join(self.output_dirs['metrics_directory'], tumor_pair.tumor.name + ".concordance.tsv")
+            input_contamination_out = os.path.join(self.output_dirs['metrics_directory'], tumor_pair.tumor.name + ".contamination.tsv")
+            input_purple_purity = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple", tumor_name + ".purple.purity.tsv"),
+            input_purple_qc = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple", tumor_name + ".purple.qc")
 
             input_dep += [
                 input_normal_oxog,
@@ -1841,7 +1860,11 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 input_tumor_qcbias,
                 input_tumor_all_picard,
                 input_tumor_qualimap,
-                input_tumor_fastqc
+                input_tumor_fastqc,
+                input_concordance_out,
+                input_contamination_out,
+                input_purple_purity,
+                input_purple_qc
             ]
 
             output = os.path.join(metrics_directory, tumor_pair.name + ".multiqc")

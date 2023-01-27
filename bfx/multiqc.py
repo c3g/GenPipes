@@ -42,7 +42,7 @@ multiqc -f {options} \\
         )
     )
 
-def mutliqc_run(
+def multiqc_run(
     yamlFile,
     input_files
     ):
