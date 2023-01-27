@@ -1847,8 +1847,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             input_concordance_out = os.path.join(self.output_dirs['metrics_directory'], tumor_pair.tumor.name + ".concordance.tsv")
             input_contamination_out = os.path.join(self.output_dirs['metrics_directory'], tumor_pair.tumor.name + ".contamination.tsv")
-            input_purple_purity = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple", tumor_name + ".purple.purity.tsv"),
-            input_purple_qc = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple", tumor_name + ".purple.qc")
+            input_purple_purity = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple", tumor_pair.tumor.name + ".purple.purity.tsv")
+            input_purple_qc = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple", tumor_pair.tumor.name + ".purple.qc")
 
             input_dep += [
                 input_normal_oxog,
