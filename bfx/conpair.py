@@ -73,7 +73,7 @@ python3 $CONPAIR_SCRIPTS/verify_concordance.py {options} \\
         markers=config.param('conpair_concordance_contamination', 'markers_txt'),
         input_normal=input_normal,
         input_tumor=input_tumor,
-        output= output
+        output=output
         )
     )
 

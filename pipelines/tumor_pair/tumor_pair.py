@@ -1821,10 +1821,18 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             else:
                 normal_directory = os.path.join(metrics_directory, tumor_pair.normal.name)
     
+            input_normal_align = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".all.metrics.alignment_summary_metrics")
+            input_normal_base_dist = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".all.metrics.base_distribution_by_cycle_metrics")
             input_normal_oxog = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".oxog_metrics.txt")
             input_normal_qcbias = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name +".qcbias_metrics.txt")
-            input_normal_all_picard = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".all.metrics.quality_distribution.pdf")
+            input_normal_isize = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".all.metrics.insert_size_metrics")
+            input_normal_qcycle = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".all.metrics.quality_by_cycle_metrics")
+            input_normal_all_picard = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".all.metrics.quality_distribution_metrics")
             input_normal_qualimap = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "genome_results.txt")
+            input_normal_qualimap_cov = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "raw_data_qualimapReport", "coverage_histogram.txt"),
+            input_normal_qualimap_isize = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "raw_data_qualimapReport", "insert_size_histogram.txt"),
+            input_normal_qualimap_frac = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "raw_data_qualimapReport", "genome_fraction_coverage.txt"),
+            input_normal_qualimap_mapp = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "raw_data_qualimapReport", "mapped_reads_gc-content_distribution.txt")
             [input_normal_fastqc] = self.select_input_files(
                 [
                     [os.path.join(normal_directory, "fastqc", tumor_pair.normal.name + ".sorted.dup_fastqc.zip")],
@@ -1834,32 +1842,55 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             tumor_directory = os.path.join(metrics_directory, tumor_pair.tumor.name)
 
+            input_tumor_align = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all_metrics.alignment_summary_metrics")
+            input_tumor_base_dist = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all_metrics.base_distribution_by_cycle_metrics")
             input_tumor_oxog = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".oxog_metrics.txt")
             input_tumor_qcbias = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".qcbias_metrics.txt")
-            input_tumor_all_picard = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all.metrics.quality_distribution.pdf")
+            input_tumor_isize = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all.metrics.insert_size_metrics")
+            input_tumor_qcycle = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all.metrics.quality_by_cycle_metrics")
+            input_tumor_all_picard = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all.metrics.quality_distribution_metrics")
             input_tumor_qualimap = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "genome_results.txt")
+            input_tumor_qualimap_cov = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "raw_data_qualimapReport", "coverage_histogram.txt"),
+            input_tumor_qualimap_isize = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "raw_data_qualimapReport", "insert_size_histogram.txt"),
+            input_tumor_qualimap_frac = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "raw_data_qualimapReport", "genome_fraction_coverage.txt"),
+            input_tumor_qualimap_mapp = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "raw_data_qualimapReport", "mapped_reads_gc-content_distribution.txt")
             [input_tumor_fastqc] = self.select_input_files(
                 [
                     [os.path.join(tumor_directory, "fastqc", tumor_pair.tumor.name + ".sorted.dup_fastqc.zip")],
                     [os.path.join(tumor_directory, "fastqc", tumor_pair.tumor.name + "_fastqc.zip")],
                 ]
             )
-
             input_concordance_out = os.path.join(self.output_dirs['metrics_directory'], tumor_pair.tumor.name + ".concordance.tsv")
             input_contamination_out = os.path.join(self.output_dirs['metrics_directory'], tumor_pair.tumor.name + ".contamination.tsv")
             input_purple_purity = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple", tumor_pair.tumor.name + ".purple.purity.tsv")
             input_purple_qc = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple", tumor_pair.tumor.name + ".purple.qc")
 
             input_dep += [
+                input_normal_align,
+                input_normal_base_dist,
                 input_normal_oxog,
                 input_normal_qcbias,
+                input_normal_isize,
+                input_normal_qcycle,
                 input_normal_all_picard,
                 input_normal_qualimap,
+                input_normal_qualimap_cov,
+                input_normal_qualimap_isize,
+                input_normal_qualimap_frac,
+                input_normal_qualimap_mapp,
                 input_normal_fastqc,
+                input_tumor_align,
+                input_tumor_base_dist,
                 input_tumor_oxog,
                 input_tumor_qcbias,
+                input_tumor_isize,
+                input_tumor_qcycle,
                 input_tumor_all_picard,
                 input_tumor_qualimap,
+                input_tumor_qualimap_cov,
+                input_tumor_qualimap_isize,
+                input_tumor_qualimap_frac,
+                input_tumor_qualimap_mapp,
                 input_tumor_fastqc,
                 input_concordance_out,
                 input_contamination_out,
