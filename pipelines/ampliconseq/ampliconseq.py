@@ -524,7 +524,7 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
                 sample_name,
                 catenate_fasta
             )
-            job.name = "catenate"
+            job.name = "qiime_catenate"
             job.samples = self.samples
             jobs.append(job)
         else:
@@ -532,7 +532,8 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
                 [],
                 [],
                 'map_build',
-                f"-s {','.join(sample_name)}"
+                f"-s {','.join(sample_name)}",
+                ini_section='qiime_catenate'
             )
             catenate_job = qiime.catenate(
                 input_files,
@@ -546,7 +547,7 @@ printf "{sample}\t{readset}\t${{minLen}}\t${{maxLen}}\t${{minFlashOverlap}}\t${{
                         mapbuild_job,
                         catenate_job
                     ],
-                    name="catenate"
+                    name="qiime_catenate"
                 )
             )
         return jobs
