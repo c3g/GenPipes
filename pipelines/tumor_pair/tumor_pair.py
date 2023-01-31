@@ -1812,10 +1812,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
         jobs = []
 
         metrics_directory = os.path.join(self.output_dirs['metrics_directory'], "dna")
-        input_dep = []
         for tumor_pair in self.tumor_pairs.values():
             input_dep = []
-            inputs = []
             if tumor_pair.multiple_normal == 1:
                 normal_directory = os.path.join(metrics_directory, tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -1865,7 +1863,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             input_purple_purity = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple", tumor_pair.tumor.name + ".purple.purity.tsv")
             input_purple_qc = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "purple", tumor_pair.tumor.name + ".purple.qc")
 
-            input_dep += [
+            input_dep = [
                 input_normal_align,
                 input_normal_base_dist,
                 input_normal_oxog,
