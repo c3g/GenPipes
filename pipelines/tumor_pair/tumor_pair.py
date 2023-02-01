@@ -1840,8 +1840,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             tumor_directory = os.path.join(metrics_directory, tumor_pair.tumor.name)
 
-            input_tumor_align = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all_metrics.alignment_summary_metrics")
-            input_tumor_base_dist = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all_metrics.base_distribution_by_cycle_metrics")
+            input_tumor_align = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all.metrics.alignment_summary_metrics")
+            input_tumor_base_dist = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all.metrics.base_distribution_by_cycle_metrics")
             input_tumor_oxog = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".oxog_metrics.txt")
             input_tumor_qcbias = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".qcbias_metrics.txt")
             input_tumor_isize = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all.metrics.insert_size_metrics")
