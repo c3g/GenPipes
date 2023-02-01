@@ -1827,14 +1827,14 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             input_normal_qcycle = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".all.metrics.quality_by_cycle_metrics")
             input_normal_all_picard = os.path.join(normal_directory, "picard_metrics", tumor_pair.normal.name + ".all.metrics.quality_distribution_metrics")
             input_normal_qualimap = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "genome_results.txt")
-            input_normal_qualimap_cov = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "raw_data_qualimapReport", "coverage_histogram.txt"),
-            input_normal_qualimap_isize = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "raw_data_qualimapReport", "insert_size_histogram.txt"),
-            input_normal_qualimap_frac = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "raw_data_qualimapReport", "genome_fraction_coverage.txt"),
+            input_normal_qualimap_cov = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "raw_data_qualimapReport", "coverage_histogram.txt")
+            input_normal_qualimap_isize = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "raw_data_qualimapReport", "insert_size_histogram.txt")
+            input_normal_qualimap_frac = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "raw_data_qualimapReport", "genome_fraction_coverage.txt")
             input_normal_qualimap_mapp = os.path.join(normal_directory, "qualimap", tumor_pair.normal.name, "raw_data_qualimapReport", "mapped_reads_gc-content_distribution.txt")
             [input_normal_fastqc] = self.select_input_files(
                 [
                     [os.path.join(normal_directory, "fastqc", tumor_pair.normal.name + ".sorted.dup_fastqc.zip")],
-                    [os.path.join(normal_directory, "fastqc", tumor_pair.normal.name + "_fastqc.zip")],
+                    [os.path.join(normal_directory, "fastqc", tumor_pair.normal.name + "_fastqc.zip")]
                 ]
             )
 
@@ -1848,14 +1848,14 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             input_tumor_qcycle = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all.metrics.quality_by_cycle_metrics")
             input_tumor_all_picard = os.path.join(tumor_directory, "picard_metrics", tumor_pair.tumor.name + ".all.metrics.quality_distribution_metrics")
             input_tumor_qualimap = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "genome_results.txt")
-            input_tumor_qualimap_cov = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "raw_data_qualimapReport", "coverage_histogram.txt"),
-            input_tumor_qualimap_isize = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "raw_data_qualimapReport", "insert_size_histogram.txt"),
-            input_tumor_qualimap_frac = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "raw_data_qualimapReport", "genome_fraction_coverage.txt"),
+            input_tumor_qualimap_cov = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "raw_data_qualimapReport", "coverage_histogram.txt")
+            input_tumor_qualimap_isize = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "raw_data_qualimapReport", "insert_size_histogram.txt")
+            input_tumor_qualimap_frac = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "raw_data_qualimapReport", "genome_fraction_coverage.txt")
             input_tumor_qualimap_mapp = os.path.join(tumor_directory, "qualimap", tumor_pair.tumor.name, "raw_data_qualimapReport", "mapped_reads_gc-content_distribution.txt")
             [input_tumor_fastqc] = self.select_input_files(
                 [
                     [os.path.join(tumor_directory, "fastqc", tumor_pair.tumor.name + ".sorted.dup_fastqc.zip")],
-                    [os.path.join(tumor_directory, "fastqc", tumor_pair.tumor.name + "_fastqc.zip")],
+                    [os.path.join(tumor_directory, "fastqc", tumor_pair.tumor.name + "_fastqc.zip")]
                 ]
             )
             input_concordance_out = os.path.join(self.output_dirs['metrics_directory'], tumor_pair.tumor.name + ".concordance.tsv")

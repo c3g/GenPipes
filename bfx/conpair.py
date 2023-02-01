@@ -88,6 +88,7 @@ def contamination(input_normal, input_tumor, output):
             ['conpair_concordance_contamination', 'module_conpair']
         ],
         command="""\
+rm -r {output} && \\
 python3 $CONPAIR_SCRIPTS/estimate_tumor_normal_contamination.py {options} \\
   --markers {markers} \\
   --normal_pileup {input_normal} \\
