@@ -29,8 +29,7 @@ def run(inputs, output, ini_section='multiqc'):
         inputs,
         [output],
         [
-            [ini_section, 'module_python'],
-            [ini_section, 'module_multiqc'],
+            [ini_section, 'module_multiqc']
         ],
         command="""\
 multiqc -f {options} \\
@@ -42,7 +41,7 @@ multiqc -f {options} \\
         )
     )
 
-def mutliqc_run(
+def multiqc_run(
     yamlFile,
     input_files
     ):

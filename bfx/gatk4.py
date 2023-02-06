@@ -531,7 +531,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
                 exclude_intervals="".join(
                     " \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
-        ))
+            )
+        )
 
 def GenomicsDBImport(
     inputs,
@@ -563,7 +564,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 input="".join(" \\\n  --variant " + input for input in inputs),
                 output=output,
                 intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-        ))
+            )
+        )
 
 def genotype_gvcf(
     variants,
@@ -895,7 +897,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 recal_input=recal_input,
                 tranches_input=tranches_input,
                 output=apply_recal_output
-        ))
+            )
+        )
 
 def variant_filtration(
     input,
@@ -973,7 +976,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 ram=config.param('build_bam_index', 'ram'),
                 input=input,
                 output=output,
-        ))
+            )
+        )
 
 def calculate_hs_metrics(
     input,
@@ -1021,7 +1025,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 intervals=intervals,
                 baits=baits_intervals if baits_intervals != "" else intervals,
                 reference_sequence=reference_sequence if reference_sequence else config.param('picard_calculate_hs_metrics', 'genome_fasta', param_type='filepath')
-        ))
+            )
+        )
 
 def collect_multiple_metrics(
     input,
@@ -1087,7 +1092,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 input=input,
                 output=output,
                 max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
-        ))
+            )
+        )
 
 def collect_sequencing_artifacts_metrics(
     input,
@@ -1131,7 +1137,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             output=output,
             reference=reference_sequence if reference_sequence else config.param('picard_collect_sequencing_artifacts_metrics', 'genome_fasta'),
             max_records_in_ram=config.param('picard_collect_sequencing_artifacts_metrics', 'max_records_in_ram', param_type='int')
-    ))
+        )    
+    )
 
 def convert_sequencing_artifacts_metrics(
     input,
@@ -1216,7 +1223,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 dbsnp="--DB_SNP " + config.param('picard_collect_oxog_metrics', 'known_variants') if config.param('picard_collect_oxog_metrics', 'known_variants') else "",
                 reference=reference_sequence if reference_sequence else config.param('picard_collect_oxog_metrics', 'genome_fasta'),
                 max_records_in_ram=config.param('picard_collect_oxog_metrics', 'max_records_in_ram', param_type='int')
-        ))
+            )
+        )
 
 def collect_gcbias_metrics(
     input,
