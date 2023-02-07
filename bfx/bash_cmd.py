@@ -255,7 +255,41 @@ def sed(
 sed {instructions} {input} {output}""".format(
             instructions=instructions,
             input=input if input else "",
+            output="> " + output if output else ""
+        )
+    )
+
+def grep(
+    input,
+    output,
+    instructions
+    ):
+    return Job(
+        [input],
+        [output],
+        command="""\
+grep {instructions} {input} {output}""".format(
+            instructions=instructions,
+            input=input if input else "",
+            output="> " + output if output else ""
+        )
+    )
+
+def sort(
+    input,
+    output,
+    instructions,
+    extra=None
+    ):
+    return Job(
+        [input],
+        [output],
+        command="""\
+sort {instructions} {input} {output}{extra}""".format(
+            instructions=instructions,
+            input=input if input else "",
             output="> " + output if output else "",
+            extra=extra if (extra and output) else ""
         )
     )
 
@@ -282,7 +316,7 @@ def chmod(file, permission):
         [file],
         command="""\
 chmod {permission} {file}""".format(
-    permission=permission,
-    file=file
-    ),
-)
+            permission=permission,
+            file=file
+        )
+    )

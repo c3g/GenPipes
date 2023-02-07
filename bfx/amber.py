@@ -39,6 +39,7 @@ def run(normal, tumor, normal_name, tumor_name, output_dir, other_options=None):
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $AMBER_JAR \\
   -threads {threads} \\
+  -ref_genome_version {build} \\
   -reference {reference} \\
   -reference_bam {reference_bam} \\
   -tumor {tumor} \\
@@ -49,6 +50,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $AMBER_JAR \
         java_other_options=config.param('amber', 'java_other_options'),
         ram=config.param('amber', 'ram'),
         threads=config.param('amber', 'threads'),
+        build=config.param('amber', 'assembly_alias2'),
         loci=config.param('amber', 'loci'),
         reference=normal_name,
         reference_bam=normal,
