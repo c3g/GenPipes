@@ -7,6 +7,9 @@ SOFTWARE=GenomeAnalysisTK
 # What follows stands for version <= 3.8
 #VERSION=3.8
 #ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
+VERSION=4.0.6.0
+#ARCHIVE=${SOFTWARE}-${VERSION}.tar.bz2
+ARCHIVE=gatk-${VERSION}.zip
 #echo "Prior to install the gatk module, you must download the archive $ARCHIVE manually, if not done already, from http://www.broadinstitute.org/gatk/download since it requires a license agreement.
 #Once downloaded, copy it in \$MUGQIC_INSTALL_HOME_DEV/archive/ or \$MUGQIC_INSTALL_HOME/archive/"
 #SOFTWARE_DIR=$SOFTWARE-$VERSION

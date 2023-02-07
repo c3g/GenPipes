@@ -955,7 +955,7 @@ class HicSeq(common.Illumina):
 
         yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
         input_files = [os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam") for sample in self.samples]
-        job = multiqc.multiqc_run(
+        job = multiqc.mutliqc_run(
             yamlFile,
             input_files
         )

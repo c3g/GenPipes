@@ -361,14 +361,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
 
 def indel_realigner(input,
                     target_intervals,
-                    input2=[],
-                    output=[],
-                    output_dir=[],
+                    input2=None,
+                    output=None,
+                    output_dir=None,
                     output_norm_dep=[],
                     output_tum_dep=[],
                     intervals=[],
                     exclude_intervals=[],
-                    optional=[]
+                    optional=None
                     ):
     
     output_dep = output_norm_dep + output_tum_dep
@@ -441,8 +441,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
 
 def realigner_target_creator(input,
                              output,
-                             output_dir=[],
-                             input2=[],
+                             output_dir=None,
+                             input2=None,
                              intervals=[],
                              exclude_intervals=[]
                              ):
@@ -621,7 +621,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-
 def split_n_cigar_reads(input, output, intervals=[], exclude_intervals=[], interval_list=None):
     if interval_list:
         inputs = [input]
@@ -641,19 +640,18 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
   --out {output}{intervals}{exclude_intervals}""".format(
-            tmp_dir=config.param('gatk_split_N_trim', 'tmp_dir'),
-            java_other_options=config.param('gatk_split_N_trim', 'java_other_options'),
-            ram=config.param('gatk_split_N_trim', 'ram'),
-            other_options=config.param('gatk_split_N_trim', 'other_options', required=False),
-            reference_sequence=config.param('gatk_split_N_trim', 'reference', param_type='filepath'),
-            input=" \\\n  ".join(input for input in inputs),
-            output=output,
-            intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-            interval_list=" \\\n --interval_padding 100 --intervals " + interval_list if interval_list else "",
-            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+
+        tmp_dir=config.param('gatk_split_N_trim', 'tmp_dir'),
+        java_other_options=config.param('gatk_split_N_trim', 'java_other_options'),
+        ram=config.param('gatk_split_N_trim', 'ram'),
+        other_options=config.param('gatk_split_N_trim', 'other_options', required=False),
+        reference_sequence=config.param('gatk_split_N_trim', 'reference', param_type='filepath'),
+        input=input,
+        output=output,
+        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+        exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
-
 
 def variant_filtration(input, output, other_options):
     return Job(
