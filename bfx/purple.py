@@ -41,37 +41,24 @@ def run(
     ):
     amber_input = os.path.join(amber, tumor_name + ".amber.baf.pcf")
     cobalt_input = os.path.join(cobalt, tumor_name + ".cobalt.ratio.pcf")
-<<<<<<< HEAD
+
+    input_files = [amber_input, cobalt_input, somatic_snv]
+
     purple_outputs = [
         os.path.join(output_dir, tumor_name + ".purple.purity.tsv"),
         os.path.join(output_dir, tumor_name + ".purple.qc")
     ]
-||||||| parent of c2eac9fa (Tumor Pair - SV : revamping SV protocol of Tumor Pair with use of amber, purple, gridss, etc...)
-    purple_output = os.path.join(output_dir, tumor_name + ".purple.purity.tsv")
-=======
-    input_files = [amber_input, cobalt_input, somatic_snv]
-
-    purple_output = [os.path.join(output_dir, tumor_name + ".purple.purity.tsv")]
->>>>>>> c2eac9fa (Tumor Pair - SV : revamping SV protocol of Tumor Pair with use of amber, purple, gridss, etc...)
     
 
     if structural_sv is not None and sv_recovery is not None:
         input_files.append(structural_sv)
         input_files.append(sv_recovery)
         purple_sv = os.path.join(output_dir, tumor_name + ".purple.sv.vcf.gz")
-        purple_output.append(purple_sv)    
+        purple_outputs.append(purple_sv)    
 
     return Job(
-<<<<<<< HEAD
-        [amber_input, cobalt_input, somatic_snv],
-        purple_outputs,
-||||||| parent of c2eac9fa (Tumor Pair - SV : revamping SV protocol of Tumor Pair with use of amber, purple, gridss, etc...)
-        [amber_input, cobalt_input, somatic_snv],
-        [purple_output],
-=======
         input_files,
-        purple_output,
->>>>>>> c2eac9fa (Tumor Pair - SV : revamping SV protocol of Tumor Pair with use of amber, purple, gridss, etc...)
+        purple_outputs,
         [
             ['purple', 'module_java'],
             ['purple', 'module_R'],
