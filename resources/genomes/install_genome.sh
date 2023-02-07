@@ -463,6 +463,8 @@ create_bwa_index() {
     BWA_CMD="\
 mkdir -p $INDEX_DIR && \
 ln -s -f -t $INDEX_DIR ../$GENOME_FASTA && \
+ln -s -f -t $INDEX_DIR ../$GENOME_FASTA.fai && \
+ln -s -f ../$GENOME_FASTA.dict $INDEX_DIR/$GENOME_FASTA.fa.dict && \
 module load $module_bwa && \
 LOG=$LOG_DIR/bwa_$TIMESTAMP.log && \
 bwa index $INDEX_DIR/$GENOME_FASTA > \$LOG 2>&1 && \
@@ -973,7 +975,7 @@ build_files() {
     echo "You might consider to manually download a gtf file from UCSC table browser (http://genome.ucsc.edu/cgi-bin/hgTables)"
   fi
 
-  Annotations are not installed for UCSC genomes
+  # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
   then
     if [[ $SOURCE != "NCBI" ]]
