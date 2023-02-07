@@ -103,8 +103,7 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
 def compute_global_dist(input_files, output_dir, output_files, converteddir, inputinfofile, histone_mark, chr_sizes_file):
 
     return Job(
-        (input_files),
-       # input_files,
+        input_files,
         output_files,
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name="chromimpute_compute_global_dist." + histone_mark,
