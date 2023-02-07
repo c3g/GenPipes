@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=samtools
-VERSION=1.14
+VERSION=1.16
 
 if [[ ${VERSION:0:1} == 1 ]]; then
   ARCHIVE=$SOFTWARE-$VERSION.tar.bz2
