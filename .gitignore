@@ -1,4 +1,5 @@
 *.pyc
+core/__pycache__
 resources/container/*
 !resources/container/get_wrapper.sh
 .idea
