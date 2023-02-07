@@ -46,20 +46,20 @@ def somatic(
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $LINX_JAR \\
-        -threads {threads} \\
-        -ref_genome_version {build} \\
-        -sample {sample} \\
-        -purple_dir {purple_dir} \\
-        -sv_vcf {purple_vcf} \\
-        -output_dir {outdir} \\
-        -fragile_site_file {fragile_site} \\
-        -line_element_file {line_element} \\
-        -ensembl_data_dir {ensembl_data} \\
-        -check_fusions \\
-        -known_fusion_file {known_fusion} \\
-        -driver_gene_panel {driver_gene} \\
-        -check_drivers \\
-        -write_vis_data """.format(
+  -threads {threads} \\
+  -ref_genome_version {build} \\
+  -sample {sample} \\
+  -purple_dir {purple_dir} \\
+  -sv_vcf {purple_vcf} \\
+  -output_dir {outdir} \\
+  -fragile_site_file {fragile_site} \\
+  -line_element_file {line_element} \\
+  -ensembl_data_dir {ensembl_data} \\
+  -check_fusions \\
+  -known_fusion_file {known_fusion} \\
+  -driver_gene_panel {driver_gene} \\
+  -check_drivers \\
+  -write_vis_data """.format(
             tmp_dir=config.param('linx', 'tmp_dir'),
             java_other_options=config.param('linx', 'java_other_options'),
             ram=config.param('linx', 'ram'),
@@ -97,16 +97,16 @@ def germline(
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $LINX_JAR \\
-    -threads {threads} \\
-    -ref_genome_version {build} \\
-    -sample {sample} \\
-    -germline \\
-    -sv_vcf {purple_vcf} \\
-    -output_dir {outdir} \\
-    -fragile_site_file {fragile_site} \\
-    -line_element_file {line_element} \\
-    -ensembl_data_dir {ensembl_data} \\
-    -driver_gene_panel {driver_gene}""".format(
+  -threads {threads} \\
+  -ref_genome_version {build} \\
+  -sample {sample} \\
+  -germline \\
+  -sv_vcf {purple_vcf} \\
+  -output_dir {outdir} \\
+  -fragile_site_file {fragile_site} \\
+  -line_element_file {line_element} \\
+  -ensembl_data_dir {ensembl_data} \\
+  -driver_gene_panel {driver_gene}""".format(
             tmp_dir=config.param('linx', 'tmp_dir'),
             java_other_options=config.param('linx', 'java_other_options'),
             ram=config.param('linx', 'ram'),
@@ -132,8 +132,8 @@ def plot(
     return Job(
         [linx_input],
         [
-            linx_dir + "/plot",
-            linx_dir + "/circos"
+            os.path.join(linx_dir, "plot"),
+            os.path.join(linx_dir, "circos")
         ],
         [
             ['linx', 'module_java'],
@@ -144,12 +144,12 @@ def plot(
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $LINX_JAR com.hartwig.hmftools.linx.visualiser.SvVisualiser \\
-    -threads {threads} \\
-    -sample {sample} \\
-    -plot_out {linx_dir}/plot/ \\
-    -data_out {linx_dir}/circos/ \\
-    -vis_file_dir {linx_dir} \\
-    -circos circos""".format(
+  -threads {threads} \\
+  -sample {sample} \\
+  -plot_out {linx_dir}/plot/ \\
+  -data_out {linx_dir}/circos/ \\
+  -vis_file_dir {linx_dir} \\
+  -circos circos""".format(
             tmp_dir=config.param('linx', 'tmp_dir'),
             java_other_options=config.param('linx', 'java_other_options'),
             ram=config.param('linx', 'ram'),
