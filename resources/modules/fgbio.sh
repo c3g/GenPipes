@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=fgbio
-VERSION=1.4.0
+VERSION=2.1.0
 ARCHIVE=${SOFTWARE}-${VERSION}.jar
 ARCHIVE_URL=https://github.com/fulcrumgenomics/${SOFTWARE}/releases/download/${VERSION}/${ARCHIVE}
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}
@@ -26,7 +26,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          FGBIO_JAR           $root/$ARCHIVE
+setenv          FGBIO_JAR           \$root/$ARCHIVE
 prepend-path    PATH                \$root/
 "
 }

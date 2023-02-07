@@ -293,6 +293,29 @@ sort {instructions} {input} {output}{extra}""".format(
         )
     )
 
+def zip(
+    input,
+    output,
+    recursive=False
+    ):
+    inputs = [input] if not isinstance(input, list) else input
+    if output:
+        outputs = [output] 
+    else:
+        output = f"{input}.zip"
+        outputs = None
+    if recursive:
+        rec = "-r"
+        if isinstance(input, list):
+            input = os.path.dirname(input[0])
+    else:
+        rec = ""
+    return Job(
+        inputs,
+        outputs,
+        command=f"zip {rec} {output} {input}"
+    )
+
 def gzip(
     input,
     output,

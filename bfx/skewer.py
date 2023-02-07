@@ -56,5 +56,4 @@ $SKEWER_HOME/./skewer --threads {threads} {options} \\
         inputs=" \\\n  ".join(inputs),
         outputs="-o " + prefix,
         ),
-#        removable_files=output
     )

@@ -106,10 +106,10 @@ def split_n_cigar_reads(
             command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   SplitNCigarReads {other_options} \\
-  --TMP_DIR {tmp_dir} \\
-  --reference_sequence {reference_sequence} \\
-  --input_file {input} \\
-  --out {output}{intervals}{exclude_intervals}""".format(
+  --tmp-dir {tmp_dir} \\
+  --reference {reference_sequence} \\
+  --input {input} \\
+  --output {output}{intervals}{exclude_intervals}""".format(
             tmp_dir=config.param('gatk_split_N_trim', 'tmp_dir'),
             java_other_options=config.param('gatk_split_N_trim', 'gatk4_java_options'),
             ram=config.param('gatk_split_N_trim', 'ram'),
@@ -119,7 +119,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             output=output,
             intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
             interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",
-            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+            exclude_intervals="".join(" \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
 
@@ -266,7 +266,7 @@ def cat_variants(
         variants = [variants]
 
     if config.param('gatk_merge_vcfs', 'module_gatk').split("/")[2] < "4":
-        return picard2.mergeVcfs(
+        return gatk.cat_variants(
             variants,
             output
         )
@@ -649,8 +649,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --input {inputNormal} \\
   --normal-sample {normal_name} \\
   --germline-resource {known_sites} \\
-  --output {outputVCF}{interval_list}{intervals}{exclude_intervals}""".format(
-        tmp_dir=config.param('gatk_mutect', 'tmp_dir'),
+  --output {outputVCF}{interval_list}{intervals}{exclude_intervals}{pon}""".format(
+        tmp_dir=config.param('gatk_mutect2', 'tmp_dir'),
         java_other_options=config.param('gatk_mutect2', 'gatk4_java_options'),
         ram=config.param('gatk_mutect2', 'ram'),
         options=config.param('gatk_mutect2', 'options'),
@@ -664,7 +664,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
         outputVCF=outputVCF,
         interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
         intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-        #pon=" --panel-of-normals " + config.param('gatk_mutect2', 'pon', type='filepath') if config.param('gatk_mutect2', 'pon', type='filepath') else "",
+        pon=" --panel-of-normals " + config.param('gatk_mutect2', 'pon', param_type='filepath') if config.param('gatk_mutect2', 'pon', param_type='filepath', required=False) else "",
         exclude_intervals="".join(
             " \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
@@ -905,13 +905,40 @@ def variant_filtration(
     output,
     other_options
     ):
-
-    return gatk.variant_filtration(
-        input,
-        output,
-        other_options
-    )
-
+    
+    if config.param('gatk_variant_filtration', 'module_gatk').split("/")[2] < "4":
+        return gatk.variant_filtration(
+            input,
+            output,
+            other_options
+        )
+    else:
+        return Job(
+            [
+                input
+            ],
+                [
+                    output
+                ],
+            [
+                ['gatk_variant_filtration', 'module_java'],
+                ['gatk_variant_filtration', 'module_gatk']
+            ],
+            command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  VariantFiltration \\
+  --reference {reference_sequence} \\
+  --variant {variants} \\
+  {other_options} \\
+  --output {output}""".format(
+                tmp_dir=config.param('gatk_variant_filtration', 'tmp_dir'),
+                java_other_options=config.param('gatk_variant_filtration', 'gatk4_java_options'),
+                ram=config.param('gatk_variant_filtration', 'ram'),
+                reference_sequence=config.param('gatk_variant_filtration', 'genome_fasta', param_type='filepath'),
+                variants=input,
+                other_options=other_options,
+                output=output
+        ))
 
 #####################
 #  Copy Number Variant Discovery
@@ -1667,16 +1694,23 @@ def collect_rna_metrics(
     annotation_flat=None,
     reference_sequence=None
     ):
-
-    return Job(
-        [input],
-        # collect specific RNA metrics (exon rate, strand specificity, etc...)
-        [output],
-        [
-            ['picard_collect_rna_metrics', 'module_java'],
-            ['picard_collect_rna_metrics', 'module_gatk'],
-            ['picard_collect_rna_metrics', 'module_R']
-        ],
+    if config.param('picard_rna_metrics', 'module_gatk').split("/")[2] < "4":
+        return picard2.collect_rna_metrics(
+            input,
+            output,
+            annotation_flat=None,
+            reference_sequence=None
+        )
+    else:
+        return Job(
+            [input],
+            # collect specific RNA metrics (exon rate, strand specificity, etc...)
+            [output],
+            [
+                ['picard_collect_rna_metrics', 'module_java'],
+                ['picard_collect_rna_metrics', 'module_gatk'],
+                ['picard_collect_rna_metrics', 'module_R']
+            ],
             command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
  CollectRnaSeqMetrics \\

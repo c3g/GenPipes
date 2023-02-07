@@ -18,47 +18,31 @@
 ################################################################################
 
 # Python Standard Modules
+import logging
+import os
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def estimate_damage(mpileup_r1, mpileup_r2, output, sample_id, options):
+log = logging.getLogger(__name__)
 
-    return Job(
-        [mpileup_r1,mpileup_r2],
-        [output],
-        [
-            ['DEFAULT', 'module_dna_damage'],
-        ],
-        command="""\
-perl $DNA_DAMAGE_PATH/estimate_damage.pl {options} \\
-    --mpileup1 {mpileup_r1} \\
-    --mpileup2 {mpileup_r2} \\
-    --id {sample_id} \\
-    {output}""".format(
-        options=options,
-        mpileup_r1=mpileup_r1,
-        mpileup_r2=mpileup_r2,
-        sample_id=sample_id,
-        output="> " + output if output else "",
-        )
-    )
-
-def estimate_damage_r(input, output):
-
+def run(input_folder, output_folder, sample_name):
+    input = os.path.join(input_folder, sample_name + ".arriba.tsv")
+    #output = os.path.join(output_folder, sample_name + ".metacaller.1.tsv")
+    output = os.path.join(output_folder, sample_name + ".metacaller.2.tsv")
     return Job(
         [input],
         [output],
         [
-            ['DEFAULT', 'module_dna_damage'],
-            ['DEFAULT', 'module_R'],
+            ['fusionmetacaller', 'module_mugqic_tools'],
+            ['fusionmetacaller', 'module_R'],
         ],
-        command="""\
-Rscript --vanilla $DNA_DAMAGE_PATH/plot_damage.R \\
-    {input} \\
-    {output}""".format(
-        input=input,
-        output=output,
+        command="""\\
+Rscript $R_TOOLS/RunFusionMetaCaller.R \\
+    {INPUT_FOLDER}   \\
+    {OUTPUT_BASE_NAME}""".format(
+            INPUT_FOLDER=input_folder,
+            OUTPUT_BASE_NAME=os.path.join(output_folder, sample_name)
         )
     )
