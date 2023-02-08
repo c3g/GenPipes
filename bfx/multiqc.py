@@ -45,7 +45,7 @@ def multiqc_run(
     yamlFile,
     input_files
     ):
-    ## for now multiqc will run after hicup alignments are complete. Once Homer is added to mutliqc, the input must change to refect homer tag dirs
+    ## for now multiqc will run after hicup alignments are complete. Once Homer is added to multiqc, the input must change to refect homer tag dirs
     return Job(
         input_files = input_files,
         output_files = ["Analysis_Summary_Report.html"],
