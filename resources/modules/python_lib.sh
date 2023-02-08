@@ -13,7 +13,7 @@ module load $PYTHON_MODULE
 #easy_install pip
 PIP_PATH=$(which pip)
 $PIP_PATH install --upgrade pip
-
+ 
 # cython
 $PIP_PATH install --upgrade cython
 
@@ -29,6 +29,10 @@ $PIP_PATH install --upgrade biopython
 # Markdown
 $PIP_PATH install --upgrade markdown
 $PIP_PATH install --upgrade pymdown-extensions
+
+#Pands
+$PIP_PATH install --upgrade pandas
+$PIP_PATH install --upgrade tabulate
 
 # python-dateutil
 $PIP_PATH install --upgrade python-dateutil
