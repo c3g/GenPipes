@@ -1842,8 +1842,7 @@ done""".format(
             metrics_output_directory = self.output_dirs['metrics_output_directory']
             for sample in self.samples:
                 for mark_name in sample.marks:
-                    picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name,
-                                                 sample.name + "." + mark_name + ".sorted.dup.filtered.all.metrics.")
+                    picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.all.metrics.")
                     if self.run_type == 'SINGLE_END':
                         picard_files = [
                             picard_prefix + "quality_by_cycle.pdf",
@@ -1865,10 +1864,8 @@ done""".format(
 
                         ]
                     input_files.extend(picard_files)
-                    input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name,
-                                                    sample.name + "." + mark_name + ".sorted.dup.filtered.flagstat"))
-                    homer_prefix = os.path.join(self.output_dirs['homer_output_directory'], sample.name,
-                                                sample.name + "." + mark_name)
+                    input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.flagstat"))
+                    homer_prefix = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name)
                     homer_files = [
                         os.path.join(homer_prefix, "tagGCcontent.txt"),
                         os.path.join(homer_prefix, "genomeGCcontent.txt"),
@@ -1876,7 +1873,6 @@ done""".format(
                         os.path.join(homer_prefix, "tagInfo.txt")
                     ]
                     input_files.extend(homer_files)
-            # input_files = [os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt") for sample in self.samples]
             output = os.path.join(self.output_dirs['report_output_directory'], "multiqc_report")
             log.info(output)
 

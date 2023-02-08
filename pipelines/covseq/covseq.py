@@ -1250,7 +1250,7 @@ ln -sf {freebayes_output_status_fa_basename} {freebayes_output_fa}""".format(
         job = multiqc.run(
             input_dep,
             output
-            )
+        )
         job.name = "multiqc_all_samples"
         job.samples = self.samples
 
@@ -1760,8 +1760,8 @@ module load {R_covseqtools}""".format(
             self.ncovtools_quickalign,
             self.prepare_table,
             self.prepare_report_ivar,
-            self.prepare_report_freebayes
-            # self.run_multiqc
+            self.prepare_report_freebayes,
+            self.run_multiqc
         ]
 
 if __name__ == '__main__':

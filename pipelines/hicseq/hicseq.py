@@ -959,6 +959,7 @@ class HicSeq(common.Illumina):
             yamlFile,
             input_files
         )
+        job.name = "multiqc_report"
         job.samples = self.samples
         jobs.append(job)
 
