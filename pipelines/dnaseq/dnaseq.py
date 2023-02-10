@@ -1274,9 +1274,7 @@ END
                         mkdir_job,
                         gatk4.collect_gcbias_metrics(
                             input,
-                            os.path.join(picard_directory, sample.name + ".qcbias_metrics.txt"),
-                            os.path.join(picard_directory, sample.name + ".qcbias_metrics.pdf"),
-                            os.path.join(picard_directory, sample.name + ".qcbias_summary_metrics.txt")
+                            os.path.join(picard_directory, sample.name)
                         )
                     ],
                     name="picard_collect_gcbias_metrics." + sample.name,
@@ -1334,7 +1332,6 @@ END
                     samples=[sample]
                 )
             )
-
         return jobs
 
     def metrics_dna_sambamba_flagstat(self):

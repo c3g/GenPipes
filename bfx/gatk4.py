@@ -1255,13 +1255,24 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 
 def collect_gcbias_metrics(
     input,
-    output,
-    chart,
-    summary_file,
+    output_prefix,
+    chart=None,
+    summary_file=None,
     annotation_flat=None,
     reference_sequence=None
     ):
-    
+
+    output = output_prefix +  ".qcbias_metrics.txt"
+    if not chart:
+        chart = output_prefix + ".qcbias_metrics.pdf"
+    if not summary_file:
+        summary_file = output_prefix + ".qcbias_summary_metrics.txt"
+    outputs = [
+        output,
+        chart,
+        summary_file
+    ]
+
     if config.param('picard_collect_gcbias_metrics', 'module_gatk').split("/")[2] < "4":
         return picard2.collect_gcbias_metrics(
             input,
@@ -1274,7 +1285,7 @@ def collect_gcbias_metrics(
     else:
         return Job(
             [input],
-            [output],
+            outputs,
             [
                 ['picard_collect_gcbias_metrics', 'module_java'],
                 ['picard_collect_gcbias_metrics', 'module_gatk'],
@@ -1299,8 +1310,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             output=output,
             chart=chart,
             summary_file=summary_file,
-            reference=reference_sequence if reference_sequence else config.param('picard_collect_gcbias_metrics',
-                                                                                 'genome_fasta'),
+            reference=reference_sequence if reference_sequence else config.param('picard_collect_gcbias_metrics', 'genome_fasta'),
             max_records_in_ram=config.param('picard_collect_gcbias_metrics', 'max_records_in_ram', param_type='int')
         )
     )

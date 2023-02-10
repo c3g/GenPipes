@@ -1651,16 +1651,19 @@ pandoc \\
         right_fastqs = collections.defaultdict(list)
     
         for readset in self.readsets:
-            trim_dir = os.path.abspath(self.output_dirs["trim_directory"])
-            trim_file_prefix = os.path.join(trim_dir, readset.sample.name, readset.name + "-trimmed-")
+            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + "-trimmed-")
         
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
-                                                  re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    candidate_input_files.append(
+                        [
+                            re.sub("\.bam$", ".pair1.fastq.gz", readset.bam),
+                            re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)
+                        ]
+                    )
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
@@ -1672,8 +1675,7 @@ pandoc \\
                 fastq2 = None
         
             else:
-                raise Exception("Error: run type \"" + readset.run_type +
-                                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
+                raise Exception("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!")
         
             left_fastqs[readset.sample.name].append(fastq1)
             right_fastqs[readset.sample.name].append(fastq2)
