@@ -251,12 +251,14 @@ class RnaSeqRaw(common.Illumina):
                             adapter_file
                         ),
                         bash.ln(
-                            trim_file_prefix + "-trimmed-pair1.fastq.gz",
-                            trim_file_prefix + ".trim.pair1.fastq.gz"
+                            os.path.relpath(trim_file_prefix + "-trimmed-pair1.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair1.fastq.gz")),
+                            trim_file_prefix + ".trim.pair1.fastq.gz",
+                            input=trim_file_prefix + "-trimmed-pair1.fastq.gz"
                         ),
                         bash.ln(
-                            trim_file_prefix + "-trimmed-pair2.fastq.gz",
-                            trim_file_prefix + ".trim.pair2.fastq.gz"
+                            os.path.relpath(trim_file_prefix + "-trimmed-pair2.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair2.fastq.gz")),
+                            trim_file_prefix + ".trim.pair2.fastq.gz",
+                            input=trim_file_prefix + "-trimmed-pair2.fastq.gz"
                         )
                     ],
                     name="skewer_trimming." + readset.name,
@@ -285,8 +287,6 @@ class RnaSeqRaw(common.Illumina):
         individual_junction_list=[]
         genome_length = self.star_genome_length()
         mapping = config.param("star_align", "mapping", required=False) # option to skip 2-pass mapping with star aligner and only do one pass
-        mapping = config.param("star_align", "mapping", required=False) # option to skip 2-pass mapping with star aligner and only do one pass
-        ######
  
         if not mapping or mapping == "2-pass": # if mapping is not explicitely set in config file or is set to 2-pass, start 1st pass alignment, otherwise skip to next pass
             #pass 1 -alignment
@@ -326,8 +326,7 @@ class RnaSeqRaw(common.Illumina):
                     [fastq1] = self.select_input_files(candidate_input_files)
                     fastq2 = None
                 else:
-                    _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                    _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
     
                 rg_platform = config.param('star_align', 'platform', required=False)
                 rg_center = config.param('star_align', 'sequencing_center', required=False)
@@ -348,7 +347,6 @@ class RnaSeqRaw(common.Illumina):
                 job.samples = [readset.sample]
                 jobs.append(job)
     
-            ######
             jobs.append(
                 concat_jobs(
                     [
