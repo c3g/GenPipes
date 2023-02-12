@@ -22,6 +22,7 @@ import os
 
 # MUGQIC Modules
 from core.job import Job
+from core.config import config
 
 def mkdir(
     folder,
@@ -192,7 +193,7 @@ def cat(
 def cut(
     input,
     output,
-    options
+    options=None
     ):
 
     return Job(
@@ -200,7 +201,7 @@ def cut(
         [output],
         command="""\
 cut {options} {input}{output}""".format(
-            options=options,
+            options=options if options else "",
             input=input if input else "",
             output=" > " + output if output else "",
         )
@@ -209,7 +210,7 @@ cut {options} {input}{output}""".format(
 def paste(
     input,
     output,
-    options
+    options=None
     ):
 
     return Job(
@@ -217,7 +218,7 @@ def paste(
         [output],
         command="""\
 paste {options} {input}{output}""".format(
-            options=options,
+            options=options if options else "",
             input=input if input else "",
             output=" > " + output if output else "",
         )
@@ -341,5 +342,27 @@ def chmod(file, permission):
 chmod {permission} {file}""".format(
             permission=permission,
             file=file
+        )
+    )
+
+def pigz(
+    inputs,
+    threads,
+    options=None,
+    ini_section='pigz'
+    ):
+    return Job(
+        input_files=inputs,
+        output_files=[s + ".gz" for s in inputs],
+        module_entries=[
+            [ini_section, 'module_pigz']
+        ],
+        command="""\
+pigz {options} \\
+  {nthreads} \\
+  {input_files}""".format(
+            input_files=" ".join(inputs),
+            nthreads=threads,
+            options=options if options else ""
         )
     )

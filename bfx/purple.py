@@ -39,16 +39,15 @@ def run(
     germline_hotspots=None,
     driver_gene_panel=None
     ):
+
     amber_input = os.path.join(amber, tumor_name + ".amber.baf.pcf")
     cobalt_input = os.path.join(cobalt, tumor_name + ".cobalt.ratio.pcf")
-
     input_files = [amber_input, cobalt_input, somatic_snv]
 
     purple_outputs = [
         os.path.join(output_dir, tumor_name + ".purple.purity.tsv"),
         os.path.join(output_dir, tumor_name + ".purple.qc")
     ]
-    
 
     if structural_sv is not None and sv_recovery is not None:
         input_files.append(structural_sv)

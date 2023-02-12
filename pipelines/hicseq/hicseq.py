@@ -508,7 +508,7 @@ class HicSeq(common.Illumina):
                                     smooth
                                 )
                             ],
-                            samples=[sample],
+                            samples=[sample[0], sample[1]],
                             removable_files=[output_file]
                         )
                         input_files_for_merging.append(output_file)

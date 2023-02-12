@@ -86,6 +86,16 @@ class CoVSeq(dnaseq.DnaSeqRaw):
         }
         return dirs
 
+    @property
+    def multiqc_inputs(self):
+        if not hasattr(self, "_multiqc_inputs"):
+            self._multiqc_inputs = []
+        return self._multiqc_inputs
+
+    @multiqc_inputs.setter
+    def multiqc_inputs(self, value):
+        self._multiqc_inputs = value
+
     def host_reads_removal(self):
         """
         The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
@@ -111,7 +121,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [
                     [readset.fastq1, readset.fastq2]
-                    ]
+                ]
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
                 output_other = os.path.join(host_removal_directory, readset.name + ".host_removed.other.fastq.gz")
@@ -122,7 +132,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [
                     [readset.fastq1]
-                    ]
+                ]
                 [fastq1] = self.select_input_files(candidate_input_files)
                 fastq2 = None
                 output_pair1 = None
@@ -131,67 +141,69 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                 output_single = None
 
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(host_removal_directory),
-                    pipe_jobs([
-                        bwa.mem(
-                            fastq1,
-                            fastq2,
-                            read_group="'@RG" + \
-                                "\\tID:" + readset.name + \
-                                "\\tSM:" + readset.sample.name + \
-                                "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
-                                ("\\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
-                                ("\\tCN:" + config.param('host_reads_removal', 'sequencing_center') if config.param('host_reads_removal', 'sequencing_center', required=False) else "") + \
-                                ("\\tPL:" + config.param('host_reads_removal', 'sequencing_technology') if config.param('host_reads_removal', 'sequencing_technology', required=False) else "Illumina") + \
-                                "'",
-                                ini_section='host_reads_removal'
+                concat_jobs(
+                    [
+                        bash.mkdir(host_removal_directory),
+                        pipe_jobs(
+                            [
+                                bwa.mem(
+                                    fastq1,
+                                    fastq2,
+                                    read_group="'@RG" + \
+                                        "\\tID:" + readset.name + \
+                                        "\\tSM:" + readset.sample.name + \
+                                        "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
+                                        ("\\tPU:run" + readset.run + "_" + readset.lane if readset.run and readset.lane else "") + \
+                                        ("\\tCN:" + config.param('host_reads_removal', 'sequencing_center') if config.param('host_reads_removal', 'sequencing_center', required=False) else "") + \
+                                        ("\\tPL:" + config.param('host_reads_removal', 'sequencing_technology') if config.param('host_reads_removal', 'sequencing_technology', required=False) else "Illumina") + \
+                                        "'",
+                                        ini_section='host_reads_removal'
                                 ),
+                                sambamba.view(
+                                    "/dev/stdin",
+                                    None,
+                                    options="-S -f bam"
+                                ),
+                                sambamba.sort(
+                                    "/dev/stdin",
+                                    readset_bam,
+                                    tmp_dir=config.param('host_reads_removal', 'tmp_dir', required=True),
+                                    other_options=config.param('host_reads_removal', 'sambamba_sort_other_options', required=False)
+                                )
+                            ]
+                        ),
                         sambamba.view(
-                            "/dev/stdin",
-                            None,
-                            options="-S -f bam"
-                            ),
-                        sambamba.sort(
-                            "/dev/stdin",
-                            readset_bam,
-                            tmp_dir=config.param('host_reads_removal', 'tmp_dir', required=True),
-                            other_options=config.param('host_reads_removal', 'sambamba_sort_other_options', required=False)
-                            )
-                        ]),
-                    sambamba.view(
                             readset_bam,
                             readset_bam_host_removed_sorted,
                             options=config.param('host_reads_removal', 'sambamba_view_other_options')
-                            ),
-                    sambamba.sort(
+                        ),
+                        sambamba.sort(
                             readset_bam_host_removed_sorted,
                             readset_bam_host_removed_name_sorted,
                             tmp_dir=config.param('host_reads_removal', 'tmp_dir', required=True),
                             other_options=config.param('host_reads_removal', 'sambamba_name_sort_other_options', required=False)
-                            ),
-                    sambamba.index(
-                        readset_bam_host_removed_sorted,
-                        readset_bam_host_removed_sorted_index,
-                        other_options=config.param('host_reads_removal', 'sambamba_index_other_options', required=False)
                         ),
-                    samtools.bam2fq(
-                        input_bam=readset_bam_host_removed_name_sorted,
-                        output_pair1=output_pair1,
-                        output_pair2=output_pair2,
-                        output_other=output_other,
-                        output_single=output_single,
-                        ini_section='host_reads_removal'
+                        sambamba.index(
+                            readset_bam_host_removed_sorted,
+                            readset_bam_host_removed_sorted_index,
+                            other_options=config.param('host_reads_removal', 'sambamba_index_other_options', required=False)
+                        ),
+                        samtools.bam2fq(
+                            input_bam=readset_bam_host_removed_name_sorted,
+                            output_pair1=output_pair1,
+                            output_pair2=output_pair2,
+                            output_other=output_other,
+                            output_single=output_single,
+                            ini_section='host_reads_removal'
                         )
                     ],
                     name="host_reads_removal." + readset.name,
                     samples=[readset.sample]
-                    )
                 )
+            )
 
         return jobs
 
@@ -208,16 +220,16 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             host_removal_file_prefix = os.path.join(host_removal_directory, readset.name)
             kraken_directory = os.path.join(self.output_dirs["metrics_directory"], "dna", readset.sample.name, "kraken_metrics")
             kraken_out_prefix = os.path.join(kraken_directory, readset.name)
-            # readset_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam")
-            # index_bam = os.path.join(host_removal_directory, readset.name, readset.name + ".nsorted.bam.bai")
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [
                     [host_removal_file_prefix + ".host_removed.pair1.fastq.gz", host_removal_file_prefix + ".host_removed.pair2.fastq.gz"]
-                    ]
+                ]
                 if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                    candidate_input_files.append(
+                        [readset.fastq1, readset.fastq2]
+                    )
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
                 unclassified_output = [kraken_out_prefix + ".unclassified_sequences_1.fastq", kraken_out_prefix + ".unclassified_sequences_2.fastq"]
                 classified_output = [kraken_out_prefix + ".classified_sequences_1.fastq", kraken_out_prefix + ".classified_sequences_2.fastq"]
@@ -225,7 +237,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [
                     [host_removal_file_prefix + ".host_removed.single.fastq.gz"]
-                    ]
+                ]
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 [fastq1] = self.select_input_files(candidate_input_files)
@@ -234,40 +246,33 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                 classified_output = [kraken_out_prefix + ".classified_sequences.fastq"]
 
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(kraken_directory),
-                    kraken2.kraken2(
-                        fastq1,
-                        fastq2,
-                        kraken_out_prefix,
-                        other_options=config.param('kraken_analysis', 'kraken2_other_options'),
-                        nthread=config.param('kraken_analysis', 'kraken2_threads'),
-                        database=config.param('kraken_analysis', 'kraken2_database')
+                concat_jobs(
+                    [
+                        bash.mkdir(kraken_directory),
+                        kraken2.kraken2(
+                            fastq1,
+                            fastq2,
+                            kraken_out_prefix,
+                            other_options=config.param('kraken_analysis', 'kraken2_other_options'),
+                            nthread=config.param('kraken_analysis', 'kraken2_threads'),
+                            database=config.param('kraken_analysis', 'kraken2_database')
                         ),
-                    Job(
-                        input_files=unclassified_output + classified_output,
-                        output_files=[s + ".gz" for s in unclassified_output + classified_output],
-                        module_entries=[
-                            ['pigz', 'module_pigz']
-                        ],
-                        command="""pigz -k -f -p {nthreads} {input_files}""".format(
-                            input_files=" ".join(unclassified_output + classified_output),
-                            nthreads=config.param('kraken_analysis', 'pigz_threads')
-                            )
+                        bash.pigz(
+                            unclassified_output + classified_output,
+                            config.param('kraken_analysis', 'pigz_threads'),
+                            options="-k -f -p",
+                            ini_section='kraken_analysis'
                         )
                     ],
                     name="kraken_analysis." + readset.name,
                     samples=[readset.sample],
                     removable_files=unclassified_output + classified_output
-                    )
                 )
-
+            )
         return jobs
-
 
     def cutadapt(self):
         """
@@ -293,7 +298,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [
                     [host_removal_file_prefix + ".host_removed.pair1.fastq.gz", host_removal_file_prefix + ".host_removed.pair2.fastq.gz"]
-                    ]
+                ]
                 if readset.fastq1 and readset.fastq2:
                     candidate_input_files.append([readset.fastq1, readset.fastq2])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
@@ -303,7 +308,7 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [
                     [host_removal_file_prefix + ".host_removed.single.fastq.gz"]
-                    ]
+                ]
                 if readset.fastq1:
                     candidate_input_files.append([readset.fastq1])
                 [fastq1] = self.select_input_files(candidate_input_files)
@@ -312,25 +317,25 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                 adapter_rev = None
 
             else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type + "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(trim_directory),
-                    cutadapt.trim(
-                        fastq1,
-                        fastq2,
-                        trim_file_prefix,
-                        adapter_fwd,
-                        adapter_rev
+                concat_jobs(
+                    [
+                        bash.mkdir(trim_directory),
+                        cutadapt.trim(
+                            fastq1,
+                            fastq2,
+                            trim_file_prefix,
+                            adapter_fwd,
+                            adapter_rev
                         )
                     ],
-                    name="cutadapt." + readset.name)
+                    name="cutadapt." + readset.name,
+                    samples=[readset.sample]
                 )
-
+            )
         return jobs
-
 
     def mapping_bwa_mem_sambamba(self):
         """
@@ -445,30 +450,33 @@ class CoVSeq(dnaseq.DnaSeqRaw):
 
             if library[sample] == "PAIRED_END":
                 jobs.append(
-                    concat_jobs([
-                        bash.mkdir(os.path.dirname(output_bam)),
-                        pipe_jobs([
-                            sambamba.view(
-                                input_bam=input_bam,
-                                output_bam=None,
-                                options="-h"
-                                ),
-                            Job(
-                                input_files=[],
-                                output_files=[],
-                                command="""awk 'substr($0,1,1)=="@" ||\\
-($9 >= {min_insert_size} && $9 <= {max_insert_size}) ||\\
-($9 <= -{min_insert_size} && $9 >= -{max_insert_size})'""".format(
-    min_insert_size=config.param('sambamba_filtering', 'min_insert_size', required=False),
-    max_insert_size=config.param('sambamba_filtering', 'max_insert_size', required=False)
-    )
-                                ),
-                            sambamba.view(
-                                input_bam="/dev/stdin",
-                                output_bam=output_bam,
-                                options=config.param('sambamba_filtering', 'sambamba_filtering_other_options', required=False)
-                                )
-                            ]),
+                    concat_jobs(
+                        [
+                            bash.mkdir(os.path.dirname(output_bam)),
+                            pipe_jobs(
+                                [
+                                    sambamba.view(
+                                        input_bam=input_bam,
+                                        output_bam=None,
+                                        options="-h"
+                                        ),
+                                    Job(
+                                        input_files=[],
+                                        output_files=[],
+                                        command="""awk 'substr($0,1,1)=="@" || \\
+  ($9 >= {min_insert_size} && $9 <= {max_insert_size}) || \\
+  ($9 <= -{min_insert_size} && $9 >= -{max_insert_size})'""".format(
+                                            min_insert_size=config.param('sambamba_filtering', 'min_insert_size', required=False),
+                                            max_insert_size=config.param('sambamba_filtering', 'max_insert_size', required=False)
+                                        )
+                                    ),
+                                    sambamba.view(
+                                        input_bam="/dev/stdin",
+                                        output_bam=output_bam,
+                                        options=config.param('sambamba_filtering', 'sambamba_filtering_other_options', required=False)
+                                    )
+                                ]
+                            )
                         ],
                         name="sambamba_filtering." + sample.name,
                         samples=[sample]
@@ -476,22 +484,20 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                     )
             else:
                 jobs.append(
-                    concat_jobs([
-                        bash.mkdir(os.path.dirname(output_bam)),
-                        sambamba.view(
-                            input_bam=input_bam,
-                            output_bam=output_bam,
-                            options=config.param('sambamba_filtering', 'sambamba_filtering_other_options', required=False)
-                            ),
+                    concat_jobs(
+                        [
+                            bash.mkdir(os.path.dirname(output_bam)),
+                            sambamba.view(
+                                input_bam=input_bam,
+                                output_bam=output_bam,
+                                options=config.param('sambamba_filtering', 'sambamba_filtering_other_options', required=False)
+                            )
                         ],
                         name="sambamba_filtering." + sample.name,
                         samples=[sample]
-                        )
                     )
-
-
+                )
         return jobs
-
 
     def fgbio_trim_primers(self):
         """
@@ -505,21 +511,20 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             output_bam = os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(output_bam)),
-                    fgbio.trim_primers(
-                        input_bam,
-                        output_bam,
-                        hard_clip=True
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.dirname(output_bam)),
+                        fgbio.trim_primers(
+                            input_bam,
+                            output_bam,
+                            hard_clip=True
                         )
                     ],
                     name="fgbio_trim_primers." + sample.name,
                     samples=[sample]
-                    )
                 )
-
+            )
         return jobs
-
 
     def ivar_trim_primers(self):
         """
@@ -534,26 +539,25 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             output_bam = os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(alignment_directory),
-                    ivar.trim_primers(
-                        input_bam,
-                        output_prefix
+                concat_jobs(
+                    [
+                        bash.mkdir(alignment_directory),
+                        ivar.trim_primers(
+                            input_bam,
+                            output_prefix
                         ),
-                    sambamba.sort(
-                        output_prefix + ".bam",
-                        output_bam,
-                        config.param('ivar_trim_primers', 'tmp_dir')
+                        sambamba.sort(
+                            output_prefix + ".bam",
+                            output_bam,
+                            config.param('ivar_trim_primers', 'tmp_dir')
                         )
                     ],
                     name="ivar_trim_primers." + sample.name,
                     samples=[sample],
                     removable_files=[output_prefix + ".bam"]
-                    )
                 )
-
+            )
         return jobs
-
 
     def metrics_sambamba_flagstat(self):
         """
@@ -574,19 +578,19 @@ class CoVSeq(dnaseq.DnaSeqRaw):
                 output = os.path.join(flagstat_directory, re.sub("\.bam$", ".flagstat", os.path.basename(input_bam)))
 
                 jobs.append(
-                    concat_jobs([
-                        bash.mkdir(flagstat_directory),
-                        sambamba.flagstat(
-                            input_bam,
-                            output,
-                            config.param('sambamba_flagstat', 'flagstat_options')
+                    concat_jobs(
+                        [
+                            bash.mkdir(flagstat_directory),
+                            sambamba.flagstat(
+                                input_bam,
+                                output,
+                                config.param('sambamba_flagstat', 'flagstat_options')
                             )
                         ],
                         name="sambamba_flagstat." + re.sub("\.bam$", "", os.path.basename(input_bam)),
                         samples=[sample]
-                        )
                     )
-
+                )
         return jobs
 
     def metrics_bedtools_genomecov(self):
@@ -597,28 +601,29 @@ class CoVSeq(dnaseq.DnaSeqRaw):
         jobs = []
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
-            [input_bam] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
-            ])
+            [input_bam] = self.select_input_files(
+                [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                ]
+            )
 
             output = os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(input_bam)))
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(alignment_directory),
-                    bedtools.genomecov(
-                        input_bam,
-                        output
+                concat_jobs(
+                    [
+                        bash.mkdir(alignment_directory),
+                        bedtools.genomecov(
+                            input_bam,
+                            output
                         )
                     ],
                     name="bedtools_genomecov." + sample.name,
                     samples=[sample]
-                    )
                 )
-
+            )
         return jobs
-
 
     def multiple_metrics_picard(self):
         """
@@ -642,55 +647,52 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             input_bams = [
                 os.path.join(alignment_directory, sample.name + ".sorted.bam"),
                 os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")
-                ]
+            ]
+
             mkdir_job = bash.mkdir(picard_directory, remove=True)
 
             for input in input_bams:
                 jobs.append(
-                    concat_jobs([
-                        mkdir_job,
-                        gatk4.collect_multiple_metrics(
-                            input,
-                            os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input)) + ".all.metrics"),
-                            library_type=library[sample]
+                    concat_jobs(
+                        [
+                            mkdir_job,
+                            gatk4.collect_multiple_metrics(
+                                input,
+                                os.path.join(picard_directory, re.sub("\.bam$", ".all.metrics", os.path.basename(input))),
+                                library_type=library[sample]
                             )
                         ],
                         name="multiple_metrics_raw_picard." + re.sub("\.bam$", "", os.path.basename(input)),
                         samples=[sample]
-                        )
                     )
-
+                )
                 jobs.append(
-                    concat_jobs([
-                        mkdir_job,
-                        gatk4.collect_oxog_metrics(
-                            input,
-                            os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input)) + ".oxog_metrics.txt")
+                    concat_jobs(
+                        [
+                            mkdir_job,
+                            gatk4.collect_oxog_metrics(
+                                input,
+                                os.path.join(picard_directory, re.sub("\.bam$", ".oxog_metrics.txt", os.path.basename(input)))
                             )
                         ],
                         name="picard_collect_oxog_metrics." + re.sub("\.bam$", "", os.path.basename(input)),
                         samples=[sample]
-                        )
                     )
-
+                )
                 jobs.append(
-                    concat_jobs([
-                        mkdir_job,
-                        gatk4.collect_gcbias_metrics(
-                            input,
-                            os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input)) + ".qcbias_metrics.txt"),
-                            os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input)) + ".qcbias_metrics.pdf"),
-                            os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input)) + ".qcbias_summary_metrics.txt")
+                    concat_jobs(
+                        [
+                            mkdir_job,
+                            gatk4.collect_gcbias_metrics(
+                                input,
+                                os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input)))
                             )
                         ],
                         name="picard_collect_gcbias_metrics." + re.sub("\.bam$", "", os.path.basename(input)),
                         samples=[sample]
-                        )
                     )
-
+                )
         return jobs
-
-
 
     def covseq_metrics(self):
         """
@@ -700,16 +702,16 @@ class CoVSeq(dnaseq.DnaSeqRaw):
         jobs = []
 
         jobs.extend(self.multiple_metrics_picard())
-        # jobs.extend(self.metrics_dna_picard_metrics())
         jobs.extend(self.metrics_dna_sample_qualimap())
         jobs.extend(self.metrics_sambamba_flagstat())
         jobs.extend(self.metrics_bedtools_genomecov())
-        # jobs.extend(self.metrics_dna_sambamba_flagstat())
         jobs.extend(self.picard_calculate_hs_metrics())
         jobs.extend(self.metrics())
 
-        return jobs
+        for job in jobs:
+            self.multiqc_inputs.extend(job.output_files)
 
+        return jobs
 
     def ivar_calling(self):
 
@@ -723,49 +725,50 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
 
-            [input_bam] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
-            ])
+            [input_bam] = self.select_input_files(
+                [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                ]
+            )
 
             output_prefix = os.path.join(variant_directory, sample.name) + ".variants"
             output_tsv = output_prefix + ".tsv"
             output_vcf = os.path.join(variant_directory, re.sub("\.bam$", "", os.path.basename(input_bam))) + ".vcf"
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(variant_directory),
-                    pipe_jobs([
-                        samtools.mpileup(
-                            input_bam,
-                            output=None,
-                            other_options=config.param('ivar_call_variants', 'mpileup_options'),
-                            region=None,
-                            regionFile=None,
-                            ini_section='ivar_call_variants'
-                            ),
-                        ivar.call_variants(
-                            output_prefix
-                            )
-                        ]),
-                    ivar.tsv_to_vcf(
-                        output_tsv,
-                        output_vcf
+                concat_jobs(
+                    [
+                        bash.mkdir(variant_directory),
+                        pipe_jobs(
+                            [
+                                samtools.mpileup(
+                                    input_bam,
+                                    output=None,
+                                    other_options=config.param('ivar_call_variants', 'mpileup_options'),
+                                    region=None,
+                                    regionFile=None,
+                                    ini_section='ivar_call_variants'
+                                ),
+                                ivar.call_variants(output_prefix)
+                            ]
                         ),
-                    htslib.bgzip_tabix(
-                        output_vcf,
-                        output_vcf + ".gz"
+                        ivar.tsv_to_vcf(
+                            output_tsv,
+                            output_vcf
+                        ),
+                        htslib.bgzip_tabix(
+                            output_vcf,
+                            output_vcf + ".gz"
                         )
                     ],
                     name="ivar_call_variants." + sample.name,
                     samples=[sample],
                     removable_files=[output_vcf]
-                    )
                 )
-
+            )
         return jobs
-
 
     def freebayes_calling(self):
         """
@@ -780,87 +783,92 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
 
-            [input_bam] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
-            ])
+            [input_bam] = self.select_input_files(
+                [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                ]
+            )
 
             output_prefix = os.path.join(variant_directory, sample.name) + ".freebayes_calling"
             output_gvcf = output_prefix + ".gvcf"
 
             output_masks = output_prefix + ".mask.txt"
             output_variants = output_prefix + ".variants.vcf"
-            # output_variants_norm = re.sub(r"\.vcf$", ".norm.vcf.gz", output_variants)
             output_consensus = output_prefix + ".consensus.vcf"
             output_consensus_norm = re.sub(r"\.vcf$", ".norm.vcf.gz", output_consensus)
-            # output_ambiguous_norm = output_prefix + ".ambiguous.norm.vcf.gz"
-            # output_fixed_norm = output_prefix + ".fixed.norm.vcf.gz"
 
-
-            job = concat_jobs([
-                bash.mkdir(variant_directory),
-                freebayes.freebayes(
-                    input_bam,
-                    output_gvcf,
-                    options="--gvcf --gvcf-dont-use-chunk true",
-                    ini_section='freebayes_call_variants'
+            job = concat_jobs(
+                [
+                    bash.mkdir(variant_directory),
+                    freebayes.freebayes(
+                        input_bam,
+                        output_gvcf,
+                        options="--gvcf --gvcf-dont-use-chunk true",
+                        ini_section='freebayes_call_variants'
                     ),
-                freebayes.process_gvcf(
-                    output_gvcf,
-                    output_masks,
-                    output_variants,
-                    output_consensus,
-                    ini_section='freebayes_call_variants'
+                    freebayes.process_gvcf(
+                        output_gvcf,
+                        output_masks,
+                        output_variants,
+                        output_consensus,
+                        ini_section='freebayes_call_variants'
                     )
-                ])
-
+                ]
+            )
             for file in [output_variants, output_consensus]:
                 output_vcf_gz = re.sub(r"\.vcf$", ".norm.vcf.gz", file)
-                job = concat_jobs([
-                    job,
-                    pipe_jobs([
-                        bcftools.norm(
-                            file,
-                            None,
-                            "-f " + config.param("DEFAULT", 'genome_fasta', param_type='filepath'),
-                            ini_section='freebayes_call_variants'
-                            ),
-                        htslib.bgzip_tabix(
-                            None,
-                            output_vcf_gz
-                            )
-                        ])
-                    ])
-
+                job = concat_jobs(
+                    [
+                        job,
+                        pipe_jobs(
+                            [
+                                bcftools.norm(
+                                    file,
+                                    None,
+                                    "-f " + config.param("DEFAULT", 'genome_fasta', param_type='filepath'),
+                                    ini_section='freebayes_call_variants'
+                                ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    output_vcf_gz
+                                )
+                            ]
+                        )
+                    ]
+                )
             for flag in ["ambiguous", "fixed"]:
                 output_vcf_gz = re.sub(r"\.consensus\.norm\.vcf\.gz$", ".%s.norm.vcf.gz" % (flag), output_consensus_norm)
-                job = concat_jobs([
-                    job,
-                    pipe_jobs([
-                        bash.cat(
-                            output_consensus_norm,
-                            None,
-                            zip=True
-                        ),
-                        bash.awk(
-                            None,
-                            None,
-                            "-v vartag=ConsensusTag=%s '$0 ~ /^#/ || $0 ~ vartag'" % (flag)),
-                        htslib.bgzip_tabix(
-                            None,
-                            output_vcf_gz
-                            )
-                        ])
-                    ])
-
+                job = concat_jobs(
+                    [
+                        job,
+                        pipe_jobs(
+                            [
+                                bash.cat(
+                                    output_consensus_norm,
+                                    None,
+                                    zip=True
+                                ),
+                                bash.awk(
+                                    None,
+                                    None,
+                                    "-v vartag=ConsensusTag=%s '$0 ~ /^#/ || $0 ~ vartag'" % (flag)
+                                ),
+                                htslib.bgzip_tabix(
+                                    None,
+                                    output_vcf_gz
+                                )
+                            ]
+                        )
+                    ]
+                )
             job.name = "freebayes_call_variants." + sample.name
             job.samples = [sample]
             job.removable_files = [output_gvcf]
             jobs.append(job)
 
         return jobs
-
 
     def snpeff_annotate(self):
         """
@@ -874,11 +882,13 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             metrics_ivar_prefix = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "snpeff_metrics_ivar", sample.name + ".snpEff")
             metrics_freebayes_prefix = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "snpeff_metrics_freebayes", sample.name + ".snpEff")
 
-            [ivar_vcf] = self.select_input_files([
-                [os.path.join(variant_directory, sample.name + ".sorted.filtered.primerTrim.vcf.gz")],
-                [os.path.join(variant_directory, sample.name + ".sorted.filtered.vcf.gz")],
-                [os.path.join(variant_directory, sample.name + ".sorted.vcf.gz")]
-            ])
+            [ivar_vcf] = self.select_input_files(
+                [
+                    [os.path.join(variant_directory, sample.name + ".sorted.filtered.primerTrim.vcf.gz")],
+                    [os.path.join(variant_directory, sample.name + ".sorted.filtered.vcf.gz")],
+                    [os.path.join(variant_directory, sample.name + ".sorted.vcf.gz")]
+                ]
+            )
 
             ivar_output_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(ivar_vcf)))
 
@@ -886,34 +896,33 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             freebayes_output_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(freebayes_vcf)))
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(metrics_ivar_prefix)),
-                    snpeff.snpeff_annotate(
-                        ivar_vcf,
-                        ivar_output_vcf,
-                        metrics_ivar_prefix
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.dirname(metrics_ivar_prefix)),
+                        snpeff.snpeff_annotate(
+                            ivar_vcf,
+                            ivar_output_vcf,
+                            metrics_ivar_prefix
                         ),
-                    htslib.bgzip_tabix(
-                        ivar_output_vcf,
-                        ivar_output_vcf + ".gz"
+                        htslib.bgzip_tabix(
+                            ivar_output_vcf,
+                            ivar_output_vcf + ".gz"
                         ),
-                    bash.mkdir(os.path.dirname(metrics_freebayes_prefix)),
-                    snpeff.snpeff_annotate(
-                        freebayes_vcf,
-                        freebayes_output_vcf,
-                        metrics_freebayes_prefix
+                        bash.mkdir(os.path.dirname(metrics_freebayes_prefix)),
+                        snpeff.snpeff_annotate(
+                            freebayes_vcf,
+                            freebayes_output_vcf,
+                            metrics_freebayes_prefix
                         ),
-                    htslib.bgzip_tabix(
-                        freebayes_output_vcf,
-                        freebayes_output_vcf + ".gz"
+                        htslib.bgzip_tabix(
+                            freebayes_output_vcf,
+                            freebayes_output_vcf + ".gz"
                         )
                     ],
                     name="snpeff_annotate." + sample.name,
                     samples=[sample]
-                    # removable_files=[output_vcf]
-                    )
                 )
-
+            )
         return jobs
 
     def ivar_create_consensus(self):
@@ -925,37 +934,41 @@ class CoVSeq(dnaseq.DnaSeqRaw):
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             consensus_directory = os.path.join(self.output_dirs["consensus_directory"], sample.name)
-            [input_bam] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
-            ])
+            [input_bam] = self.select_input_files(
+                [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.primerTrim.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                ]
+            )
 
             output_prefix = os.path.join(consensus_directory, re.sub("\.bam$", ".consensus", os.path.basename(input_bam)))
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(output_prefix)),
-                    pipe_jobs([
-                        samtools.mpileup(
-                            input_bam,
-                            output=None,
-                            other_options=config.param('ivar_create_consensus', 'mpileup_options'),
-                            region=None,
-                            regionFile=None,
-                            ini_section='ivar_create_consensus'
-                            ),
-                        ivar.create_consensus(
-                            output_prefix
-                            )
-                        ])
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.dirname(output_prefix)),
+                        pipe_jobs(
+                            [
+                                samtools.mpileup(
+                                    input_bam,
+                                    output=None,
+                                    other_options=config.param('ivar_create_consensus', 'mpileup_options'),
+                                    region=None,
+                                    regionFile=None,
+                                    ini_section='ivar_create_consensus'
+                                ),
+                                ivar.create_consensus(
+                                    output_prefix
+                                )
+                            ]
+                        )
                     ],
                     name="ivar_create_consensus." + sample.name,
                     samples=[sample],
                     removable_files=[output_prefix + ".fa"]
-                    )
                 )
-
+            )
         return jobs
 
     def bcftools_create_consensus(self):
@@ -968,7 +981,6 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             consensus_directory = os.path.join(self.output_dirs["consensus_directory"], sample.name)
             variant_directory = os.path.join(self.output_dirs["variants_directory"], sample.name)
 
-
             input_prefix = os.path.join(variant_directory, sample.name) + ".freebayes_calling"
 
             intput_masks = input_prefix + ".mask.txt"
@@ -980,39 +992,37 @@ class CoVSeq(dnaseq.DnaSeqRaw):
             output_consensus_fasta = output_prefix + ".consensus.fasta"
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(output_prefix)),
-                    bcftools.consensus(
-                        input_ambiguous_norm,
-                        output_ambiguous_fasta,
-                        "-f " + config.param("DEFAULT", 'genome_fasta', param_type='filepath') + " -I "
-                        ),
-                    pipe_jobs([
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.dirname(output_prefix)),
                         bcftools.consensus(
-                            input_fixed_norm,
-                            None,
-                            "-f " + output_ambiguous_fasta + " -m " + intput_masks
-                            ),
-                        Job(
-                            input_files=[],
-                            output_files=[output_consensus_fasta],
-                            module_entries=[],
-                            command="""\\
-sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".format(
-    reference_genome_name=config.param("DEFAULT", 'assembly_synonyms'),
-    sample_name=sample.name,
-    output_consensus_fasta=output_consensus_fasta
-    )
-                            )
-                        ])
+                            input_ambiguous_norm,
+                            output_ambiguous_fasta,
+                            "-f " + config.param("DEFAULT", 'genome_fasta', param_type='filepath') + " -I "
+                        ),
+                        pipe_jobs(
+                            [
+                                bcftools.consensus(
+                                    input_fixed_norm,
+                                    None,
+                                    "-f " + output_ambiguous_fasta + " -m " + intput_masks
+                                    ),
+                                bash.sed(
+                                    None,
+                                    output_consensus_fasta,
+                                    """s/{reference_genome_name}/{sample_name}/""".format(
+                                        reference_genome_name=config.param("DEFAULT", 'assembly_synonyms'),
+                                        sample_name=sample.name
+                                    )
+                                )
+                            ]
+                        )
                     ],
                     name="bcftools_create_consensus." + sample.name,
                     samples=[sample]
-                    )
                 )
-
+            )
         return jobs
-
 
     def quast_consensus_metrics(self):
         """
@@ -1023,34 +1033,35 @@ sed s/{reference_genome_name}/{sample_name}/ > {output_consensus_fasta}""".forma
         for sample in self.samples:
             consensus_directory = os.path.join(self.output_dirs["consensus_directory"], sample.name)
             ivar_output_dir = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "quast_metrics_ivar")
-            [ivar_consensus] = self.select_input_files([
-                [os.path.join(consensus_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
-                [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
-                [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
-            ])
+            [ivar_consensus] = self.select_input_files(
+                [
+                    [os.path.join(consensus_directory, sample.name + ".sorted.filtered.primerTrim.consensus.fa")],
+                    [os.path.join(consensus_directory, sample.name + ".sorted.filtered.consensus.fa")],
+                    [os.path.join(consensus_directory, sample.name + ".sorted.consensus.fa")]
+                ]
+            )
             freebayes_output_dir = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "quast_metrics_freebayes")
             freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.fasta"
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(ivar_output_dir),
-                    quast.quast(
-                        ivar_consensus,
-                        ivar_output_dir
+                concat_jobs(
+                    [
+                        bash.mkdir(ivar_output_dir),
+                        quast.quast(
+                            ivar_consensus,
+                            ivar_output_dir
                         ),
-                    bash.mkdir(freebayes_output_dir),
-                    quast.quast(
-                        freebayes_consensus,
-                        freebayes_output_dir
+                        bash.mkdir(freebayes_output_dir),
+                        quast.quast(
+                            freebayes_consensus,
+                            freebayes_output_dir
                         )
                     ],
                     name="quast_consensus_metrics." + sample.name,
                     samples=[sample]
-                    )
                 )
-
+            )
         return jobs
-
 
     def rename_consensus_header_ivar(self):
         """
@@ -1141,7 +1152,6 @@ ln -sf {ivar_output_status_fa_basename} {ivar_output_fa}""".format(
                     samples=[sample]
                 )
             )
-
         return jobs
 
     def rename_consensus_header_freebayes(self):
@@ -1222,7 +1232,6 @@ ln -sf {freebayes_output_status_fa_basename} {freebayes_output_fa}""".format(
                     samples=[sample]
                 )
             )
-
         return jobs
 
     def run_multiqc(self):
@@ -1230,25 +1239,10 @@ ln -sf {freebayes_output_status_fa_basename} {freebayes_output_fa}""".format(
         jobs = []
 
         metrics_directory = os.path.join(self.output_dirs["metrics_directory"], "dna")
-        input_dep = []
-        inputs = []
-        for sample in self.samples:
-            input_oxog = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".oxog_metrics.txt")
-            input_qcbias = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".qcbias_metrics.txt")
-            input_all_picard = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".all.metrics.quality_distribution.pdf")
-
-            input_dep += [
-                input_oxog,
-                input_qcbias,
-                input_all_picard
-            ]
-
-            inputs += [os.path.join(metrics_directory, sample.name)]
-
         output = os.path.join(metrics_directory, "multiqc_report")
 
         job = multiqc.run(
-            input_dep,
+            self.multiqc_inputs,
             output
         )
         job.name = "multiqc_all_samples"
@@ -1257,7 +1251,6 @@ ln -sf {freebayes_output_status_fa_basename} {freebayes_output_fa}""".format(
         jobs.append(job)
 
         return jobs
-
 
     def ncovtools_quickalign(self):
         """
@@ -1275,7 +1268,8 @@ ln -sf {freebayes_output_status_fa_basename} {freebayes_output_fa}""".format(
             ivar_consensus = os.path.join(consensus_directory, sample.name + ".consensus.fasta")
             freebayes_consensus = os.path.join(consensus_directory, sample.name) + ".freebayes_calling.consensus.renamed.fasta"
             jobs.append(
-                    concat_jobs([
+                concat_jobs(
+                    [
                         bash.mkdir(ncovtools_quickalign_directory),
                         Job(
                             input_files=[ivar_consensus, freebayes_consensus],
@@ -1286,17 +1280,16 @@ ln -sf {freebayes_output_status_fa_basename} {freebayes_output_fa}""".format(
                             ],
                             command="""\\
 quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}""".format(
-    ivar_consensus=ivar_consensus,
-    freebayes_consensus=freebayes_consensus,
-    output=output
-    )
+                                ivar_consensus=ivar_consensus,
+                                freebayes_consensus=freebayes_consensus,
+                                output=output
                             )
+                        )
                     ],
                     name="ncovtools_quickalign." + sample.name,
                     samples=[sample]
-                    )
                 )
-
+            )
         return jobs
 
     def prepare_table(self):
@@ -1354,13 +1347,15 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         for sample in self.samples:
             # Finding quast outputs
             ivar_quast_output_dir = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "quast_metrics_ivar")
-            quast_outputs.extend([
-                os.path.join(ivar_quast_output_dir, "report.html"),
-                os.path.join(ivar_quast_output_dir, "report.pdf"),
-                os.path.join(ivar_quast_output_dir, "report.tex"),
-                os.path.join(ivar_quast_output_dir, "report.tsv"),
-                os.path.join(ivar_quast_output_dir, "report.txt")
-                ])
+            quast_outputs.extend(
+                [
+                    os.path.join(ivar_quast_output_dir, "report.html"),
+                    os.path.join(ivar_quast_output_dir, "report.pdf"),
+                    os.path.join(ivar_quast_output_dir, "report.tex"),
+                    os.path.join(ivar_quast_output_dir, "report.tsv"),
+                    os.path.join(ivar_quast_output_dir, "report.txt")
+                ]
+            )
             # Finding flagstat outputs
             flagstat_directory = os.path.join(self.output_dirs["metrics_directory"], "dna", sample.name, "flagstat")
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
@@ -1372,10 +1367,12 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
             for input_bam in input_bams:
                 flagstat_outputs.append(os.path.join(flagstat_directory, re.sub("\.bam$", ".flagstat", os.path.basename(input_bam))))
             # Finding BedGraph file
-            [input_bam] = self.select_input_files([
-                [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-                [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
-            ])
+            [input_bam] = self.select_input_files(
+                [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                ]
+            )
             bedgraph_outputs.append(os.path.join(alignment_directory, re.sub("\.bam$", ".BedGraph", os.path.basename(input_bam))))
 
             # Picard collect multiple metrics outputs
@@ -1383,14 +1380,18 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
             picard_out = os.path.join(picard_directory, re.sub("\.bam$", "", os.path.basename(input_bam)) + ".all.metrics")
 
             if library[sample] == "PAIRED_END":
-                picard_outputs.extend([
-                    picard_out + ".alignment_summary_metrics",
-                    picard_out + ".insert_size_metrics"
-                ])
+                picard_outputs.extend(
+                    [
+                        picard_out + ".alignment_summary_metrics",
+                        picard_out + ".insert_size_metrics"
+                    ]
+                )
             else:
-                picard_outputs.extend([
-                    picard_out + ".alignment_summary_metrics",
-                ])
+                picard_outputs.extend(
+                    [
+                        picard_out + ".alignment_summary_metrics",
+                    ]
+                )
 
         covid_collect_metrics_inputs = []
         covid_collect_metrics_inputs.extend(kraken_outputs)
@@ -1400,18 +1401,19 @@ quick_align.py -r {ivar_consensus} -g {freebayes_consensus} -o vcf > {output}"""
         covid_collect_metrics_inputs.extend(bedgraph_outputs)
         covid_collect_metrics_inputs.extend(picard_outputs)
         jobs.append(
-            concat_jobs([
-                bash.mkdir(metrics_directory),
-                bash.mkdir(os.path.dirname(run_metadata)),
-                covseq_tools.covid_collect_metrics(
-                    readset_file,
-                    covid_collect_metrics_inputs
+            concat_jobs(
+                [
+                    bash.mkdir(metrics_directory),
+                    bash.mkdir(os.path.dirname(run_metadata)),
+                    covseq_tools.covid_collect_metrics(
+                        readset_file,
+                        covid_collect_metrics_inputs
                     ),
-                Job(
-                    input_files=[],
-                    output_files=[run_metadata, software_version],
-                    module_entries=[],
-                    command="""\\
+                    Job(
+                        input_files=[],
+                        output_files=[run_metadata, software_version],
+                        module_entries=[],
+                        command="""\\
 echo "Preparing to run metadata..." && \\
 echo "run_name,{run_name}
 genpipes_version,{genpipes_version}
@@ -1420,22 +1422,21 @@ assembly_synonyms,{assembly_synonyms}
 sequencing_technology,{sequencing_technology}" > {run_metadata} && \\
 echo "Software Versions
 {modules_all}" > {software_version}""".format(
-    output_dir=self.output_dir,
-    run_name=config.param('prepare_report', 'run_name', required=True),
-    genpipes_version=self.genpipes_version.strip(),
-    cluster_server=config.param('prepare_report', 'cluster_server'),
-    assembly_synonyms=config.param('prepare_report', 'assembly_synonyms'),
-    sequencing_technology=config.param('prepare_report', 'sequencing_technology'),
-    run_metadata=run_metadata,
-    modules_all="\n".join(modules),
-    software_version=software_version
-    )
+                            output_dir=self.output_dir,
+                            run_name=config.param('prepare_report', 'run_name', required=True),
+                            genpipes_version=self.genpipes_version.strip(),
+                            cluster_server=config.param('prepare_report', 'cluster_server'),
+                            assembly_synonyms=config.param('prepare_report', 'assembly_synonyms'),
+                            sequencing_technology=config.param('prepare_report', 'sequencing_technology'),
+                            run_metadata=run_metadata,
+                            modules_all="\n".join(modules),
+                            software_version=software_version
+                        )
                     )
                 ],
                 name="prepare_table." + config.param('prepare_report', 'run_name', required=True)
-                )
             )
-
+        )
         return jobs
 
     def prepare_report_ivar(self):
@@ -1454,14 +1455,6 @@ echo "Software Versions
         ivar_metadata = os.path.join(ivar_ncovtools_directory, "metadata.tsv")
         ivar_ncovtools_data_directory = os.path.join(ivar_ncovtools_directory, "data")
         ivar_ncovtools_config = os.path.join(ivar_ncovtools_directory, "config.yaml")
-
-        modules = []
-        # Retrieve all unique module version values in config files
-        # assuming that all module key names start with "module_"
-        for section in config.sections():
-            for name, value in config.items(section):
-                if re.search("^module_", name) and value not in modules:
-                    modules.append(value)
 
         job = concat_jobs(
             [

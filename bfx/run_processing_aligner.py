@@ -128,8 +128,11 @@ class BwaRunProcessingAligner(RunProcessingAligner):
         input_file_prefix = readset.bam + '.'
         input = input_file_prefix + "bam"
 
-        job = picard.collect_multiple_metrics(input, input_file_prefix + "metrics",
-                                              reference_sequence=readset.reference_file)
+        job = picard.collect_multiple_metrics(
+            input,
+            input_file_prefix + "metrics",
+            reference_sequence=readset.reference_file
+        )
         job.name = "picard_collect_multiple_metrics." + readset.name + ".met" + "." + readset.run + "." + readset.lane
         jobs.append(job)
 

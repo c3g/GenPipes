@@ -225,17 +225,35 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             )
         )
 
-def collect_gcbias_metrics(input, output, chart, summary_file, annotation_flat=None,reference_sequence=None):
+def collect_gcbias_metrics(
+    input,
+    output_prefix,
+    chart=None,
+    summary_file=None,
+    annotation_flat=None,
+    reference_sequence=None
+    ):
 
-        return Job(
-            [input],
-            [output],
-            [
-                ['picard_collect_gcbias_metrics', 'module_java'],
-                ['picard_collect_gcbias_metrics', 'module_picard'],
-                ['picard_collect_gcbias_metrics', 'module_R']
-            ],
-            command="""\
+    output = output_prefix +  ".qcbias_metrics.txt"
+    if not chart:
+        chart = output_prefix + ".qcbias_metrics.pdf"
+    if not summary_file:
+        summary_file = output_prefix + ".qcbias_summary_metrics.txt"
+    outputs = [
+        output,
+        chart,
+        summary_file
+    ]
+
+    return Job(
+        [input],
+        outputs,
+        [
+            ['picard_collect_gcbias_metrics', 'module_java'],
+            ['picard_collect_gcbias_metrics', 'module_picard'],
+            ['picard_collect_gcbias_metrics', 'module_R']
+        ],
+        command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar CollectGcBiasMetrics \\
  VALIDATION_STRINGENCY=SILENT ALSO_IGNORE_DUPLICATES=TRUE \\
  TMP_DIR={tmp_dir} \\
@@ -254,8 +272,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             summary_file=summary_file,
             reference=reference_sequence if reference_sequence else config.param('picard_collect_gcbias_metrics', 'genome_fasta'),
             max_records_in_ram=config.param('picard_collect_gcbias_metrics', 'max_records_in_ram', param_type='int')
-            )
         )
+    )
 
 def fix_mate_information(input, output):
 
@@ -540,11 +558,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
   )
 
 def collect_rna_metrics(
-        input,
-        output,
-        annotation_flat=None,
-        reference_sequence=None
-):
+    input,
+    output,
+    annotation_flat=None,
+    reference_sequence=None
+    ):
 
     if config.param('picard_collect_rna_metrics', 'module_picard').split("/")[2] < "2":
         return picard.collect_rna_metrics(input, output, annotation_flat, reference_sequence)
@@ -569,16 +587,16 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  MINIMUM_LENGTH={min_length} \\
  REFERENCE_SEQUENCE={reference} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_collect_rna_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_rna_metrics', 'java_other_options'),
-            ram=config.param('picard_collect_rna_metrics', 'ram'),
-            input=input,
-            output=output,
-            ref_flat=annotation_flat if annotation_flat else config.param('picard_collect_rna_metrics', 'annotation_flat'),
-            strand_specificity=config.param('picard_collect_rna_metrics', 'strand_info'),
-            min_length=config.param('picard_collect_rna_metrics', 'minimum_length', param_type='int'),
-            reference=reference_sequence if reference_sequence else config.param('picard_collect_rna_metrics', 'genome_fasta'),
-            max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', param_type='int')
+                tmp_dir=config.param('picard_collect_rna_metrics', 'tmp_dir'),
+                java_other_options=config.param('picard_collect_rna_metrics', 'java_other_options'),
+                ram=config.param('picard_collect_rna_metrics', 'ram'),
+                input=input,
+                output=output,
+                ref_flat=annotation_flat if annotation_flat else config.param('picard_collect_rna_metrics', 'annotation_flat'),
+                strand_specificity=config.param('picard_collect_rna_metrics', 'strand_info'),
+                min_length=config.param('picard_collect_rna_metrics', 'minimum_length', param_type='int'),
+                reference=reference_sequence if reference_sequence else config.param('picard_collect_rna_metrics', 'genome_fasta'),
+                max_records_in_ram=config.param('picard_collect_rna_metrics', 'max_records_in_ram', param_type='int')
             )
         )
 
