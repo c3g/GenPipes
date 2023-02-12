@@ -63,10 +63,17 @@ get_dbNSFP() {
     then
         module load $module_snpeff $module_java
         java -Xmx8G -jar $SNPEFF_HOME/SnpSift.jar dbnsfp -v -db $DBNSFP.txt.gz $DBSNP > $DBSNP_ANNOTATED
+        # fix dbsnp header and chr
+        module load $module_tabix
+        zcat $DBSNP | awk '{if($0 !~ /^#/) print "chr"$0; else print $0}' | sed 's#chrMT#chrM#g' | bgzip -cf > $DBSNP.fix.vcf.gz
+        mv -f $DBSNP.fix.vcf.gz $DBSNP
+        rm -f $DBSNP.tbi
+        && tabix -pvcf $DBSNP
+        zcat $DBSNP_ANNOTATED | awk '{if($0 !~ /^#/) print "chr"$0; else print $0}' | sed 's#chrMT#chrM#g' | bgzip -cf > $DBSNP_ANNOTATED.fix.vcf
+        mv -f $DBSNP_ANNOTATED.fix.vcf $DBSNP_ANNOTATED
         for POP_FREQ in 1000Gp3_EUR_AF 1000Gp3_AFR_AF 1000Gp3_ASN_AF;
         do
             cat $DBSNP_ANNOTATED | sed -e 's/dbNSFP_'$POP_FREQ'/AF/g' > $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf
-            module load $module_tabix
             bgzip $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf
             tabix -p vcf $ANNOTATIONS_DIR/$SPECIES.$ASSEMBLY.dbSNP${DBSNP_VERSION}_${POP_FREQ}.vcf.gz
         done

@@ -443,8 +443,8 @@ chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
   BINGC_CMD="\
 module load $module_python $module_mugqic_tools && \
 LOG=$LOG_DIR/wgbs_bin100bp_GC_$TIMESTAMP.log && \
-\$PYTHON_TOOLS/getFastaBinedGC.py -s 100 -r $BISMARK_INDEX_DIR/$GENOME_FASTA -o $ANNOTATIONS_DIR/${ASSEMBLY}_wgbs_bin100bp_GC.bed > \$LOG 2>&1" # && \
-#chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
+\$PYTHON_TOOLS/getFastaBinedGC.py -s 100 -r $BISMARK_INDEX_DIR/$GENOME_FASTA -o $ANNOTATIONS_DIR/${ASSEMBLY}_wgbs_bin100bp_GC.bed > \$LOG 2>&1" && \
+chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
     cmd_or_job BINGC_CMD 8
   else
     echo
