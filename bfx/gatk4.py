@@ -1385,6 +1385,7 @@ def picard_mark_duplicates(
                 ['picard_mark_duplicates', 'module_gatk']
             ],
             command="""\
+rm -rf {output}.part && \\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
  MarkDuplicates \\
  --REMOVE_DUPLICATES {remove_duplicates} \\

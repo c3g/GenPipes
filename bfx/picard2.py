@@ -321,6 +321,7 @@ def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
                 ['picard_mark_duplicates', 'module_picard']
             ],
             command="""\
+rm -rf {output}.part && \\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar MarkDuplicates \\
  REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
  TMP_DIR={tmp_dir} \\

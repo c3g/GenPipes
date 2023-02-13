@@ -574,7 +574,6 @@ pandoc --to=markdown \\
                 samples=[sample]
             )
             jobs.append(job)
-
         return jobs
 
     def rseqc(self):
@@ -645,7 +644,6 @@ pandoc --to=markdown \\
                 samples=[sample]
             )
             jobs.append(job)
-        
         return jobs
 
     def gatk_callable_loci(self):
@@ -1684,7 +1682,7 @@ pandoc \\
             job = concat_jobs(
                 [
                     bash.mkdir(output_dir),
-                    bash.chdir(output_dir),
+                    # bash.chdir(output_dir),
                     arriba.run(
                         left_fastqs[sample.name],
                         right_fastqs[sample.name],
