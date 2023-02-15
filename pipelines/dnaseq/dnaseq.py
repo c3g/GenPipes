@@ -821,7 +821,6 @@ END
                 job.name = "sambamba_merge_realigned." + sample.name
                 job.samples = [sample]
                 jobs.append(job)
-
         return jobs
 
     def fix_mate_by_coordinate(self):
@@ -862,7 +861,6 @@ END
                     samples=[sample]
                 )
             )
-
         return jobs
 
     def fix_mate_by_coordinate_samtools(self):
@@ -911,11 +909,9 @@ END
                     samples=[sample]
                 )
             )
-
         return jobs
 
-
-    def picard_mark_duplicates(self):
+    def mark_duplicates(self):
         """
         Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
         (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
@@ -949,94 +945,22 @@ END
                             picard_directory,
                             remove=False,
                         ),
-                        gatk4.picard_mark_duplicates(
+                        gatk4.mark_duplicates(
                             input,
                             output,
-                            metrics_file
-                            ),
+                            metrics_file,
+                            ini_section='mark_duplicates'
+                        ),
                         Job(
                             [metrics_file],
                             [os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")],
-                            command="sed -e 's#.realigned##g' " + metrics_file + " > "
-                                    + os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")
+                            command="sed -e 's#.realigned##g' " + metrics_file + " > " + os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")
                         )
                     ],
-                    name="picard_mark_duplicates." + sample.name,
+                    name="mark_duplicates." + sample.name,
                     samples=[sample]
                 )
             )
-
-        return jobs
-
-    def gatk_mark_duplicates(self):
-        """
-        GATK version of Mark duplicates. A better duplication marking algorithm that handles all cases including clipped and gapped alignments
-        Aligned reads per sample are duplicates if they have the same 5' alignment positions
-        (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
-        will be marked as a duplicate in the BAM file.
-        """
-
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
-            readset = sample.readsets[0]
-
-            [input] = self.select_input_files(
-                [
-                    [alignment_file_prefix + "sorted.matefixed.bam"],
-                    [alignment_file_prefix + "sorted.realigned.bam"],
-                    [alignment_file_prefix + "sorted.bam"],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
-                ]
-            )
-            output = alignment_file_prefix + "sorted.dup.bam"
-            metrics_file = alignment_file_prefix + "sorted.dup.metrics"
-
-            job = gatk4.mark_duplicates(
-                input,
-                output,
-                metrics_file
-            )
-            job.name = "gatk_mark_duplicates." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
-
-        return jobs
-
-    def sambamba_mark_duplicates(self):
-        """
-        Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
-        (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
-        will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
-        """
-
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
-            readset = sample.readsets[0]
-
-            [input] = self.select_input_files(
-                [
-                    [alignment_file_prefix + "sorted.matefixed.bam"],
-                    [alignment_file_prefix + "sorted.realigned.bam"],
-                    [alignment_file_prefix + "sorted.bam"],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
-                ]
-            )
-            output = alignment_file_prefix + "sorted.dup.bam"
-
-            job = sambamba.markdup(
-                input,
-                output
-            )
-            job.name = "sambamba_mark_duplicates." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
-            
         return jobs
 
     def recalibration(self):
@@ -1129,7 +1053,6 @@ END
                     samples=[sample]
                 )
             )
-
         return jobs
 
     def sym_link_final_bam(self):
@@ -4268,7 +4191,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                self.picard_mark_duplicates,
+                self.mark_duplicates,
                 self.recalibration,
                 self.gatk_haplotype_caller,
                 self.merge_and_call_individual_gvcf,
@@ -4308,7 +4231,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                self.picard_mark_duplicates,
+                self.mark_duplicates,
                 self.recalibration,
                 self.rawmpileup,
                 self.rawmpileup_cat,
@@ -4341,7 +4264,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                self.picard_mark_duplicates,
+                self.mark_duplicates,
                 self.recalibration,
                 self.sym_link_final_bam,
                 self.metrics_dna_picard_metrics,
@@ -4374,7 +4297,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                self.picard_mark_duplicates,
+                self.mark_duplicates,
                 self.recalibration,
                 self.gatk_haplotype_caller,
                 self.merge_and_call_individual_gvcf,

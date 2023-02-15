@@ -522,7 +522,7 @@ pandoc --to=markdown \\
             jobs.append(job)
         return jobs
 
-    def picard_mark_duplicates(self):
+    def mark_duplicates(self):
         """
         Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
         (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
@@ -536,9 +536,10 @@ pandoc --to=markdown \\
             job = picard.mark_duplicates(
                 [alignment_file_prefix + "bam"],
                 alignment_file_prefix + "mdup.bam",
-                alignment_file_prefix + "mdup.metrics"
+                alignment_file_prefix + "mdup.metrics",
+                ini_section='mark_duplicates'
             )
-            job.name = "picard_mark_duplicates." + sample.name
+            job.name = "mark_duplicates." + sample.name
             job.samples = [sample]
             jobs.append(job)
         return jobs
@@ -2344,7 +2345,7 @@ END
                 self.star,
                 self.picard_merge_sam_files,
                 self.picard_sort_sam,
-                self.picard_mark_duplicates,
+                self.mark_duplicates,
                 self.picard_rna_metrics,
                 self.estimate_ribosomal_rna,
                 self.bam_hard_clip,
@@ -2364,7 +2365,7 @@ END
                 self.skewer_trimming,
                 self.star,
                 self.picard_merge_sam_files,
-                self.picard_mark_duplicates,
+                self.mark_duplicates,
                 self.split_N_trim,
                 self.sambamba_merge_splitNtrim_files,
                 self.gatk_indel_realigner,
@@ -2389,7 +2390,7 @@ END
                 self.skewer_trimming,
                 self.star,
                 self.picard_merge_sam_files,
-                self.picard_mark_duplicates,
+                self.mark_duplicates,
                 self.split_N_trim,
                 self.sambamba_merge_splitNtrim_files,
                 self.gatk_indel_realigner,

@@ -42,7 +42,6 @@ from bfx import picard2 as picard
 from bfx import bedtools
 from bfx import samtools
 from bfx import sambamba
-from bfx import gatk4
 from bfx import gatk
 from bfx import igvtools
 from bfx import bissnp
@@ -331,9 +330,10 @@ pandoc --to=markdown \\
                 [input],
                 bam_output,
                 metrics_file,
-                remove_duplicates="true"
+                remove_duplicates="true",
+                ini_section='mark_duplicates'
             )
-            job.name = "picard_mark_duplicates." + sample.name
+            job.name = "mark_duplicates." + sample.name
             job.samples = [sample]
             jobs.append(job)
 

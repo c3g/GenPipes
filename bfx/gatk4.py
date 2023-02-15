@@ -110,16 +110,16 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --reference {reference_sequence} \\
   --input {input} \\
   --output {output}{intervals}{exclude_intervals}""".format(
-            tmp_dir=config.param('gatk_split_N_trim', 'tmp_dir'),
-            java_other_options=config.param('gatk_split_N_trim', 'gatk4_java_options'),
-            ram=config.param('gatk_split_N_trim', 'ram'),
-            other_options=config.param('gatk_split_N_trim', 'other_options', required=False),
-            reference_sequence=config.param('gatk_split_N_trim', 'reference', param_type='filepath'),
-            input=input,
-            output=output,
-            intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-            interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",
-            exclude_intervals="".join(" \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
+                tmp_dir=config.param('gatk_split_N_trim', 'tmp_dir'),
+                java_other_options=config.param('gatk_split_N_trim', 'gatk4_java_options'),
+                ram=config.param('gatk_split_N_trim', 'ram'),
+                other_options=config.param('gatk_split_N_trim', 'other_options', required=False),
+                reference_sequence=config.param('gatk_split_N_trim', 'reference', param_type='filepath'),
+                input=input,
+                output=output,
+                intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+                interval_list=" \\\n --interval-padding 100 --intervals " + interval_list if interval_list else "",
+                exclude_intervals="".join(" \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
 
@@ -1360,18 +1360,20 @@ def mark_duplicates(
     inputs,
     output,
     metrics_file,
-    remove_duplicates="false"
+    remove_duplicates="false",
+    ini_section='gatk_mark_duplicates'
     ):
 
     if not isinstance(inputs, list):
         inputs = [inputs]
         
-    if config.param('gatk_mark_duplicates', 'module_gatk').split("/")[2] < "4":
+    if config.param(ini_section, 'module_gatk').split("/")[2] < "4":
         return picard2.mark_duplicates(
             inputs,
             output,
             metrics_file,
-            remove_duplicates
+            remove_duplicates,
+            ini_section=ini_section
         )
     else:
         return Job(
@@ -1382,8 +1384,8 @@ def mark_duplicates(
                 metrics_file
             ],
             [
-                ['gatk_mark_duplicates', 'module_java'],
-                ['gatk_mark_duplicates', 'module_gatk']
+                [ini_section, 'module_java'],
+                [ini_section, 'module_gatk']
             ],
             command="""\
 rm -rf {output}.part && \\
@@ -1397,14 +1399,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --OUTPUT {output} \\
  --METRICS_FILE {metrics_file} \\
  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=config.param('gatk_mark_duplicates', 'tmp_dir'),
-                java_other_options=config.param('gatk_mark_duplicates', 'gatk4_java_options'),
-                ram=config.param('gatk_mark_duplicates', 'ram'),
+                tmp_dir=config.param(ini_section, 'tmp_dir'),
+                java_other_options=config.param(ini_section, 'gatk4_java_options'),
+                ram=config.param(ini_section, 'ram'),
                 remove_duplicates=remove_duplicates,
                 inputs=" \\\n  ".join("--INPUT " + input for input in inputs),
                 output=output,
                 metrics_file=metrics_file,
-                max_records_in_ram=config.param('gatk_mark_duplicates', 'max_records_in_ram', param_type='int')
+                max_records_in_ram=config.param(ini_section, 'max_records_in_ram', param_type='int')
             ),
             removable_files=[
                 output,
@@ -1413,18 +1415,22 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             ]
         )
 
-def mark_duplicates_mate_cigar(inputs,
-                           output,
-                           metrics_file,
-                           remove_duplicates="false"):
+def mark_duplicates_mate_cigar(
+    inputs,
+    output,
+    metrics_file,
+    remove_duplicates="false"
+    ):
+
     if not isinstance(inputs, list):
-        inputs = [inputs]
-    
+        inputs = [inputs]    
     if config.param('mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] < "4":
-        return picard2.mark_duplicates_mate_cigar(inputs,
-                                       output,
-                                       metrics_file,
-                                       remove_duplicates)
+        return picard2.mark_duplicates_mate_cigar(
+            inputs,
+            output,
+            metrics_file,
+            remove_duplicates
+        )
     else:
         return Job(
             inputs,
@@ -1456,18 +1462,22 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
-def picard_mark_duplicates_mate_cigar(inputs,
-                           output,
-                           metrics_file,
-                           remove_duplicates="false"):
+def picard_mark_duplicates_mate_cigar(
+    inputs,
+    output,
+    metrics_file,
+    remove_duplicates="false"
+    ):
+
     if not isinstance(inputs, list):
-        inputs = [inputs]
-    
+        inputs = [inputs]    
     if config.param('picard_mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] < "4":
-        return picard2.mark_duplicates_mate_cigar(inputs,
-                                       output,
-                                       metrics_file,
-                                       remove_duplicates)
+        return picard2.mark_duplicates_mate_cigar(
+            inputs,
+            output,
+            metrics_file,
+            remove_duplicates
+        )
     else:
         return Job(
             inputs,
@@ -1499,19 +1509,19 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
         )
 
-def merge_sam_files(inputs,
-                    output):
+def merge_sam_files(
+    inputs,
+    output
+    ):
     
     if not isinstance(inputs, list):
         inputs = [inputs]
-
     if config.param('picard_merge_sam_files', 'module_gatk').split("/")[2] < "4":
         return picard2.merge_sam_files(
             inputs,
             output
         )
     else:
-        
         return Job(
             inputs,
             [
@@ -1749,11 +1759,12 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
         )
 
 
-def crosscheck_fingerprint(inputs,
-                           output):
+def crosscheck_fingerprint(
+    inputs,
+    output
+    ):
 
     matrix=output + ".matrix"
-        
     return Job(
         inputs,
         [output],
@@ -1783,16 +1794,18 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             )
         )
 
-def cluster_crosscheck_metrics(input,
-                               output):
-        return Job(
-            [input],
-            [output],
-            [
-                ['gatk_cluster_crosscheck_metrics', 'module_java'],
-                ['gatk_cluster_crosscheck_metrics', 'module_gatk']
-            ],
-            command="""\
+def cluster_crosscheck_metrics(
+    input,
+    output
+    ):
+    return Job(
+        [input],
+        [output],
+        [
+            ['gatk_cluster_crosscheck_metrics', 'module_java'],
+            ['gatk_cluster_crosscheck_metrics', 'module_gatk']
+        ],
+        command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   ClusterCrosscheckMetrics {options} \\
   --VALIDATION_STRINGENCY SILENT \\
@@ -1800,15 +1813,15 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --INPUT {input} \\
   --LOD_THRESHOLD {lod_threshold} \\
   --OUTPUT {output} """.format(
-                tmp_dir=config.param('gatk_cluster_crosscheck_metrics', 'tmp_dir'),
-                options=config.param('gatk_cluster_crosscheck_metrics', 'options'),
-                java_other_options=config.param('gatk_cluster_crosscheck_metrics', 'gatk4_java_options'),
-                lod_threshold=config.param('gatk_cluster_crosscheck_metrics', 'lod_threshold'),
-                ram=config.param('gatk_cluster_crosscheck_metrics', 'ram'),
-                input=input,
-                output=output,
-            )
+            tmp_dir=config.param('gatk_cluster_crosscheck_metrics', 'tmp_dir'),
+            options=config.param('gatk_cluster_crosscheck_metrics', 'options'),
+            java_other_options=config.param('gatk_cluster_crosscheck_metrics', 'gatk4_java_options'),
+            lod_threshold=config.param('gatk_cluster_crosscheck_metrics', 'lod_threshold'),
+            ram=config.param('gatk_cluster_crosscheck_metrics', 'ram'),
+            input=input,
+            output=output,
         )
+    )
 
 def bed2interval_list(
     dictionary,
@@ -1866,11 +1879,13 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             )
         )
 
-def preProcessInterval(reference,
-                       intervals,
-                       output,
-                       options = None):
-#                  exclude_intervals=None):
+def preProcessInterval(
+    reference,
+    intervals,
+    output,
+    options = None
+    ):
+    # exclude_intervals=None
 
     return Job(
         [intervals],
@@ -1896,17 +1911,17 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
         )
     )
 
-def splitInterval(intervals,
-                  output,
-                  jobs,
-                  options = None):
-#                  exclude_intervals=None):
+def splitInterval(
+    intervals,
+    output,
+    jobs,
+    options = None
+    ):
+    # exclude_intervals=None
 
     interval_list = []
     for idx in range(jobs):
-     interval_list.append(
-         os.path.join(output, str(idx).zfill(4) + "-scattered.interval_list")
-         )
+        interval_list.append(os.path.join(output, str(idx).zfill(4) + "-scattered.interval_list"))
 
     return Job(
         [intervals],

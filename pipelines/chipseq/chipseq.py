@@ -2011,7 +2011,6 @@ done""".format(
                 self.sambamba_merge_bam_files, #5
                 self.sambamba_mark_duplicates,
                 self.sambamba_view_filter,
-                # self.picard_mark_duplicates,
                 self.metrics,
                 self.homer_make_tag_directory,
                 self.qc_metrics,

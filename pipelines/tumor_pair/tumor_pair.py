@@ -4453,10 +4453,10 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         ),
                         pcgr.report(
                             input,
-                            output_cna,
                             input_cpsr,
                             pcgr_directory,
-                            tumor_pair.name
+                            tumor_pair.name,
+                            input_cna=output_cna
                         )
                     ],
                     name="report_pcgr." + tumor_pair.name,
