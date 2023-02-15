@@ -123,7 +123,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
         )
     )
 
-def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
+def mark_duplicates_spark(inputs, output, metrics_file, remove_duplicates="false"):
     if not isinstance(inputs, list):
         inputs = [inputs]
 
@@ -131,10 +131,11 @@ def mark_duplicates(inputs, output, metrics_file, remove_duplicates="false"):
         inputs,
         [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
         [
-            ['gatk_mark_duplicates', 'module_java'],
-            ['gatk_mark_duplicates', 'module_gatk']
+            ['gatk_mark_duplicates_spark', 'module_java'],
+            ['gatk_mark_duplicates_spark', 'module_gatk']
         ],
         command="""\
+rm -rf {output}.part && \\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
  MarkDuplicatesSpark \\
  --remove-all-duplicates {remove_duplicates} --read-validation-stringency SILENT --create-output-bam-index true \\
@@ -143,15 +144,15 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --metrics-file {metrics_file} \\
  --spark-master local[{threads}] \\
  --output {output}""".format(
-            tmp_dir=config.param('gatk_mark_duplicates', 'tmp_dir'),
-            java_other_options=config.param('gatk_mark_duplicates', 'gatk4_java_options'),
-            ram=config.param('gatk_mark_duplicates', 'ram'),
+            tmp_dir=config.param('gatk_mark_duplicates_spark', 'tmp_dir'),
+            java_other_options=config.param('gatk_mark_duplicates_spark', 'gatk4_java_options'),
+            ram=config.param('gatk_mark_duplicates_spark', 'ram'),
             remove_duplicates=remove_duplicates,
             inputs=" \\\n  ".join("--input " + input for input in inputs),
-            threads=config.param('gatk_mark_duplicates', 'threads', param_type='int'),
+            threads=config.param('gatk_mark_duplicates_spark', 'threads', param_type='int'),
             output=output,
             metrics_file=metrics_file,
-            max_records_in_ram=config.param('gatk_mark_duplicates', 'max_records_in_ram', param_type='int')
+            max_records_in_ram=config.param('gatk_mark_duplicates_spark', 'max_records_in_ram', param_type='int')
         ),
         removable_files=[output, re.sub("\.([sb])am$", ".\\1ai", output), output + ".md5"]
     )
@@ -1355,7 +1356,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             ]
         )
 
-def picard_mark_duplicates(
+def mark_duplicates(
     inputs,
     output,
     metrics_file,
@@ -1365,7 +1366,7 @@ def picard_mark_duplicates(
     if not isinstance(inputs, list):
         inputs = [inputs]
         
-    if config.param('picard_mark_duplicates', 'module_gatk').split("/")[2] < "4":
+    if config.param('gatk_mark_duplicates', 'module_gatk').split("/")[2] < "4":
         return picard2.mark_duplicates(
             inputs,
             output,
@@ -1381,8 +1382,8 @@ def picard_mark_duplicates(
                 metrics_file
             ],
             [
-                ['picard_mark_duplicates', 'module_java'],
-                ['picard_mark_duplicates', 'module_gatk']
+                ['gatk_mark_duplicates', 'module_java'],
+                ['gatk_mark_duplicates', 'module_gatk']
             ],
             command="""\
 rm -rf {output}.part && \\
@@ -1396,14 +1397,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --OUTPUT {output} \\
  --METRICS_FILE {metrics_file} \\
  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
-                tmp_dir=config.param('picard_mark_duplicates', 'tmp_dir'),
-                java_other_options=config.param('picard_mark_duplicates', 'gatk4_java_options'),
-                ram=config.param('picard_mark_duplicates', 'ram'),
+                tmp_dir=config.param('gatk_mark_duplicates', 'tmp_dir'),
+                java_other_options=config.param('gatk_mark_duplicates', 'gatk4_java_options'),
+                ram=config.param('gatk_mark_duplicates', 'ram'),
                 remove_duplicates=remove_duplicates,
                 inputs=" \\\n  ".join("--INPUT " + input for input in inputs),
                 output=output,
                 metrics_file=metrics_file,
-                max_records_in_ram=config.param('picard_mark_duplicates', 'max_records_in_ram', param_type='int')
+                max_records_in_ram=config.param('gatk_mark_duplicates', 'max_records_in_ram', param_type='int')
             ),
             removable_files=[
                 output,
