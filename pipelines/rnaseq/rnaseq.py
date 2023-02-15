@@ -1566,7 +1566,8 @@ pandoc \\
                             input_cpsr,
                             pcgr_directory,
                             sample.name
-                        )
+                        ),
+                        bash.ls(output)
                     ],
                     name="report_pcgr." + sample.name,
                     samples=[sample],

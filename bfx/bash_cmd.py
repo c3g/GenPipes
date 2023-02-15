@@ -366,3 +366,15 @@ pigz {options} \\
             options=options if options else ""
         )
     )
+
+def ls(
+    target
+    ):
+    return Job(
+        [target],
+        [],
+        command="""\
+ls {path}""".format(
+            path=target
+        )
+    )

@@ -4457,7 +4457,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             pcgr_directory,
                             tumor_pair.name,
                             input_cna=output_cna
-                        )
+                        ),
+                        bash.ls(output)
                     ],
                     name="report_pcgr." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
