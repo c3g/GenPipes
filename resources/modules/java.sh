@@ -27,6 +27,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root/lib
 prepend-path    PATH                \$root/bin
 "
 }

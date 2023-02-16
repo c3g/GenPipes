@@ -24,6 +24,7 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
+setenv          NXF_OPTS            -Djdk.lang.Process.launchMechanism=vfork
 "
 }
 
