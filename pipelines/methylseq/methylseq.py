@@ -1137,10 +1137,10 @@ pandoc \\
                 bash.mkdir(os.path.join(config.param('dragen_align', 'work_folder'), "job_output", "dragen_methylation_call")),
                 bash.mkdir(os.path.abspath(methylation_call_directory)),
                 dragen.call_methylation(
-                    dragen_bam,
+                    dragen_tmp_bam,
                     dragen_workfolder,
                     sample.name, output=output_report),
-                bash.cp(dragen_workfolder+"/*", os.path.abspath(methylation_call_directory) + "/", recursive=False),
+                bash.cp(dragen_workfolder, os.path.abspath(self.output_dirs["methylation_call_directory"]) + "/", recursive=True),
                 bash.rm(dragen_workfolder, recursive=True, force=True ),
                 rm_dragen_bam_job
             ], name="dragen_methylation_call." + sample.name, samples=[sample],  input_dependency=[dragen_bam],
