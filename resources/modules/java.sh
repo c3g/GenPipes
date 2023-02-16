@@ -3,17 +3,16 @@
 set -eu -o pipefail
 
 SOFTWARE=java
-JVERSION=17.0.1
+JVERSION=11.0.2
 VERSION=openjdk-jdk-${JVERSION}
 ARCHIVE=openjdk-${JVERSION}_linux-x64_bin.tar.gz
-ARCHIVE_URL=https://download.java.net/java/GA/jdj${JVERSION}/afdd2e245b014143b62ccb916125e3ce/10/GPL/$ARCHIVE
+ARCHIVE_URL=https://download.java.net/java/GA/jdk11/9/GPL/$ARCHIVE
 SOFTWARE_DIR=$VERSION
 
 build() {
   cd $INSTALL_DOWNLOAD
   echo $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
-  ls -la
 
   # Install software
   mv -i ${VERSION/openjdk-/} $INSTALL_DIR/$SOFTWARE_DIR

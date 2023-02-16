@@ -1,0 +1,20 @@
+#!/bin/bash
+# Exit immediately on error
+set -eu -o pipefail
+
+SPECIES=Ceratitis_capitata
+COMMON_NAME="Mediterranean fruit fly"
+ASSEMBLY=EGII-3.2.1
+ASSEMBLY_SYNONYMS=
+SOURCE=NCBI
+VERSION=2021-09-26
+ACCESSION_ID=GCA_905071925.1
+URL_PREFIX=https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/905/071/925/${ACCESSION_ID}_${ASSEMBLY}/${ACCESSION_ID}_${ASSEMBLY}
+
+GENOME_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $GENOME_INSTALL_SCRIPT_DIR/install_genome.sh
+
+install_genome "$SPECIES" "$COMMON_NAME" "$ASSEMBLY" "$ASSEMBLY_SYNONYMS" "$SOURCE" "$VERSION"
+
+################################################################################
+# Write below all commands to install additional data files specific to this genome assembly
