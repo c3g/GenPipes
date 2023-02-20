@@ -460,16 +460,21 @@ class EpiQC(common.Illumina):
 
                     input_file = os.path.join(input_dir, sample.name + "_" + readset.mark_name + ".bedgraph.gz")
 
-                    job = chromimpute.convert(
-                        input_dir,
-                        input_file,
-                        output_dir,
-                        output_files,
-                        inputinfofile,
-                        readset.mark_name,
-                        sample.name,
-                        chr_sizes_file
-                    )
+                    job = concat_jobs(
+                    [   
+                        bash.mkdir(output_dir),
+                        chromimpute.convert(
+                            input_dir,
+                            input_file,
+                            output_dir,
+                            output_files,
+                            inputinfofile,
+                            readset.mark_name,
+                            sample.name,
+                            chr_sizes_file
+                        )
+                    ],
+                    name="chromimpute_convert")
                     job.samples = [sample]
                     jobs.append(job)
         return jobs
