@@ -571,6 +571,12 @@ cp \\
                 library[readset.sample]="PAIRED_END"
 
         jobs = []
+
+        methylseq_protocol = self.args.type
+
+        methylation_protocol = config.param('dragen_align', 'methylation_protocol', param_type='string')
+        mapping_implementation = config.param('dragen_align', 'mapping_implementation', param_type='string')
+
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
 
@@ -583,26 +589,53 @@ cp \\
                 os.path.join(methyl_directory, re.sub(".bam", ".CpG_report.txt.gz", os.path.basename(input_file)))
             ]
 
-            jobs.append(
-                concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory),
-                    picard.sort_sam(
-                        input_file,
-                        re.sub("sorted", "readset_sorted", input_file),
-                        "queryname"
-                        )
-                ], name="picard_sort_sam." + sample.name, samples=[sample])
-            )
-            outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
-            bismark_job = bismark.methyl_call(
-                re.sub("sorted", "readset_sorted", input_file),
-                outputs,
-                library[sample]
-            )
-            bismark_job.name = "bismark_methyl_call." + sample.name
-            bismark_job.samples = [sample]
-            jobs.append( bismark_job )
+            if (methylseq_protocol == "hybrid" and methylation_protocol == "directional" and mapping_implementation=="single-pass"):
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + methyl_directory),
+                        samtools.view(
+                            input_file,
+                            re.sub("sorted","sorted.filtered", input_file),
+                            "-d XM -b"
+                            ),
+                        picard.sort_sam(
+                            re.sub("sorted", "sorted.filtered", input_file),
+                            re.sub("sorted", "readset_sorted", input_file),
+                            "queryname"
+                            )
+                    ], name="picard_sort_sam." + sample.name, samples=[sample])
+                )
+                outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
+                bismark_job = bismark.methyl_call(
+                    re.sub("sorted", "readset_sorted", input_file),
+                    outputs,
+                    library[sample]
+                )
+                bismark_job.name = "bismark_methyl_call." + sample.name
+                bismark_job.samples = [sample]
+                jobs.append( bismark_job )
 
+            else:
+                jobs.append(
+                    concat_jobs([
+                        Job(command="mkdir -p " + methyl_directory),
+                        picard.sort_sam(
+                            input_file,
+                            re.sub("sorted", "readset_sorted", input_file),
+                            "queryname"
+                            )
+                    ], name="picard_sort_sam." + sample.name, samples=[sample])
+                )
+                outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
+                bismark_job = bismark.methyl_call(
+                    re.sub("sorted", "readset_sorted", input_file),
+                    outputs,
+                    library[sample]
+                )
+                bismark_job.name = "bismark_methyl_call." + sample.name
+                bismark_job.samples = [sample]
+                jobs.append( bismark_job )
+    
         return jobs
 
     def wiggle_tracks(self):
@@ -998,6 +1031,12 @@ pandoc \\
         # if the protocol is hybrid and methylation_protocol is "directional-complement" and
         # mapping_implementation is "sigle-pass" pipeline will not be generating genpipes file. Dragen protocol
         # should be used in this case.
+        # In order to run the hybrid protocol for directional libraries and generate dragen outfiles that are compatible with bismark methylation calling,
+        # the following should be set in the config file for dragen_align:
+        # methylation_protocol=directional
+        # OR, for multi-pass mapping_implementation:
+        # methylation_protocol=directional, sort=false, mapping_implementation=multi-pass, duplicate_marking=false, remove_duplicates=false.
+        # note that the "multi-pass" mapping implementation is deprecated and no longer recommended by Illumina. 
         if not (methylseq_protocol == "hybrid" and methylation_protocol == "directional-complement" and mapping_implementation=="single-pass"):
 
             for readset in self.readsets:
