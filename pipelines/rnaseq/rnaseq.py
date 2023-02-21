@@ -1684,7 +1684,7 @@ pandoc \\
             job = concat_jobs(
                 [
                     bash.mkdir(output_dir),
-                    # bash.chdir(output_dir),
+                    bash.chdir(output_dir),
                     arriba.run(
                         left_fastqs[sample.name],
                         right_fastqs[sample.name],
