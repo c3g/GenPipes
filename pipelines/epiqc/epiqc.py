@@ -326,7 +326,7 @@ class EpiQC(common.Illumina):
 
         #remove inputinfor file if exist
         #at this point imputation directory has already been created as chromosome file has generated first
-        inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+        inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
         if os.path.exists(inputinfofile):
             os.remove(inputinfofile)
         #copy inputinfor file from CVMFS
@@ -344,7 +344,7 @@ class EpiQC(common.Illumina):
 
         #train_user_data = config.param('DEFAULT', 'train_only_user_data')
         train_user_data = "F"
-        chr_sizes_file = os.path.join(self.output_dir, self.chromosome_file)
+        chr_sizes_file = self.chromosome_file
         converteddir = self.output_dirs['chromimpute_converted_directory']
 
         #gather converted file paths in CVMFS as they needed to feed into the job as input files
@@ -413,7 +413,7 @@ class EpiQC(common.Illumina):
         else:
             chrs = config.param('chromimpute_preprocess', 'chromosomes').split(",")
 
-        chr_sizes_file = os.path.join(self.output_dir, self.chromosome_file)
+        chr_sizes_file = self.chromosome_file
 
         if os.path.exists(chr_sizes_file):
             os.remove(chr_sizes_file)
@@ -438,7 +438,7 @@ class EpiQC(common.Illumina):
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
 
-        # check ini file whether user has requested specific chromosoems instead All chromosomes. Then change the input folder accordingly
+        # check ini file whether user has requested specific chromosomes or all chromosomes. Then change the input folder accordingly
         chrs = config.param('chromimpute_preprocess', 'chromosomes')
 
         if chrs == "All":
@@ -461,21 +461,21 @@ class EpiQC(common.Illumina):
                     input_file = os.path.join(input_dir, sample.name + "_" + readset.mark_name + ".bedgraph.gz")
 
                     job = concat_jobs(
-                    [   
-                        bash.mkdir(output_dir),
-                        chromimpute.convert(
-                            input_dir,
-                            input_file,
-                            output_dir,
-                            output_files,
-                            inputinfofile,
-                            readset.mark_name,
-                            sample.name,
-                            chr_sizes_file
-                        )
-                    ],
-                    name="chromimpute_convert")
-                    job.samples = [sample]
+                        [
+                            chromimpute.convert(
+                                input_dir,
+                                input_file,
+                                output_dir,
+                                output_files,
+                                inputinfofile,
+                                readset.mark_name,
+                                sample.name,
+                                chr_sizes_file
+                            )
+                        ],
+                        name="chromimpute_convert." + sample.name + "." + readset.mark_name,
+                        samples=[sample]
+                    )
                     jobs.append(job)
         return jobs
 
@@ -571,8 +571,8 @@ class EpiQC(common.Illumina):
         # directory is necessary.
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
-        temp_inputinfofile_path = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], "temp_" + self.inputinfo_file)
-        temp2_inputinfofile_path = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], "temp2_" + self.inputinfo_file)
+        temp_inputinfofile_path = os.path.join(self.output_dirs['chromimpute_output_directory'], "temp_" + self.inputinfo_file)
+        temp2_inputinfofile_path = os.path.join(self.output_dirs['chromimpute_output_directory'], "temp2_" + self.inputinfo_file)
         distancedir = self.output_dirs['chromimpute_distance_directory']
         converteddir = self.output_dirs['chromimpute_converted_directory']
         output_dir = self.output_dirs['chromimpute_traindata_directory']
@@ -730,7 +730,7 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
         """
         jobs = []
 
-        temp_inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], "temp_" + self.inputinfo_file)
+        temp_inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], "temp_" + self.inputinfo_file)
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
         traindatadir = self.output_dirs['chromimpute_traindata_directory']
         output_dir = self.output_dirs['chromimpute_predictor_directory']
@@ -771,7 +771,7 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
         """
         jobs = []
 
-        temp_inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], "temp_" + self.inputinfo_file)
+        temp_inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], "temp_" + self.inputinfo_file)
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
         converteddir = self.output_dirs['chromimpute_converted_directory']
         distancedir = self.output_dirs['chromimpute_distance_directory']
@@ -1186,7 +1186,7 @@ fi""".format(
         jobs = []
         chr_jobs = []
 
-        chr_sizes_file = os.path.join(self.output_dir, self.chromosome_file)
+        chr_sizes_file = self.chromosome_file
         signal_noise_output_dir = self.output_dirs['signal_to_noise_output_directory']
 
         for sample in self.samples:
