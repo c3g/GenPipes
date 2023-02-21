@@ -25,11 +25,10 @@ from core.config import *
 from core.job import *
 
 def run(fastqs1, fastqs2, output_dir):
-    output_file_fusions = os.path.join(output_dir, "fusions.tsv")
-    output_file_discarded = os.path.join(output_dir, "fusions.discarded.tsv")
+    output_file = os.path.join(output_dir, "fusions.tsv")
     return Job(
         fastqs1,
-        [output_file_fusions, output_file_discarded],
+        [output_file],
         [
             ['run_arriba', 'module_arriba'],
             ['run_arriba', 'module_star'],
@@ -46,9 +45,7 @@ $ARRIBA_HOME/./run_arriba.sh \\
       {protein_domains} \\
       {threads} \\
       {fastq1} \\
-      {fastq2} \\
-      -o {fusions} \\
-      -O {discarded}""".format(
+      {fastq2}""".format(
             genome_build=config.param('run_arriba', 'genome_build'),
             gene_annot=config.param('run_arriba', 'gene_annot'),
             reference=config.param('run_arriba', 'reference'),
@@ -59,7 +56,5 @@ $ARRIBA_HOME/./run_arriba.sh \\
             options=config.param('run_arriba', 'options'),
             fastq1=",".join(fastq1 for fastq1 in fastqs1),
             fastq2=",".join(fastq2 for fastq2 in fastqs2),
-            fusions=output_file_fusions,
-            discarded=output_file_discarded
         ),
     )
