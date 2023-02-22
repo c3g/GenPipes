@@ -1684,13 +1684,14 @@ pandoc \\
             job = concat_jobs(
                 [
                     bash.mkdir(output_dir),
-                    # bash.chdir(output_dir),
+                    bash.chdir(output_dir),
                     arriba.run(
-                        left_fastqs[sample.name],
-                        right_fastqs[sample.name],
+                        [os.path.relpath(fastq1, output_dir) for fastq1 in left_fastqs[sample.name]],
+                        [os.path.relpath(fastq2, output_dir) for fastq2 in right_fastqs[sample.name] if fastq2],
                         output_dir
                     )
                 ],
+                input_dependency=left_fastqs[sample.name] + right_fastqs[sample.name],
                 name="run_arriba." + sample.name,
                 samples=[sample]
             )
