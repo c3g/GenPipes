@@ -1686,11 +1686,12 @@ pandoc \\
                     bash.mkdir(output_dir),
                     bash.chdir(output_dir),
                     arriba.run(
-                        left_fastqs[sample.name],
-                        right_fastqs[sample.name],
+                        os.path.relpath(left_fastqs[sample.name], output_dir),
+                        os.path.relpath(right_fastqs[sample.name], output_dir),
                         output_dir
                     )
                 ],
+                input_files=[left_fastqs[sample.name], right_fastqs[sample.name]],
                 name="run_arriba." + sample.name,
                 samples=[sample]
             )
