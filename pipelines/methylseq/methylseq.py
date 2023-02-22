@@ -574,8 +574,8 @@ cp \\
 
         methylseq_protocol = self.args.type
 
-        methylation_protocol = config.param('dragen_align', 'methylation_protocol', param_type='string')
-        mapping_implementation = config.param('dragen_align', 'mapping_implementation', param_type='string')
+        methylation_protocol = config.param('dragen_align', 'methylation_protocol', param_type='string', required=False)
+        mapping_implementation = config.param('dragen_align', 'mapping_implementation', param_type='string', required=False)
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
