@@ -261,6 +261,8 @@ END
             adapter_file = config.param('skewer_trimming', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
+            quality_offset = readset.quality_offset
+
             if not adapter_file:
                 adapter_file = os.path.join(output_dir, "adapter.tsv")
                 adapter_job = adapters.create(
@@ -315,7 +317,8 @@ END
                             fastq1,
                             fastq2,
                             trim_file_prefix,
-                            adapter_file
+                            adapter_file,
+                            quality_offset
                         ),
                         bash.ln(
                             os.path.relpath(trim_file_prefix + "-trimmed-pair1.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair1.fastq.gz")),
@@ -678,6 +681,8 @@ END
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             realign_directory = os.path.join(alignment_directory, "realign")
             readset = sample.readsets[0]
+            
+            quality_offsets = [readset.quality_offset for readset in sample.readsets]
 
             [input] = self.select_input_files(
                 [
@@ -705,12 +710,14 @@ END
                                 input,
                                 realign_intervals,
                                 output_dir=self.output_dir,
+                                fix_encoding=True if quality_offsets[0] == 64 else ""
                             ),
                             gatk4.indel_realigner(
                                 input,
                                 output=output_bam,
                                 output_dir=self.output_dir,
-                                target_intervals=realign_intervals
+                                target_intervals=realign_intervals,
+                                fix_encoding=True if quality_offsets[0] == 64 else ""
                             ),
                             # Create sample realign symlink since no merging is required
                             bash.ln(
@@ -745,14 +752,16 @@ END
                                     input,
                                     realign_intervals,
                                     output_dir=self.output_dir,
-                                    intervals=intervals
+                                    intervals=intervals,
+                                    fix_encoding=True if quality_offsets[0] == 64 else ""
                                 ),
                                 gatk4.indel_realigner(
                                     input,
                                     output_dir=self.output_dir,
                                     output=output_bam,
                                     target_intervals=realign_intervals,
-                                    intervals=intervals
+                                    intervals=intervals,
+                                    fix_encoding=True if quality_offsets[0] == 64 else ""
                                     )
                                 ],
                                 name="gatk_indel_realigner." + sample.name + "." + str(idx),
@@ -774,14 +783,16 @@ END
                                 input,
                                 realign_intervals,
                                 output_dir=self.output_dir,
-                                exclude_intervals=unique_sequences_per_job_others
+                                exclude_intervals=unique_sequences_per_job_others,
+                                fix_encoding=True if quality_offsets[0] == 64 else ""
                             ),
                             gatk4.indel_realigner(
                                 input,
                                 output_dir=self.output_dir,
                                 output=output_bam,
                                 target_intervals=realign_intervals,
-                                exclude_intervals=unique_sequences_per_job_others
+                                exclude_intervals=unique_sequences_per_job_others,
+                                fix_encoding=True if quality_offsets[0] == 64 else ""
                                 )
                         ],
                         name="gatk_indel_realigner." + sample.name + ".others",

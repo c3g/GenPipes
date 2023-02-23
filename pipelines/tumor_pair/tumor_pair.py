@@ -269,6 +269,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             log.warning("Number of realign jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.values():
+            quality_offsets = self.readsets[0].quality_offset
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
             else:
@@ -308,7 +309,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 input_normal,
                                 realign_intervals,
                                 output_dir=self.output_dir,
-                                input2=input_tumor
+                                input2=input_tumor,
+                                fix_encoding=True if quality_offsets == 64 else ""
                             ),
                             gatk.indel_realigner(
                                 input_normal,
@@ -317,7 +319,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 output_norm_dep=[normal_bam,normal_index],
                                 output_tum_dep=[tumor_bam,tumor_index],
                                 target_intervals=realign_intervals,
-                                optional=bam_postfix
+                                optional=bam_postfix,
+                                fix_encoding=True if quality_offsets == 64 else ""
                             ),
                             bash.chdir(
                                 self.output_dir
@@ -400,7 +403,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     realign_intervals,
                                     output_dir=self.output_dir,
                                     input2=input_tumor,
-                                    intervals=intervals
+                                    intervals=intervals,
+                                    fix_encoding=True if quality_offsets == 64 else ""
                                 ),
                                 gatk.indel_realigner(
                                     input_normal,
@@ -410,7 +414,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     output_tum_dep=[tumor_bam,tumor_index],
                                     target_intervals=realign_intervals,
                                     intervals=intervals,
-                                    optional=bam_postfix
+                                    optional=bam_postfix,
+                                    fix_encoding=True if quality_offsets == 64 else ""
                                 ),
                                 bash.chdir(
                                     self.output_dir
@@ -478,7 +483,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 realign_intervals,
                                 output_dir=self.output_dir,
                                 input2=input_tumor,
-                                exclude_intervals=unique_sequences_per_job_others
+                                exclude_intervals=unique_sequences_per_job_others,
+                                fix_encoding=True if quality_offsets == 64 else ""
                             ),
                             gatk.indel_realigner(
                                 input_normal,
@@ -488,7 +494,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 output_tum_dep=[tumor_bam, tumor_index],
                                 target_intervals=realign_intervals,
                                 exclude_intervals=unique_sequences_per_job_others,
-                                optional=bam_postfix
+                                optional=bam_postfix,
+                                fix_encoding=True if quality_offsets == 64 else ""
                             ),
                             bash.chdir(
                                 self.output_dir
