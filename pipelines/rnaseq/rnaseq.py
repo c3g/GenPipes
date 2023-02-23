@@ -179,6 +179,8 @@ class RnaSeqRaw(common.Illumina):
             adapter_file = config.param('skewer_trimming', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
+            quality_offset = readset.quality_offset
+
             if not adapter_file:
                 adapter_file = os.path.join(output_dir, "adapter.tsv")
                 adapter_job = adapters.create(
@@ -248,7 +250,8 @@ class RnaSeqRaw(common.Illumina):
                             fastq1,
                             fastq2,
                             trim_file_prefix,
-                            adapter_file
+                            adapter_file,
+                            quality_offset
                         ),
                         bash.ln(
                             os.path.relpath(trim_file_prefix + "-trimmed-pair1.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair1.fastq.gz")),
@@ -1686,12 +1689,12 @@ pandoc \\
                     bash.mkdir(output_dir),
                     bash.chdir(output_dir),
                     arriba.run(
-                        os.path.relpath(left_fastqs[sample.name], output_dir),
-                        os.path.relpath(right_fastqs[sample.name], output_dir),
+                        [os.path.relpath(fastq1, output_dir) for fastq1 in left_fastqs[sample.name]],
+                        [os.path.relpath(fastq2, output_dir) for fastq2 in right_fastqs[sample.name] if fastq2],
                         output_dir
                     )
                 ],
-                input_files=[left_fastqs[sample.name], right_fastqs[sample.name]],
+                input_dependency=left_fastqs[sample.name] + right_fastqs[sample.name],
                 name="run_arriba." + sample.name,
                 samples=[sample]
             )
