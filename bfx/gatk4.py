@@ -39,7 +39,8 @@ def realigner_target_creator(
     output_dir=[],
     input2=[],
     intervals=[],
-    exclude_intervals=[]
+    exclude_intervals=[],
+    fix_encoding=[]
     ):
 
     return gatk.realigner_target_creator(
@@ -48,7 +49,8 @@ def realigner_target_creator(
         output_dir,
         input2,
         intervals,
-        exclude_intervals
+        exclude_intervals,
+        fix_encoding
     )
 
 # only in GATK3
@@ -62,7 +64,8 @@ def indel_realigner(
     output_tum_dep=[],
     intervals=[],
     exclude_intervals=[],
-    optional=[]
+    optional=[],
+    fix_encoding=[]
     ):
 
     return gatk.indel_realigner(
@@ -75,7 +78,8 @@ def indel_realigner(
         output_tum_dep,
         intervals,
         exclude_intervals,
-        optional
+        optional,
+        fix_encoding
     )
 
 def split_n_cigar_reads(

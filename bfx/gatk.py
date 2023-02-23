@@ -368,7 +368,8 @@ def indel_realigner(input,
                     output_tum_dep=[],
                     intervals=[],
                     exclude_intervals=[],
-                    optional=None
+                    optional=None,
+                    fix_encoding=None
                     ):
     
     output_dep = output_norm_dep + output_tum_dep
@@ -385,7 +386,7 @@ def indel_realigner(input,
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --analysis_type IndelRealigner {other_options} \\
   --reference_sequence {reference_sequence} \\
-  {optional} \\
+  {optional} {fix_encoding} \\
   --input_file {input} \\
   {input2} \\
   --targetIntervals {target_intervals} \\
@@ -397,6 +398,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
             other_options=config.param('gatk_indel_realigner', 'other_options'),
             reference_sequence=config.param('gatk_indel_realigner', 'genome_fasta', param_type='filepath'),
             optional="--nWayOut " + optional if optional else "",
+            fix_encoding="-fixMisencodedQuals" if fix_encoding else "",
             input=os.path.join(output_dir, input),
             input2="--input_file " + os.path.join(output_dir, input2) if input2 else "",
             target_intervals=os.path.join(output_dir, target_intervals),
@@ -444,7 +446,8 @@ def realigner_target_creator(input,
                              output_dir=None,
                              input2=None,
                              intervals=[],
-                             exclude_intervals=[]
+                             exclude_intervals=[],
+                             fix_encoding=None
                              ):
 
     return Job(
@@ -456,7 +459,7 @@ def realigner_target_creator(input,
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
-  --analysis_type RealignerTargetCreator {other_options} \\
+  --analysis_type RealignerTargetCreator {other_options} {fix_encoding} \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
   {input2} \\
@@ -465,6 +468,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         java_other_options=config.param('gatk_realigner_target_creator', 'java_other_options'),
         ram=config.param('gatk_realigner_target_creator', 'ram'),
         other_options=config.param('gatk_realigner_target_creator', 'other_options'),
+        fix_encoding="-fixMisencodedQuals" if fix_encoding else "",
         reference_sequence=config.param('gatk_realigner_target_creator', 'genome_fasta', param_type='filepath'),
         input= os.path.join(output_dir, input),
         input2="--input_file " + os.path.join(output_dir, input2) if input2 else "",

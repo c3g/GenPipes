@@ -179,6 +179,8 @@ class RnaSeqRaw(common.Illumina):
             adapter_file = config.param('skewer_trimming', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
+            quality_offset = readset.quality_offset
+
             if not adapter_file:
                 adapter_file = os.path.join(output_dir, "adapter.tsv")
                 adapter_job = adapters.create(
@@ -248,7 +250,8 @@ class RnaSeqRaw(common.Illumina):
                             fastq1,
                             fastq2,
                             trim_file_prefix,
-                            adapter_file
+                            adapter_file,
+                            quality_offset
                         ),
                         bash.ln(
                             os.path.relpath(trim_file_prefix + "-trimmed-pair1.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair1.fastq.gz")),
@@ -948,7 +951,9 @@ pandoc \\
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             realign_directory = os.path.join(alignment_directory, "realign")
             input = os.path.join(alignment_directory, sample.name + ".sorted.mdup.split.bam")
-        
+
+            quality_offsets = [readset.quality_offset for readset in sample.readsets]
+
             if nb_jobs == 1:
                 realign_prefix = os.path.join(realign_directory, "all")
                 realign_intervals = realign_prefix + ".intervals"
@@ -964,12 +969,14 @@ pandoc \\
                             input,
                             realign_intervals,
                             output_dir=self.output_dir,
+                            fix_encoding=True if quality_offsets[0] == 64 else ""
                         ),
                         gatk4.indel_realigner(
                             input,
                             output=output_bam,
                             target_intervals=realign_intervals,
                             output_dir=self.output_dir,
+                            fix_encoding=True if quality_offsets[0] == 64 else ""
                         ),
                         # Create sample realign symlink since no merging is required
                         bash.ln(
@@ -1008,6 +1015,7 @@ pandoc \\
                                 realign_intervals,
                                 intervals=intervals,
                                 output_dir=self.output_dir,
+                                fix_encoding=True if quality_offsets[0] == 64 else ""
                             ),
                             gatk4.indel_realigner(
                                 input,
@@ -1015,6 +1023,7 @@ pandoc \\
                                 target_intervals=realign_intervals,
                                 intervals=intervals,
                                 output_dir=self.output_dir,
+                                fix_encoding=True if quality_offsets[0] == 64 else ""
                             )
                         ],
                         name="gatk_indel_realigner." + sample.name + "." + str(idx),
@@ -1038,6 +1047,7 @@ pandoc \\
                             realign_intervals,
                             exclude_intervals=unique_sequences_per_job_others,
                             output_dir=self.output_dir,
+                            fix_encoding=True if quality_offsets[0] == 64 else ""
                         ),
                         gatk4.indel_realigner(
                             input,
@@ -1045,6 +1055,7 @@ pandoc \\
                             target_intervals=realign_intervals,
                             exclude_intervals=unique_sequences_per_job_others,
                             output_dir=self.output_dir,
+                            fix_encoding=True if quality_offsets[0] == 64 else ""
                         )
                     ],
                     name="gatk_indel_realigner." + sample.name + ".others",
