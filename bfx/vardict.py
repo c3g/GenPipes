@@ -78,6 +78,44 @@ java {java_other_options} -Djava.io.tmpdir={tmp_dir} -Xms768m -Xmx{ram} -classpa
         )
     )
 
+def single_java(input_bam, sample_name, output=None, sv=False, freq=None, region=[]):
+    return Job(
+            [input_bam],
+            [output],
+            [
+            ['vardict_single', 'module_java'],
+            ['vardict_single', 'module_vardict_java'],
+            ['vardict_single', 'module_perl'],
+            ['vardict_single', 'module_R']
+            ],
+            command="""\
+java {java_other_options} -Djava.io.tmpdir={tmp_dir} -Xms768m -Xmx{ram} -classpath {classpath} \\
+  -N {sample_name} \\
+  -G {reference_fasta} \\
+  -b {input_bam} \\
+  {sv} \\
+  -f {freq} \\
+  {region}{vardict_options} \\
+  -r {min_reads} \\
+  -q {min_phred}{output}""".format(
+      java_other_options=config.param('vardict_single', 'java_other_options'),
+      tmp_dir=config.param('vardict_single', 'tmp_dir'),
+      ram=config.param('vardict_single', 'ram'),
+      classpath=config.param('vardict_single', 'classpath'),
+      sample_name=sample_name,
+      reference_fasta=config.param('vardict_single', 'genome_fasta', param_type='filepath'),
+      input_bam=input_bam,
+      sv=" \\\n --nosv " if sv else "",
+      freq=freq if freq else "0.01",
+      region=" \\\n " + region if region else "",
+      vardict_options=config.param('vardict_single', 'vardict_options'),
+      min_reads=config.param('vardict_single', 'min_reads'),
+      min_phred=config.param('vardict_single', 'min_phred'),
+      output=" \\\n > " + output if output else ""
+      )
+    )
+
+
 def testsomatic(input=None, output=None):
     return Job(
         [input],
@@ -91,6 +129,22 @@ $VARDICT_BIN/testsomatic.R {input} {output}""".format(
         input=" \\\n " + input if input else "",
         output=" \\\n  > " + output if output else ""
         )
+    )
+
+
+def teststrandbias(input=None, output=None):
+    return Job(
+            [input],
+            [output],
+            [
+            ['vardict_single', 'module_vardict_java'],
+            ['vardict_single', 'module_R']
+            ],
+            command="""\
+$VARDICT_BIN/teststrandbias.R {input} {output}""".format(
+            input=" \\\n " + input if input else "",
+            output=" \\\n " + output if output else ""
+            )
     )
 
 
@@ -112,6 +166,28 @@ perl $VARDICT_BIN/var2vcf_paired.pl \\
         output=" \\\n  > " + output if output else ""
         )
     )
+
+
+def var2vcf_valid(output, sample_name, freq=None, input=None):
+    return Job(
+            [input],
+            [output],
+            [
+            ['vardict_single', 'module_vardict_java'],
+            ['vardict_single', 'module_perl']
+            ],
+            command="""\
+perl $VARDICT_BIN/var2vcf_valid.pl \\
+    -N {sample_name} \\
+    -f {freq}{other_options}{input}{output}""".format(
+        sample_name=sample_name,
+        freq=freq if freq else "0.01",
+        other_options=config.param('vardict_single', 'var2vcf_valid_options'),
+        input=" \\\n " + input if input else "",
+        output=output
+        )
+    )
+
 
 def dict2beds(dictionary,beds):
     return Job(
