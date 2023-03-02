@@ -9,17 +9,15 @@ from core.job import *
 def trimmer(
         input1,
         input2,
-        output_prefix
+        output
         ):
     return Job(
-            input1,
-            input2,
-            output,
+            [input1, input2],
+            [output],
             [
-                ['trimmer' 'module_java'],
-                ['trimmer' 'module_trimmer']
+                ['trimmer', 'module_java']#,
+             #   ['trimmer', 'module_trimmer']
             ],
-
             command="""\
 java {java_other_options} -XmX{ram} -jar $TRIMMER_JAR \\
   -fq1 {input1} \\
