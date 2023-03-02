@@ -17,6 +17,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs, pipe_jobs
 import utils.utils
+from pipelines import common
 
 from bfx import trimmer
 from bfx import bwa
@@ -29,7 +30,7 @@ from core.config import config
 
 log = logging.getLogger(__name__)
 
-class DOvEE_gene():
+class DOvEE_gene(common.Illumina):
     """
     DOvEE Gene Pipeline
     """
@@ -50,7 +51,7 @@ class DOvEE_gene():
                 }
         return dirs
 
-    def trimmer():
+    def trimmer(self):
         """
         Read trimming with AGeNT Trimmer.
         """
@@ -59,22 +60,23 @@ class DOvEE_gene():
 
         for readset in self.readsets:
             trim_directory = os.path.join(self.output_dirs["trim_directory"], readset.sample.name)
-            trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim."
+            trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.")
             fastq1 = readset.fastq1
             fastq2 = readset.fastq2
+            
             job = trimmer.trimmer(
                 fastq1,
                 fastq2,
                 trim_file_prefix
                 )
 
-             jobs.append(
-                 concat.jobs(
-                     [
-                         command="mkdir =p " + trim_directory,
-                         job
-                        ], name="trimmer." + readset.name
-                     )                               
+            jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(trim_directory),
+                            job
+                        ], name="trimmer." + readset.name, output_dependency=[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]
+                        )
                  )
             return jobs
 
@@ -150,7 +152,6 @@ class DOvEE_gene():
                                 samtools.sort(
                                     "/dev/stdin",
                                     readset_bam,
-                                    other_options=config.param('samtools_sort', 'sort_options', required=False),
                                 )
                             ]
                         )
@@ -176,7 +177,7 @@ class DOvEE_gene():
            if 'saliva' in sample.name:
                output_duplex = os.path.join(alignment_directory, sample.name + "dedup.duplex.bam")
                output_hybrid = os.path.join(alignment_directory, sample.name + "dedup.hybrid.bam")
-               covered_bed = config.param('locatit', 'covered_bedv8', paramtype='filepath')
+               covered_bed = config.param('locatit', 'covered_bedv8', param_type='filepath')
 
                jobs.append(
                        concat_jobs(
@@ -197,9 +198,9 @@ class DOvEE_gene():
                            name='locatit_dedup' + sample.name
                            )
                        )
-            elif 'brush' in sample.name:
+           elif 'brush' in sample.name:
                 output_duplex = os.path.join(alignment_directory, sample.name + "dedup.duplex.bam")
-                covered_bed = config.param('locatit', 'covered_bedv7', paramtype='filepath')
+                covered_bed = config.param('locatit', 'covered_bedv7', param_type='filepath')
 
                 jobs.append(
                         locatit.dedup(
@@ -265,7 +266,7 @@ class DOvEE_gene():
                 input_hybrid = os.path.join(alignment_directory, sample.name + "dedup.hybrid.sorted.bam")
 
                 jobs.append(
-                        concat.jobs(
+                        concat_jobs(
                             [
                                 samtools.index(
                                     input_duplex
@@ -299,9 +300,9 @@ class DOvEE_gene():
             variant_directory = os.path.join(self.output_dirs['variant_directory'], sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".dedup.sorted.bam")
             
-            if sample == 'brush':
+            if 'brush' in sample.name:
                freq=0.001
-               region=  #target bed file
+               region=config.param('vardict_single', 'target_file', param_type='filepath')  #target bed file
 
                jobs.append(
                        vardict.single_java(
@@ -309,13 +310,14 @@ class DOvEE_gene():
                            sample.name,
                            None,
                            sv=True,
-                           freq,
-                           region
+                           freq=freq,
+                           region=region
                            )
                        )
-            elif sample == 'saliva':
+
+            elif 'saliva' in sample.name:
                 freq=0.1
-                region= #targetv8 bed file
+                region=config.param('vardict_single', 'target_filev8', param_type='filepath') #targetv8 bed file
 
                 jobs.append(
                         vardict.single_java(
@@ -323,8 +325,8 @@ class DOvEE_gene():
                             sample.name,
                             None,
                             sv=False,
-                            freq,
-                            region
+                            freq=freq,
+                            region=region
                             )
                         )
 
@@ -340,3 +342,5 @@ class DOvEE_gene():
                 self.samtools_index,
                 self.vardict_single,
                 ]
+if __name__ == "__main__":
+        DOvEE_gene()
