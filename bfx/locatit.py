@@ -28,7 +28,7 @@ java {java_other_options} -XmX{ram} -jar $LOCATIT_JAR \\
       java_other_options=config.param('locatit', 'java_other_options'),
       ram=config.param('locatit', 'java_other_options'),
       mode="-"+mode if mode else "",
-      other_options=config.param('locatit', 'locatit_other_options')
+      other_options=config.param('locatit', 'locatit_other_options'),
       bed="-l " + bed if bed else "",
       output=output,
       input=input
