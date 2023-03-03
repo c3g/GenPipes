@@ -13,7 +13,7 @@ def trimmer(
         ):
     return Job(
             [input1, input2],
-            [output],
+            [output + "_R1.fastq.gz", output + "_R2.fastq.gz"],
             [
                 ['trimmer', 'module_java']#,
              #   ['trimmer', 'module_trimmer']

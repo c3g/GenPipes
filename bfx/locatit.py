@@ -11,11 +11,11 @@ def dedup(input,
             bed=None,
             mode=None):
     return Job(
-            input,
-            output,
+            [input],
+            [output],
             [
-                ['locatit' 'module_java'],
-                ['locatit' 'module_locatit']
+                ['locatit', 'module_java']#,
+              #  ['locatit', 'module_locatit']
             ],
 
             command="""\

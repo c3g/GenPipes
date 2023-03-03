@@ -78,13 +78,13 @@ java {java_other_options} -Djava.io.tmpdir={tmp_dir} -Xms768m -Xmx{ram} -classpa
         )
     )
 
-def single_java(input_bam, sample_name, output=None, sv=False, freq=None, region=[]):
+def single_java(input_bam, sample_name, output=None, nosv=False, freq=None, region=[]):
     return Job(
             [input_bam],
             [output],
             [
             ['vardict_single', 'module_java'],
-            ['vardict_single', 'module_vardict_java'],
+            #['vardict_single', 'module_vardict_java'],
             ['vardict_single', 'module_perl'],
             ['vardict_single', 'module_R']
             ],
@@ -93,9 +93,10 @@ java {java_other_options} -Djava.io.tmpdir={tmp_dir} -Xms768m -Xmx{ram} -classpa
   -N {sample_name} \\
   -G {reference_fasta} \\
   -b {input_bam} \\
-  {sv} \\
+  {nosv} \\
   -f {freq} \\
-  {region}{vardict_options} \\
+  {region} \\
+  {vardict_options} \\
   -r {min_reads} \\
   -q {min_phred}{output}""".format(
       java_other_options=config.param('vardict_single', 'java_other_options'),
@@ -105,7 +106,7 @@ java {java_other_options} -Djava.io.tmpdir={tmp_dir} -Xms768m -Xmx{ram} -classpa
       sample_name=sample_name,
       reference_fasta=config.param('vardict_single', 'genome_fasta', param_type='filepath'),
       input_bam=input_bam,
-      sv=" \\\n --nosv " if sv else "",
+      nosv=" \\\n --nosv " if nosv else "",
       freq=freq if freq else "0.01",
       region=" \\\n " + region if region else "",
       vardict_options=config.param('vardict_single', 'vardict_options'),
@@ -137,7 +138,7 @@ def teststrandbias(input=None, output=None):
             [input],
             [output],
             [
-            ['vardict_single', 'module_vardict_java'],
+           # ['vardict_single', 'module_vardict_java'],
             ['vardict_single', 'module_R']
             ],
             command="""\
@@ -168,23 +169,24 @@ perl $VARDICT_BIN/var2vcf_paired.pl \\
     )
 
 
-def var2vcf_valid(output, sample_name, freq=None, input=None):
+def var2vcf_valid(output, sample_name, freq, input=None):
     return Job(
             [input],
             [output],
             [
-            ['vardict_single', 'module_vardict_java'],
+           # ['vardict_single', 'module_vardict_java'],
             ['vardict_single', 'module_perl']
             ],
             command="""\
 perl $VARDICT_BIN/var2vcf_valid.pl \\
     -N {sample_name} \\
-    -f {freq}{other_options}{input}{output}""".format(
+    -f {freq} \\
+    {other_options}{input}{output}""".format(
         sample_name=sample_name,
-        freq=freq if freq else "0.01",
+        freq=freq if freq else 0.01,
         other_options=config.param('vardict_single', 'var2vcf_valid_options'),
         input=" \\\n " + input if input else "",
-        output=output
+        output=" \\\n > " + output if output else ""
         )
     )
 

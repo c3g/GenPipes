@@ -60,7 +60,7 @@ class DOvEE_gene(common.Illumina):
 
         for readset in self.readsets:
             trim_directory = os.path.join(self.output_dirs["trim_directory"], readset.sample.name)
-            trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.")
+            trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim")
             fastq1 = readset.fastq1
             fastq2 = readset.fastq2
             
@@ -74,8 +74,10 @@ class DOvEE_gene(common.Illumina):
                     concat_jobs(
                         [
                             bash.mkdir(trim_directory),
-                            job
-                        ], name="trimmer." + readset.name, output_dependency=[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]
+                            job,
+                            bash.mv(trim_file_prefix + "_R1.fastq.gz", trim_file_prefix + ".pair1.fastq.gz"), # trimmer only allows specifying outfile prefix to which it adds _R1/2.fastq.gz
+                            bash.mv(trim_file_prefix + "_R2.fastq.gz", trim_file_prefix + ".pair2.fastq.gz"), # can either rename here or change following to expect that naming
+                        ], name="trimmer." + readset.name
                         )
                  )
         return jobs
@@ -89,7 +91,7 @@ class DOvEE_gene(common.Illumina):
         for readset in self.readsets:
             trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            readset_bam = os.path.join(alignment_directory, readset.sample.name + ".sorted")
             
             fastq1 = ""
             fastq2 = ""
@@ -128,7 +130,7 @@ class DOvEE_gene(common.Illumina):
             jobs.append(
                 concat_jobs(
                     [
-                        bash.mkdir(os.path.dirname(readset_bam)),
+                        bash.mkdir(os.path.dirname(alignment_directory)),
                         pipe_jobs(
                             [
                                 bwa.mem(
@@ -140,14 +142,14 @@ class DOvEE_gene(common.Illumina):
                                         "\\tLB:" + readset.library + \
                                         "\\tPU:" + readset.library + \
                                         ("\\tCN:" + config.param('bwa_mem', 'sequencing_center')) + \
-                                        ("\\tPL:" + config.param('bwa_mem', 'sequencing_technology') if config.param('bwa_mem_sambamba_sort_sam', 'sequencing_technology', required=False) else "Illumina") + \
+                                        ("\\tPL:" + config.param('bwa_mem', 'sequencing_technology') if config.param('bwa_mem', 'sequencing_technology', required=False) else "\\tPL:Illumina") + \
                                         "'",
                                         ini_section="bwa_mem"
                                 ),
                                 samtools.view(
                                     "/dev/stdin",
                                     None,
-                                    ""
+                                    "-b "
                                 ),
                                 samtools.sort(
                                     "/dev/stdin",
@@ -175,8 +177,8 @@ class DOvEE_gene(common.Illumina):
            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
            if 'saliva' in sample.name:
-               output_duplex = os.path.join(alignment_directory, sample.name + "dedup.duplex.bam")
-               output_hybrid = os.path.join(alignment_directory, sample.name + "dedup.hybrid.bam")
+               output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
+               output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
                covered_bed = config.param('locatit', 'covered_bedv8', param_type='filepath')
 
                jobs.append(
@@ -186,30 +188,31 @@ class DOvEE_gene(common.Illumina):
                                    input_bam,
                                    output_duplex,
                                    covered_bed,
-                                   duplex
+                                   "duplex"
                                    ),
                                locatit.dedup(
                                    input_bam,
                                    output_hybrid,
                                    covered_bed,
-                                   hybrid
+                                   "hybrid"
                                    )
                             ],
-                           name='locatit_dedup' + sample.name
+                           name='locatit_dedup.' + sample.name
                            )
                        )
            elif 'brush' in sample.name:
-                output_duplex = os.path.join(alignment_directory, sample.name + "dedup.duplex.bam")
+                output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
                 covered_bed = config.param('locatit', 'covered_bedv7', param_type='filepath')
 
-                jobs.append(
-                        locatit.dedup(
-                            input_bam,
-                            output_duplex,
-                            covered_bed,
-                            duplex
-                            )
+                job = locatit.dedup(
+                        input_bam,
+                        output_duplex,
+                        covered_bed,
+                        "duplex"
                         )
+                job.name='locatit_dedup.' + sample.name
+                jobs.append(job)
+                
         return jobs
     
 
@@ -224,33 +227,37 @@ class DOvEE_gene(common.Illumina):
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             
             if 'saliva' in sample.name: #temporary solution
-                input_duplex = os.path.join(alignment_directory, sample.name + "dedup.duplex.bam")
-                input_hybrid = os.path.join(alignment_directory, sample.name + "dedup.hybrid.bam")
+                input_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
+                input_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
+                output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.sorted")
+                output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted")
 
                 jobs.append(
                         concat_jobs(
                             [
                                 samtools.sort(
                                     input_duplex,
-                                    resub(".duplex.", ".duplex.sorted.", input_duplex)
+                                    output_duplex
                                     ),
                                 samtools.sort(
                                     input_hybrid,
-                                    resub(".hybrid.", ".hybrid.sorted.", input_hybrid)
+                                    output_hybrid
                                     )
                             ],
-                            name = "samtools.sort" + sample.name
+                            name = "samtools.sort." + sample.name
                         )
                     )
             elif 'brush' in sample.name:
-                input_duplex = os.path.join(alignment_directory, sample.name + "dedup.duplex.bam")
+                input_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
+                output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted")
 
-                jobs.append(
-                        samtools.sort(
-                            input_duplex,
-                            resub(".duplex.", ".duplex.sorted.", input_duplex)
-                            )
+                job = samtools.sort(
+                        input_duplex,
+                        output_duplex
                         )
+                job.name = "samtools.sort." + sample.name
+                jobs.append(job)
+
         return jobs
 
     def samtools_index(self):
@@ -263,8 +270,8 @@ class DOvEE_gene(common.Illumina):
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             if 'saliva' in sample.name:
-                input_duplex = os.path.join(alignment_directory, sample.name + "dedup.duplex.sorted.bam")
-                input_hybrid = os.path.join(alignment_directory, sample.name + "dedup.hybrid.sorted.bam")
+                input_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
+                input_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.sorted.bam")
 
                 jobs.append(
                         concat_jobs(
@@ -276,17 +283,18 @@ class DOvEE_gene(common.Illumina):
                                     input_hybrid
                                     )
                             ],
-                            name = "samtools.index" + sample.name
+                            name = "samtools.index." + sample.name
                             )
                         )
             elif 'brush' in sample.name:
-                input_duplex = os.path.join(alignment_directory, sample.name + "dedup.duplex.sorted.bam")
+                input_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
 
-                jobs.append(
-                        samtools.index(
+                job = samtools.index(
                             input_duplex
-                            )
                         )
+                job.name = "samtools.index." + sample.name
+                jobs.append(job)
+
         return jobs
 
     def vardict_single(self):
@@ -298,40 +306,57 @@ class DOvEE_gene(common.Illumina):
         
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            variant_directory = os.path.join(self.output_dirs['variant_directory'], sample.name)
-            input_bam = os.path.join(alignment_directory, sample.name + ".dedup.sorted.bam")
-            
-            if 'brush' in sample.name:
-               freq=0.001
-               region=config.param('vardict_single', 'target_file', param_type='filepath')  #target bed file
+            variants_directory = os.path.join(self.output_dirs['variants_directory'], sample.name)
+            input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam") # which bam should be used here? For saliva two bams exist
+            output = os.path.join(variants_directory, sample.name + "out.vcf") # temp name
 
-               jobs.append(
-                       vardict.single_java(
-                           input_bam,
-                           sample.name,
-                           None,
-                           sv=True,
-                           freq=freq,
-                           region=region
-                           )
-                       )
+            if 'brush' in sample.name:
+                freq=0.001
+                region=config.param('vardict_single', 'target_file', param_type='filepath')  #target bed file
+                nosv=True
 
             elif 'saliva' in sample.name:
                 freq=0.1
-                region=config.param('vardict_single', 'target_filev8', param_type='filepath') #targetv8 bed file
+                region=config.param('vardict_single', 'target_filev7', param_type='filepath')  #target bed file
+                nosv=False
 
-                jobs.append(
-                        vardict.single_java(
-                            input_bam,
-                            sample.name,
-                            None,
-                            sv=False,
-                            freq=freq,
-                            region=region
-                            )
+            vardict_job = vardict.single_java(
+                    input_bam,
+                    sample.name,
+                    None,
+                    nosv=nosv,
+                    freq=freq,
+                    region=region
+                    )
+
+            teststrandbias_job = vardict.teststrandbias(
+                    None,
+                    None
+                    )
+
+            var2vcf_job = vardict.var2vcf_valid(
+                    output,
+                    sample.name,
+                    freq,
+                    None
+                    )
+
+            jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(variants_directory),
+                            pipe_jobs(
+                                [
+                                    vardict_job,
+                                    teststrandbias_job,
+                                    var2vcf_job
+                                    ]
+                                )
+                            ], name = "vardict." + sample.name
                         )
+                    )
 
-        return Jobs
+        return jobs
 
     @property
     def steps(self):
