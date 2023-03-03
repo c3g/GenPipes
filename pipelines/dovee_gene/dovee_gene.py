@@ -78,7 +78,7 @@ class DOvEE_gene(common.Illumina):
                         ], name="trimmer." + readset.name, output_dependency=[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]
                         )
                  )
-            return jobs
+        return jobs
 
     def bwa_mem_samtools_sort(self):
         """
@@ -210,6 +210,7 @@ class DOvEE_gene(common.Illumina):
                             duplex
                             )
                         )
+        return jobs
     
 
     def samtools_sort(self):
@@ -286,7 +287,7 @@ class DOvEE_gene(common.Illumina):
                             input_duplex
                             )
                         )
-            return jobs
+        return jobs
 
     def vardict_single(self):
         """
@@ -330,7 +331,7 @@ class DOvEE_gene(common.Illumina):
                             )
                         )
 
-            return Jobs
+        return Jobs
 
     @property
     def steps(self):
