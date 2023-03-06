@@ -74,11 +74,7 @@ def convert(input_dir, input_file, output_dir, output_files, inputinfofile, hist
     # input = input_files.extend(inputinfofile)
 
     return Job(
-        [
-            inputinfofile,
-            input_file,
-            chr_sizes_file
-        ],
+        [input_file],
         output_files,
         [
             ['chromimpute', 'module_java'],
