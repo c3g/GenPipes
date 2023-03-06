@@ -24,6 +24,8 @@ from bfx import bwa
 from bfx import samtools
 from bfx import locatit
 from bfx import vardict
+from bfx import hmm
+from bfx import ichorCNA
 
 from bfx import bash_cmd as bash
 from core.config import config
@@ -37,6 +39,7 @@ class DOvEE_gene(common.Illumina):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments? 
+        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default vardict)", choices=["vardict", "copy-number"]) # FINAL NAMES TBD
         super(DOvEE_gene, self).__init__(protocol)
 
     @property
@@ -48,6 +51,8 @@ class DOvEE_gene(common.Illumina):
                 'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
                 'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir),
                 'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir),
+                'wig_directory' : os.path.relpath(os.path.join(self.output_dir, 'wig'), self.output_dir), #temp
+                'cna_directory' : os.path.relpath(os.path.join(self.output_dir, 'cna'), self.output_dir) #temp
                 }
         return dirs
 
@@ -358,15 +363,94 @@ class DOvEE_gene(common.Illumina):
 
         return jobs
 
+    def hmm_readCounter(self):
+        """
+        Counting number of reads in non-overlapping windows of fixed width directly from BAM files with HMM Copy Utils readCounter:
+        https://github.com/shahcompbio/hmmcopy_utils
+        """
+        # Which bam file is used as input here? Need to clarify, whether duplex or hybrid dedup, etc.
+        # Run on both saliva and brush, as both wigs needed as input for IchorCNA
+
+        jobs = []
+
+        for sample in self.samples: # or iterate over sample_pair/tumor_pair name?
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            wig_directory = os.path.join(self.output_dirs['wig_directory'], sample.name) 
+            input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam") # how should bam be generated here? For locatit, two dedup options exist. Sorting needed?
+            output = os.path.join(wig_directory, sample.name + "out.wig") # temp name
+
+            job = concat_jobs(
+                    [
+                    bash.mkdir(wig_directory),
+                    hmm.readCounter(
+                    input_bam,
+                    output
+                    )
+                    ]
+                ), name = "hmm_readCounter." + sample.name
+
+            jobs.append(job)
+
+        return jobs
+
+    def run_ichorCNA(self):
+        """
+        https://github.com/broadinstitute/ichorCNA
+        'Hidden Markov model (HMM) to analyze Ultra-low pass whole genome sequencing (ULP-WGS) data.'
+        """
+        # Run once per patient using paired saliva and brush sample wigs, requires knowing which saliva and brush came from same patient.
+
+        jobs = []
+        
+        for sample_pair in self.sample_pairs: # or another id that allows us to pair brush and saliva
+            wig_directory = wig_directory = self.output_dirs['wig_directory']
+            input_brush = os.path.join(wig_directory, sample_pair.brush.name, sample_pair.brush.name + "out.wig") # temp name 
+            input_saliva = os.path.join(wig_directory, sample_pair.saliva.name, sample_pair.saliva.name + "out.wig") # temp name 
+            output_dir = os.path.join(self.output_dirs['cna_directory'], sample_pair.name)
+
+            jobs.append(
+                    concat_jobs(
+                        [
+                        bash.mkdir(output_dir),
+                        ichorCNA.run_ichorCNA(
+                            input_brush,
+                            input_saliva,
+                            sample_pair.name,
+                            output_dir
+                            )
+                        ], 
+                        name = "run_ichorCNA." + sample_pair.name
+                    )
+                )
+
+        return jobs
+
     @property
-    def steps(self):
+    def steps(self): # what kind of metrics and reports to add?
         return [
-                self.trimmer,
-                self.bwa_mem_samtools_sort,
-                self.locatit_dedup_bam,
-                self.samtools_sort,
-                self.samtools_index,
-                self.vardict_single,
-                ]
+                [
+                    self.trimmer,
+                    self.bwa_mem_samtools_sort,
+                    self.locatit_dedup_bam,
+                    self.samtools_sort,
+                    self.samtools_index,
+                    self.vardict_single,
+                ],
+                [
+                    self.trimmer, # same trimming, mapping, dedup steps for copy number protocol? 
+                    self.bwa_mem_samtools_sort,
+                    self.locatit_dedup_bam,
+                    self.samtools_sort,
+                    self.samtools_index,
+                    self.hmm_readCounter,
+                    self.run_ichorCNA
+                 ]
+            ]
+
+
 if __name__ == "__main__":
-        DOvEE_gene()
+    argv = sys.argv
+    if '--wrap' in argv:
+        utils.utils.container_wrapper_argparse(argv)
+    else:
+        DOvEE_gene(protocol=['vardict', 'copy-number'])
