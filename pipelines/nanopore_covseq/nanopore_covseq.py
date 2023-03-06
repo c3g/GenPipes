@@ -690,27 +690,28 @@ echo "pass_reads" $(grep -c "^@" {pass_fq}) >> {fq_stats} """.format(
             annotated_vcf = os.path.join(variant_directory, re.sub("\.vcf.gz$", ".annotate.vcf", os.path.basename(input_vcf)))
 
             jobs.append(
-                concat_jobs([
-                    bash.mkdir(os.path.dirname(output_fa)),
-                    Job(
-                        input_files=[quast_tsv, quast_html],
-                        output_files=[],
-                        command="""\\
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.dirname(output_fa)),
+                        Job(
+                            input_files=[quast_tsv, quast_html],
+                            output_files=[],
+                            command="""\\
 cons_len=`grep -oP "Total length \(>= 0 bp\)\\t\K.*?(?=$)" {quast_tsv}`
 N_count=`grep -oP "# N's\\",\\"quality\\":\\"Less is better\\",\\"values\\":\[\K.*?(?=])" {quast_html}`
 cons_perc_N=`echo "scale=2; 100*$N_count/$cons_len" | bc -l`
 frameshift=`if grep -q "frameshift_variant" {annotated_vcf}; then echo "FLAG"; fi`
 STATUS=`awk -v frameshift=$frameshift -v cons_perc_N=$cons_perc_N 'BEGIN {{ if (cons_perc_N < 5 && frameshift != "FLAG") {{print "pass"}} else if ((cons_perc_N >= 5 && cons_perc_N <= 10 ) || frameshift == "FLAG") {{print "flag"}} else if (cons_perc_N > 10) {{print "rej"}} }}'`
 export STATUS""".format(
-                            quast_html=quast_html,
-                            quast_tsv=quast_tsv,
-                            annotated_vcf=annotated_vcf
-                        )
-                    ),
-                    Job(
-                        input_files=[input_fa],
-                        output_files=[output_status_fa],
-                        command="""\\
+                                quast_html=quast_html,
+                                quast_tsv=quast_tsv,
+                                annotated_vcf=annotated_vcf
+                            )
+                        ),
+                        Job(
+                            input_files=[input_fa],
+                            output_files=[output_status_fa],
+                            command="""\\
 awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|assemb_method:{assemb_method}|snv_call_method:{snv_call_method}"; next}}{{print}}' < {input_fa} > {output_status_fa}""".format(
                             country=config.param('rename_consensus_header', 'country', required=False),
                             province=config.param('rename_consensus_header', 'province', required=False),
@@ -721,9 +722,9 @@ awk '/^>/{{print ">{country}/{province}-{sample}/{year} seq_method:{seq_method}|
                             sample=sample.name,
                             input_fa=input_fa,
                             output_status_fa=output_status_fa
+                            )
                         )
-                    )
-                ],
+                    ],
                     name="rename_consensus_header." + sample.name,
                     samples=[sample]
                 )

@@ -22,6 +22,7 @@ import os
 
 # MUGQIC Modules
 from core.job import Job
+from core.config import config
 
 def mkdir(
     folder,
@@ -192,7 +193,7 @@ def cat(
 def cut(
     input,
     output,
-    options
+    options=None
     ):
 
     return Job(
@@ -200,7 +201,7 @@ def cut(
         [output],
         command="""\
 cut {options} {input}{output}""".format(
-            options=options,
+            options=options if options else "",
             input=input if input else "",
             output=" > " + output if output else "",
         )
@@ -209,7 +210,7 @@ cut {options} {input}{output}""".format(
 def paste(
     input,
     output,
-    options
+    options=None
     ):
 
     return Job(
@@ -217,7 +218,7 @@ def paste(
         [output],
         command="""\
 paste {options} {input}{output}""".format(
-            options=options,
+            options=options if options else "",
             input=input if input else "",
             output=" > " + output if output else "",
         )
@@ -255,8 +256,65 @@ def sed(
 sed {instructions} {input} {output}""".format(
             instructions=instructions,
             input=input if input else "",
-            output="> " + output if output else "",
+            output="> " + output if output else ""
         )
+    )
+
+def grep(
+    input,
+    output,
+    instructions
+    ):
+    return Job(
+        [input],
+        [output],
+        command="""\
+grep {instructions} {input} {output}""".format(
+            instructions=instructions,
+            input=input if input else "",
+            output="> " + output if output else ""
+        )
+    )
+
+def sort(
+    input,
+    output,
+    instructions,
+    extra=None
+    ):
+    return Job(
+        [input],
+        [output],
+        command="""\
+sort {instructions} {input} {output}{extra}""".format(
+            instructions=instructions,
+            input=input if input else "",
+            output="> " + output if output else "",
+            extra=extra if (extra and output) else ""
+        )
+    )
+
+def zip(
+    input,
+    output,
+    recursive=False
+    ):
+    inputs = [input] if not isinstance(input, list) else input
+    if output:
+        outputs = [output] 
+    else:
+        output = f"{input}.zip"
+        outputs = None
+    if recursive:
+        rec = "-r"
+        if isinstance(input, list):
+            input = os.path.dirname(input[0])
+    else:
+        rec = ""
+    return Job(
+        inputs,
+        outputs,
+        command=f"zip {rec} {output} {input}"
     )
 
 def gzip(
@@ -282,7 +340,41 @@ def chmod(file, permission):
         [file],
         command="""\
 chmod {permission} {file}""".format(
-    permission=permission,
-    file=file
-    ),
-)
+            permission=permission,
+            file=file
+        )
+    )
+
+def pigz(
+    inputs,
+    threads,
+    options=None,
+    ini_section='pigz'
+    ):
+    return Job(
+        input_files=inputs,
+        output_files=[s + ".gz" for s in inputs],
+        module_entries=[
+            [ini_section, 'module_pigz']
+        ],
+        command="""\
+pigz {options} \\
+  {nthreads} \\
+  {input_files}""".format(
+            input_files=" ".join(inputs),
+            nthreads=threads,
+            options=options if options else ""
+        )
+    )
+
+def ls(
+    target
+    ):
+    return Job(
+        [target],
+        [],
+        command="""\
+ls {path}""".format(
+            path=target
+        )
+    )

@@ -325,7 +325,7 @@ cmd_or_job() {
     echo "Submitting $JOB_PREFIX as job..."
     echo
     if [[ $HOST == abacus* ]]; then
-      echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_NAME -q qfat256 -l pmem=256000m -l walltime=12:00:0 -l nodes=1:ppn=$CORES
+      echo "${!CMD}" | qsub -m ae -M $JOB_MAIL -A $RAP_ID -W umask=0002 -d $INSTALL_DIR -j oe -o $LOG_DIR/${JOB_PREFIX}_$TIMESTAMP.log -N $JOB_NAME -q sw -l walltime=12:00:0 -l nodes=1:ppn=$CORES
     else      
       echo "#! /bin/bash 
       ${!CMD}" | \
@@ -443,8 +443,8 @@ chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
   BINGC_CMD="\
 module load $module_python $module_mugqic_tools && \
 LOG=$LOG_DIR/wgbs_bin100bp_GC_$TIMESTAMP.log && \
-\$PYTHON_TOOLS/getFastaBinedGC.py -s 100 -r $BISMARK_INDEX_DIR/$GENOME_FASTA -o $ANNOTATIONS_DIR/${ASSEMBLY}_wgbs_bin100bp_GC.bed > \$LOG 2>&1" # && \
-#chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
+\$PYTHON_TOOLS/getFastaBinedGC.py -s 100 -r $BISMARK_INDEX_DIR/$GENOME_FASTA -o $ANNOTATIONS_DIR/${ASSEMBLY}_wgbs_bin100bp_GC.bed > \$LOG 2>&1 && \
+chmod -R ug+rwX,o+rX $BISMARK_INDEX_DIR \$LOG"
     cmd_or_job BINGC_CMD 8
   else
     echo
@@ -463,6 +463,8 @@ create_bwa_index() {
     BWA_CMD="\
 mkdir -p $INDEX_DIR && \
 ln -s -f -t $INDEX_DIR ../$GENOME_FASTA && \
+ln -s -f -t $INDEX_DIR ../$GENOME_FASTA.fai && \
+ln -s -f ../${GENOME_FASTA/.fa/.dict} $INDEX_DIR/$GENOME_FASTA.dict && \
 module load $module_bwa && \
 LOG=$LOG_DIR/bwa_$TIMESTAMP.log && \
 bwa index $INDEX_DIR/$GENOME_FASTA > \$LOG 2>&1 && \
@@ -736,7 +738,7 @@ create_gene_annotations_flat() {
     echo
     cd $ANNOTATIONS_DIR
     module load $module_ucsc
-    gtfToGenePred -genePredExt -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
+    gtfToGenePred -ignoreGroupsWithoutExons -genePredExt -geneNameAsName2 ${ANNOTATION_PREFIX}.gtf ${ANNOTATION_PREFIX}.refFlat.tmp.txt
     cut -f 12 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt
     cut -f 1-10 ${ANNOTATION_PREFIX}.refFlat.tmp.txt > ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt
     paste ${ANNOTATION_PREFIX}.refFlat.tmp.2.txt ${ANNOTATION_PREFIX}.refFlat.tmp.3.txt > ${ANNOTATION_PREFIX}.ref_flat.tsv
@@ -973,7 +975,7 @@ build_files() {
     echo "You might consider to manually download a gtf file from UCSC table browser (http://genome.ucsc.edu/cgi-bin/hgTables)"
   fi
 
-  Annotations are not installed for UCSC genomes
+  # Annotations are not installed for UCSC genomes
   if [[ $SOURCE != "UCSC" ]]
   then
     if [[ $SOURCE != "NCBI" ]]

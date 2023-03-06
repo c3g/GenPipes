@@ -3,18 +3,15 @@
 set -eu -o pipefail
 
 SOFTWARE=nextflow
-VERSION=19.04.0
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/nextflow-io/$SOFTWARE/archive/v$VERSION.tar.gz
-SOFTWARE_DIR=$SOFTWARE-$VERSION  ## TO BE MODIFIED WITH SPECIFIC SOFTWARE DIRECTORY IF NECESSARY
+VERSION=22.10.6
+ARCHIVE=$SOFTWARE-$VERSION
+ARCHIVE_URL=https://github.com/nextflow-io/${SOFTWARE}/releases/download/v${VERSION}/${SOFTWARE}-${VERSION}-all
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
-  tar zxvf $ARCHIVE
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/ 
+  mkdir -p $INSTALL_DIR/$SOFTWARE_DIR/
+  cp $ARCHIVE $INSTALL_DIR/$SOFTWARE_DIR/$SOFTWARE
 }
 
 module_file() {
@@ -27,6 +24,7 @@ module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
+setenv          NXF_OPTS            -Djdk.lang.Process.launchMechanism=vfork
 "
 }
 

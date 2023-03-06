@@ -8,7 +8,7 @@ VERSION=2.27.4
 ARCHIVE=${SOFTWARE}-${VERSION}.jar
 ARCHIVE_URL=https://github.com/broadinstitute/picard/releases/download/$VERSION/${SOFTWARE}.jar
 SOFTWARE_DIR=$SOFTWARE-$VERSION
-MODULE_JAVA=mugqic/java/openjdk-jdk-19
+MODULE_JAVA=mugqic/java/openjdk-jdk-19.0.1
 
 build() {
   cd $INSTALL_DOWNLOAD

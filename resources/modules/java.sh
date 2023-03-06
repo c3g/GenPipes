@@ -3,17 +3,19 @@
 set -eu -o pipefail
 
 SOFTWARE=java
-VERSION=openjdk-jdk-17
-ARCHIVE=jdk-17_linux-x64_bin.tar.gz
-ARCHIVE_URL=https://download.oracle.com/java/17/latest/$ARCHIVE
+JVERSION=11.0.2
+VERSION=openjdk-jdk-${JVERSION}
+ARCHIVE=openjdk-${JVERSION}_linux-x64_bin.tar.gz
+ARCHIVE_URL=https://download.java.net/java/GA/jdk11/9/GPL/$ARCHIVE
 SOFTWARE_DIR=$VERSION
 
 build() {
   cd $INSTALL_DOWNLOAD
+  echo $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
   # Install software
-  mv -i ${SOFTWARE_DIR/openjdk-/}.0.4.1 $INSTALL_DIR/$SOFTWARE_DIR
+  mv -i ${VERSION/openjdk-/} $INSTALL_DIR/$SOFTWARE_DIR
 }
 
 module_file() {
@@ -25,6 +27,7 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
+prepend-path    PATH                \$root/lib
 prepend-path    PATH                \$root/bin
 "
 }

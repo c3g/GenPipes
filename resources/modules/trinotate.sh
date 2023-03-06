@@ -10,40 +10,53 @@ set -eu -o pipefail
 # - Assuming sqlite is already available on the system
 
 SOFTWARE=trinotate
-VERSION=2.0.2
-ARCHIVE=${SOFTWARE^}-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/Trinotate/Trinotate/archive/v$VERSION.tar.gz
-SOFTWARE_DIR=${SOFTWARE^}-$VERSION
+VERSION=4.0.0
+ARCHIVE=${SOFTWARE^}-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/${SOFTWARE^}/${SOFTWARE^}/archive/refs/tags/${SOFTWARE^}-v${VERSION}.tar.gz
+SOFTWARE_DIR=${SOFTWARE^}-${VERSION}
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+MODULE_PERL=mugqic/perl/5.34.0
+MODULE_INFERNAL=mugqic/infernal/1.1.4
+MODULE_DIAMOND=mugqic/diamond/2.1.4
+
+
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
+  cd ${SOFTWARE^}-${SOFTWARE^}-v${VERSION}
+  module load $MODULE_PERL $MODULE_INFERNAL $MODULE_DIAMOND
+  SQLITE=Trinotate.sqlite
+  ./Trinotate \
+    --create \
+    --db ${SQLITE} \
+    --trinotate_data_dir data \
+    --use_diamond
+
   # Install software
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  cd $INSTALL_DOWNLOAD
+  mv -i ${SOFTWARE^}-${SOFTWARE^}-v${VERSION} $INSTALL_DIR/$SOFTWARE_DIR
 
   # Download Trinotate resources (adjust file names for newer Trinotate version)
-  SQLITE=Trinotate.sprot_uniref90.20150131.boilerplate.sqlite
-  download_archive "ftp://ftp.broadinstitute.org/pub/users/bhaas/Trinotate_v${VERSION%.*}_RESOURCES" $SQLITE.gz
-  gunzip $SQLITE.gz -c > $INSTALL_DIR/$SOFTWARE_DIR/$SQLITE
-  store_archive $SQLITE.gz
+  # SQLITE=Trinotate.sprot_uniref90.20150131.boilerplate.sqlite
+  # download_archive "ftp://ftp.broadinstitute.org/pub/users/bhaas/Trinotate_v${VERSION%.*}_RESOURCES" $SQLITE.gz
+  # gunzip $SQLITE.gz -c > $INSTALL_DIR/$SOFTWARE_DIR/$SQLITE
+  # store_archive $SQLITE.gz
 }
 
 module_file() {
 echo "\
 #%Module1.0
 proc ModulesHelp { } {
-  puts stderr \"\tMUGQIC - $SOFTWARE \"
+  puts stderr \"\tMUGQIC - ${SOFTWARE^} \"
 }
-module-whatis \"$SOFTWARE\"
+module-whatis \"${SOFTWARE^}\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
 setenv          TRINOTATE_HOME      \$root
 setenv          TRINOTATE_SQLITE    \$root/$SQLITE
+setenv          TRINOTATE_DATA_DIR  \$root/data
 "
 }
 

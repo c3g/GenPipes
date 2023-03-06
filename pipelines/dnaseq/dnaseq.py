@@ -261,6 +261,8 @@ END
             adapter_file = config.param('skewer_trimming', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
+            quality_offset = readset.quality_offset
+
             if not adapter_file:
                 adapter_file = os.path.join(output_dir, "adapter.tsv")
                 adapter_job = adapters.create(
@@ -315,7 +317,8 @@ END
                             fastq1,
                             fastq2,
                             trim_file_prefix,
-                            adapter_file
+                            adapter_file,
+                            quality_offset
                         ),
                         bash.ln(
                             os.path.relpath(trim_file_prefix + "-trimmed-pair1.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair1.fastq.gz")),
@@ -678,6 +681,8 @@ END
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             realign_directory = os.path.join(alignment_directory, "realign")
             readset = sample.readsets[0]
+            
+            quality_offsets = [readset.quality_offset for readset in sample.readsets]
 
             [input] = self.select_input_files(
                 [
@@ -705,12 +710,14 @@ END
                                 input,
                                 realign_intervals,
                                 output_dir=self.output_dir,
+                                fix_encoding=True if quality_offsets[0] == 64 else ""
                             ),
                             gatk4.indel_realigner(
                                 input,
                                 output=output_bam,
                                 output_dir=self.output_dir,
-                                target_intervals=realign_intervals
+                                target_intervals=realign_intervals,
+                                fix_encoding=True if quality_offsets[0] == 64 else ""
                             ),
                             # Create sample realign symlink since no merging is required
                             bash.ln(
@@ -745,14 +752,16 @@ END
                                     input,
                                     realign_intervals,
                                     output_dir=self.output_dir,
-                                    intervals=intervals
+                                    intervals=intervals,
+                                    fix_encoding=True if quality_offsets[0] == 64 else ""
                                 ),
                                 gatk4.indel_realigner(
                                     input,
                                     output_dir=self.output_dir,
                                     output=output_bam,
                                     target_intervals=realign_intervals,
-                                    intervals=intervals
+                                    intervals=intervals,
+                                    fix_encoding=True if quality_offsets[0] == 64 else ""
                                     )
                                 ],
                                 name="gatk_indel_realigner." + sample.name + "." + str(idx),
@@ -774,14 +783,16 @@ END
                                 input,
                                 realign_intervals,
                                 output_dir=self.output_dir,
-                                exclude_intervals=unique_sequences_per_job_others
+                                exclude_intervals=unique_sequences_per_job_others,
+                                fix_encoding=True if quality_offsets[0] == 64 else ""
                             ),
                             gatk4.indel_realigner(
                                 input,
                                 output_dir=self.output_dir,
                                 output=output_bam,
                                 target_intervals=realign_intervals,
-                                exclude_intervals=unique_sequences_per_job_others
+                                exclude_intervals=unique_sequences_per_job_others,
+                                fix_encoding=True if quality_offsets[0] == 64 else ""
                                 )
                         ],
                         name="gatk_indel_realigner." + sample.name + ".others",
@@ -821,7 +832,6 @@ END
                 job.name = "sambamba_merge_realigned." + sample.name
                 job.samples = [sample]
                 jobs.append(job)
-
         return jobs
 
     def fix_mate_by_coordinate(self):
@@ -862,7 +872,6 @@ END
                     samples=[sample]
                 )
             )
-
         return jobs
 
     def fix_mate_by_coordinate_samtools(self):
@@ -911,11 +920,9 @@ END
                     samples=[sample]
                 )
             )
-
         return jobs
 
-
-    def picard_mark_duplicates(self):
+    def mark_duplicates(self):
         """
         Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
         (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
@@ -949,94 +956,22 @@ END
                             picard_directory,
                             remove=False,
                         ),
-                        gatk4.picard_mark_duplicates(
+                        gatk4.mark_duplicates(
                             input,
                             output,
-                            metrics_file
-                            ),
+                            metrics_file,
+                            ini_section='mark_duplicates'
+                        ),
                         Job(
                             [metrics_file],
                             [os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")],
-                            command="sed -e 's#.realigned##g' " + metrics_file + " > "
-                                    + os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")
+                            command="sed -e 's#.realigned##g' " + metrics_file + " > " + os.path.join(picard_directory, sample.name + ".sorted.dup.metrics")
                         )
                     ],
-                    name="picard_mark_duplicates." + sample.name,
+                    name="mark_duplicates." + sample.name,
                     samples=[sample]
                 )
             )
-
-        return jobs
-
-    def gatk_mark_duplicates(self):
-        """
-        GATK version of Mark duplicates. A better duplication marking algorithm that handles all cases including clipped and gapped alignments
-        Aligned reads per sample are duplicates if they have the same 5' alignment positions
-        (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
-        will be marked as a duplicate in the BAM file.
-        """
-
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
-            readset = sample.readsets[0]
-
-            [input] = self.select_input_files(
-                [
-                    [alignment_file_prefix + "sorted.matefixed.bam"],
-                    [alignment_file_prefix + "sorted.realigned.bam"],
-                    [alignment_file_prefix + "sorted.bam"],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
-                ]
-            )
-            output = alignment_file_prefix + "sorted.dup.bam"
-            metrics_file = alignment_file_prefix + "sorted.dup.metrics"
-
-            job = gatk4.mark_duplicates(
-                input,
-                output,
-                metrics_file
-            )
-            job.name = "gatk_mark_duplicates." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
-
-        return jobs
-
-    def sambamba_mark_duplicates(self):
-        """
-        Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
-        (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
-        will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
-        """
-
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            alignment_file_prefix = os.path.join(alignment_directory, sample.name + ".")
-            readset = sample.readsets[0]
-
-            [input] = self.select_input_files(
-                [
-                    [alignment_file_prefix + "sorted.matefixed.bam"],
-                    [alignment_file_prefix + "sorted.realigned.bam"],
-                    [alignment_file_prefix + "sorted.bam"],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.filtered.bam")],
-                    [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
-                ]
-            )
-            output = alignment_file_prefix + "sorted.dup.bam"
-
-            job = sambamba.markdup(
-                input,
-                output
-            )
-            job.name = "sambamba_mark_duplicates." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
-            
         return jobs
 
     def recalibration(self):
@@ -1129,7 +1064,6 @@ END
                     samples=[sample]
                 )
             )
-
         return jobs
 
     def sym_link_final_bam(self):
@@ -1274,9 +1208,7 @@ END
                         mkdir_job,
                         gatk4.collect_gcbias_metrics(
                             input,
-                            os.path.join(picard_directory, sample.name + ".qcbias_metrics.txt"),
-                            os.path.join(picard_directory, sample.name + ".qcbias_metrics.pdf"),
-                            os.path.join(picard_directory, sample.name + ".qcbias_summary_metrics.txt")
+                            os.path.join(picard_directory, sample.name)
                         )
                     ],
                     name="picard_collect_gcbias_metrics." + sample.name,
@@ -1334,7 +1266,6 @@ END
                     samples=[sample]
                 )
             )
-
         return jobs
 
     def metrics_dna_sambamba_flagstat(self):
@@ -4086,7 +4017,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             gatk_pass = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".hc.flt.vcf.gz")
             lumpy_vcf = os.path.join(pair_directory, sample.name + ".lumpy.germline.vcf.gz")
             manta_vcf = os.path.join(pair_directory, sample.name + ".manta.germline.vcf.gz")
-            abs_manta = os.path.abspath(manta_vcf)
+            # abs_manta = os.path.abspath(manta_vcf)
             wham_vcf = os.path.join(pair_directory, sample.name + ".wham.germline.vcf.gz")
             delly_vcf = os.path.join(pair_directory, sample.name + ".delly.germline.vcf.gz")
             cnvkit_vcf = os.path.join(pair_directory, sample.name + ".cnvkit.germline.vcf.gz")
@@ -4135,7 +4066,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         ),
                         metasv.ensemble(
                             lumpy_vcf,
-                            abs_manta,
+                            manta_vcf,
                             input_cnvkit,
                             wham_vcf,
                             delly_vcf,
@@ -4271,7 +4202,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                self.picard_mark_duplicates,
+                self.mark_duplicates,
                 self.recalibration,
                 self.gatk_haplotype_caller,
                 self.merge_and_call_individual_gvcf,
@@ -4311,7 +4242,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                self.picard_mark_duplicates,
+                self.mark_duplicates,
                 self.recalibration,
                 self.rawmpileup,
                 self.rawmpileup_cat,
@@ -4344,7 +4275,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                self.picard_mark_duplicates,
+                self.mark_duplicates,
                 self.recalibration,
                 self.sym_link_final_bam,
                 self.metrics_dna_picard_metrics,
@@ -4377,7 +4308,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sambamba_merge_sam_extract_unmapped,
                 self.gatk_indel_realigner,
                 self.sambamba_merge_realigned,
-                self.picard_mark_duplicates,
+                self.mark_duplicates,
                 self.recalibration,
                 self.gatk_haplotype_caller,
                 self.merge_and_call_individual_gvcf,

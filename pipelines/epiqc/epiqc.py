@@ -157,8 +157,8 @@ class EpiQC(common.Illumina):
 
     @property
     def prefix_path(self):
-        # Depending on the path of the readset, file this try to generate the path to signal tracks folder
-        # Therefore, It is necessary to place the readset file in the ChIP-seq output directory
+        # Depending on the path of the readset file, this tries to generate the path to signal tracks folder
+        # Therefore, it is necessary to place the readset file in the ChIP-seq output directory
         #
         #gets the complete path to the readset directory and remove the readset name from the file path
         path = os.path.relpath(self.args.readsets.name, self.output_dir).replace(os.path.basename(self.args.readsets.name), '')
@@ -326,17 +326,18 @@ class EpiQC(common.Illumina):
 
         #remove inputinfor file if exist
         #at this point imputation directory has already been created as chromosome file has generated first
-        inputinfofile = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
-        if os.path.exists(inputinfofile):
-            os.remove(inputinfofile)
+        inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+        inputinfofile_abs = os.path.join(self.output_dir, inputinfofile)
+        if os.path.exists(inputinfofile_abs):
+            os.remove(inputinfofile_abs)
         #copy inputinfor file from CVMFS
-        copyfile(ihec_inputinfofile, inputinfofile)
+        copyfile(ihec_inputinfofile, inputinfofile_abs)
 
         #add user histone marks to inputinfo file
         # dynamically extend inputinfor file adding user samples (this is not a job, this step is executed
         # when generating the job script
         # copy histone mark, sample and file paths in user's samples into inputinfo file (avoid input histone files)
-        with open(inputinfofile, "a") as inputinfo:
+        with open(inputinfofile_abs, "a") as inputinfo:
             for sample in self.samples:
                 for readset in sample.readsets:
                     if readset.mark_type != "I":
@@ -344,16 +345,17 @@ class EpiQC(common.Illumina):
 
         #train_user_data = config.param('DEFAULT', 'train_only_user_data')
         train_user_data = "F"
-        chr_sizes_file = os.path.join(self.output_dir, self.chromosome_file)
+        chr_sizes_file = self.chromosome_file
+        chr_sizes_file_abs = os.path.join(self.output_dir, chr_sizes_file)
         converteddir = self.output_dirs['chromimpute_converted_directory']
 
         #gather converted file paths in CVMFS as they needed to feed into the job as input files
         converted_simlinks = []
         if train_user_data == "F":
-            with open(chr_sizes_file, "r") as chrominfofile:
+            with open(chr_sizes_file_abs, "r") as chrominfofile:
                 for line in chrominfofile:
                     chr_name = line.strip().split("\t")[0]
-                    with open(inputinfofile, "r") as inputinfo:
+                    with open(inputinfofile_abs, "r") as inputinfo:
                         for inputinfoline in inputinfo:
                             # if histone mark in inputinfo file present in readset file it only includes as an input fileof the convert global distance step
                             converted_simlinks.append(os.path.join(converteddir, "%s_%s.wig.gz" % (chr_name, inputinfoline.strip().split("\t")[2])))
@@ -413,17 +415,17 @@ class EpiQC(common.Illumina):
         else:
             chrs = config.param('chromimpute_preprocess', 'chromosomes').split(",")
 
-        chr_sizes_file = os.path.join(self.output_dir, self.chromosome_file)
+        chr_sizes_file_abs = os.path.join(self.output_dir, self.chromosome_file)
 
-        if os.path.exists(chr_sizes_file):
-            os.remove(chr_sizes_file)
+        if os.path.exists(chr_sizes_file_abs):
+            os.remove(chr_sizes_file_abs)
         # Dynamically creates the chromosome size file using ini file parameters
         for chr in chrs:
             with open(chr_sizes, "r") as chr_sizes_genome:
                 for chr_line in chr_sizes_genome:
                     if chr == chr_line.strip().split("\t")[0]:
                         chr_size = chr_line.strip().split("\t")[1]
-                        chr_sizes_file_name = open(chr_sizes_file, "w")
+                        chr_sizes_file_name = open(chr_sizes_file_abs, "w")
                         chr_sizes_file_name.write(f"{chr}\t{int(chr_size)}\n")
 
     def chromimpute_convert(self):
@@ -438,7 +440,7 @@ class EpiQC(common.Illumina):
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
 
-        # check ini file whether user has requested specific chromosoems instead All chromosomes. Then change the input folder accordingly
+        # check ini file whether user has requested specific chromosomes or all chromosomes. Then change the input folder accordingly
         chrs = config.param('chromimpute_preprocess', 'chromosomes')
 
         if chrs == "All":
@@ -460,17 +462,22 @@ class EpiQC(common.Illumina):
 
                     input_file = os.path.join(input_dir, sample.name + "_" + readset.mark_name + ".bedgraph.gz")
 
-                    job = chromimpute.convert(
-                        input_dir,
-                        input_file,
-                        output_dir,
-                        output_files,
-                        inputinfofile,
-                        readset.mark_name,
-                        sample.name,
-                        chr_sizes_file
+                    job = concat_jobs(
+                        [
+                            chromimpute.convert(
+                                input_dir,
+                                input_file,
+                                output_dir,
+                                output_files,
+                                inputinfofile,
+                                readset.mark_name,
+                                sample.name,
+                                chr_sizes_file
+                            )
+                        ],
+                        name="chromimpute_convert." + sample.name + "." + readset.mark_name,
+                        samples=[sample]
                     )
-                    job.samples = [sample]
                     jobs.append(job)
         return jobs
 
@@ -482,15 +489,17 @@ class EpiQC(common.Illumina):
         """
         jobs = []
         chr_sizes_file = self.chromosome_file
+        chr_sizes_file_abs = os.path.join(self.output_dir, chr_sizes_file)
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+        inputinfofile_abs = os.path.join(self.output_dir, inputinfofile)
         converteddir = self.output_dirs['chromimpute_converted_directory']
         output_dir = self.output_dirs['chromimpute_distance_directory']
 
         histone_marks = []
         # create a job for each histone maek in inputinfor file together with user's histone marks
         # get unique histone marks from the inputinfo file
-        with open(os.path.join(self.output_dir, inputinfofile), "r") as histone_marks_total:
+        with open(os.path.join(self.output_dir, inputinfofile_abs), "r") as histone_marks_total:
             for line in histone_marks_total:
                 histone_marks.append(line.strip().split("\t")[1])
         histone_marks = list(set(histone_marks))
@@ -499,12 +508,12 @@ class EpiQC(common.Illumina):
         # so it takes time
         # if you want to do this uncomment this and comment the code below this
         # for histone in histone_marks:
-        #     with open(inputinfofile, "r") as inputinfo:
+        #     with open(inputinfofile_abs, "r") as inputinfo:
         #         for inputinfoline in inputinfo:
         #             #if histone mark in inputinfo file present in design file it only includes as an input fileof the convert global distance step
         #             if inputinfoline.split("\t")[1]==histone:
         #
-        #                 with open(chr_sizes_file, "r") as chrominfofile:
+        #                 with open(chr_sizes_file_abs, "r") as chrominfofile:
         #                     for line in chrominfofile:
         #
         #                         input_files.append(os.path.join(self.output_dirs['chromimpute_output_directory'],
@@ -523,10 +532,10 @@ class EpiQC(common.Illumina):
         for histone in histone_marks:
             input_files = []
             output_files = []
-            with open(os.path.join(self.output_dir, chr_sizes_file), "r") as chrominfofile:
+            with open(os.path.join(self.output_dir, chr_sizes_file_abs), "r") as chrominfofile:
                 line = chrominfofile.readline()
 
-                with open(os.path.join(self.output_dir, inputinfofile), "r") as inputinfo:
+                with open(os.path.join(self.output_dir, inputinfofile_abs), "r") as inputinfo:
                     for inputinfoline in inputinfo:
 
                         # if histone mark in inputinfo file present in design file it only includes as an input fileof the convert global distance step
@@ -566,12 +575,14 @@ class EpiQC(common.Illumina):
         # directory is necessary.
 
         inputinfofile = os.path.join(self.output_dirs['chromimpute_output_directory'], self.inputinfo_file)
+        inputinfofile_abs = os.path.join(self.output_dir, inputinfofile)
         temp_inputinfofile_path = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], "temp_" + self.inputinfo_file)
         temp2_inputinfofile_path = os.path.join(self.output_dir, self.output_dirs['chromimpute_output_directory'], "temp2_" + self.inputinfo_file)
         distancedir = self.output_dirs['chromimpute_distance_directory']
         converteddir = self.output_dirs['chromimpute_converted_directory']
         output_dir = self.output_dirs['chromimpute_traindata_directory']
         chr_sizes_file = self.chromosome_file
+        chr_sizes_file_abs = os.path.join(self.output_dir, chr_sizes_file)
         #get all the unique histone marks in user's readset file
 
         histone_marks =[]
@@ -603,7 +614,7 @@ class EpiQC(common.Illumina):
                 os.remove(temp2_inputinfofile_path)
 
             temp_inputinfofile = open(temp2_inputinfofile_path, "a")
-            lines = open(os.path.join(self.output_dir, inputinfofile), 'r').readlines()
+            lines = open(os.path.join(self.output_dir, inputinfofile_abs), 'r').readlines()
             for line in sorted(lines, key=lambda line: line.split()[0]):
                 temp_inputinfofile.write(line)
             temp_inputinfofile.close()
@@ -632,7 +643,7 @@ class EpiQC(common.Illumina):
 
             if train_data_path == "":
                 for histone in histone_marks:
-                    with open(os.path.join(self.output_dir, chr_sizes_file), "r") as chrominfofile:
+                    with open(os.path.join(self.output_dir, chr_sizes_file_abs), "r") as chrominfofile:
                         for line in chrominfofile:
                             chr_name = line.strip().split("\t")[0]
                             input_files = []
@@ -646,7 +657,7 @@ class EpiQC(common.Illumina):
                                         input_files.append(os.path.join(distancedir, "%s_%s.txt" % (inputinfoline.split('\t')[0], histone)))
                                         # to make this job step independent of global distance step we need to correctly
                                         # specify all the dependency input files
-                                        with open(os.path.join(self.output_dir, inputinfofile), "r") as inputinfo2:
+                                        with open(os.path.join(self.output_dir, inputinfofile_abs), "r") as inputinfo2:
                                             for inpputinfo2line in inputinfo2:
                                                 input_files.append(os.path.join(distancedir, "%s_%s.txt" % (inpputinfo2line.split('\t')[0], inpputinfo2line.split('\t')[1])))
                                         # distance files generated for user histone marks
@@ -773,13 +784,14 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
         predictordir = self.output_dirs['chromimpute_predictor_directory']
         output_dir = self.output_dirs['chromimpute_apply']
         chr_sizes_file = self.chromosome_file
+        chr_sizes_file_abs = os.path.join(self.output_dir, chr_sizes_file)
 
         for sample in self.samples:
             for readset in sample.readsets:
                 if readset.mark_type != "I":
                     input_files = []
                     output_files = []
-                    with open(os.path.join(self.output_dir, chr_sizes_file), "r") as chrominfofile:
+                    with open(os.path.join(self.output_dir, chr_sizes_file_abs), "r") as chrominfofile:
                         for line in chrominfofile:
                             chr_name = line.strip().split("\t")[0]
                             with open(temp_inputinfofile, "r") as inputinfo:
@@ -821,6 +833,7 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
         converteddir = self.output_dirs['chromimpute_converted_directory']
         imputeddir = self.output_dirs['chromimpute_apply']
         chr_sizes_file = self.chromosome_file
+        chr_sizes_file_abs = os.path.join(self.output_dir, chr_sizes_file)
 
         percent1 = config.param('chromimpute_eval', 'percent1')
         percent2 = config.param('chromimpute_eval', 'percent2')
@@ -830,7 +843,7 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
             for readset in sample.readsets:
                 input_files = []
                 if readset.mark_type != "I":
-                    with open(os.path.join(self.output_dir, chr_sizes_file), "r") as chrominfofile:
+                    with open(os.path.join(self.output_dir, chr_sizes_file_abs), "r") as chrominfofile:
                         line = chrominfofile.readline()
                         chr_name = line.strip().split("\t")[0]
 
@@ -887,6 +900,7 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
         jobs = []
         output_dir = self.output_dirs['signal_to_noise_output_directory']
         chr_sizes_file = self.chromosome_file
+        chr_sizes_file_abs = os.path.join(self.output_dir, chr_sizes_file)
 
         converteddir = self.output_dirs['chromimpute_converted_directory']
 
@@ -896,7 +910,7 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
             for readset in sample.readsets:
                 input_files = []
                 if readset.mark_type != "I":
-                    with open(os.path.join(self.output_dir, chr_sizes_file), "r") as chrominfofile:
+                    with open(os.path.join(self.output_dir, chr_sizes_file_abs), "r") as chrominfofile:
                         for line in chrominfofile:
                             chr_name = line.strip().split("\t")[0]
                             # If not, we search for the path from a chipseq pipeline
@@ -932,7 +946,6 @@ python $PYTHON_TOOLS/signal_noise.py \\
                                     output_dir=output_file
                                 )
                             )
-
                             jobs.append(
                                 concat_jobs(
                                     [
@@ -942,7 +955,6 @@ python $PYTHON_TOOLS/signal_noise.py \\
                                     name=f"signal_noise.{chr_name}_{sample.name}_{readset.mark_name}.tsv"
                                 )
                             )
-
         return jobs
 
     def epigeec_tohdf5(self):
@@ -1181,7 +1193,8 @@ fi""".format(
         jobs = []
         chr_jobs = []
 
-        chr_sizes_file = os.path.join(self.output_dir, self.chromosome_file)
+        chr_sizes_file = self.chromosome_file
+        chr_sizes_file_abs = os.path.join(self.output_dir, chr_sizes_file)
         signal_noise_output_dir = self.output_dirs['signal_to_noise_output_directory']
 
         for sample in self.samples:
@@ -1195,7 +1208,7 @@ fi""".format(
                         "SignalToNoise_report_" + sample.name + "_" + readset.mark_name + ".txt"
                     )
 
-                    with open(chr_sizes_file, "r") as chrominfofile:
+                    with open(chr_sizes_file_abs, "r") as chrominfofile:
                         for line in chrominfofile:
                             chr_name = line.strip().split("\t")[0]
                             signal_noise_file = os.path.join(
@@ -1298,7 +1311,7 @@ fi""".format(
 
         jobs = []
 
-        chr_sizes_file = self.chromosome_file
+        chr_sizes_file_abs = os.path.join(self.output_dir, self.chromosome_file)
 
         signal_noise_output_dir = self.output_dirs['signal_to_noise_output_directory']
 
@@ -1335,7 +1348,7 @@ fi""".format(
                     )
 
                     chr_jobs = []
-                    with open(chr_sizes_file, "r") as chrominfofile:
+                    with open(chr_sizes_file_abs, "r") as chrominfofile:
                         for line in chrominfofile:
                             chr_name = line.strip().split("\t")[0]
                             signal_noise_file = os.path.join(

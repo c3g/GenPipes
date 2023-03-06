@@ -42,7 +42,9 @@ def align(
     sort_bam=False,
     create_wiggle_track=False,
     search_chimeres=False,
-    cuff_follow=False
+    cuff_follow=False,
+    two_pass=False,
+    allsjdbFiles=None,	
     ):
 
 
@@ -55,9 +57,15 @@ def align(
             star_version=''
         )
 
+    inputs = []
+    inputs.extend([reads1,reads2])
+
+    if two_pass:
+        inputs.extend(allsjdbFiles)
+
     bam_name = "Aligned.sortedByCoord.out.bam" if sort_bam else "Aligned.out.bam"
     job = Job(
-        [reads1, reads2],
+        inputs,
         [os.path.join(output_directory, bam_name), os.path.join(output_directory, "SJ.out.tab")],
         [['star_align', 'module_star']],
         removable_files=[os.path.join(output_directory, bam_name)]
@@ -87,7 +95,7 @@ def align(
 
     ## Chimeric information
     if search_chimeres and chimere_segment_min != "":
-        chim_cmd = "--chimSegmentMin " + str(chimere_segment_min)
+        chim_cmd = "--chimSegmentMin " + str(chimere_segment_min) + " --chimJunctionOverhangMin " + str(chimere_segment_min) + " --chimSegmentReadGapMax 3"
     else:
         chim_cmd = ""
 
@@ -101,6 +109,11 @@ def align(
             raise Exception("Stand info\"" + stranded + "\" unrecognized")
     else:
         cuff_cmd = ""
+
+    if two_pass:
+        two_pass_cmd = "  --sjdbFileChrStartEnd" + " ".join(" " + sjdbFile for sjdbFile in allsjdbFiles),
+    else:
+        two_pass_cmd = ""
 
     other_options = config.param('star_align', 'other_options', required=False)
 
@@ -138,6 +151,7 @@ STAR --runMode alignReads \\
         chim_param=" \\\n  " + chim_cmd if chim_cmd else "",
         cuff_cmd=" \\\n  " + cuff_cmd if cuff_cmd else "",
         tmp_dir=config.param('star_align', 'tmp_dir', required=True),
+	    two_pass_cmd=" \\\n" + " ".join(two_pass_cmd) if two_pass_cmd else "",
         other_options=" \\\n  " + other_options if other_options else ""
     )
 

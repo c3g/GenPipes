@@ -25,13 +25,7 @@ from core.config import *
 from core.job import *
 
 
-def report(
-    input_vcf,
-    input_cna,
-    cpsr_report,
-    output_dir,
-    tumor_id
-    ):
+def report(input_vcf, cpsr_report, output_dir, tumor_id, input_cna=None):
     
     if config.param('report_pcgr', 'module_pcgr').split("/")[2] >= "1":
         call = 'pcgr'
@@ -41,7 +35,6 @@ def report(
     return Job(
         [
             input_vcf,
-            input_cna,
         ],
         output_dir,
         [
@@ -58,7 +51,7 @@ def report(
     {msi_options} \\
     --input_vcf {input_vcf} \\
     --cpsr_report {cpsr_report} \\
-    --input_cna {input_cna} \\
+    {input_cna} \\
     --pcgr_dir $PCGR_DATA \\
     --output_dir {output_dir} \\
     --genome_assembly {assembly} \\
@@ -74,7 +67,7 @@ def report(
             msi_options=config.param('report_pcgr', 'msi_options'),
             input_vcf=input_vcf,
             cpsr_report=cpsr_report,
-            input_cna=input_cna,
+            input_cna=" \\\n --input_cna " + input_cna if input_cna else "",
             output_dir=output_dir,
             assembly=config.param('report_pcgr', 'assembly'),
             tumor_id=tumor_id

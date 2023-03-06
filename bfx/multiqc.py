@@ -29,8 +29,7 @@ def run(inputs, output, ini_section='multiqc'):
         inputs,
         [output],
         [
-            [ini_section, 'module_python'],
-            [ini_section, 'module_multiqc'],
+            [ini_section, 'module_multiqc']
         ],
         command="""\
 multiqc -f {options} \\
@@ -42,16 +41,17 @@ multiqc -f {options} \\
         )
     )
 
-def mutliqc_run(
+def multiqc_run(
     yamlFile,
     input_files
     ):
-    ## for now multiqc will run after hicup alignments are complete. Once Homer is added to mutliqc, the input must change to refect homer tag dirs
+    ## for now multiqc will run after hicup alignments are complete. Once Homer is added to multiqc, the input must change to refect homer tag dirs
     return Job(
-        input_files = input_files,
-        output_files = ["Analysis_Summary_Report.html"],
-        module_entries = [["multiqc_report", "module_multiqc"]],
-        name = "multiqc_report",
+        input_files,
+        ["Analysis_Summary_Report.html"],
+        module_entries = [
+            ["multiqc_report", "module_multiqc"]
+        ],
         command = """\
 export MULTIQC_CONFIG_PATH={yamlFile} && \\
   multiqc .""".format(

@@ -143,9 +143,7 @@ bedtools coverage {other_options} \\
         )
     )
 
-
 def genomecov(input_file, output_file):
-
     return Job(
         [input_file],
         [output_file],

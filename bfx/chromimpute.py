@@ -74,10 +74,12 @@ def convert(input_dir, input_file, output_dir, output_files, inputinfofile, hist
     # input = input_files.extend(inputinfofile)
 
     return Job(
-        [inputinfofile, input_file, chr_sizes_file],
+        [input_file],
         output_files,
-        [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
-        name="chromimpute_convert." + sample + "." + histone_mark,
+        [
+            ['chromimpute', 'module_java'],
+            ['chromimpute', 'module_chromimpute']
+        ],
         command="""\
 java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_JAR \\
   Convert \\
@@ -88,23 +90,22 @@ java -Djava.io.tmpdir=$TMPDIR {java_other_options} -Xmx{ram} -jar $CHROMIMPUTE_J
   {inputinfofile} \\
   {chrom_sizes} \\
   {output_dir}""".format(
-      java_other_options=config.param('DEFAULT', 'java_other_options'),
-      ram=config.param('chromimpute', 'ram'),
-      histone_mark=histone_mark,
-      convertsample=sample,
-      resolution=config.param('chromimpute', 'resolution'),
-      path_to_dataset=input_dir,
-      inputinfofile=inputinfofile,
-      chrom_sizes=chr_sizes_file,
-      output_dir=output_dir
-      )
+            java_other_options=config.param('DEFAULT', 'java_other_options'),
+            ram=config.param('chromimpute', 'ram'),
+            histone_mark=histone_mark,
+            convertsample=sample,
+            resolution=config.param('chromimpute', 'resolution'),
+            path_to_dataset=input_dir,
+            inputinfofile=inputinfofile,
+            chrom_sizes=chr_sizes_file,
+            output_dir=output_dir
+        )
     )
 
 def compute_global_dist(input_files, output_dir, output_files, converteddir, inputinfofile, histone_mark, chr_sizes_file):
 
     return Job(
-        (input_files),
-       # input_files,
+        input_files,
         output_files,
         [['java', 'module_java'], ['chromimpute', 'module_chromimpute']],
         name="chromimpute_compute_global_dist." + histone_mark,

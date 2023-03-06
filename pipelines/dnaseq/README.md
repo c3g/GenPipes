@@ -16,7 +16,7 @@ usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--genpipes_file GENPIPES_FILE]
                  [-t {mugqic,mpileup,light,sv}] [-r READSETS] [-v]
 
-Version: 4.3.2
+Version: 4.4.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -85,7 +85,7 @@ mugqic:
 5- sambamba_merge_sam_extract_unmapped
 6- gatk_indel_realigner
 7- sambamba_merge_realigned
-8- picard_mark_duplicates
+8- mark_duplicates
 9- recalibration
 10- gatk_haplotype_caller
 11- merge_and_call_individual_gvcf
@@ -129,7 +129,7 @@ mpileup:
 5- sambamba_merge_sam_extract_unmapped
 6- gatk_indel_realigner
 7- sambamba_merge_realigned
-8- picard_mark_duplicates
+8- mark_duplicates
 9- recalibration
 10- rawmpileup
 11- rawmpileup_cat
@@ -166,7 +166,7 @@ light:
 5- sambamba_merge_sam_extract_unmapped
 6- gatk_indel_realigner
 7- sambamba_merge_realigned
-8- picard_mark_duplicates
+8- mark_duplicates
 9- recalibration
 10- sym_link_final_bam
 11- metrics_dna_picard_metrics
@@ -203,7 +203,7 @@ sv:
 5- sambamba_merge_sam_extract_unmapped
 6- gatk_indel_realigner
 7- sambamba_merge_realigned
-8- picard_mark_duplicates
+8- mark_duplicates
 9- recalibration
 10- gatk_haplotype_caller
 11- merge_and_call_individual_gvcf
@@ -270,8 +270,8 @@ sambamba_merge_realigned
 ------------------------
 BAM files of regions of realigned reads are merged per sample using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
-picard_mark_duplicates
-----------------------
+mark_duplicates
+---------------
 Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
 (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
 will be marked as a duplicate in the BAM file. Marking duplicates is done using [Picard](http://broadinstitute.github.io/picard/).

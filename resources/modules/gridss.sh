@@ -28,6 +28,7 @@ module-whatis \"$SOFTWARE - require JDK1.8\"
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 setenv          GRIDSS_HOME         \$root
 setenv          GRIDSS_JAR          \$root/gridss-2.13.2-gridss-jar-with-dependencies.jar
+setenv          GRIDSS_DATA         /cvmfs/ref.mugqic/genomes/hmftools
 "
 }
 

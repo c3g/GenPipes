@@ -52,9 +52,6 @@ ARCHIVE=$SOFTWARE-${VERSION}c.Linux.tar.gz
 ARCHIVE_URL=http://www.dropbox.com/s/b4guq6ysyhi7eqm/$ARCHIVE
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE

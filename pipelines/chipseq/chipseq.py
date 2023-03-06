@@ -663,50 +663,49 @@ pandoc --to=markdown \\
         for sample in self.samples:
             samples_associative_array.append("[\"" + sample.name + "\"]=\"" + " ".join(sample.marks.keys()) + "\"")
             for mark_name in sample.marks:
-                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name,
-                                                   mark_name)
+                alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 raw_bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.bam")
-                bam_file = os.path.join(alignment_directory,
-                                        sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
 
                 jobs.append(
-                    concat_jobs([
-                        bash.mkdir(os.path.join(metrics_output_directory, sample.name, mark_name)),
-                        picard.collect_multiple_metrics(
-                            bam_file,
-                            os.path.join(metrics_output_directory, sample.name, mark_name,
-                                         re.sub("bam$", "all.metrics", os.path.basename(bam_file))),
-                            library_type=self.run_type
-                        )
-                    ],
-                        name="picard_collect_multiple_metrics." + sample.name + "." + mark_name
+                    concat_jobs(
+                        [
+                            bash.mkdir(os.path.join(metrics_output_directory, sample.name, mark_name)),
+                            picard.collect_multiple_metrics(
+                                bam_file,
+                                os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("bam$", "all.metrics", os.path.basename(bam_file))),
+                                library_type=self.run_type
+                            )
+                        ],
+                        name="picard_collect_multiple_metrics." + sample.name + "." + mark_name,
+                        samples=[sample]
                     )
                 )
 
                 jobs.append(
-                    concat_jobs([
-                        bash.mkdir(os.path.join(metrics_output_directory, sample.name, mark_name)),
-                        sambamba.flagstat(
-                            raw_bam_file,
-                            os.path.join(metrics_output_directory, sample.name, mark_name,
-                                         re.sub("\.bam$", ".flagstat", os.path.basename(raw_bam_file)))
-                        ),
-                        sambamba.flagstat(
-                            bam_file,
-                            os.path.join(metrics_output_directory, sample.name, mark_name,
-                                         re.sub("\.bam$", ".flagstat", os.path.basename(bam_file)))
-                        )
-                    ],
-                        name="metrics_flagstat." + sample.name + "." + mark_name
+                    concat_jobs(
+                        [
+                            bash.mkdir(os.path.join(metrics_output_directory, sample.name, mark_name)),
+                            sambamba.flagstat(
+                                raw_bam_file,
+                                os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(raw_bam_file)))
+                            ),
+                            sambamba.flagstat(
+                                bam_file,
+                                os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(bam_file)))
+                            )
+                        ],
+                        name="metrics_flagstat." + sample.name + "." + mark_name,
+                        samples=[sample]
                     )
                 )
-                inputs_report.extend((os.path.join(metrics_output_directory, sample.name, mark_name,
-                                                   re.sub("\.bam$", ".flagstat", os.path.basename(raw_bam_file))),
-                                      os.path.join(metrics_output_directory, sample.name, mark_name,
-                                                   re.sub("\.bam$", ".flagstat", os.path.basename(bam_file))),
-                                      os.path.join(self.output_dirs['alignment_output_directory'], sample.name,
-                                                   mark_name,
-                                                   sample.name + "." + mark_name + ".sorted.dup.filtered.bam")))
+                inputs_report.extend(
+                    [
+                        os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(raw_bam_file))),
+                        os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(bam_file))),
+                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                    ]
+                )
 
         trim_metrics_file = os.path.join(metrics_output_directory, "trimSampleTable.tsv")
         metrics_file = os.path.join(metrics_output_directory, "SampleMetrics.tsv")
@@ -799,10 +798,8 @@ pandoc --to=markdown \\
         jobs = []
         for sample in self.samples:
             for mark_name in sample.marks:
-                alignment_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                              sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
-                output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name,
-                                          sample.name + "." + mark_name)
+                alignment_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name)
                 other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
                 genome = config.param('homer_make_tag_directory', 'genome', required=False) if config.param('homer_make_tag_directory', 'genome', required=False) else self.ucsc_genome
 
@@ -832,17 +829,14 @@ pandoc --to=markdown \\
         readset_file = os.path.relpath(self.args.readsets.name, self.output_dir)
 
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.qc_metrics.md")
-        output_files = [os.path.join(self.output_dirs['graphs_output_directory'],
-                                     sample.name + "." + mark_name + "_QC_Metrics.ps") for sample in self.samples
-                        for mark_name in sample.marks] + [report_file]
+        output_files = [os.path.join(self.output_dirs['graphs_output_directory'], sample.name + "." + mark_name + "_QC_Metrics.ps") for sample in self.samples for mark_name in sample.marks]
+        output_files.append(report_file)
 
         jobs = []
 
         jobs.append(
             Job(
-                [os.path.join(self.output_dirs['homer_output_directory'], sample.name,
-                              sample.name + "." + mark_name, "tagInfo.txt") for sample in self.samples for mark_name
-                 in sample.marks],
+                [os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name, "tagInfo.txt") for sample in self.samples for mark_name in sample.marks],
                 output_files,
                 [
                     ['qc_plots_R', 'module_mugqic_tools'],
@@ -881,7 +875,6 @@ done""".format(
                 report_files=[report_file]
             )
         )
-
         return jobs
 
     def homer_make_ucsc_file(self):
@@ -1842,8 +1835,7 @@ done""".format(
             metrics_output_directory = self.output_dirs['metrics_output_directory']
             for sample in self.samples:
                 for mark_name in sample.marks:
-                    picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name,
-                                                 sample.name + "." + mark_name + ".sorted.dup.filtered.all.metrics.")
+                    picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.all.metrics.")
                     if self.run_type == 'SINGLE_END':
                         picard_files = [
                             picard_prefix + "quality_by_cycle.pdf",
@@ -1865,10 +1857,8 @@ done""".format(
 
                         ]
                     input_files.extend(picard_files)
-                    input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name,
-                                                    sample.name + "." + mark_name + ".sorted.dup.filtered.flagstat"))
-                    homer_prefix = os.path.join(self.output_dirs['homer_output_directory'], sample.name,
-                                                sample.name + "." + mark_name)
+                    input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.flagstat"))
+                    homer_prefix = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name)
                     homer_files = [
                         os.path.join(homer_prefix, "tagGCcontent.txt"),
                         os.path.join(homer_prefix, "genomeGCcontent.txt"),
@@ -1876,7 +1866,6 @@ done""".format(
                         os.path.join(homer_prefix, "tagInfo.txt")
                     ]
                     input_files.extend(homer_files)
-            # input_files = [os.path.join(self.output_dirs['homer_output_directory'], sample.name, "tagInfo.txt") for sample in self.samples]
             output = os.path.join(self.output_dirs['report_output_directory'], "multiqc_report")
             log.info(output)
 
@@ -2022,7 +2011,6 @@ done""".format(
                 self.sambamba_merge_bam_files, #5
                 self.sambamba_mark_duplicates,
                 self.sambamba_view_filter,
-                # self.picard_mark_duplicates,
                 self.metrics,
                 self.homer_make_tag_directory,
                 self.qc_metrics,

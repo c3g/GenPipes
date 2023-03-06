@@ -27,6 +27,7 @@ module-whatis \"$SOFTWARE - require JDK1.8\"
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 setenv          GRIPSS_HOME         \$root
 setenv          GRIPSS_JAR          \$root/gripss.jar
+setenv          GRIPSS_DATA         /cvmfs/ref.mugqic/genomes/hmftools
 "
 }
 
