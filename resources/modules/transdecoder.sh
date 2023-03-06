@@ -3,33 +3,30 @@
 set -eu -o pipefail
 
 SOFTWARE=TransDecoder
-VERSION=2.0.1
-ARCHIVE=$SOFTWARE-$VERSION.tar.gz
-ARCHIVE_URL=https://github.com/$SOFTWARE/$SOFTWARE/archive/$VERSION.tar.gz
-SOFTWARE_DIR=$SOFTWARE-$VERSION
+VERSION=5.7.0
+ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/${SOFTWARE}/${SOFTWARE}/archive/refs/tags/${SOFTWARE}-v${VERSION}.tar.gz
+SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
 
-  cd $SOFTWARE_DIR
-  make -j12
+  cd ${SOFTWARE}-${SOFTWARE}-v${VERSION}
+  make -j12 all
 
   # Install software
   cd $INSTALL_DOWNLOAD
-  mv -i $SOFTWARE_DIR $INSTALL_DIR/
+  mv -i ${SOFTWARE}-${SOFTWARE}-v${VERSION} $INSTALL_DIR/${SOFTWARE_DIR}
 }
 
 module_file() {
 echo "\
 #%Module1.0
 proc ModulesHelp { } {
-  puts stderr \"\tMUGQIC - $SOFTWARE \"
+  puts stderr \"\tMUGQIC - ${SOFTWARE^} \"
 }
-module-whatis \"$SOFTWARE\"
+module-whatis \"${SOFTWARE^}\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root
