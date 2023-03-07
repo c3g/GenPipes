@@ -350,6 +350,7 @@ pandoc --to=markdown \\
                         num_fasta_chunks
                     )
                 ],
+                input_dependency=[trinity_fasta],
                 name="exonerate_fastasplit.Trinity.fasta",
                 samples=self.samples
             )
@@ -1728,6 +1729,7 @@ awk -v OFS="\t" '{{ print $1,$0}}' \\
                             deseq_job_batch_corrected if self.args.batch else None,
                             report_matrix_job
                         ],
+                        input_dependency=[count_matrix_temp],
                         name="differential_expression.seq2fun",
                         samples=self.samples
                     )
