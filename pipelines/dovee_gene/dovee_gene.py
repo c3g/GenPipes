@@ -29,6 +29,7 @@ from bfx import ichorCNA
 
 from bfx import bash_cmd as bash
 from core.config import config
+from core.sample_tumor_pairs import parse_tumor_pair_file # using tumor pair system for ichorCNA step for now
 
 log = logging.getLogger(__name__)
 
@@ -56,6 +57,16 @@ class DOvEE_gene(common.Illumina):
                 'cna_directory' : os.path.relpath(os.path.join(self.output_dir, 'cna'), self.output_dir) #temp name
                 }
         return dirs
+
+    @property
+    def tumor_pairs(self):
+        if not hasattr(self, "_tumor_pairs"):
+            self._tumor_pairs = parse_tumor_pair_file(
+                    self.args.pairs.name,
+                    self.samples,
+                    self.args.profyle 
+                    )
+        return self._tumor_pairs
 
     def trimmer(self):
         """
@@ -403,10 +414,10 @@ class DOvEE_gene(common.Illumina):
 
         jobs = []
         
-        for sample_pair in self.sample_pairs: # or another id that allows us to pair brush and saliva, could use tumor pair system?
-            wig_directory = wig_directory = self.output_dirs['wig_directory']
-            input_brush = os.path.join(wig_directory, sample_pair.brush.name, sample_pair.brush.name + "out.wig") # temp name 
-            input_saliva = os.path.join(wig_directory, sample_pair.saliva.name, sample_pair.saliva.name + "out.wig") # temp name 
+        for sample_pair in self.tumor_pairs.values(): # or another id that allows us to pair brush and saliva, using tumor pair system for now?
+            wig_directory = self.output_dirs['wig_directory']
+            input_brush = os.path.join(wig_directory, sample_pair.tumor.name, sample_pair.tumor.name + "out.wig") # temp name 
+            input_saliva = os.path.join(wig_directory, sample_pair.normal.name, sample_pair.normal.name + "out.wig") # temp name 
             output_dir = os.path.join(self.output_dirs['cna_directory'], sample_pair.name)
 
             jobs.append(
