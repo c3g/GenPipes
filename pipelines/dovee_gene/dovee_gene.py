@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import sys
+import argparse
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -64,7 +65,6 @@ class DOvEE_gene(common.Illumina):
             self._tumor_pairs = parse_tumor_pair_file(
                     self.args.pairs.name,
                     self.samples,
-                    self.args.profyle 
                     )
         return self._tumor_pairs
 
@@ -391,17 +391,17 @@ class DOvEE_gene(common.Illumina):
             input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam") # how should bam be generated here? For locatit, two dedup options exist. Sorting needed?
             output = os.path.join(wig_directory, sample.name + "out.wig") # temp name
 
-            job = concat_jobs(
+            jobs.append(
+                    concat_jobs(
                     [
-                    bash.mkdir(wig_directory),
-                    hmm.readCounter(
-                    input_bam,
-                    output
-                    )
-                    ]
-                ), name = "hmm_readCounter." + sample.name
-
-            jobs.append(job)
+                        bash.mkdir(wig_directory),
+                        hmm.readCounter(
+                            input_bam,
+                            output
+                            )
+                    ], name = "hmm_readCounter." + sample.name
+                )
+            )
 
         return jobs
 
