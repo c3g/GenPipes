@@ -38,8 +38,9 @@ class DOvEE_gene(common.Illumina):
     """
     def __init__(self, protocol=None):
         self._protocol = protocol
-        # Add pipeline specific arguments? 
-        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default vardict)", choices=["vardict", "copy-number"]) # FINAL NAMES TBD
+        # Add pipeline specific arguments?
+        self.argparser.add_argument("-p", "--pairs", help="File with sample pairing information", type=argparse.FileType('r')) # only needed for copy number protocol ichorCNA step
+        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default vardict)", choices=["vardict", "copy-number"], default="vardict") # FINAL NAMES TBD
         super(DOvEE_gene, self).__init__(protocol)
 
     @property
@@ -51,8 +52,8 @@ class DOvEE_gene(common.Illumina):
                 'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
                 'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir),
                 'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir),
-                'wig_directory' : os.path.relpath(os.path.join(self.output_dir, 'wig'), self.output_dir), #temp
-                'cna_directory' : os.path.relpath(os.path.join(self.output_dir, 'cna'), self.output_dir) #temp
+                'wig_directory' : os.path.relpath(os.path.join(self.output_dir, 'wig'), self.output_dir), #temp name
+                'cna_directory' : os.path.relpath(os.path.join(self.output_dir, 'cna'), self.output_dir) #temp name
                 }
         return dirs
 
@@ -402,7 +403,7 @@ class DOvEE_gene(common.Illumina):
 
         jobs = []
         
-        for sample_pair in self.sample_pairs: # or another id that allows us to pair brush and saliva
+        for sample_pair in self.sample_pairs: # or another id that allows us to pair brush and saliva, could use tumor pair system?
             wig_directory = wig_directory = self.output_dirs['wig_directory']
             input_brush = os.path.join(wig_directory, sample_pair.brush.name, sample_pair.brush.name + "out.wig") # temp name 
             input_saliva = os.path.join(wig_directory, sample_pair.saliva.name, sample_pair.saliva.name + "out.wig") # temp name 
