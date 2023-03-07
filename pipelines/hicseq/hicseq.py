@@ -325,7 +325,7 @@ class HicSeq(common.Illumina):
                             sample.name,
                             sample_output_dir,
                             chrlist,
-                            os.path.join(sample_output_dir, "HomerQcPlots")
+                            "HomerQcPlots"
                         ),
                         bash.mkdir(os.path.join(sample_output_dir, "archive")),
                         bash.chdir(sample_output_dir),
