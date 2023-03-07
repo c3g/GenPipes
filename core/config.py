@@ -54,7 +54,7 @@ class Config(configparser.SafeConfigParser):
         # Make option names case sensitive
         self.optionxform = str
         for config_file in config_files:
-            if isinstance(config_file,  io.IOBase):
+            if isinstance(config_file, io.IOBase):
                 self.read_file(config_file)
             else:
                 with open(config_file, 'r') as f:

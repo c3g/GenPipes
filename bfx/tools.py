@@ -402,6 +402,7 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, tx2genes_
         ],
         name=job_name,
         command="""\
+rm -rf {output_dir} && \\
 bash rnaseq_light_kallisto.sh \\
   {output_dir} \\
   {parameters} \\
