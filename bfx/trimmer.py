@@ -15,11 +15,11 @@ def trimmer(
             [input1, input2],
             [output + "_R1.fastq.gz", output + "_R2.fastq.gz"],
             [
-                ['trimmer', 'module_java']#,
-             #   ['trimmer', 'module_trimmer']
+                ['trimmer', 'module_java'],
+                ['trimmer', 'module_trimmer']
             ],
             command="""\
-java {java_other_options} -XmX{ram} -jar $TRIMMER_JAR \\
+java {java_other_options} -Xmx{ram} -jar $TRIMMER \\
   -fq1 {input1} \\
   -fq2 {input2} \\
   -{sample_type} \\
