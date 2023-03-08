@@ -38,7 +38,7 @@ import utils.utils
 
 from bfx import bash_cmd as bash
 from bfx import gq_seq_utils
-from bfx import picard
+from bfx import kallisto
 from bfx import rmarkdown
 from bfx import differential_expression
 from bfx import tools
@@ -70,55 +70,83 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         """
         Run Kallisto on fastq files for a fast esimate of abundance.
         """
+
         transcriptome_file = config.param('kallisto', 'transcriptome_idx', param_type="filepath")
         tx2genes_file = config.param('kallisto', 'transcript2genes', param_type="filepath")
         bootstraps = config.param('kallisto', 'bootstraps')
         other_param = config.param('kallisto', 'other_options', required=False)
 
         jobs = []
-        for readset in self.readsets:
-            trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
 
-            #PAIRED
-            if readset.run_type == "PAIRED_END":
-                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
-                if readset.fastq1 and readset.fastq2:
-                    candidate_input_files.append([readset.fastq1, readset.fastq2])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
-                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+        for sample in self.samples:
+            parameters = ""
+            readset_type = ""
+            input_fastqs = []
+            for readset in sample.readsets:
+                trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], sample.name, readset.name + ".trim.")
+                if not readset_type:
+                    readset_type = readset.run_type
+                elif readset_type == readset.run_type:
+                    message = f"Sample {sample.name} has mixed single-end and paired-end readset libraries...\n"
+                    message += f"Please use only single-end or only paired-end library for samples with multiple readsets."
+                    _raise(SanitycheckError(message))
 
-                job_name = "kallisto." + readset.name
-                output_dir= os.path.join(self.output_dirs["kallisto_directory"], readset.sample.name)
-                parameters ="--bootstrap-samples=" + str(bootstraps)
-                parameters= other_param + parameters if other_param else parameters
-                job = tools.rnaseqLight_kallisto(fastq1, fastq2, transcriptome_file, tx2genes_file, output_dir, parameters, job_name)
-                job.samples = [readset.sample]
-                jobs.append(job)
+                #PAIRED
+                if readset.run_type == "PAIRED_END":
+                    candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                    if readset.fastq1 and readset.fastq2:
+                        candidate_input_files.append([readset.fastq1, readset.fastq2])
+                    if readset.bam:
+                        candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                    input_fastqs.extend([fastq1, fastq2])
 
-            #SINGLE
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
-                [fastq1] = self.select_input_files(candidate_input_files)
+                    parameters = "--bootstrap-samples=" + str(bootstraps)
 
-                job_name = "kallisto." + readset.name
-                output_dir=os.path.join(self.output_dirs["kallisto_directory"], readset.sample.name)
-                fragment_length = config.param('kallisto', 'fragment_length')
-                fragment_length_sd = config.param('kallisto', 'fragment_length_sd')
-                #warn user to update parameters in ini file?
-                # print("Please make sure to update fragment_length and fragment_length_sd in the ini file!")
-                parameters=" --single -l "+ fragment_length +" -s " + fragment_length_sd
-                parameters = other_param + parameters if other_param else parameters
-                job = tools.rnaseqLight_kallisto(fastq1, "", transcriptome_file, tx2genes_file, output_dir, parameters, job_name)
-                job.samples = [readset.sample]
-                jobs.append(job)
-            else:
-                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                #SINGLE
+                elif readset.run_type == "SINGLE_END":
+                    candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                    if readset.fastq1:
+                        candidate_input_files.append([readset.fastq1])
+                    if readset.bam:
+                        candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    [fastq1] = self.select_input_files(candidate_input_files)
+                    input_fastqs.append(fastq1)
+
+                    fragment_length = config.param('kallisto', 'fragment_length', required=True)
+                    fragment_length_sd = config.param('kallisto', 'fragment_length_sd', required=True)
+                    parameters = "--single -l "+ fragment_length +" -s " + fragment_length_sd
+
+                else:
+                    _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+            output_dir = os.path.join(self.output_dirs["kallisto_directory"], sample.name)
+            parameters = " ".join([other_param, parameters]) if other_param else parameters
+            jobs.append(
+                concat_jobs(
+                    [
+                        kallisto.quant(
+                            input_fastqs,
+                            output_dir,
+                            transcriptome_file,
+                            parameters
+                        ),
+                        bash.mv(
+                            os.path.join(output_dir, "abundance.tsv"),
+                            os.path.join(output_dir, "abundance_transcripts.tsv")
+                        ),
+                        tools.r_transcript_to_gene(
+                            os.path.join(output_dir, "abundance_transcripts.tsv"),
+                            os.path.join(output_dir, "abundance_gene.tsv"),
+                            tx2genes_file
+                        )
+                    ],
+                    input_dependency=input_fastqs,
+                    name="kallisto." + sample.name,
+                    samples=[sample]
+                )
+            )
 
         return jobs
 
@@ -131,7 +159,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         output_dir = os.path.join(self.output_dirs["kallisto_directory"], "All_readsets")
 
         #per trancripts
-        input_abundance_files_transcripts = [os.path.join(self.output_dirs["kallisto_directory"], readset.sample.name, "abundance_transcripts.tsv") for readset in self.readsets]
+        input_abundance_files_transcripts = [os.path.join(self.output_dirs["kallisto_directory"], sample.name, "abundance_transcripts.tsv") for sample in self.samples]
         job_name_transcripts="kallisto_count_matrix.transcripts"
         data_type_transcripts="transcripts"
         job=tools.r_create_kallisto_count_matrix(
@@ -144,7 +172,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         jobs.append(job)
 
         #per genes
-        input_abundance_files_genes = [os.path.join(self.output_dirs["kallisto_directory"], readset.sample.name, "abundance_genes.tsv") for readset in self.readsets]
+        input_abundance_files_genes = [os.path.join(self.output_dirs["kallisto_directory"], sample.name, "abundance_genes.tsv") for sample in self.samples]
         job_name_genes="kallisto_count_matrix.genes"
         data_type_genes="genes"
         job=tools.r_create_kallisto_count_matrix(
@@ -157,24 +185,19 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         jobs.append(job)
 
         report_dir = self.output_dirs["report_directory"]
-        #copy tx2genes file
+        # Copy tx2genes file
         jobs.append(
             concat_jobs(
                 [
                     bash.mkdir(report_dir),
-                    Job(
-                        [
-                            os.path.join(output_dir, "all_readsets.abundance_genes.csv"),
-                            os.path.join(output_dir, "all_readsets.abundance_transcripts.csv")
-                        ],
-                        [],
-                        command="""\
-cp {tx2genes_file} \\
-  {report_dir}""".format(
-                            tx2genes_file=config.param('kallisto', 'transcript2genes', param_type="filepath"),
-                            report_dir=report_dir
-                        )
+                    bash.cp(
+                        config.param('kallisto', 'transcript2genes', param_type="filepath"),
+                        report_dir
                     )
+                ],
+                input_dependency=[
+                    os.path.join(output_dir, "all_readsets.abundance_genes.csv"),
+                    os.path.join(output_dir, "all_readsets.abundance_transcripts.csv")
                 ],
                 name="report.copy_tx2genes_file",
                 samples=self.samples
@@ -183,7 +206,6 @@ cp {tx2genes_file} \\
 
         # Create kallisto report
         readset_merge_trim_stats = os.path.join(self.output_dirs["metrics_directory"], "trimReadsetTable.tsv") # set in merge trimmomatic stats
-
         jobs.append(
             rmarkdown.render(
                 job_input=[
