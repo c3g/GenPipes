@@ -16,7 +16,7 @@ def run_ichorCNA(
             [input_tumor, input_normal],
             [output_dir],
             [
-#                ['run_ichorCNA', 'module_ichorCNA'],
+                ['run_ichorCNA', 'module_ichorCNA'],
                 ['run_ichorCNA', 'module_R']
             ],
 
