@@ -164,12 +164,12 @@ class DOvEE_gene(common.Illumina):
                                         ini_section="bwa_mem"
                                 ),
                                 samtools.view(
-                                    "/dev/stdin",
+                                    "-",
                                     None,
                                     "-b "
                                 ),
                                 samtools.sort(
-                                    "/dev/stdin",
+                                    "-",
                                     readset_bam,
                                 )
                             ]
@@ -196,30 +196,30 @@ class DOvEE_gene(common.Illumina):
            if 'saliva' in sample.name:
                output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
                output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
-               covered_bed = config.param('locatit', 'covered_bedv8', param_type='filepath')
+               covered_bed = config.param('agent_locatit', 'covered_bedv8', param_type='filepath')
 
                jobs.append(
                        concat_jobs(
                            [
-                               locatit.dedup(
+                               agent.locatit(
                                    input_bam,
                                    output_duplex,
                                    covered_bed,
                                    "duplex"
                                    ),
-                               locatit.dedup(
+                               agent.locatit(
                                    input_bam,
                                    output_hybrid,
                                    covered_bed,
                                    "hybrid"
                                    )
                             ],
-                           name='locatit_dedup.' + sample.name
+                           name='agent_locatit_dedup.' + sample.name
                            )
                        )
            elif 'brush' in sample.name:
                 output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
-                covered_bed = config.param('locatit', 'covered_bedv7', param_type='filepath')
+                covered_bed = config.param('agent_locatit', 'covered_bedv7', param_type='filepath')
 
                 job = locatit.dedup(
                         input_bam,
@@ -227,7 +227,7 @@ class DOvEE_gene(common.Illumina):
                         covered_bed,
                         "duplex"
                         )
-                job.name='locatit_dedup.' + sample.name
+                job.name='agent_locatit_dedup.' + sample.name
                 jobs.append(job)
                 
         return jobs
