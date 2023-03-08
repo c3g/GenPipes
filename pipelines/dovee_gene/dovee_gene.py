@@ -126,23 +126,9 @@ class DOvEE_gene(common.Illumina):
                     candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
                 [fastq1, fastq2] = self.select_input_files(candidate_input_files)
 
-            elif readset.run_type == "SINGLE_END":
-                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
-                if readset.fastq1:
-                    candidate_input_files.append([readset.fastq1])
-                if readset.bam:
-                    prefix = os.path.join(
-                        self.output_dirs["raw_reads_directory"],
-                        readset.sample.name,
-                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
-                    )
-                    candidate_input_files.append([prefix + ".single.fastq.gz"])
-                [fastq1] = self.select_input_files(candidate_input_files)
-                fastq2 = None
-
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
-                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END)!"))
 
             jobs.append(
                 concat_jobs(
@@ -161,7 +147,7 @@ class DOvEE_gene(common.Illumina):
                                         ("\\tCN:" + config.param('bwa_mem', 'sequencing_center')) + \
                                         ("\\tPL:" + config.param('bwa_mem', 'sequencing_technology') if config.param('bwa_mem', 'sequencing_technology', required=False) else "\\tPL:Illumina") + \
                                         "'",
-                                        ini_section="bwa_mem"
+                                    ini_section="bwa_mem"
                                 ),
                                 samtools.view(
                                     "-",
