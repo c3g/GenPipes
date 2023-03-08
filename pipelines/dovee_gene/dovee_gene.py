@@ -20,10 +20,9 @@ from core.job import Job, concat_jobs, pipe_jobs
 import utils.utils
 from pipelines import common
 
-from bfx import trimmer
+from bfx import agent
 from bfx import bwa
 from bfx import samtools
-from bfx import locatit
 from bfx import vardict
 from bfx import hmm
 from bfx import ichorCNA
@@ -81,7 +80,7 @@ class DOvEE_gene(common.Illumina):
             fastq1 = readset.fastq1
             fastq2 = readset.fastq2
             
-            job = trimmer.trimmer(
+            job = agent.trimmer(
                 fastq1,
                 fastq2,
                 trim_file_prefix
@@ -107,8 +106,8 @@ class DOvEE_gene(common.Illumina):
         jobs = []
         for readset in self.readsets:
             trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.sample.name + ".sorted")
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name)
+            readset_bam = os.path.join(alignment_directory, readset.name + ".sorted")
             
             fastq1 = ""
             fastq2 = ""
@@ -133,7 +132,7 @@ class DOvEE_gene(common.Illumina):
             jobs.append(
                 concat_jobs(
                     [
-                        bash.mkdir(os.path.dirname(alignment_directory)),
+                        bash.mkdir(alignment_directory),
                         pipe_jobs(
                             [
                                 bwa.mem(
@@ -168,12 +167,50 @@ class DOvEE_gene(common.Illumina):
 
         return jobs
 
+    def samtools_merge(self):
+        """
+        Merges sorted bam files for each sample, if there are multiple readsets for the sample. If only a single readset file is found, a symlink to the bam is created. 
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            readset_bams = [os.path.join(alignment_directory, readset.name + ".sorted.bam") for readset in sample.readsets]
+            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+
+            # If this sample has one readset only, create a sample BAM symlink to the readset BAM
+            if len(sample.readsets) == 1:
+                readset_bam = readset_bams[0]
+
+                job = bash.ln(
+                       os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
+                       sample_bam,
+                       input=readset_bam
+                        )
+                job.name = "symlink_readset_sample_bam." + sample.name
+                job.samples = [sample]
+
+                jobs.append(job)
+
+            elif len(sample.readsets) > 1:
+                job = samtools.merge(
+                        sample_bam,
+                        readset_bams
+                        )
+                job.name = "samtools_merge." + sample.name
+                job.samples = [sample]
+
+                jobs.append(job)
+
+        return jobs
+                        
     def locatit_dedup_bam(self):
         """
         Deduplicated bam files with AGeNT locatit in hybrid or duplex mode.
         """
 
-        jobs =[]
+        jobs = []
 
         for sample in self.samples:
            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
@@ -207,7 +244,7 @@ class DOvEE_gene(common.Illumina):
                 output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
                 covered_bed = config.param('agent_locatit', 'covered_bedv7', param_type='filepath')
 
-                job = locatit.dedup(
+                job = agent.locatit(
                         input_bam,
                         output_duplex,
                         covered_bed,
@@ -429,6 +466,7 @@ class DOvEE_gene(common.Illumina):
                 [
                     self.trimmer,
                     self.bwa_mem_samtools_sort,
+                    self.samtools_merge,
                     self.locatit_dedup_bam,
                     self.samtools_sort,
                     self.samtools_index,
@@ -437,6 +475,7 @@ class DOvEE_gene(common.Illumina):
                 [
                     self.trimmer, # same trimming, mapping, dedup steps for copy number protocol? 
                     self.bwa_mem_samtools_sort,
+                    self.samtools_merge,
                     self.locatit_dedup_bam,
                     self.samtools_sort,
                     self.samtools_index,
