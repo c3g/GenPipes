@@ -17,7 +17,7 @@ usage: rnaseq_light.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                        [--genpipes_file GENPIPES_FILE] [-d DESIGN] [-b BATCH]
                        [-r READSETS] [-v]
 
-Version: 4.3.2
+Version: 4.4.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

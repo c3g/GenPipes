@@ -402,6 +402,7 @@ def rnaseqLight_kallisto(fastq_file1, fastq_file2, transcriptome_file, tx2genes_
         ],
         name=job_name,
         command="""\
+rm -rf {output_dir} && \\
 bash rnaseq_light_kallisto.sh \\
   {output_dir} \\
   {parameters} \\
@@ -420,6 +421,29 @@ bash rnaseq_light_kallisto.sh \\
      )
 
 ## functions for R tools ##
+def r_transcript_to_gene(
+    abundance_tsv,
+    output_tsv,
+    tx2genes_file
+    ):
+    return Job(
+        [abundance_tsv],
+        [output_tsv],
+        [
+            ['kallisto_count_matrix', 'module_mugqic_tools'],
+            ['kallisto_count_matrix', 'module_R'],
+            ['kallisto_count_matrix', 'module_mugqic_R_packages']
+        ],
+        command="""\
+Rscript --vanilla $R_TOOLS/abundanceTranscript2geneLevel.R \\
+  {abundance_tsv} \\
+  {tx2genes}""".format(
+            abundance_tsv=abundance_tsv,
+            tx2genes=tx2genes_file
+        )
+    )
+
+
 def r_create_kallisto_count_matrix(input_abundance_files, output_dir, data_type, job_name):
     return Job(
         input_abundance_files,

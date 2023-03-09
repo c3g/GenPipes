@@ -20,7 +20,7 @@ usage: covseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--container {wrapper, singularity} <IMAGE PATH>]
                  [--genpipes_file GENPIPES_FILE] [-r READSETS] [-v]
 
-Version: 4.3.2
+Version: 4.4.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -97,6 +97,7 @@ Steps:
 18- prepare_table
 19- prepare_report_ivar
 20- prepare_report_freebayes
+21- run_multiqc
 
 ```
 
@@ -213,4 +214,6 @@ prepare_report_freebayes
 ------------------------
 Prepare [FreeBayes](https://github.com/freebayes/freebayes) analysis report.
 
+run_multiqc
+-----------
 

@@ -17,8 +17,8 @@ Software requirement
 GenPipes have been tested with Python 3.6+
 
 
-Quick setup for abacus, Beluga, graham, cedar and mammouth users
-----------------------------------------------------
+Quick setup for Abacus, Beluga, Narval, Graham and cedar users
+--------------------------------------------------------------
 Genomes and modules used by the pipelines are already installed on a CVMFS partition mounted on all those clusters in `/cvmfs/soft.mugqic/root`.
 To access them, add the following lines to your *$HOME/.bash_profile*:
 
@@ -319,10 +319,11 @@ For more information about a specific pipeline, visit:
 ### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq/)
 ### [RNA-Seq De Novo Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_denovo_assembly/)
 ### [RNA-Seq Light Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq_light/)
-### [PacBio Assembly Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/pacbio_assembly/)
 ### [ChIP-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/chipseq/)
 ### [Amplicon-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/ampliconseq/)
 ### [Methyl-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/methylseq/)
+### [EpiQC Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/epiqc/)
+### [HiC-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/hicseq/)
 ### [Nanopore Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/nanopore/)
 ### [Tumor Pair Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/)
 ### [CoV-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/covseq/)

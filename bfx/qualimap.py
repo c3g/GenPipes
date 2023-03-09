@@ -25,12 +25,27 @@ import os
 from core.config import *
 from core.job import * 
 
-def bamqc(input_bam, output_directory, output, options, ini_section='qualimap'):
-
-    inputs = [input_bam]
-    outputs = [output]
+def bamqc(
+    input_bam,
+    output_directory,
+    output,
+    options,
+    ini_section='qualimap'
+    ):
 
     (input_basename, file_format) = os.path.splitext(input_bam)
+    inputs = [input_bam]
+
+    raw_data_qualimap_dir = os.path.join(os.path.dirname(output), "raw_data_qualimapReport")
+    outputs = [
+        output,
+        os.path.join(raw_data_qualimap_dir, "coverage_histogram.txt"),
+        os.path.join(raw_data_qualimap_dir, "insert_size_histogram.txt"),
+        os.path.join(raw_data_qualimap_dir, "genome_fraction_coverage.txt"),
+        os.path.join(raw_data_qualimap_dir, "mapped_reads_gc-content_distribution.txt")
+    ]
+
+    
 
     return Job(
         inputs,

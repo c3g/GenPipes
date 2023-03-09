@@ -24,7 +24,7 @@ usage: nanopore_covseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                           [--genpipes_file GENPIPES_FILE] [-r READSETS]
                           [-t {default,basecalling}] [-v]
 
-Version: 4.3.2
+Version: 4.4.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

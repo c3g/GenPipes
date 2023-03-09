@@ -27,6 +27,7 @@ module-whatis \"$SOFTWARE - require JDK1.8\"
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 setenv          PURPLE_HOME         \$root
 setenv          PURPLE_JAR          \$root/purple.jar
+setenv          PURPLE_DATA         /cvmfs/ref.mugqic/genomes/hmftools
 "
 }
 

@@ -27,6 +27,7 @@ module-whatis \"$SOFTWARE - require JDK1.8\"
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 setenv          LINX_HOME           \$root
 setenv          LINX_JAR            \$root/linx.jar
+setenv          LINX_DATA           /cvmfs/ref.mugqic/genomes/hmftools
 "
 }
 

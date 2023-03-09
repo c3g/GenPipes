@@ -13,10 +13,11 @@ usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [-l {debug,info,warning,error,critical}] [--sanity-check]
                  [--force_mem_per_cpu FORCE_MEM_PER_CPU]
                  [--container {wrapper, singularity} <IMAGE PATH>]
-                 [--genpipes_file GENPIPES_FILE] [-t {stringtie,cufflinks}]
-                 [-d DESIGN] [-b BATCH] [-r READSETS] [-v]
+                 [--genpipes_file GENPIPES_FILE]
+                 [-t {stringtie,variants,cancer}] [-d DESIGN] [-b BATCH]
+                 [-r READSETS] [-v]
 
-Version: 4.3.2
+Version: 4.4.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -63,7 +64,7 @@ optional arguments:
                         process the data, or said otherwise, this command will
                         "run the Genpipes pipeline". Will be redirected to
                         stdout if the option is not provided.
-  -t {stringtie,cufflinks}, --type {stringtie,cufflinks}
+  -t {stringtie,variants,cancer}, --type {stringtie,variants,cancer}
                         RNAseq analysis type
   -d DESIGN, --design DESIGN
                         design file
@@ -88,7 +89,7 @@ stringtie:
 4- star
 5- picard_merge_sam_files
 6- picard_sort_sam
-7- picard_mark_duplicates
+7- mark_duplicates
 8- picard_rna_metrics
 9- estimate_ribosomal_rna
 10- bam_hard_clip
@@ -104,35 +105,66 @@ stringtie:
 20- cram_output
 ----
 ```
-![rnaseq cufflinks workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_cufflinks.resized.png)
-[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_cufflinks.png)
+![rnaseq variants workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_variants.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_variants.png)
 ```
-cufflinks:
+variants:
 1- picard_sam_to_fastq
-2- trimmomatic
-3- merge_trimmomatic_stats
-4- star
-5- picard_merge_sam_files
-6- picard_sort_sam
-7- picard_mark_duplicates
-8- picard_rna_metrics
-9- estimate_ribosomal_rna
-10- bam_hard_clip
-11- rnaseqc
-12- wiggle
-13- raw_counts
-14- raw_counts_metrics
-15- cufflinks
-16- cuffmerge
-17- cuffquant
-18- cuffdiff
-19- cuffnorm
-20- fpkm_correlation_matrix
-21- gq_seq_utils_exploratory_analysis_rnaseq
-22- differential_expression
-23- differential_expression_goseq
-24- ihec_metrics
-25- cram_output
+2- skewer_trimming
+3- star
+4- picard_merge_sam_files
+5- mark_duplicates
+6- split_N_trim
+7- sambamba_merge_splitNtrim_files
+8- gatk_indel_realigner
+9- sambamba_merge_realigned
+10- recalibration
+11- gatk_haplotype_caller
+12- merge_hc_vcf
+13- run_vcfanno
+14- variant_filtration
+15- decompose_and_normalize
+16- compute_snp_effects
+17- gemini_annotations
+18- picard_rna_metrics
+19- estimate_ribosomal_rna
+20- rnaseqc2
+21- gatk_callable_loci
+22- wiggle
+23- cram_output
+----
+```
+![rnaseq cancer workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_cancer.resized.png)
+[download full-size diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_cancer.png)
+```
+cancer:
+1- picard_sam_to_fastq
+2- skewer_trimming
+3- star
+4- picard_merge_sam_files
+5- mark_duplicates
+6- split_N_trim
+7- sambamba_merge_splitNtrim_files
+8- gatk_indel_realigner
+9- sambamba_merge_realigned
+10- recalibration
+11- gatk_haplotype_caller
+12- merge_hc_vcf
+13- run_vcfanno
+14- decompose_and_normalize
+15- filter_gatk
+16- report_cpsr
+17- report_pcgr
+18- run_star_fusion
+19- run_arriba
+20- run_annofuse
+21- picard_rna_metrics
+22- estimate_ribosomal_rna
+23- rnaseqc2
+24- rseqc
+25- gatk_callable_loci
+26- wiggle
+27- cram_output
 
 ```
 
@@ -178,8 +210,8 @@ picard_sort_sam
 ---------------
 The alignment file is reordered (QueryName) using [Picard](http://broadinstitute.github.io/picard/). The QueryName-sorted bam files will be used to determine raw read counts.
 
-picard_mark_duplicates
-----------------------
+mark_duplicates
+---------------
 Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
 (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
 will be marked as a duplicate in the BAM file. Marking duplicates is done using [Picard](http://broadinstitute.github.io/picard/).
@@ -200,8 +232,6 @@ This step takes as input files: readset Bam files.
 
 bam_hard_clip
 -------------
-Generate a hardclipped version of the bam for the toxedo suite which doesn't support this official sam feature.
-
 rnaseqc
 -------
 Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
@@ -244,43 +274,126 @@ cram_output
 Generate long term storage version of the final alignment files in CRAM format.
 Using this function will include the orginal final bam file into the  removable file list.
 
-cufflinks
----------
-Compute RNA-Seq data expression using [cufflinks](http://cole-trapnell-lab.github.io/cufflinks/cufflinks/).
-Warning: It needs to use a hard clipped bam file while Tuxedo tools do not support official soft clip SAM format
+skewer_trimming
+---------------
+[Skewer](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-15-182) is used mainly for
+detection and trimming adapter sequences from raw fastq files. Other features of Skewer is listed
+[here](https://github.com/relipmoc/skewer).
 
-cuffmerge
----------
-Merge assemblies into a master transcriptome reference using [cuffmerge](http://cole-trapnell-lab.github.io/cufflinks/cuffmerge/).
-
-cuffquant
----------
-Compute expression profiles (abundances.cxb) using [cuffquant](http://cole-trapnell-lab.github.io/cufflinks/cuffquant/).
-Warning: It needs to use a hard clipped bam file while Tuxedo tools do not support official soft clip SAM format
-
-cuffdiff
---------
-[Cuffdiff](http://cole-trapnell-lab.github.io/cufflinks/cuffdiff/) is used to calculate differential transcript expression levels and test them for significant differences.
-
-cuffnorm
---------
-Global normalization of RNA-Seq expression levels using [Cuffnorm](http://cole-trapnell-lab.github.io/cufflinks/cuffnorm/).
-
-fpkm_correlation_matrix
------------------------
-Compute the pearson corrleation matrix of gene and transcripts FPKM. FPKM data are those estimated by cuffnorm.
-
-gq_seq_utils_exploratory_analysis_rnaseq
-----------------------------------------
-Exploratory analysis using the gqSeqUtils R package.
-
-differential_expression_goseq
------------------------------
-Gene Ontology analysis for RNA-Seq using the Bioconductor's R package [goseq](http://www.bioconductor.org/packages/release/bioc/html/goseq.html).
-Generates GO annotations for differential gene expression analysis.
-
-ihec_metrics
+split_N_trim
 ------------
-Generate IHEC's standard metrics.
+SplitNtrim. A [GATK](https://software.broadinstitute.org/gatk/) tool called SplitNCigarReads developed specially for RNAseq, which splits reads into exon segments (getting rid of Ns but maintaining grouping information) and hard-clip any sequences overhanging into the intronic regions.
+
+sambamba_merge_splitNtrim_files
+-------------------------------
+BAM readset files are merged into one file per sample. Merge is done using [Sambamba] (http://lomereiter.github.io/sambamba/docs/sambamba-merge.html).
+
+gatk_indel_realigner
+--------------------
+Insertion and deletion realignment is performed on regions where multiple base mismatches
+are preferred over indels by the aligner since it can appear to be less costly by the algorithm.
+Such regions will introduce false positive variant calls which may be filtered out by realigning
+those regions properly. Realignment is done using [GATK](https://www.broadinstitute.org/gatk/).
+The reference genome is divided by a number regions given by the `nb_jobs` parameter.
+
+sambamba_merge_realigned
+------------------------
+BAM files of regions of realigned reads are merged per sample using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
+
+recalibration
+-------------
+Recalibrate base quality scores of sequencing-by-synthesis reads in an aligned BAM file. After recalibration,
+the quality scores in the QUAL field in each read in the output BAM are more accurate in that
+the reported quality score is closer to its actual probability of mismatching the reference genome.
+Moreover, the recalibration tool attempts to correct for variation in quality with machine cycle
+and sequence context, and by doing so, provides not only more accurate quality scores but also
+more widely dispersed ones.
+
+gatk_haplotype_caller
+---------------------
+GATK haplotype caller for snps and small indels.
+
+merge_hc_vcf
+------------
+Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
+
+run_vcfanno
+-----------
+vcfanno is used to annotate VCF files with preferred INFO fields from anu number of VCF or BED files. For more
+information [visit](https://github.com/brentp/vcfanno)
+
+variant_filtration
+------------------
+GATK VariantFiltration.
+VariantFiltration is a GATK tool for hard-filtering variant calls based on certain criteria. Records are hard-filtered
+by changing the value in the FILTER field to something other than PASS.
+
+decompose_and_normalize
+-----------------------
+[vt](https://genome.sph.umich.edu/wiki/Vt#Normalization) is used to normalized and decompose VCF files. For more
+information about normalizing and decomposing visit
+[here](https://research-help.genomicsengland.co.uk/display/GERE/Variant+Normalisation). An indexed file is also
+generated from the output file using [htslib](http://www.htslib.org/download/).
+
+compute_snp_effects
+-------------------
+[SnpEff](https://pcingola.github.io/SnpEff/) is used to variant annotation and effect prediction on genes by
+using an interval forest approach. It annotates and predicts the effects of genetic variants
+(such as amino acid changes).
+
+gemini_annotations
+------------------
+[gemini](https://github.com/arq5x/gemini) (GEnome MINIng) is used to integrative exploration of genetic
+variation and genome annotations. For more information
+[visit](https://gemini.readthedocs.io/en/latest/).
+
+rnaseqc2
+--------
+Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
+
+gatk_callable_loci
+------------------
+Computes the callable region or the genome as a bed track.
+
+filter_gatk
+-----------
+Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
+the filter on those generated fields.
+
+report_cpsr
+-----------
+Creates a cpsr gremline report (https://sigven.github.io/cpsr/)
+input: filtered ensemble gremline vcf
+output: html report and addtionalflat files
+
+report_pcgr
+-----------
+Creates a PCGR somatic + germline report (https://sigven.github.io/cpsr/)
+input: filtered ensemble gremline vcf
+output: html report and addtionalflat files
+
+run_star_fusion
+---------------
+STAR-Fusion is a component of the Trinity Cancer Transcriptome Analysis Toolkit (CTAT). Based on the STAR
+aligner it identifies candidate fusion transcripts supported by Illumina reads.
+https://github.com/STAR-Fusion/STAR-Fusion/wiki
+
+run_arriba
+----------
+[arriba](https://github.com/suhrig/arriba) is used for the detection of gene fusions from RNA-Seq data.
+arriba is based on the [STAR](https://github.com/alexdobin/STAR) aligner. Apart from gene fusions,
+Arriba can detect other structural rearrangements with potential clinical relevance, including viral integration
+sites, internal tandem duplications, whole exon duplications and intragenic inversions etc...
+
+run_annofuse
+------------
+[annofuse](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-020-03922-7)
+is a R package and it is used to annotate, prioritize, and interactively explore putative oncogenic
+RNA fusions.
+
+rseqc
+-----
+Computes a series of quality control metrics using both CollectRnaSeqMetrics and CollectAlignmentSummaryMetrics functions
+metrics are collected using [Picard](http://broadinstitute.github.io/picard/).
 
 

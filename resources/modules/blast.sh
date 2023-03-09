@@ -3,14 +3,12 @@
 set -eu -o pipefail
 
 SOFTWARE=blast
-VERSION=2.7.1+
+VERSION=2.11.0+
 ARCHIVE=ncbi-$SOFTWARE-$VERSION-src.tar.gz
 ARCHIVE_URL=ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/${VERSION%+}/$ARCHIVE
 SOFTWARE_DIR=ncbi-$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
+
 build() {
   cd $INSTALL_DOWNLOAD
   tar zxvf $ARCHIVE
@@ -32,6 +30,7 @@ module-whatis \"$SOFTWARE\"
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    PATH                \$root/bin
 prepend-path    BLASTDB             \$::env(MUGQIC_INSTALL_HOME)/genomes/blast_db
+setenv          BLAST_HOME          \$root
 "
 }
 

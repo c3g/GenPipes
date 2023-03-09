@@ -3,7 +3,7 @@
 ###################
 ################### exonerate
 ###################
-VERSION="2.4"
+VERSION="2.7"
 INSTALL_PATH=$MUGQIC_INSTALL_HOME/software/pigz/
 mkdir -p $INSTALL_PATH
 cd $INSTALL_PATH

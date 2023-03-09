@@ -325,7 +325,7 @@ class HicSeq(common.Illumina):
                             sample.name,
                             sample_output_dir,
                             chrlist,
-                            os.path.join(sample_output_dir, "HomerQcPlots")
+                            "HomerQcPlots"
                         ),
                         bash.mkdir(os.path.join(sample_output_dir, "archive")),
                         bash.chdir(sample_output_dir),
@@ -508,7 +508,7 @@ class HicSeq(common.Illumina):
                                     smooth
                                 )
                             ],
-                            samples=[sample],
+                            samples=[sample[0], sample[1]],
                             removable_files=[output_file]
                         )
                         input_files_for_merging.append(output_file)
@@ -955,10 +955,11 @@ class HicSeq(common.Illumina):
 
         yamlFile = os.path.expandvars(config.param('multiqc_report', 'MULTIQC_CONFIG_PATH'))
         input_files = [os.path.join(self.output_dirs['bams_output_directory'], sample.name, sample.name + ".merged.bam") for sample in self.samples]
-        job = multiqc.mutliqc_run(
+        job = multiqc.multiqc_run(
             yamlFile,
             input_files
         )
+        job.name = "multiqc_report"
         job.samples = self.samples
         jobs.append(job)
 

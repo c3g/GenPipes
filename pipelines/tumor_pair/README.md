@@ -35,7 +35,7 @@ usage: tumor_pair.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                      [--genpipes_file GENPIPES_FILE] [-p PAIRS] [--profyle]
                      [-t {fastpass,ensemble,sv}] [-r READSETS] [-v]
 
-Version: 4.3.2
+Version: 4.4.0
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -191,30 +191,11 @@ sv:
 9- recalibration
 10- manta_sv_calls
 11- strelka2_paired_somatic
-12- strelka2_paired_germline
-13- metrics_dna_picard_metrics
-14- sequenza
-15- delly_call_filter
-16- delly_sv_annotation
-17- manta_sv_annotation
-18- lumpy_paired_sv
-19- lumpy_sv_annotation
-20- wham_call_sv
-21- wham_sv_annotation
-22- cnvkit_batch
-23- cnvkit_sv_annotation
-24- svaba_assemble
-25- svaba_sv_annotation
-26- ensemble_metasv_somatic
-27- ensemble_metasv_germline
-28- metasv_sv_annotation
-29- sym_link_sequenza
-30- sym_link_metasv
-31- sym_link_delly
-32- sym_link_manta
-33- sym_link_lumpy
-34- sym_link_wham
-35- sym_link_cnvkit
+12- gridss_paired_somatic
+13- purple_sv
+14- linx_annotations_somatic
+15- linx_annotations_germline
+16- linx_plot
 
 ```
 
@@ -483,69 +464,19 @@ Create sym link of final bam for delivery of data to clients.
 
 sym_link_ensemble
 -----------------
-delly_call_filter
------------------
-Delly2 is an integrated structural variant prediction method that can
-discover, genotype and visualize deletions, tandem duplications, inversions and translocations
-at single-nucleotide resolution in short-read massively parallel sequencing data. It uses paired-ends
-and split-reads to sensitively and accurately delineate genomic rearrangements throughout the genome.
-Structural variants can be visualized using Delly-maze and Delly-suave.
-Input: normal and tumor final bams
-Returns: bcf file
+gridss_paired_somatic
+---------------------
 
-delly_sv_annotation
--------------------
-manta_sv_annotation
--------------------
-lumpy_paired_sv
----------------
-A probabilistic framework for structural variant discovery.
-Lumpy traditional with paired ends and split reads on tumor normal pair.
-Returns: bams.
+purple_sv
+---------
 
-lumpy_sv_annotation
--------------------
-wham_call_sv
-------------
-Wham (Whole-genome Alignment Metrics) to provide a single, integrated framework for both structural variant
-calling and association testing, thereby bypassing many of the difficulties that currently frustrate attempts
-to employ SVs in association testing.
-Returns: vcf.
-
-wham_sv_annotation
-------------------
-cnvkit_sv_annotation
---------------------
-svaba_assemble
---------------
-SvABA - Structural variation and indel analysis by assembly.
-
-svaba_sv_annotation
--------------------
-ensemble_metasv_somatic
------------------------
-MetaSV: An accurate and integrative structural-variant caller for next generation sequencing.
-
-ensemble_metasv_germline
+linx_annotations_somatic
 ------------------------
-MetaSV: An accurate and integrative structural-variant caller for next generation sequencing.
 
-metasv_sv_annotation
---------------------
-sym_link_sequenza
------------------
-Sym link of sequenza outputs.
+linx_annotations_germline
+-------------------------
 
-sym_link_metasv
----------------
-sym_link_delly
---------------
-sym_link_manta
---------------
-sym_link_lumpy
---------------
-sym_link_wham
--------------
-sym_link_cnvkit
----------------
+linx_plot
+---------
+
 

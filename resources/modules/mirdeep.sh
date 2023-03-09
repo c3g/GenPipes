@@ -3,20 +3,19 @@
 set -eu -o pipefail
 
 SOFTWARE=mirdeep2
-VERSION=0.0.5
-ARCHIVE=${SOFTWARE}-${VERSION}.zip
+VERSION=0.1.3
+ARCHIVE=${SOFTWARE}-${VERSION}.tar.gz
 #ARCHIVE_URL=https://www.mdc-berlin.de/45995549/en/research/research_teams/systems_biology_of_gene_regulatory_elements/projects/miRDeep/${SOFTWARE}_${VERSION//./_}.zip
-ARCHIVE_URL=https://www.mdc-berlin.de/internet/38350089/en/research/research_teams/systems_biology_of_gene_regulatory_elements/projects/miRDeep/older_miRDeep2_versions/mirdeep2_0_0_5.zip
+#ARCHIVE_URL=https://www.mdc-berlin.de/internet/38350089/en/research/research_teams/systems_biology_of_gene_regulatory_elements/projects/miRDeep/older_miRDeep2_versions/mirdeep2_0_0_5.zip
+ARCHIVE_URL=https://github.com/rajewsky-lab/${SOFTWARE}/archive/refs/tags/v${VERSION}.tar.gz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-module_perl=mugqic/perl/5.22.1
-module_bowtie=mugqic/bowtie/1.1.2
+module_perl=mugqic/perl/5.34.0
+module_bowtie=mugqic/bowtie/1.3.1
 
 build() {
   cd $INSTALL_DOWNLOAD
-  unzip $ARCHIVE
-#  mv ${SOFTWARE} $SOFTWARE_DIR			# for VERSION=0.0.5
-  mv ${SOFTWARE}_${VERSION//./_} $SOFTWARE_DIR	# for VERSION=0.0.8
+  tar zxvf $ARCHIVE
 
   cd $SOFTWARE_DIR
   module load $module_perl $module_bowtie
