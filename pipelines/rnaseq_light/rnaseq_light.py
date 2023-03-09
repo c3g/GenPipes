@@ -79,14 +79,14 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         jobs = []
 
         for sample in self.samples:
-            parameters = ""
             readset_type = ""
+            parameters = ""
             input_fastqs = []
             for readset in sample.readsets:
                 trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], sample.name, readset.name + ".trim.")
                 if not readset_type:
                     readset_type = readset.run_type
-                elif readset_type == readset.run_type:
+                elif not readset_type == readset.run_type:
                     message = f"Sample {sample.name} has mixed single-end and paired-end readset libraries...\n"
                     message += f"Please use only single-end or only paired-end library for samples with multiple readsets."
                     _raise(SanitycheckError(message))
@@ -138,11 +138,16 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                         ),
                         tools.r_transcript_to_gene(
                             os.path.join(output_dir, "abundance_transcripts.tsv"),
-                            os.path.join(output_dir, "abundance_gene.tsv"),
+                            os.path.join(output_dir, "abundance_genes.tsv"),
                             tx2genes_file
                         )
                     ],
                     input_dependency=input_fastqs,
+                    output_dependency=[
+                        os.path.join(output_dir, "abundance_transcripts.tsv"),
+                        os.path.join(output_dir, "abundance_genes.tsv"),
+                        os.path.join(output_dir, "kallisto_quant.log")
+                    ],
                     name="kallisto." + sample.name,
                     samples=[sample]
                 )
