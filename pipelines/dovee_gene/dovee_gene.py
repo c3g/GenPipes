@@ -93,7 +93,7 @@ class DOvEE_gene(common.Illumina):
                             job,
                             bash.mv(trim_file_prefix + "_R1.fastq.gz", trim_file_prefix + ".pair1.fastq.gz"), # trimmer only allows specifying outfile prefix to which it adds _R1/2.fastq.gz
                             bash.mv(trim_file_prefix + "_R2.fastq.gz", trim_file_prefix + ".pair2.fastq.gz"), # can either rename here or change following to expect that naming
-                        ], name="trimmer." + readset.name
+                        ], name="agent_trimmer." + readset.name
                         )
                  )
         return jobs
@@ -160,7 +160,7 @@ class DOvEE_gene(common.Illumina):
                             ]
                         )
                     ],
-                    name="bwa_mem_samtools_sort." + readset.name,
+                    name="bwa_mem." + readset.name,
                     samples=[readset.sample]
                 )
             )
