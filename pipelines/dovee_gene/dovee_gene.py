@@ -93,7 +93,8 @@ class DOvEE_gene(common.Illumina):
                             job,
                             bash.mv(trim_file_prefix + "_R1.fastq.gz", trim_file_prefix + ".pair1.fastq.gz"), # trimmer only allows specifying outfile prefix to which it adds _R1/2.fastq.gz
                             bash.mv(trim_file_prefix + "_R2.fastq.gz", trim_file_prefix + ".pair2.fastq.gz"), # can either rename here or change following to expect that naming
-                        ], name="agent_trimmer." + readset.name
+                        ], name="agent_trimmer." + readset.name,
+                        samples = [readset.sample]
                         )
                  )
         return jobs
@@ -151,7 +152,7 @@ class DOvEE_gene(common.Illumina):
                                 samtools.view(
                                     "-",
                                     None,
-                                    "-b "
+                                    "-b -@ 7"
                                 ),
                                 samtools.sort(
                                     "-",
@@ -228,16 +229,17 @@ class DOvEE_gene(common.Illumina):
                                    input_bam,
                                    output_duplex,
                                    covered_bed,
-                                   "duplex"
+                                   "v2Duplex"
                                    ),
                                agent.locatit(
                                    input_bam,
                                    output_hybrid,
                                    covered_bed,
-                                   "hybrid"
+                                   "v2Hybrid"
                                    )
                             ],
-                           name='agent_locatit_dedup.' + sample.name
+                           name='agent_locatit.' + sample.name,
+                           samples=[sample]
                            )
                        )
            elif 'brush' in sample.name:
@@ -248,9 +250,10 @@ class DOvEE_gene(common.Illumina):
                         input_bam,
                         output_duplex,
                         covered_bed,
-                        "duplex"
+                        "v2Duplex"
                         )
-                job.name='agent_locatit_dedup.' + sample.name
+                job.name='agent_locatit.' + sample.name
+                job.samples=[sample]
                 jobs.append(job)
                 
         return jobs
@@ -284,7 +287,8 @@ class DOvEE_gene(common.Illumina):
                                     output_hybrid
                                     )
                             ],
-                            name = "samtools.sort." + sample.name
+                            name = "samtools_sort." + sample.name,
+                            samples = [sample]
                         )
                     )
             elif 'brush' in sample.name:
@@ -295,7 +299,8 @@ class DOvEE_gene(common.Illumina):
                         input_duplex,
                         output_duplex
                         )
-                job.name = "samtools.sort." + sample.name
+                job.name = "samtools_sort." + sample.name
+                job.samples = [sample]
                 jobs.append(job)
 
         return jobs
@@ -323,7 +328,8 @@ class DOvEE_gene(common.Illumina):
                                     input_hybrid
                                     )
                             ],
-                            name = "samtools.index." + sample.name
+                            name = "samtools_index." + sample.name,
+                            samples = [sample]
                             )
                         )
             elif 'brush' in sample.name:
@@ -332,7 +338,8 @@ class DOvEE_gene(common.Illumina):
                 job = samtools.index(
                             input_duplex
                         )
-                job.name = "samtools.index." + sample.name
+                job.name = "samtools_index." + sample.name
+                job.samples = [sample]
                 jobs.append(job)
 
         return jobs
@@ -348,16 +355,16 @@ class DOvEE_gene(common.Illumina):
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             variants_directory = os.path.join(self.output_dirs['variants_directory'], sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam") # which bam should be used here? For saliva two bams exist
-            output = os.path.join(variants_directory, sample.name + "out.vcf") # temp name
+            output = os.path.join(variants_directory, sample.name + ".out.vcf") # temp name
 
             if 'brush' in sample.name:
                 freq=0.001
-                region=config.param('vardict_single', 'target_file', param_type='filepath')  #target bed file
+                region=config.param('vardict_single', 'target_filev7', param_type='filepath')  #target bed file
                 nosv=True
 
             elif 'saliva' in sample.name:
                 freq=0.1
-                region=config.param('vardict_single', 'target_filev7', param_type='filepath')  #target bed file
+                region=config.param('vardict_single', 'target_filev8', param_type='filepath')  #target bed file
                 nosv=False
 
             vardict_job = vardict.single_java(
@@ -392,7 +399,9 @@ class DOvEE_gene(common.Illumina):
                                     var2vcf_job
                                     ]
                                 )
-                            ], name = "vardict." + sample.name
+                            ], 
+                        name = "vardict_single." + sample.name,
+                        samples = [sample]
                         )
                     )
 
@@ -412,7 +421,7 @@ class DOvEE_gene(common.Illumina):
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             wig_directory = os.path.join(self.output_dirs['wig_directory'], sample.name) 
             input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam") # how should bam be generated here? For locatit, two dedup options exist. Sorting needed?
-            output = os.path.join(wig_directory, sample.name + "out.wig") # temp name
+            output = os.path.join(wig_directory, sample.name + ".out.wig") # temp name
 
             jobs.append(
                     concat_jobs(
@@ -422,7 +431,9 @@ class DOvEE_gene(common.Illumina):
                             input_bam,
                             output
                             )
-                    ], name = "hmm_readCounter." + sample.name
+                    ], 
+                    name = "hmm_readCounter." + sample.name,
+                    samples = [sample]
                 )
             )
 
@@ -439,8 +450,8 @@ class DOvEE_gene(common.Illumina):
         
         for sample_pair in self.tumor_pairs.values(): # or another id that allows us to pair brush and saliva, using tumor pair system for now?
             wig_directory = self.output_dirs['wig_directory']
-            input_brush = os.path.join(wig_directory, sample_pair.tumor.name, sample_pair.tumor.name + "out.wig") # temp name 
-            input_saliva = os.path.join(wig_directory, sample_pair.normal.name, sample_pair.normal.name + "out.wig") # temp name 
+            input_brush = os.path.join(wig_directory, sample_pair.tumor.name, sample_pair.tumor.name + ".out.wig") # temp name 
+            input_saliva = os.path.join(wig_directory, sample_pair.normal.name, sample_pair.normal.name + ".out.wig") # temp name 
             output_dir = os.path.join(self.output_dirs['cna_directory'], sample_pair.name)
 
             jobs.append(
@@ -454,7 +465,8 @@ class DOvEE_gene(common.Illumina):
                             output_dir
                             )
                         ], 
-                        name = "run_ichorCNA." + sample_pair.name
+                        name = "run_ichorCNA." + sample_pair.name,
+                        samples = [sample_pair.normal, sample_pair.tumor]
                     )
                 )
 
