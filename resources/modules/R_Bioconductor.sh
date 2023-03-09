@@ -299,7 +299,7 @@ $INSTALL_DIR/bin/R  --no-save --no-restore  <<-'EOF'
     "farver", "fastcluster", "fdrtool", "ff", "fields", "FDb.InfiniumMethylation.hg19", "foreach", "foreign",
     "gcrma", "gdata", "genefilter", "genomation", "GenomicFeatures", "GenomicRanges", "GenomeInfoDb", "genoset", "GEOquery", "ggplot2", "ggvis", "googleVis", "goseq",
     "gplots", "graph", "gsalib", "gtable", "gtools", "Gviz",
-    "hdrcde", "Hmisc", "hwriter", "HTqPCR", "HTSFilter", "hopach",
+    "hdrcde", "Hmisc", "HMMcopy", "hwriter", "HTqPCR", "HTSFilter", "hopach",
     "igraph", "IlluminaHumanMethylation450kmanifest", "IlluminaHumanMethylation450kanno.ilmn12.hg19", "impute", "InteractionSet", "IRanges", "iterators",
     "JASPAR2020",
     "KernSmooth", "ks",

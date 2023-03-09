@@ -926,8 +926,7 @@ ln -s {ihec_traindatadir}/* {output_dir}/{usertraindatadir}/""".format(
                             signal_noise_folder = bash.mkdir(output_dir)
                             signal_noise_job = Job(
                                 [
-                                    converted_bedgraph_file,
-                                    chr_sizes_file
+                                    converted_bedgraph_file
                                 ],
                                 [output_file],
                                 [
