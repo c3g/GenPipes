@@ -109,14 +109,15 @@ def merge(sample_output, input_bams):
         input_bams,
         [sample_output],
         [
-            ['hicup_align', 'module_samtools']
+            ['samtools_merge', 'module_samtools']
         ],
         command="""\
-samtools merge \\
+samtools merge {other_options} \\
   {sample_output} \\
   {input_bams}""".format(
             sample_output=sample_output,
-            input_bams=" ".join(map(str.strip, input_bams))
+            input_bams=" ".join(map(str.strip, input_bams)),
+            other_options=config.param('samtools_merge', 'other_options', required=False)
         )
     )
 
