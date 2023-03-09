@@ -3430,25 +3430,14 @@ class RunProcessing(common.MUGQICPipeline):
             )
 
         # Adding the MultiQC input file list
-        self.report_hash[lane]["multiqc_inputs"] = []
+        # self.report_hash[lane]["multiqc_inputs"] = []
         step_list = [step for step in self.step_list if step.jobs]
-        for step in step_list:
-            if step.name in ['basecall', 'fastq', 'index']:
-                step_report_files = []
-                for readset in self.readsets[lane]:
-                    if step.name in readset.report_files:
-                        step_report_files.extend(readset.report_files[step.name])
-                self.report_hash[lane]["multiqc_inputs"].extend([os.path.relpath(path, self.report_dir[lane]) for path in step_report_files])
-            else:
-                for readset in self.readsets[lane]:
-                    if step.name in readset.report_files:
-                        self.report_hash[lane]["multiqc_inputs"].extend([os.path.relpath(path, self.report_dir[lane]) for path in readset.report_files[step.name]])
-        self.report_hash[lane]["multiqc_inputs"] = list(set(self.report_hash[lane]["multiqc_inputs"]))
+        self.report_hash[lane]["multiqc_inputs"] = list(set([report_file for step in step_list for job in step.jobs for report_file in job.report_files if f"ligned.{lane}" in report_file]))
         self.report_hash[lane]["multiqc_inputs"].append(os.path.join(self.report_dir[lane], f"{self.run_id}.{lane}.run_validation_report.json"))
 
         if not os.path.exists(os.path.dirname(self.run_validation_report_json[lane])):
-             os.makedirs(os.path.dirname(self.run_validation_report_json[lane]))
-        if not os.path.exists(self.run_validation_report_json[lane]):
+            os.makedirs(os.path.dirname(self.run_validation_report_json[lane]))
+        if not os.path.exists(self.run_validation_report_json[lane]) or self.force_jobs:
             with open(self.run_validation_report_json[lane], 'w') as out_json:
                 json.dump(self.report_hash[lane], out_json, indent=4)
 
@@ -3462,27 +3451,35 @@ class RunProcessing(common.MUGQICPipeline):
             readset_r1_outputs = []
             readset_r2_outputs = []
             for index in readset.indexes:
-                readset_r1_outputs.extend([
-                    os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.gz"),
-                    os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.fqStat.txt")
-                ])
+                readset_r1_outputs.extend(
+                    [
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.gz"),
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_1.fq.fqStat.txt")
+                    ]
+                )
                 if readset.run_type == "PAIRED_END":
-                    readset_r2_outputs.extend([
-                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.gz"),
-                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.fqStat.txt")
-                    ])
+                    readset_r2_outputs.extend(
+                        [
+                            os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.gz"),
+                            os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_" + index['INDEX_NAME'] + "_2.fq.fqStat.txt")
+                        ]
+                    )
 
             # If True, then merge the 'Undetermined' reads
             if self.merge_undetermined[lane]:
-                readset_r1_outputs.extend([
-                    os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.gz"),
-                    os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.fqStat.txt")
-                ])
+                readset_r1_outputs.extend(
+                    [
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.gz"),
+                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_1.fq.fqStat.txt")
+                    ]
+                )
                 if readset.run_type == "PAIRED_END":
-                    readset_r2_outputs.extend([
-                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.gz"),
-                        os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.fqStat.txt")
-                    ])
+                    readset_r2_outputs.extend(
+                        [
+                            os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.gz"),
+                            os.path.join(basecall_dir, self.run_id, f"L0{lane}", self.raw_fastq_prefix +  "_L0" + lane + "_undecoded_2.fq.fqStat.txt")
+                        ]
+                    )
             # Processing R1 fastq outputs :
             #   convert headers from MGI to Illumina format using zcat and awk
             basecall_outputs.extend(readset_r1_outputs)
