@@ -14,11 +14,11 @@ def readCounter(
             [input],
             [output],
             [
-#                ['hmm_readCounter', 'module_hmm']
+                ['hmm_readCounter', 'module_hmm']
             ],
 
             command="""\
-$HMM_HOME/readCounter \\
+readCounter \\
     --window {window_size} \\
     --quality {threshold} \\
     --chromosome {chr_list} \\
