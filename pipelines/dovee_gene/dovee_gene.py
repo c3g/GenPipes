@@ -194,6 +194,7 @@ class DOvEE_gene(common.Illumina):
 
                 jobs.append(job)
 
+            # If multiple readsets exist for the sample, merge readset bams into one sample bam
             elif len(sample.readsets) > 1:
                 job = samtools.merge(
                         sample_bam,
@@ -208,7 +209,8 @@ class DOvEE_gene(common.Illumina):
                         
     def locatit_dedup_bam(self):
         """
-        Deduplicated bam files with AGeNT locatit in hybrid or duplex mode.
+        Deduplicate bam files with AGeNT locatit in hybrid (saliva only) or duplex (both saliva and brush) mode.
+        Used for SureSelect samples in vardict protocol.
         """
 
         jobs = []
@@ -257,90 +259,116 @@ class DOvEE_gene(common.Illumina):
                 jobs.append(job)
                 
         return jobs
-    
+
+    def locatit_hybrid_dedup(self):
+        """
+        Deduplicate bam files with locatit in hybrid mode only. Used for low pass copy-number protocol.
+        """
+
+        jobs = []
+
+        for sample in self.samples:
+           alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+           input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+
+           if 'saliva' in sample.name:
+               output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
+        #       covered_bed = config.param('agent_locatit', 'covered_bedv8', param_type='filepath') # is this needed for low-pass samples?
+
+               job = agent.locatit(
+                            input_bam,
+                            output_hybrid,
+                            None,   #covered_bed needed??
+                            "v2Hybrid"
+                            )
+               job.name='agent_locatit.' + sample.name
+               job.samples=[sample]
+               jobs.append(job)
+
+           elif 'brush' in sample.name:
+               output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
+              # covered_bed = config.param('agent_locatit', 'covered_bedv7', param_type='filepath')
+
+               job = agent.locatit(
+                        input_bam,
+                        output_hybrid,
+                        None, #covered_bed needed??
+                        "v2Hybrid"
+                        )
+               job.name='agent_locatit.' + sample.name
+               job.samples=[sample]
+               jobs.append(job)
+                
+        return jobs
 
     def samtools_sort(self):
         """
-        Sort deduplicated bams by coordinate with samtools.
+        Sort deduplicated bams by coordinate and index with samtools.
         """
 
         jobs = []
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            
-            if 'saliva' in sample.name: #temporary solution
-                input_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
-                input_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
-                output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.sorted")
-                output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted")
+            bam_file_prefix = os.path.join(alignment_directory, sample.name + ".dedup.")
+
+            previous_jobs_output_files = set([output_file for job in self.jobs for output_file in job.output_files])
+
+            # Find deduplicated bams from previous locatit step, sort and index
+            candidate_input_files = []
+            if bam_file_prefix + "hybrid.bam" in previous_jobs_output_files:
+                candidate_input_files.append(bam_file_prefix + "hybrid.bam")
+            if bam_file_prefix + "duplex.bam" in previous_jobs_output_files:
+                candidate_input_files.append(bam_file_prefix + "duplex.bam")
+                
+            if len(candidate_input_files) > 1: 
+                input1 = candidate_input_files[0]
+                input2 = candidate_input_files[1]
+                output1 = re.sub(".bam", ".sorted", input1)
+                output2 = re.sub(".bam", ".sorted", input2)
 
                 jobs.append(
                         concat_jobs(
                             [
                                 samtools.sort(
-                                    input_duplex,
-                                    output_duplex
+                                    input1,
+                                    output1
+                                    ),
+                                samtools.index(
+                                    output1 + ".bam"
                                     ),
                                 samtools.sort(
-                                    input_hybrid,
-                                    output_hybrid
+                                    input2,
+                                    output2
+                                    ),
+                                samtools.index(
+                                    output2 + ".bam"
                                     )
                             ],
                             name = "samtools_sort." + sample.name,
                             samples = [sample]
                         )
                     )
-            elif 'brush' in sample.name:
-                input_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
-                output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted")
-
-                job = samtools.sort(
-                        input_duplex,
-                        output_duplex
-                        )
-                job.name = "samtools_sort." + sample.name
-                job.samples = [sample]
-                jobs.append(job)
-
-        return jobs
-
-    def samtools_index(self):
-        """
-        Index deduplicated and sorted bams with samtools.
-        """
-
-        jobs=[]
-
-        for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            if 'saliva' in sample.name:
-                input_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
-                input_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.sorted.bam")
+            elif len(candidate_input_files) == 1: 
+                input_dedup = candidate_input_files[0] 
+                output_dedup = re.sub(".bam", ".sorted", input_dedup)
 
                 jobs.append(
                         concat_jobs(
                             [
-                                samtools.index(
-                                    input_duplex
+                                samtools.sort(
+                                    input_dedup,
+                                    output_dedup
                                     ),
                                 samtools.index(
-                                    input_hybrid
-                                    )
-                            ],
-                            name = "samtools_index." + sample.name,
+                                    output_dedup + ".bam"
+                                    ) 
+                            ], name = "samtools_sort." + sample.name,
                             samples = [sample]
                             )
                         )
-            elif 'brush' in sample.name:
-                input_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
-
-                job = samtools.index(
-                            input_duplex
-                        )
-                job.name = "samtools_index." + sample.name
-                job.samples = [sample]
-                jobs.append(job)
+            else:
+                _raise(SanitycheckError("Error: no deduplicated bams found for \"" + sample.name + "\"!"))
 
         return jobs
 
@@ -354,7 +382,7 @@ class DOvEE_gene(common.Illumina):
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             variants_directory = os.path.join(self.output_dirs['variants_directory'], sample.name)
-            input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam") # which bam should be used here? For saliva two bams exist
+            input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
             output = os.path.join(variants_directory, sample.name + ".out.vcf") # temp name
 
             if 'brush' in sample.name:
@@ -412,7 +440,6 @@ class DOvEE_gene(common.Illumina):
         Counting number of reads in non-overlapping windows of fixed width directly from BAM files with HMM Copy Utils readCounter:
         https://github.com/shahcompbio/hmmcopy_utils
         """
-        # Which bam file is used as input here? Need to clarify, whether duplex or hybrid dedup, etc.
         # Run on both saliva and brush, as both wigs needed as input for IchorCNA
 
         jobs = []
@@ -420,7 +447,7 @@ class DOvEE_gene(common.Illumina):
         for sample in self.samples: # or iterate over sample_pair/tumor_pair name?
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             wig_directory = os.path.join(self.output_dirs['wig_directory'], sample.name) 
-            input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam") # how should bam be generated here? For locatit, two dedup options exist. Sorting needed?
+            input_bam = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.sorted.bam") 
             output = os.path.join(wig_directory, sample.name + ".out.wig") # temp name
 
             jobs.append(
@@ -481,16 +508,14 @@ class DOvEE_gene(common.Illumina):
                     self.samtools_merge,
                     self.locatit_dedup_bam,
                     self.samtools_sort,
-                    self.samtools_index,
                     self.vardict_single,
                 ],
                 [
                     self.trimmer, # same trimming, mapping, dedup steps for copy number protocol? 
                     self.bwa_mem_samtools_sort,
                     self.samtools_merge,
-                    self.locatit_dedup_bam,
+                    self.locatit_hybrid_dedup,
                     self.samtools_sort,
-                    self.samtools_index,
                     self.hmm_readCounter,
                     self.run_ichorCNA
                  ]
