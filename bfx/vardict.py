@@ -84,7 +84,7 @@ def single_java(input_bam, sample_name, output=None, nosv=False, freq=None, regi
             [output],
             [
             ['vardict_single', 'module_java'],
-            #['vardict_single', 'module_vardict_java'],
+            ['vardict_single', 'module_vardict_java'],
             ['vardict_single', 'module_perl'],
             ['vardict_single', 'module_R']
             ],
