@@ -37,7 +37,9 @@ proc ModulesHelp { } {
        puts stderr \"\tMUGQIC - $SOFTWARE \"
 }
 module-whatis \"$SOFTWARE\"
-                      
+
+prereq-any mugqic/R_Bioconductor/4.0.3_3.12 mugqic/R_Bioconductor/4.1.0_3.13 mugqic/R_Bioconductor/4.2.1_3.15 mugqic/R_Bioconductor/4.2.2_3.16
+
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
 prepend-path    R_LIBS              \$root
 setenv          ICHORCNA_HOME       \$root/scripts
