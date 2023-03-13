@@ -16,8 +16,8 @@ def run_ichorCNA(
             [input_tumor, input_normal],
             [output_dir],
             [
-                ['run_ichorCNA', 'module_ichorCNA'],
-                ['run_ichorCNA', 'module_R']
+                ['run_ichorCNA', 'module_R'],
+                ['run_ichorCNA', 'module_ichorCNA']
             ],
 
             command="""\
@@ -36,7 +36,7 @@ Rscript $ICHORCNA_HOME/runIchorCNA.R {other_ichorCNA_options} \\
     --chrTrain {chr_train} \\
     --estimateNormal {estimateNormal} \\
     --estimatePloidy {estimatePloidy} \\
-    --estimatePrevalence {estimatePrevalence} \\
+    --estimateScPrevalence {estimateScPrevalence} \\
     --scStates {scStates} \\
     --txnE {txnE} \\
     --txnStrength {txnStrength} \\
@@ -56,7 +56,7 @@ Rscript $ICHORCNA_HOME/runIchorCNA.R {other_ichorCNA_options} \\
         chr_train=config.param('run_ichorCNA', 'chr_train'),
         estimateNormal=config.param('run_ichorCNA', 'estimateNormal'),
         estimatePloidy=config.param('run_ichorCNA', 'estimatePloidy'),
-        estimatePrevalence=config.param('run_ichorCNA', 'estimatePrevalence'),
+        estimateScPrevalence=config.param('run_ichorCNA', 'estimateScPrevalence'),
         scStates=config.param('run_ichorCNA', 'scStates'),
         txnE=config.param('run_ichorCNA', 'txnE'),
         txnStrength=config.param('run_ichorCNA', 'txnStrength'),
