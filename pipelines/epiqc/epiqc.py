@@ -373,10 +373,7 @@ class EpiQC(common.Illumina):
         job_create_simlinks = Job(
             output_files=converted_simlinks,
             command="""\
-    if [ "$(ls -A {output_dir}/{user_converteddir})" ]; then
-    rm {output_dir}/{user_converteddir}/*
-    fi &&
-    ln -s {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
+ln -s -f {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
                 output_dir=self.output_dirs['chromimpute_output_directory'],
                 user_converteddir=os.path.basename(self.output_dirs['chromimpute_converted_directory']),
                 ihec_converteddir=config.param('chromimpute', 'IHEC_data')
