@@ -83,9 +83,9 @@ class DOvEE_gene(common.Illumina):
             # Trimmer does not create STATS file if one already exists. Remove any existing STATS file.
             job_rm = Job(
                     command="""\
-                if [ -f {STATS} ]; then
-                rm {STATS}
-                fi""".format(
+    if [ -f {STATS} ]; then
+        rm {STATS}
+    fi""".format(
                     STATS=trim_file_prefix + "_STATS.properties"
                     )
                 )
@@ -99,8 +99,8 @@ class DOvEE_gene(common.Illumina):
             jobs.append(
                     concat_jobs(
                         [
-                            job_rm,
                             bash.mkdir(trim_directory),
+                            job_rm,
                             job,
                             bash.ln(os.path.relpath(trim_file_prefix + "_R1.fastq.gz", os.path.dirname(trim_file_prefix + ".pair1.fastq.gz")), 
                                 trim_file_prefix + ".pair1.fastq.gz",
