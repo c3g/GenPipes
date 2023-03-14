@@ -28,6 +28,7 @@ from bfx import hmm
 from bfx import ichorCNA
 from bfx import fastp
 from bfx import mosdepth
+from bfx import picard2
 
 from bfx import bash_cmd as bash
 from core.config import config
@@ -458,6 +459,62 @@ class DOvEE_gene(common.Illumina):
                     )
         return jobs
 
+    def picard_metrics(self):
+        """
+        Collect on and off target metrics for SureSelect samples with Picard.
+        """
+        jobs = []
+
+        picard_directory = os.path.join(self.output_dirs['metrics_directory'], "picard")
+
+        targetv7 = config.param('vardict_single', 'target_filev7', param_type='filepath')  #target bed file 
+        targetv8 = config.param('vardict_single', 'target_filev8', param_type='filepath')  #target bed file
+
+        outputv7 = os.path.join(picard_directory, "targetv7.interval_list")
+        outputv8 = os.path.join(picard_directory, "targetv8.interval_list")
+
+        jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(picard_directory),
+                        picard2.bed2interval_list(
+                            None,
+                            targetv7,
+                            outputv7
+                            ),
+                        picard2.bed2interval_list(
+                            None,
+                            targetv8,
+                            outputv8
+                            )
+                        ],
+                    name = "picard.bed2interval_list"
+                    )
+                )
+
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
+
+            output = os.path.join(picard_directory, sample.name + ".picard_HS_metrics.txt")
+
+            if 'brush' in sample.name:
+                intervals = outputv7
+
+            elif 'saliva' in sample.name:
+                intervals = outputv8
+
+            job = picard2.calculate_hs_metrics(
+                    input_bam,
+                    output,
+                    intervals
+                    )
+            job.name = "picard_calculate_hs_metrics." + sample.name
+            job.samples = [sample]
+            jobs.append(job)
+
+        return jobs
+
     def vardict_single(self):
         """
         Variant calling with vardict.
@@ -596,6 +653,7 @@ class DOvEE_gene(common.Illumina):
                     self.locatit_dedup_bam,
                     self.samtools_sort,
                     self.mosdepth,
+                    self.picard_metrics,
                     self.vardict_single,
                 ],
                 [
