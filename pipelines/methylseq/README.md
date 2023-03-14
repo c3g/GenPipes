@@ -44,7 +44,7 @@ usage: methylseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                     [--genpipes_file GENPIPES_FILE] [-d DESIGN]
                     [-t {bismark,hybrid,dragen}] [-r READSETS] [-v]
 
-Version: 4.4.0
+Version: 4.4.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 

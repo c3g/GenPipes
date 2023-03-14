@@ -3,7 +3,7 @@
 set -eu -o pipefail
 
 SOFTWARE=mosdepth
-VERSION=0.2.4
+VERSION=0.3.3
 ARCHIVE=${SOFTWARE}-${VERSION}
 ARCHIVE_URL=https://github.com/brentp/${SOFTWARE}/releases/download/v${VERSION}/$SOFTWARE
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}

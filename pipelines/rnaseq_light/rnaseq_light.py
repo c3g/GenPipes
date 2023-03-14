@@ -126,6 +126,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
             jobs.append(
                 concat_jobs(
                     [
+                        bash.mkdir(output_dir),
                         kallisto.quant(
                             input_fastqs,
                             output_dir,
