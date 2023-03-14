@@ -26,6 +26,8 @@ from bfx import samtools
 from bfx import vardict
 from bfx import hmm
 from bfx import ichorCNA
+from bfx import fastp
+from bfx import mosdepth
 
 from bfx import bash_cmd as bash
 from core.config import config
@@ -112,6 +114,33 @@ class DOvEE_gene(common.Illumina):
                         samples = [readset.sample]
                         )
                  )
+        return jobs
+    
+    def fastp(self):
+        """
+        Generate basic QC metrics for trimmed reads.
+        """
+        jobs = []
+
+        for readset in self.readsets:
+            trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.")
+            trim1 = trim_file_prefix + "pair1.fastq.gz"
+            trim2 = trim_file_prefix + "pair2.fastq.gz"
+
+            output_json_path = os.path.join(os.path.dirname(trim1), readset.name + ".trim.fastp.json")
+            output_html_path = os.path.join(os.path.dirname(trim1), readset.name + ".trim.fastp.html")
+
+            job = fastp.basic_qc(
+                    trim1,
+                    trim2,
+                    output_json_path,
+                    output_html_path
+                    )
+            job.name = "fastp." + readset.name
+            samples = [readset.sample]
+
+            jobs.append(job)
+
         return jobs
 
     def bwa_mem_samtools_sort(self):
@@ -387,6 +416,48 @@ class DOvEE_gene(common.Illumina):
 
         return jobs
 
+    def mosdepth(self):
+        """
+        Calculate depth stats for captured regions with mosdepth.
+        """
+
+        jobs = []
+
+        dovee_protocol = self.args.type
+
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            output_prefix = os.path.join(self.output_dirs['metrics_directory'], "mosdepth", sample.name)
+
+            if dovee_protocol == "vardict":
+                input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
+
+                if 'brush' in sample.name:
+                    region=config.param('vardict_single', 'target_filev7', param_type='filepath')
+                elif 'saliva' in sample.name:
+                    region=config.param('vardict_single', 'target_filev8', param_type='filepath')
+
+            elif dovee_protocol == "copy-number":
+                input_bam = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.sorted.bam")
+                region="10000" # window size
+
+            jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(os.path.join(self.output_dirs['metrics_directory'], "mosdepth")),
+                            mosdepth.mosdepth(
+                                input_bam,
+                                output_prefix,
+                                True,
+                                region
+                                )
+                            ],
+                        name = "mosdepth." + sample.name,
+                        samples = [sample]
+                        )
+                    )
+        return jobs
+
     def vardict_single(self):
         """
         Variant calling with vardict.
@@ -519,18 +590,22 @@ class DOvEE_gene(common.Illumina):
         return [
                 [
                     self.trimmer,
+                    self.fastp,
                     self.bwa_mem_samtools_sort,
                     self.samtools_merge,
                     self.locatit_dedup_bam,
                     self.samtools_sort,
+                    self.mosdepth,
                     self.vardict_single,
                 ],
                 [
-                    self.trimmer, # same trimming, mapping, dedup steps for copy number protocol? 
+                    self.trimmer, 
+                    self.fastp, # same trimming, mapping, dedup steps for copy number protocol? 
                     self.bwa_mem_samtools_sort,
                     self.samtools_merge,
                     self.locatit_hybrid_dedup,
                     self.samtools_sort,
+                    self.mosdepth,
                     self.hmm_readCounter,
                     self.run_ichorCNA
                  ]
