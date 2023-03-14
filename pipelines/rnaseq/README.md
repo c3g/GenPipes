@@ -17,7 +17,7 @@ usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [-t {stringtie,variants,cancer}] [-d DESIGN] [-b BATCH]
                  [-r READSETS] [-v]
 
-Version: 4.4.0
+Version: 4.4.1
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
