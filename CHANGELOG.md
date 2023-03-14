@@ -1,6 +1,21 @@
-37 tags, 9830 commits
+38 tags, 9840 commits
 
-HEAD        Thu Mar 9 17:22:56 2023 +0000        0 commits
+HEAD        Tue Mar 14 17:48:02 2023 +0000        0 commits
+
+4.4.1        Tue Mar 14 17:52:02 2023 +0000        10 commits
+
+  ehenrion <edouard.henrion@mcgill.ca>      10 commits
+
+       0d2e78fc2 Merged in release_4.4.1 (pull request #411)
+       412c2e3d6 GenPipes - in prep for bug-fix release 4.4.1
+       c27edf154 Resources - update mosdepth version to 0.3.3 in install script
+       6a5222f2d EpiQC - correcting chromimpute_preprocess command : do not use "rm" and force symlink creation with the "-f" flag
+       087fd9b3f Resources - adding / updating install scripts
+       252b6ee50 RNASeq Light - Added mkdir to the kalliso command
+       07f45a23f Resources - adding 'gget' install script and updating others
+       ed8e359e6 Version bump to 4.4.1-beta
+       20c470b78 Merged in release_4.4.0 (pull request #410)
+       8cabdc1c6 Version bump to 4.4.0
 
 4.4.0        Thu Mar 9 18:24:15 2023 +0000        156 commits
 
