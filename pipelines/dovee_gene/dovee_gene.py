@@ -652,6 +652,28 @@ class DOvEE_gene(common.Illumina):
 
         return jobs
 
+    def multiqc(self):
+        """
+        Aggregate results from bioinformatics analyses across many samples into a single report
+        MultiQC searches a given directory for analysis logs and compiles a HTML report. It's a general use tool,
+        perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
+        """
+
+        jobs = []
+
+        metrics_directory = self.output_dirs['metrics_directory']
+        for sample in self.samples():
+            output = os.path.join(metrics_directory, sample.name + ".multiqc")
+            job = multiqc.run(
+                    self.multiqc_inputs[sample.name],
+                    output
+                    )
+            job.name = "multiqc." + sample.name
+            samples = [sample]
+            jobs.append(job)
+
+        return jobs
+
     @property
     def steps(self): # what kind of metrics and reports to add?
         return [
