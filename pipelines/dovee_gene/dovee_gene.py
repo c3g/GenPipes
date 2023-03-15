@@ -353,50 +353,63 @@ class DOvEE_gene(common.Illumina):
 
         jobs = []
 
+        dovee_protocol = self.args.type
+
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             bam_file_prefix = os.path.join(alignment_directory, sample.name + ".dedup.")
 
-            previous_jobs_output_files = set([output_file for job in self.jobs for output_file in job.output_files])
+            if dovee_protocol == "vardict":
+                if 'brush' in sample.name:
+                    input_dedup = bam_file_prefix + "duplex.bam" 
+                    output_dedup = bam_file_prefix + "duplex.sorted"
+    
+                    jobs.append(
+                            concat_jobs(
+                                [
+                                    samtools.sort(
+                                        input_dedup,
+                                        output_dedup
+                                        ),
+                                    samtools.index(
+                                        output_dedup + ".bam"
+                                        ) 
+                                ], name = "samtools_sort." + sample.name,
+                                samples = [sample]
+                                )
+                            )
 
-            # Find deduplicated bams from previous locatit step, sort and index
-            candidate_input_files = []
-            if bam_file_prefix + "hybrid.bam" in previous_jobs_output_files:
-                candidate_input_files.append(bam_file_prefix + "hybrid.bam")
-            if bam_file_prefix + "duplex.bam" in previous_jobs_output_files:
-                candidate_input_files.append(bam_file_prefix + "duplex.bam")
-                
-            if len(candidate_input_files) > 1: 
-                input1 = candidate_input_files[0]
-                input2 = candidate_input_files[1]
-                output1 = re.sub(".bam", ".sorted", input1)
-                output2 = re.sub(".bam", ".sorted", input2)
+                elif 'saliva' in sample.name:
+                    input_duplex = bam_file_prefix + "duplex.bam"
+                    input_hybrid = bam_file_prefix + "hybrid.bam"
+                    output_duplex = bam_file_prefix + "duplex.sorted"
+                    output_hybrid = bam_file_prefix + "hybrid.sorted"
 
-                jobs.append(
-                        concat_jobs(
-                            [
-                                samtools.sort(
-                                    input1,
-                                    output1
-                                    ),
-                                samtools.index(
-                                    output1 + ".bam"
-                                    ),
-                                samtools.sort(
-                                    input2,
-                                    output2
-                                    ),
-                                samtools.index(
-                                    output2 + ".bam"
-                                    )
-                            ],
-                            name = "samtools_sort." + sample.name,
-                            samples = [sample]
-                        )
-                    )
-            elif len(candidate_input_files) == 1: 
-                input_dedup = candidate_input_files[0] 
-                output_dedup = re.sub(".bam", ".sorted", input_dedup)
+                    jobs.append(
+                            concat_jobs(
+                                [
+                                    samtools.sort(
+                                        input_duplex,
+                                        output_duplex
+                                        ),
+                                    samtools.index(
+                                        output_duplex + ".bam"
+                                        ),
+                                    samtools.sort(
+                                        input_hybrid,
+                                        output_hybrid
+                                        ),
+                                    samtools.index(
+                                        output_hybrid + ".bam"
+                                        )
+                                ], name = "samtools_sort." + sample.name,
+                                samples = [sample]
+                                )
+                            )
+
+            elif dovee_protocol == "copy-number":
+                input_dedup = bam_file_prefix + "hybrid.bam" 
+                output_dedup = bam_file_prefix + "hybrid.sorted"
 
                 jobs.append(
                         concat_jobs(
@@ -412,10 +425,7 @@ class DOvEE_gene(common.Illumina):
                             samples = [sample]
                             )
                         )
-            else:
-                _raise(SanitycheckError("Error: no deduplicated bams found for \"" + sample.name + "\"!"))
-
-        return jobs
+            return jobs
 
     def mosdepth(self):
         """
