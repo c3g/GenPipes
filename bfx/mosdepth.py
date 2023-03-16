@@ -9,7 +9,8 @@ from core.job import Job
 def mosdepth(input, output_prefix, per_base=False, regions=None):
     outputs = [
             output_prefix + ".mosdepth.global.dist.txt",
-            output_prefix + ".mosdepth.summary.txt"
+            output_prefix + ".mosdepth.summary.txt",
+            output_prefix + ".mosdepth.region.dist.txt"
             ]
     return Job(
             [input],
