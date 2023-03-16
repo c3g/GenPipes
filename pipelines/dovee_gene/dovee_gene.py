@@ -29,10 +29,12 @@ from bfx import ichorCNA
 from bfx import fastp
 from bfx import mosdepth
 from bfx import picard2
+from bfx import multiqc
 
 from bfx import bash_cmd as bash
 from core.config import config
 from core.sample_dovee_pairs import parse_dovee_pair_file # using modified tumor pair system for ichorCNA step for now
+from core.dovee_design import parse_dovee_design_file # using modified design.py to distinguish brush from saliva in vardict protocol
 
 log = logging.getLogger(__name__)
 
@@ -43,6 +45,7 @@ class DOvEE_gene(common.Illumina):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments?
+        self.argparser.add_argument("-d", "--design", help="File indicating whether sample is saliva or brush", type=argparse.FileType('r')) # only needed for vardict protocol
         self.argparser.add_argument("-p", "--pairs", help="File with sample pairing information", type=argparse.FileType('r')) # only needed for copy number protocol ichorCNA step
         self.argparser.add_argument("-t", "--type", help="Type of pipeline (default vardict)", choices=["vardict", "copy-number"], default="vardict") # FINAL NAMES TBD
         super(DOvEE_gene, self).__init__(protocol)
@@ -69,6 +72,15 @@ class DOvEE_gene(common.Illumina):
                     self.samples,
                     )
         return self._dovee_pairs
+
+    @property
+    def contrasts(self):
+        if not hasattr(self, "_contrasts"):
+            if self.args.design:
+                self._contrasts = parse_dovee_design_file(self.args.design.name, self.samples)
+            else:
+                self.argparser.error("argument -d/--design is required for contrast")
+        return self._contrasts
 
     def trimmer(self):
         """
@@ -260,36 +272,39 @@ class DOvEE_gene(common.Illumina):
 
         jobs = []
 
+        if self.contrasts:
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+
         for sample in self.samples:
-           alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-           input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
-           if 'saliva' in sample.name:
-               output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
-               output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
-               covered_bed = config.param('agent_locatit', 'covered_bedv8', param_type='filepath')
+            if sample in self.contrasts.salivas:
+                output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
+                output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
+                covered_bed = config.param('agent_locatit', 'covered_bedv8', param_type='filepath')
 
-               jobs.append(
-                       concat_jobs(
-                           [
-                               agent.locatit(
-                                   input_bam,
-                                   output_duplex,
-                                   covered_bed,
-                                   "v2Duplex"
-                                   ),
-                               agent.locatit(
-                                   input_bam,
-                                   output_hybrid,
-                                   covered_bed,
-                                   "v2Hybrid"
-                                   )
+                jobs.append(
+                        concat_jobs(
+                            [
+                                agent.locatit(
+                                    input_bam,
+                                    output_duplex,
+                                    covered_bed,
+                                    "v2Duplex"
+                                    ),
+                                agent.locatit(
+                                    input_bam,
+                                    output_hybrid,
+                                    covered_bed,
+                                    "v2Hybrid"
+                                    )
                             ],
-                           name='agent_locatit.' + sample.name,
-                           samples=[sample]
-                           )
-                       )
-           elif 'brush' in sample.name:
+                            name='agent_locatit.' + sample.name,
+                            samples=[sample]
+                            )
+                        )
+            elif sample in self.contrasts.brushes:
                 output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
                 covered_bed = config.param('agent_locatit', 'covered_bedv7', param_type='filepath')
 
@@ -315,34 +330,17 @@ class DOvEE_gene(common.Illumina):
         for sample in self.samples:
            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-
-           if 'saliva' in sample.name:
-               output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
-        #       covered_bed = config.param('agent_locatit', 'covered_bedv8', param_type='filepath') # is this needed for low-pass samples?
-
-               job = agent.locatit(
-                            input_bam,
-                            output_hybrid,
-                            None,   #covered_bed needed??
-                            "v2Hybrid"
-                            )
-               job.name='agent_locatit.' + sample.name
-               job.samples=[sample]
-               jobs.append(job)
-
-           elif 'brush' in sample.name:
-               output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
-              # covered_bed = config.param('agent_locatit', 'covered_bedv7', param_type='filepath')
-
-               job = agent.locatit(
-                        input_bam,
-                        output_hybrid,
-                        None, #covered_bed needed??
-                        "v2Hybrid"
-                        )
-               job.name='agent_locatit.' + sample.name
-               job.samples=[sample]
-               jobs.append(job)
+           output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
+           
+           job = agent.locatit(
+                   input_bam,
+                   output_hybrid,
+                   None, # covered bed not needed (?)
+                   "v2Hybrid"
+                   )
+           job.name='agent_locatit.' + sample.name
+           job.samples=[sample]
+           jobs.append(job)
                 
         return jobs
 
@@ -355,12 +353,15 @@ class DOvEE_gene(common.Illumina):
 
         dovee_protocol = self.args.type
 
-        for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            bam_file_prefix = os.path.join(alignment_directory, sample.name + ".dedup.")
+        if dovee_protocol == "vardict":
+            if self.contrasts:
+                design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
-            if dovee_protocol == "vardict":
-                if 'brush' in sample.name:
+            for sample in self.samples:
+                alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+                bam_file_prefix = os.path.join(alignment_directory, sample.name + ".dedup.")
+
+                if sample in self.contrasts.brushes:
                     input_dedup = bam_file_prefix + "duplex.bam" 
                     output_dedup = bam_file_prefix + "duplex.sorted"
     
@@ -378,13 +379,13 @@ class DOvEE_gene(common.Illumina):
                                 samples = [sample]
                                 )
                             )
-
-                elif 'saliva' in sample.name:
+    
+                elif sample in self.contrasts.salivas:
                     input_duplex = bam_file_prefix + "duplex.bam"
                     input_hybrid = bam_file_prefix + "hybrid.bam"
                     output_duplex = bam_file_prefix + "duplex.sorted"
                     output_hybrid = bam_file_prefix + "hybrid.sorted"
-
+    
                     jobs.append(
                             concat_jobs(
                                 [
@@ -407,7 +408,10 @@ class DOvEE_gene(common.Illumina):
                                 )
                             )
 
-            elif dovee_protocol == "copy-number":
+        elif dovee_protocol == "copy-number":
+            for sample in self.samples:
+                alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+                bam_file_prefix = os.path.join(alignment_directory, sample.name + ".dedup.")
                 input_dedup = bam_file_prefix + "hybrid.bam" 
                 output_dedup = bam_file_prefix + "hybrid.sorted"
 
@@ -425,7 +429,7 @@ class DOvEE_gene(common.Illumina):
                             samples = [sample]
                             )
                         )
-            return jobs
+        return jobs
 
     def mosdepth(self):
         """
@@ -442,11 +446,12 @@ class DOvEE_gene(common.Illumina):
 
             if dovee_protocol == "vardict":
                 input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
-
-                if 'brush' in sample.name:
-                    region=config.param('vardict_single', 'target_filev7', param_type='filepath')
-                elif 'saliva' in sample.name:
-                    region=config.param('vardict_single', 'target_filev8', param_type='filepath')
+                if self.contrasts:
+                    design_file = os.path.relpath(self.args.design.name, self.output_dir)
+                    if sample in self.contrasts.salivas:
+                        region=config.param('vardict_single', 'target_filev7', param_type='filepath')
+                    elif sample in self.contrasts.brushes:
+                        region=config.param('vardict_single', 'target_filev8', param_type='filepath')
 
             elif dovee_protocol == "copy-number":
                 input_bam = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.sorted.bam")
@@ -502,16 +507,18 @@ class DOvEE_gene(common.Illumina):
                     )
                 )
 
+        if self.contrasts:
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
 
             output = os.path.join(picard_directory, sample.name + ".picard_HS_metrics.txt")
 
-            if 'brush' in sample.name:
+            if sample in self.contrasts.brushes:
                 intervals = outputv7
 
-            elif 'saliva' in sample.name:
+            elif sample in self.contrasts.salivas:
                 intervals = outputv8
 
             job = picard2.calculate_hs_metrics(
@@ -531,19 +538,22 @@ class DOvEE_gene(common.Illumina):
         """
 
         jobs = []
-        
+
+        if self.contrasts:
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             variants_directory = os.path.join(self.output_dirs['variants_directory'], sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
             output = os.path.join(variants_directory, sample.name + ".out.vcf") # temp name
 
-            if 'brush' in sample.name:
+            if sample in self.contrasts.brushes:
                 freq=0.001
                 region=config.param('vardict_single', 'target_filev7', param_type='filepath')  #target bed file
                 nosv=True
 
-            elif 'saliva' in sample.name:
+            elif sample in self.contrasts.salivas:
                 freq=0.1
                 region=config.param('vardict_single', 'target_filev8', param_type='filepath')  #target bed file
                 nosv=False
@@ -661,16 +671,28 @@ class DOvEE_gene(common.Illumina):
 
         jobs = []
 
-        metrics_directory = self.output_dirs['metrics_directory']
-        for sample in self.samples():
-            output = os.path.join(metrics_directory, sample.name + ".multiqc")
-            job = multiqc.run(
-                    self.multiqc_inputs[sample.name],
-                    output
-                    )
-            job.name = "multiqc." + sample.name
-            samples = [sample]
-            jobs.append(job)
+        output = os.path.join(self.output_dirs['metrics_directory'], "multiqc")
+        inputs = []
+
+        for readset in self.readsets:
+           fastp = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.fastp.json")
+           inputs.append(fastp)
+
+        for sample in self.samples:
+            mosdepth = os.path.join(self.output_dirs['metrics_directory'], "mosdepth", sample.name +".mosdepth.region.dist.txt")
+            inputs.append(mosdepth)
+
+        if self.args.type == "vardict":
+            for sample in self.samples:
+                picard = os.path.join(self.output_dirs['metrics_directory'], "picard", sample.name +".picard_HS_metrics.txt")
+                inputs.append(picard)
+
+        job = multiqc.run(
+                inputs,
+                output
+                )
+        job.name = "multiqc"
+        jobs.append(job)
 
         return jobs
 
@@ -687,6 +709,7 @@ class DOvEE_gene(common.Illumina):
                     self.mosdepth,
                     self.picard_metrics,
                     self.vardict_single,
+                    self.multiqc
                 ],
                 [
                     self.trimmer, 
@@ -697,7 +720,8 @@ class DOvEE_gene(common.Illumina):
                     self.samtools_sort,
                     self.mosdepth,
                     self.hmm_readCounter,
-                    self.run_ichorCNA
+                    self.run_ichorCNA,
+                    self.multiqc
                  ]
             ]
 
