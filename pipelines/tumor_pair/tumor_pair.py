@@ -6288,9 +6288,10 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             gridss_directory = os.path.join(pair_directory, "gridss")
-            output_prefix = os.path.join(gridss_directory, tumor_pair.tumor.name)
-            gridss_vcf_output = output_prefix + ".gridss.vcf.gz"
-            gridds_bam_output = output_prefix + ".assembly.bam"
+            normal_output_prefix = os.path.join(gridss_directory, tumor_pair.normal.name)
+            tumor_output_prefix = os.path.join(gridss_directory, tumor_pair.tumor.name)
+            gridss_vcf_output = tumor_output_prefix + ".gridss.vcf.gz"
+            gridds_bam_output = tumor_output_prefix + ".assembly.bam"
 
             jobs.append(
                 concat_jobs(
@@ -6314,8 +6315,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 )
             )
 
-            gripss_vcf_output = output_prefix + ".gripss.somatic.vcf.gz"
-            gripss_filter_vcf_output = output_prefix + ".gripss.filtered.somatic.vcf.gz"
+            gripss_vcf_output = tumor_output_prefix + ".gripss.somatic.vcf.gz"
+            gripss_filter_vcf_output = tumor_output_prefix + ".gripss.filtered.somatic.vcf.gz"
             jobs.append(
                 concat_jobs(
                     [
@@ -6324,8 +6325,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             gripss_vcf_output,
                             gripss_filter_vcf_output,
                             "somatic",
-                            tumor_pair.normal.name,
-                            tumor_pair.tumor.name,
+                            sample=tumor_pair.tumor.name,
+                            reference=tumor_pair.normal.name,
                         )
                     ],
                     name="gripss_filter.somatic." + tumor_pair.name,
@@ -6333,8 +6334,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 )
             )
 
-            gripss_vcf_output = output_prefix + ".gripss.germline.vcf.gz"
-            gripss_filter_vcf_output = output_prefix + ".gripss.filtered.germline.vcf.gz"
+            gripss_vcf_output = normal_output_prefix + ".gripss.germline.vcf.gz"
+            gripss_filter_vcf_output = normal_output_prefix + ".gripss.filtered.germline.vcf.gz"
             jobs.append(
                 concat_jobs(
                     [
@@ -6343,8 +6344,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             gripss_vcf_output,
                             gripss_filter_vcf_output,
                             "germline -germline",
-                            None,
-                            tumor_pair.normal.name
+                            sample=tumor_pair.normal.name,
+                            reference=tumor_pair.tumor.name
                         )
                     ],
                     name="gripss_filter.germline." + tumor_pair.name,
