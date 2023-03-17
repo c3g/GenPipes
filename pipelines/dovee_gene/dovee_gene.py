@@ -1,8 +1,23 @@
 #!/usr/bin/env python
 
-######
-# Copyright etc
-#####
+################################################################################
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
+#
+# This file is part of MUGQIC Pipelines.
+#
+# MUGQIC Pipelines is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# MUGQIC Pipelines is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with MUGQIC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
 
 # Python Standard Modules
 import logging
@@ -32,8 +47,7 @@ from bfx import picard2
 from bfx import multiqc
 
 from bfx import bash_cmd as bash
-from core.config import config
-from core.sample_dovee_pairs import parse_dovee_pair_file # using modified tumor pair system for ichorCNA step for now
+from core.sample_dovee_pairs import parse_dovee_pair_file # using modified tumor pair system to identify paired brush and saliva for ichorCNA step
 from core.dovee_design import parse_dovee_design_file # using modified design.py to distinguish brush from saliva in vardict protocol
 
 log = logging.getLogger(__name__)
@@ -44,10 +58,10 @@ class DOvEE_gene(common.Illumina):
     """
     def __init__(self, protocol=None):
         self._protocol = protocol
-        # Add pipeline specific arguments?
+        # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="File indicating whether sample is saliva or brush", type=argparse.FileType('r')) # only needed for vardict protocol
         self.argparser.add_argument("-p", "--pairs", help="File with sample pairing information", type=argparse.FileType('r')) # only needed for copy number protocol ichorCNA step
-        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default vardict)", choices=["vardict", "copy-number"], default="vardict") # FINAL NAMES TBD
+        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default vardict)", choices=["vardict", "copy-number"], default="vardict") # FINAL NAMES of the two protocols TBD
         super(DOvEE_gene, self).__init__(protocol)
 
     @property
@@ -59,8 +73,8 @@ class DOvEE_gene(common.Illumina):
                 'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
                 'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir),
                 'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir),
-                'wig_directory' : os.path.relpath(os.path.join(self.output_dir, 'wig'), self.output_dir), #temp name
-                'cna_directory' : os.path.relpath(os.path.join(self.output_dir, 'cna'), self.output_dir) #temp name
+                'wig_directory' : os.path.relpath(os.path.join(self.output_dir, 'wig'), self.output_dir),
+                'cna_directory' : os.path.relpath(os.path.join(self.output_dir, 'cna'), self.output_dir)
                 }
         return dirs
 
@@ -84,7 +98,7 @@ class DOvEE_gene(common.Illumina):
 
     def trimmer(self):
         """
-        Read trimming with AGeNT Trimmer.
+        Read trimming with AGeNT Trimmer from Agilent Genomics NextGen tool kit. 
         """
 
         jobs = []
@@ -131,8 +145,9 @@ class DOvEE_gene(common.Illumina):
     
     def fastp(self):
         """
-        Generate basic QC metrics for trimmed reads.
+        Generate basic QC metrics for trimmed reads with fastp.
         """
+
         jobs = []
 
         for readset in self.readsets:
@@ -159,6 +174,7 @@ class DOvEE_gene(common.Illumina):
     def bwa_mem_samtools_sort(self):
         """
         The trimmed reads are aligned to the reference genome with bwa mem, followed by sorting with samtools.
+        The bwa mem output is piped directory into samtools to avoid saving the intermediate file.
         """
 
         jobs = []
@@ -268,6 +284,7 @@ class DOvEE_gene(common.Illumina):
         """
         Deduplicate bam files with AGeNT locatit in hybrid (saliva only) or duplex (both saliva and brush) mode.
         Used for SureSelect samples in vardict protocol.
+        Saliva and brush samples are identified via the design file. 
         """
 
         jobs = []
@@ -318,6 +335,10 @@ class DOvEE_gene(common.Illumina):
                 job.samples=[sample]
                 jobs.append(job)
                 
+            else:
+                _raise(SanitycheckError("Error: sample \"" + sample.name +
+                "\" is not included in the design file! Cannot determine whether \"" + sample.name + "\" is a saliva or brush sample."))
+
         return jobs
 
     def locatit_hybrid_dedup(self):
@@ -407,6 +428,10 @@ class DOvEE_gene(common.Illumina):
                                 samples = [sample]
                                 )
                             )
+
+                else:
+                    _raise(SanitycheckError("Error: sample \"" + sample.name +
+                    "\" is not included in the design file! Cannot determine whether \"" + sample.name + "\" is a saliva or brush sample."))
 
         elif dovee_protocol == "copy-number":
             for sample in self.samples:
@@ -534,7 +559,7 @@ class DOvEE_gene(common.Illumina):
 
     def vardict_single(self):
         """
-        Variant calling with vardict.
+        Variant calling with vardict in single mode.
         """
 
         jobs = []
@@ -546,7 +571,7 @@ class DOvEE_gene(common.Illumina):
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             variants_directory = os.path.join(self.output_dirs['variants_directory'], sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
-            output = os.path.join(variants_directory, sample.name + ".out.vcf") # temp name
+            output = os.path.join(variants_directory, sample.name + ".out.vcf") # name TBC
 
             if sample in self.contrasts.brushes:
                 freq=0.001
@@ -557,6 +582,10 @@ class DOvEE_gene(common.Illumina):
                 freq=0.1
                 region=config.param('vardict_single', 'target_filev8', param_type='filepath')  #target bed file
                 nosv=False
+
+            else:
+                _raise(SanitycheckError("Error: sample \"" + sample.name +
+                "\" is not included in the design file! Cannot determine whether \"" + sample.name + "\" is a saliva or brush sample."))
 
             vardict_job = vardict.single_java(
                     input_bam,
@@ -602,16 +631,16 @@ class DOvEE_gene(common.Illumina):
         """
         Counting number of reads in non-overlapping windows of fixed width directly from BAM files with HMM Copy Utils readCounter:
         https://github.com/shahcompbio/hmmcopy_utils
+        Run on both saliva and brush, as both wigs needed as input for IchorCNA.
         """
-        # Run on both saliva and brush, as both wigs needed as input for IchorCNA
 
         jobs = []
 
-        for sample in self.samples: # or iterate over sample_pair/dovee_pair name?
+        for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             wig_directory = os.path.join(self.output_dirs['wig_directory'], sample.name) 
             input_bam = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.sorted.bam") 
-            output = os.path.join(wig_directory, sample.name + ".out.wig") # temp name
+            output = os.path.join(wig_directory, sample.name + ".out.wig")
 
             jobs.append(
                     concat_jobs(
@@ -633,15 +662,15 @@ class DOvEE_gene(common.Illumina):
         """
         https://github.com/broadinstitute/ichorCNA
         'Hidden Markov model (HMM) to analyze Ultra-low pass whole genome sequencing (ULP-WGS) data.'
+        Run once per patient using paired saliva and brush sample wigs, requires knowing which saliva and brush came from same patient.
         """
-        # Run once per patient using paired saliva and brush sample wigs, requires knowing which saliva and brush came from same patient.
 
         jobs = []
         
         for sample_pair in self.dovee_pairs.values(): # or another id that allows us to pair brush and saliva, using modified tumor pair system for now
             wig_directory = self.output_dirs['wig_directory']
-            input_brush = os.path.join(wig_directory, sample_pair.brush.name, sample_pair.brush.name + ".out.wig") # temp name 
-            input_saliva = os.path.join(wig_directory, sample_pair.saliva.name, sample_pair.saliva.name + ".out.wig") # temp name 
+            input_brush = os.path.join(wig_directory, sample_pair.brush.name, sample_pair.brush.name + ".out.wig")
+            input_saliva = os.path.join(wig_directory, sample_pair.saliva.name, sample_pair.saliva.name + ".out.wig")
             output_dir = os.path.join(self.output_dirs['cna_directory'], sample_pair.name)
 
             jobs.append(
@@ -697,7 +726,7 @@ class DOvEE_gene(common.Illumina):
         return jobs
 
     @property
-    def steps(self): # what kind of metrics and reports to add?
+    def steps(self): # Are additional metrics or reports requested?
         return [
                 [
                     self.trimmer,
@@ -713,7 +742,7 @@ class DOvEE_gene(common.Illumina):
                 ],
                 [
                     self.trimmer, 
-                    self.fastp, # same trimming, mapping, dedup steps for copy number protocol? 
+                    self.fastp, 
                     self.bwa_mem_samtools_sort,
                     self.samtools_merge,
                     self.locatit_hybrid_dedup,
