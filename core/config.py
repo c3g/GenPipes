@@ -135,22 +135,27 @@ class Config(configparser.SafeConfigParser):
                     return self.getboolean(section, option)
                 elif param_type == 'filepath':
                     value = os.path.expandvars(self.get(section, option))
+                    if not value and not required:
+                        return None
                     if os.path.isfile(value):
                         return value
                     else:
-                        _raise(SanitycheckError("File path \"" + value + "\" does not exist or is not a valid regular file!"))
+                        log.debug(required)
+                        _raise(SanitycheckError(f"File path \"{value}\" provided in section [{section}] for option {option} does not exist or is not a valid regular file!"))
                 elif param_type == 'dirpath':
                     value = os.path.expandvars(self.get(section, option))
+                    if not value and not required:
+                        return None
                     if os.path.isdir(value):
                         return value
                     else:
-                        _raise(SanitycheckError("Directory path \"" + value + "\" does not exist or is not a valid directory!"))
+                        _raise(SanitycheckError(f"Directory path \"{value}\" provided in section [{section}] for option {option} does not exist or is not a valid directory!"))
                 elif param_type == 'prefixpath':
                     value = os.path.expandvars(self.get(section, option))
                     if glob.glob(value + "*"):
                         return value
                     else:
-                        _raise(SanitycheckError("Prefix path \"" + value + "\" does not match any file!"))
+                        _raise(SanitycheckError(f"Prefix path \"{value}\" provided in section [{section}] for option {option} does not match any file!"))
                 elif param_type == 'list':
                     # Remove empty strings from list
                     return [x for x in self.get(section, option).split(",") if x]
