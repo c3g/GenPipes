@@ -704,8 +704,8 @@ class DOvEE_gene(common.Illumina):
         inputs = []
 
         for readset in self.readsets:
-           fastp = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.fastp.json")
-           inputs.append(fastp)
+            fastp = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.fastp.json")
+            inputs.append(fastp)
 
         for sample in self.samples:
             mosdepth = os.path.join(self.output_dirs['metrics_directory'], "mosdepth", sample.name +".mosdepth.region.dist.txt")

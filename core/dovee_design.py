@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -65,7 +65,7 @@ def parse_dovee_design_file(design_file, samples):
     design_csv = csv.DictReader(open(design_file, 'r'), delimiter='\t')
 
     # Skip first column which is Sample
-    contrasts = Contrast(design_csv.fieldnames[1]) #design_csv.fieldnames[1]
+    contrasts = Contrast(design_csv.fieldnames[1]) 
 
     for line in design_csv:
 
@@ -78,7 +78,6 @@ def parse_dovee_design_file(design_file, samples):
         else:
             _raise(SanitycheckError("Error: sample " + sample_name + " in design file " + design_file + " not found in pipeline samples!"))
 
-  #      for contrast in contrasts:
         sample_contrast_type = line['Source']
             # Empty or '0' types are ignored
         if not sample_contrast_type or sample_contrast_type == "0":
@@ -90,8 +89,6 @@ def parse_dovee_design_file(design_file, samples):
         else:
             _raise(SanitycheckError("Error: invalid value for sample " + sample_name + " and contrast " + contrasts_name + " in design file " + design_file + " (should be 'saliva' for saliva, 'brush' for brush, '0' or '' to be ignored)!"))
 
- #   for contrast in contrasts:
     log.info("Contrast " + contrasts.name + " (salivas: " + str(len(contrasts.salivas)) + ", brushes: " + str(len(contrasts.brushes)) + ") created")
-#    log.info(str(len(contrasts)) + " contrast" + ("s" if len(contrasts) > 1 else "") + " parsed\n")
 
     return contrasts
