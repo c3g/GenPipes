@@ -2165,7 +2165,7 @@ pandoc --to=markdown \\
         input_gtfs = [os.path.join(self.output_dirs["stringtie_directory"], sample.name, "transcripts.gtf") for sample in self.samples]
         gtf = config.param('stringtie','gtf', param_type='filepath')
 
-        if os.path.exists(os.path.join(self.output_dirs["stringtie_directory"], "stringtieAbundDone")) and not self.force_jobs:
+        if os.path.exists(os.path.join(self.output_dir, self.output_dirs["stringtie_directory"], "stringtieAbundDone")) and not self.force_jobs:
             log.info(f"Stringtie Abund done already... Skipping stringtie_merge step...")
 
         else:
