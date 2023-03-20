@@ -27,8 +27,8 @@ def call_TADs(matrix, output_dir, res, minwin, maxwin):
 
     prefix = os.path.splitext(os.path.basename(matrix))[0]
 
-    output_Scores = os.path.join(output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , str(int(res)/1000) ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5.txt")))
-    output_calls = os.path.join(output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , str(int(res)/1000) ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5_threshold0.2.txt")))
+    output_Scores = os.path.join(output_dir, "".join(("BoundaryScores_", prefix, "_binSize" , f'{float(int(res)/1000):g}' ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5.txt")))
+    output_calls = os.path.join(output_dir, "".join(("TADBoundaryCalls_", prefix, "_binSize" , f'{float(int(res)/1000):g}' ,"_minW" + minwin + "_maxW" + maxwin + "_minRatio1.5_threshold0.2.txt")))
 
     return Job(
         [matrix],
