@@ -73,7 +73,7 @@ def unicodeCheck(stringArray):
         except UnicodeDecodeError:
             Pass = False
             error()
-            print("File contains non English characters in line:\n" + str(row) + "at element:\n" + str(s))
+            print("File contains non English characters in line:\n" + str(row))
     return Pass
 
 
@@ -200,7 +200,7 @@ def designStructureCheck(stringArray):
         except ValueError:
             Pass = False
             error()
-            print(str(s) + " is not an integer. Entries in design file matrix should be integers. Please change this and try again!")
+            print("Entries in design file matrix should be integers. Please change this and try again!")
     return Pass
 
 
@@ -265,7 +265,7 @@ def designValidator(designFile):
 designFile = readsetFile = None
 try:
     options,remainder = getopt.getopt(sys.argv[1:],'r:d:h',["readsetFile=","designFile=","help"])
-except getopt.GetoptError, e:
+except getopt.GetoptError as e:
     print("Error - "+str(e)+". See help ('-h' or '--help')")
     sys.exit(2)
 
