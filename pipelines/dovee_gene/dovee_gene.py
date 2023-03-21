@@ -768,6 +768,7 @@ class DOvEE_gene(common.Illumina):
                     self.mosdepth,
                     self.picard_metrics,
                     self.vardict_single,
+                    self.bcftools_stats,
                     self.multiqc
                 ],
                 [
