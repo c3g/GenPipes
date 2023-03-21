@@ -53,7 +53,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GRIPSS_JAR 
   -output_id {output_id} \\
   -output_dir {outdir} \\
   -sample {sample} \\
-  -referecence {reference}""".format(
+  -reference {reference}""".format(
             tmp_dir=config.param('gripss_filter', 'tmp_dir'),
             java_other_options=config.param('gripss_filter', 'java_other_options'),
             ram=config.param('gripss_filter', 'ram'),
