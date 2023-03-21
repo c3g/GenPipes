@@ -6425,14 +6425,16 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             jobs.append(
                 concat_jobs(
                     [
-                           bash.mkdir(linx_output_dir),
-                           linx.plot(
+                        bash.mkdir(linx_output_dir),
+                        linx.plot(
                             tumor_pair.tumor.name,
                             linx_output_dir
-                          )
+                        ),
+                        bash.touch(os.path.join(linx_output_dir, "linx_plot." + tumor_pair.name + ".Done"))
                     ],
                     name="linx_plot." + tumor_pair.name,
-                    samples=[tumor_pair.tumor]
+                    samples=[tumor_pair.tumor],
+                    output_dependency=[os.path.join(linx_output_dir, "linx_plot." + tumor_pair.name + ".Done")]
                 )
             )
         return jobs
