@@ -45,6 +45,7 @@ from bfx import fastp
 from bfx import mosdepth
 from bfx import picard2
 from bfx import multiqc
+from bfx import bcftools
 
 from bfx import bash_cmd as bash
 from core.sample_dovee_pairs import parse_dovee_pair_file # using modified tumor pair system to identify paired brush and saliva for ichorCNA step
@@ -702,6 +703,36 @@ class DOvEE_gene(common.Illumina):
                     )
                 )
 
+        return jobs
+
+    def bcftools_stats(self):
+        """
+        Collect stats number and types of variants in vcf files produced by vardict_single.
+        """
+        
+        jobs = []
+
+        for sample in self.samples:
+            variants_directory = os.path.join(self.output_dirs['variants_directory'], sample.name)
+            input = os.path.join(variants_directory, sample.name + ".out.vcf")
+            output_directory = os.path.join(self.output_dirs['metrics_directory'], "bcftools")
+            output = os.path.join(output_directory, sample.name + ".bcftools.stats")
+            
+            jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(output_directory),
+                            bcftools.stats(
+                                input,
+                                output                                
+                                )                          
+                        ], name = "bcftools_stats." + sample.name,
+                        samples = [sample]
+                    )
+                )
+        
+            self.multiqc_inputs.append(output)
+        
         return jobs
 
     def multiqc(self):

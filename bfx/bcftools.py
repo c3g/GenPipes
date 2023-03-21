@@ -317,3 +317,25 @@ bcftools \\
         output=output
         )
     )
+
+def stats(input, output):
+    """
+    produces text file stats which can be plotted with plot-vcfstats and 
+    parsed by multiqc
+    """
+    return Job(
+            [input],
+            [output],
+            [
+                ['bcftools_stats', 'module_bcftools']
+            ],
+            command="""\
+bcftools stats \\
+    {other_options} \\
+    {input} \\
+    > {output}""".format(
+        other_options=config.param('bcftools_stats', 'other_options', required=False),
+        input=input,
+        output=output
+        )
+    )
