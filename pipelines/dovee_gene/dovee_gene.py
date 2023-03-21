@@ -65,6 +65,16 @@ class DOvEE_gene(common.Illumina):
         super(DOvEE_gene, self).__init__(protocol)
 
     @property
+    def multiqc_inputs(self):
+        if not hasattr(self, "_multiqc_inputs"):
+            self._multiqc_inputs = []
+        return self._multiqc_inputs
+
+    @multiqc_inputs.setter
+    def multiqc_inputs(self, value):
+        self._multiqc_inputs = value
+
+    @property
     def output_dirs(self):
         dirs = {
                 'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
@@ -165,7 +175,8 @@ class DOvEE_gene(common.Illumina):
                     output_html_path
                     )
             job.name = "fastp." + readset.name
-            samples = [readset.sample]
+            job.samples = [readset.sample]
+            self.multiqc_inputs.append(output_json_path)
 
             jobs.append(job)
 
@@ -497,6 +508,7 @@ class DOvEE_gene(common.Illumina):
                         samples = [sample]
                         )
                     )
+            self.multiqc_inputs.append(output_prefix + ".mosdepth.region.dist.txt")
         return jobs
 
     def picard_metrics(self):
@@ -554,6 +566,7 @@ class DOvEE_gene(common.Illumina):
             job.name = "picard_calculate_hs_metrics." + sample.name
             job.samples = [sample]
             jobs.append(job)
+            self.multiqc_inputs.append(output)
 
         return jobs
 
@@ -701,25 +714,11 @@ class DOvEE_gene(common.Illumina):
         jobs = []
 
         output = os.path.join(self.output_dirs['metrics_directory'], "multiqc")
-        inputs = []
-
-        for readset in self.readsets:
-            fastp = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.fastp.json")
-            inputs.append(fastp)
-
-        for sample in self.samples:
-            mosdepth = os.path.join(self.output_dirs['metrics_directory'], "mosdepth", sample.name +".mosdepth.region.dist.txt")
-            inputs.append(mosdepth)
-
-        if self.args.type == "vardict":
-            for sample in self.samples:
-                picard = os.path.join(self.output_dirs['metrics_directory'], "picard", sample.name +".picard_HS_metrics.txt")
-                inputs.append(picard)
 
         job = multiqc.run(
-                inputs,
-                output
-                )
+            self.multiqc_inputs,
+            output
+        )
         job.name = "multiqc"
         jobs.append(job)
 
