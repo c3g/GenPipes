@@ -5233,8 +5233,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                         remove=True
                                     ),
                                     sequenza.bam2seqz(
-                                        inputNormal[0],
-                                        inputTumor[0],
+                                        inputNormal,
+                                        inputTumor,
                                         config.param('sequenza', 'gc_file'),
                                         rawOutput + "seqz." + sequence['name'] + ".gz",
                                         sequence['name']
