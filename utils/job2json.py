@@ -108,7 +108,6 @@ def main():
     #print config_files
     config.parse_files(config_files)
 
-
     for jfile in json_files.split(","):
 
         # finally (unlock) will execute even if exceptions occur
@@ -163,17 +162,29 @@ def main():
             if not step_found :
                 sys.exit("Error : step " + step_name + " was not found in " + " json_file...")
 
-            # Print to file
-            with open(jfile, 'w') as out_json:
-                json.dump(current_json, out_json, indent=4)
-
-            out_json.close()
-
-            # Print a copy of it for the monitoring interface
-            portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
-            if portal_output_dir != '':
-                with open(os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + str(uuid4().hex) + '.json'), 'w') as out_json:
+            # Let's do 5 attempts to write the file (because sometimes we weirly end up with malformed JSON files...)
+            count = 5
+            while count:
+                # Print to file
+                with open(jfile, 'w') as out_json:
                     json.dump(current_json, out_json, indent=4)
+                out_json.close()
+
+                # Test opening the written file
+                try:
+                    with open(jfile, 'r') as json_file:
+                        current_json_hash = json.load(json_file)
+                    if current_json_hash:
+                        # Print a copy of the JSON file for the monitoring interface
+                        portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
+                        if portal_output_dir != '':
+                            shutil.copy(jfile, os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + str(uuid4().hex) + '.json'))
+                        count = 0
+                    else:
+                        count -= 1
+                except json.decoder.JSONDecodeError:
+                    count -= 1
+
         finally:
             # Finally unlock the file
             unlock(jfile)

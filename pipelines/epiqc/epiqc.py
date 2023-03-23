@@ -23,6 +23,7 @@
 import logging
 import os
 import sys
+import shutil
 
 # Append mugqic_pipelines directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
@@ -39,7 +40,6 @@ from bfx import epigeec
 from bfx import epiqc_reports
 from core.readset import parse_illumina_readset_file
 import utils.utils
-from shutil import copyfile
 from bfx import genome
 
 #from pipelines.chipseq import chipseq
@@ -331,7 +331,7 @@ class EpiQC(common.Illumina):
         if os.path.exists(inputinfofile_abs):
             os.remove(inputinfofile_abs)
         #copy inputinfor file from CVMFS
-        copyfile(ihec_inputinfofile, inputinfofile_abs)
+        shutil.copyfile(ihec_inputinfofile, inputinfofile_abs)
 
         #add user histone marks to inputinfo file
         # dynamically extend inputinfor file adding user samples (this is not a job, this step is executed
