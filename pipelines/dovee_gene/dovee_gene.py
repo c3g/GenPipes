@@ -192,7 +192,7 @@ class DOvEE_gene(common.Illumina):
         jobs = []
         for readset in self.readsets:
             trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.")
-            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name)
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name)
             readset_bam = os.path.join(alignment_directory, readset.name + ".sorted")
             
             fastq1 = ""
@@ -262,22 +262,36 @@ class DOvEE_gene(common.Illumina):
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            readset_bams = [os.path.join(alignment_directory, readset.name + ".sorted.bam") for readset in sample.readsets]
+            readset_bams = [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM
             if len(sample.readsets) == 1:
                 readset_bam = readset_bams[0]
+                
+                # remove any existing symlink
+                job_rm = Job(
+                    command="""\
+if [ -L {LINK} ]; then
+    rm {LINK}
+fi""".format(
+                    LINK=sample_bam
+                    )
+                )
 
-                job = bash.ln(
-                       os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
-                       sample_bam,
-                       input=readset_bam
+                jobs.append(
+                        concat_jobs(
+                            [
+                                job_rm,
+                                bash.ln(
+                                    os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
+                                    sample_bam,
+                                    input=readset_bam
+                                    )
+                                ], name = "symlink_readset_sample_bam." + sample.name,
+                            samples = [sample]
+                            )
                         )
-                job.name = "symlink_readset_sample_bam." + sample.name
-                job.samples = [sample]
-
-                jobs.append(job)
 
             # If multiple readsets exist for the sample, merge readset bams into one sample bam
             elif len(sample.readsets) > 1:
