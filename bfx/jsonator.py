@@ -90,10 +90,12 @@ def create(pipeline, sample):
     # Then from the modules, build the list of softwares with names and versions
     softwares = []
     for module in modules:
-        softwares.append({
-            'name' : module.split("/")[-2],
-            'version' : module.split("/")[-1]
-        })
+        softwares.append(
+            {
+                'name' : module.split("/")[-2],
+                'version' : module.split("/")[-1]
+            }
+        )
 
     with open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r') as version_file:
         general_info['pipeline_version'] = re.sub("\n?$", "", version_file.readlines()[0])
@@ -343,13 +345,15 @@ def update_json(
             current_json_hash['pipeline']['step'].append(
                 {
                     'name': step.name,
-                    'job': [{
-                        "name": job.name,
-                        "id": job.id,
-                        "command": re.sub("\\\\\n", "", job.command_with_modules),
-                        "input_file": job.input_files,
-                        "output_file": job.output_files,
-                        "dependency": [dependency_job.id for dependency_job in job.dependency_jobs]
-                    } for job in step.jobs if sample in job.samples]
+                    'job': [
+                        {
+                            "name": job.name,
+                            "id": job.id,
+                            "command": re.sub("\\\\\n", "", job.command_with_modules),
+                            "input_file": job.input_files,
+                            "output_file": job.output_files,
+                            "dependency": [dependency_job.id for dependency_job in job.dependency_jobs]
+                        } for job in step.jobs if sample in job.samples
+                    ]
                 }
             )

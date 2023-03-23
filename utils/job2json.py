@@ -113,7 +113,7 @@ def main():
         # finally (unlock) will execute even if exceptions occur
         try:
 
-            # Make sure the the jfile is unlock if process receive SIGTERM too (not python exception)
+            # Make sure the jfile is unlock if process receive SIGTERM too (not python exception)
             def sigterm_handler(_signo, _stack_frame):
                 unlock(jfile)
                 sys.exit(0)
