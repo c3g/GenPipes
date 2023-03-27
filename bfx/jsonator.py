@@ -232,7 +232,32 @@ def create_json(
                 'step': []
             }
         }
-    else :
+    elif pipeline.__class__.__name__ == "RunProcessing":
+        json_hash = { 
+            'version': jsonator_version,
+            'project': list(set([readset.project for readset in sample.readsets]))[0],
+            'submission_date': "", 
+            # Create a submission time entry and let it empty : will be updated as the bash script is launched
+            'sample_name': sample.name,
+            'readset': [{
+                "name": readset.name,
+                "lane": readset.lane,
+                "library": readset.library,
+                "fastq1": os.path.realpath(readset.fastq1) if readset.fastq1 else "",
+                "fastq2": os.path.realpath(readset.fastq2) if readset.fastq2 else "",
+                "bam": os.path.realpath(readset.bam + ".bam") if readset.bam else ""
+            } for readset in sample.readsets],
+            'pipeline': {
+                'name': pipeline.__class__.__name__,
+                'general_information': general_info,
+                'software': [{
+                    'name': software['name'],
+                    'version': software['version']
+                } for software in softwares],
+                'step': []
+            }   
+        }
+    else:
         json_hash = {
             'version': jsonator_version,
             'project': project_name,
