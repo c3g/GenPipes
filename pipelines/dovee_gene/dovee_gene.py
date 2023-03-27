@@ -500,13 +500,13 @@ fi""".format(
                 if self.contrasts:
                     design_file = os.path.relpath(self.args.design.name, self.output_dir)
                     if sample in self.contrasts.salivas:
-                        region=config.param('vardict_single', 'target_filev7', param_type='filepath')
+                        region=config.param('agent_locatit', 'covered_bedv8', param_type='filepath')
                     elif sample in self.contrasts.brushes:
-                        region=config.param('vardict_single', 'target_filev8', param_type='filepath')
+                        region=config.param('agent_locatit', 'covered_bedv7', param_type='filepath')
 
             elif dovee_protocol == "copy-number":
                 input_bam = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.sorted.bam")
-                region="10000" # window size
+                region="1000" # window size
 
             jobs.append(
                     concat_jobs(
