@@ -4104,7 +4104,7 @@ class RunProcessing(common.MUGQICPipeline):
             index1length = index_lengths[1] if unaligned_i2 else index_lengths[0]
             if index1length:
                 postprocessing_jobs.append(
-                    concat_jobs(
+                    pipe_jobs(
                         [
                             bash.cat(
                                 unaligned_i1,
@@ -4127,7 +4127,7 @@ class RunProcessing(common.MUGQICPipeline):
             index2length = index_lengths[0]
             if index2length:
                 postprocessing_jobs.append(
-                    concat_jobs(
+                    pipe_jobs(
                         [
                             bash.cat(
                                 unaligned_i2,
