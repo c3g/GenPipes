@@ -30,13 +30,7 @@ log = logging.getLogger(__name__)
 
 # Start creating the json dump for the passed sample
 def create(pipeline, sample):
-<<<<<<< HEAD
-    jsonator_version = "1.0.2"
-||||||| parent of 3f649d77a (Run processing - full squash of the branch before massive rebase)
-    jsonator_version = "1.0.1"
-=======
     jsonator_version = "2.0.0"
->>>>>>> 3f649d77a (Run processing - full squash of the branch before massive rebase)
 
     # Retrieve the project name fome the config file, if not specified then use the parent folder name of where the pipeline has been launched
     if config.param("DEFAULT", 'project_name', required=False):
@@ -237,25 +231,6 @@ def create_json(
                 ],
                 'step': []
             }
-<<<<<<< HEAD
-        }
-    else :
-        json_hash = {
-            'version': jsonator_version,
-            'project': project,
-            'submission_date': "",      # Create a submission time entry and let it empty : will be updated as the bash script is launched
-            'sample_name' : sample.name,
-            'readset' : [
-                {
-||||||| parent of 3f649d77a (Run processing - full squash of the branch before massive rebase)
-        else :
-            json_hash = {
-                'version': jsonator_version,
-                'project': project_name,
-                'submission_date': "",      # Create a submission time entry and let it empty : will be updated as the bash script is launched
-                'sample_name' : sample.name,
-                'readset' : [{
-=======
         elif pipeline.__class__.__name__ == "RunProcessing":
             json_hash = { 
                 'version': jsonator_version,
@@ -288,7 +263,6 @@ def create_json(
                 'submission_date': "",      # Create a submission time entry and let it empty : will be updated as the bash script is launched
                 'sample_name' : sample.name,
                 'readset' : [{
->>>>>>> 3f649d77a (Run processing - full squash of the branch before massive rebase)
                     "name" : readset.name,
                     "library" : readset.library,
                     "runType" : readset.run_type,
