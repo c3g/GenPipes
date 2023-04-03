@@ -282,16 +282,17 @@ def sam_to_fastq(input, fastq, second_end_fastq=None):
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SamToFastq.jar \\
- VALIDATION_STRINGENCY=LENIENT \\
- CREATE_MD5_FILE=TRUE \\
- INPUT={input} \\
- FASTQ={fastq}{second_end_fastq}""".format(
-            tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir'),
-            java_other_options=config.param('picard_sam_to_fastq', 'java_other_options'),
-            ram=config.param('picard_sam_to_fastq', 'ram'),
-            input=input,
-            fastq=fastq,
-            second_end_fastq=" \\\n  SECOND_END_FASTQ=" + second_end_fastq if second_end_fastq else ""
+  {other_options} \\
+  CREATE_MD5_FILE=TRUE \\
+  INPUT={input} \\
+  FASTQ={fastq}{second_end_fastq}""".format(
+                tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir'),
+                java_other_options=config.param('picard_sam_to_fastq', 'java_other_options'),
+                ram=config.param('picard_sam_to_fastq', 'ram'),
+                other_options=config.param('picard_sam_to_fastq', 'other_options'),
+                input=input,
+                fastq=fastq,
+                second_end_fastq=" \\\n  SECOND_END_FASTQ=" + second_end_fastq if second_end_fastq else ""
             ),
             removable_files=[fastq, second_end_fastq]
         )
