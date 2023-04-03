@@ -145,7 +145,7 @@ class DOvEE_gene(common.Illumina):
                             bash.ln(os.path.relpath(trim_file_prefix + "_R1.fastq.gz", os.path.dirname(trim_file_prefix + ".pair1.fastq.gz")), 
                                 trim_file_prefix + ".pair1.fastq.gz",
                                 trim_file_prefix + "_R1.fastq.gz"), # trimmer only allows specifying outfile prefix to which it adds _R1/2.fastq.gz
-                            bash.ln(os.path.relpath(trim_file_prefix + "_R1.fastq.gz", os.path.dirname(trim_file_prefix + ".pair1.fastq.gz")), 
+                            bash.ln(os.path.relpath(trim_file_prefix + "_R2.fastq.gz", os.path.dirname(trim_file_prefix + ".pair2.fastq.gz")), 
                                 trim_file_prefix + ".pair2.fastq.gz",
                                 trim_file_prefix + "_R2.fastq.gz")# can either rename here or change following to expect that naming
                         ], name="agent_trimmer." + readset.name,
