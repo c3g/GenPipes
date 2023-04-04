@@ -18,8 +18,8 @@ library(dplyr, warn.conflicts = FALSE) #avoid conflict message for duplicate fun
 
 require(lubridate)
 
-#job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
-job_output_path = "/scratch/matteol/genpipes_test/job_output"
+job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
+#job_output_path = "/scratch/matteol/genpipes_test/job_output"
 #system2("l", stdout = TRUE, stderr = TRUE)
 
 folder_path_to_o_file_list <- function(job_output_path){
@@ -103,8 +103,6 @@ parsed_folder <- function(folder_path_list){
 		  #Create (global) temporary dataframe 
 		  Info_df_temp <<- Info_df
 
-		  #research JobId
-		  #JobId <- research_Element(FileInput_List, "JobId")
 
 		  #research EligibleTime
 		  EligibleTime <- String_to_Date(research_Element(FileInput_List, "EligibleTime"))
@@ -115,8 +113,6 @@ parsed_folder <- function(folder_path_list){
 		  #calculation WaitingTime
 		  WaitingTime <- as.character(difftime(StartTime, EligibleTime, units = "mins"))
 
-		  #return()
-
 		  #research RunTime
 		  RunTime <- research_Element(FileInput_List, "RunTime")
 
@@ -125,6 +121,18 @@ parsed_folder <- function(folder_path_list){
 
 		  #research NumCPUs
 		  NumCPUs <- research_Element(FileInput_List, "NumCPUs")
+
+		  #seff for memory request and
+		  #research JobId
+		  JobId <- research_Element(FileInput_List, "JobId")
+
+		  #seff command give memory efficiency information (and more)
+		  seff_resp <- system2("seff", args = JobId, stdout = TRUE)
+		  Pos_eli_time <- grep("Memory Efficiency",seff_resp)
+		  return(Pos_eli_time)
+
+		  Memory_Efficiency <- strsplit(x = Pos_eli_time, split = " ")[[1]][3] %>%
+		  						strsplit(split = "%")[[1]][1]
 
 		  #add informations in Info_df_temp
 		  Info_df_temp[nrow(Info_df_temp) + 1,] = list(WaitingTime, RunTime, TimeLimit, NumCPUs) 
@@ -153,11 +161,6 @@ parsed_folder <- function(folder_path_list){
 		time <- as.character(Info_df$WaitingTime[i])
 		min <- strsplit(x = time, split = ":")[[1]][1]
 		sec <- strsplit(x = time, split = ":")[[1]][2]
-		
-
-
-
-
 
 		# transforme minutes into hours and min
 		h <- as.numeric(min) %/% 60
@@ -274,9 +277,6 @@ max_hour <- function(df){
 	# gl pour pull depuis ~/apps/genpipes pour tout à jour
 
 #############
-
-seff_resp <- system2("seff", args = "35439271", stdout = TRUE)
-#print(seff_resp)
 
 #function call with complete list of .o file
 result <- parsed_folder(job_output_path)
