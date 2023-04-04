@@ -6,50 +6,78 @@
 # IN : job_output folder path (str)
 # OUT : folder containing graphs (.pdf) and a table containing all values (.csv)
 #
+#install.packages("datetime", repos ="http://r-forge.r-project.org/R/?group_id=1215")
 
-#install.packages("dplyr")    
 library(dplyr, warn.conflicts = FALSE) #avoid conflict message for duplicate functions
-#library(lubridate)
+
+library(datetime)
 
 # ask for job_output path
 #cat("Job_output path: ");
 #job_output_path <- readLines("stdin",n=1);
 
-#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
-job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output"
+require(lubridate)
 
+job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 			#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
 
-#list all folders path in job_output folder as list
-job_output_list_folder <- (list.dirs(path = job_output_path,
-									recursive = FALSE,
-									full.names = TRUE))
+folder_path_to_o_file_list <- function(job_output_path){
+	#IN : folder path as character
+	#OUT : list containing sub list for each step type containing .o file path
 
-#list containing sub list for each folder
-o_files_list = list() 
+	#list all folders path in job_output folder as list
+	job_output_list_folder <- (list.dirs(path = job_output_path,
+										recursive = FALSE,
+										full.names = TRUE))
 
-#look to every folder and keep .o file path
-for (i in 1:length(job_output_list_folder)) {
-	# open each folder from folder list 
-  folder_path <- job_output_list_folder[i]
-  
-  # find all .o file in each sub folder
-  new_folder <- list(list.files(folder_path,
-                           pattern = "\\.o$",
-                           recursive = TRUE,
-                           full.names = TRUE))
-  
-  # some folder doesn't have any .o file, condition to avoid type error
-  if (length(new_folder) == 0 ){
-    o_files_list[i] <- NULL
-  }else{
-    o_files_list[i] <- new_folder
-  }
+	#folder path list
+	list_path = list()
+
+	for (path in job_output_list_folder){
+
+		list_path <- append(list_path,list.files(path,
+	                           pattern = "\\.o$",
+	                           recursive = TRUE,
+	                           full.names = TRUE))
+	}
+
+	#dataframe containing path and associated type of step
+	df_path <<- data.frame(	path = as.character(),
+								file_step_name = as.character())
+
+	#create a dataframe containing all path as keys and associated name step as values
+	for (path in list_path){
+		file_step_name <- sapply(strsplit(x = path, split = "/"), tail, 1) %>% 	#element after last "/"
+							strsplit(split = "\\.") %>%							#element before first "."
+								sapply(head,1)
+
+		#add new line with informations in dataframe
+		df_path[nrow(df_path) + 1,] = list(path, file_step_name)
+	}
+
+	#list of steps
+	unique_step_name <- unique(df_path$file_step_name)
+
+	#list containing sub list for each folder
+	o_files_list = list()
+
+	#for each step, a list is created and add to a global list
+	for (step in unique_step_name){
+
+		#new list containing all path 
+		new_list <- list(df_path$path[which(df_path$file_step_name == step)])
+
+		o_files_list <- append(o_files_list,new_list)
+
+	}
+	return (o_files_list)
 }
 
-
-parsed_folder <- function(file_path_list){
+parsed_folder <- function(folder_path_list){
 	#IN : list of .o file path
 	#OUT : dataset containing wanted information from these files
+
+	#récup path list
+	file_path_list <- folder_path_to_o_file_list(folder_path_list)
 
 	#creating df for parsed informations
 	Info_df <<- data.frame(#JobId = as.integer(),
@@ -85,7 +113,9 @@ parsed_folder <- function(file_path_list){
 		  StartTime <- String_to_Date(research_Element(FileInput_List, "StartTime"))
 
 		  #calculation WaitingTime
-		  WaitingTime <- (difftime(StartTime, EligibleTime, units = "mins"))
+		  WaitingTime <- as.character(difftime(StartTime, EligibleTime, units = "mins"))
+
+		  #return()
 
 		  #research RunTime
 		  RunTime <- research_Element(FileInput_List, "RunTime")
@@ -156,13 +186,14 @@ parsed_folder <- function(file_path_list){
 	}
 
 	#return complete dataframe
-	return (Info_df)
+	return (Info_df)	
 }
 
 add_0_time <- function(number){
-		if (length(number) == 1){
+		if (floor(log10(number)) == 0){
 			number <- paste(c(0,number), collapse="")
 		}
+
 		return(number)
 }
 
@@ -171,9 +202,9 @@ research_Element <- function(Input_file, Researched_element){
 	#OUT : wanted value associated with researched_element given (character)
 	out <- tryCatch(
 		{
-			#research element StartTime
+			#research element 
 			Pos_eli_time <- grep(Researched_element,Input_file)
-			Pos1 <- as.integer(strsplit(x = as.character(Pos_eli_time), split = " ")[[2]]) #position of list containing Start Time
+			Pos1 <- as.integer(strsplit(x = as.character(Pos_eli_time), split = " ")[[2]]) #position of list containing element
 
 			#list containing research element
 			list <- Input_file[Pos1]
@@ -213,14 +244,28 @@ max_hour <- function(df){
 #############
 ### TO DO ###
 
-#memory
+#date.time avec pages internet pour rentrer bon format et permettre lecture automatqiue des valeurs
+	# permet d'avoir element de type date et affichage automatique comme voulu
+
+# valeurs à prendre dans les notes et explication du graph à faire
+
+#memory avec seff en dessous, à lancer depuis beluga donc push depuis local et pull depuis beluga
+	# ga nom de fichier --> add
+	# gc -m "message"
+	# gp
+
+	#gst pour avoir state et vérifier état
+
+	# push faisable depuis sublime merge = plus facile
+
+	# gl pour pull depuis ~/apps/genpipes pour tout à jour
 
 #############
 
-system2("ls", stdout = TRUE, stderr = TRUE)
+#system2("seff ID", stdout = TRUE, stderr = TRUE)
 
 
 #function call with complete list of .o file
-result <- parsed_folder(o_files_list)
+result <- parsed_folder(job_output_path)
 print(result)
 
