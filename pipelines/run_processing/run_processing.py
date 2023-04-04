@@ -3434,6 +3434,7 @@ class RunProcessing(common.MUGQICPipeline):
         step_list = [step for step in self.step_list if step.jobs]
         self.report_hash[lane]["multiqc_inputs"] = list(set([report_file for step in step_list for job in step.jobs for report_file in job.report_files if f"ligned.{lane}" in report_file]))
         self.report_hash[lane]["multiqc_inputs"].append(os.path.join(self.report_dir[lane], f"{self.run_id}.{lane}.run_validation_report.json"))
+        self.report_hash[lane]["multiqc_report_url"] = f"https://datahub-297-p25.p.genap.ca/MGI_validation/{self.year}/{self.run_id}.report.html"
 
         if not os.path.exists(os.path.dirname(self.run_validation_report_json[lane])):
             os.makedirs(os.path.dirname(self.run_validation_report_json[lane]))
