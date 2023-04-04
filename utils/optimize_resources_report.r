@@ -10,7 +10,7 @@
 
 library(dplyr, warn.conflicts = FALSE) #avoid conflict message for duplicate functions
 
-library(datetime)
+#library(datetime)
 
 # ask for job_output path
 #cat("Job_output path: ");
@@ -18,7 +18,9 @@ library(datetime)
 
 require(lubridate)
 
-job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 			#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
+#job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
+job_output_path = "/scratch/matteol/genpipes_test/job_output"
+#system2("l", stdout = TRUE, stderr = TRUE)
 
 folder_path_to_o_file_list <- function(job_output_path){
 	#IN : folder path as character
@@ -28,7 +30,6 @@ folder_path_to_o_file_list <- function(job_output_path){
 	job_output_list_folder <- (list.dirs(path = job_output_path,
 										recursive = FALSE,
 										full.names = TRUE))
-
 	#folder path list
 	list_path = list()
 
@@ -88,7 +89,6 @@ parsed_folder <- function(folder_path_list){
 							TimeLimit = as.character(),
 							NumCPUs = as.integer())
 
-
 	for (i in file_path_list){
 		for (j in i){
 		  #file reading
@@ -108,7 +108,7 @@ parsed_folder <- function(folder_path_list){
 
 		  #research EligibleTime
 		  EligibleTime <- String_to_Date(research_Element(FileInput_List, "EligibleTime"))
-		  
+
 		  #research StartTime
 		  StartTime <- String_to_Date(research_Element(FileInput_List, "StartTime"))
 
@@ -128,7 +128,7 @@ parsed_folder <- function(folder_path_list){
 
 		  #add informations in Info_df_temp
 		  Info_df_temp[nrow(Info_df_temp) + 1,] = list(WaitingTime, RunTime, TimeLimit, NumCPUs) 
-		  
+
 		}
 		#compute maximum values if there is more than one .o file per folder
 		if (nrow(Info_df_temp) > 1){
@@ -148,19 +148,26 @@ parsed_folder <- function(folder_path_list){
 	#Change WaitingTime format
 	Info_df$WaitingTime <- round(as.double(Info_df$WaitingTime), digits = 2) %>% 
 	 						gsub(pattern = "\\.", replacement = ":")
+
 	for (i in 1:length(Info_df$WaitingTime)){
 		time <- as.character(Info_df$WaitingTime[i])
 		min <- strsplit(x = time, split = ":")[[1]][1]
 		sec <- strsplit(x = time, split = ":")[[1]][2]
+		
+
+
+
+
 
 		# transforme minutes into hours and min
 		h <- as.numeric(min) %/% 60
 		#return(typeof(h))
 		#h <- add_0_time(h)
-
+		
 		min <- as.numeric(min) %% 60
 		#return(typeof(min))
-		#return(floor(log10(h)) + 1)
+		#return(floor(log10(h)) + 1
+		
 		min <- add_0_time(min)
 
 		#re-create the full WaintingTime value
@@ -175,7 +182,13 @@ parsed_folder <- function(folder_path_list){
 
 		time <- as.character(Info_df$TimeLimit[i])
 		day_in_hours <- as.integer(strsplit(x = time, split = "-")[[1]][1]) * 24
-		hminsec <- strsplit(x = time, split = "-")[[1]][2]
+		
+		#specific case where there is less than a day of TimeLimit
+		if (is.na(day_in_hours)){
+			day_in_hours <- 0
+		}
+
+		hminsec <- strsplit(x = time, split = "-")[[1]][1]
 		h <- strsplit(x = hminsec, split = ":")[[1]][1]
 		min <- strsplit(x = hminsec, split = ":")[[1]][2]
 		sec <- strsplit(x = hminsec, split = ":")[[1]][3]
@@ -262,8 +275,8 @@ max_hour <- function(df){
 
 #############
 
-#system2("seff ID", stdout = TRUE, stderr = TRUE)
-
+seff_resp <- system2("seff", args = "35439271", stdout = TRUE)
+#print(seff_resp)
 
 #function call with complete list of .o file
 result <- parsed_folder(job_output_path)
