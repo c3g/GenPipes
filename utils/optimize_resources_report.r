@@ -9,17 +9,17 @@
 #install.packages("datetime", repos ="http://r-forge.r-project.org/R/?group_id=1215")
 
 library(dplyr, warn.conflicts = FALSE) #avoid conflict message for duplicate functions
-
+library(chron)
 #library(datetime)
 
 # ask for job_output path
 #cat("Job_output path: ");
 #job_output_path <- readLines("stdin",n=1);
 
-require(lubridate)
+library(lubridate)
 
-#job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
-job_output_path = "/scratch/matteol/genpipes_test/job_output"
+job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
+#job_output_path = "/scratch/matteol/genpipes_test/job_output"
 #system2("l", stdout = TRUE, stderr = TRUE)
 
 folder_path_to_o_file_list <- function(job_output_path){
@@ -81,9 +81,7 @@ parsed_folder <- function(folder_path_list){
 	file_path_list <- folder_path_to_o_file_list(folder_path_list)
 
 	#creating df for parsed informations
-	Info_df <<- data.frame(#JobId = as.integer(),
-							#EligibleTime = as.character(),
-		  					#StartTime = as.character(),
+	Info_df <<- data.frame(	JobName = as.character(),
 							WaitingTime = as.character(),
 							RunTime = as.character(),
 							TimeLimit = as.character(),
@@ -92,66 +90,86 @@ parsed_folder <- function(folder_path_list){
 							Memory_Request = as.numeric())
 
 	for (i in file_path_list){
+		# print("i :")
+		# print(i)
 		for (j in i){
-		  #file reading
-		  FileInput = readLines(j)
-		  
-		  # Replace line feeds with spaces
-		  FileInput_Space <- gsub(pattern = "\\n", replacement = " ", x = FileInput)
-		  
-		  #split file to extract value
-		  FileInput_List <- strsplit(x = FileInput_Space, split = " ")
-		  
-		  #Create (global) temporary dataframe 
-		  Info_df_temp <<- Info_df
+			# print("j :")
+			# print(j)
 
+			#file reading
+			FileInput = readLines(j)
 
-		  #research EligibleTime
-		  EligibleTime <- String_to_Date(research_Element(FileInput_List, "EligibleTime"))
+			# Replace line feeds with spaces
+			FileInput_Space <- gsub(pattern = "\\n", replacement = " ", x = FileInput)
 
-		  #research StartTime
-		  StartTime <- String_to_Date(research_Element(FileInput_List, "StartTime"))
+			#split file to extract value
+			FileInput_List <- strsplit(x = FileInput_Space, split = " ")
 
-		  #calculation WaitingTime
-		  WaitingTime <- as.character(difftime(StartTime, EligibleTime, units = "mins"))
+			#Create (global) temporary dataframe 
+			Info_df_temp <- data.frame(	JobName = as.character(),
+										WaitingTime = as.character(),
+										RunTime = as.character(),
+										TimeLimit = as.character(),
+										NumCPUs = as.integer(),
+										Memory_Efficiency = as.numeric(),
+										Memory_Request = as.numeric())
 
-		  #research RunTime
-		  RunTime <- research_Element(FileInput_List, "RunTime")
+			#research StepName
+			JobName <- research_Element(FileInput_List, "JobName")
 
-		  #research TimeLimit
-		  TimeLimit <- research_Element(FileInput_List, "TimeLimit")
+			#research EligibleTime
+			EligibleTime <- String_to_Date(research_Element(FileInput_List, "EligibleTime"))
+			#EligibleTime <- as.POSIXlt(EligibleTime, format, tryFormats = c("%H:%M:%S"))
 
-		  #research NumCPUs
-		  NumCPUs <- research_Element(FileInput_List, "NumCPUs")
+			#research StartTime
+			StartTime <- String_to_Date(research_Element(FileInput_List, "StartTime"))
+			#StartTime <- as.POSIXlt(StartTime, format, tryFormats = c("%H:%M:%S"))
 
-		  #seff for memory request and
-		  #research JobId
-		  JobId <- research_Element(FileInput_List, "JobId")
+			#calculation WaitingTime
+			WaitingTime <- as.numeric(as.character(difftime(StartTime, EligibleTime, units = "mins")))
+			#WaitingTime <- difftime(StartTime, EligibleTime)
+			#print(hm(difftime(as.character(StartTime), as.character(EligibleTime))))
 
-		  #seff command give memory efficiency information (and more)
-		  #Memory_Efficiency
-		  seff_resp <- system2("seff", args = JobId, stdout = TRUE)
-		  Pos_eli_time <- grep("Memory Efficiency",seff_resp)
-		  #return(Pos_eli_time)
-		  print(seff_resp)
-		  print(Pos_eli_time)
-		  Memory_Efficiency <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
-		  Memory_Efficiency <- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
+			#research RunTime
+			RunTime <- research_Element(FileInput_List, "RunTime")
 
-		  Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
+			#research TimeLimit
+			TimeLimit <- research_Element(FileInput_List, "TimeLimit")
 
-		  # #Memory_Request
-		  Memory_Request <- strsplit(x = Pos_eli_time, split = " ")[[1]][5]
+			#research NumCPUs
+			NumCPUs <- research_Element(FileInput_List, "NumCPUs")
 
-		  #add informations in Info_df_temp
+			#seff for memory request and
+			#research JobId
+			JobId <- research_Element(FileInput_List, "JobId")
 
-		  #Memory_Efficiency <- NA
-		  #Memory_Request <- NA
+			#seff command give memory efficiency information (and more)
+			#Memory_Efficiency
+			# seff_resp <- system2("seff", args = JobId, stdout = TRUE)
+			# Pos_eli_time <- grep("Memory Efficiency",seff_resp)
+			# #return(Pos_eli_time)
+			# print(seff_resp)
+			# print(Pos_eli_time)
+			# Memory_Efficiency <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
+			# Memory_Efficiency <- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
 
-		  Info_df_temp[nrow(Info_df_temp) + 1,] = list(WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request) 
+			# Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
 
+			# # #Memory_Request
+			# Memory_Request <- strsplit(x = Pos_eli_time, split = " ")[[1]][5]
+
+			#add informations in Info_df_temp
+
+			Memory_Efficiency <- NA
+			Memory_Request <- NA
+
+			Info_df_temp[nrow(Info_df_temp) + 1,] = list(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request) 
+			#print("info :")
+			#print(list(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request))
 		}
-		#compute maximum values if there is more than one .o file per folder
+
+
+		#compute average values if there is more than one .o file per folder
 		if (nrow(Info_df_temp) > 1){
 			for (var in colnames(Info_df_temp)){
 				
@@ -159,16 +177,17 @@ parsed_folder <- function(folder_path_list){
 			}
 		}
 		Info_df_temp <- Info_df_temp %>% filter(row_number()==1)
-		
+		#print("ajouté au principal :")
+		#print(Info_df_temp)
 		Info_df <- rbind(Info_df, Info_df_temp)
-
+		
 	}
 
 
 
 	#Change WaitingTime format
 	Info_df$WaitingTime <- round(as.double(Info_df$WaitingTime), digits = 2) %>% 
-	 						gsub(pattern = "\\.", replacement = ":")
+ 							gsub(pattern = "\\.", replacement = ":")
 
 	for (i in 1:length(Info_df$WaitingTime)){
 		time <- as.character(Info_df$WaitingTime[i])
@@ -177,14 +196,24 @@ parsed_folder <- function(folder_path_list){
 
 		# transforme minutes into hours and min
 		h <- as.numeric(min) %/% 60
-		#return(typeof(h))
-		#h <- add_0_time(h)
+		h <- add_0_time(h)
 		
-		min <- as.numeric(min) %% 60
-		#return(typeof(min))
-		#return(floor(log10(h)) + 1
-		
+		min <- as.numeric(min) %% 60		
 		min <- add_0_time(min)
+
+		flag <- FALSE
+
+		if (is.na(sec)){
+			sec <- "00"
+			flag <- TRUE
+		} 
+
+		if (!flag){
+
+			sec <- as.numeric(sec)
+			sec <- add_0_time(sec)
+			flag <- FALSE
+		}
 
 		#re-create the full WaintingTime value
 		Info_df$WaitingTime[i] <- paste(c(h, min, sec), collapse=":")
@@ -211,17 +240,20 @@ parsed_folder <- function(folder_path_list){
 		min <- strsplit(x = hminsec, split = ":")[[1]][2]
 		sec <- strsplit(x = hminsec, split = ":")[[1]][3]
 		day_and_hours <- as.numeric(day_in_hours) + as.numeric(h)
+		day_and_hours <- add_0_time(day_and_hours)
 
 		# re-create the full TimeLimit value
 		Info_df$TimeLimit[i] <- paste(c(day_and_hours, min, sec), collapse=":")
 	}
 
-	#return complete dataframe
+	# #return complete dataframe
 	return (Info_df)	
 }
 
+
+
 add_0_time <- function(number){
-		if (floor(log10(number)) == 0){
+		if (floor(log10(number)) == 0 | number == 0){
 			number <- paste(c(0,number), collapse="")
 		}
 
@@ -269,7 +301,6 @@ max_hour <- function(df){
 	#OUT : one Date type value
 	return (max(unlist(df)))
 }
-
 
 
 #############
