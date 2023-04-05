@@ -87,7 +87,8 @@ parsed_folder <- function(folder_path_list){
 							WaitingTime = as.character(),
 							RunTime = as.character(),
 							TimeLimit = as.character(),
-							NumCPUs = as.integer())
+							NumCPUs = as.integer(),
+							Memory_Efficiency = as.numeric)
 
 	for (i in file_path_list){
 		for (j in i){
@@ -127,15 +128,21 @@ parsed_folder <- function(folder_path_list){
 		  JobId <- research_Element(FileInput_List, "JobId")
 
 		  #seff command give memory efficiency information (and more)
+		  #Memory_Efficiency
 		  seff_resp <- system2("seff", args = JobId, stdout = TRUE)
 		  Pos_eli_time <- grep("Memory Efficiency",seff_resp)
-		  return(Pos_eli_time)
+		  #return(Pos_eli_time)
 
 		  Memory_Efficiency <- strsplit(x = Pos_eli_time, split = " ")[[1]][3] %>%
 		  						strsplit(split = "%")[[1]][1]
 
+		  Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
+
+		  #Memory_Request
+		  Memory_Request <- strsplit(x = Pos_eli_time, split = " ")[[1]][5]
+
 		  #add informations in Info_df_temp
-		  Info_df_temp[nrow(Info_df_temp) + 1,] = list(WaitingTime, RunTime, TimeLimit, NumCPUs) 
+		  Info_df_temp[nrow(Info_df_temp) + 1,] = list(WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request) 
 
 		}
 		#compute maximum values if there is more than one .o file per folder
