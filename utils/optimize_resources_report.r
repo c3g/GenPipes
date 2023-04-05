@@ -18,8 +18,8 @@ library(dplyr, warn.conflicts = FALSE) #avoid conflict message for duplicate fun
 
 require(lubridate)
 
-job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
-#job_output_path = "/scratch/matteol/genpipes_test/job_output"
+#job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
+job_output_path = "/scratch/matteol/genpipes_test/job_output"
 #system2("l", stdout = TRUE, stderr = TRUE)
 
 folder_path_to_o_file_list <- function(job_output_path){
@@ -130,22 +130,23 @@ parsed_folder <- function(folder_path_list){
 
 		  #seff command give memory efficiency information (and more)
 		  #Memory_Efficiency
-		  # seff_resp <- system2("seff", args = JobId, stdout = TRUE)
-		  # Pos_eli_time <- grep("Memory Efficiency",seff_resp)
-		  # #return(Pos_eli_time)
+		  seff_resp <- system2("seff", args = JobId, stdout = TRUE)
+		  Pos_eli_time <- grep("Memory Efficiency",seff_resp)
+		  #return(Pos_eli_time)
+		  print(seff_resp)
+		  print(Pos_eli_time)
+		  Memory_Efficiency <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
+		  Memory_Efficiency <- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
 
-		  # Memory_Efficiency <- strsplit(x = Pos_eli_time, split = " ")[[1]][3] %>%
-		  # 						strsplit(split = "%")[[1]][1]
-
-		  # Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
+		  Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
 
 		  # #Memory_Request
-		  # Memory_Request <- strsplit(x = Pos_eli_time, split = " ")[[1]][5]
+		  Memory_Request <- strsplit(x = Pos_eli_time, split = " ")[[1]][5]
 
 		  #add informations in Info_df_temp
 
-		  Memory_Efficiency <- NA
-		  Memory_Request <- NA
+		  #Memory_Efficiency <- NA
+		  #Memory_Request <- NA
 
 		  Info_df_temp[nrow(Info_df_temp) + 1,] = list(WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request) 
 
