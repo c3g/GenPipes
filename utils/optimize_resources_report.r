@@ -88,7 +88,8 @@ parsed_folder <- function(folder_path_list){
 							RunTime = as.character(),
 							TimeLimit = as.character(),
 							NumCPUs = as.integer(),
-							Memory_Efficiency = as.numeric)
+							Memory_Efficiency = as.numeric(),
+							Memory_Request = as.numeric())
 
 	for (i in file_path_list){
 		for (j in i){
@@ -129,19 +130,23 @@ parsed_folder <- function(folder_path_list){
 
 		  #seff command give memory efficiency information (and more)
 		  #Memory_Efficiency
-		  seff_resp <- system2("seff", args = JobId, stdout = TRUE)
-		  Pos_eli_time <- grep("Memory Efficiency",seff_resp)
-		  #return(Pos_eli_time)
+		  # seff_resp <- system2("seff", args = JobId, stdout = TRUE)
+		  # Pos_eli_time <- grep("Memory Efficiency",seff_resp)
+		  # #return(Pos_eli_time)
 
-		  Memory_Efficiency <- strsplit(x = Pos_eli_time, split = " ")[[1]][3] %>%
-		  						strsplit(split = "%")[[1]][1]
+		  # Memory_Efficiency <- strsplit(x = Pos_eli_time, split = " ")[[1]][3] %>%
+		  # 						strsplit(split = "%")[[1]][1]
 
-		  Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
+		  # Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
 
-		  #Memory_Request
-		  Memory_Request <- strsplit(x = Pos_eli_time, split = " ")[[1]][5]
+		  # #Memory_Request
+		  # Memory_Request <- strsplit(x = Pos_eli_time, split = " ")[[1]][5]
 
 		  #add informations in Info_df_temp
+
+		  Memory_Efficiency <- NA
+		  Memory_Request <- NA
+
 		  Info_df_temp[nrow(Info_df_temp) + 1,] = list(WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request) 
 
 		}
@@ -195,10 +200,12 @@ parsed_folder <- function(folder_path_list){
 		
 		#specific case where there is less than a day of TimeLimit
 		if (is.na(day_in_hours)){
-			day_in_hours <- 0
+			day_in_hours <- 0 						#less than one day
+			hminsec <- time
+		}else{
+			hminsec <- strsplit(x = time, split = "-")[[1]][2] 		#one day or more
 		}
 
-		hminsec <- strsplit(x = time, split = "-")[[1]][1]
 		h <- strsplit(x = hminsec, split = ":")[[1]][1]
 		min <- strsplit(x = hminsec, split = ":")[[1]][2]
 		sec <- strsplit(x = hminsec, split = ":")[[1]][3]
