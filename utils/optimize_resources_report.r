@@ -120,7 +120,7 @@ parsed_folder <- function(folder_path_list){
 			WaitingTime <- as.numeric(as.character(difftime(StartTime, EligibleTime, units = "mins")))
 
 			#research RunTime
-			RunTime <- research_Element(FileInput_List, "RunTime")
+			RunTime <- period_to_seconds(lubridate::hms(research_Element(FileInput_List, "RunTime")))
 
 			#research TimeLimit
 			TimeLimit <- research_Element(FileInput_List, "TimeLimit")
@@ -183,35 +183,34 @@ parsed_folder <- function(folder_path_list){
 	}
 
 
+	# #Change WaitingTime format
+	# Info_df$WaitingTime <- round(as.double(Info_df$WaitingTime), digits = 2) %>% 
+ 	# 						gsub(pattern = "\\.", replacement = ":")
 
-	#Change WaitingTime format
-	Info_df$WaitingTime <- round(as.double(Info_df$WaitingTime), digits = 2) %>% 
- 							gsub(pattern = "\\.", replacement = ":")
+	# for (i in 1:length(Info_df$WaitingTime)){
+	# 	time <- as.character(Info_df$WaitingTime[i])
+	# 	min <- strsplit(x = time, split = ":")[[1]][1]
+	# 	sec <- strsplit(x = time, split = ":")[[1]][2]
 
-	for (i in 1:length(Info_df$WaitingTime)){
-		time <- as.character(Info_df$WaitingTime[i])
-		min <- strsplit(x = time, split = ":")[[1]][1]
-		sec <- strsplit(x = time, split = ":")[[1]][2]
-
-		# transforme minutes into hours and min
-		h <- as.numeric(min) %/% 60
-		h <- add_0_time(h)
+	# 	# transforme minutes into hours and min
+	# 	h <- as.numeric(min) %/% 60
+	# 	h <- add_0_time(h)
 		
-		min <- as.numeric(min) %% 60		
-		min <- add_0_time(min)
+	# 	min <- as.numeric(min) %% 60		
+	# 	min <- add_0_time(min)
 
-		#specific verification for sec because of 
-		if (is.na(sec)){
-			sec <- "00"
-		}else{
-			sec <- as.numeric(sec)
-			sec <- add_0_time(sec)
-		}
+	# 	#specific verification for sec because of 
+	# 	if (is.na(sec)){
+	# 		sec <- "00"
+	# 	}else{
+	# 		sec <- as.numeric(sec)
+	# 		sec <- add_0_time(sec)
+	# 	}
 
-		#re-create the full WaintingTime value
-		Info_df$WaitingTime[i] <- paste(c(h, min, sec), collapse=":")
+	# 	#re-create the full WaintingTime value
+	# 	Info_df$WaitingTime[i] <- paste(c(h, min, sec), collapse=":")
 
-	}
+	# }
 
 	#return complete dataframe
 	return (Info_df)	
@@ -344,4 +343,44 @@ variance <- function(df){
 #function call with complete list of .o file
 result <- parsed_folder(job_output_path)
 print(result)
+
+dumbbell <- function(v1, v2, group = rep(1, length(v1)), labels = NULL,
+                     segments = FALSE, text = FALSE, pch = 19,
+                     colv1 = 1, colv2 = 1, pt.cex = 1, segcol = 1,
+                     lwd = 1, ...) {
+  
+  o <- sort.list(as.numeric(group), decreasing = TRUE)
+  group <- group[o]
+  offset <- cumsum(c(0, diff(as.numeric(group)) != 0))
+  y <- 1L:length(v1) + 2 * offset
+  
+  dotchart(v1, labels = labels, color = colv1, xlim = range(v1, v2) + c(-2, 2),
+           groups = group, pch = pch, pt.cex = pt.cex)
+  
+  if(segments == TRUE) {
+    for(i in 1:length(v1)) {
+      segments(min(v2[i], v1[i]), y[i],
+               max(v2[i], v1[i]), y[i],
+               lwd = lwd, col = segcol) 
+    }
+  }
+  
+  for(i in 1:length(v1)){
+    points(v2[i], y[i], pch = pch, cex = pt.cex, col = colv2)
+    points(v1[i], y[i], pch = pch, cex = pt.cex, col = colv1)
+  }
+  
+  if(text == TRUE) {
+    for(i in 1:length(v1)) {
+      text(min(v2[i ], v1[i]) - 1.5, y[i],
+           labels = min(v2[i], v1[i]))
+      text(max(v2[i], v1[i]) + 1.5, y[i],
+           labels = max(v2[i], v1[i])) 
+    }
+  }
+}
+
+graph_Run <- dumbbell(v1 = period_to_seconds(hms(result$TimeLimit)), v2 = as.numeric(result$RunTime), text = FALSE,
+          labels = result$JobName, segments = TRUE, pch = 19,
+          pt.cex = 1.5, colv1 = 1, colv2 = "blue")
 
