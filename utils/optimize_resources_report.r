@@ -6,21 +6,17 @@
 # IN : job_output folder path (str)
 # OUT : folder containing graphs (.pdf) and a table containing all values (.csv)
 #
-#install.packages("datetime", repos ="http://r-forge.r-project.org/R/?group_id=1215")
 
 library(dplyr, warn.conflicts = FALSE) #avoid conflict message for duplicate functions
-library(chron)
-#library(datetime)
+library(kimisc) #for seconds_to_hms function
+library(lubridate)
 
 # ask for job_output path
 #cat("Job_output path: ");
 #job_output_path <- readLines("stdin",n=1);
 
-library(lubridate)
-
 job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
 #job_output_path = "/scratch/matteol/genpipes_test/job_output"
-#system2("l", stdout = TRUE, stderr = TRUE)
 
 folder_path_to_o_file_list <- function(job_output_path){
 	#IN : folder path as character
@@ -90,11 +86,17 @@ parsed_folder <- function(folder_path_list){
 							Memory_Request = as.numeric())
 
 	for (i in file_path_list){
-		# print("i :")
-		# print(i)
+
+		#Create temporary dataframe 
+		Info_df_temp <- data.frame(	JobName = as.character(),
+									WaitingTime = as.character(),
+									RunTime = as.character(),
+									TimeLimit = as.character(),
+									NumCPUs = as.integer(),
+									Memory_Efficiency = as.numeric(),
+									Memory_Request = as.numeric())
+
 		for (j in i){
-			# print("j :")
-			# print(j)
 
 			#file reading
 			FileInput = readLines(j)
@@ -105,30 +107,17 @@ parsed_folder <- function(folder_path_list){
 			#split file to extract value
 			FileInput_List <- strsplit(x = FileInput_Space, split = " ")
 
-			#Create (global) temporary dataframe 
-			Info_df_temp <- data.frame(	JobName = as.character(),
-										WaitingTime = as.character(),
-										RunTime = as.character(),
-										TimeLimit = as.character(),
-										NumCPUs = as.integer(),
-										Memory_Efficiency = as.numeric(),
-										Memory_Request = as.numeric())
-
 			#research StepName
 			JobName <- research_Element(FileInput_List, "JobName")
 
 			#research EligibleTime
 			EligibleTime <- String_to_Date(research_Element(FileInput_List, "EligibleTime"))
-			#EligibleTime <- as.POSIXlt(EligibleTime, format, tryFormats = c("%H:%M:%S"))
 
 			#research StartTime
 			StartTime <- String_to_Date(research_Element(FileInput_List, "StartTime"))
-			#StartTime <- as.POSIXlt(StartTime, format, tryFormats = c("%H:%M:%S"))
 
 			#calculation WaitingTime
 			WaitingTime <- as.numeric(as.character(difftime(StartTime, EligibleTime, units = "mins")))
-			#WaitingTime <- difftime(StartTime, EligibleTime)
-			#print(hm(difftime(as.character(StartTime), as.character(EligibleTime))))
 
 			#research RunTime
 			RunTime <- research_Element(FileInput_List, "RunTime")
@@ -158,27 +147,37 @@ parsed_folder <- function(folder_path_list){
 			# # #Memory_Request
 			# Memory_Request <- strsplit(x = Pos_eli_time, split = " ")[[1]][5]
 
-			#add informations in Info_df_temp
-
 			Memory_Efficiency <- NA
 			Memory_Request <- NA
 
-			Info_df_temp[nrow(Info_df_temp) + 1,] = list(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request) 
-			#print("info :")
-			#print(list(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request))
+			#fill df_info with new informations and rename columns
+			df_info <- data.frame(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request)
+			names(df_info) <- c("JobName", "WaitingTime", "RunTime", "TimeLimit", "NumCPUs", "Memory_Efficiency", "Memory_Request")
+
+			Info_df_temp <- rbind(Info_df_temp, df_info)
+
 		}
 
-
+		#change TimeLimit format
+		Info_df_temp$TimeLimit <- day_into_hours(Info_df_temp$TimeLimit)
+		
 		#compute average values if there is more than one .o file per folder
 		if (nrow(Info_df_temp) > 1){
-			for (var in colnames(Info_df_temp)){
-				
-				Info_df_temp[var] <- max_hour(Info_df_temp[var]) 
-			}
+
+			#re-create the dataframe with the average values
+			Info_df_temp <- data.frame(JobName,
+									   mean_value(Info_df_temp$WaitingTime),
+									   mean_value(Info_df_temp$RunTime),
+									   mean_value(Info_df_temp$TimeLimit),
+									   mean_value(as.integer(Info_df_temp$NumCPUs)),
+									   mean_value(Info_df_temp$Memory_Efficiency),
+									   mean_value(Info_df_temp$Memory_Request))
+
+			#rename columns
+			names(Info_df_temp) <- c("JobName", "WaitingTime", "RunTime", "TimeLimit", "NumCPUs", "Memory_Efficiency", "Memory_Request")
 		}
-		Info_df_temp <- Info_df_temp %>% filter(row_number()==1)
-		#print("ajouté au principal :")
-		#print(Info_df_temp)
+		
+		#put Info_df_temp at the end of the main dataframe containing all informations
 		Info_df <- rbind(Info_df, Info_df_temp)
 		
 	}
@@ -201,18 +200,12 @@ parsed_folder <- function(folder_path_list){
 		min <- as.numeric(min) %% 60		
 		min <- add_0_time(min)
 
-		flag <- FALSE
-
+		#specific verification for sec because of 
 		if (is.na(sec)){
 			sec <- "00"
-			flag <- TRUE
-		} 
-
-		if (!flag){
-
+		}else{
 			sec <- as.numeric(sec)
 			sec <- add_0_time(sec)
-			flag <- FALSE
 		}
 
 		#re-create the full WaintingTime value
@@ -220,12 +213,15 @@ parsed_folder <- function(folder_path_list){
 
 	}
 
-	
+	#return complete dataframe
+	return (Info_df)	
+}
 
+day_into_hours <- function(df){
 	#Convert day into hours TimeLimit
-	for (i in 1:length(Info_df$TimeLimit)){
+	for (i in 1:length(df)){
 
-		time <- as.character(Info_df$TimeLimit[i])
+		time <- as.character(df[i])
 		day_in_hours <- as.integer(strsplit(x = time, split = "-")[[1]][1]) * 24
 		
 		#specific case where there is less than a day of TimeLimit
@@ -243,16 +239,18 @@ parsed_folder <- function(folder_path_list){
 		day_and_hours <- add_0_time(day_and_hours)
 
 		# re-create the full TimeLimit value
-		Info_df$TimeLimit[i] <- paste(c(day_and_hours, min, sec), collapse=":")
+		df[i] <- paste(c(day_and_hours, min, sec), collapse=":")
 	}
-
-	# #return complete dataframe
-	return (Info_df)	
+	return(df)
 }
 
-
-
 add_0_time <- function(number){
+		#print("number")
+		#print(number)
+		if (is.na(number)){
+			return(number)
+		}
+
 		if (floor(log10(number)) == 0 | number == 0){
 			number <- paste(c(0,number), collapse="")
 		}
@@ -296,12 +294,31 @@ String_to_Date <- function(stringD){
 	return(only_date_String)
 }
 
-max_hour <- function(df){
-	#IN : list column containing Date type values
-	#OUT : one Date type value
-	return (max(unlist(df)))
+
+mean_value <- function(df){
+	#IN : dataframe column containing numerical values or h:m:s values with character type
+	#OUT : mean value of the dataframe column with character type
+
+	#case where df contain character values
+	if (is.character(df)){
+		df <- df %>%
+				hms()%>%
+				period_to_seconds()%>%
+				mean()%>%
+				seconds.to.hms()
+
+	# df already contain numerical values
+	}else{
+		df <- mean(df)
+	}
+	
+	return (as.character(df))
 }
 
+
+variance <- function(df){
+	#
+}
 
 #############
 ### TO DO ###
