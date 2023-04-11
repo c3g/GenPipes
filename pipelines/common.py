@@ -480,7 +480,7 @@ pandoc \\
     if [ -f {INDEX} ]; then
         rm {INDEX}
     fi""".format(
-                    FILE=sample_bam
+                    BAM=sample_bam,
                     INDEX=re.sub("\.bam$", ".bam.bai", sample_bam)
                 )
             )
