@@ -493,7 +493,8 @@ fi""".format(
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            output_prefix = os.path.join(self.output_dirs['metrics_directory'], "mosdepth", sample.name)
+            mosdepth_directory = os.path.join(self.output_dirs['metrics_directory'], "mosdepth")
+            output_prefix = os.path.join(mosdepth_directory, sample.name)
 
             if dovee_protocol == "vardict":
                 input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
@@ -523,7 +524,7 @@ fi""".format(
                         samples = [sample]
                         )
                     )
-            self.multiqc_inputs.append(output_prefix + ".mosdepth.region.dist.txt")
+            self.multiqc_inputs.append(mosdepth_directory)
         return jobs
 
     def picard_metrics(self):
@@ -581,7 +582,7 @@ fi""".format(
             job.name = "picard_calculate_hs_metrics." + sample.name
             job.samples = [sample]
             jobs.append(job)
-            self.multiqc_inputs.append(output)
+            self.multiqc_inputs.append(picard_directory)
 
         return jobs
 
@@ -745,7 +746,7 @@ fi""".format(
                     )
                 )
         
-            self.multiqc_inputs.append(output)
+            self.multiqc_inputs.append(output_directory)
         
         return jobs
 
@@ -761,7 +762,7 @@ fi""".format(
         output = os.path.join(self.output_dirs['metrics_directory'], "multiqc")
 
         job = multiqc.run(
-            self.multiqc_inputs,
+            set(self.multiqc_inputs),
             output
         )
         job.name = "multiqc"
