@@ -472,6 +472,18 @@ pandoc \\
 
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
             mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
+            rm_job = Job(
+                    command="""\
+    if [ -f {BAM} ]; then
+        rm {BAM}
+    fi
+    if [ -f {INDEX} ]; then
+        rm {INDEX}
+    fi""".format(
+                    FILE=sample_bam
+                    INDEX=re.sub("\.bam$", ".bam.bai", sample_bam)
+                )
+            )
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
@@ -504,6 +516,7 @@ pandoc \\
                     concat_jobs(
                         [
                             mkdir_job,
+                            rm_job,
                             sambamba.merge(
                                 readset_bams,
                                 sample_bam
