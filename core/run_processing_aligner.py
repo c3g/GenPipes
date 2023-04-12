@@ -40,14 +40,14 @@ import logging
 log = logging.getLogger(__name__)
 
 class RunProcessingAligner(object):
-    def __init__(self, output_dir, genome_folder, platform):
-        self._output_dir = output_dir
+    def __init__(self, output_dirs, genome_folder, platform):
+        self._output_dirs = output_dirs
         self._genome_folder = genome_folder
         self._platform = platform
 
     @property
-    def output_dir(self):
-        return self._output_dir
+    def output_dirs(self):
+        return self._output_dirs
 
     @property
     def genome_folder(self):
@@ -225,21 +225,25 @@ class BwaRunProcessingAligner(RunProcessingAligner):
 
     def get_alignment_job(self, readset):
         output = readset.bam + ".bam"
-        job = concat_jobs([
-            bash.mkdir(os.path.dirname(output)),
-            pipe_jobs([
-                bwa.mem(
-                    readset.fastq1,
-                    readset.fastq2,
-                    read_group=RunProcessingAligner.get_rg_tag(readset, self.platform, 'bwa_mem'),
-                    ref=readset.aligner_reference_index
-                ),
-                picard.sort_sam(
-                    "/dev/stdin",
-                    output,
-                    "coordinate"
-                )]
-            )],
+        job = concat_jobs(
+            [
+                bash.mkdir(os.path.dirname(output)),
+                pipe_jobs(
+                    [
+                        bwa.mem(
+                            readset.fastq1,
+                            readset.fastq2,
+                            read_group=RunProcessingAligner.get_rg_tag(readset, self.platform, 'bwa_mem'),
+                            ref=readset.aligner_reference_index
+                        ),
+                        picard.sort_sam(
+                            "/dev/stdin",
+                            output,
+                            "coordinate"
+                        )
+                    ]
+                )
+            ],
             name="bwa_mem_picard_sort_sam." + readset.name + "." + readset.run + "." + readset.lane,
             samples=[readset.sample]
         )
@@ -615,8 +619,7 @@ class CellrangerRunProcessingAligner(RNARunProcessingAligner):
 
     def get_alignment_job(self, readset):
         outdir = os.path.join(
-            self.output_dir,
-            "10x_cellcount." + readset.lane,
+            self.output_dirs[f"10x_cellcount.{readset.lane}_directory"],
             readset.name + "_" + readset.sample_number,
             "outs"
         )
@@ -707,8 +710,7 @@ class VdjProcessingAligner(RNARunProcessingAligner):
 
     def get_alignment_job(self, readset):
         outdir = os.path.join(
-            self.output_dir,
-            "10x_cellcount." + readset.lane,
+            self.output_dirs[f"10x_cellcount.{readset.lane}_directory"],
             readset.name + "_" + readset.sample_number,
             "outs"
         )
@@ -796,8 +798,7 @@ class AtacRunProcessingAligner(RNARunProcessingAligner):
 
     def get_alignment_job(self, readset):
         outdir = os.path.join(
-            self.output_dir,
-            "10x_cellcount." + readset.lane,
+            self.output_dirs[f"10x_cellcount.{readset.lane}_directory"],
             readset.name + "_" + readset.sample_number,
             "outs"
         )
@@ -852,12 +853,19 @@ class CellCounterRunProcessingAligner(NullRunProcessingAligner):
 
     def get_fastq_metrics_jobs(self, readset):
         input_file = readset.fastq1
-        output = os.path.join(self.output_dir,
-                              "Unaligned." + str(readset.lane_str) + "Count",
-                              readset.name + '_S' + readset.sample_number + '_L00' + readset.lane_str
-                              + '_R1_001.count.csv')
-        job = Job([input_file], [output], [["cell_counter", "module_java"]],
-                  name="cell_counter." + readset.name + "." + readset.run + "." + readset.lane_str)
+        output = os.path.join(
+            self.output_dirs["Unaligned.{readset.lane}Count_directory"],
+            f"{readset.name}_S{readset.sample_number}_L00{readset.lane}_R1_001.count.csv"
+        )
+        job = Job(
+            [input_file],
+            [output],
+            [
+                ["cell_counter", "module_java"]
+            ],
+            name=f"cell_counter.{readset.name}.{readset.run}.{readset.lane}",
+            samples=[readset.sample]
+        )
         job.command = """\java {java_other_options} -cp {jar} ca.mcgill.genome.mps.core.util.ChromiumCellCounter {input} {output}""".format(
             java_other_options=config.param('cell_counter', 'java_other_options'),
             jar=config.param('cell_counter', 'jar'),

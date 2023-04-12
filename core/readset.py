@@ -394,7 +394,7 @@ def parse_freezeman_readset_file(
     read2cycles,
     index1cycles,
     index2cycles,
-    output_dir,
+    output_dirs,
     platform
     ):
 
@@ -513,8 +513,7 @@ def parse_freezeman_readset_file(
             readset._beds = []
 
         fastq_file_pattern = os.path.join(
-            output_dir,
-            "Unaligned." + readset.lane,
+            output_dirs[f"Unaligned.{readset.lane}_directory"],
             "Project_" + readset.project_id,
             "Sample_" + readset.name,
             readset.name + '_S' + readset.sample_number + "_L00" + readset.lane + "_R{read_number}_001.fastq.gz"
@@ -568,8 +567,7 @@ def parse_freezeman_readset_file(
                     readset._reference_file = reference_file
                     readset._dictionary_file = dictionary_file
                     readset._bam = os.path.join(
-                        output_dir,
-                        "Aligned." + readset.lane,
+                        output_dirs[f"Aligned.{readset.lane}_directory"],
                         'alignment',
                         sample_name,
                         'run' + readset.run + "_" + readset.lane,
@@ -604,7 +602,7 @@ def parse_clarity_readset_file(
     read2cycles,
     index1cycles,
     index2cycles,
-    output_dir,
+    output_dirs,
     platform
     ):
 
@@ -735,8 +733,7 @@ def parse_clarity_readset_file(
             readset._beds = []
 
         fastq_file_pattern = os.path.join(
-            output_dir,
-            "Unaligned." + readset.lane,
+            output_dirs[f"Unaligned.{readset.lane}_directory"],
             "Project_" + readset.project_id,
             "Sample_" + readset.name,
             readset.name + '_S' + readset.sample_number + "_L00" + readset.lane + "_R{read_number}_001.fastq.gz"
@@ -795,8 +792,7 @@ def parse_clarity_readset_file(
                     readset._reference_file = reference_file
                     readset._dictionary_file = dictionary_file
                     readset._bam = os.path.join(
-                        output_dir,
-                        "Aligned." + readset.lane,
+                        output_dirs[f"Aligned.{readset.lane}_directory"],
                         'alignment',
                         sample_name,
                         'run' + readset.run + "_" + readset.lane,

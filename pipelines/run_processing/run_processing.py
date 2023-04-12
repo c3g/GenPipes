@@ -171,6 +171,21 @@ class RunProcessing(common.MUGQICPipeline):
         super(RunProcessing, self).__init__(protocol)
 
     @property
+    def output_dirs(self):
+        if not hasattr(self, "_output_dirs"):
+            self._output_dirs = {}
+            for lane in self.lanes:
+                self._output_dirs[lane] = {
+                    f"Unaligned.{lane}_directory": os.path.relpath(os.path.join(self.output_dir, f"Unaligned.{lane}"), self.output_dir),
+                    f"Unaligned.{lane}_directory_tmp": os.path.relpath(os.path.join(self.output_dir, f"Unaligned.{lane}_tmp"), self.output_dir),
+                    f"Unaligned.{lane}.noindex_directory": os.path.relpath(os.path.join(self.output_dir, f"Unaligned.{lane}.noindex"), self.output_dir),
+                    f"Aligned.{lane}_directory": os.path.relpath(os.path.join(self.output_dir, f"Aligned.{lane}"), self.output_dir),
+                    "index_directory": os.path.relpath(os.path.join(self.output_dir, 'index'), self.output_dir),
+                    "report_directory": os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
+                }
+        return self._output_dirs
+
+    @property
     def readsets(self):
         if not hasattr(self, "_readsets"):
             self._readsets = {}
@@ -284,8 +299,8 @@ class RunProcessing(common.MUGQICPipeline):
         if not hasattr(self, "_bioinfo_files"):
             self._bioinfo_files = {}
             for lane in self.lanes:
-                if os.path.exists(os.path.join(self.output_dir, f"Unaligned.{lane}", "raw_fastq", "BioInfo.csv")):
-                    self._bioinfo_files[lane] = os.path.join(self.output_dir, f"Unaligned.{lane}", "raw_fastq", "BioInfo.csv")
+                if os.path.exists(os.path.join(self.output_dirs[lane][f"Unaligned.{lane}_directory"], "raw_fastq", "BioInfo.csv")):
+                    self._bioinfo_files[lane] = os.path.join(self.output_dirs[lane][f"Unaligned.{lane}_directory"], "raw_fastq", "BioInfo.csv")
                 else:
                     bioinfo_file = os.path.join(self.run_dir, f"L0{lane}", "BioInfo.csv")
                     if lane in self._bioinfo_files and self._bioinfo_files[lane] != bioinfo_file:
@@ -607,7 +622,10 @@ class RunProcessing(common.MUGQICPipeline):
                                     "fastq_1": readset.fastq1,
                                     "fastq_2": readset.fastq2 if self.is_paired_end[lane] else None,
                                     "bam": readset.bam + ".bam" if readset.bam else None,
-                                    "bai": readset.bam + ".bai" if readset.bam else None
+                                    "bai": readset.bam + ".bai" if readset.bam else None,
+                                    "derived_sample_obj_id": readset.library,
+                                    "project_obj_id": readset.project_id,
+                                    "hercules_project_id": readset.hercules_project_id if is_json(self.readset_file) else None
                                 }
                             ) for readset in self.readsets[lane]
                         ]
@@ -616,19 +634,11 @@ class RunProcessing(common.MUGQICPipeline):
         return self._report_hash
 
     @property
-    def report_dir(self):
-        if not hasattr(self, "_report_dir"):
-            self._report_dir = {}
-            for lane in self.lanes:
-                self._report_dir[lane] = os.path.join(self.output_dir, "report")
-        return self._report_dir
-
-    @property
     def run_validation_report_json(self):
         if not hasattr(self, "_run_validation_report_json"):
             self._run_validation_report_json = {}
             for lane in self.lanes:
-                self._run_validation_report_json[lane] = os.path.join(self.report_dir[lane], f"{self.run_id}.{lane}.run_validation_report.json")
+                self._run_validation_report_json[lane] = os.path.join(self.output_dirs[lane]["report_directory"], f"{self.run_id}.{lane}.run_validation_report.json")
         return self._run_validation_report_json
 
     def basecall(self):
@@ -647,7 +657,7 @@ class RunProcessing(common.MUGQICPipeline):
 
             input = self.readset_file
 
-            unaligned_dir = os.path.join(self.output_dir, f"Unaligned.{lane}")
+            unaligned_dir = self.output_dirs[lane][f"Unaligned.{lane}_directory"]
             basecall_dir = os.path.join(unaligned_dir, "basecall")
 
             lane_config_file = os.path.join(unaligned_dir, f"{self.run_id}.{lane}.settings.config")
@@ -726,8 +736,9 @@ class RunProcessing(common.MUGQICPipeline):
                             lane_config_file
                         ),
                         bash.ln(
-                            os.path.join(basecall_dir, self.run_id, f"L0{lane}"),
-                            raw_fastq_dir
+                            os.path.relpath(os.path.join(basecall_dir, self.run_id, f"L0{lane}"), os.path.dirname(raw_fastq_dir)),
+                            raw_fastq_dir,
+                            input=os.path.join(basecall_dir, self.run_id, f"L0{lane}")
                         )
                     ],
                     name=f"basecall.{self.run_id}.{lane}",
@@ -782,8 +793,8 @@ class RunProcessing(common.MUGQICPipeline):
                 lane_jobs = []
 
                 input = os.path.join(self.run_dir, "RunInfo.xml")
-                output = os.path.join(self.output_dir, "index",  f"{self.run_id}_{lane}.metrics")
-                basecalls_dir = os.path.join(self.output_dir, "index", "BaseCalls")
+                output = os.path.join(self.output_dirs[lane]["index"],  f"{self.run_id}_{lane}.metrics")
+                basecalls_dir = os.path.join(self.output_dirs[lane]["index"], "BaseCalls")
 
                 barcode_file = config.param('index', 'barcode_file', param_type='filepath', required='false')
                 if not (barcode_file and os.path.isfile(barcode_file)):
@@ -807,7 +818,7 @@ class RunProcessing(common.MUGQICPipeline):
                         ),
                         bash.ln(
                             os.path.join(self.run_dir, "Data", "Intensities", "s.locs"),
-                            os.path.join(self.output_dir, "index", "s.locs")
+                            os.path.join(self.output_dirs[lane]["index"], "s.locs")
                         ),
                         run_processing_tools.index(
                             input,
@@ -889,7 +900,7 @@ class RunProcessing(common.MUGQICPipeline):
 
             input = self.readset_file
             fastq_outputs, postprocessing_jobs, cleanjob_deps = self.generate_bcl2fastq_outputs(lane)
-            output_dir = os.path.join(self.output_dir, f"Unaligned.{lane}")
+            output_dir = self.output_dirs[lane][f"Unaligned.{lane}_directory"]
             tmp_output_dir = f"{output_dir}_tmp"
             casava_sample_sheet = os.path.join(self.output_dir, f"casavasheet.{lane}.indexed.csv")
 
@@ -903,7 +914,7 @@ class RunProcessing(common.MUGQICPipeline):
             else:
 
                 if self.umi:
-                    output_dir_noindex = os.path.join(self.output_dir, f"Unaligned.{lane}.noindex")
+                    output_dir_noindex = self.output_dirs[lane][f"Unaligned.{lane}.noindex_directory"]
                     casava_sample_sheet_noindex = os.path.join(self.output_dir, f"casavasheet.{lane}.noindex.csv")
 
                     lane_jobs.append(
@@ -1080,7 +1091,7 @@ class RunProcessing(common.MUGQICPipeline):
                     lane_jobs = []
                     jobs_to_throttle = []
 
-                    unaligned_dir = os.path.join(self.output_dir, f"Unaligned.{lane}")
+                    unaligned_dir = self.output_dirs[lane][f"Unaligned.{lane}_directory"]
                     raw_fastq_dir = os.path.join(unaligned_dir, "raw_fastq")
                     raw_name_prefix = f"{self.raw_fastq_prefix}_L0{lane}"
 
@@ -1093,7 +1104,7 @@ class RunProcessing(common.MUGQICPipeline):
                             bash.mkdir(raw_fastq_dir),
                             bash.ln(
                                 os.path.join(self.run_dir, f"L0{lane}", "*"),
-                                raw_fastq_dir
+                                raw_fastq_dir,
                             )
                         ]
                     )
@@ -1173,7 +1184,7 @@ class RunProcessing(common.MUGQICPipeline):
 
                         tmp_output_dir = os.path.dirname(demuxfastqs_outputs[0])
                         tmp_metrics_file = os.path.join(tmp_output_dir, self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
-                        metrics_file = os.path.join(self.output_dir, "Unaligned." + lane, self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
+                        metrics_file = os.path.join(self.output_dirs[lane][f"Unaligned.{lane}_directory"], self.run_id + "." + lane + ".DemuxFastqs.metrics.txt")
                         demuxfastqs_outputs.append(metrics_file)
 
                         if self.readsets[lane][0].run_type == "PAIRED_END":
@@ -1435,7 +1446,7 @@ class RunProcessing(common.MUGQICPipeline):
         for lane in self.lanes:
             lane_jobs = []
             if 'mgi' in self.args.type:
-                unaligned_dir = os.path.join(self.output_dir, f"Unaligned.{lane}")
+                unaligned_dir = self.output_dirs[lane][f"Unaligned.{lane}_directory"]
                 raw_fastq_dir = os.path.join(unaligned_dir, "raw_fastq")
                 raw_name_prefix = f"{self.raw_fastq_prefix}_L0{lane}"
                 raw_reads_input1 = os.path.join(raw_fastq_dir, f"{raw_name_prefix}_read_1.fq.gz")
@@ -2706,8 +2717,8 @@ class RunProcessing(common.MUGQICPipeline):
             "step_name" : step_name,
             "jobs" : [{
                 "job_name" : job.name,
-                "input_files" : [os.path.relpath(input_file, self.report_dir[lane]) for input_file in job.input_files],
-                "output_files" : [os.path.relpath(output_file, self.report_dir[lane]) for output_file in job.output_files],
+                "input_files" : [os.path.relpath(input_file, self.output_dirs[lane]["report_directory"]) for input_file in job.input_files],
+                "output_files" : [os.path.relpath(output_file, self.output_dirs[lane]["report_directory"]) for output_file in job.output_files],
                 "command" : job.command,
                 "modules" : job.modules
             } for job in jobs]
@@ -3433,7 +3444,7 @@ class RunProcessing(common.MUGQICPipeline):
         # self.report_hash[lane]["multiqc_inputs"] = []
         step_list = [step for step in self.step_list if step.jobs]
         self.report_hash[lane]["multiqc_inputs"] = list(set([report_file for step in step_list for job in step.jobs for report_file in job.report_files if f"ligned.{lane}" in report_file]))
-        self.report_hash[lane]["multiqc_inputs"].append(os.path.join(self.report_dir[lane], f"{self.run_id}.{lane}.run_validation_report.json"))
+        self.report_hash[lane]["multiqc_inputs"].append(os.path.join(self.output_dirs[lane]["report_directory"], f"{self.run_id}.{lane}.run_validation_report.json"))
         self.report_hash[lane]["multiqc_report_url"] = f"https://datahub-297-p25.p.genap.ca/MGI_validation/{self.year}/{self.run_id}.report.html"
 
         if not os.path.exists(os.path.dirname(self.run_validation_report_json[lane])):
@@ -3445,7 +3456,7 @@ class RunProcessing(common.MUGQICPipeline):
     def generate_basecall_outputs(self, lane):
         basecall_outputs = []
         postprocessing_jobs = []
-        unaligned_dir = os.path.join(self.output_dir, "Unaligned." + lane)
+        unaligned_dir = self.output_dirs[lane][f"Unaligned.{lane}_directory"]
         basecall_dir = os.path.join(unaligned_dir, "basecall")
 
         for readset in self.readsets[lane]:
@@ -3608,7 +3619,7 @@ class RunProcessing(common.MUGQICPipeline):
         postprocessing_jobs = []
         cleanjob_deps = []
         
-        output_dir = os.path.join(self.output_dir, f"Unaligned.{lane}_tmp")
+        output_dir = self.output_dirs[lane][f"Unaligned.{lane}_directory_tmp"]
 
         bcl2fastq_outputs.extend(
             [
@@ -3913,7 +3924,7 @@ class RunProcessing(common.MUGQICPipeline):
         demuxfastqs_outputs = []
         postprocessing_jobs = []
         cleanjob_deps = []
-        output_dir = os.path.join(self.output_dir, "Unaligned." + lane)
+        output_dir = self.output_dirs[lane][f"Unaligned.{lane}_directory"]
 
         index_lengths = self.get_smallest_index_length(lane)
         for readset in self.readsets[lane]:
@@ -4213,9 +4224,9 @@ class RunProcessing(common.MUGQICPipeline):
                     barcode1_len=self.index1cycles[lane],
                     barcode2_len=self.index2cycles[lane],
                     flowcell=self.flowcell_id,
-                    r1_out=readset.fastq1 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz"),
-                    i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz"),
-                    i2_out=readset.index_fastq2 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
+                    r1_out=readset.fastq1 if readset else os.path.join(self.output_dirs[lane][f"Unaligned.{lane}_directory"], "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz"),
+                    i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dirs[lane][f"Unaligned.{lane}_directory"], "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz"),
+                    i2_out=readset.index_fastq2 if readset else os.path.join(self.output_dirs[lane][f"Unaligned.{lane}_directory"], "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
                 )
             else:
                 return """-v inst=\"{instrument}\" -v run=\"{run}\" -v read_len=\"{read_len}\" -v barcode_len=\"{barcode_len}\" '{{
@@ -4238,8 +4249,8 @@ class RunProcessing(common.MUGQICPipeline):
                     read_len=self.read1cycles[lane],
                     barcode_len=self.index1cycles[lane],
                     flowcell=self.flowcell_id,
-                    r1_out=readset.fastq1 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz"),
-                    i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
+                    r1_out=readset.fastq1 if readset else os.path.join(self.output_dirs[lane][f"Unaligned.{lane}_directory"], "Undetermined_S0_L00" + lane + "_R1_001.fastq.gz"),
+                    i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dirs[lane][f"Unaligned.{lane}_directory"], "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
                 )
 
     def awk_read_2_processing_command(self, lane, readset=None):
@@ -4274,9 +4285,9 @@ class RunProcessing(common.MUGQICPipeline):
                 barcode1_len=self.index1cycles[lane],
                 barcode2_len=self.index2cycles[lane],
                 flowcell=self.flowcell_id,
-                r2_out=readset.fastq2 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
-                i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz"),
-                i2_out=readset.index_fastq2 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
+                r2_out=readset.fastq2 if readset else os.path.join(self.output_dirs[lane][f"Unaligned.{lane}_directory"], "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
+                i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dirs[lane][f"Unaligned.{lane}_directory"], "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz"),
+                i2_out=readset.index_fastq2 if readset else os.path.join(self.output_dirs[lane][f"Unaligned.{lane}_directory"], "Undetermined_S0_L00" + lane + "_I2_001.fastq.gz")
             )
         else:
             return """-v inst=\"{instrument}\" -v run=\"{run}\" -v read_len=\"{read_len}\" -v barcode_len=\"{barcode_len}\" '{{
@@ -4299,8 +4310,8 @@ class RunProcessing(common.MUGQICPipeline):
                 read_len=self.read2cycles[lane],
                 barcode_len=self.index1cycles[lane],
                 flowcell=self.flowcell_id,
-                r2_out=readset.fastq2 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
-                i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dir, "Unaligned." + lane, "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
+                r2_out=readset.fastq2 if readset else os.path.join(self.output_dirs[lane][f"Unaligned.{lane}_directory"], "Undetermined_S0_L00" + lane + "_R2_001.fastq.gz"),
+                i1_out=readset.index_fastq1 if readset else os.path.join(self.output_dirs[lane][f"Unaligned.{lane}_directory"], "Undetermined_S0_L00" + lane + "_I1_001.fastq.gz")
             )
 
     def throttle_jobs(self, jobs, key=""):
@@ -4376,7 +4387,7 @@ class RunProcessing(common.MUGQICPipeline):
                 int(self.read2cycles[lane]),
                 int(self.index1cycles[lane]),
                 int(self.index2cycles[lane]),
-                self.output_dir,
+                self.output_dirs,
                 self.args.type
             )
         else:
@@ -4390,7 +4401,7 @@ class RunProcessing(common.MUGQICPipeline):
                 int(self.read2cycles[lane]),
                 int(self.index1cycles[lane]),
                 int(self.index2cycles[lane]),
-                self.output_dir,
+                self.output_dirs,
                 self.args.type
             )
 
