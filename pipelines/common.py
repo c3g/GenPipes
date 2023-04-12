@@ -473,19 +473,6 @@ pandoc \\
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
             mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
             
-            # Sambamba merge fails if a file/symlink with the merged sample name already exists. Remove any existing file before merging.
-            rm_job = Job(
-                    command="""\
-if [ -f {BAM} ]; then
-    rm {BAM}
-fi
-if [ -f {INDEX} ]; then
-    rm {INDEX}
-fi""".format(
-                BAM=sample_bam,
-                INDEX=re.sub("\.bam$", ".bam.bai", sample_bam)
-            )
-        )
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
@@ -513,12 +500,15 @@ fi""".format(
                     )
                 )
 
+
+            # Sambamba merge fails if a file/symlink with the merged sample name already exists. Remove any existing file before merging.
             elif len(sample.readsets) > 1:
                 jobs.append(
                     concat_jobs(
                         [
                             mkdir_job,
-                            rm_job,
+                            bash.rm(sample_bam),
+                            bash.rm(re.sub("\.bam$", ".bam.bai", sample_bam)),
                             sambamba.merge(
                                 readset_bams,
                                 sample_bam
