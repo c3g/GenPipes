@@ -169,17 +169,29 @@ class DOvEE_gene(common.Illumina):
             output_json_path = os.path.join(os.path.dirname(trim1), readset.name + ".trim.fastp.json")
             output_html_path = os.path.join(os.path.dirname(trim1), readset.name + ".trim.fastp.html")
 
-            job = fastp.basic_qc(
-                    trim1,
-                    trim2,
-                    output_json_path,
-                    output_html_path
-                    )
-            job.name = "fastp." + readset.name
-            job.samples = [readset.sample]
-            self.multiqc_inputs.append(output_json_path)
+            link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
 
-            jobs.append(job)
+            jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(link_directory),
+                            fastp.basic_qc(
+                                trim1,
+                                trim2,
+                                output_json_path,
+                                output_html_path
+                                ),
+                            bash.ln(
+                                os.path.relpath(output_json_path, link_directory),
+                                os.path.join(link_directory, readset.name + ".trim.fastp.json"),
+                                output_json_path
+                                )
+                        ],
+                        name = "fastp." + readset.name,
+                        samples = [readset.sample]
+                        )
+                    )
+            self.multiqc_inputs.append(output_json_path)
 
         return jobs
 
@@ -494,6 +506,7 @@ fi""".format(
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             mosdepth_directory = os.path.join(self.output_dirs['metrics_directory'], "mosdepth")
+            link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
             output_prefix = os.path.join(mosdepth_directory, sample.name)
 
             if dovee_protocol == "vardict":
@@ -512,19 +525,25 @@ fi""".format(
             jobs.append(
                     concat_jobs(
                         [
-                            bash.mkdir(os.path.join(self.output_dirs['metrics_directory'], "mosdepth")),
+                            bash.mkdir(mosdepth_directory),
+                            bash.mkdir(link_directory),
                             mosdepth.mosdepth(
                                 input_bam,
                                 output_prefix,
                                 True,
                                 region
+                                ),
+                            bash.ln(
+                                os.path.relpath(output_prefix + ".mosdepth.region.dist.txt", link_directory),
+                                os.path.join(link_directory, sample.name + ".mosdepth.region.dist.txt"),
+                                output_prefix + ".mosdepth.region.dist.txt"
                                 )
                             ],
                         name = "mosdepth." + sample.name,
                         samples = [sample]
                         )
                     )
-            self.multiqc_inputs.append(mosdepth_directory)
+            self.multiqc_inputs.append(output_prefix + ".mosdepth.region.dist.txt")
         return jobs
 
     def picard_metrics(self):
@@ -534,7 +553,8 @@ fi""".format(
         jobs = []
 
         picard_directory = os.path.join(self.output_dirs['metrics_directory'], "picard")
-
+        link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
+        
         targetv7 = config.param('vardict_single', 'target_filev7', param_type='filepath')  #target bed file 
         targetv8 = config.param('vardict_single', 'target_filev8', param_type='filepath')  #target bed file
 
@@ -574,14 +594,24 @@ fi""".format(
             elif sample in self.contrasts.salivas:
                 intervals = outputv8
 
-            job = picard2.calculate_hs_metrics(
-                    input_bam,
-                    output,
-                    intervals
+            jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(link_directory),
+                            picard2.calculate_hs_metrics(
+                                input_bam,
+                                output,
+                                intervals
+                                ),
+                            bash.ln(
+                                os.path.relpath(output, link_directory),
+                                os.path.join(link_directory, sample.name + ".picard_HS_metrics.txt"),
+                                input=output
+                                )
+                        ], name = "picard_calculate_hs_metrics." + sample.name,
+                        samples = [sample]
+                        )
                     )
-            job.name = "picard_calculate_hs_metrics." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
             self.multiqc_inputs.append(picard_directory)
 
         return jobs
@@ -731,22 +761,29 @@ fi""".format(
             variants_directory = os.path.join(self.output_dirs['variants_directory'], sample.name)
             input = os.path.join(variants_directory, sample.name + ".out.vcf")
             output_directory = os.path.join(self.output_dirs['metrics_directory'], "bcftools")
+            link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
             output = os.path.join(output_directory, sample.name + ".bcftools.stats")
             
             jobs.append(
                     concat_jobs(
                         [
                             bash.mkdir(output_directory),
+                            bash.mkdir(link_directory),
                             bcftools.stats(
                                 input,
                                 output                                
-                                )                          
+                                ),
+                            bash.ln(
+                                os.path.relpath(output, link_directory),
+                                os.path.join(link_directory, sample.name + ".bcftools.stats"),
+                                input=output
+                                )
                         ], name = "bcftools_stats." + sample.name,
                         samples = [sample]
                     )
                 )
         
-            self.multiqc_inputs.append(output_directory)
+            self.multiqc_inputs.append(output)
         
         return jobs
 
@@ -759,13 +796,15 @@ fi""".format(
 
         jobs = []
 
+        input_links = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
         output = os.path.join(self.output_dirs['metrics_directory'], "multiqc")
 
         job = multiqc.run(
-            set(self.multiqc_inputs),
+            [input_links],
             output
         )
         job.name = "multiqc"
+        job.input_dependency = self.multiqc_inputs
         jobs.append(job)
 
         return jobs
