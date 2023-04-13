@@ -515,7 +515,8 @@ pandoc \\
                             )
                         ],
                         name="sambamba_merge_sam_files." + sample.name,
-                        samples=[sample]
+                        samples=[sample],
+                        input_dependency=readset_bams
                     )
                 )
 
