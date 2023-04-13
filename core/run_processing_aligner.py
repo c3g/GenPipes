@@ -619,7 +619,7 @@ class CellrangerRunProcessingAligner(RNARunProcessingAligner):
 
     def get_alignment_job(self, readset):
         outdir = os.path.join(
-            self.output_dirs[f"10x_cellcount.{readset.lane}_directory"],
+            self.output_dirs[readset.lane][f"10x_cellcount.{readset.lane}_directory"],
             readset.name + "_" + readset.sample_number,
             "outs"
         )
@@ -710,7 +710,7 @@ class VdjProcessingAligner(RNARunProcessingAligner):
 
     def get_alignment_job(self, readset):
         outdir = os.path.join(
-            self.output_dirs[f"10x_cellcount.{readset.lane}_directory"],
+            self.output_dirs[readset.lane][f"10x_cellcount.{readset.lane}_directory"],
             readset.name + "_" + readset.sample_number,
             "outs"
         )
@@ -798,7 +798,7 @@ class AtacRunProcessingAligner(RNARunProcessingAligner):
 
     def get_alignment_job(self, readset):
         outdir = os.path.join(
-            self.output_dirs[f"10x_cellcount.{readset.lane}_directory"],
+            self.output_dirs[readset.lane][f"10x_cellcount.{readset.lane}_directory"],
             readset.name + "_" + readset.sample_number,
             "outs"
         )
@@ -854,7 +854,7 @@ class CellCounterRunProcessingAligner(NullRunProcessingAligner):
     def get_fastq_metrics_jobs(self, readset):
         input_file = readset.fastq1
         output = os.path.join(
-            self.output_dirs["Unaligned.{readset.lane}Count_directory"],
+            self.output_dirs[readset.lane]["Unaligned.{readset.lane}Count_directory"],
             f"{readset.name}_S{readset.sample_number}_L00{readset.lane}_R1_001.count.csv"
         )
         job = Job(

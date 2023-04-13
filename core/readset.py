@@ -513,7 +513,7 @@ def parse_freezeman_readset_file(
             readset._beds = []
 
         fastq_file_pattern = os.path.join(
-            output_dirs[f"Unaligned.{readset.lane}_directory"],
+            output_dirs[readset.lane][f"Unaligned.{readset.lane}_directory"],
             "Project_" + readset.project_id,
             "Sample_" + readset.name,
             readset.name + '_S' + readset.sample_number + "_L00" + readset.lane + "_R{read_number}_001.fastq.gz"
@@ -545,16 +545,16 @@ def parse_freezeman_readset_file(
 
             if readset.is_10x:
                 if readset.is_rna:
-                    readset._aligner = CellrangerRunProcessingAligner(output_dir, current_genome_folder, platform)
+                    readset._aligner = CellrangerRunProcessingAligner(output_dirs, current_genome_folder, platform)
                 elif readset.is_atac:
-                    readset._aligner = AtacRunProcessingAligner(output_dir, current_genome_folder, platform)
+                    readset._aligner = AtacRunProcessingAligner(output_dirs, current_genome_folder, platform)
             elif readset.is_rna:
                 if readset.is_scrna:
-                    readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(read2cycles), platform)
+                    readset._aligner = StarRunProcessingAligner(output_dirs, current_genome_folder, int(read2cycles), platform)
                 else:
-                    readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(read1cycles), platform)                
+                    readset._aligner = StarRunProcessingAligner(output_dirs, current_genome_folder, int(read1cycles), platform)                
             else:
-                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder, platform)
+                readset._aligner = BwaRunProcessingAligner(output_dirs, current_genome_folder, platform)
 
             aligner_reference_index = readset.aligner.get_reference_index()
             annotation_files = readset.aligner.get_annotation_files()
@@ -567,7 +567,7 @@ def parse_freezeman_readset_file(
                     readset._reference_file = reference_file
                     readset._dictionary_file = dictionary_file
                     readset._bam = os.path.join(
-                        output_dirs[f"Aligned.{readset.lane}_directory"],
+                        output_dirs[readset.lane][f"Aligned.{readset.lane}_directory"],
                         'alignment',
                         sample_name,
                         'run' + readset.run + "_" + readset.lane,
@@ -733,7 +733,7 @@ def parse_clarity_readset_file(
             readset._beds = []
 
         fastq_file_pattern = os.path.join(
-            output_dirs[f"Unaligned.{readset.lane}_directory"],
+            output_dirs[readset.lane][f"Unaligned.{readset.lane}_directory"],
             "Project_" + readset.project_id,
             "Sample_" + readset.name,
             readset.name + '_S' + readset.sample_number + "_L00" + readset.lane + "_R{read_number}_001.fastq.gz"
@@ -770,16 +770,16 @@ def parse_clarity_readset_file(
 
             if readset.is_10x:
                 if readset.is_rna:
-                    readset._aligner = CellrangerRunProcessingAligner(output_dir, current_genome_folder, common_platform)
+                    readset._aligner = CellrangerRunProcessingAligner(output_dirs, current_genome_folder, common_platform)
                 elif readset.is_atac:
-                    readset._aligner = AtacRunProcessingAligner(output_dir, current_genome_folder, common_platform)
+                    readset._aligner = AtacRunProcessingAligner(output_dirs, current_genome_folder, common_platform)
             elif readset.is_rna:
                 if readset.is_scrna:
-                    readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(read2cycles), common_platform)
+                    readset._aligner = StarRunProcessingAligner(output_dirs, current_genome_folder, int(read2cycles), common_platform)
                 else:
-                    readset._aligner = StarRunProcessingAligner(output_dir, current_genome_folder, int(read1cycles), common_platform)                
+                    readset._aligner = StarRunProcessingAligner(output_dirs, current_genome_folder, int(read1cycles), common_platform)                
             else:
-                readset._aligner = BwaRunProcessingAligner(output_dir, current_genome_folder, common_platform)
+                readset._aligner = BwaRunProcessingAligner(output_dirs, current_genome_folder, common_platform)
 
             aligner_reference_index = readset.aligner.get_reference_index()
             annotation_files = readset.aligner.get_annotation_files()
@@ -792,7 +792,7 @@ def parse_clarity_readset_file(
                     readset._reference_file = reference_file
                     readset._dictionary_file = dictionary_file
                     readset._bam = os.path.join(
-                        output_dirs[f"Aligned.{readset.lane}_directory"],
+                        output_dirs[readset.lane][f"Aligned.{readset.lane}_directory"],
                         'alignment',
                         sample_name,
                         'run' + readset.run + "_" + readset.lane,

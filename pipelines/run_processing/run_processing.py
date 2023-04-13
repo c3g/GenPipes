@@ -171,13 +171,9 @@ class RunProcessing(common.MUGQICPipeline):
         super(RunProcessing, self).__init__(protocol)
 
     @property
-    def readsets(self):
-        if not hasattr(self, "_readsets"):
-            self._readsets = {}
-            if not hasattr(self, "_mask"):
-                self._mask = {}
-            if not hasattr(self, "_output_dirs"):
-                self._output_dirs = {}
+    def output_dirs(self):
+        if not hasattr(self, "_output_dirs"):
+            self._output_dirs = {}
             for lane in self.lanes:
                 self._output_dirs[lane] = {
                     f"Unaligned.{lane}_directory": os.path.relpath(os.path.join(self.output_dir, f"Unaligned.{lane}"), self.output_dir),
@@ -187,22 +183,20 @@ class RunProcessing(common.MUGQICPipeline):
                     "index_directory": os.path.relpath(os.path.join(self.output_dir, 'index'), self.output_dir),
                     "report_directory": os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
                 }
+        return self._output_dirs
+
+    @property
+    def readsets(self):
+        if not hasattr(self, "_readsets"):
+            self._readsets = {}
+            if not hasattr(self, "_mask"):
+                self._mask = {}
+            for lane in self.lanes:
                 self._readsets[lane] = self.load_readsets(lane)
                 if not int(self.index1cycles[lane]) + int(self.index2cycles[lane]) == 0:
                     self._mask[lane] = self.get_mask(lane)
                     self.generate_lane_sample_sheet(lane)
         return self._readsets
-
-    @property
-    def output_dirs(self):
-        if not hasattr(self, "_output_dirs"):
-            _raise(SanitycheckError("No output_dirs could be found !!"))
-        return self._output_dirs
-    @property
-    def mask(self):
-        if not hasattr(self, "_mask"):
-            _raise(SanitycheckError("No mask could be found !!"))
-        return self._mask
 
     @property
     def samples(self):
