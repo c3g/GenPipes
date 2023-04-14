@@ -7,16 +7,12 @@
 # OUT : folder containing graphs (.pdf) and a table containing all values (.csv)
 #
 
-library(dplyr, warn.conflicts = FALSE) #avoid conflict message for duplicate functions
-library(kimisc) #for seconds_to_hms function
+library(dplyr, warn.conflicts = FALSE)  #avoid conflict message for duplicate functions
+library(kimisc)                         #for seconds_to_hms function
 library(lubridate)
 
 # Library for plot
 library(ggplot2)
-library(dplyr)
-library(hrbrthemes)
-library(cowplot)
-library(patchwork)
 
 
 # ask for job_output path
@@ -425,7 +421,7 @@ Keep_hour <- function(df, df2 = NA, unite = NA){
 
 	# gl pour pull depuis ~/apps/genpipes pour tout à jour
 
-#############
+############## RESULT ###########################################################
 
 #function call with complete list of .o file
 result <- parsed_folder(job_output_path)
@@ -451,7 +447,7 @@ complete_path_name_csv <- paste(c(complete_path_name,"csv"), collapse =".")
 #Write csv in job_output folder
 write.csv(Info_df, complete_path_name_csv, row.names=TRUE)
 
-
+ 
 ############## Custom specfific dataFrame for ploting ##########################
 #Change WaitingTime, RunTime and TimeLimit format
 
@@ -487,39 +483,8 @@ p_WaintingTime <- ggplot(DF_plot, aes(x=as.factor(JobName), y=WaitingTime, label
   xlab("Step name") +
   ggtitle("WaitingTime for each step (EligibleTime to StartTime)")
 
-#############
-#RunTime vs TimeLimit
-#efficiency RunTime (RunTime / TimeLimit)
-#RunTime_Efficiency
-# p1 <- ggplot(DF_plot, aes(x=as.factor(JobName), y=as.numeric(RunTime_Efficiency), label= as.numeric(RunTime_Efficiency))) + 
-#   coord_flip() +
-#   theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
-#         panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),) +
-#   geom_boxplot(fill="red", alpha=0.2) + 
-#   geom_text(hjust=-0.5, vjust=-0.5) +
-#   ylab(paste(c("RunTime_Efficiency (", Time_unite, ")"), collapse ="")) +
-#   xlab("Step name") +
-#   ggtitle("RunTime_Efficiency for each step") 
-#   
-###################### A CUSTOM ET À AJOUTER AVEC LES DEUX SUIVANTS DANS WRAP ELEMENT
+############## RunTime vs RunTime_Efficiency Plot ##############################
 
-
-#RunTime
-# p2 <- ggplot(DF_plot, aes(x=as.factor(JobName), y=RunTime, label= as.numeric(RunTime))) + 
-#   theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
-#         panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),) +
-#   geom_boxplot(fill="slateblue", alpha=0.2) + 
-#   coord_flip() +
-#   geom_text(hjust=-0.5, vjust=-0.5) +
-#   ylab(paste(c("RunTime (", Time_unite, ")"), collapse ="")) +
-#   xlab("Step name") +
-#   ggtitle("RunTime for each step")
-# 
-# p1 + p2
-
-
-
-coeff <- 1
 
 ggplot(DF_plot, aes(x=as.factor(JobName))) +
   
@@ -542,15 +507,22 @@ ggplot(DF_plot, aes(x=as.factor(JobName))) +
                 fill="#69b3a2",
                 ) + 
 
-  geom_boxplot( aes(y=RunTime_Efficiency.y * 10),
+  geom_point( aes(y=RunTime_Efficiency.y),
                 color="red",
                 alpha=0.7) +
 
   ggtitle("RunTime and RunTime_Efficiency") +
   
+  geom_text(y =  as.numeric(DF_plot$RunTime_Efficiency.y),
+            label = as.numeric(DF_plot$RunTime_Efficiency.y),
+            color="red",
+            size=3,
+            nudge_x = -0.5, nudge_y = -0.5,
+            check_overlap = TRUE) +
+  
   # geom_label(
   #   y =  as.numeric(DF_plot$RunTime),
-  #   label = as.numeric(DF_plot$RunTime), 
+  #   label = as.numeric(DF_plot$RunTime),
   #   nudge_x = 0.5, nudge_y = 0.5
   # ) +
 
@@ -568,11 +540,10 @@ ggplot(DF_plot, aes(x=as.factor(JobName))) +
     
     # Add a second axis and specify its features
     #sec.axis = sec_axis(~.*coeff, name="Second Axis")
-    sec.axis = sec_axis(~.*coeff / max(DF_plot$RunTime),
+    sec.axis = sec_axis(~./ max(DF_plot$RunTime),
                         name="RunTime_Efficiency (between 0 and 1)")
   )
 
-#text(p, DF_plot$RunTime_Efficiency , paste("max of RunTime_Efficiency:", max(DF_plot$RunTime_Efficiency), sep=" ") ,cex=1)
 
 ############# R MarkDown
 #toutes les infos (csv + plots + rapides explications de ce qui est montré)
