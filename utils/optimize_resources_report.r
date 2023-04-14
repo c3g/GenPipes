@@ -14,6 +14,10 @@ library(lubridate)
 # Library for plot
 library(ggplot2)
 
+#library for RMarkDown
+library(knitr)
+library(markdown)
+
 
 # ask for job_output path
 #cat("Job_output path: ");
@@ -407,7 +411,6 @@ Keep_hour <- function(df, df2 = NA, unite = NA){
 #graph memory
   #verif modules beluga
   #test beluga
-#labels partout
 #création RMarkdown
 
 #memory avec seff en dessous, à lancer depuis beluga donc push depuis local et pull depuis beluga
@@ -435,7 +438,7 @@ print(Info_df)
 #' The following dataframe contain all values found and will be used to create next plots
 print(DF_plot)
 
-############## Register file
+############## Register file ###################################################
 ##Register dataframe as CSV
 #Create name with date
 actual_date_time <- strsplit(x= as.character(Sys.time()), split = " ")[[1]][1:2] %>%
@@ -470,83 +473,159 @@ DF_max_Eff <- DF_plot[c(1, 8)] %>% group_by(JobName) %>% top_n(1, RunTime_Effici
 DF_plot <- merge(DF_plot, DF_max_Eff, by = "JobName")
 
 ############## WaitingTime Plot ################################################
-#WaitingTime plot
 
-#+ fig.width=50, fig.height=50
 p_WaintingTime <- ggplot(DF_plot, aes(x=as.factor(JobName), y=WaitingTime, label= as.numeric(WaitingTime))) + 
-  theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
-        panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),) +
-  geom_boxplot(fill="slateblue", alpha=0.2) + 
-  coord_flip() +
-  geom_text(hjust=-0.5, vjust=-0.5) +
-  ylab(paste(c("WaitingTime (", Waiting_unite, ")"), collapse ="")) +
-  xlab("Step name") +
-  ggtitle("WaitingTime for each step (EligibleTime to StartTime)")
+              theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
+                    panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),) +
+              geom_boxplot(fill="slateblue", alpha=0.2) + 
+              coord_flip() +
+              geom_text(hjust=-0.5, vjust=-0.5) +
+              ylab(paste(c("WaitingTime (", Waiting_unite, ")"), collapse ="")) +
+              xlab("Step name") +
+              ggtitle("WaitingTime for each step (EligibleTime to StartTime)")
 
 ############## RunTime vs RunTime_Efficiency Plot ##############################
 
 
-ggplot(DF_plot, aes(x=as.factor(JobName))) +
+p_RunTime <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
   
-  theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
-        panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
-        axis.title.x.top = element_text(color = "red", size=13),
-        axis.title.x.bottom = element_text(color = "blue", size=13),
-        axis.title.y = element_text(size=13),
-        ) +
-  
-  coord_flip() +
-  
-  xlab("Step name") +
-  
-  ylab(paste(c("RunTime (", Time_unite, ")"), collapse ="")) +
-  
-  geom_boxplot( aes(y=RunTime),
-                alpha=0.2,
-                color="blue",
-                fill="#69b3a2",
-                ) + 
+              theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
+                    panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
+                    axis.title.x.top = element_text(color = "red", size=13),
+                    axis.title.x.bottom = element_text(color = "blue", size=13),
+                    axis.title.y = element_text(size=13),
+                    ) +
+              
+              coord_flip() +
+              
+              xlab("Step name") +
+              
+              ylab(paste(c("RunTime (", Time_unite, ")"), collapse ="")) +
+              
+              geom_boxplot( aes(y=RunTime),
+                            alpha=0.2,
+                            color="blue",
+                            fill="#69b3a2",
+                            ) + 
+            
+              geom_point( aes(y=RunTime_Efficiency.y),
+                            color="red",
+                            alpha=0.7) +
+            
+              ggtitle("RunTime and RunTime_Efficiency") +
+              
+              geom_text(y =  as.numeric(DF_plot$RunTime_Efficiency.y),
+                        label = as.numeric(DF_plot$RunTime_Efficiency.y),
+                        color="red",
+                        size=3,
+                        nudge_x = -0.5, nudge_y = -0.5,
+                        check_overlap = TRUE) +
+              
+              # geom_label(
+              #   y =  as.numeric(DF_plot$RunTime),
+              #   label = as.numeric(DF_plot$RunTime),
+              #   nudge_x = 0.5, nudge_y = 0.5
+              # ) +
+            
+              # geom_label(
+              #   #data = data.frame(DF_plot$RunTime_Efficiency),
+              #   y =  DF_plot$RunTime_Efficiency,
+              #   label = DF_plot$RunTime_Efficiency,
+              #   nudge_x = 0.5, nudge_y = 0.5
+              # ) +
+            
+              scale_y_continuous(
+                
+                # Features of the first axis
+                name = paste(c("RunTime (", Time_unite, ")"), collapse =""),
+                
+                # Add a second axis and specify its features
+                #sec.axis = sec_axis(~.*coeff, name="Second Axis")
+                sec.axis = sec_axis(~./ max(DF_plot$RunTime),
+                                    name="RunTime_Efficiency (percentage)")
+              )
 
-  geom_point( aes(y=RunTime_Efficiency.y),
-                color="red",
-                alpha=0.7) +
 
-  ggtitle("RunTime and RunTime_Efficiency") +
+
+
+############## Memory_Efficiency vs Memory_Request #############################
+
+p_Memory <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
   
-  geom_text(y =  as.numeric(DF_plot$RunTime_Efficiency.y),
-            label = as.numeric(DF_plot$RunTime_Efficiency.y),
-            color="red",
-            size=3,
-            nudge_x = -0.5, nudge_y = -0.5,
-            check_overlap = TRUE) +
-  
-  # geom_label(
-  #   y =  as.numeric(DF_plot$RunTime),
-  #   label = as.numeric(DF_plot$RunTime),
-  #   nudge_x = 0.5, nudge_y = 0.5
-  # ) +
+              theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
+                    panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
+                    axis.title.x.top = element_text(color = "red", size=13),
+                    axis.title.x.bottom = element_text(color = "blue", size=13),
+                    axis.title.y = element_text(size=13),
+              ) +
+              
+              coord_flip() +
+              
+              xlab("Step name") +
+              
+              ylab(paste(c("Memory_Request (", Time_unite, ")"), collapse ="")) +
+              
+              geom_boxplot( aes(y=Memory_Request),
+                            alpha=0.2,
+                            color="blue",
+                            fill="#69b3a2",
+              ) + 
+              
+              geom_point( aes(y=Memory_Efficiency),
+                          color="red",
+                          alpha=0.7) +
+              
+              ggtitle("Memory_Request and RunTime_Efficiency") +
+              
+              geom_text(y =  as.numeric(DF_plot$Memory_Efficiency),
+                        label = as.numeric(DF_plot$Memory_Efficiency),
+                        color="red",
+                        size=3,
+                        nudge_x = -0.5, nudge_y = -0.5,
+                        check_overlap = TRUE) +
+              
+              # geom_label(
+              #   y =  as.numeric(DF_plot$Memory_Request),
+              #   label = as.numeric(DF_plot$Memory_Request),
+              #   nudge_x = 0.5, nudge_y = 0.5
+              # ) +
+              
+              # geom_label(
+              #   #data = data.frame(DF_plot$Memory_Efficiency),
+              #   y =  DF_plot$Memory_Efficiency,
+              #   label = DF_plot$Memory_Efficiency,
+            #   nudge_x = 0.5, nudge_y = 0.5
+            # ) +
+            
+            scale_y_continuous(
+              
+              # Features of the first axis
+              name = paste(c("Memory_Request (", Time_unite, ")"), collapse =""),
+              
+              # Add a second axis and specify its features
+              #sec.axis = sec_axis(~.*coeff, name="Second Axis")
+              sec.axis = sec_axis(~./ max(DF_plot$Memory_Request),
+                                  name="Memory_Efficiency (between 0 and 1)")
+            )
 
-  # geom_label(
-  #   #data = data.frame(DF_plot$RunTime_Efficiency),
-  #   y =  DF_plot$RunTime_Efficiency,
-  #   label = DF_plot$RunTime_Efficiency,
-  #   nudge_x = 0.5, nudge_y = 0.5
-  # ) +
-
-  scale_y_continuous(
-    
-    # Features of the first axis
-    name = paste(c("RunTime (", Time_unite, ")"), collapse =""),
-    
-    # Add a second axis and specify its features
-    #sec.axis = sec_axis(~.*coeff, name="Second Axis")
-    sec.axis = sec_axis(~./ max(DF_plot$RunTime),
-                        name="RunTime_Efficiency (between 0 and 1)")
-  )
 
 
-############# R MarkDown
+
+############## R MarkDown #######################################################
 #toutes les infos (csv + plots + rapides explications de ce qui est montré)
 #peut-être intéractif, couleurs changent en fonction des valeurs des plots
 # 
 #rmarkdown::render("~/Documents/local/apps/genpipes/utils/optimize_resources_report.r")
+
+# Actual_path <- rstudioapi::getActiveDocumentContext()$path #get actual absolute path
+# rmarkdown::render(input = Actual_path,
+#                   output_dir = "/Users/mleguen/Documents/local/apps/genpipes/utils/",
+#                   clean = TRUE
+#                   )
+
+
+
+
+
+
+
