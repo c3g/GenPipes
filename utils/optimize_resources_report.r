@@ -162,7 +162,7 @@ parsed_folder <- function(folder_path_list){
 			# Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
 
 			# # #Memory_Request
-			# Memory_Request <- strsplit(x = Pos_eli_time, split = " ")[[1]][5]
+			# Memory_Request <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][5]
 
 			Memory_Efficiency <- NA
 			Memory_Request <- NA
@@ -506,7 +506,10 @@ p_RunTime <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
                             alpha=0.2,
                             color="blue",
                             fill="#69b3a2",
+                            width = 0.3,
                             ) + 
+  
+              scale_x_discrete(expand = c(0.05, 0)) +
             
               geom_point( aes(y=RunTime_Efficiency.y),
                             color="red",
@@ -520,19 +523,6 @@ p_RunTime <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
                         size=3,
                         nudge_x = -0.5, nudge_y = -0.5,
                         check_overlap = TRUE) +
-              
-              # geom_label(
-              #   y =  as.numeric(DF_plot$RunTime),
-              #   label = as.numeric(DF_plot$RunTime),
-              #   nudge_x = 0.5, nudge_y = 0.5
-              # ) +
-            
-              # geom_label(
-              #   #data = data.frame(DF_plot$RunTime_Efficiency),
-              #   y =  DF_plot$RunTime_Efficiency,
-              #   label = DF_plot$RunTime_Efficiency,
-              #   nudge_x = 0.5, nudge_y = 0.5
-              # ) +
             
               scale_y_continuous(
                 
@@ -541,10 +531,9 @@ p_RunTime <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
                 
                 # Add a second axis and specify its features
                 #sec.axis = sec_axis(~.*coeff, name="Second Axis")
-                sec.axis = sec_axis(~./ max(DF_plot$RunTime),
+                sec.axis = sec_axis(~. ,                                           # * 100 / max(DF_plot$RunTime)
                                     name="RunTime_Efficiency (percentage)")
               )
-
 
 
 
@@ -604,14 +593,19 @@ p_Memory <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
               
               # Add a second axis and specify its features
               #sec.axis = sec_axis(~.*coeff, name="Second Axis")
-              sec.axis = sec_axis(~./ max(DF_plot$Memory_Request),
+              sec.axis = sec_axis(~. ,                                            # / max(DF_plot$Memory_Request)
                                   name="Memory_Efficiency (between 0 and 1)")
             )
 
 
+############# PDF Result #######################################################
+pdf("optimize_resources_report_output.pdf")
+print(p_WaintingTime)     # Plot 1 --> in the first page of PDF
+print(p_RunTime)     # Plot 2 ---> in the second page of the PDF
+dev.off()
 
 
-############## R MarkDown #######################################################
+############## R MarkDown ######################################################
 #toutes les infos (csv + plots + rapides explications de ce qui est montré)
 #peut-être intéractif, couleurs changent en fonction des valeurs des plots
 # 
