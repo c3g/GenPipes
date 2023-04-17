@@ -8,7 +8,7 @@
 #
 
 library(dplyr, warn.conflicts = FALSE)  #avoid conflict message for duplicate functions
-library(kimisc)                         #for seconds_to_hms function
+#library(kimisc)                         #for seconds_to_hms function
 library(lubridate)
 
 # Library for plot
@@ -19,8 +19,8 @@ library(ggplot2)
 #cat("Job_output path: ");
 #job_output_path <- readLines("stdin",n=1);
 
-job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
-#job_output_path = "/scratch/matteol/genpipes_test/job_output"
+#job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
+job_output_path = "/scratch/matteol/genpipes_test/job_output"
 
 folder_path_to_o_file_list <- function(job_output_path){
 	#IN : folder path as character
@@ -138,6 +138,7 @@ parsed_folder <- function(folder_path_list){
 			#research TimeLimit
 			TimeLimit <- (research_Element(FileInput_List, "TimeLimit"))
 
+
 			#research NumCPUs
 			NumCPUs <- research_Element(FileInput_List, "NumCPUs")
 
@@ -147,21 +148,21 @@ parsed_folder <- function(folder_path_list){
 
 			#seff command give memory efficiency information (and more)
 			#Memory_Efficiency
-			# seff_resp <- system2("seff", args = JobId, stdout = TRUE)
-			# Pos_eli_time <- grep("Memory Efficiency",seff_resp)
+			seff_resp <- system2("seff", args = JobId, stdout = TRUE)
+			Pos_eli_time <- grep("Memory Efficiency",seff_resp)
 			# #return(Pos_eli_time)
 			# print(seff_resp)
 			# print(Pos_eli_time)
-			# Memory_Efficiency <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
-			# Memory_Efficiency <- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
+			Memory_Efficiency <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
+			Memory_Efficiency <- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
 
-			# Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
+			Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
 
-			# # #Memory_Request
-			# Memory_Request <- strsplit(x = Pos_eli_time, split = " ")[[1]][5]
+			# #Memory_Request
+			Memory_Request <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][5]
 
-			Memory_Efficiency <- NA
-			Memory_Request <- NA
+			#Memory_Efficiency <- NA
+			#Memory_Request <- NA
 
 			#fill df_info with new informations and rename columns
 			df_info <- data.frame(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request)
@@ -187,7 +188,7 @@ parsed_folder <- function(folder_path_list){
 									   mean_value(Info_df_temp$TimeLimit),
 									   mean_value(as.integer(Info_df_temp$NumCPUs)),
 									   mean_value(Info_df_temp$Memory_Efficiency),
-									   mean_value(Info_df_temp$Memory_Request))
+									   mean(as.numeric(Info_df_temp$Memory_Request)))
 
 			#rename columns
 			names(Info_df_temp) <- c("JobName", "WaitingTime", "RunTime", "TimeLimit", "NumCPUs", "Memory_Efficiency", "Memory_Request")
@@ -355,9 +356,9 @@ mean_value <- function(df){
 		df <- df %>%
 				hms()%>%
 				period_to_seconds()%>%
-				mean()%>%
-		    seconds_to_period()%>%
-		    seconds.to.hms()
+				mean() #%>%
+		    #seconds_to_period()%>%
+		    #seconds.to.hms()
 
 	# df already contain numerical values
 	}else{
@@ -483,10 +484,12 @@ p_WaintingTime <- ggplot(DF_plot, aes(x=as.factor(JobName), y=WaitingTime, label
   xlab("Step name") +
   ggtitle("WaitingTime for each step (EligibleTime to StartTime)")
 
+
+
 ############## RunTime vs RunTime_Efficiency Plot ##############################
 
 
-ggplot(DF_plot, aes(x=as.factor(JobName))) +
+p_RunTime <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
   
   theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
         panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
@@ -494,6 +497,8 @@ ggplot(DF_plot, aes(x=as.factor(JobName))) +
         axis.title.x.bottom = element_text(color = "blue", size=13),
         axis.title.y = element_text(size=13),
         ) +
+
+  scale_x_discrete(expand = c(0.05, 0)) +
   
   coord_flip() +
   
@@ -505,6 +510,7 @@ ggplot(DF_plot, aes(x=as.factor(JobName))) +
                 alpha=0.2,
                 color="blue",
                 fill="#69b3a2",
+		width = 0.2,
                 ) + 
 
   geom_point( aes(y=RunTime_Efficiency.y),
@@ -540,10 +546,16 @@ ggplot(DF_plot, aes(x=as.factor(JobName))) +
     
     # Add a second axis and specify its features
     #sec.axis = sec_axis(~.*coeff, name="Second Axis")
-    sec.axis = sec_axis(~./ max(DF_plot$RunTime),
-                        name="RunTime_Efficiency (between 0 and 1)")
+    sec.axis = sec_axis(~. #/ max(DF_plot$RunTime)
+    			,
+                        name="RunTime_Efficiency (%)")
   )
 
+
+pdf("optimize_resources_report_output.pdf")
+print(p_WaintingTime)     # Plot 1 --> in the first page of PDF
+print(p_RunTime)     # Plot 2 ---> in the second page of the PDF
+dev.off()
 
 ############# R MarkDown
 #toutes les infos (csv + plots + rapides explications de ce qui est montré)
