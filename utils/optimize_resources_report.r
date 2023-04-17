@@ -8,7 +8,7 @@
 #
 
 library(dplyr, warn.conflicts = FALSE)  #avoid conflict message for duplicate functions
-#library(kimisc)                         #for seconds_to_hms function
+library(kimisc)                         #for seconds_to_hms function
 library(lubridate)
 
 # Library for plot
@@ -23,8 +23,8 @@ library(markdown)
 #cat("Job_output path: ");
 #job_output_path <- readLines("stdin",n=1);
 
-#job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
-job_output_path = "/scratch/matteol/genpipes_test/job_output"
+job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
+#job_output_path = "/scratch/matteol/genpipes_test/job_output"
 
 folder_path_to_o_file_list <- function(job_output_path){
 	#IN : folder path as character
@@ -152,21 +152,21 @@ parsed_folder <- function(folder_path_list){
 
 			#seff command give memory efficiency information (and more)
 			#Memory_Efficiency
-			seff_resp <- system2("seff", args = JobId, stdout = TRUE)
-			Pos_eli_time <- grep("Memory Efficiency",seff_resp)
-			# #return(Pos_eli_time)
-			# print(seff_resp)
-			# print(Pos_eli_time)
-			Memory_Efficiency <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
-			Memory_Efficiency <- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
+			# seff_resp <- system2("seff", args = JobId, stdout = TRUE)
+			# Pos_eli_time <- grep("Memory Efficiency",seff_resp)
+			# # #return(Pos_eli_time)
+			# # print(seff_resp)
+			# # print(Pos_eli_time)
+			# Memory_Efficiency <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
+			# Memory_Efficiency <- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
+			# 
+			# Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
+			# 
+			# # #Memory_Request
+			# Memory_Request <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][5]
 
-			Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
-
-			# #Memory_Request
-			Memory_Request <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][5]
-
-			#Memory_Efficiency <- NA
-			#Memory_Request <- NA
+			Memory_Efficiency <- NA
+			Memory_Request <- NA
 
 			#fill df_info with new informations and rename columns
 			df_info <- data.frame(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request)
@@ -360,9 +360,9 @@ mean_value <- function(df){
 		df <- df %>%
 				hms()%>%
 				period_to_seconds()%>%
-				mean() #%>%
-		    #seconds_to_period()%>%
-		    #seconds.to.hms()
+				mean() %>%
+		    seconds_to_period()%>%
+		    seconds.to.hms()
 
 	# df already contain numerical values
 	}else{
@@ -444,8 +444,8 @@ print(DF_plot)
 #Create name with date
 actual_date_time <- strsplit(x= as.character(Sys.time()), split = " ")[[1]][1:2] %>%
                 paste(collapse ="_")
-file_name <- paste(c("job_output_analyse", actual_date_time), collapse ="_")
-complete_path_name <- paste(c(job_output_path,file_name), collapse ="/")
+file_name <- paste(c("optimize_ressource_report", actual_date_time), collapse ="_")
+complete_path_name <- paste(c(job_output_path, file_name), collapse ="/")
 complete_path_name_csv <- paste(c(complete_path_name,"csv"), collapse =".")
 
 #Write csv in job_output folder
@@ -465,7 +465,7 @@ DF_plot$TimeLimit <- Run_Limit[[2]]
 Time_unite <- Run_Limit[[3]]
 
 #computing percentage amount for RunTime compared to TimeLimit
-DF_plot$RunTime_Efficiency <- round((DF_plot$RunTime / DF_plot$TimeLimit) *100, 3)
+DF_plot$RunTime_Efficiency <- round((DF_plot$RunTime / DF_plot$TimeLimit) *100, 1)
 
 #compute maximal Efficiency for each step
 DF_max_Eff <- DF_plot[c(1, 8)] %>% group_by(JobName) %>% top_n(1, RunTime_Efficiency)
@@ -479,6 +479,7 @@ p_WaintingTime <- ggplot(DF_plot, aes(x=as.factor(JobName), y=WaitingTime, label
               theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
                     panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),) +
               geom_boxplot(fill="slateblue", alpha=0.2) + 
+              scale_x_discrete(expand = c(0.05, 0)) +
               coord_flip() +
               geom_text(hjust=-0.5, vjust=-0.5) +
               ylab(paste(c("WaitingTime (", Waiting_unite, ")"), collapse ="")) +
@@ -550,69 +551,63 @@ p_RunTime <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
 
 ############## Memory_Efficiency vs Memory_Request #############################
 
-p_Memory <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
+p_Memory <- ggplot(DF_memory, aes(x=as.factor(JobName))) +                               #CHANGER DF_MEMORY PAR DF_plot  
+      
+            theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
+                           panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
+                           axis.title.x.top = element_text(color = "red", size=13),
+                           axis.title.x.bottom = element_text(color = "blue", size=13),
+                           axis.title.y = element_text(size=13),
+                    ) +
   
-              theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
-                    panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
-                    axis.title.x.top = element_text(color = "red", size=13),
-                    axis.title.x.bottom = element_text(color = "blue", size=13),
-                    axis.title.y = element_text(size=13),
-              ) +
-              
-              coord_flip() +
-              
-              xlab("Step name") +
-              
-              ylab(paste(c("Memory_Request (", Time_unite, ")"), collapse ="")) +
-              
-              geom_boxplot( aes(y=Memory_Request),
-                            alpha=0.2,
-                            color="blue",
-                            fill="#69b3a2",
-              ) + 
-              
-              geom_point( aes(y=Memory_Efficiency),
-                          color="red",
-                          alpha=0.7) +
-              
-              ggtitle("Memory_Request and RunTime_Efficiency") +
-              
-              geom_text(y =  as.numeric(DF_plot$Memory_Efficiency),
-                        label = as.numeric(DF_plot$Memory_Efficiency),
-                        color="red",
-                        size=3,
-                        nudge_x = -0.5, nudge_y = -0.5,
-                        check_overlap = TRUE) +
-              
-              # geom_label(
-              #   y =  as.numeric(DF_plot$Memory_Request),
-              #   label = as.numeric(DF_plot$Memory_Request),
-              #   nudge_x = 0.5, nudge_y = 0.5
-              # ) +
-              
-              # geom_label(
-              #   #data = data.frame(DF_plot$Memory_Efficiency),
-              #   y =  DF_plot$Memory_Efficiency,
-              #   label = DF_plot$Memory_Efficiency,
-            #   nudge_x = 0.5, nudge_y = 0.5
-            # ) +
+            scale_x_discrete(expand = c(0.05, 0)) +
             
+            coord_flip() +
+            
+            xlab("Step name") +
+            
+            ylab(paste(c("Memory_Request (", Time_unite, ")"), collapse ="")) +
+            
+            geom_boxplot( aes(y=Memory_Request),
+                                           alpha=0.2,
+                                           color="blue",
+                                           fill="#69b3a2",
+                             ) + 
+            
+            geom_point( aes(y=round(Memory_Efficiency,1)),
+                                       color="red",
+                                       alpha=0.7) +
+            
+            ggtitle("Memory_Request and RunTime_Efficiency") +
+            
+            geom_text(y =  round(as.numeric(DF_memory$Memory_Efficiency),1),
+                                   label = round(as.numeric(DF_memory$Memory_Efficiency),1),
+                                   color="red",
+                                   size=3,
+                                   nudge_x = -0.5, nudge_y = -0.5,
+                                   check_overlap = TRUE) +
+  
             scale_y_continuous(
-              
+            
               # Features of the first axis
               name = paste(c("Memory_Request (", Time_unite, ")"), collapse =""),
               
               # Add a second axis and specify its features
-              #sec.axis = sec_axis(~.*coeff, name="Second Axis")
-              sec.axis = sec_axis(~. ,                                            # / max(DF_plot$Memory_Request)
-                                  name="Memory_Efficiency (between 0 and 1)")
+              sec.axis = sec_axis(~. ,                                            
+                                  name="Memory_Efficiency (%)")
             )
 
-
 ############# PDF Result #######################################################
-pdf("optimize_resources_report_output.pdf")
-print(p_WaintingTime)     # Plot 1 --> in the first page of PDF
-print(p_RunTime)     # Plot 2 ---> in the second page of the PDF
+#create path and file name
+pdf_file_name <- paste(c("optimize_resources_report_plots", actual_date_time), collapse ="_")
+pdf_complete_path_name <- paste(c(job_output_path, pdf_file_name), collapse ="/")            
+pdf_complete_path_name <- paste(c(pdf_complete_path_name,"pdf"), collapse =".")
+
+#create pdf file from plots
+pdf(pdf_complete_path_name)
+print(p_WaintingTime)     # Page 1
+print(p_RunTime)          # Page 2 
+print(p_Memory)           # Page 3
 dev.off()
 
 ############# R MarkDown
