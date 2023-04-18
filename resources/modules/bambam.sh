@@ -7,9 +7,6 @@ ARCHIVE=$SOFTWARE-${VERSION}.tar.gz
 ARCHIVE_URL=https://sourceforge.net/projects/bambam/files/$SOFTWARE-${VERSION}.tgz
 SOFTWARE_DIR=$SOFTWARE-$VERSION
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   tar -xzvf $ARCHIVE
