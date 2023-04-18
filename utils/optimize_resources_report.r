@@ -19,7 +19,7 @@ library(knitr)
 library(markdown)
 
 
-# ask for job_output path
+#ask for job_output path
 #cat("Job_output path: ");
 #job_output_path <- readLines("stdin",n=1);
 
@@ -29,7 +29,7 @@ job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output
 folder_path_to_o_file_list <- function(job_output_path){
 	#IN : folder path as character
 	#OUT : list containing sub list for each step type containing .o file path
-
+  
 	#list all folders path in job_output folder as list
 	job_output_list_folder <- (list.dirs(path = job_output_path,
 										recursive = FALSE,
@@ -334,7 +334,10 @@ research_Element <- function(Input_file, Researched_element){
 			return (Only_Element)
 		},
 		error = function(cond){
-			### MESSAGE A AJOUTER POUR CAUSE STOP ###
+		  print("The following element asn't been found : ")
+		  print(Researched_element)
+		  
+      return(NA)
 		}
 	)
 	return (out)
@@ -409,10 +412,6 @@ Keep_hour <- function(df, df2 = NA, unite = NA){
 ############# TO DO
 ### TO DO ###
 
-#graph memory
-  #verif modules beluga
-  #test beluga
-#création RMarkdown
 
 #memory avec seff en dessous, à lancer depuis beluga donc push depuis local et pull depuis beluga
 	# ga nom de fichier --> add
@@ -478,10 +477,14 @@ DF_plot <- merge(DF_plot, DF_max_Eff, by = "JobName")
 p_WaintingTime <- ggplot(DF_plot, aes(x=as.factor(JobName), y=WaitingTime, label= as.numeric(WaitingTime))) + 
               theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
                     panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),) +
-              geom_boxplot(fill="slateblue", alpha=0.2) + 
+              geom_boxplot(color="blue",
+                           fill="#69b3a2",
+                           alpha=0.2) + 
               scale_x_discrete(expand = c(0.05, 0)) +
               coord_flip() +
-              geom_text(hjust=-0.5, vjust=-0.5) +
+              geom_text(data = . %>% group_by(JobName) %>% filter(WaitingTime == max(WaitingTime)),
+                        nudge_y = 0.45,
+                        check_overlap = TRUE) +
               ylab(paste(c("WaitingTime (", Waiting_unite, ")"), collapse ="")) +
               xlab("Step name") +
               ggtitle("WaitingTime for each step (EligibleTime to StartTime)")
@@ -512,28 +515,29 @@ p_RunTime <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
                 alpha=0.2,
                 color="blue",
                 fill="#69b3a2",
-		width = 0.2,
+		            #width = 0.6,
                 ) + 
 
-  geom_point( aes(y=RunTime_Efficiency.y),
+  geom_point( aes(y= round(RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
                 color="red",
-                alpha=0.7) +
+                alpha=0.5) +
 
   ggtitle("RunTime and RunTime_Efficiency") +
   
               scale_x_discrete(expand = c(0.05, 0)) +
             
-              geom_point( aes(y=RunTime_Efficiency.y),
+              geom_point( aes(y=round(RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
                             color="red",
-                            alpha=0.7) +
+                            alpha=0.5) +
             
               ggtitle("RunTime and RunTime_Efficiency") +
               
-              geom_text(y =  as.numeric(DF_plot$RunTime_Efficiency.y),
-                        label = as.numeric(DF_plot$RunTime_Efficiency.y),
+              geom_text(y =  as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
+                        label = as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
                         color="red",
-                        size=3,
-                        nudge_x = -0.5, nudge_y = -0.5,
+                        size=2.5,
+                        nudge_x = 0.5, 
+                        nudge_y = 0,
                         check_overlap = TRUE) +
             
               scale_y_continuous(
@@ -543,7 +547,7 @@ p_RunTime <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
                 
                 # Add a second axis and specify its features
                 #sec.axis = sec_axis(~.*coeff, name="Second Axis")
-                sec.axis = sec_axis(~. ,                                           # * 100 / max(DF_plot$RunTime)
+                sec.axis = sec_axis(~. *100 / max(DF_plot$RunTime),                                           # * 100 / max(DF_plot$RunTime)
                                     name="RunTime_Efficiency (percentage)")
               )
 
@@ -569,22 +573,23 @@ p_Memory <- ggplot(DF_memory, aes(x=as.factor(JobName))) +                      
             ylab(paste(c("Memory_Request (", Time_unite, ")"), collapse ="")) +
             
             geom_boxplot( aes(y=Memory_Request),
-                                           alpha=0.2,
+                                           alpha=0.1,
                                            color="blue",
                                            fill="#69b3a2",
                              ) + 
             
-            geom_point( aes(y=round(Memory_Efficiency,1)),
+            geom_point( aes(y=round(Memory_Efficiency * 100 / max(DF_memory$Memory_Request),1)),
                                        color="red",
-                                       alpha=0.7) +
+                                       alpha=0.5) +
             
             ggtitle("Memory_Request and RunTime_Efficiency") +
             
-            geom_text(y =  round(as.numeric(DF_memory$Memory_Efficiency),1),
-                                   label = round(as.numeric(DF_memory$Memory_Efficiency),1),
+            geom_text(y =  round(as.numeric(DF_memory$Memory_Efficiency * 100 / max(DF_memory$Memory_Request)),1),
+                                   label = round(as.numeric(DF_memory$Memory_Efficiency * 100 / max(DF_memory$Memory_Request)),1),
                                    color="red",
                                    size=3,
-                                   nudge_x = -0.5, nudge_y = -0.5,
+                                   nudge_x = 0.5, 
+                                   #nudge_y = 1,
                                    check_overlap = TRUE) +
   
             scale_y_continuous(
