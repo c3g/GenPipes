@@ -7,24 +7,36 @@
 # OUT : folder containing graphs (.pdf) and a table containing all values (.csv)
 #
 
-library(dplyr, warn.conflicts = FALSE)  #avoid conflict message for duplicate functions
-library(kimisc)                         #for seconds_to_hms function
-library(lubridate)
+suppressMessages(library(dplyr, warn.conflicts = FALSE))  #avoid conflict message for duplicate functions
+#library(kimisc)                         #for seconds_to_hms function
+suppressMessages(library(lubridate))
 
 # Library for plot
-library(ggplot2)
+suppressMessages(library(ggplot2))
 
 #library for RMarkDown
-library(knitr)
-library(markdown)
+suppressMessages(library(knitr))
+suppressMessages(library(markdown))
 
 
 #ask for job_output path
-#cat("Job_output path: ");
-#job_output_path <- readLines("stdin",n=1);
+cat("Job_output path: ");
+job_output_path <- readLines("stdin",n=1);
 
-job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
+#job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
 #job_output_path = "/scratch/matteol/genpipes_test/job_output"
+
+print(file.exists(job_output_path))
+
+foo(job_output_path)
+foo <- function(job_output_path) {
+    	stopifnot(file.exists(job_output_path))
+	print("appel")
+        result <- parsed_folder(job_output_path)
+	
+	Info_df <- result[[1]]
+	DF_plot <- result[[2]]
+	}
 
 folder_path_to_o_file_list <- function(job_output_path){
 	#IN : folder path as character
@@ -427,10 +439,10 @@ Keep_hour <- function(df, df2 = NA, unite = NA){
 ############## RESULT ###########################################################
 
 #function call with complete list of .o file
-result <- parsed_folder(job_output_path)
+#result <- parsed_folder(job_output_path)
 
-Info_df <- result[[1]]
-DF_plot <- result[[2]]
+#Info_df <- result[[1]]
+#DF_plot <- result[[2]]
 
 #' The following dataframe contain average values parsed in .o files contained in the job_output file gived.
 print(Info_df)
