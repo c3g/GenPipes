@@ -55,7 +55,7 @@ create_c3g_wrappers() {
     echo $i;
     mv $i $i.raw;
     echo '#!/bin/sh' > $i
-    echo "$INTERPRETER --library-path $LIBDIR $i.raw \${@}" >> $i;
+    echo "$INTERPRETER --library-path $LIBDIR $i.raw \"\${@}\"" >> $i;
     chmod a+x $i
   done
 }
