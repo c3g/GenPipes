@@ -73,6 +73,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  OUTPUT={output} \\
  BAIT_INTERVALS={baits} \\
  TARGET_INTERVALS={intervals} \\
+ {other_options} \\
  REFERENCE_SEQUENCE={reference_sequence}""".format(
             tmp_dir=config.param('picard_calculate_hs_metrics', 'tmp_dir'),
             java_other_options=config.param('picard_calculate_hs_metrics', 'java_other_options'),
@@ -81,6 +82,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             output=output,
             intervals=intervals,
             baits=baits_intervals if baits_intervals != "" else intervals,
+            other_options=config.param('picard_calculate_hs_metrics', 'other_options') if config.param('picard_calculate_hs_metrics', 'other_options', required=False) else "",
             reference_sequence=reference_sequence if reference_sequence else config.param('picard_calculate_hs_metrics', 'genome_fasta', param_type='filepath')
             )
         )
