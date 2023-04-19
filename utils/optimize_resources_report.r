@@ -8,7 +8,7 @@
 #
 
 suppressMessages(library(dplyr, warn.conflicts = FALSE))  #avoid conflict message for duplicate functions
-#library(kimisc)                         #for seconds_to_hms function
+suppressMessages(library(kimisc))                         #for seconds_to_hms function
 suppressMessages(library(lubridate))
 
 # Library for plot
@@ -20,23 +20,21 @@ suppressMessages(library(markdown))
 
 
 #ask for job_output path
-cat("Job_output path: ");
-job_output_path <- readLines("stdin",n=1);
+# cat("Job_output path: ");
+# job_output_path <- readLines("stdin",n=1);
 
-#job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
+job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
 #job_output_path = "/scratch/matteol/genpipes_test/job_output"
 
-print(file.exists(job_output_path))
 
-foo(job_output_path)
-foo <- function(job_output_path) {
-    	stopifnot(file.exists(job_output_path))
-	print("appel")
-        result <- parsed_folder(job_output_path)
-	
-	Info_df <- result[[1]]
-	DF_plot <- result[[2]]
-	}
+# foo(job_output_path)
+# foo <- function(job_output_path) {
+#     	stopifnot(file.exists(job_output_path))
+# 	print("appel")
+#         result <- parsed_folder(job_output_path)
+# 	
+# 	
+# 	}
 
 folder_path_to_o_file_list <- function(job_output_path){
 	#IN : folder path as character
@@ -90,8 +88,8 @@ folder_path_to_o_file_list <- function(job_output_path){
 }
 
 parsed_folder <- function(folder_path_list){
-	#IN : list of .o file path
-	#OUT : dataset containing wanted information from these files
+	#IN :   list of .o file path
+	#OUT :  dataset containing wanted information from these files
 
 	#récup path list
 	file_path_list <- folder_path_to_o_file_list(folder_path_list)
@@ -105,6 +103,7 @@ parsed_folder <- function(folder_path_list){
 							Memory_Efficiency = as.numeric(),
 							Memory_Request = as.numeric())
   
+	#data.frame creation for plots, this dataframe is made to keep all values
 	DF_plot <<- data.frame(	JobName = as.character(),
 	                        WaitingTime = as.character(),
 	                        RunTime = as.character(),
@@ -153,7 +152,6 @@ parsed_folder <- function(folder_path_list){
       
 			#research TimeLimit
 			TimeLimit <- (research_Element(FileInput_List, "TimeLimit"))
-
 
 			#research NumCPUs
 			NumCPUs <- research_Element(FileInput_List, "NumCPUs")
@@ -214,40 +212,13 @@ parsed_folder <- function(folder_path_list){
 		Info_df <- rbind(Info_df, Info_df_temp)
 	
 	}
-
+	
 	 #Change WaitingTime format
 	 Info_df$WaitingTime <- ChangeWaitingTimeFormat(Info_df$WaitingTime)
 	 DF_plot$WaitingTime <- ChangeWaitingTimeFormat(DF_plot$WaitingTime)
-# 	 Info_df$WaitingTime <- round(as.double(Info_df$WaitingTime), digits = 2) %>% 
-#  	 						gsub(pattern = "\\.", replacement = ":")
-# 
-# 	 for (i in 1:length(Info_df$WaitingTime)){
-# 	 	time <- as.character(Info_df$WaitingTime[i])
-# 	 	min <- strsplit(x = time, split = ":")[[1]][1]
-# 	 	sec <- strsplit(x = time, split = ":")[[1]][2]
-# 
-# 	 	# transforme minutes into hours and min
-# 	 	h <- as.numeric(min) %/% 60
-# 	 	h <- add_0_time(h)
-# 
-# 	 	min <- as.numeric(min) %% 60
-# 	 	min <- add_0_time(min)
-# 
-# 	 	#specific verification for sec because of
-# 	 	if (is.na(sec)){
-# 	 		sec <- "00"
-# 	 	}else{
-# 	 		sec <- as.numeric(sec)
-# 	 		sec <- add_0_time(sec)
-# 	 	}
-# 
-# 	 	#re-create the full WaitingTime value
-# 	 	Info_df$WaitingTime[i] <- paste(c(h, min, sec), collapse=":")
 
-	#}
-
+	 
 	#return complete dataframe
-	#return (Info_df, DF_plot)
 	return(list(Info_df, DF_plot))
 }
 
@@ -285,6 +256,9 @@ ChangeWaitingTimeFormat <- function(df){
 }
 
 day_into_hours <- function(df){
+  #IN :   data.frame object containing D-H:M:S format values
+  #OUT :  data.frame object containing H:M:S format values where days are turned into hours 
+  
 	#Convert day into hours TimeLimit
 	for (i in 1:length(df)){
 
@@ -312,8 +286,8 @@ day_into_hours <- function(df){
 }
 
 add_0_time <- function(number){
-		#print("number")
-		#print(number)
+  #IN :   a number object
+  #OUT :  same number with a 0 in front of it if it's smaller than 10
 		if (is.na(number)){
 		  number <- 0
 		}
@@ -370,8 +344,6 @@ mean_value <- function(df){
 
 	#case where df contain character values
 	if (is.character(df)){
-	  #print(df)
-	  #print(typeof(df))
 		df <- df %>%
 				hms()%>%
 				period_to_seconds()%>%
@@ -421,34 +393,19 @@ Keep_hour <- function(df, df2 = NA, unite = NA){
 }
 
 
-############# TO DO
-### TO DO ###
-
-
-#memory avec seff en dessous, à lancer depuis beluga donc push depuis local et pull depuis beluga
-	# ga nom de fichier --> add
-	# gc -m "message"
-	# gp
-
-	#gst pour avoir state et vérifier état
-
-	# push faisable depuis sublime merge = plus facile
-
-	# gl pour pull depuis ~/apps/genpipes pour tout à jour
-
 ############## RESULT ###########################################################
 
 #function call with complete list of .o file
-#result <- parsed_folder(job_output_path)
+result <- parsed_folder(job_output_path)
 
-#Info_df <- result[[1]]
-#DF_plot <- result[[2]]
+Info_df <- result[[1]]
+DF_plot <- result[[2]]
 
-#' The following dataframe contain average values parsed in .o files contained in the job_output file gived.
-print(Info_df)
+# The following dataframe contain average values parsed in .o files contained in the job_output file gived.
+#print(Info_df)
 
-#' The following dataframe contain all values found and will be used to create next plots
-print(DF_plot)
+# The following dataframe contain all values found and will be used to create next plots
+#print(DF_plot)
 
 ############## Register file ###################################################
 ##Register dataframe as CSV
@@ -461,7 +418,6 @@ complete_path_name_csv <- paste(c(complete_path_name,"csv"), collapse =".")
 
 #Write csv in job_output folder
 write.csv(Info_df, complete_path_name_csv, row.names=TRUE)
-
  
 ############## Custom specfific dataFrame for ploting ##########################
 #Change WaitingTime, RunTime and TimeLimit format
@@ -472,8 +428,8 @@ DF_plot$WaitingTime <- Keep_hour(DF_plot$WaitingTime)[[1]]
 Run_Limit <- Keep_hour(DF_plot$RunTime, DF_plot$TimeLimit)
 
 DF_plot$RunTime <- Run_Limit[[1]]
-DF_plot$TimeLimit <- Run_Limit[[2]]
-Time_unite <- Run_Limit[[3]]
+DF_plot$TimeLimit <- Run_Limit[[2]]     #RunTime and TimeLimit have the same format depending on RunTime values
+Time_unite <- Run_Limit[[3]]            #unite associated with RunTime and TimeLimit columns for plot
 
 #computing percentage amount for RunTime compared to TimeLimit
 DF_plot$RunTime_Efficiency <- round((DF_plot$RunTime / DF_plot$TimeLimit) *100, 1)
@@ -489,22 +445,28 @@ DF_plot <- merge(DF_plot, DF_max_Eff, by = "JobName")
 p_WaintingTime <- ggplot(DF_plot, aes(x=as.factor(JobName), y=WaitingTime, label= as.numeric(WaitingTime))) + 
               theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
                     panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),) +
-              geom_boxplot(color="blue",
+              
+              #boxplot
+              geom_boxplot(color="blue", 
                            fill="#69b3a2",
-                           alpha=0.2) + 
+                           alpha=0.2) +     
+  
               scale_x_discrete(expand = c(0.05, 0)) +
-              coord_flip() +
-              geom_text(data = . %>% group_by(JobName) %>% filter(WaitingTime == max(WaitingTime)),
+  
+              #invert x and y axes
+              coord_flip() + 
+  
+              #label on highest values
+              geom_text(data = . %>% group_by(JobName) %>% filter(WaitingTime == max(WaitingTime)), 
                         nudge_y = 0.45,
                         check_overlap = TRUE) +
-              ylab(paste(c("WaitingTime (", Waiting_unite, ")"), collapse ="")) +
+  
+              ylab(paste(c("WaitingTime (", Waiting_unite, ")"), collapse ="")) + 
               xlab("Step name") +
               ggtitle("WaitingTime for each step (EligibleTime to StartTime)")
 
 
-
 ############## RunTime vs RunTime_Efficiency Plot ##############################
-
 
 p_RunTime <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
   
@@ -527,41 +489,40 @@ p_RunTime <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
                 alpha=0.2,
                 color="blue",
                 fill="#69b3a2",
-		            #width = 0.6,
                 ) + 
 
+  #Change RunTime_Efficiency.y values and axes to keep them between 0 and 100%
   geom_point( aes(y= round(RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
                 color="red",
                 alpha=0.5) +
 
   ggtitle("RunTime and RunTime_Efficiency") +
   
-              scale_x_discrete(expand = c(0.05, 0)) +
-            
-              geom_point( aes(y=round(RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
-                            color="red",
-                            alpha=0.5) +
-            
-              ggtitle("RunTime and RunTime_Efficiency") +
-              
-              geom_text(y =  as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
-                        label = as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
-                        color="red",
-                        size=2.5,
-                        nudge_x = 0.5, 
-                        nudge_y = 0,
-                        check_overlap = TRUE) +
-            
-              scale_y_continuous(
-                
-                # Features of the first axis
-                name = paste(c("RunTime (", Time_unite, ")"), collapse =""),
-                
-                # Add a second axis and specify its features
-                #sec.axis = sec_axis(~.*coeff, name="Second Axis")
-                sec.axis = sec_axis(~. *100 / max(DF_plot$RunTime),                                           # * 100 / max(DF_plot$RunTime)
-                                    name="RunTime_Efficiency (percentage)")
-              )
+  scale_x_discrete(expand = c(0.05, 0)) +
+
+  geom_point( aes(y=round(RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
+                color="red",
+                alpha=0.5) +
+
+  ggtitle("RunTime and RunTime_Efficiency") +
+  
+  geom_text(y =  as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
+            label = as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
+            color="red",
+            size=2.5,
+            nudge_x = 0.5, 
+            nudge_y = 0,
+            check_overlap = TRUE) +
+
+  scale_y_continuous(
+    
+    # Features of the first axis
+    name = paste(c("RunTime (", Time_unite, ")"), collapse =""),
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~. *100 / max(DF_plot$RunTime),
+                        name="RunTime_Efficiency (percentage)")
+  )
 
 
 
@@ -582,8 +543,6 @@ p_Memory <- ggplot(DF_memory, aes(x=as.factor(JobName))) +                      
             
             xlab("Step name") +
             
-            ylab(paste(c("Memory_Request (", Time_unite, ")"), collapse ="")) +
-            
             geom_boxplot( aes(y=Memory_Request),
                                            alpha=0.1,
                                            color="blue",
@@ -601,13 +560,12 @@ p_Memory <- ggplot(DF_memory, aes(x=as.factor(JobName))) +                      
                                    color="red",
                                    size=3,
                                    nudge_x = 0.5, 
-                                   #nudge_y = 1,
                                    check_overlap = TRUE) +
   
             scale_y_continuous(
             
               # Features of the first axis
-              name = paste(c("Memory_Request (", Time_unite, ")"), collapse =""),
+              name = "Memory_Request (GB)" ,
               
               # Add a second axis and specify its features
               sec.axis = sec_axis(~. ,                                            
@@ -627,7 +585,7 @@ print(p_RunTime)          # Page 2
 print(p_Memory)           # Page 3
 dev.off()
 
-############# R MarkDown
+############# R MarkDown #######################################################
 #toutes les infos (csv + plots + rapides explications de ce qui est montré)
 #peut-être intéractif, couleurs changent en fonction des valeurs des plots
 # 
