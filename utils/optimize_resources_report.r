@@ -145,21 +145,21 @@ parsed_folder <- function(folder_path_list){
       
       #seff command give memory efficiency information (and more)
       #Memory_Efficiency
-      # seff_resp <- system2("seff", args = JobId, stdout = TRUE)
-      # Pos_eli_time <- grep("Memory Efficiency",seff_resp)
+      seff_resp <- system2("seff", args = JobId, stdout = TRUE)
+      Pos_eli_time <- grep("Memory Efficiency",seff_resp)
       # # # #return(Pos_eli_time)
       # # # print(seff_resp)
       # # # print(Pos_eli_time)
-      # Memory_Efficiency <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
-      # Memory_Efficiency <- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
+      Memory_Efficiency <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
+      Memory_Efficiency <- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
       #  
-      # Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
+      Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
       #  
       # # #Memory_Request
-      # Memory_Request <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][5]
+      Memory_Request <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][5]
       
-      Memory_Efficiency <- NA
-      Memory_Request <- NA
+      #Memory_Efficiency <- NA
+      #Memory_Request <- NA
       
       #fill df_info with new informations and rename columns
       df_info <- data.frame(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request)
@@ -561,11 +561,11 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
   # print(DF_plot)
   # print(typeof(DF_plot$Memory_Efficiency))
   # print(typeof(DF_plot$Memory_Request))
-  # print("memory")
+  print("memory")
 
 
 
-  p_Memory <- ggplot(DF_MEMORY, aes(x=as.factor(JobName))) +                               #CHANGER DF_MEMORY PAR DF_plot
+  p_Memory <- ggplot(DF_plot, aes(x=as.factor(JobName))) +                               #CHANGER DF_MEMORY PAR DF_plot
 
     theme(panel.background = element_rect(fill = 'white', color = 'grey'),
           panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
@@ -580,13 +580,13 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
 
     xlab("Step name") +
 
-    geom_boxplot( aes(y=DF_MEMORY$Memory_Request),
+    geom_boxplot( aes(y=DF_plot$Memory_Request),
                   alpha=0.1,
                   color="blue",
                   fill="#69b3a2",
     ) +
 
-    geom_point( aes(y=round(Memory_Efficiency * 100 / max(DF_MEMORY$Memory_Request),1)),
+    geom_point( aes(y=round(Memory_Efficiency * 100 / max(DF_plot$Memory_Request),1)),
                 color="red",
                 alpha=0.5) +
 
@@ -594,8 +594,8 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
 
 
 
-    geom_text( y = round(as.numeric(DF_MEMORY$Memory_Efficiency * 100 / max(DF_MEMORY$Memory_Request)),1),
-               label = round(as.numeric(DF_MEMORY$Memory_Efficiency * 100 / max(DF_MEMORY$Memory_Request)),1),
+    geom_text( y = round(as.numeric(DF_plot$Memory_Efficiency * 100 / max(DF_plot$Memory_Request)),1),
+               label = round(as.numeric(DF_plot$Memory_Efficiency * 100 / max(DF_plot$Memory_Request)),1),
                color="red",
                size=3,
                nudge_x = 0.5,
