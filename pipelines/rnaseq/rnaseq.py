@@ -1111,10 +1111,15 @@ pandoc \\
         created_interval_lists = []
     
         for sample in self.samples:
-            file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.split.realigned.")
-            input = file_prefix + "bam"
-            print_reads_output = file_prefix + "recal.bam"
-            base_recalibrator_output = file_prefix + "recalibration_report.grp"
+            alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            [input] = self.select_input_files(
+                [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.mdup.split.realigned.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.mdup.split.bam")]
+                ]
+            )
+            print_reads_output = re.sub("\.bam$", ".recal.bam", input)
+            base_recalibrator_output = re.sub("\.bam$", ".recalibration_report.grp", input)
         
             interval_list = None
         
@@ -1178,7 +1183,8 @@ pandoc \\
                 [
                     [os.path.join(alignment_directory, sample.name + ".sorted.mdup.split.realigned.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.mdup.split.realigned.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                    [os.path.join(alignment_directory, sample.name + ".sorted.mdup.split.recal.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.mdup.split.bam")]
                 ]
             )
         
