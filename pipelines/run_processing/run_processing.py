@@ -162,7 +162,7 @@ class RunProcessing(common.MUGQICPipeline):
             if arg == '--splitbarcode-demux':
                 splitbarcode = True
         if typearg and not typearg in ['illumina', 'mgig400', 'mgit7']:
-            _raise(SanitycheckError(f"Unsupported protocol '{typearg}'"))
+            _raise(SanitycheckError(f"Unsupported protocol {typearg}"))
         if flag and not typearg == 'mgit7':
             log.info("Ignoring -f/--flag option because useless without '-t/--type mgit7'...")
         if typearg == 'illumina' and splitbarcode:
@@ -1188,7 +1188,7 @@ class RunProcessing(common.MUGQICPipeline):
                         demuxfastqs_outputs.append(metrics_file)
 
                         if self.readsets[lane][0].run_type == "PAIRED_END":
-                            raw_name_prefix = self.raw_fastq_prefix +  "_L0" + lane
+                            raw_name_prefix = f"{self.raw_fastq_prefix}_L0{lane}"
                             input1 = os.path.join(raw_fastq_dir, f"{raw_name_prefix}_read_1.fq.gz")
                             input2 = os.path.join(raw_fastq_dir, f"{raw_name_prefix}_read_2.fq.gz")
                             if ini_section == 'fastq_g400':
