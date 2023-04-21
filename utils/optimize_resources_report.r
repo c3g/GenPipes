@@ -384,16 +384,19 @@ job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output
 
 option_list = list(
   make_option(c("-i", "--in_path"), 
-              type = "character",
+              action = "store",
+	      type = "character",
               default=NA, 
               help="Job_Output path to analyse"),
 
-  make_option(c("-o", "--out_path"), 
+  make_option(c("-o", "--out_path"),
+  	      action = "store",
               type = "character",
               default=NA, 
               help="Folder where report is registered"),
 
-  make_option(c("-n", "--name"), 
+  make_option(c("-n", "--name"),
+  	      action = "store",
               type = "character",
               default="Optimize_ressource_report", 
               help="Name of the report file [default %default]"),
@@ -447,7 +450,7 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
                       paste(collapse ="T") %>% 
                       gsub(pattern = ":", replacement = ".")
   file_name <- paste(c(opt$name, actual_date_time), collapse ="_")
-  complete_path_name <- paste(c(output_path, file_name), collapse ="")
+  complete_path_name <- paste(c(output_path, file_name), collapse ="/")
   complete_path_name_csv <- paste(c(complete_path_name,"csv"), collapse =".")
 
   #Write csv in job_output folder
@@ -477,7 +480,7 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
   DF_plot$Memory_Request <- as.numeric(DF_plot$Memory_Request)
   
   ############## WaitingTime Plot ################################################
-  print("waiting")
+
   p_WaintingTime <- ggplot(DF_plot, aes(x=as.factor(JobName), y=WaitingTime, label= as.numeric(WaitingTime))) + 
     theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
           panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),) +
@@ -503,7 +506,7 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
   
   
   ############## RunTime vs RunTime_Efficiency Plot ##############################
-  print("RunTime")
+
   p_RunTime <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
     
     theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
@@ -534,7 +537,7 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
     
     ggtitle("RunTime and RunTime_Efficiency") +
     
-    scale_x_discrete(expand = c(0.05, 0)) + 
+    #scale_x_discrete(expand = c(0.05, 0)) + 
     
     geom_text(y =  as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
               label = as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
@@ -550,7 +553,7 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
       name = paste(c("RunTime (", Time_unite, ")"), collapse =""),
       
       # Add a second axis and specify its features
-      sec.axis = sec_axis(~. *100 / max(DF_plot$RunTime),
+      sec.axis = sec_axis(~. *10 / max(DF_plot$RunTime),
                           name="RunTime_Efficiency (percentage)")
     )
   
@@ -561,7 +564,7 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
   # print(DF_plot)
   # print(typeof(DF_plot$Memory_Efficiency))
   # print(typeof(DF_plot$Memory_Request))
-  print("memory")
+
 
 
 
@@ -638,7 +641,7 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
   
   #verbose option
   if (opt$verbose){
-    
+    cat("\n")  
     #Total steps
     cat(paste(nrow(DF_plot),"files parsed." ,"\n", sep = " "))
     
@@ -647,6 +650,7 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
     
     #Absolute path if the one gived is relative
     #cat(paste("", opt$in_path,"\n", sep = " "))
+    cat("\n")
   }
   
 } 
