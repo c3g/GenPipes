@@ -1252,7 +1252,7 @@ pandoc \\
 
     def merge_hc_vcf(self):
         """
-        Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
+        Merges vcfs from haplotype caller to generate a sample level vcf
         """
     
         jobs = []
