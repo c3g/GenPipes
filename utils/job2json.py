@@ -126,64 +126,68 @@ def main():
                 current_json = json.load(json_file)
             json_file.close()
 
-            # Make sure the job_log file is not in absolute path anymore
-            if current_json['pipeline']['general_information']['analysis_folder']:
-                job_log = re.sub(current_json['pipeline']['general_information']['analysis_folder'], "", job_log)
+            if not current_json:
+                os.remove(jfile)
 
-            step_found = False
-            job_found = False
+            else:
+                # Make sure the job_log file is not in absolute path anymore
+                if current_json['pipeline']['general_information']['analysis_folder']:
+                    job_log = re.sub(current_json['pipeline']['general_information']['analysis_folder'], "", job_log)
 
-            # Find the current step which should already exist in the json object (already created by bfx/jsonator.py)
-            for jstep in current_json['pipeline']['step']:
-                if jstep['name'] == step_name:
-                    step_found = True
+                step_found = False
+                job_found = False
 
-                    # Find the current job which should already exist in the json object (already created by bfx/jsonator.py)
-                    for jjob in jstep['job']:
-                        if jjob['name'] == job_name:
-                            job_found = True
-                            if  status == "running":
-                                jjob['job_start_date'] = re.sub("\.\d+$", "", str(datetime.datetime.now()))
-                                jjob['status'] = "running"
-                            else:
-                                jjob['log_file'] = job_log
-                                if status == "0":
-                                    jjob['status'] = "success"
-                                    jjob['done_file'] = job_done
+                # Find the current step which should already exist in the json object (already created by bfx/jsonator.py)
+                for jstep in current_json['pipeline']['step']:
+                    if jstep['name'] == step_name:
+                        step_found = True
+
+                        # Find the current job which should already exist in the json object (already created by bfx/jsonator.py)
+                        for jjob in jstep['job']:
+                            if jjob['name'] == job_name:
+                                job_found = True
+                                if  status == "running":
+                                    jjob['job_start_date'] = re.sub("\.\d+$", "", str(datetime.datetime.now()))
+                                    jjob['status'] = "running"
                                 else:
-                                    jjob['status'] = "error"
-                                jjob['job_end_date'] = re.sub("\.\d+$", "", str(datetime.datetime.now()))
+                                    jjob['log_file'] = job_log
+                                    if status == "0":
+                                        jjob['status'] = "success"
+                                        jjob['done_file'] = job_done
+                                    else:
+                                        jjob['status'] = "error"
+                                    jjob['job_end_date'] = re.sub("\.\d+$", "", str(datetime.datetime.now()))
 
-                    # If job does not exist already, raise an exception
-                    if not job_found :
-                        sys.exit("Error : job " + job_name + ", within step " + step_name + ", was not found in " + " json_file...")
+                        # If job does not exist already, raise an exception
+                        if not job_found :
+                            sys.exit("Error : job " + job_name + ", within step " + step_name + ", was not found in " + " json_file...")
 
-            # If step does not exist already, raise an exception
-            if not step_found :
-                sys.exit("Error : step " + step_name + " was not found in " + " json_file...")
+                # If step does not exist already, raise an exception
+                if not step_found :
+                    sys.exit("Error : step " + step_name + " was not found in " + " json_file...")
 
-            # Let's do 5 attempts to write the file (because sometimes we weirly end up with malformed JSON files...)
-            count = 5
-            while count:
-                # Print to file
-                with open(jfile, 'w') as out_json:
-                    json.dump(current_json, out_json, indent=4)
-                out_json.close()
+                # Let's do 5 attempts to write the file (because sometimes we weirly end up with malformed JSON files...)
+                count = 5
+                while count:
+                    # Print to file
+                    with open(jfile, 'w') as out_json:
+                        json.dump(current_json, out_json, indent=4)
+                    out_json.close()
 
-                # Test opening the written file
-                try:
-                    with open(jfile, 'r') as json_file:
-                        current_json_hash = json.load(json_file)
-                    if current_json_hash:
-                        # Print a copy of the JSON file for the monitoring interface
-                        portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
-                        if portal_output_dir != '':
-                            shutil.copy(jfile, os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + str(uuid4().hex) + '.json'))
-                        count = 0
-                    else:
+                    # Test opening the written file
+                    try:
+                        with open(jfile, 'r') as json_file:
+                            current_json_hash = json.load(json_file)
+                        if current_json_hash:
+                            # Print a copy of the JSON file for the monitoring interface
+                            portal_output_dir = config.param('DEFAULT', 'portal_output_dir', required=False, param_type='dirpath')
+                            if portal_output_dir != '':
+                                shutil.copy(jfile, os.path.join(portal_output_dir, user + '.' + current_json['sample_name'] + '.' + str(uuid4().hex) + '.json'))
+                            count = 0
+                        else:
+                            count -= 1
+                    except json.decoder.JSONDecodeError:
                         count -= 1
-                except json.decoder.JSONDecodeError:
-                    count -= 1
 
         finally:
             # Finally unlock the file
