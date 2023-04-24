@@ -1271,12 +1271,35 @@ pandoc \\
         
             job = concat_jobs(
                 [
-                    gatk4.cat_variants(
-                        vcfs_to_merge,
-                        output_haplotype_file_prefix + ".hc.vcf.gz"
+                    pipe_jobs(
+                        [
+                            bcftools.concat(
+                                vcfs_to_merge,
+                                None
+                            ),
+                            bash.grep(
+                                None,
+                                None,
+                                "-v 'GL00'"
+                            ),
+                            bash.grep(
+                                None,
+                                None,
+                                "-Ev 'chrUn|random'"
+                            ),
+                            bash.grep(
+                                None,
+                                None,
+                                "-vE 'EBV|hs37d5'"
+                            ),
+                            htslib.bgzip_tabix(
+                                None,
+                                output_haplotype_file_prefix + ".hc.vcf.gz"
+                            )
+                        ]
                     )
                 ],
-                name="gatk_merge_vcfs." + sample.name,
+                name="merge_vcfs." + sample.name,
                 samples=[sample]
             )
             jobs.append(job)
