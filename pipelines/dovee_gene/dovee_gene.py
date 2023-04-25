@@ -46,6 +46,7 @@ from bfx import mosdepth
 from bfx import picard2
 from bfx import multiqc
 from bfx import bcftools
+from bfx import conpair
 
 from bfx import bash_cmd as bash
 from core.sample_dovee_pairs import parse_dovee_pair_file # using modified tumor pair system to identify paired brush and saliva for ichorCNA step
@@ -61,7 +62,7 @@ class DOvEE_gene(common.Illumina):
         self._protocol = protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="File indicating whether sample is saliva or brush", type=argparse.FileType('r')) # only needed for vardict protocol
-        self.argparser.add_argument("-p", "--pairs", help="File with sample pairing information", type=argparse.FileType('r')) # only needed for copy number protocol ichorCNA step
+        self.argparser.add_argument("-p", "--pairs", help="File with sample pairing information", type=argparse.FileType('r')) # only needed for copy number protocol ichorCNA step and vardict protocol compare bams step
         self.argparser.add_argument("-t", "--type", help="Type of pipeline (default vardict)", choices=["vardict", "copy-number"], default="vardict") # FINAL NAMES of the two protocols TBD
         super(DOvEE_gene, self).__init__(protocol)
 
@@ -819,6 +820,60 @@ fi""".format(
         
         return jobs
 
+    def conpair_concordance(self):
+        """
+        Conpair is a fast and robust method dedicated for human tumor-normal studies to perform concordance verification
+        (= samples coming from the same individual).
+        Run once per patient to ensure that saliva and brush samples are correctly assigned.
+        Requires pair file.
+        """
+
+        jobs = []
+
+        conpair_directory = os.path.join(self.output_dirs['metrics_directory'], 'concordance')
+        link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
+
+        for sample_pair in self.dovee_pairs.values():
+            input_brush = os.path.join(self.output_dirs['alignment_directory'], sample_pair.brush.name, sample_pair.brush.name + ".dedup.duplex.sorted.bam")
+            input_saliva = os.path.join(self.output_dirs['alignment_directory'], sample_pair.saliva.name, sample_pair.saliva.name + ".dedup.duplex.sorted.bam") 
+            output_dir = os.path.join(conpair_directory, sample_pair.name)
+            pileup_brush = os.path.join(output_dir, sample_pair.brush.name + ".pileup")
+            pileup_saliva = os.path.join(output_dir, sample_pair.saliva.name + ".pileup")
+            concordance_out = os.path.join(output_dir, sample_pair.name + ".concordance.out")
+
+            jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                output_dir
+                                ),
+                            conpair.pileup(
+                                input_brush,
+                                pileup_brush
+                                ),
+                            conpair.pileup(
+                                input_saliva,
+                                pileup_saliva
+                                ),
+                            conpair.concordance(
+                                pileup_saliva,
+                                pileup_brush,
+                                concordance_out
+                                ),
+                            bash.ln(
+                                os.path.relpath(concordance_out, link_directory),
+                                os.path.join(link_directory, sample_pair.name + ".concordance.out"),
+                                input=concordance_out
+                                )
+                        ],
+                        name = "conpair_concordance_contamination." + sample_pair.name,
+                        samples = [sample_pair.brush, sample_pair.saliva]
+                        )
+                    )
+            self.multiqc_inputs.append(concordance_out)
+        
+        return jobs
+
     def multiqc(self):
         """
         Aggregate results from bioinformatics analyses across many samples into a single report
@@ -855,6 +910,7 @@ fi""".format(
                     self.picard_metrics,
                     self.vardict_single,
                     self.bcftools_stats,
+                    self.conpair_concordance,
                     self.multiqc
                 ],
                 [
