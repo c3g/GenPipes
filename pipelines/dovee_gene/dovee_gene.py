@@ -333,9 +333,11 @@ fi""".format(
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            sorted_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
 
             if sample in self.contrasts.salivas:
                 output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
+                index_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bai")
                 output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
                 covered_bed = config.param('agent_locatit', 'covered_bedv8', param_type='filepath')
 
@@ -353,6 +355,16 @@ fi""".format(
                                     output_hybrid,
                                     covered_bed,
                                     "v2Hybrid"
+                                    ),
+                                bash.ln(
+                                    os.path.relpath(output_duplex, os.path.dirname(sorted_bam)),
+                                    sorted_bam,
+                                    output_duplex
+                                    ),
+                                bash.ln(
+                                    os.path.relpath(index_duplex, os.path.dirname(sorted_bam)),
+                                    sorted_bam + ".bai",
+                                    index_duplex
                                     )
                             ],
                             name='agent_locatit.' + sample.name,
@@ -361,17 +373,37 @@ fi""".format(
                         )
             elif sample in self.contrasts.brushes:
                 output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
+                index_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bai")
                 covered_bed = config.param('agent_locatit', 'covered_bedv7', param_type='filepath')
 
-                job = agent.locatit(
-                        input_bam,
-                        output_duplex,
-                        covered_bed,
-                        "v2Duplex"
+                jobs.append(
+                        concat_jobs(
+                            [
+                                agent.locatit(
+                                    input_bam,
+                                    output_duplex,
+                                    covered_bed,
+                                    "v2Duplex"
+                                    ),
+                                bash.ln(
+                                    os.path.relpath(output_duplex, os.path.dirname(sorted_bam)),
+                                    sorted_bam,
+                                    output_duplex
+                                    ),
+                                bash.ln(
+                                    os.path.relpath(index_duplex, os.path.dirname(sorted_bam)),
+                                    sorted_bam + ".bai",
+                                    index_duplex
+                                    )
+                                ],
+                            name='agent_locatit.' + sample.name,
+                            samples=[sample]
+                            )
                         )
-                job.name='agent_locatit.' + sample.name
-                job.samples=[sample]
-                jobs.append(job)
+                        
+ #               job.name='agent_locatit.' + sample.name
+ #               job.samples=[sample]
+ #               jobs.append(job)
                 
             else:
                 _raise(SanitycheckError("Error: sample \"" + sample.name +
@@ -818,7 +850,7 @@ fi""".format(
                     self.bwa_mem_samtools_sort,
                     self.samtools_merge,
                     self.locatit_dedup_bam,
-                    self.samtools_sort,
+                   # self.samtools_sort,
                     self.mosdepth,
                     self.picard_metrics,
                     self.vardict_single,
