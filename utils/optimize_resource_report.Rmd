@@ -146,27 +146,28 @@ parsed_folder <- function(folder_path_list){
       #research JobId
       JobId <- research_Element(FileInput_List, "JobId")
       
-      #seff command give memory efficiency information (and more)                         #modif
+      #seff command give memory efficiency information (and more)                         ##modif
       #Memory_Efficiency
-      # seff_resp <- system2("seff", args = JobId, stdout = TRUE)
-      # Pos_eli_time <- grep("Memory Efficiency",seff_resp)
-      # # # # #return(Pos_eli_time)
-      # # # # print(seff_resp)
-      # # # # print(Pos_eli_time)
-      # Memory_Efficiency <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
-      # Memory_Efficiency <- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
-      # #  
-      # Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
-      # #  
-      # # # #Memory_Request
-      # Memory_Request <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][5]
-      # 
+      seff_resp <- system2("seff", args = JobId, stdout = TRUE)
+      Pos_eli_time <- grep("Memory Efficiency",seff_resp)
+      #return(Pos_eli_time)
+      #print(seff_resp)
+      #print(Pos_eli_time)
+      Memory_Efficiency <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
+      Memory_Efficiency <- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
+      
+      Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
+      
+      #Memory_Request
+      Memory_Request <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][5]
+
       #Memory_Efficiency <- NA
       #Memory_Request <- NA
       
       #fill df_info with new informations and rename columns
-      df_info <- data.frame(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs, NA,NA   #modif
-                            #Memory_Efficiency, Memory_Request
+      df_info <- data.frame(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs,
+                            #NA,NA   ##modif
+                            Memory_Efficiency, Memory_Request
                             )
       names(df_info) <- c("JobName", "WaitingTime", "RunTime", "TimeLimit", "NumCPUs", "Memory_Efficiency", "Memory_Request")
       
@@ -382,56 +383,56 @@ Keep_hour <- function(df, df2 = NA, unite = NA){
 
 
 
-job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
+#job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
 #job_output_path = "/scratch/matteol/genpipes_test/job_output"
 
 ##### OPTPARSE OPTIONS #####
-# 
-# option_list = list(                                                       #modif
-#   make_option(c("-i", "--in_path"), 
-#               action = "store",
-# 	      type = "character",
-#               default=NA, 
-#               help="Job_Output path to analyse"),
-# 
-#   make_option(c("-o", "--out_path"),
-#   	      action = "store",
-#               type = "character",
-#               default=NA, 
-#               help="Folder where report is registered"),
-# 
-#   make_option(c("-n", "--name"),
-#   	      action = "store",
-#               type = "character",
-#               default="Optimize_ressource_report", 
-#               help="Name of the report file [default %default]"),
-#   
-#   # make_option(c("-q", "--quiet"), action="store_false", dest="verbose",
-#   #             help="Make the program not be verbose."),
-#   
-#   make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
-#               help="Should the program print extra stuff out? [default %default]")  
-# )
-# 
-# opt = parse_args(OptionParser(option_list=option_list))
+
+option_list = list(                                                       ##modif
+  make_option(c("-i", "--in_path"),
+              action = "store",
+	      type = "character",
+              default=NA,
+              help="Job_Output path to analyse"),
+
+  make_option(c("-o", "--out_path"),
+  	      action = "store",
+              type = "character",
+              default=NA,
+              help="Folder where report is registered"),
+
+  make_option(c("-n", "--name"),
+  	      action = "store",
+              type = "character",
+              default="Optimize_ressource_report",
+              help="Name of the report file [default %default]"),
+
+  # make_option(c("-q", "--quiet"), action="store_false", dest="verbose",
+  #             help="Make the program not be verbose."),
+
+  make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
+              help="Should the program print extra stuff out? [default %default]")
+)
+
+opt = parse_args(OptionParser(option_list=option_list))
 
 
 
 
 
-#output path not specified    #modif
-# if(is.na(opt$out_path)){
-#   opt$out_path <- opt$in_path
-# }
+#output path not specified    ##modif
+if(is.na(opt$out_path)){
+  opt$out_path <- opt$in_path
+}
 
 #main part of script
-if(TRUE) {  #file.exists(opt$in_path) & file.exists(opt$out_path) #modif
+if(file.exists(opt$in_path) & file.exists(opt$out_path)) {  #TRUE ##modif
   
-  # Options values                              #modif
-  # job_output_path = opt$in_path
-  # output_path = opt$out_path
+  # Options values                              ##modif
+  job_output_path = opt$in_path
+  output_path = opt$out_path
   
-  output_path = job_output_path                 #modif           
+  #output_path = job_output_path                 ##modif           
   
   ############## RESULT ###########################################################
   
@@ -453,7 +454,7 @@ if(TRUE) {  #file.exists(opt$in_path) & file.exists(opt$out_path) #modif
   actual_date_time <- strsplit(x= as.character(Sys.time()), split = " ")[[1]][1:2] %>%
                       paste(collapse ="T") %>% 
                       gsub(pattern = ":", replacement = ".")
-  file_name <- paste(c("name_test", actual_date_time), collapse ="_") #opt$name #modif
+  file_name <- paste(c(opt$name, actual_date_time), collapse ="_") #"name_test" ##modif
   complete_path_name <- paste(c(output_path, file_name), collapse ="/")
   complete_path_name_csv <- paste(c(complete_path_name,"csv"), collapse =".")
 
@@ -500,9 +501,9 @@ if(TRUE) {  #file.exists(opt$in_path) & file.exists(opt$out_path) #modif
     coord_flip() + 
     
     #label on highest values
-    geom_text(data = . %>% group_by(JobName) %>% filter(WaitingTime == max(WaitingTime)), 
-              nudge_y = 0.45,
-              check_overlap = TRUE) +
+    # geom_text(data = . %>% group_by(JobName) %>% filter(WaitingTime == max(WaitingTime)), 
+    #           nudge_y = 0.45,
+    #           check_overlap = TRUE) +
     
     ylab(paste(c("WaitingTime (", Waiting_unite, ")"), collapse ="")) + 
     xlab("Step name") +
@@ -510,8 +511,12 @@ if(TRUE) {  #file.exists(opt$in_path) & file.exists(opt$out_path) #modif
   
   
   ############## RunTime vs RunTime_Efficiency Plot ##############################
-
-  p_RunTime <- ggplot(DF_plot, aes(x=as.factor(JobName))) +
+  #change JobName type in order to use it as x values
+  DF_plot$JobName <- as.factor(DF_plot$JobName)
+  #Change RunTime_Efficiency.y values and axes to keep them between 0 and 100%
+    DF_plot$RunTime_Efficiency.y <- round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)
+  
+  p_RunTime <- ggplot(DF_plot, aes(x=JobName)) +
     
     theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
           panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
@@ -534,87 +539,86 @@ if(TRUE) {  #file.exists(opt$in_path) & file.exists(opt$out_path) #modif
                   fill="#69b3a2",
     ) + 
     
-    #Change RunTime_Efficiency.y values and axes to keep them between 0 and 100%
-    geom_point( aes(y= round(RunTime_Efficiency.y *100 / max(RunTime),1)),
+    geom_point( aes(y= RunTime_Efficiency.y),
                 color="red",
                 alpha=0.5) +
     
-    ggtitle("RunTime and RunTime_Efficiency") +
+    ggtitle("RunTime_Efficiency (percentage)") #+
     
     #scale_x_discrete(expand = c(0.05, 0)) + 
     
-    geom_text(y =  as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
-              label = as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
-              color="red",
-              size=2.5,
-              nudge_x = 0.5, 
-              nudge_y = 0,
-              check_overlap = TRUE) +
+    # geom_text(y =  as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
+    #           label = as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
+    #           color="red",
+    #           size=2.5,
+    #           nudge_x = 0.5, 
+    #           nudge_y = 0,
+    #           check_overlap = TRUE) +
     
-    scale_y_continuous(
-      
-      # Features of the first axis
-      name = paste(c("RunTime (", Time_unite, ")"), collapse =""),
-      
-      # Add a second axis and specify its features
-      sec.axis = sec_axis(~. *10 / max(DF_plot$RunTime),
-                          name="RunTime_Efficiency (percentage)")
-    )
+    # scale_y_continuous(
+    #   
+    #   # Features of the first axis
+    #   name = paste(c("RunTime (", Time_unite, ")"), collapse =""),
+    #   
+    #   # Add a second axis and specify its features
+    #   sec.axis = sec_axis(~. *10 / max(DF_plot$RunTime),
+    #                       name="RunTime_Efficiency (percentage)")
+    # )
   
   
   
   ############## Memory_Efficiency vs Memory_Request #############################
 
 
-  # p_Memory <- ggplot(DF_plot, aes(x=as.factor(JobName))) +                               #CHANGER DF_MEMORY PAR DF_plot
-  #                                                                                     #modif
-  #   theme(panel.background = element_rect(fill = 'white', color = 'grey'),
-  #         panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
-  #         axis.title.x.top = element_text(color = "red", size=13),
-  #         axis.title.x.bottom = element_text(color = "blue", size=13),
-  #         axis.title.y = element_text(size=13),
-  #   ) +
-  # 
-  #   scale_x_discrete(expand = c(0.05, 0)) +
-  # 
-  #   coord_flip() +
-  # 
-  #   xlab("Step name") +
-  # 
-  #   geom_boxplot( aes(y=DF_plot$Memory_Request),
-  #                 alpha=0.1,
-  #                 color="blue",
-  #                 fill="#69b3a2",
-  #   ) +
-  # 
-  #   geom_point( aes(y=round(Memory_Efficiency * 100 / max(DF_plot$Memory_Request),1)),
-  #               color="red",
-  #               alpha=0.5) +
-  # 
-  #   ggtitle("Memory_Request and RunTime_Efficiency") +
-  # 
-  # 
-  # 
-  #   geom_text( y = round(as.numeric(DF_plot$Memory_Efficiency * 100 / max(DF_plot$Memory_Request)),1),
-  #              label = round(as.numeric(DF_plot$Memory_Efficiency * 100 / max(DF_plot$Memory_Request)),1),
-  #              color="red",
-  #              size=3,
-  #              nudge_x = 0.5,
-  #              check_overlap = TRUE) +
-  # 
-  #   scale_y_continuous(
-  # 
-  #     # Features of the first axis
-  #     name = "Memory_Request (GB)" ,
-  # 
-  #     # Add a second axis and specify its features
-  #     sec.axis = sec_axis(~. ,
-  #                         name="Memory_Efficiency (%)")
-  #   )
+  p_Memory <- ggplot(DF_plot, aes(x=as.factor(JobName))) +                               #CHANGER DF_MEMORY PAR DF_plot
+                                                                                      ##modif
+    theme(panel.background = element_rect(fill = 'white', color = 'grey'),
+          panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
+          axis.title.x.top = element_text(color = "red", size=13),
+          axis.title.x.bottom = element_text(color = "blue", size=13),
+          axis.title.y = element_text(size=13),
+    ) +
+
+    scale_x_discrete(expand = c(0.05, 0)) +
+
+    coord_flip() +
+
+    xlab("Step name") +
+
+    geom_boxplot( aes(y=DF_plot$Memory_Request),
+                  alpha=0.1,
+                  color="blue",
+                  fill="#69b3a2",
+    ) +
+
+    geom_point( aes(y=round(Memory_Efficiency * 100 / max(DF_plot$Memory_Request),1)),
+                color="red",
+                alpha=0.5) +
+
+    ggtitle("Memory_Request and RunTime_Efficiency") +
+
+
+
+    geom_text( y = round(as.numeric(DF_plot$Memory_Efficiency * 100 / max(DF_plot$Memory_Request)),1),
+               label = round(as.numeric(DF_plot$Memory_Efficiency * 100 / max(DF_plot$Memory_Request)),1),
+               color="red",
+               size=3,
+               nudge_x = 0.5,
+               check_overlap = TRUE) +
+
+    scale_y_continuous(
+
+      # Features of the first axis
+      name = "Memory_Request (GB)" ,
+
+      # Add a second axis and specify its features
+      sec.axis = sec_axis(~. ,
+                          name="Memory_Efficiency (%)")
+    )
   
   ############## PDF Result #######################################################
   #create path and file name
-  pdf_file_name <- paste(c("name_test","plots", actual_date_time), collapse ="_") #opt$name #modif
+  pdf_file_name <- paste(c(opt$name,"plots", actual_date_time), collapse ="_") #"name_test" ##modif
   pdf_complete_path_name <- paste(c(output_path, pdf_file_name), collapse ="/")            
   pdf_complete_path_name <- paste(c(pdf_complete_path_name,"pdf"), collapse =".")
   
@@ -637,219 +641,72 @@ if(TRUE) {  #file.exists(opt$in_path) & file.exists(opt$out_path) #modif
   #                   clean = TRUE
   #                   )
   
-  #verbose option                                                             #modif
-  # if (opt$verbose){
-  #   cat("\n")  
-  #   #Total steps
-  #   cat(paste(nrow(DF_plot),"files parsed." ,"\n", sep = " "))
-  #   
-  #   #Total differents steps
-  #   cat(paste(nrow(Info_df),"differents steps in total among all files." ,"\n", sep = " "))
-  #   
-  #   #Absolute path if the one gived is relative
-  #   #cat(paste("", opt$in_path,"\n", sep = " "))
-  #   cat("\n")
-  # }
+  #verbose option                                                             ##modif
+  if (opt$verbose){
+    cat("\n")
+    #Total steps
+    cat(paste(nrow(DF_plot),"files parsed." ,"\n", sep = " "))
+
+    #Total differents steps
+    cat(paste(nrow(Info_df),"differents steps in total among all files." ,"\n", sep = " "))
+
+    #Absolute path if the one gived is relative
+    #cat(paste("", opt$in_path,"\n", sep = " "))
+    cat("\n")
+  }
   
 } 
 
-# #Input folder problem                                             #modif
-# if  (!file.exists(opt$in_path)){
-#   cat(paste("The specified input path doesn't exist :", opt$in_path,"\n", sep = " "), file=stderr()) # print error messages to stderr
-# }
-# 
-# #Output folder problem
-# if  (!file.exists(opt$out_path)){
-#   cat(paste("The specified output path doesn't exist :", opt$out_path,"\n", sep = " "), file=stderr()) # print error messages to stderr
-# }
+#Input folder problem                                             ##modif
+if  (!file.exists(opt$in_path)){
+  cat(paste("The specified input path doesn't exist :", opt$in_path,"\n", sep = " "), file=stderr()) # print error messages to stderr
+}
+
+#Output folder problem
+if  (!file.exists(opt$out_path)){
+  cat(paste("The specified output path doesn't exist :", opt$out_path,"\n", sep = " "), file=stderr()) # print error messages to stderr
+}
 
 
 
+```
+
+```{r plot2, echo=FALSE}
+font <- list(
+  family = "Roboto Condensed",
+  size = 12,
+  color = "white"
+)
+label <- list(
+  bgcolor = "#232F34",
+  bordercolor = "transparent",
+  font = font
+)
 ```
 ***
 ## WaitingTime plot
 
-This plot represent the time spent in queue before steps get run. 
+This plot represent the time spend in queue for each step. 
 
-```{r eruptions, echo=FALSE, out.width="100px"}
-# ui <- fluidPage(
-#   # Some custom CSS for a smaller font for preformatted text
-#   tags$head(
-#     tags$style(HTML("
-#       pre, table.table {
-#         font-size: smaller;
-#       }
-#     "))
-#   ),
-# 
-#     fluidRow(
-#     # column(width = 5, wellPanel(
-#     #   # radioButtons("plot_type", "Plot type",
-#     #   #   c("WaitingTime", "RunTime")
-#     #   #)
-#     # )),
-#     column(width = 12,
-#       # In a plotOutput, passing values for click, dblclick, hover, or brush
-#       # will enable those interactions.
-#       plotOutput("plot1", #height = 1000,
-#         # Equivalent to: click = clickOpts(id = "plot_click")
-#         # click = "plot_click",
-#         # dblclick = dblclickOpts(
-#         #   id = "plot_dblclick"
-#         # ),
-#         hover = hoverOpts(
-#           id = "plot_hover"
-#         ) #,
-#         # brush = brushOpts(
-#         #   id = "plot_brush"
-#         # )
-#       )
-#     )
-#   ),
-#   fluidRow(
-#     # column(width = 3,
-#     #   verbatimTextOutput("click_info")
-#     # ),
-#     # column(width = 3,
-#     #   verbatimTextOutput("dblclick_info")
-#     # ),
-#     column(width = 12,
-#       verbatimTextOutput("hover_info"))
-#     # ),
-#     # column(width = 3,
-#     #   verbatimTextOutput("brush_info")
-#     # )
-#   )
-# )
-# 
-# 
-# server <- function(input, output) {
-#   output$plot1 <- renderPlot({
-#     
-#     p_WaitingTime
-#   })
-# 
-#   
-#   output$hover_info <- renderPrint({
-#         if(!is.null(input$plot_hover)){
-#             hover=input$plot_hover
-#             dist=sqrt((hover$x-DF_plot$WaitingTime)^2)         #sqrt((hover$x-DF_plot$JobName)^2+(hover$y-DF_plot$WaitingTime)^2)
-#             cat("hover_x \n")
-#             cat(round(hover$x))
-#             cat("\n")
-#             cat("hover_y \n")
-#             cat(round(hover$y))
-#             cat("\n")
-#             cat("waitingTime \n")
-#             cat(DF_plot$WaitingTime)
-#             cat("\n")
-#             cat("dedans ?")
-#             cat(round(hover$x) %in% DF_plot$WaitingTime)
-#             
-#             if(min(dist) < 1)
-#                 DF_plot$WaitingTime[which.min(dist)]
-#         }
-# 
-# 
-#     })
-# 
-# }
-# shinyApp(ui, server)
+```{r p_WaitingTime, echo=FALSE}
+ggplotly(p_WaitingTime) %>% style(hoverlabel = label) %>% layout(font = font)
 
 ```
-
-
+***
 ## RunTime plot
 
-This plot represent the running time for each steps. 
+This plot represent the running time for each steps and the associated efficiency compare to the time limit. The efficiency compare requested resources and  resources used.
 
-```{r plot2, echo=FALSE}
-ggplotly(p_WaitingTime)
-ggplotly(p_RunTime)
+```{r p_RunTime, echo=FALSE}
+ggplotly(p_RunTime) %>% style(hoverlabel = label) %>% layout(font = font)
 
 ```
+***
+## Memory plot
 
-<!-- ```{r plot2, echo=FALSE} -->
-<!-- ui <- fluidPage( -->
-<!--   # Some custom CSS for a smaller font for preformatted text -->
-<!--   tags$head( -->
-<!--     tags$style(HTML(" -->
-<!--       pre, table.table { -->
-<!--         font-size: smaller; -->
-<!--       } -->
-<!--     ")) -->
-<!--   ), -->
+This plot represent the amount of memory required and the associated efficiency. 
 
-<!--   fluidRow( -->
-<!--     # column(width = 5, wellPanel( -->
-<!--     #   # radioButtons("plot_type", "Plot type", -->
-<!--     #   #   c("WaitingTime", "RunTime") -->
-<!--     #   #) -->
-<!--     # )), -->
-<!--     column(width = 12, -->
-<!--       # In a plotOutput, passing values for click, dblclick, hover, or brush -->
-<!--       # will enable those interactions. -->
-<!--       plotOutput("plot1", #height = 1000, -->
-<!--         # Equivalent to: click = clickOpts(id = "plot_click") -->
-<!--         # click = "plot_click", -->
-<!--         # dblclick = dblclickOpts( -->
-<!--         #   id = "plot_dblclick" -->
-<!--         # ), -->
-<!--         hover = hoverOpts( -->
-<!--           id = "plot_hover" -->
-<!--         ) #, -->
-<!--         # brush = brushOpts( -->
-<!--         #   id = "plot_brush" -->
-<!--         # ) -->
-<!--       ) -->
-<!--     ) -->
-<!--   ), -->
-<!--   fluidRow( -->
-<!--     # column(width = 3, -->
-<!--     #   verbatimTextOutput("click_info") -->
-<!--     # ), -->
-<!--     # column(width = 3, -->
-<!--     #   verbatimTextOutput("dblclick_info") -->
-<!--     # ), -->
-<!--     column(width = 12, -->
-<!--       verbatimTextOutput("hover_info")) -->
-<!--     # ), -->
-<!--     # column(width = 3, -->
-<!--     #   verbatimTextOutput("brush_info") -->
-<!--     # ) -->
-<!--   ) -->
-<!-- ) -->
+```{r p_Memory, echo=FALSE}
+ggplotly(p_Memory) %>% style(hoverlabel = label, marker.color = "#232F34") %>% layout(font = font) ##modif
 
-
-<!-- server <- function(input, output) { -->
-<!--   output$plot1 <- renderPlot({ -->
-<!--     p_RunTime -->
-<!--   }) -->
-
-<!--   output$hover_info <- renderPrint({ -->
-<!--         if(!is.null(input$plot_hover)){ -->
-<!--             hover=input$plot_hover -->
-<!--             dist=sqrt((hover$x-DF_plot$RunTime)^2) -->
-<!--             cat("hover_x \n") -->
-<!--             cat(round(hover$x)) -->
-<!--             cat("\n") -->
-<!--             cat("hover_y \n") -->
-<!--             cat(round(hover$y)) -->
-<!--             cat("\n") -->
-<!--             cat("waitingTime \n") -->
-<!--             cat(DF_plot$RunTime) -->
-<!--             cat("\n") -->
-<!--             cat("dedans ?") -->
-<!--             cat(round(hover$x) %in% DF_plot$RunTime) -->
-
-<!--             if(min(dist) < 1) -->
-<!--                 DF_plot$RunTime[which.min(dist)] -->
-<!--         } -->
-
-
-<!--     }) -->
-
-<!-- } -->
-<!-- shinyApp(ui, server) -->
-
-<!-- ``` -->
+```
