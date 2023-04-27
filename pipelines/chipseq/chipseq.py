@@ -678,7 +678,7 @@ pandoc --to=markdown \\
                                         output_bam_index
                                         )
                                     ],
-                                name = "bedtools_intersect." + sample.name + "." + mark_name
+                                name = "bedtools_intersect." + sample.name + "." + mark_name,
                                 samples = [sample]
                                 )
                             )
