@@ -3,10 +3,20 @@ title: "optimize_resources_report.Rmd"
 date: "`r Sys.Date()`"
 output: html_document
 runtime: shiny
+params: 
+  input: NULL
+  output: NULL
+  name: NULL
+  verbose: NULL
 ---
+
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r main, include=FALSE}
 
 suppressMessages(library(dplyr, warn.conflicts = FALSE))  #avoid conflict message for duplicate functions
 suppressMessages(library(kimisc))                         #for seconds_to_hms function
@@ -18,8 +28,10 @@ suppressMessages(library(ggplot2))
 
 #library for RMarkDown
 suppressMessages(library(knitr))
-suppressMessages(library(markdown))
+#suppressMessages(library(markdown))
 suppressMessages(library(plotly))
+library(highcharter) 
+
 
 
 folder_path_to_o_file_list <- function(job_output_path){
@@ -146,27 +158,24 @@ parsed_folder <- function(folder_path_list){
       #research JobId
       JobId <- research_Element(FileInput_List, "JobId")
       
-      #seff command give memory efficiency information (and more)                         ##modif
+      seff command give memory efficiency information (and more)                         ##modif
       #Memory_Efficiency
-      seff_resp <- system2("seff", args = JobId, stdout = TRUE)
+      seff_resp <- system2("ls", args = JobId, stdout = TRUE)
       Pos_eli_time <- grep("Memory Efficiency",seff_resp)
-      #return(Pos_eli_time)
-      #print(seff_resp)
-      #print(Pos_eli_time)
+
       Memory_Efficiency <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
       Memory_Efficiency <- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
       
       Memory_Efficiency <- as.numeric(as.character(Memory_Efficiency))
-      
+
       #Memory_Request
       Memory_Request <- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][5]
 
-      #Memory_Efficiency <- NA
-      #Memory_Request <- NA
+      # Memory_Efficiency <- NA
+      # Memory_Request <- NA
       
       #fill df_info with new informations and rename columns
-      df_info <- data.frame(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs,
-                            #NA,NA   ##modif
+      df_info <- data.frame(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs,   #modif
                             Memory_Efficiency, Memory_Request
                             )
       names(df_info) <- c("JobName", "WaitingTime", "RunTime", "TimeLimit", "NumCPUs", "Memory_Efficiency", "Memory_Request")
@@ -382,314 +391,231 @@ Keep_hour <- function(df, df2 = NA, unite = NA){
 }
 
 
+#
+job_output_path = params$input
+output_path = params$output
 
 #job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
 #job_output_path = "/scratch/matteol/genpipes_test/job_output"
 
-##### OPTPARSE OPTIONS #####
-
-option_list = list(                                                       ##modif
-  make_option(c("-i", "--in_path"),
-              action = "store",
-	      type = "character",
-              default=NA,
-              help="Job_Output path to analyse"),
-
-  make_option(c("-o", "--out_path"),
-  	      action = "store",
-              type = "character",
-              default=NA,
-              help="Folder where report is registered"),
-
-  make_option(c("-n", "--name"),
-  	      action = "store",
-              type = "character",
-              default="Optimize_ressource_report",
-              help="Name of the report file [default %default]"),
-
-  # make_option(c("-q", "--quiet"), action="store_false", dest="verbose",
-  #             help="Make the program not be verbose."),
-
-  make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
-              help="Should the program print extra stuff out? [default %default]")
-)
-
-opt = parse_args(OptionParser(option_list=option_list))
-
-
-
-
-
-#output path not specified    ##modif
-if(is.na(opt$out_path)){
-  opt$out_path <- opt$in_path
-}
 
 #main part of script
-if(file.exists(opt$in_path) & file.exists(opt$out_path)) {  #TRUE ##modif
-  
-  # Options values                              ##modif
-  job_output_path = opt$in_path
-  output_path = opt$out_path
-  
-  #output_path = job_output_path                 ##modif           
-  
-  ############## RESULT ###########################################################
-  
-  #function call with complete list of .o file
-  result <- parsed_folder(job_output_path)
-  
-  Info_df <- result[[1]]
-  DF_plot <- result[[2]]
-  
-  # The following dataframe contain average values parsed in .o files contained in the job_output file gived.
-  #print(Info_df)
-  
-  # The following dataframe contain all values found and will be used to create next plots
-  #print(DF_plot)
-  
-  ############## Register file ###################################################
-  ##Register dataframe as CSV
-  #Create name with date
-  actual_date_time <- strsplit(x= as.character(Sys.time()), split = " ")[[1]][1:2] %>%
-                      paste(collapse ="T") %>% 
-                      gsub(pattern = ":", replacement = ".")
-  file_name <- paste(c(opt$name, actual_date_time), collapse ="_") #"name_test" ##modif
-  complete_path_name <- paste(c(output_path, file_name), collapse ="/")
-  complete_path_name_csv <- paste(c(complete_path_name,"csv"), collapse =".")
 
-  #Write csv in job_output folder
-  write.csv(Info_df, complete_path_name_csv, row.names=FALSE)
-  ############## Custom specfific dataFrame for ploting ##########################
-  #Change WaitingTime, RunTime and TimeLimit format
-  
-  Waiting_unite <- Keep_hour(DF_plot$WaitingTime)[[2]]
-  DF_plot$WaitingTime <- Keep_hour(DF_plot$WaitingTime)[[1]]
-  
-  Run_Limit <- Keep_hour(DF_plot$RunTime, DF_plot$TimeLimit)
-  
-  DF_plot$RunTime <- Run_Limit[[1]]
-  DF_plot$TimeLimit <- Run_Limit[[2]]     #RunTime and TimeLimit have the same format depending on RunTime values
-  Time_unite <- Run_Limit[[3]]            #unite associated with RunTime and TimeLimit columns for plot
-  
-  #computing percentage amount for RunTime compared to TimeLimit
-  DF_plot$RunTime_Efficiency <- round((DF_plot$RunTime / DF_plot$TimeLimit) *100, 1)
-  
-  #compute maximal Efficiency for each step
-  DF_max_Eff <- DF_plot[c(1, 8)] %>% group_by(JobName) %>% top_n(1, RunTime_Efficiency)
-  
-  #Merge DF_max_Eff with DF_plot
-  DF_plot <- merge(DF_plot, DF_max_Eff, by = "JobName")
-  
-  #Change Memory_Request column type to numeric
-  DF_plot$Memory_Request <- as.numeric(DF_plot$Memory_Request)
-  
-  ############## WaitingTime Plot ################################################
+############## RESULT ###########################################################
 
-  p_WaitingTime <- ggplot(DF_plot, aes(x=as.factor(JobName), y=WaitingTime, label= as.numeric(WaitingTime))) + 
-    theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
-          panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),) +
-    
-    #boxplot
-    geom_boxplot(color="blue", 
-                 fill="#69b3a2",
-                 alpha=0.2) +     
-    
-    scale_x_discrete(expand = c(0.05, 0)) +
-    
-    #invert x and y axes
-    coord_flip() + 
-    
-    #label on highest values
-    # geom_text(data = . %>% group_by(JobName) %>% filter(WaitingTime == max(WaitingTime)), 
-    #           nudge_y = 0.45,
-    #           check_overlap = TRUE) +
-    
-    ylab(paste(c("WaitingTime (", Waiting_unite, ")"), collapse ="")) + 
-    xlab("Step name") +
-    ggtitle("WaitingTime for each step (EligibleTime to StartTime)")
-  
-  
-  ############## RunTime vs RunTime_Efficiency Plot ##############################
-  #change JobName type in order to use it as x values
-  DF_plot$JobName <- as.factor(DF_plot$JobName)
-  #Change RunTime_Efficiency.y values and axes to keep them between 0 and 100%
-    DF_plot$RunTime_Efficiency.y <- round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)
-  
-  p_RunTime <- ggplot(DF_plot, aes(x=JobName)) +
-    
-    theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
-          panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
-          axis.title.x.top = element_text(color = "red", size=13),
-          axis.title.x.bottom = element_text(color = "blue", size=13),
-          axis.title.y = element_text(size=13),
-    ) +
-    
-    scale_x_discrete(expand = c(0.05, 0)) +
-    
-    coord_flip() +
-    
-    xlab("Step name") +
-    
-    ylab(paste(c("RunTime (", Time_unite, ")"), collapse ="")) +
-    
-    geom_boxplot( aes(y=RunTime),
-                  alpha=0.2,
-                  color="blue",
-                  fill="#69b3a2",
-    ) + 
-    
-    geom_point( aes(y= RunTime_Efficiency.y),
-                color="red",
-                alpha=0.5) +
-    
-    ggtitle("RunTime_Efficiency (percentage)") #+
-    
-    #scale_x_discrete(expand = c(0.05, 0)) + 
-    
-    # geom_text(y =  as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
-    #           label = as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
-    #           color="red",
-    #           size=2.5,
-    #           nudge_x = 0.5, 
-    #           nudge_y = 0,
-    #           check_overlap = TRUE) +
-    
-    # scale_y_continuous(
-    #   
-    #   # Features of the first axis
-    #   name = paste(c("RunTime (", Time_unite, ")"), collapse =""),
-    #   
-    #   # Add a second axis and specify its features
-    #   sec.axis = sec_axis(~. *10 / max(DF_plot$RunTime),
-    #                       name="RunTime_Efficiency (percentage)")
-    # )
-  
-  
-  
-  ############## Memory_Efficiency vs Memory_Request #############################
+#function call with complete list of .o file
+result <- parsed_folder(job_output_path)
+
+Info_df <- result[[1]]
+DF_plot <- result[[2]]
+
+############## Register file ###################################################
+##Register dataframe as CSV
+#Create name with date
+actual_date_time <- strsplit(x= as.character(Sys.time()), split = " ")[[1]][1:2] %>%
+                    paste(collapse ="T") %>% 
+                    gsub(pattern = ":", replacement = ".")
+file_name <- paste(c(params$name, actual_date_time), collapse ="_")
+complete_path_name <- paste(c(output_path, file_name), collapse ="/")
+complete_path_name_csv <- paste(c(complete_path_name,"csv"), collapse =".")
+
+#Write csv in job_output folder
+write.csv(Info_df, complete_path_name_csv, row.names=FALSE)
+############## Custom specfific dataFrame for ploting ##########################
+#Change WaitingTime, RunTime and TimeLimit format
+
+Waiting_unite <- Keep_hour(DF_plot$WaitingTime)[[2]]
+DF_plot$WaitingTime <- Keep_hour(DF_plot$WaitingTime)[[1]]
+
+Run_Limit <- Keep_hour(DF_plot$RunTime, DF_plot$TimeLimit)
+
+DF_plot$RunTime <- Run_Limit[[1]]
+DF_plot$TimeLimit <- Run_Limit[[2]]     #RunTime and TimeLimit have the same format depending on RunTime values
+Time_unite <- Run_Limit[[3]]            #unite associated with RunTime and TimeLimit columns for plot
+
+#computing percentage amount for RunTime compared to TimeLimit
+DF_plot$RunTime_Efficiency <- round((DF_plot$RunTime / DF_plot$TimeLimit) *100, 1)
+
+#compute maximal Efficiency for each step
+DF_max_Eff <- DF_plot[c(1, 8)] %>% group_by(JobName) %>% top_n(1, RunTime_Efficiency)
+
+#Merge DF_max_Eff with DF_plot
+DF_plot <- merge(DF_plot, DF_max_Eff, by = "JobName")
+
+#Change Memory_Request column type to numeric
+DF_plot$Memory_Request <- as.numeric(DF_plot$Memory_Request)
+
+############## WaitingTime Plot ################################################
+
+# p_WaitingTime <- ggplot(DF_plot, aes(x=as.factor(JobName), y=WaitingTime, label= as.numeric(WaitingTime))) + 
+#   theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
+#         panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),) +
+#   
+#   #boxplot
+#   geom_boxplot(color="blue", 
+#                fill="#69b3a2",
+#                alpha=0.2) +     
+#   
+#   scale_x_discrete(expand = c(0.05, 0)) +
+#   
+#   #invert x and y axes
+#   coord_flip() + 
+#   
+#   #label on highest values
+#   # geom_text(data = . %>% group_by(JobName) %>% filter(WaitingTime == max(WaitingTime)), 
+#   #           nudge_y = 0.45,
+#   #           check_overlap = TRUE) +
+#   
+#   ylab(paste(c("WaitingTime (", Waiting_unite, ")"), collapse ="")) + 
+#   xlab("Step name") +
+#   ggtitle("WaitingTime for each step (EligibleTime to StartTime)")
 
 
-  p_Memory <- ggplot(DF_plot, aes(x=as.factor(JobName))) +                               #CHANGER DF_MEMORY PAR DF_plot
-                                                                                      ##modif
-    theme(panel.background = element_rect(fill = 'white', color = 'grey'),
-          panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
-          axis.title.x.top = element_text(color = "red", size=13),
-          axis.title.x.bottom = element_text(color = "blue", size=13),
-          axis.title.y = element_text(size=13),
-    ) +
+############## RunTime vs RunTime_Efficiency Plot ##############################
+#change JobName type in order to use it as x values
+# DF_plot$JobName <- as.factor(DF_plot$JobName)
+# #Change RunTime_Efficiency.y values and axes to keep them between 0 and 100%
+#   DF_plot$RunTime_Efficiency.y <- round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)
 
-    scale_x_discrete(expand = c(0.05, 0)) +
-
-    coord_flip() +
-
-    xlab("Step name") +
-
-    geom_boxplot( aes(y=DF_plot$Memory_Request),
-                  alpha=0.1,
-                  color="blue",
-                  fill="#69b3a2",
-    ) +
-
-    geom_point( aes(y=round(Memory_Efficiency * 100 / max(DF_plot$Memory_Request),1)),
-                color="red",
-                alpha=0.5) +
-
-    ggtitle("Memory_Request and RunTime_Efficiency") +
+# p_RunTime <- ggplot(DF_plot, aes(x=JobName)) +
+#   
+#   theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
+#         panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
+#         axis.title.x.top = element_text(color = "red", size=13),
+#         axis.title.x.bottom = element_text(color = "blue", size=13),
+#         axis.title.y = element_text(size=13),
+#   ) +
+#   
+#   scale_x_discrete(expand = c(0.05, 0)) +
+#   
+#   coord_flip() +
+#   
+#   xlab("Step name") +
+#   
+#   ylab(paste(c("RunTime (", Time_unite, ")"), collapse ="")) +
+#   
+#   geom_boxplot( aes(y=RunTime),
+#                 alpha=0.2,
+#                 color="blue",
+#                 fill="#69b3a2",
+#   ) + 
+#   
+#   geom_boxplot( aes(y= RunTime_Efficiency.y),
+#               color="red",
+#               alpha=0.5) +
+#   
+#   ggtitle("RunTime_Efficiency (percentage)") #+
+  
+  #scale_x_discrete(expand = c(0.05, 0)) + 
+  
+  # geom_text(y =  as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
+  #           label = as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
+  #           color="red",
+  #           size=2.5,
+  #           nudge_x = 0.5, 
+  #           nudge_y = 0,
+  #           check_overlap = TRUE) +
+  
+  # scale_y_continuous(
+  #   
+  #   # Features of the first axis
+  #   name = paste(c("RunTime (", Time_unite, ")"), collapse =""),
+  #   
+  #   # Add a second axis and specify its features
+  #   sec.axis = sec_axis(~. *10 / max(DF_plot$RunTime),
+  #                       name="RunTime_Efficiency (percentage)")
+  # )
 
 
 
-    geom_text( y = round(as.numeric(DF_plot$Memory_Efficiency * 100 / max(DF_plot$Memory_Request)),1),
-               label = round(as.numeric(DF_plot$Memory_Efficiency * 100 / max(DF_plot$Memory_Request)),1),
-               color="red",
-               size=3,
-               nudge_x = 0.5,
-               check_overlap = TRUE) +
-
-    scale_y_continuous(
-
-      # Features of the first axis
-      name = "Memory_Request (GB)" ,
-
-      # Add a second axis and specify its features
-      sec.axis = sec_axis(~. ,
-                          name="Memory_Efficiency (%)")
-    )
-  
-  ############## PDF Result #######################################################
-  #create path and file name
-  pdf_file_name <- paste(c(opt$name,"plots", actual_date_time), collapse ="_") #"name_test" ##modif
-  pdf_complete_path_name <- paste(c(output_path, pdf_file_name), collapse ="/")            
-  pdf_complete_path_name <- paste(c(pdf_complete_path_name,"pdf"), collapse =".")
-  
-  #create pdf file from plots                                                     #modif
-  # pdf(pdf_complete_path_name)
-  # print(p_WaintingTime)     # Page 1
-  # print(p_RunTime)          # Page 2 
-  # print(p_Memory)           # Page 3
-  # dev.off()
-  
-  ############## R MarkDown #######################################################
-  #toutes les infos (csv + plots + rapides explications de ce qui est montré)
-  #peut-être intéractif, couleurs changent en fonction des valeurs des plots
-  # 
-  #rmarkdown::render("~/Documents/local/apps/genpipes/utils/optimize_resources_report.r")
-  
-  # Actual_path <- rstudioapi::getActiveDocumentContext()$path #get actual absolute path
-  # rmarkdown::render(input = Actual_path,
-  #                   output_dir = "/Users/mleguen/Documents/local/apps/genpipes/utils/",
-  #                   clean = TRUE
-  #                   )
-  
-  #verbose option                                                             ##modif
-  if (opt$verbose){
-    cat("\n")
-    #Total steps
-    cat(paste(nrow(DF_plot),"files parsed." ,"\n", sep = " "))
-
-    #Total differents steps
-    cat(paste(nrow(Info_df),"differents steps in total among all files." ,"\n", sep = " "))
-
-    #Absolute path if the one gived is relative
-    #cat(paste("", opt$in_path,"\n", sep = " "))
-    cat("\n")
-  }
-  
-} 
-
-#Input folder problem                                             ##modif
-if  (!file.exists(opt$in_path)){
-  cat(paste("The specified input path doesn't exist :", opt$in_path,"\n", sep = " "), file=stderr()) # print error messages to stderr
-}
-
-#Output folder problem
-if  (!file.exists(opt$out_path)){
-  cat(paste("The specified output path doesn't exist :", opt$out_path,"\n", sep = " "), file=stderr()) # print error messages to stderr
-}
+############## Memory_Efficiency vs Memory_Request #############################
 
 
+# p_Memory <- ggplot(DF_plot, aes(x=as.factor(JobName))) +                               #CHANGER DF_MEMORY PAR DF_plot
+#                                                                                     #modif
+#   theme(panel.background = element_rect(fill = 'white', color = 'grey'),
+#         panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
+#         axis.title.x.top = element_text(color = "red", size=13),
+#         axis.title.x.bottom = element_text(color = "blue", size=13),
+#         axis.title.y = element_text(size=13),
+#   ) +
+# 
+#   scale_x_discrete(expand = c(0.05, 0)) +
+# 
+#   coord_flip() +
+# 
+#   xlab("Step name") +
+# 
+#   geom_boxplot( aes(y=DF_plot$Memory_Request),
+#                 alpha=0.1,
+#                 color="blue",
+#                 fill="#69b3a2",
+#   ) +
+# 
+#   geom_point( aes(y=round(Memory_Efficiency * 100 / max(DF_plot$Memory_Request),1)),
+#               color="red",
+#               alpha=0.5) +
+# 
+#   ggtitle("Memory_Request and RunTime_Efficiency") +
+# 
+# 
+# 
+#   geom_text( y = round(as.numeric(DF_plot$Memory_Efficiency * 100 / max(DF_plot$Memory_Request)),1),
+#              label = round(as.numeric(DF_plot$Memory_Efficiency * 100 / max(DF_plot$Memory_Request)),1),
+#              color="red",
+#              size=3,
+#              nudge_x = 0.5,
+#              check_overlap = TRUE) +
+# 
+#   scale_y_continuous(
+# 
+#     # Features of the first axis
+#     name = "Memory_Request (GB)" ,
+# 
+#     # Add a second axis and specify its features
+#     sec.axis = sec_axis(~. ,
+#                         name="Memory_Efficiency (%)")
+#   )
 
 ```
 
-```{r plot2, echo=FALSE}
-font <- list(
-  family = "Roboto Condensed",
-  size = 12,
-  color = "white"
-)
-label <- list(
-  bgcolor = "#232F34",
-  bordercolor = "transparent",
-  font = font
-)
+
+```{r verbose, condition, eval=params$verbose, results='asis', echo=FALSE}
+cat("*** \n ")
+
+cat('\n##', "Verbose", '\n')
+
+cat(" \n ")
+
+#Total steps
+cat(" \n ", paste(nrow(DF_plot),"files parsed." ," \n ", sep = " "))
+
+#Total differents steps
+cat(paste(nrow(Info_df),"differents steps in total among all files." ,"\n", sep = " "))
+
+#Absolute path if the one gived is relative
+#cat(paste("", opt$in_path,"\n", sep = " ")) 
+# cat("\n")
+
 ```
+
 ***
 ## WaitingTime plot
 
 This plot represent the time spend in queue for each step. 
 
-```{r p_WaitingTime, echo=FALSE}
-ggplotly(p_WaitingTime) %>% style(hoverlabel = label) %>% layout(font = font)
+```{r p_WaitingTime, echo=FALSE, fig.height=10, out.width = '100%'}
+
+dat1 <- data_to_boxplot(data = DF_plot,
+                       variable = WaitingTime,
+                       group_var = JobName, 
+                       name = paste(c("WaitingTime (", Waiting_unite, ")"), collapse =""))
+
+highchart() %>%
+  hc_xAxis(type = "category") %>%
+  hc_add_series_list(dat1)%>%
+  hc_chart(type = "bar",
+           height = "800px")
 
 ```
 ***
@@ -697,8 +623,58 @@ ggplotly(p_WaitingTime) %>% style(hoverlabel = label) %>% layout(font = font)
 
 This plot represent the running time for each steps and the associated efficiency compare to the time limit. The efficiency compare requested resources and  resources used.
 
-```{r p_RunTime, echo=FALSE}
-ggplotly(p_RunTime) %>% style(hoverlabel = label) %>% layout(font = font)
+```{r p_RunTime, echo=FALSE, fig.height=14, out.width = '100%'}
+
+dat1 <- data_to_boxplot(data = DF_plot,
+                       variable = RunTime,
+                       group_var = JobName,
+                       name = paste(c("RunTime (", Time_unite, ")"), collapse =""))
+
+dat2 <- data_to_boxplot(data = DF_plot,
+                       variable = RunTime_Efficiency.y,
+                       group_var = JobName,
+                       name = "RunTime_Efficiency (%)")
+
+highchart() %>%
+  hc_xAxis(type = "category") %>%
+  hc_add_series_list(dat1)%>%
+  hc_add_series_list(dat2)%>%
+  hc_chart(type = "bar",
+           height = "1000px")
+
+# highchart() %>%
+#   # hc_xAxis(type = "category") %>%
+#   # hc_chart(type = "bar",
+#   #          height = "1000px")%>%
+#   hc_yAxis_multiples(list(title = list(text = "RunTime_Efficiency (%)"),
+#                           labels=list(format = '{value}%'),
+#                           min=0,
+#                           max=100,
+#                           showFirstLabel = TRUE,
+#                           showLastLabel=TRUE,
+#                           opposite = FALSE),
+#                        
+#                      list(title = list(text = paste(c("RunTime (", Time_unite, ")"), collapse ="")),
+#                           min=5,
+#                           max = max(DF_plot$RunTime),
+#                           labels = list(format = "{value}"),
+#                           showLastLabel = FALSE,
+#                           opposite = TRUE)) %>%
+#     
+#     #hc_plotOptions(column = list(stacking = "normal")) %>%
+#     hc_add_series(DF_plot,
+#                   type="point",
+#                   hcaes(x=JobName,
+#                         y=RunTime_Efficiency.y,
+#                         group=JobName
+#                         ),
+#                         yAxis=1) %>%
+#     hc_add_series(DF_plot,
+#                   type="point",
+#                   hcaes(x=JobName,
+#                         y=RunTime,
+#                         group=JobName
+#                         ))
 
 ```
 ***
@@ -707,6 +683,21 @@ ggplotly(p_RunTime) %>% style(hoverlabel = label) %>% layout(font = font)
 This plot represent the amount of memory required and the associated efficiency. 
 
 ```{r p_Memory, echo=FALSE}
-ggplotly(p_Memory) %>% style(hoverlabel = label, marker.color = "#232F34") %>% layout(font = font) ##modif
+dat1 <- data_to_boxplot(data = DF_plot,
+                       variable = Memory_Request,
+                       group_var = JobName, 
+                       name = "Memory_Request (GB)")
+
+dat2 <- data_to_boxplot(data = DF_plot,
+                       variable = Memory_Efficiency,
+                       group_var = JobName, 
+                       name = "Memory_Efficiency (%)")
+
+highchart() %>%
+  hc_xAxis(type = "category") %>%
+  hc_add_series_list(dat1)%>%
+  hc_add_series_list(dat2)%>%
+  hc_chart(type = "bar",
+           height = "1000px")
 
 ```
