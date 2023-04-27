@@ -6443,7 +6443,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             )
         return jobs
 
-
     def linx_plot(self):
         """
         """
@@ -6563,7 +6562,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 self.linx_plot
             ]
         ]
-
 
 if __name__ == '__main__':
     argv = sys.argv
