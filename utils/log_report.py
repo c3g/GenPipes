@@ -62,7 +62,10 @@ class JobStat(object):
                  parsed_after_header=50, remote_hpc=None):
         self.completed = None
         self._path = step_output_file
-        self.jobid = int(jobid)
+        if remote_hpc == "abacus":
+            self.jobid = int(jobid.split(".")[0])
+        else:
+            self.jobid = int(jobid)
         self._dependency = dependency
         self._name = name
         self._prologue = {}
@@ -121,7 +124,7 @@ class JobStat(object):
         return subprocess.check_output(cmd).decode("utf-8")
 
     @classmethod
-    def set_all_status(cls):
+    def set_all_status_slurm(cls):
         ids = ','.join([str(i) for i in cls.registery.keys()])
         raw_output = cls.sacct(ids)
         lines = raw_output.rstrip().splitlines()
@@ -134,9 +137,9 @@ class JobStat(object):
             bidon[job_id].append(slurm_steps)
         for job_id, steps in bidon.items():
             acct = dict(zip(keys, zip(*steps)))
-            cls.registery[int(job_id)].set_job_status(acct)
+            cls.registery[int(job_id)].set_job_status_slurm(acct)
 
-    def set_job_status(self, sacct_val):
+    def set_job_status_slurm(self, sacct_val):
         self._sacct_val = sacct_val
         self._slurm_state = sacct_val[self.SSTATE]
         self._sub_id = sacct_val[self.SJOBID]
@@ -408,7 +411,10 @@ def get_report(job_list_tsv=None, remote_hpc=None):
                     remote_hpc=remote_hpc
                     )
                 )
-        JobStat.set_all_status()
+        if remote_hpc == "abacus":
+            pass
+        else:
+            JobStat.set_all_status_slurm()
     return report
 
 
