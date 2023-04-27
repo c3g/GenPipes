@@ -2079,21 +2079,22 @@ done""".format(
                 self.sambamba_merge_bam_files, #5
                 self.sambamba_mark_duplicates,
                 self.sambamba_view_filter,
+                self.bedtools_blacklist_filter,
                 self.metrics,
                 self.homer_make_tag_directory,
                 self.qc_metrics,
-                self.homer_make_ucsc_file,  #11
+                self.homer_make_ucsc_file,  #12
                 self.macs2_callpeak,
                 self.homer_annotate_peaks,
                 self.homer_find_motifs_genome,
                 self.annotation_graphs,
                 self.run_spp,
-                self.differential_binding, #17
+                self.differential_binding, #18
                 self.ihec_metrics,
                 self.multiqc_report,
                 self.cram_output,
                 self.gatk_haplotype_caller,
-                self.merge_and_call_individual_gvcf #22
+                self.merge_and_call_individual_gvcf #23
             ],
             [
                 self.picard_sam_to_fastq,
@@ -2103,6 +2104,7 @@ done""".format(
                 self.sambamba_merge_bam_files,
                 self.sambamba_mark_duplicates,
                 self.sambamba_view_filter,
+                self.bedtools_blacklist_filter,
                 self.metrics,
                 self.homer_make_tag_directory,
                 self.qc_metrics,
