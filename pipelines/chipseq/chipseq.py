@@ -844,9 +844,9 @@ pandoc --to=markdown \\
             for mark_name in sample.marks:
                 # add input selection that allows for use of blacklist-filtered and unfiltered bams
                 filtered_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
-                cleaned_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
-                candiate_input_files = [[cleaned_bam], [filtered_bam]]
-                alignment_file = self.select_input_files(candidate_input_files)
+                cleaned_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam")
+                candidate_input_files = [[cleaned_bam], [filtered_bam]]
+                [alignment_file] = self.select_input_files(candidate_input_files)
                 output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name)
                 other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
                 genome = config.param('homer_make_tag_directory', 'genome', required=False) if config.param('homer_make_tag_directory', 'genome', required=False) else self.ucsc_genome
@@ -1018,7 +1018,7 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                                         mark_name, mark_type in sample.marks.items() if mark_type == "I"]
             else:
                 input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                        sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam") for
+                                        sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
                                         mark_name, mark_type in sample.marks.items() if mark_type == "I"]
             if len(input_file_list) > 0:
                 if len(input_file_list) > 1:
@@ -1033,8 +1033,8 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                                      sample.name + "." + mark_name + ".sorted.dup.filtered.bam")]
                     cleaned_file = [
                         os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                    sample.name + "." + mark_name + "sorted.dup.filtered.bam")]
-                    candidate_input_files = [[cleaned_file], [filtered_file]]
+                                    sample.name + "." + mark_name + "sorted.dup.filtered.cleaned.bam")]
+                    candidate_input_files = [cleaned_file, filtered_file]
                     mark_file = self.select_input_files(candidate_input_files)
                     output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
 
@@ -1175,7 +1175,7 @@ done""".format(
                                         mark_name, mark_type in sample.marks.items() if mark_type == "I"]
             else:
                 input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                        sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam") for
+                                        sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
                                         mark_name, mark_type in sample.marks.items() if mark_type == "I"]
             if len(input_file_list) > 0:
                 if len(input_file_list) > 1:
@@ -1190,8 +1190,8 @@ done""".format(
                                      sample.name + "." + mark_name + ".sorted.dup.filtered.bam")]
                     cleaned_file = [
                         os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                    sample.name + "." + mark_name + "sorted.dup.filtered.bam")]
-                    candidate_input_files = [[cleaned_file], [filtered_file]]
+                                    sample.name + "." + mark_name + "sorted.dup.filtered.cleaned.bam")]
+                    candidate_input_files = [cleaned_file, filtered_file]
                     mark_file = self.select_input_files(candidate_input_files)
                     # control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.filtered.bam") for sample in contrast.controls]
                     output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
@@ -1903,7 +1903,12 @@ done""".format(
             metrics_output_directory = self.output_dirs['metrics_output_directory']
             for sample in self.samples:
                 for mark_name in sample.marks:
-                    picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.all.metrics.")
+                    # select input from blacklist filtered (clean) or just sambamba filtered bam
+                    filtered_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                    clean_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam")
+                    candidate_input_files = [[clean_bam], [filtered_bam]]
+                    [bam_file] = self.select_input_files(candidate_input_files)
+                    picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("bam$", "all.metrics.", os.path.basename(bam_file)))
                     if self.run_type == 'SINGLE_END':
                         picard_files = [
                             picard_prefix + "quality_by_cycle.pdf",
@@ -1925,7 +1930,7 @@ done""".format(
 
                         ]
                     input_files.extend(picard_files)
-                    input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.flagstat"))
+                    input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("bam$", "flagstat", os.path.basename(bam_file))))
                     homer_prefix = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name)
                     homer_files = [
                         os.path.join(homer_prefix, "tagGCcontent.txt"),
