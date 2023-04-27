@@ -158,7 +158,7 @@ def create(pipeline, sample):
     # Print to file
     filepath = os.path.join(pipeline.output_dir, "json", sample.json_file)
     with open(filepath, 'w') as out_json:
-        json.dump(current_json, out_json, indent=4)
+        out_json.write(current_json)
     out_json.close()
 
     return filepath
@@ -358,3 +358,4 @@ def update_json(
                     ]
                 }
             )
+    return current_json_hash
