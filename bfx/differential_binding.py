@@ -33,6 +33,7 @@ def diffbind(
     readset,
     output_dir,
     alignment_dir,
+    alignment_ext,
     peak_dir,
     minOverlap,
     minMembers,
@@ -58,7 +59,7 @@ def diffbind(
         command="""\
         mkdir -p {output_dir} &&
 cp $R_TOOLS/DiffBind.R {R_filename} &&
-Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("{R_filename}",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",p="{peak_dir}",dir="{output_dir}",minOverlap={minOverlap},minMembers={minMembers},method="{method}",th={th},bUsePval={bUsePval},contrastnb={contrastnb}),output_file=file.path(cur_dir,"{html_output}"));' &&
+Rscript -e 'cur_dir=getwd();library(knitr);rmarkdown::render("{R_filename}",params=list(cur_wd=cur_dir,d="{design}",r="{readset}",c="{comparison}",o="{output_file}",b="{alignment_dir}",ext="{alignment_ext}",p="{peak_dir}",dir="{output_dir}",minOverlap={minOverlap},minMembers={minMembers},method="{method}",th={th},bUsePval={bUsePval},contrastnb={contrastnb}),output_file=file.path(cur_dir,"{html_output}"));' &&
 rm {R_filename}""".format(
             design=design,
             comparison=comparison,
@@ -66,6 +67,7 @@ rm {R_filename}""".format(
             output_dir=output_dir,
             readset=readset,
             alignment_dir=alignment_dir,
+            alignment_ext=alignment_ext,
             peak_dir=peak_dir,
             minOverlap=minOverlap,
             minMembers=minMembers,
