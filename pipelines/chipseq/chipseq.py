@@ -754,6 +754,11 @@ pandoc --to=markdown \\
         metrics_file = os.path.join(metrics_output_directory, "SampleMetrics.tsv")
         report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "SampleMetrics.tsv")
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.metrics.md")
+        if config.param('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+            bam_ext = "sorted.dup.filtered.cleaned.bam"
+        else:
+            bam_ext = "sorted.dup.filtered.bam"
+
         jobs.append(
             Job(
                 inputs_report,
@@ -773,7 +778,7 @@ do
   do
     raw_flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.flagstat
     filtered_flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.filtered.flagstat
-    bam_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.filtered.bam
+    bam_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.{bam_ext}
     raw_supplementarysecondary_reads=`bc <<< $(grep "secondary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
     mapped_reads=`bc <<< $(grep "mapped (" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$raw_supplementarysecondary_reads`
     filtered_supplementarysecondary_reads=`bc <<< $(grep "secondary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
@@ -818,6 +823,7 @@ pandoc --to=markdown \\
                     # samples=" ".join([sample.name for sample in self.samples]),
                     samples_associative_array=" ".join(samples_associative_array),
                     alignment_dir=self.output_dirs['alignment_output_directory'],
+                    bam_ext=bam_ext,
                     report_dir=self.output_dirs['report_output_directory'],
                     trim_metrics_file=trim_metrics_file,
                     report_metrics_file=report_metrics_file,
@@ -1975,8 +1981,10 @@ done""".format(
 
         for sample in self.samples:
             for mark_name in sample.marks:
-                input_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                filtered_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                clean_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam")
+                candidate_input_files = [[clean_bam], [filtered_bam]]
+                [input_bam] = self.select_input_files(candidate_input_files)
                 output_cram = re.sub("\.bam$", ".cram", input_bam)
 
                 # Run samtools
@@ -2010,8 +2018,10 @@ done""".format(
 
                     macs_output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
 
-                    input_bam = os.path.join(alignment_directory,
-                                                 sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                    filtered_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                    clean_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam")
+                    candidate_input_files = [[clean_bam], [filtered_bam]]
+                    [input_bam] = self.select_input_files(candidate_input_files)
 
                     #peak calling bed file from MACS2 is given here to restrict the variant calling to peaks regions
                     interval_list = None
