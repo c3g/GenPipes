@@ -436,3 +436,25 @@ client_linux \\
             json_flag=json_flag_file
         )
     )
+
+def match_undetermined_barcodes(
+        input,
+        barcode_db,
+        output):
+    
+    return Job(
+            [input],
+            output,
+            [
+                [ini_section, 'module_mugqic_tools']
+            ],
+            command="""\
+python $PYTHON_TOOLS/matchUndeterminedBarcodes.py \\
+    -i {input} \\
+    -b {barcode_db} \\
+    -o {output}""".format(
+        input=input,
+        barcode_db=config.param(ini_section, 'barcodes_by_sequence'),
+        output=output
+        )
+    )
