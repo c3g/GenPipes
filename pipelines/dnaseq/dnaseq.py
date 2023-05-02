@@ -1067,6 +1067,9 @@ END
         return jobs
 
     def sym_link_final_bam(self):
+        """
+        Create sym link of final bam for delivery of data to clients.
+        """
         jobs = []
 
         for sample in self.samples:
@@ -1138,6 +1141,12 @@ END
         return jobs
 
     def metrics_dna_picard_metrics(self):
+        """
+        Generates metrics with picard, including:
+        CollectMultipleMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-
+        CollectOxoGMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-
+        CollectGcBiasMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-
+        """
 
         ##check the library status
         library = {}
@@ -1219,6 +1228,12 @@ END
         return jobs
 
     def metrics_dna_sample_qualimap(self):
+        """
+        Generates metrics with qualimap bamqc:
+        BAM QC reports information for the evaluation of the quality of the provided alignment data (a BAM file). 
+        In short, the basic statistics of the alignment (number of reads, coverage, GC-content, etc.) are summarized and a number of useful graphs are produced.
+        http://qualimap.conesalab.org/doc_html/analysis.html#bamqc
+        """
 
         jobs = []
         for sample in self.samples:
@@ -1269,6 +1284,10 @@ END
         return jobs
 
     def metrics_dna_sambamba_flagstat(self):
+        """
+        Outputs flag statistics from BAM file.
+        https://lomereiter.github.io/sambamba/docs/sambamba-flagstat.html
+        """
 
         jobs = []
         for sample in self.samples:
@@ -1307,6 +1326,10 @@ END
         return jobs
 
     def metrics_dna_fastqc(self):
+        """
+        QualityControl with fastqc.
+        https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+        """
 
         jobs = []
         for sample in self.samples:
@@ -1361,6 +1384,12 @@ END
         return jobs
 
     def run_multiqc(self):
+        """
+        Aggregate results from bioinformatics analyses across many samples into a single report.
+        MultiQC searches a given directory for analysis logs and compiles a HTML report. 
+        It's a general use tool, perfect for summarising the output from numerous bioinformatics tools.
+        https://multiqc.info/
+        """
 
         jobs = []
 
@@ -2655,6 +2684,12 @@ pandoc \\
         output_vcf="variants/allSamples.merged.flt.vt.vcf.gz",
         job_name="decompose_and_normalize"
         ):
+        """
+        Variants with multiple alternate alleles will not be handled correctly by gemini (or by the tools used to annotate the variants).
+        To reduce the number of false negatives, the authors of gemini strongly recommend that gemini users split, left-align, and trim their variants.
+        For more info on preprocessing, see the gemini docs: https://gemini.readthedocs.io/en/latest/content/preprocessing.html
+        The tool used for decomposing and normalizing VCFs is vt: https://github.com/atks/vt
+        """
     
         jobs = []
         jobs.append(
@@ -3251,6 +3286,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
 
     def delly_sv_annotation(self):
+        """
+        Preprocess and annotate VCF with SnpEff.
+        SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+        https://pcingola.github.io/SnpEff/se_introduction/
+        """
         jobs = []
 
         for sample in self.samples:
@@ -3413,7 +3453,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
 
     def manta_sv_annotation(self):
-
+        """
+        Annotate VCF with SnpEff.
+        SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+        https://pcingola.github.io/SnpEff/se_introduction/
+        """
         jobs = []
 
         for sample in self.samples:
@@ -3582,6 +3626,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
 
     def lumpy_sv_annotation(self):
+        """
+        Annotate VCF with SnpEff.
+        SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+        https://pcingola.github.io/SnpEff/se_introduction/
+        """
     
         jobs = []
     
@@ -3698,6 +3747,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
 
     def wham_sv_annotation(self):
+        """
+        Annotate VCF with SnpEff.
+        SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+        https://pcingola.github.io/SnpEff/se_introduction/
+        """
 
         jobs = []
         for sample in self.samples:
@@ -3717,6 +3771,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def cnvkit_batch(self):
         """
+        CNVkit is a Python library and command-line software toolkit to infer and visualize copy number from high-throughput DNA sequencing data.
+        https://cnvkit.readthedocs.io/en/stable/index.html
         """
         jobs = []
 
@@ -3926,7 +3982,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
 
     def cnvkit_sv_annotation(self):
-
+        """
+        Annotate VCF with SnpEff.
+        SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+        https://pcingola.github.io/SnpEff/se_introduction/
+        """
         jobs = []
 
         for sample in self.samples:
@@ -3997,7 +4057,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def ensemble_metasv(self):
         """
-		"""
+        MetaSV is an integrated SV caller which leverages multiple orthogonal SV signals for high accuracy and resolution.
+        MetaSV proceeds by merging SVs from multiple tools for all types of SVs.
+        http://bioinform.github.io/metasv/
+        """
         jobs = []
 
         for sample in self.samples:
@@ -4089,6 +4152,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
 
     def metasv_sv_annotation(self):
+        """
+        Annotate VCF with SnpEff.
+        SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+        https://pcingola.github.io/SnpEff/se_introduction/
+        """
 
         jobs = []
 
