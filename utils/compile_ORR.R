@@ -29,11 +29,13 @@ option_list = list(
               default="Optimize_ressource_report", 
               help="Name of the report file [default %default]"),
   
-  # make_option(c("-q", "--quiet"), action="store_false", dest="verbose",
-  #             help="Make the program not be verbose."),
-  
   make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
-              help="Should the program print extra stuff out? [default %default]")  
+              help="Should the program print extra stuff out? [default %default]"),
+  
+  make_option(c("-s", "--scheduler"),
+              action="store",
+              default="SLURM",
+              help="Choose the scheduler you are currently using : PBS or SLURM [default %default]")  
 )
 
 opt = parse_args(OptionParser(option_list=option_list))
@@ -75,7 +77,8 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
                       input = opt$in_path,             #joboutput path
                       output = opt$out_path,           #report output path
                       name = opt$name,                 #name of document (if needed)
-                      verbose = opt$verbose            #verbose option
+                      verbose = opt$verbose,           #verbose option
+                      scheduler = opt$scheduler        #scheduler option
                       ),
                     output_dir = opt$out_path,
                     output_file = file_name_html
