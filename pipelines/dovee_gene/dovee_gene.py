@@ -402,10 +402,6 @@ fi""".format(
                             )
                         )
                         
- #               job.name='agent_locatit.' + sample.name
- #               job.samples=[sample]
- #               jobs.append(job)
-                
             else:
                 _raise(SanitycheckError("Error: sample \"" + sample.name +
                 "\" is not included in the design file! Cannot determine whether \"" + sample.name + "\" is a saliva or brush sample."))
@@ -536,47 +532,100 @@ fi""".format(
 
         dovee_protocol = self.args.type
 
-        for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            mosdepth_directory = os.path.join(self.output_dirs['metrics_directory'], "mosdepth")
-            link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
-            output_prefix = os.path.join(mosdepth_directory, sample.name)
-
-            if dovee_protocol == "vardict":
+        mosdepth_directory = os.path.join(self.output_dirs['metrics_directory'], "mosdepth")
+        link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
+        
+        if dovee_protocol == "vardict":
+            for sample in self.samples:
+                alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+                output_prefix = os.path.join(mosdepth_directory, sample.name)
                 input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
                 if self.contrasts:
                     design_file = os.path.relpath(self.args.design.name, self.output_dir)
                     if sample in self.contrasts.salivas:
-                        region=config.param('agent_locatit', 'covered_bedv8', param_type='filepath')
+                        region=config.param('mosdepth', 'region_bed', param_type='filepath')
+                        source="_saliva"
                     elif sample in self.contrasts.brushes:
-                        region=config.param('agent_locatit', 'covered_bedv7', param_type='filepath')
+                        region=config.param('mosdepth', 'region_bed', param_type='filepath')
+                        source="_brush"
 
-            elif dovee_protocol == "copy-number":
-                input_bam = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.sorted.bam")
-                region="1000" # window size
-
-            jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(mosdepth_directory),
-                            bash.mkdir(link_directory),
-                            mosdepth.mosdepth(
-                                input_bam,
-                                output_prefix,
-                                True,
-                                region
-                                ),
-                            bash.ln(
-                                os.path.relpath(output_prefix + ".mosdepth.region.dist.txt", link_directory),
-                                os.path.join(link_directory, sample.name + ".mosdepth.region.dist.txt"),
-                                output_prefix + ".mosdepth.region.dist.txt"
-                                )
+                jobs.append(
+                        concat_jobs(
+                            [
+                                bash.mkdir(mosdepth_directory),
+                                bash.mkdir(link_directory),
+                                mosdepth.mosdepth(
+                                    input_bam,
+                                    output_prefix,
+                                    True,
+                                    region
+                                    ),
+                                bash.ln(
+                                    os.path.relpath(output_prefix + ".mosdepth.region.dist.txt", link_directory),
+                                    os.path.join(link_directory, sample.name + source + ".mosdepth.region.dist.txt"),
+                                    output_prefix + ".mosdepth.region.dist.txt"
+                                    )
                             ],
                         name = "mosdepth." + sample.name,
                         samples = [sample]
                         )
                     )
-            self.multiqc_inputs.append(output_prefix + ".mosdepth.region.dist.txt")
+                self.multiqc_inputs.append(output_prefix + ".mosdepth.region.dist.txt")
+        
+        elif dovee_protocol == "copy-number":
+            for sample_pair in self.dovee_pairs.values():
+                
+                input_brush = os.path.join(self.output_dirs['alignment_directory'], sample_pair.brush.name, sample_pair.brush.name + ".dedup.hybrid.sorted.bam")
+                input_saliva = os.path.join(self.output_dirs['alignment_directory'], sample_pair.saliva.name, sample_pair.saliva.name + ".dedup.hybrid.sorted.bam")
+                output_prefix_brush = os.path.join(mosdepth_directory, sample_pair.brush.name)
+                output_prefix_saliva = os.path.join(mosdepth_directory, sample_pair.saliva.name)
+                region="1000" # window size
+
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(mosdepth_directory),
+                            bash.mkdir(link_directory),
+                            mosdepth.mosdepth(
+                                input_brush,
+                                output_prefix_brush,
+                                True,
+                                region
+                                ),
+                            bash.ln(
+                                os.path.relpath(output_prefix_brush + ".mosdepth.region.dist.txt", link_directory),
+                                os.path.join(link_directory, sample_pair.brush.name + "_brush" + ".mosdepth.region.dist.txt"),
+                                output_prefix_brush + ".mosdepth.region.dist.txt"
+                                )
+                            ],
+                        name = "mosdepth." + sample_pair.brush.name,
+                        samples = [sample_pair.brush]
+                        )
+                    )
+                self.multiqc_inputs.append(output_prefix_brush + ".mosdepth.region.dist.txt")
+                
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(mosdepth_directory),
+                            bash.mkdir(link_directory),
+                            mosdepth.mosdepth(
+                                input_saliva,
+                                output_prefix_saliva,
+                                True,
+                                region
+                                ),
+                            bash.ln(
+                                os.path.relpath(output_prefix_saliva + ".mosdepth.region.dist.txt", link_directory),
+                                os.path.join(link_directory, sample_pair.saliva.name + "_saliva" + ".mosdepth.region.dist.txt"),
+                                output_prefix_saliva + ".mosdepth.region.dist.txt"
+                                )
+                            ],
+                        name = "mosdepth." + sample_pair.saliva.name,
+                        samples = [sample_pair.saliva]
+                        )
+                    )
+                self.multiqc_inputs.append(output_prefix_saliva + ".mosdepth.region.dist.txt")
         return jobs
 
     def picard_metrics(self):
@@ -623,9 +672,11 @@ fi""".format(
 
             if sample in self.contrasts.brushes:
                 intervals = outputv7
+                source = "_brush"
 
             elif sample in self.contrasts.salivas:
                 intervals = outputv8
+                source = "_saliva"
 
             jobs.append(
                     concat_jobs(
@@ -638,7 +689,7 @@ fi""".format(
                                 ),
                             bash.ln(
                                 os.path.relpath(output, link_directory),
-                                os.path.join(link_directory, sample.name + ".picard_HS_metrics.txt"),
+                                os.path.join(link_directory, sample.name + source + ".picard_HS_metrics.txt"),
                                 input=output
                                 )
                         ], name = "picard_calculate_hs_metrics." + sample.name,
@@ -663,7 +714,7 @@ fi""".format(
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             variants_directory = os.path.join(self.output_dirs['variants_directory'], sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
-            output = os.path.join(variants_directory, sample.name + ".out.vcf") # name TBC
+            output = os.path.join(variants_directory, sample.name + ".out.vcf")
 
             if sample in self.contrasts.brushes:
                 freq=0.001
@@ -797,6 +848,13 @@ fi""".format(
             link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
             output = os.path.join(output_directory, sample.name + ".bcftools.stats")
             
+            if self.contrasts:
+                design_file = os.path.relpath(self.args.design.name, self.output_dir)
+                if sample in self.contrasts.salivas:
+                    source="_saliva"
+                elif sample in self.contrasts.brushes:
+                    source="_brush"
+
             jobs.append(
                     concat_jobs(
                         [
@@ -808,7 +866,7 @@ fi""".format(
                                 ),
                             bash.ln(
                                 os.path.relpath(output, link_directory),
-                                os.path.join(link_directory, sample.name + ".bcftools.stats"),
+                                os.path.join(link_directory, sample.name + source + ".bcftools.stats"),
                                 input=output
                                 )
                         ], name = "bcftools_stats." + sample.name,
