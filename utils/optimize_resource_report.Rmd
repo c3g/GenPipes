@@ -290,30 +290,27 @@ Values_PBS <- function(FileInput_List){
   TimeLimit <<- strsplit(x = TimeLimit, split = "=")[[1]][6]
   
   #research NumCPUs
-  NumCPUs <<- research_Element_PBS(FileInput_List, "NumCPUs")
+  NumCPUs <<- research_Element_PBS(FileInput_List, "Limits")        #OK
+  NumCPUs <<- strsplit(x = NumCPUs, split = c("=",":"))[[1]][6]
+  
+  #Memory_Efficiency                                                #OK
+  Memory_Efficiency <<- research_Element_PBS(FileInput_List, "Resources")
+  Memory_Efficiency <<- strsplit(x = Memory_Efficiency, split = c("=",","))[[1]][6]
+  Memory_Efficiency <<- strsplit(x = Memory_Efficiency, split = "kb" )[[1]][1]
+  
   
   #research JobId
   JobId <<- research_Element_PBS(FileInput_List, "ID")
   JobId <<- strsplit(x = JobId, split = "\\.")[[1]][1]
-
   
   #ckeckjob command for additional information                                   ##modif
   checkjob_resp <<- system2("checkjob -v", args = JobId, stdout = TRUE)
   
   #calculation WaitingTime
   WaitingTime <<- String_to_Date(research_Element_PBS(checkjob_resp, "Eligible:"))  #OK
-  
-  #Memory_Efficiency
-  Pos_eli_time <<- grep("Memory Efficiency",checkjob_resp)
-  
-  
-  Memory_Efficiency <<- strsplit(x = checkjob_resp[Pos_eli_time], split = " ")[[1]][3]
-  Memory_Efficiency <<- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
-
-  Memory_Efficiency <<- as.numeric(as.character(Memory_Efficiency))
 
   #Memory_Request
-  Memory_Request <<- strsplit(x = checkjob_resp[Pos_eli_time], split = " ")[[1]][5]
+  Memory_Request <<- as.numerical(NumCPUs) * 5                                      #OK
 
   # Memory_Efficiency <<- NA
   # Memory_Request <<- NA
@@ -334,12 +331,12 @@ research_Element_PBS <- function(Input_file, Researched_element){
       list <- Input_file[Pos1]
       
       #position of element inside sub list
-      Pos2 <- as.integer(grep(Researched_element,list[[1]]))
-      Complet_Element <- Input_file[[Pos1]][Pos2]
+      # Pos2 <- as.integer(grep(Researched_element,list[[1]]))
+      # Complet_Element <- Input_file[[Pos1]][Pos2]
+      # 
+      # Only_Element <- strsplit(x = Complet_Element, split = "=")[[1]][2]
       
-      Only_Element <- strsplit(x = Complet_Element, split = "=")[[1]][2]
-      
-      return (Only_Element)
+      return(list)        #Only_Element
     },
     error = function(cond){
       print("The following element asn't been found : ")
