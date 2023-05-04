@@ -439,8 +439,8 @@ client_linux \\
 
 def match_undetermined_barcodes(
         input,
-        barcode_db,
-        output):
+        output,
+        ini_section='fastq_match_undetermined_barcodes'):
     
     return Job(
             [input],
@@ -454,7 +454,7 @@ python $PYTHON_TOOLS/matchUndeterminedBarcodes.py \\
     -b {barcode_db} \\
     -o {output}""".format(
         input=input,
-        barcode_db=config.param(ini_section, 'barcodes_by_sequence'),
+        barcode_db=config.param(ini_section, 'barcodes_by_sequence', param_type='filepath'),
         output=output
         )
     )
