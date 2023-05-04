@@ -4177,14 +4177,19 @@ class RunProcessing(common.MUGQICPipeline):
             )
             cleanjob_deps.append(unexpected_barcode_counts_i1)
 
-        candidate_input_files=[[unexpected_barcode_counts_i1i2], [unexpected_barcode_counts_i1]]
-        unexpected_barcode_counts = self.select_input_files(candidate_input_files)
+        #candidate_input_files=[[unexpected_barcode_counts_i1i2], [unexpected_barcode_counts_i1]]
+        #unexpected_barcode_counts = self.select_input_files(candidate_input_files)
+        #unexpected_barcode_matches = re.sub(".counts.txt", ".match_table.tsv", unexpected_barcode_counts)
+        if unaligned_i2:
+            unexpected_barcode_counts = unexpected_barcode_counts_i1i2
+        else:
+            unexpected_barcode_counts = unexpected_barcode_counts_i1
         unexpected_barcode_matches = re.sub(".counts.txt", ".match_table.tsv", unexpected_barcode_counts)
 
-        job = self.match_undetermined_barcodes(
-                    unexpected_barcode_counts,
-                    unexpected_barcode_matches
-                    )
+        job = run_processing_tools.match_undetermined_barcodes(
+                unexpected_barcode_counts,
+                unexpected_barcode_matches
+                )
         job.name = 'fastq_match_undetermined_barcodes.' + self.run_id + "." + lane
         samples = self.samples[lane]
         postprocessing_jobs.append(job)
