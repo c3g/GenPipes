@@ -328,8 +328,8 @@ fi""".format(
 
         jobs = []
 
-        if self.contrasts:
-            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+#        if self.contrasts:
+#            design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
@@ -432,9 +432,150 @@ fi""".format(
                 
         return jobs
 
+    def creak_dedup_bam(self):
+        """
+        Deduplicate bam files with AGeNT creak in hybrid (saliva only) or duplex (both saliva and brush) mode.
+        Testing for SureSelect samples in vardict protocol.
+        Saliva and brush samples are identified via the design file. 
+        """
+
+        jobs = []
+
+#        if self.contrasts:
+#            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            sorted_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
+
+            if sample in self.contrasts.salivas:
+                output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
+                index_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bai")
+                output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
+                covered_bed = config.param('agent_creak', 'covered_bedv8', param_type='filepath')
+
+                jobs.append(
+                        concat_jobs(
+                            [
+                                agent.creak(
+                                    input_bam,
+                                    output_duplex,
+                                    "DUPLEX",
+                                    covered_bed
+                                    ),
+                                agent.creak(
+                                    input_bam,
+                                    output_hybrid,
+                                    "HYBRID",
+                                    covered_bed
+                                    ),
+                                bash.ln(
+                                    os.path.relpath(output_duplex, os.path.dirname(sorted_bam)),
+                                    sorted_bam,
+                                    output_duplex
+                                    ),
+                                bash.ln(
+                                    os.path.relpath(index_duplex, os.path.dirname(sorted_bam)),
+                                    sorted_bam + ".bai",
+                                    index_duplex
+                                    )
+                            ],
+                            name='agent_creak.' + sample.name,
+                            samples=[sample]
+                            )
+                        )
+            elif sample in self.contrasts.brushes:
+                output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
+                index_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bai")
+                covered_bed = config.param('agent_creak', 'covered_bedv7', param_type='filepath')
+
+                jobs.append(
+                        concat_jobs(
+                            [
+                                agent.creak(
+                                    input_bam,
+                                    output_duplex,
+                                    "DUPLEX",
+                                    covered_bed
+                                    )#,     # skip this symlink creation here and create symlink instead after subsample? Would keep names between samples consistent.
+                                #bash.ln(
+                                #    os.path.relpath(output_duplex, os.path.dirname(sorted_bam)),
+                                #    sorted_bam,
+                                #    output_duplex
+                                #    ),
+                                #bash.ln(
+                                #    os.path.relpath(index_duplex, os.path.dirname(sorted_bam)),
+                                #    sorted_bam + ".bai",
+                                #    index_duplex
+                                #    )
+                                ],
+                            name='agent_creak.' + sample.name,
+                            samples=[sample]
+                            )
+                        )
+                        
+            else:
+                _raise(SanitycheckError("Error: sample \"" + sample.name +
+                "\" is not included in the design file! Cannot determine whether \"" + sample.name + "\" is a saliva or brush sample."))
+
+        return jobs
+
+    def samtools_subsample(self):
+        """
+        Vardict protocol only.
+        Subsample the deduplicated bams to 1.5M reads if the number of overlapping reads exceeds this number (brush samples only).
+        Number of overlapping reads is assessed with samtools view -c, from which a fraction is calculated for subsampling.
+        If fraction >= 1, the bam is not subsampled.
+        """
+        jobs = []
+
+#        if self.contrasts:
+#            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+
+        for sample in self.samples:
+            if sample in self.contrasts.brushes:
+                alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+                input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
+                sorted_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
+
+                covered_bed = config.param('agent_creak', 'covered_bedv7', param_type='filepath')
+                seed = config.param('samtools_subsample', 'seed')
+
+                jobs.append(
+                        concat_jobs(
+                            [
+                            Job(
+                                command="""\
+READS=`samtools view -c -L {covered_bed} {input_bam}` &&
+if [[ $READS -ge 1500000 ]]; then 
+    FRACTION=`awk -v nr=$READS \'BEGIN{{ print 1500000 / nr }}\'`
+else
+    FRACTION=1; fi""".format(
+                                sorted_bam=sorted_bam,
+                                covered_bed=covered_bed,
+                                input_bam=input_bam
+                                )
+                            ),
+                            samtools.view(
+                                input_bam,
+                                sorted_bam,
+                                "-b --subsample-seed " + seed + " --subsample $FRACTION"
+                                ),
+                            samtools.index(
+                                sorted_bam
+                                        ) 
+                            ],
+                        name = "samtools_subsample." + sample.name,
+                        samples = [sample]
+                        )
+                    )
+
+        return jobs
+
     def samtools_sort(self):
         """
-        Sort deduplicated bams by coordinate and index with samtools.
+        Sort deduplicated bams by coordinate and index with samtools. Note: Not needed when using -S flag with locatit or using creak for deduplication.
         """
 
         jobs = []
@@ -962,7 +1103,9 @@ fi""".format(
                     self.fastp,
                     self.bwa_mem_samtools_sort,
                     self.samtools_merge,
-                    self.locatit_dedup_bam,
+                    #self.locatit_dedup_bam,
+                    self.creak_dedup_bam,
+                    self.samtools_subsample,
                    # self.samtools_sort,
                     self.mosdepth,
                     self.picard_metrics,
