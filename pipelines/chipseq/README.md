@@ -104,21 +104,22 @@ chipseq:
 5- sambamba_merge_bam_files
 6- sambamba_mark_duplicates
 7- sambamba_view_filter
-8- metrics
-9- homer_make_tag_directory
-10- qc_metrics
-11- homer_make_ucsc_file
-12- macs2_callpeak
-13- homer_annotate_peaks
-14- homer_find_motifs_genome
-15- annotation_graphs
-16- run_spp
-17- differential_binding
-18- ihec_metrics
-19- multiqc_report
-20- cram_output
-21- gatk_haplotype_caller
-22- merge_and_call_individual_gvcf
+8- bedtools_blacklist_filter
+9- metrics
+10- homer_make_tag_directory
+11- qc_metrics
+12- homer_make_ucsc_file
+13- macs2_callpeak
+14- homer_annotate_peaks
+15- homer_find_motifs_genome
+16- annotation_graphs
+17- run_spp
+18- differential_binding
+19- ihec_metrics
+20- multiqc_report
+21- cram_output
+22- gatk_haplotype_caller
+23- merge_and_call_individual_gvcf
 ----
 ```
 ![chipseq atacseq workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_chipseq_atacseq.resized.png)
@@ -132,21 +133,22 @@ atacseq:
 5- sambamba_merge_bam_files
 6- sambamba_mark_duplicates
 7- sambamba_view_filter
-8- metrics
-9- homer_make_tag_directory
-10- qc_metrics
-11- homer_make_ucsc_file
-12- macs2_atacseq_callpeak
-13- homer_annotate_peaks
-14- homer_find_motifs_genome
-15- annotation_graphs
-16- run_spp
-17- differential_binding
-18- ihec_metrics
-19- multiqc_report
-20- cram_output
-21- gatk_haplotype_caller
-22- merge_and_call_individual_gvcf
+8- bedtools_blacklist_filter
+9- metrics
+10- homer_make_tag_directory
+11- qc_metrics
+12- homer_make_ucsc_file
+13- macs2_atacseq_callpeak
+14- homer_annotate_peaks
+15- homer_find_motifs_genome
+16- annotation_graphs
+17- run_spp
+18- differential_binding
+19- ihec_metrics
+20- multiqc_report
+21- cram_output
+22- gatk_haplotype_caller
+23- merge_and_call_individual_gvcf
 
 ```
 
@@ -203,6 +205,15 @@ will be marked as a duplicate in the BAM file. Marking duplicates is done using 
 sambamba_view_filter
 --------------------
 Filter out unmapped reads and low quality reads [Sambamba](http://www.htslib.org/).
+
+bedtools_blacklist_filter
+-------------------------
+Remove reads in blacklist regions from bam with bedtools intersect if blacklist file is supplied. Do nothing otherwise. 
+It is recommended to filter regions of reference genomes with abnormal pileups of short sequencing reads to improve biological signal
+and avoid false positives in peak calls and differential binding.
+Blacklists that include these problematic regions are available for model organisms and one should be provided if available.
+For more information about exclusion sets: https://doi.org/10.1093/bioinformatics/btad198
+The blacklist can be supplied/removed in the config file under ['bedtools_intersect', 'blacklist'].
 
 metrics
 -------
