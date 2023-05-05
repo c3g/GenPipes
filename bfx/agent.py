@@ -78,3 +78,32 @@ java {java_other_options} -Xmx{ram} -jar $LOCATIT \\
       input=input
     ) 
 )
+
+def creak(input,
+        output,
+        mode,
+        bed=None):
+    return Job(
+            [input],
+            [output, re.sub(".bam", ".bai", output)],
+            [
+                ['agent_creak', 'module_java'],
+                ['agent_creak', 'module_agent']
+            ],
+
+            command="""\
+java {java_other_options} -Xmx{ram} -jar $CREAK \\
+    -c {mode} \\
+    {other_options} \\
+    {bed} \\
+    -o {output} \\
+    {input}""".format(
+        java_other_options=config.param('agent_creak', 'java_other_options', required=False),
+        ram=config.param('agent_creak', 'ram'),
+        mode=mode,
+        other_options=config.param('agent_creak', 'creak_other_options'),
+        bed="-b " + bed if bed else "",
+        output=output,
+        input=input
+        )
+    )
