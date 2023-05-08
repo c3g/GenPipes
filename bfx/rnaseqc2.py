@@ -24,18 +24,11 @@ import os
 from core.config import *
 from core.job import *
 
-def run(input_bam,
-        output_directory
-):
+def run(input_bam, output_directory):
     
     return Job(
-        [
-            input_bam
-        ],
-        [
-            os.path.join(output_directory, "index.html"),
-            os.path.join(output_directory, "metrics.tsv"),
-        ],
+        [input_bam],
+        [os.path.join(output_directory, "metrics.tsv")],
         [
             ['rnaseqc2', 'module_rnaseqc2']
         ],
@@ -47,7 +40,6 @@ rnaseqc \\
             gtf_file=config.param('rnaseqc2', 'gtf', param_type='filepath'),
             input_bam=input_bam,
             output_directory=output_directory,
-            other_options=(" \\\n  " + config.param('rnaseqc2', 'other_options', required=False)) if config.param
-                ('rnaseqc2', 'other_options', required=False) else "",
-        ),
+            other_options=(" \\\n  " + config.param('rnaseqc2', 'other_options', required=False)) if config.param('rnaseqc2', 'other_options', required=False) else ""
+        )
     )
