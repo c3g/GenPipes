@@ -131,7 +131,7 @@ parsed_folder <- function(folder_path_list){
       FileInput_Space <- gsub(pattern = "\\n", replacement = " ", x = FileInput)
       
       #split file to extract value
-      FileInput_List <- strsplit(x = FileInput_Space, split = " ")
+      FileInput_List <<- strsplit(x = FileInput_Space, split = " ")
       
       if(params$scheduler == "SLURM"){
         List_values <- Values_SLURM(FileInput_List)
@@ -265,58 +265,158 @@ research_Element_SLURM <- function(Input_file, Researched_element){
   return (out)
 }
 
+#####
+# Values_PBS <- function(FileInput_List){
+#   #IN : inputFile as a space separated list
+#   #out : list of all researched values into the input list
+#   
+#   #research StepName
+#   JobName <<- research_Element_PBS(FileInput_List, "Name")  #OK
+#   JobName <<- strsplit(x = JobName, split = "\\.")[[1]][1]
+#   
+#   #research EligibleTime
+#   #EligibleTime <<- String_to_Date(research_Element_PBS(FileInput_List, "EligibleTime"))
+#   
+#   #research StartTime
+#   #StartTime <<- String_to_Date(research_Element_PBS(FileInput_List, "StartTime"))
+#   
+#   
+#   
+#   #research RunTime
+#   RunTime <<- research_Element_PBS(FileInput_List, "WallTime")
+#   RunTime <<- strsplit(x = RunTime, split = " ")[[1]][1]            #OK
+#   
+#   #research TimeLimit
+#   TimeLimit <<- (research_Element_PBS(FileInput_List, "Limits"))    #OK
+#   TimeLimit <<- strsplit(x = TimeLimit, split = "=")[[1]][6]
+#   
+#   #research NumCPUs
+#   NumCPUs <<- research_Element_PBS(FileInput_List, "Limits")        #OK
+#   NumCPUs <<- strsplit(x = NumCPUs, split = c("=",":"))[[1]][6]
+#   
+#   #Memory_Efficiency                                                #OK
+#   Memory_Efficiency <<- research_Element_PBS(FileInput_List, "Resources")
+#   Memory_Efficiency <<- strsplit(x = Memory_Efficiency, split = c("=",","))[[1]][6]
+#   Memory_Efficiency <<- strsplit(x = Memory_Efficiency, split = "kb" )[[1]][1]
+#   
+#   
+#   #research JobId
+#   JobId <<- research_Element_PBS(FileInput_List, "ID")
+#   JobId <<- strsplit(x = JobId, split = "\\.")[[1]][1]
+#   
+#   #ckeckjob command for additional information                                   ##modif
+#   checkjob_resp <<- system2("checkjob -v", args = JobId, stdout = TRUE)
+#   
+#   #calculation WaitingTime
+#   WaitingTime <<- String_to_Date(research_Element_PBS(checkjob_resp, "Eligible:"))  #OK
+# 
+#   #Memory_Request
+#   Memory_Request <<- as.numerical(NumCPUs) * 5                                      #OK
+# 
+#   # Memory_Efficiency <<- NA
+#   # Memory_Request <<- NA
+#   
+#   return(list(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request))
+# }
+# research_Element_PBS <- function(Input_file, Researched_element){
+#   #Specific to PBS scheduler
+#   #IN : pre-treated file : \n replaced by space then space spliced into list, researched element (character)
+#   #OUT : wanted value associated with researched_element given (character)
+#   out <- tryCatch(
+#     {
+#       #research element 
+#       Pos_eli_time <- grep(Researched_element,Input_file)
+#       Pos1 <- as.integer(strsplit(x = as.character(Pos_eli_time), split = " ")[[2]]) #position of list containing element
+#       
+#       #list containing research element
+#       list <- Input_file[Pos1]
+#       
+#       #position of element inside sub list
+#       # Pos2 <- as.integer(grep(Researched_element,list[[1]]))
+#       # Complet_Element <- Input_file[[Pos1]][Pos2]
+#       # 
+#       # Only_Element <- strsplit(x = Complet_Element, split = "=")[[1]][2]
+#       
+#       return(list)        #Only_Element
+#     },
+#     error = function(cond){
+#       print("The following element asn't been found : ")
+#       print(Researched_element)
+#       
+#       return(NA)
+#     }
+#   )
+#   return (out)
+# }
+#####
+
 Values_PBS <- function(FileInput_List){
   #IN : inputFile as a space separated list
   #out : list of all researched values into the input list
   
   #research StepName
-  JobName <<- research_Element_PBS(FileInput_List, "Name").  #OK
+  JobName <<- research_Element_PBS(FileInput_List, "Name:")  #OK
   JobName <<- strsplit(x = JobName, split = "\\.")[[1]][1]
-  
-  #research EligibleTime
-  #EligibleTime <<- String_to_Date(research_Element_PBS(FileInput_List, "EligibleTime"))
-  
-  #research StartTime
-  #StartTime <<- String_to_Date(research_Element_PBS(FileInput_List, "StartTime"))
-  
   
   
   #research RunTime
-  RunTime <<- research_Element_PBS(FileInput_List, "WallTime")
-  RunTime <<- strsplit(x = RunTime, split = " ")[[1]][1]            #OK
+  RunTime <<- research_Element_PBS(FileInput_List, "Resources") #OK
+  RunTime <<- hms(tail(strsplit(x = RunTime, split = "=")[[1]],1)) %>% 
+                period_to_seconds()
   
   #research TimeLimit
-  TimeLimit <<- (research_Element_PBS(FileInput_List, "Limits"))    #OK
-  TimeLimit <<- strsplit(x = TimeLimit, split = "=")[[1]][6]
+  TimeLimit <<- research_Element_PBS(FileInput_List, "Limits")   #OK
+  TimeLimit <<- hms(tail(strsplit(x = TimeLimit, split = "=")[[1]],1)) %>%
+                  period_to_seconds()
+  
+  #TimeEfficiency
+  TimeEfficiency <<- (RunTime / TimeLimit ) * 100                #OK
+  
   
   #research NumCPUs
-  NumCPUs <<- research_Element_PBS(FileInput_List, "Limits")        #OK
-  NumCPUs <<- strsplit(x = NumCPUs, split = c("=",":"))[[1]][6]
+  NumCPUs <<- research_Element_PBS(FileInput_List, "Limits")       #OK
+  NumCPUs <<- strsplit(x = NumCPUs, split = "=")[[1]]
+  Pos_NumCPUs <<- grep(",nodes",NumCPUs)
   
-  #Memory_Efficiency                                                #OK
-  Memory_Efficiency <<- research_Element_PBS(FileInput_List, "Resources")
-  Memory_Efficiency <<- strsplit(x = Memory_Efficiency, split = c("=",","))[[1]][6]
-  Memory_Efficiency <<- strsplit(x = Memory_Efficiency, split = "kb" )[[1]][1]
+  NumCPUs <<- as.numeric(strsplit(x = NumCPUs[Pos_NumCPUs +1], split = ":")[[1]][1])
+  
+  
+  #Memory_use                                                           #OK
+  Memory_use_kb <<- research_Element_PBS(FileInput_List, "Resources") 
+  Memory_use_kb <<- strsplit(x = Memory_use_kb, split = "=")[[1]][4]
+  Memory_use_kb <<- as.numeric(strsplit(x = Memory_use_kb, split = "kb" )[[1]][1])
+  Memory_use_Gb <<- Memory_use_kb / 8e+08
   
   
   #research JobId
-  JobId <<- research_Element_PBS(FileInput_List, "ID")
+  JobId <<- research_Element_PBS(FileInput_List, "ID")         #OK
   JobId <<- strsplit(x = JobId, split = "\\.")[[1]][1]
   
-  #ckeckjob command for additional information                                   ##modif
+  
+  ##### checkjob command for additional information #####                                   
   checkjob_resp <<- system2("checkjob -v", args = JobId, stdout = TRUE)
+  #checkjob_resp <<- checkjob_file
   
   #calculation WaitingTime
-  WaitingTime <<- String_to_Date(research_Element_PBS(checkjob_resp, "Eligible:"))  #OK
-
-  #Memory_Request
-  Memory_Request <<- as.numerical(NumCPUs) * 5                                      #OK
-
-  # Memory_Efficiency <<- NA
-  # Memory_Request <<- NA
+  Pos_cut <<-  grep("BecameEligible:",checkjob_resp)
+  checkjob_file_cut <<- checkjob_resp[c(Pos_cut+1:length(checkjob_resp))]
+  WaitingTime <<- hms::as_hms(research_Element_PBS(checkjob_file_cut, "Eligible:"))  #OK
   
-  return(list(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request))
+  #Memory_Limit
+  Memory_Limit <<- as.numeric(NumCPUs) * 5                                     
+  
+  Memory_Efficiency <<- (Memory_use_Gb / Memory_Limit ) *100
+
+  return(list(JobName,                #OK
+              WaitingTime,            #OK
+              RunTime,                #OK
+              TimeLimit,              #OK
+              NumCPUs,                #OK
+              Memory_Efficiency,      #OK
+              Memory_use_Gb           #OK
+              ))
 }
+
 research_Element_PBS <- function(Input_file, Researched_element){
   #Specific to PBS scheduler
   #IN : pre-treated file : \n replaced by space then space spliced into list, researched element (character)
@@ -325,21 +425,23 @@ research_Element_PBS <- function(Input_file, Researched_element){
     {
       #research element 
       Pos_eli_time <- grep(Researched_element,Input_file)
-      Pos1 <- as.integer(strsplit(x = as.character(Pos_eli_time), split = " ")[[2]]) #position of list containing element
+      # Pos1 <- as.integer(strsplit(x = as.character(Pos_eli_time), split = " ")[[2]]) #position of list containing element
       
       #list containing research element
-      list <- Input_file[Pos1]
-      
+      list <- Input_file[Pos_eli_time]
+
       #position of element inside sub list
       # Pos2 <- as.integer(grep(Researched_element,list[[1]]))
       # Complet_Element <- Input_file[[Pos1]][Pos2]
-      # 
+
+      Only_Element <- list[[1]][length(list[[1]])]
+      
       # Only_Element <- strsplit(x = Complet_Element, split = "=")[[1]][2]
       
-      return(list)        #Only_Element
+      return(Only_Element)        #Only_Element
     },
     error = function(cond){
-      print("The following element asn't been found : ")
+      print("The following element hasn't been found : ")
       print(Researched_element)
       
       return(NA)
@@ -347,7 +449,6 @@ research_Element_PBS <- function(Input_file, Researched_element){
   )
   return (out)
 }
-
 
 
 ChangeWaitingTimeFormat <- function(df){
@@ -695,7 +796,11 @@ cat(paste(nrow(Info_df),"differents steps in total among all files." ,"\n", sep 
 
 #Absolute path if the one gived is relative
 #cat(paste("", opt$in_path,"\n", sep = " ")) 
-# cat("\n")
+
+cat("\n")
+
+cat(paste(params$scheduler,"choosed" ,"\n", sep = " "))
+
 
 ```
 
