@@ -305,7 +305,7 @@ research_Element_SLURM <- function(Input_file, Researched_element){
 #   JobId <<- strsplit(x = JobId, split = "\\.")[[1]][1]
 #   
 #   #ckeckjob command for additional information                                   ##modif
-#   checkjob_resp <<- system2("checkjob -v", args = JobId, stdout = TRUE)
+#   checkjob_resp <<- system2("checkjob", args = JobId, stdout = TRUE)
 #   
 #   #calculation WaitingTime
 #   WaitingTime <<- String_to_Date(research_Element_PBS(checkjob_resp, "Eligible:"))  #OK
@@ -391,10 +391,12 @@ Values_PBS <- function(FileInput_List){
   #research JobId
   JobId <<- research_Element_PBS(FileInput_List, "ID")         #OK
   JobId <<- strsplit(x = JobId, split = "\\.")[[1]][1]
-  
+
   
   ##### checkjob command for additional information #####                                   
-  checkjob_resp <<- system2("checkjob -v", args = JobId, stdout = TRUE)
+  checkjob_resp <<- system2("checkjob",
+				 args = JobId,
+				 stdout = TRUE)
   #checkjob_resp <<- checkjob_file
   
   #calculation WaitingTime
