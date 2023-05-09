@@ -410,52 +410,53 @@ Values_PBS <- function(FileInput_List){
   
   
 
-  out <- tryCatch(
-    {
-      checkjob_resp <<- system2("checkjob",
-				 args = JobId,
-				 stdout = TRUE)
+ # out <- tryCatch(
+ #   {
+ #     checkjob_resp <<- system2("checkjob",
+ #				 args = JobId,
+ #				 stdout = TRUE)
       #checkjob_resp <<- checkjob_file
       
       #calculation WaitingTime
-      Pos_cut <<-  grep("BecameEligible:",checkjob_resp)
-      checkjob_file_cut <<- checkjob_resp[c(Pos_cut+1:length(checkjob_resp))]
-      WaitingTime <<- hms::as_hms(research_Element_PBS(checkjob_file_cut, "Eligible:"))  #OK
+ #     Pos_cut <<-  grep("BecameEligible:",checkjob_resp)
+ #     checkjob_file_cut <<- checkjob_resp[c(Pos_cut+1:length(checkjob_resp))]
+ #     WaitingTime <<- hms::as_hms(research_Element_PBS(checkjob_file_cut, "Eligible:"))  #OK
       
       
-      return(list(JobName,            #OK
-              WaitingTime,            #OK
-              RunTime,                #OK
-              TimeLimit,              #OK
-              NumCPUs,                #OK
-              Memory_Efficiency,      #OK
-              Memory_use_Gb           #OK
-              ))
-    },
-    error = function(cond){
+ #     return(list(JobName,            #OK
+ #             WaitingTime,            #OK
+ #             RunTime,                #OK
+ #             TimeLimit,              #OK
+ #             NumCPUs,                #OK
+ #             Memory_Efficiency,      #OK
+ #             Memory_use_Gb           #OK
+ #             ))
+ #   },
+ #   error = function(cond){
     
       
-      return(list(JobName,            #OK
-              NA,                     #OK
-              RunTime,                #OK
-              TimeLimit,              #OK
-              NumCPUs,                #OK
-              Memory_Efficiency,      #OK
-              Memory_use_Gb           #OK
-              ))
-    }
-  )
-  return (out)
+ #     return(list(JobName,            #OK
+ #             NA,                     #OK
+ #             RunTime,                #OK
+ #             TimeLimit,              #OK
+ #             NumCPUs,                #OK
+ #             Memory_Efficiency,      #OK
+ #             Memory_use_Gb           #OK
+ #             ))
+ #   }
+ # )
+ # return (out)
   
   
-  # return(list(JobName,                #OK
-  #             WaitingTime,            #OK
-  #             RunTime,                #OK
-  #             TimeLimit,              #OK
-  #             NumCPUs,                #OK
-  #             Memory_Efficiency,      #OK
-  #             Memory_use_Gb           #OK
-  #             ))
+  return(list(JobName,                #OK
+               #WaitingTime,            #OK
+               NA,
+               RunTime,                #OK
+               TimeLimit,              #OK
+               NumCPUs,                #OK
+               Memory_Efficiency,      #OK
+               Memory_use_Gb           #OK
+               ))
 }
 
 research_Element_PBS <- function(Input_file, Researched_element){
