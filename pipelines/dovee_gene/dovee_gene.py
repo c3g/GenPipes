@@ -443,6 +443,7 @@ fi""".format(
 
 #        if self.contrasts:
 #            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+        metrics_inputs = []
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
@@ -454,6 +455,7 @@ fi""".format(
                 index_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bai")
                 output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
                 covered_bed = config.param('agent_creak', 'covered_bedv8', param_type='filepath')
+                source = "_saliva"
 
                 jobs.append(
                         concat_jobs(
@@ -479,6 +481,11 @@ fi""".format(
                                     os.path.relpath(index_duplex, os.path.dirname(sorted_bam)),
                                     sorted_bam + ".bai",
                                     index_duplex
+                                    ),
+                                bash.ln(
+                                    os.path.relpath(re.sub(".bam", ".stats", output_duplex), os.path.dirname(sorted_bam)),
+                                    os.path.join(alignment_directory, sample.name + source + ".dedup.duplex.stats"),
+                                    re.sub(".bam", ".stats", output_duplex),
                                     )
                             ],
                             name='agent_creak.' + sample.name,
@@ -489,7 +496,8 @@ fi""".format(
                 output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
                 index_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bai")
                 covered_bed = config.param('agent_creak', 'covered_bedv7', param_type='filepath')
-
+                source = "_brush"
+                
                 jobs.append(
                         concat_jobs(
                             [
@@ -498,7 +506,13 @@ fi""".format(
                                     output_duplex,
                                     "DUPLEX",
                                     covered_bed
-                                    )#,     # skip this symlink creation here and create symlink instead after subsample? Would keep names between samples consistent.
+                                    ),
+                                bash.ln(
+                                    os.path.relpath(re.sub(".bam", ".stats", output_duplex), os.path.dirname(index_duplex)),
+                                    os.path.join(alignment_directory, sample.name + source + ".dedup.duplex.stats"),
+                                    re.sub(".bam", ".stats", output_duplex),
+                                    )
+                                #,     # skip this symlink creation here and create symlink instead after subsample? Would keep names between samples consistent.
                                 #bash.ln(
                                 #    os.path.relpath(output_duplex, os.path.dirname(sorted_bam)),
                                 #    sorted_bam,
@@ -518,6 +532,64 @@ fi""".format(
             else:
                 _raise(SanitycheckError("Error: sample \"" + sample.name +
                 "\" is not included in the design file! Cannot determine whether \"" + sample.name + "\" is a saliva or brush sample."))
+            
+            metrics_inputs.append(os.path.join(alignment_directory, sample.name + source + ".dedup.duplex.stats"))
+
+        creak_metrics = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs", "creak_dedup.duplex.stats_mqc.txt")
+        
+        job=Job(
+                metrics_inputs,
+                [creak_metrics],
+                command="""\
+echo -e "# plot_type: 'table'
+# section_name: 'CReaK'
+# description: 'stats from deduplication with AGeNT CReaK'
+# headers:
+#   ReadPairs:
+#       title: 'Read Pairs'
+#       description: 'correctly-paired read pairs for MBC Consensus calling'
+#       format: '{{:,.0f}}'
+#       placement: 900
+#   DuplexConsensusPairs:
+#       title: 'Duplex Consensus Pairs'
+#       description: 'read pairs called as duplex consensus'
+#       format: '{{:,.0f}}'
+#       placement: 920
+#   SingleConsensusPairs:
+#       title: 'Single Consensus Pairs'
+#       description: 'read pairs called as single consensus'
+#       format: '{{:,.0f}}'
+#   DupReadsPairs:
+#       title: 'Duplicated Read Pairs'
+#       description: 'read pairs marked as dups during consensus calling'
+#       format: '{{:,.0f}}'
+#       placement: 1010
+#   DupRate:
+#       title: 'Duplication Rate'
+#       description: 'duplication rate calculated by dividing Dup Reads Pairs by Read Pairs' 
+#       format: '{{:,.3f}}'
+#       placement: 1020
+Sample\\tReadPairs\\tDuplexConsensusPairs\\tSingleConsensusPairs\\tDupReadsPairs\\tDupRate" > {output}
+for f in {input}; do
+    sample=$(basename $f .dedup.duplex.stats)
+    read_pairs=$(grep "correctly-paired read pairs for MBC Consensus calling:" $f | awk '{{ print $9 }}')
+    duplex_consensus=$(grep "read pairs called as duplex consensus:" $f | awk '{{ print $8 }}')
+    single_consensus=$(grep "read pairs called as single consensus:" $f | awk '{{ print $8 }}')
+    dup_read_pairs=$(grep "read pairs marked as dups during consensus calling:" $f | awk '{{ print $10 }}')
+    dup_rate=$(awk -v r=$read_pairs -v dups=$dup_read_pairs BEGIN'{{ print dups / r }}')
+
+    echo -e "$sample\\t$read_pairs\\t$duplex_consensus\\t$single_consensus\\t$dup_read_pairs\\t$dup_rate" >> {output}
+done""".format(
+    input=" ".join([" " + input for input in metrics_inputs]),
+    output=creak_metrics
+            )
+        )
+        job.name = "parse_creak_metrics"
+        job.input_dependency=[metrics_inputs]
+
+        jobs.append(job)
+
+        self.multiqc_inputs.append(creak_metrics)
 
         return jobs
 
@@ -772,6 +844,7 @@ else
     def picard_metrics(self):
         """
         Collect on and off target metrics for SureSelect samples with Picard.
+        Collect gc bias metrics for SureSelect samples with Picard.
         """
         jobs = []
 
@@ -803,8 +876,8 @@ else
                     )
                 )
 
-        if self.contrasts:
-            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+ #       if self.contrasts:
+  #          design_file = os.path.relpath(self.args.design.name, self.output_dir)
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
@@ -838,7 +911,32 @@ else
                         )
                     )
             self.multiqc_inputs.append(picard_directory)
+            
+            output_prefix = os.path.join(picard_directory, sample.name)
 
+            jobs.append(
+                    concat_jobs(
+                        [
+                            picard2.collect_gcbias_metrics(
+                                input_bam,
+                                output_prefix
+                                ),
+                            bash.ln(
+                                os.path.relpath(output_prefix + ".gcbias_metrics.txt", link_directory),
+                                os.path.join(link_directory, sample.name + source + ".gcbias_metrics.txt"),
+                                input=output_prefix + ".gcbias_metrics.txt"
+                                ),
+                            bash.ln(
+                                os.path.relpath(output_prefix + ".gcbias_summary_metrics.txt", link_directory),
+                                os.path.join(link_directory, sample.name + source + ".gcbias_summary_metrics.txt"),
+                                input=output_prefix + ".gcbias_summary_metrics.txt"
+                                )
+                            ],
+                        name = "picard_collect_gcbias_metrics." + sample.name,
+                        samples = [sample]
+                        )
+                    )
+                    
         return jobs
 
     def vardict_single(self):
