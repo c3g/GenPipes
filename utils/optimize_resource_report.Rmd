@@ -317,15 +317,15 @@ Values_PBS <- function(FileInput_List){
   Memory_Efficiency <<- (Memory_use_Gb / Memory_Limit ) *100
   
   ##### checkjob command for additional information #####                                   
-    checkjob_resp <<- system2("checkjob",
-  				 args = JobId,
-  				 stdout = TRUE)
-    checkjob_resp <<- checkjob_file
+    #checkjob_resp <<- system2("checkjob",
+    #				 args = JobId,
+    # 				 stdout = TRUE)
+    #checkjob_resp <<- checkjob_file
 
     #calculation WaitingTime
-    Pos_cut <<-  grep("BecameEligible:",checkjob_resp)
-    checkjob_file_cut <<- checkjob_resp[c(Pos_cut+1:length(checkjob_resp))]
-    WaitingTime <<- hms::as_hms(research_Element_PBS(checkjob_file_cut, "Eligible:"))  #OK
+    #Pos_cut <<-  grep("BecameEligible:",checkjob_resp)
+    #checkjob_file_cut <<- checkjob_resp[c(Pos_cut+1:length(checkjob_resp))]
+    #WaitingTime <<- hms::as_hms(research_Element_PBS(checkjob_file_cut, "Eligible:"))  #OK
   
 
 
