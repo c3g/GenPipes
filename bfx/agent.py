@@ -85,7 +85,7 @@ def creak(input,
         bed=None):
     return Job(
             [input],
-            [output, re.sub(".bam", ".bai", output)],
+            [output, re.sub(".bam", ".bai", output), re.sub(".bam", ".stats", output)],
             [
                 ['agent_creak', 'module_java'],
                 ['agent_creak', 'module_agent']
