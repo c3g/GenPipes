@@ -1445,7 +1445,7 @@ class RunProcessing(common.MUGQICPipeline):
 
         for lane in self.lanes:
             lane_jobs = []
-            if 'mgi' in self.args.type:
+            if 'mgi' in self.args.type and not self.args.splitbarcode_demux:
                 unaligned_dir = self.output_dirs[lane][f"Unaligned.{lane}_directory"]
                 raw_fastq_dir = os.path.join(unaligned_dir, "raw_fastq")
                 raw_name_prefix = f"{self.raw_fastq_prefix}_L0{lane}"
