@@ -3,6 +3,8 @@ title: "optimize_resources_report.Rmd"
 date: "`r Sys.Date()`"
 output: html_document
 runtime: shiny
+editor_options:
+  chunk_output_type: console
 params: 
   input: NULL
   output: NULL
@@ -141,7 +143,7 @@ parsed_folder <- function(folder_path_list){
       if(params$scheduler == "PBS"){
         List_values <- Values_PBS(FileInput_List)
       }
-      
+
       
       #fill df_info with new information and rename columns
       df_info <- data.frame(List_values)
@@ -221,7 +223,12 @@ Values_SLURM <- function(FileInput_List){
   
   # #seff command give memory efficiency information (and more)                         ##modif
   # #Memory_Efficiency
-  # seff_resp <<- system2("seff", args = JobId, stdout = TRUE)
+  # seff_resp <<- system2(command = "seff",
+	#			stdout = TRUE, 
+	#		 	args = as.character(JobId),
+	#			#stdout = TRUE,
+	#			stderr = FALSE,
+	#			input = list())
   # Pos_eli_time <<- grep("Memory Efficiency",seff_resp)
   # 
   # Memory_Efficiency <<- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
@@ -333,7 +340,9 @@ Values_PBS <- function(FileInput_List){
     {
       checkjob_resp <<- system2("checkjob",
   			 args = JobId,
-  			 stdout = TRUE)
+  			 stdout = TRUE
+			 #stderr = FALSE
+			)
   checkjob_resp <<- checkjob_file
 
   #calculation WaitingTime
