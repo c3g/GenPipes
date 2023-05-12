@@ -336,34 +336,56 @@ Values_PBS <- function(FileInput_List){
   
 
 
-  out <- tryCatch(
-    {
-      checkjob_resp <<- system2("checkjob",
-  			 args = JobId,
-  			 stdout = TRUE
-			 #stderr = FALSE
-			)
-  checkjob_resp <<- checkjob_file
+  #out <- tryCatch(
+  #  {
+  #    checkjob_resp <<- system2("checkjob",
+  #			 args = JobId,
+  #			 stdout = TRUE
+  #			 stderr = FALSE
+  #			)
+  # 	#checkjob_resp <<- checkjob_file
 
-  #calculation WaitingTime
-      Pos_cut <<-  grep("BecameEligible:",checkjob_resp)
-      checkjob_file_cut <<- checkjob_resp[c(Pos_cut+1:length(checkjob_resp))]
-      WaitingTime <<- hms::as_hms(research_Element_PBS(checkjob_file_cut, "Eligible:"))  #OK
-
-
-      return(list(JobName,            #OK
-              WaitingTime,            #OK
-              RunTime,                #OK
-              TimeLimit,              #OK
-              NumCPUs,                #OK
-              Memory_Efficiency,      #OK
-              Memory_use_Gb           #OK
-              ))
-    },
-    error = function(cond){
+  #	#calculation WaitingTime
+  #    Pos_cut <<-  grep("BecameEligible:",checkjob_resp)
+  #    checkjob_file_cut <<- checkjob_resp[c(Pos_cut+1:length(checkjob_resp))]
+  #    WaitingTime <<- hms::as_hms(research_Element_PBS(checkjob_file_cut, "Eligible:"))  #OK
 
 
-      return(list(JobName,            #OK
+  #    return(list(JobName,            #OK
+  #            WaitingTime,            #OK
+  #            RunTime,                #OK
+  #            TimeLimit,              #OK
+  #            NumCPUs,                #OK
+  #            Memory_Efficiency,      #OK
+  #            Memory_use_Gb           #OK
+  #            ))
+  #  },
+  #  error = function(cond){
+
+
+  #    return(list(JobName,            #OK
+  #            NA,                     #OK
+  #            RunTime,                #OK
+  #            TimeLimit,              #OK
+  #            NumCPUs,                #OK
+  #            Memory_Efficiency,      #OK
+  #            Memory_use_Gb           #OK
+  #            ))
+  #  }
+  #)
+  #return (out)
+  #####
+ 
+
+  checkjob_resp <<- system2("checkjob",
+                        args = JobId,
+                        stdout = TRUE,
+                        stderr = FALSE
+                       )
+
+ 
+  if(length(checkjob_resp) == 0){
+	return(list(JobName,            #OK
               NA,                     #OK
               RunTime,                #OK
               TimeLimit,              #OK
@@ -371,20 +393,33 @@ Values_PBS <- function(FileInput_List){
               Memory_Efficiency,      #OK
               Memory_use_Gb           #OK
               ))
-    }
-  )
-  return (out)
-  #####
-  
-  return(list(JobName,                #OK
+  }else{
+
+		#calculation WaitingTime
+	Pos_cut <<-  grep("BecameEligible:",checkjob_resp)
+	checkjob_file_cut <<- checkjob_resp[c(Pos_cut+1:length(checkjob_resp))]
+	WaitingTime <<- hms::as_hms(research_Element_PBS(checkjob_file_cut, "Eligible:"))  #OK
+	
+	return(list(JobName,            #OK
               WaitingTime,            #OK
-              #NA,
               RunTime,                #OK
               TimeLimit,              #OK
               NumCPUs,                #OK
               Memory_Efficiency,      #OK
               Memory_use_Gb           #OK
-  ))
+              ))
+  }
+
+
+  #return(list(JobName,                #OK
+  #            WaitingTime,            #OK
+  #            #NA,
+  #            RunTime,                #OK
+  #            TimeLimit,              #OK
+  #            NumCPUs,                #OK
+  #            Memory_Efficiency,      #OK
+  #            Memory_use_Gb           #OK
+  #))
 }
 research_Element_PBS <- function(Input_file, Researched_element){
   #Specific to PBS scheduler
@@ -607,8 +642,10 @@ write.csv(Info_df, complete_path_name_csv, row.names=FALSE)
 ############## Custom specfific dataFrame for ploting ##########################
 #Change WaitingTime, RunTime and TimeLimit format
 
-Waiting_unite <- Keep_hour(DF_plot$WaitingTime)[[2]]
-DF_plot$WaitingTime <- Keep_hour(DF_plot$WaitingTime)[[1]]
+if(!is.na(Keep_hour(DF_plot$WaitingTime))){
+	Waiting_unite <- Keep_hour(DF_plot$WaitingTime)[[2]]
+	DF_plot$WaitingTime <- Keep_hour(DF_plot$WaitingTime)[[1]]
+}
 
 Run_Limit <- Keep_hour(DF_plot$RunTime, DF_plot$TimeLimit)
 
