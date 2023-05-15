@@ -41,9 +41,9 @@ suppressMessages(library(knitr))
 #suppressMessages(library(markdown))
 suppressMessages(library(plotly))
 library(highcharter) 
+```
 
-
-
+```{r main}
 
 folder_path_to_o_file_list <- function(job_output_path){
   #IN : folder path as character
@@ -93,9 +93,12 @@ folder_path_to_o_file_list <- function(job_output_path){
     o_files_list <- append(o_files_list,new_list)
     
   }
+  print(o_files_list) #modif
   return (o_files_list)
 }
+```
 
+```{r main}
 parsed_folder <- function(folder_path_list){
   #IN :   list of .o file path
   #OUT :  dataset containing wanted information from these files
@@ -151,6 +154,8 @@ parsed_folder <- function(folder_path_list){
         List_values <- Values_PBS(FileInput_List)
       }
 
+      print("VALUES TROUVEES") #modif
+      print(List_values)
       
       #fill df_info with new information and rename columns
       df_info <- data.frame(List_values)
@@ -158,12 +163,18 @@ parsed_folder <- function(folder_path_list){
       #type change 
       df_info$RunTime <- as.character(df_info$RunTime)
       
+      print("DF_INFO") #modif
+      print(df_info)
+      
       Info_df_temp <- rbind(Info_df_temp, df_info)
       
     }
     
     #change TimeLimit format
     Info_df_temp$TimeLimit <- day_into_hours(Info_df_temp$TimeLimit)
+    
+    print("CHANGE TIMELIMIT FORMAT DAY INTO HOUR") #modif
+    datatable(Info_df_temp$TimeLimit)
     
     #Specfific dataframe for ploting
     DF_plot <- rbind(DF_plot, Info_df_temp)
@@ -197,7 +208,9 @@ parsed_folder <- function(folder_path_list){
   #return complete dataframe
   return(list(Info_df, DF_plot))
 }
+```
 
+```{r main}
 Values_SLURM <- function(FileInput_List){
   #IN : inputFile as a space separated list
   #out : list of all researched values into the input list
@@ -281,7 +294,9 @@ research_Element_SLURM <- function(Input_file, Researched_element){
   )
   return (out)
 }
+```
 
+```{r main}
 
 Values_PBS <- function(FileInput_List){
   #IN : inputFile as a space separated list
@@ -462,7 +477,9 @@ research_Element_PBS <- function(Input_file, Researched_element){
   )
   return (out)
 }
+```
 
+```{r main}
 
 ChangeWaitingTimeFormat <- function(df){
   #IN : WaitingTime column as dataframe with random format
@@ -499,7 +516,9 @@ ChangeWaitingTimeFormat <- function(df){
   }
   return(df)
 }
+```
 
+```{r main}
 day_into_hours <- function(df){
   #IN :   data.frame object containing D-H:M:S format values
   #OUT :  data.frame object containing H:M:S format values where days are turned into hours 
@@ -532,7 +551,9 @@ day_into_hours <- function(df){
   }
   return(df)
 }
+```
 
+```{r main}
 add_0_time <- function(number){
   #IN :   a number object
   #OUT :  same number with a 0 in front of it if it's smaller than 10
@@ -546,7 +567,9 @@ add_0_time <- function(number){
   
   return(number)
 }
+```
 
+```{r main}
 String_to_Date <- function(stringD){
   #IN : date as character type
   #OUT : date as Date type
@@ -555,7 +578,9 @@ String_to_Date <- function(stringD){
   
   return(only_date_String)
 }
+```
 
+```{r main}
 mean_value <- function(df){
   #IN : dataframe column containing numerical values or h:m:s values with character type
   #OUT : mean value of the dataframe column with character type
@@ -576,7 +601,9 @@ mean_value <- function(df){
   
   return (df)
 }
+```
 
+```{r main}
 Keep_hour <- function(df, df2 = NA, unite = NA){
   #Keep only hours or minutes or seconds depending on the value
   #IN : dataframe containing H:M:S values
@@ -616,7 +643,9 @@ Keep_hour <- function(df, df2 = NA, unite = NA){
   return(list(df, df2, unite))
   
 }
+```
 
+```{r main}
 
 #
 job_output_path = params$input
@@ -635,9 +664,9 @@ result <- parsed_folder(job_output_path)
 
 Info_df <- result[[1]]
 
-Info_df[Info_df$JobName == "gatk_indel_realigner"]$WaitingTime <- "05:46:12" #modif
 saveRDS(Info_df, file = "Info_df.rds")
 datatable(Info_df)
+
 DF_plot <- result[[2]]
 
 ############## Register file ###################################################
@@ -652,6 +681,9 @@ complete_path_name_csv <- paste(c(complete_path_name,"csv"), collapse =".")
 
 #Write csv in job_output folder
 write.csv(Info_df, complete_path_name_csv, row.names=FALSE)
+```
+
+```{r main}
 ############## Custom specfific dataFrame for ploting ##########################
 #Change WaitingTime, RunTime and TimeLimit format
 
@@ -680,6 +712,9 @@ DF_plot <- merge(DF_plot, DF_max_Eff, by = "JobName")
 
 #Change Memory_Request column type to numeric
 DF_plot$Memory_Request <- as.numeric(DF_plot$Memory_Request)
+```
+
+```{r main}
 ############## WaitingTime Plot ################################################
 
 # p_WaitingTime <- ggplot(DF_plot, aes(x=as.factor(JobName), y=WaitingTime, label= as.numeric(WaitingTime))) + 
