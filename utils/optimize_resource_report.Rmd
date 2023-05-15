@@ -24,6 +24,7 @@ knitr::opts_chunk$set(echo = TRUE)
 suppressMessages(library(dplyr, warn.conflicts = FALSE))  #avoid conflict message for duplicate functions
 suppressMessages(library(kimisc))                         #for seconds_to_hms function
 suppressMessages(library(lubridate))
+#suppressMessages(library(hms))
 suppressMessages(library(optparse))
 
 # Library for plot
@@ -282,13 +283,14 @@ Values_PBS <- function(FileInput_List){
   
   #research StepName
   JobName <<- research_Element_PBS(FileInput_List, "Name:")  #OK
+  JobName <<- strsplit(x = JobName, split = "	")[[1]][2]
   JobName <<- strsplit(x = JobName, split = "\\.")[[1]][1]
   
   
   #research RunTime
   RunTime <<- research_Element_PBS(FileInput_List, "Resources") #OK
-  RunTime <<- hms(tail(strsplit(x = RunTime, split = "=")[[1]],1)) #%>% period_to_seconds()
-    
+  RunTime <<- (tail(strsplit(x = RunTime, split = "=")[[1]],1)) #%>% period_to_seconds()
+
   
   #research TimeLimit
   TimeLimit <<- research_Element_PBS(FileInput_List, "Limits")   #OK
@@ -557,8 +559,8 @@ mean_value <- function(df){
       hms()%>%
       period_to_seconds()%>%
       mean() %>%
-      seconds_to_period()%>%
-      seconds.to.hms()
+      seconds_to_period()#%>%
+      #seconds.to.hms()
     
     # df already contain numerical values
   }else{
@@ -625,6 +627,9 @@ output_path = params$output
 result <- parsed_folder(job_output_path)
 
 Info_df <- result[[1]]
+
+Info_df[Info_df$JobName == "gatk_indel_realigner"]$WaitingTime <- "05:46:12" #modif
+saveRDS(Info_df, file = "Info_df.rds")
 DF_plot <- result[[2]]
 
 ############## Register file ###################################################
@@ -645,6 +650,9 @@ write.csv(Info_df, complete_path_name_csv, row.names=FALSE)
 if(!is.na(Keep_hour(DF_plot$WaitingTime))){
 	Waiting_unite <- Keep_hour(DF_plot$WaitingTime)[[2]]
 	DF_plot$WaitingTime <- Keep_hour(DF_plot$WaitingTime)[[1]]
+	Waiting_flag = TRUE
+}else{
+	Waiting_flag = FALSE
 }
 
 Run_Limit <- Keep_hour(DF_plot$RunTime, DF_plot$TimeLimit)
@@ -828,17 +836,18 @@ cat(paste(params$scheduler,"choosed" ,"\n", sep = " "))
 This plot represent the time spend in queue for each step. 
 
 ```{r p_WaitingTime, echo=FALSE, fig.height=10, out.width = '100%'}
-
-dat1 <- data_to_boxplot(data = DF_plot,
+if(Waiting_flag){
+	dat1 <- data_to_boxplot(data = DF_plot,
                        variable = WaitingTime,
                        group_var = JobName, 
-                       name = paste(c("WaitingTime (", Waiting_unite, ")"), collapse =""))
+                       name = paste(c("WaitingTime (", Waiting_unite, ")"), collapse ="")	)
 
-highchart() %>%
-  hc_xAxis(type = "category") %>%
-  hc_add_series_list(dat1)%>%
-  hc_chart(type = "bar",
-           height = "800px")
+	highchart() %>%
+  	hc_xAxis(type = "category") %>%
+  	hc_add_series_list(dat1)%>%
+  	hc_chart(type = "bar",
+           	height = "800px")
+}
 
 ```
 ***
