@@ -5,12 +5,12 @@ date: "`r Sys.Date()`"
 # runtime: shiny
 # editor_options:
 #   chunk_output_type: console
-# params: 
-#   input: NULL
-#   output: NULL
-#   name: NULL
-#   verbose: NULL
-#   scheduler: NULL
+params: 
+   input: NULL
+   output: NULL
+   name: NULL
+   verbose: NULL
+   scheduler: NULL
 output:
   html_document:
     toc: yes
@@ -19,20 +19,20 @@ output:
     df_print: paged
 ---
 
-```{r setup, include=FALSE}
+```{r setup}
 # knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis")
 
 ```
 
-```{r main, include=FALSE}
+```{r main}
 
 suppressMessages(library(dplyr, warn.conflicts = FALSE))  #avoid conflict message for duplicate functions
 suppressMessages(library(kimisc))                         #for seconds_to_hms function
 suppressMessages(library(lubridate))
 #suppressMessages(library(hms))
 suppressMessages(library(optparse))
-
+suppressMessages(library(DT))
 # Library for plot
 suppressMessages(library(ggplot2))
 
@@ -393,8 +393,9 @@ Values_PBS <- function(FileInput_List){
 
  
   if(length(checkjob_resp) == 0){
-	return(list(JobName,            #OK
-              NA,                     #OK
+	return(list(JobName,                #OK
+              #WaitingTime,            #OK
+              NA,
               RunTime,                #OK
               TimeLimit,              #OK
               NumCPUs,                #OK
@@ -636,6 +637,7 @@ Info_df <- result[[1]]
 
 Info_df[Info_df$JobName == "gatk_indel_realigner"]$WaitingTime <- "05:46:12" #modif
 saveRDS(Info_df, file = "Info_df.rds")
+datatable(Info_df)
 DF_plot <- result[[2]]
 
 ############## Register file ###################################################
