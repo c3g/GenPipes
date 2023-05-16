@@ -960,7 +960,12 @@ END
                             input,
                             output,
                             metrics_file,
+                            create_index=False,
                             ini_section='mark_duplicates'
+                        ),
+                        sambamba.index(
+                            output,
+                            output_index
                         ),
                         Job(
                             [metrics_file],

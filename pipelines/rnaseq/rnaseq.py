@@ -558,29 +558,34 @@ pandoc --to=markdown \\
         for sample in self.samples:
             alignment_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.")
 
-            job = picard.mark_duplicates(
-                [alignment_file_prefix + "bam"],
-                alignment_file_prefix + "mdup.bam",
-                alignment_file_prefix + "mdup.metrics",
-                ini_section='mark_duplicates'
-            )
-
             jobs.append(
-                    concat_jobs([
+                concat_jobs(
+                    [
                         bash.mkdir(link_directory),
-                        job,
+                        picard.mark_duplicates(
+                            [alignment_file_prefix + "bam"],
+                            alignment_file_prefix + "mdup.bam",
+                            alignment_file_prefix + "mdup.metrics",
+                            create_index=False,
+                            ini_section='mark_duplicates'
+                        ),
+                        sambamba.index(
+                            alignment_file_prefix + "mdup.bam",
+                            alignment_file_prefix + "mdup.bam.bai"
+                        ),
                         bash.ln(
                             os.path.relpath(alignment_file_prefix + "mdup.metrics", link_directory),
                             os.path.join(link_directory, sample.name + ".sorted.mdup.metrics" ),
                             alignment_file_prefix + "mdup.metrics"
                             )
-                        ],
-                    name = "mark_duplicates." + sample.name,
-                    samples = [sample]
-                    )
+                    ],
+                    name="mark_duplicates." + sample.name,
+                    samples=[sample]
                 )
-        
+            )
+
             self.multiqc_inputs.append(alignment_file_prefix + "mdup.metrics")
+        
         return jobs
 
     def picard_rna_metrics(self):
