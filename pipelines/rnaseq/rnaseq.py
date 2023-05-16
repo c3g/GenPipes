@@ -629,7 +629,7 @@ pandoc --to=markdown \\
                         os.path.relpath(os.path.join(output_directory, sample.name + ".picard_rna_metrics"), link_directory),
                         os.path.join(link_directory, sample.name + ".picard_rna_metrics"),
                         os.path.join(output_directory, sample.name + ".picard_rna_metrics")
-                        ),
+                        )
                 ]
             )
             
