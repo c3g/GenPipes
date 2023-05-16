@@ -651,12 +651,12 @@ pandoc --to=markdown \\
                         ]
                     )
 
-            job.name="picard_rna_metrics." + sample.name,
-            job.removable_files=[output_directory],
+            job.name = "picard_rna_metrics." + sample.name
+            job.removable_files = [output_directory]
             job.samples=[sample]
             jobs.append(job)
         
-            self.multiqc_inputs.append(os.path.join(output_directory, sample.name))
+            self.multiqc_inputs.append(output_directory)
         return jobs
 
     def rseqc(self):
