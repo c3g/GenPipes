@@ -3875,6 +3875,16 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             paired_ensemble_directory,
                             remove=True
                         ),
+                        # Remove any existing outputs because they cause silent error
+                        bash.rm(
+                            output_ensemble
+                            ),
+                        bash.rm(
+                            output_ensemble + ".tbi"
+                            ),
+                        bash.rm(
+                            os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vt-work")
+                            ),
                         bcbio_variation_recall.ensemble(
                             inputs_somatic,
                             output_ensemble,
@@ -3882,7 +3892,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         )
                     ],
                     name="bcbio_ensemble_somatic." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor]
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    input_dependency=inputs_somatic
                 )
             )
 
@@ -3927,6 +3938,16 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             paired_ensemble_directory,
                             remove=True
                         ),
+                        # Remove any existing outputs because they cause silent error
+                        bash.rm(
+                            output_ensemble
+                            ),
+                        bash.rm(
+                            output_ensemble + ".tbi"
+                            ),
+                        bash.rm(
+                            os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt-work")
+                            ),
                         bcbio_variation_recall.ensemble(
                             inputs_germline,
                             output_ensemble,
@@ -3934,7 +3955,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         )
                     ],
                     name="bcbio_ensemble_germline." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor]
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    input_dependency=inputs_germline
                 )
             )
 
