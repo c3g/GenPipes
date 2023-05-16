@@ -75,6 +75,9 @@ from bfx import annoFuse
 from bfx import rseqc
 from bfx import rnaseqc2
 
+#Metrics tools
+from bfx import multiqc
+
 from bfx import bash_cmd as bash
 
 log = logging.getLogger(__name__)
@@ -150,6 +153,16 @@ class RnaSeqRaw(common.Illumina):
         return dirs
 
     @property
+    def multiqc_inputs(self):
+        if not hasattr(self, "_multiqc_inputs"):
+            self._multiqc_inputs = []
+        return self._multiqc_inputs
+
+    @multiqc_inputs.setter
+    def multiqc_inputs(self, value):
+        self._multiqc_inputs = value
+
+    @property
     def sequence_dictionary(self):
         if not hasattr(self, "_sequence_dictionary"):
             self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=False)
@@ -172,6 +185,7 @@ class RnaSeqRaw(common.Illumina):
 
         jobs = []
 
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
         for readset in self.readsets:
             output_dir = os.path.join(self.output_dirs["trim_directory"], readset.sample.name)
             trim_file_prefix = os.path.join(output_dir, readset.name)
@@ -245,6 +259,9 @@ class RnaSeqRaw(common.Illumina):
                             output_dir,
                             remove=True
                         ),
+                        bash.mkdir(
+                            link_directory
+                            )
                         adapter_job,
                         skewer.trim(
                             fastq1,
@@ -262,7 +279,12 @@ class RnaSeqRaw(common.Illumina):
                             os.path.relpath(trim_file_prefix + "-trimmed-pair2.fastq.gz", os.path.dirname(trim_file_prefix + ".trim.pair2.fastq.gz")),
                             trim_file_prefix + ".trim.pair2.fastq.gz",
                             input=trim_file_prefix + "-trimmed-pair2.fastq.gz"
-                        )
+                        ),
+                        bash.ln(
+                            os.path.relpath(trim_file_prefix + "-trimmed.log", link_directory),
+                            os.path.join(link_directory, readset.name + "-trimmed.log"),
+                            trim_file_prefix + "-trimmed.log"
+                            )
                     ],
                     name="skewer_trimming." + readset.name,
                     removable_files=[output_dir],
@@ -270,6 +292,7 @@ class RnaSeqRaw(common.Illumina):
                 )
             )
 
+            self.multiqc_inputs.append(trim_file_prefix + "-trimmed.log")
         return jobs
 
     def star(self):
@@ -372,8 +395,6 @@ class RnaSeqRaw(common.Illumina):
             )
     
         ######
-        #Single Pass or Pass 2 - alignment
-        #This is the only pass if 1-pass option is specified in config file, pass 2 if not specified or 2-pass option specified 
         #Single Pass or Pass 2 - alignment
         #This is the only pass if 1-pass option is specified in config file, pass 2 if not specified or 2-pass option specified 
         for readset in self.readsets:
@@ -533,6 +554,7 @@ pandoc --to=markdown \\
         """
 
         jobs = []
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
         for sample in self.samples:
             alignment_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.")
 
@@ -542,9 +564,23 @@ pandoc --to=markdown \\
                 alignment_file_prefix + "mdup.metrics",
                 ini_section='mark_duplicates'
             )
-            job.name = "mark_duplicates." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
+
+            jobs.append(
+                    concat_jobs([
+                        bash.mkdir(link_directory),
+                        job,
+                        bash.ln(
+                            os.rel.path(alignment_file_prefix + "mdup.metrics", link_directory),
+                            os.path.join(link_directory, sample.name + ".sorted.mdup.metrics" ),
+                            alignment_file_prefix + "mdup.metrics"
+                            )
+                        ],
+                    name = "mark_duplicates." + sample.name,
+                    samples = [sample]
+                    )
+                )
+        
+            self.multiqc_inputs.append(alignment_file_prefix + "mdup.metrics")
         return jobs
 
     def picard_rna_metrics(self):
@@ -555,6 +591,7 @@ pandoc --to=markdown \\
 
         jobs = []
         reference_file = config.param('picard_rna_metrics', 'genome_fasta', param_type='filepath')
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
         for sample in self.samples:
             alignment_file = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.bam")
             output_directory = os.path.join(self.output_dirs["metrics_directory"], sample.name)
@@ -562,6 +599,7 @@ pandoc --to=markdown \\
             job = concat_jobs(
                 [
                     bash.mkdir(output_directory),
+                    bash.mkdir(link_directory),
                     picard.collect_multiple_metrics(
                         alignment_file,
                         os.path.join(output_directory, sample.name),
@@ -571,13 +609,54 @@ pandoc --to=markdown \\
                     picard.collect_rna_metrics(
                         alignment_file,
                         os.path.join(output_directory, sample.name+".picard_rna_metrics")
-                    )
-                ],
-                name=f"picard_rna_metrics.{sample.name}",
-                removable_files=[output_directory],
-                samples=[sample]
+                    ),
+                    bash.ln(
+                        os.rel.path(os.path.join(output_directory, sample.name + ".alignment_summary_metrics"), link_directory),
+                        os.path.join(link_directory, sample.name + ".alignment_summary_metrics"),
+                        os.path.join(output_directory, sample.name + ".alignment_summary_metrics")
+                        ),
+                    bash.ln(
+                        os.rel.path(os.path.join(output_directory, sample.name + ".quality_by_cycle_metrics"), link_directory),
+                        os.path.join(link_directory, sample.name + ".quality_by_cycle_metrics"),
+                        os.path.join(output_directory, sample.name + ".quality_by_cycle_metrics")
+                        ),
+                    bash.ln(
+                        os.rel.path(os.path.join(output_directory, sample.name + ".quality_distribution_metrics"), link_directory),
+                        os.path.join(link_directory, sample.name + ".quality_distribution_metrics"),
+                        os.path.join(output_directory, sample.name + ".quality_distribution_metrics")
+                        ),
+                    bash.ln(
+                        os.rel.path(os.path.join(output_directory, sample.name + ".picard_rna_metrics"), link_directory),
+                        os.path.join(link_directory, sample.name + ".picard_rna_metrics"),
+                        os.path.join(output_directory, sample.name + ".picard_rna_metrics")
+                        ),
+                ]
             )
+            
+
+            if sample.readsets[0].run_type == "PAIRED_END":
+                job = concat_jobs(
+                        [
+                            job,
+                            bash.ln(
+                                os.rel.path(os.path.join(output_directory, sample.name + ".base_distribution_by_cycle_metrics"), link_directory),
+                                os.path.join(link_directory, sample.name + ".base_distribution_by_cycle_metrics"),
+                                os.path.join(output_directory, sample.name + ".base_distribution_by_cycle_metrics")
+                                ),
+                            bash.ln(
+                                os.rel.path(os.path.join(output_directory, sample.name + ".insert_size_metrics"), link_directory),
+                                os.path.join(link_directory, sample.name + ".insert_size_metrics"),
+                                os.path.join(output_directory, sample.name + ".insert_size_metrics")
+                                )
+                        ]
+                    )
+
+            job.name=f"picard_rna_metrics.{sample.name}",
+            job.removable_files=[output_directory],
+            job.samples=[sample]
             jobs.append(job)
+        
+            self.multiqc_inputs.append(os.path.join(output_directory, sample.name))
         return jobs
 
     def rseqc(self):
@@ -793,6 +872,8 @@ pandoc \\
             """
             jobs = []
 
+            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+
             # Use GTF with transcript_id only otherwise RNASeQC fails
             for sample in self.samples:
                 alignment_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name)
@@ -808,9 +889,15 @@ pandoc \\
                     concat_jobs(
                         [
                             bash.mkdir(output_directory),
+                            bash.mkdir(link_directory),
                             rnaseqc2.run(
                                 input,
                                 output_directory,
+                            ),
+                            bash.ln(
+                                os.path.relpath(output_directory + sample.name + ".sorted.mdup.bam.metrics.tsv", link_directory),
+                                os.path.join(link_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
+                                os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv")
                             )
                         ],
                         name="rnaseqc2." + sample.name,
@@ -818,6 +905,7 @@ pandoc \\
                         samples=self.samples
                     )
                 )
+                self.multiqc_inputs.append(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"))
             return jobs
 
     def split_N_trim(self):
@@ -1137,11 +1225,17 @@ pandoc \\
             jobs.append(
                 concat_jobs(
                     [
+                        bash.mkdir(link_directory),
                         gatk4.base_recalibrator(
                             input,
                             base_recalibrator_output,
                             intervals=interval_list
-                        )
+                        ),
+                        bash.ln(
+                            os.rel.path(base_recalibrator_output, link_directory),
+                            os.path.join(link_directory, sample.name + ".sorted.mdup.split.realigned.recalibration_report.grp"),
+                            base_recalibrator_output
+                            )
                     ],
                     name="gatk_base_recalibrator." + sample.name,
                     samples=[sample]
@@ -1161,6 +1255,8 @@ pandoc \\
                     samples=[sample]
                 )
             )
+
+            self.multiqc_inputs.append(base_recalibrator_output)
     
         return jobs
 
@@ -1626,6 +1722,8 @@ pandoc \\
         """
     
         jobs = []
+
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
     
         left_fastqs = collections.defaultdict(list)
         right_fastqs = collections.defaultdict(list)
@@ -1662,17 +1760,24 @@ pandoc \\
             job = concat_jobs(
                 [
                     bash.mkdir(output_dir),
+                    bash.mkdir(link_directory),
                     star_fusion.run(
                         left_fastqs[sample.name],
                         right_fastqs[sample.name],
                         output_dir
-                    )
+                    ),
+                    bash.ln(
+                        os.rel.path(os.path.join(output_dir, "Log.final.out"), link_directory),
+                        os.path.join(link_directory, sample.name, "_star_fusion.Log.final.out"),
+                        os.path.join(output_dir, "Log.final.out")
+                        )
                 ],
                 name="run_star_fusion." + sample.name,
                 samples=[sample]
             )
             jobs.append(job)
     
+            self.multiqc_inputs.append(os.path.join(output_dir, "Log.final.out")
         return jobs
 
     def run_arriba(self):
@@ -1684,7 +1789,9 @@ pandoc \\
         """
     
         jobs = []
-    
+        
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+
         left_fastqs = collections.defaultdict(list)
         right_fastqs = collections.defaultdict(list)
     
@@ -1724,19 +1831,26 @@ pandoc \\
             job = concat_jobs(
                 [
                     bash.mkdir(output_dir),
+                    bash.mkdir(link_directory),
                     bash.chdir(output_dir),
                     arriba.run(
                         [os.path.relpath(fastq1, output_dir) for fastq1 in left_fastqs[sample.name]],
                         [os.path.relpath(fastq2, output_dir) for fastq2 in right_fastqs[sample.name] if fastq2],
                         output_dir
-                    )
+                    ),
+                    bash.ln(
+                        os.rel.path(os.path.join(output_dir, "Log.final.out"), link_directory),
+                        os.path.join(link_directory, sample.name, "_arriba.Log.final.out"),
+                        os.path.join(output_dir, "Log.final.out")
+                        )
                 ],
                 input_dependency=left_fastqs[sample.name] + right_fastqs[sample.name],
                 name="run_arriba." + sample.name,
                 samples=[sample]
             )
             jobs.append(job)
-    
+            
+            self.multiqc_inputs.append(os.path.join(output_dir, "Log.final.out"))
         return jobs
 
     def run_annofuse(self):
@@ -2377,6 +2491,28 @@ END
             )
         ]
 
+
+    def multiqc(self):
+        """
+        Aggregate results from bioinformatics analyses across many samples into a single report.
+        MultiQC searches a given directory for analysis logs and compiles a HTML report. It's a general use tool,
+        perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
+        """
+        jobs = []
+
+        input_links = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
+        output = os.path.join(self.output_dirs['metrics_directory'], "multiqc")
+
+        job = multiqc.run(
+                [input_links],
+                output
+                )
+        job.name = "multiqc"
+        job.input_dependency = self.multiqc_inputs
+        jobs.append(job)
+
+        return jobs
+
     @property
     def steps(self):
         return [
@@ -2400,6 +2536,7 @@ END
                 self.stringtie_abund,
                 self.ballgown,
                 self.differential_expression,
+                self.multiqc,
                 self.cram_output
             ],
             [
@@ -2425,6 +2562,7 @@ END
                 self.rnaseqc2,
                 self.gatk_callable_loci,
                 self.wiggle,
+                self.multiqc,
                 self.cram_output
             ],
             [
@@ -2454,6 +2592,7 @@ END
                 self.rseqc,
                 self.gatk_callable_loci,
                 self.wiggle,
+                self.multiqc,
                 self.cram_output
             ]
         ]
