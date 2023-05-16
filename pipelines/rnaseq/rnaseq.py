@@ -1197,7 +1197,9 @@ pandoc \\
         jobs = []
     
         created_interval_lists = []
-    
+   
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
             [input] = self.select_input_files(
