@@ -651,7 +651,7 @@ pandoc --to=markdown \\
                         ]
                     )
 
-            job.name=f"picard_rna_metrics.{sample.name}",
+            job.name="picard_rna_metrics." + sample.name,
             job.removable_files=[output_directory],
             job.samples=[sample]
             jobs.append(job)
