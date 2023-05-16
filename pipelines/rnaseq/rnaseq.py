@@ -895,7 +895,7 @@ pandoc \\
                                 output_directory,
                             ),
                             bash.ln(
-                                os.path.relpath(output_directory + sample.name + ".sorted.mdup.bam.metrics.tsv", link_directory),
+                                os.path.relpath(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv", link_directory),
                                 os.path.join(link_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
                                 os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv")
                             )
@@ -1770,7 +1770,7 @@ pandoc \\
                     ),
                     bash.ln(
                         os.path.relpath(os.path.join(output_dir, "Log.final.out"), link_directory),
-                        os.path.join(link_directory, sample.name, "_star_fusion.Log.final.out"),
+                        os.path.join(link_directory, sample.name + "_star_fusion.Log.final.out"),
                         os.path.join(output_dir, "Log.final.out")
                         )
                 ],
@@ -1842,7 +1842,7 @@ pandoc \\
                     ),
                     bash.ln(
                         os.path.relpath(os.path.join(output_dir, "Log.final.out"), link_directory),
-                        os.path.join(link_directory, sample.name, "_arriba.Log.final.out"),
+                        os.path.join(link_directory, sample.name + "_arriba.Log.final.out"),
                         os.path.join(output_dir, "Log.final.out")
                         )
                 ],
