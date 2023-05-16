@@ -327,7 +327,7 @@ fi""".format(
         """
 
         jobs = []
-
+        metrics_inputs = []
 #        if self.contrasts:
 #            design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
@@ -341,6 +341,7 @@ fi""".format(
                 index_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bai")
                 output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
                 covered_bed = config.param('agent_locatit', 'covered_bedv8', param_type='filepath')
+                source = "_saliva"
 
                 jobs.append(
                         concat_jobs(
@@ -366,6 +367,11 @@ fi""".format(
                                     os.path.relpath(index_duplex, os.path.dirname(sorted_bam)),
                                     sorted_bam + ".bai",
                                     index_duplex
+                                    ),
+                                bash.ln(
+                                    os.path.relpath(re.sub(".bam", ".properties", output_duplex), os.path.dirname(sorted_bam)),
+                                    os.path.join(alignment_directory, sample.name + source + ".dedup.duplex.properties"),
+                                    re.sub(".bam", ".properties", output_duplex)
                                     )
                             ],
                             name='agent_locatit.' + sample.name,
@@ -376,6 +382,7 @@ fi""".format(
                 output_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bam")
                 index_duplex = os.path.join(alignment_directory, sample.name + ".dedup.duplex.bai")
                 covered_bed = config.param('agent_locatit', 'covered_bedv7', param_type='filepath')
+                source = "_brush"
 
                 jobs.append(
                         concat_jobs(
@@ -386,15 +393,20 @@ fi""".format(
                                     covered_bed,
                                     "v2Duplex"
                                     ),
+                              #  bash.ln(
+                              #      os.path.relpath(output_duplex, os.path.dirname(sorted_bam)),
+                              #      sorted_bam,
+                              #      output_duplex
+                              #      ),
+                              #  bash.ln(
+                              #      os.path.relpath(index_duplex, os.path.dirname(sorted_bam)),
+                              #      sorted_bam + ".bai",
+                              #      index_duplex
+                              #      ),
                                 bash.ln(
-                                    os.path.relpath(output_duplex, os.path.dirname(sorted_bam)),
-                                    sorted_bam,
-                                    output_duplex
-                                    ),
-                                bash.ln(
-                                    os.path.relpath(index_duplex, os.path.dirname(sorted_bam)),
-                                    sorted_bam + ".bai",
-                                    index_duplex
+                                    os.path.relpath(re.sub(".bam", ".properties", output_duplex), os.path.dirname(sorted_bam)),
+                                    os.path.join(alignment_directory, sample.name + source + ".dedup.duplex.properties"),
+                                    re.sub(".bam", ".properties", output_duplex)
                                     )
                                 ],
                             name='agent_locatit.' + sample.name,
@@ -406,6 +418,58 @@ fi""".format(
                 _raise(SanitycheckError("Error: sample \"" + sample.name +
                 "\" is not included in the design file! Cannot determine whether \"" + sample.name + "\" is a saliva or brush sample."))
 
+            metrics_inputs.append(os.path.join(alignment_directory, sample.name + source + ".dedup.duplex.properties"))
+
+        locatit_metrics = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs", "locatit_dedup.duplex.stats_mqc.txt")
+        
+        parse_job=Job(
+                metrics_inputs,
+                [locatit_metrics],
+                command="""\
+echo -e "# plot_type: 'table'
+# section_name: 'LocatIt'
+# description: 'stats from deduplication with AGeNT LocatIt'
+# headers:
+#   DuplexConsensusReads:
+#       title: 'Duplex Consensus Reads'
+#       description: 'reads called as duplex consensus'
+#       format: '{{:,.0f}}'
+#       placement: 900
+#   SingleConsensusReads:
+#       title: 'Single Consensus Reads'
+#       description: 'reads called as single consensus'
+#       format: '{{:,.0f}}'
+#   DupRate:
+#       title: 'Duplication Rate'
+#       description: 'duplication rate calculated by locatit' 
+#       format: '{{:,.3f}}'
+#       placement: 1020
+Sample\\tDuplexConsensusReads\\tSingleConsensusReads\\tDupRate" > {output}
+for f in {input}; do
+    sample=$(basename $f .dedup.duplex.properties)
+    duplex_consensus=$(grep "DUPLEX_VS_SINGLE_CONSENSUS_READS" $f | awk -F'=' '{{ print $2 }}' | awk -F',' '{{ print $1 }}' )
+    single_consensus=$(grep "DUPLEX_VS_SINGLE_CONSENSUS_READS" $f | awk -F',' '{{ print $2 }}')
+    dup_rate=$(grep "DUPLICATE_RATE" $f | awk -F'=' '{{ print $2 }}')
+
+    echo -e "$sample\\t$duplex_consensus\\t$single_consensus\\t$dup_rate" >> {output}
+done""".format(
+    input=" ".join(["" + input for input in metrics_inputs]),
+    output=locatit_metrics
+            )
+        )
+
+        jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")),
+                        parse_job
+                        ],
+                    name = "parse_locatit_metrics"
+                    )
+                )
+
+        self.multiqc_inputs.append(locatit_metrics)
+
         return jobs
 
     def locatit_hybrid_dedup(self):
@@ -414,22 +478,221 @@ fi""".format(
         """
 
         jobs = []
+        metrics_inputs = []
 
         for sample in self.samples:
            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
            output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
+           index_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bai")
+           sorted_bam = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.sorted.bam")
            
+           if sample.name in [pair.brush.name for pair in self.dovee_pairs.values()]:
+               source = "_brush"
+           elif sample.name in [pair.saliva.name for pair in self.dovee_pairs.values()]:
+               source = "_saliva"
+
            job = agent.locatit(
                    input_bam,
                    output_hybrid,
-                   None, # covered bed not needed (?)
+                   None, # covered bed not needed
                    "v2Hybrid"
                    )
-           job.name='agent_locatit.' + sample.name
-           job.samples=[sample]
-           jobs.append(job)
+            
+           jobs.append(
+                   concat_jobs(
+                       [
+                           job,
+                           bash.ln(
+                               os.path.relpath(output_hybrid, os.path.dirname(sorted_bam)),
+                               sorted_bam,
+                               output_hybrid
+                               ),
+                           bash.ln(
+                               os.path.relpath(index_hybrid, os.path.dirname(sorted_bam)),
+                               sorted_bam + ".bai",
+                               index_hybrid
+                               ),
+                           bash.ln(
+                               os.path.relpath(re.sub(".bam", ".properties", output_hybrid), os.path.dirname(sorted_bam)),
+                               os.path.join(alignment_directory, sample.name + source + ".dedup.hybrid.properties"),
+                               re.sub(".bam", ".properties", output_hybrid),
+                               )
+                        ],
+                        name='agent_locatit.' + sample.name,
+                        samples=[sample]
+                        )
+                    )
+           
+           metrics_inputs.append(os.path.join(alignment_directory, sample.name + source + ".dedup.hybrid.properties"))
                 
+        locatit_metrics = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs", "locatit_dedup.hybrid.stats_mqc.txt")
+        
+        parse_job=Job(
+                metrics_inputs,
+                [locatit_metrics],
+                command="""\
+echo -e "# plot_type: 'table'
+# section_name: 'LocatIt'
+# description: 'stats from deduplication with AGeNT LocatIt'
+# headers:
+#   DuplexConsensusReads:
+#       title: 'Duplex Consensus Reads'
+#       description: 'reads called as duplex consensus'
+#       format: '{{:,.0f}}'
+#       placement: 900
+#   SingleConsensusReads:
+#       title: 'Single Consensus Reads'
+#       description: 'reads called as single consensus'
+#       format: '{{:,.0f}}'
+#   DupRate:
+#       title: 'Duplication Rate'
+#       description: 'duplication rate calculated by locatit' 
+#       format: '{{:,.3f}}'
+#       placement: 1020
+Sample\\tDuplexConsensusReads\\tSingleConsensusReads\\tDupRate" > {output}
+for f in {input}; do
+    sample=$(basename $f .dedup.hybrid.properties)
+    duplex_consensus=$(grep "DUPLEX_VS_SINGLE_CONSENSUS_READS" $f | awk -F'=' '{{ print $2 }}' | awk -F',' '{{ print $1 }}' )
+    single_consensus=$(grep "DUPLEX_VS_SINGLE_CONSENSUS_READS" $f | awk -F',' '{{ print $2 }}')
+    dup_rate=$(grep "DUPLICATE_RATE" $f | awk -F'=' '{{ print $2 }}')
+
+    echo -e "$sample\\t$duplex_consensus\\t$single_consensus\\t$dup_rate" >> {output}
+done""".format(
+    input=" ".join(["" + input for input in metrics_inputs]),
+    output=locatit_metrics
+            )
+        )
+
+        jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")),
+                        parse_job
+                        ],
+                    name = "parse_locatit_metrics"
+                    )
+                )
+
+        self.multiqc_inputs.append(locatit_metrics)
+
+        return jobs
+
+    def creak_hybrid_dedup(self):
+        """
+        Deduplicate bam files with creak in hybrid mode only. Used for low pass copy-number protocol.
+        """
+
+        jobs = []
+        metrics_inputs = []
+        
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            input_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            output_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bam")
+            index_hybrid = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.bai")
+            sorted_bam = os.path.join(alignment_directory, sample.name + ".dedup.hybrid.sorted.bam")
+
+            if sample.name in [pair.brush.name for pair in self.dovee_pairs.values()]:
+                source = "_brush"
+            elif sample.name in [pair.saliva.name for pair in self.dovee_pairs.values()]:
+                source = "_saliva"
+
+            job = agent.creak(
+                    input_bam,
+                    output_hybrid,
+                    "HYBRID",
+                    None
+                    )
+
+            jobs.append(
+                    concat_jobs(
+                        [
+                            job,
+                            bash.ln(
+                                os.path.relpath(output_hybrid, os.path.dirname(sorted_bam)),
+                                sorted_bam,
+                                output_hybrid
+                                ),
+                            bash.ln(
+                                os.path.relpath(index_hybrid, os.path.dirname(sorted_bam)),
+                                sorted_bam + ".bai",
+                                index_hybrid
+                                ),
+                            bash.ln(
+                                os.path.relpath(re.sub(".bam", ".stats", output_hybrid), os.path.dirname(sorted_bam)),
+                                os.path.join(alignment_directory, sample.name + source + ".dedup.hybrid.stats"),
+                                re.sub(".bam", ".stats", output_hybrid),
+                                )
+                        ],
+                        name='agent_creak.' + sample.name,
+                        samples=[sample]
+                        )
+                    )
+
+            metrics_inputs.append(os.path.join(alignment_directory, sample.name + source + ".dedup.hybrid.stats"))
+
+        creak_metrics = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs", "creak_dedup.hybrid.stats_mqc.txt")
+        
+        parse_job=Job(
+                metrics_inputs,
+                [creak_metrics],
+                command="""\
+echo -e "# plot_type: 'table'
+# section_name: 'CReaK'
+# description: 'stats from deduplication with AGeNT CReaK'
+# headers:
+#   ReadPairs:
+#       title: 'Read Pairs'
+#       description: 'correctly-paired read pairs for MBC Consensus calling'
+#       format: '{{:,.0f}}'
+#       placement: 900
+#   DuplexConsensusPairs:
+#       title: 'Duplex Consensus Pairs'
+#       description: 'read pairs called as duplex consensus'
+#       format: '{{:,.0f}}'
+#       placement: 920
+#   SingleConsensusPairs:
+#       title: 'Single Consensus Pairs'
+#       description: 'read pairs called as single consensus'
+#       format: '{{:,.0f}}'
+#   DupReadsPairs:
+#       title: 'Duplicated Read Pairs'
+#       description: 'read pairs marked as dups during consensus calling'
+#       format: '{{:,.0f}}'
+#       placement: 1010
+#   DupRate:
+#       title: 'Duplication Rate'
+#       description: 'duplication rate calculated by dividing Dup Reads Pairs by Read Pairs' 
+#       format: '{{:,.3f}}'
+#       placement: 1020
+Sample\\tReadPairs\\tDuplexConsensusPairs\\tSingleConsensusPairs\\tDupReadsPairs\\tDupRate" > {output}
+for f in {input}; do
+    sample=$(basename $f .dedup.hybrid.stats)
+    read_pairs=$(grep "correctly-paired read pairs for MBC Consensus calling:" $f | awk '{{ print $9 }}')
+    duplex_consensus=$(grep "read pairs called as duplex consensus:" $f | awk '{{ print $8 }}')
+    single_consensus=$(grep "read pairs called as single consensus:" $f | awk '{{ print $8 }}')
+    dup_read_pairs=$(grep "read pairs marked as dups during consensus calling:" $f | awk '{{ print $10 }}')
+    dup_rate=$(awk -v r=$read_pairs -v dups=$dup_read_pairs BEGIN'{{ print dups / r }}')
+
+    echo -e "$sample\\t$read_pairs\\t$duplex_consensus\\t$single_consensus\\t$dup_read_pairs\\t$dup_rate" >> {output}
+done""".format(
+    input=" ".join(["" + input for input in metrics_inputs]),
+    output=creak_metrics
+            )
+        )
+
+        jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")),
+                        parse_job
+                    ],
+                    name = "parse_creak_metrics"
+                    )
+                )
+
+        self.multiqc_inputs.append(creak_metrics)
         return jobs
 
     def creak_dedup_bam(self):
@@ -537,7 +800,7 @@ fi""".format(
 
         creak_metrics = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs", "creak_dedup.duplex.stats_mqc.txt")
         
-        job=Job(
+        parse_job=Job(
                 metrics_inputs,
                 [creak_metrics],
                 command="""\
@@ -580,14 +843,20 @@ for f in {input}; do
 
     echo -e "$sample\\t$read_pairs\\t$duplex_consensus\\t$single_consensus\\t$dup_read_pairs\\t$dup_rate" >> {output}
 done""".format(
-    input=" ".join([" " + input for input in metrics_inputs]),
+    input=" ".join(["" + input for input in metrics_inputs]),
     output=creak_metrics
             )
         )
-        job.name = "parse_creak_metrics"
-        job.input_dependency=[metrics_inputs]
 
-        jobs.append(job)
+        jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")),
+                        parse_job
+                    ],
+                    name = "parse_creak_metrics"
+                    )
+                )
 
         self.multiqc_inputs.append(creak_metrics)
 
@@ -655,8 +924,8 @@ else
         dovee_protocol = self.args.type
 
         if dovee_protocol == "vardict":
-            if self.contrasts:
-                design_file = os.path.relpath(self.args.design.name, self.output_dir)
+#            if self.contrasts:
+#                design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
             for sample in self.samples:
                 alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
@@ -753,14 +1022,14 @@ else
                 alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
                 output_prefix = os.path.join(mosdepth_directory, sample.name)
                 input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
-                if self.contrasts:
-                    design_file = os.path.relpath(self.args.design.name, self.output_dir)
-                    if sample in self.contrasts.salivas:
-                        region=config.param('mosdepth', 'region_bed', param_type='filepath')
-                        source="_saliva"
-                    elif sample in self.contrasts.brushes:
-                        region=config.param('mosdepth', 'region_bed', param_type='filepath')
-                        source="_brush"
+        #        if self.contrasts:
+         #           design_file = os.path.relpath(self.args.design.name, self.output_dir)
+                if sample in self.contrasts.salivas:
+                    region=config.param('mosdepth', 'region_bed', param_type='filepath')
+                    source="_saliva"
+                elif sample in self.contrasts.brushes:
+                    region=config.param('mosdepth', 'region_bed', param_type='filepath')
+                    source="_brush"
 
                 jobs.append(
                         concat_jobs(
@@ -917,6 +1186,7 @@ else
             jobs.append(
                     concat_jobs(
                         [
+                            bash.mkdir(link_directory),
                             picard2.collect_gcbias_metrics(
                                 input_bam,
                                 output_prefix
@@ -953,7 +1223,7 @@ else
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             variants_directory = os.path.join(self.output_dirs['variants_directory'], sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
-            output = os.path.join(variants_directory, sample.name + ".out.vcf")
+            output = os.path.join(variants_directory, sample.name + ".vcf")
 
             if sample in self.contrasts.brushes:
                 freq=0.001
@@ -1082,17 +1352,17 @@ else
 
         for sample in self.samples:
             variants_directory = os.path.join(self.output_dirs['variants_directory'], sample.name)
-            input = os.path.join(variants_directory, sample.name + ".out.vcf")
+            input = os.path.join(variants_directory, sample.name + ".vcf")
             output_directory = os.path.join(self.output_dirs['metrics_directory'], "bcftools")
             link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
             output = os.path.join(output_directory, sample.name + ".bcftools.stats")
             
-            if self.contrasts:
-                design_file = os.path.relpath(self.args.design.name, self.output_dir)
-                if sample in self.contrasts.salivas:
-                    source="_saliva"
-                elif sample in self.contrasts.brushes:
-                    source="_brush"
+    #        if self.contrasts:
+     #           design_file = os.path.relpath(self.args.design.name, self.output_dir)
+            if sample in self.contrasts.salivas:
+                source="_saliva"
+            elif sample in self.contrasts.brushes:
+                source="_brush"
 
             jobs.append(
                     concat_jobs(
@@ -1144,6 +1414,7 @@ else
                             bash.mkdir(
                                 output_dir
                                 ),
+                            bash.mkdir(link_directory),
                             conpair.pileup(
                                 input_brush,
                                 pileup_brush
@@ -1201,8 +1472,8 @@ else
                     self.fastp,
                     self.bwa_mem_samtools_sort,
                     self.samtools_merge,
-                    #self.locatit_dedup_bam,
-                    self.creak_dedup_bam,
+                    self.locatit_dedup_bam,
+                    #self.creak_dedup_bam,
                     self.samtools_subsample,
                    # self.samtools_sort,
                     self.mosdepth,
@@ -1218,7 +1489,8 @@ else
                     self.bwa_mem_samtools_sort,
                     self.samtools_merge,
                     self.locatit_hybrid_dedup,
-                    self.samtools_sort,
+                    #self.creak_hybrid_dedup,
+                    #self.samtools_sort,
                     self.mosdepth,
                     self.hmm_readCounter,
                     self.run_ichorCNA,
