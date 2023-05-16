@@ -570,7 +570,7 @@ pandoc --to=markdown \\
                         bash.mkdir(link_directory),
                         job,
                         bash.ln(
-                            os.rel.path(alignment_file_prefix + "mdup.metrics", link_directory),
+                            os.path.relpath(alignment_file_prefix + "mdup.metrics", link_directory),
                             os.path.join(link_directory, sample.name + ".sorted.mdup.metrics" ),
                             alignment_file_prefix + "mdup.metrics"
                             )
@@ -611,22 +611,22 @@ pandoc --to=markdown \\
                         os.path.join(output_directory, sample.name+".picard_rna_metrics")
                     ),
                     bash.ln(
-                        os.rel.path(os.path.join(output_directory, sample.name + ".alignment_summary_metrics"), link_directory),
+                        os.path.relpath(os.path.join(output_directory, sample.name + ".alignment_summary_metrics"), link_directory),
                         os.path.join(link_directory, sample.name + ".alignment_summary_metrics"),
                         os.path.join(output_directory, sample.name + ".alignment_summary_metrics")
                         ),
                     bash.ln(
-                        os.rel.path(os.path.join(output_directory, sample.name + ".quality_by_cycle_metrics"), link_directory),
+                        os.path.relpath(os.path.join(output_directory, sample.name + ".quality_by_cycle_metrics"), link_directory),
                         os.path.join(link_directory, sample.name + ".quality_by_cycle_metrics"),
                         os.path.join(output_directory, sample.name + ".quality_by_cycle_metrics")
                         ),
                     bash.ln(
-                        os.rel.path(os.path.join(output_directory, sample.name + ".quality_distribution_metrics"), link_directory),
+                        os.path.relpath(os.path.join(output_directory, sample.name + ".quality_distribution_metrics"), link_directory),
                         os.path.join(link_directory, sample.name + ".quality_distribution_metrics"),
                         os.path.join(output_directory, sample.name + ".quality_distribution_metrics")
                         ),
                     bash.ln(
-                        os.rel.path(os.path.join(output_directory, sample.name + ".picard_rna_metrics"), link_directory),
+                        os.path.relpath(os.path.join(output_directory, sample.name + ".picard_rna_metrics"), link_directory),
                         os.path.join(link_directory, sample.name + ".picard_rna_metrics"),
                         os.path.join(output_directory, sample.name + ".picard_rna_metrics")
                         ),
@@ -639,12 +639,12 @@ pandoc --to=markdown \\
                         [
                             job,
                             bash.ln(
-                                os.rel.path(os.path.join(output_directory, sample.name + ".base_distribution_by_cycle_metrics"), link_directory),
+                                os.path.relpath(os.path.join(output_directory, sample.name + ".base_distribution_by_cycle_metrics"), link_directory),
                                 os.path.join(link_directory, sample.name + ".base_distribution_by_cycle_metrics"),
                                 os.path.join(output_directory, sample.name + ".base_distribution_by_cycle_metrics")
                                 ),
                             bash.ln(
-                                os.rel.path(os.path.join(output_directory, sample.name + ".insert_size_metrics"), link_directory),
+                                os.path.relpath(os.path.join(output_directory, sample.name + ".insert_size_metrics"), link_directory),
                                 os.path.join(link_directory, sample.name + ".insert_size_metrics"),
                                 os.path.join(output_directory, sample.name + ".insert_size_metrics")
                                 )
@@ -1232,7 +1232,7 @@ pandoc \\
                             intervals=interval_list
                         ),
                         bash.ln(
-                            os.rel.path(base_recalibrator_output, link_directory),
+                            os.path.relpath(base_recalibrator_output, link_directory),
                             os.path.join(link_directory, sample.name + ".sorted.mdup.split.realigned.recalibration_report.grp"),
                             base_recalibrator_output
                             )
@@ -1767,7 +1767,7 @@ pandoc \\
                         output_dir
                     ),
                     bash.ln(
-                        os.rel.path(os.path.join(output_dir, "Log.final.out"), link_directory),
+                        os.relpath(os.path.join(output_dir, "Log.final.out"), link_directory),
                         os.path.join(link_directory, sample.name, "_star_fusion.Log.final.out"),
                         os.path.join(output_dir, "Log.final.out")
                         )
@@ -1839,7 +1839,7 @@ pandoc \\
                         output_dir
                     ),
                     bash.ln(
-                        os.rel.path(os.path.join(output_dir, "Log.final.out"), link_directory),
+                        os.path.relpath(os.path.join(output_dir, "Log.final.out"), link_directory),
                         os.path.join(link_directory, sample.name, "_arriba.Log.final.out"),
                         os.path.join(output_dir, "Log.final.out")
                         )
