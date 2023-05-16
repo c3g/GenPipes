@@ -24,6 +24,8 @@ from core.config import *
 from core.job import *
 
 def run(inputs, output, ini_section='multiqc'):
+    if not isinstance(inputs, list):
+        inputs = [inputs]
     output = output + ".html"
     return Job(
         inputs,

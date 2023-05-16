@@ -125,8 +125,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
             'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
             'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
             'paired_variants_directory': os.path.relpath(os.path.join(self.output_dir, 'pairedVariants'), self.output_dir),
-            'sv_variants_directory': os.path.relpath(os.path.join(self.output_dir, 'SVariants'), self.output_dir)
+            'sv_variants_directory': os.path.relpath(os.path.join(self.output_dir, 'SVariants'), self.output_dir),
+            'report': {}
         }
+        for tumor_pair in self.tumor_pairs.values():
+            dirs['report'][tumor_pair.name] = os.path.relpath(os.path.join(self.output_dir, 'report', tumor_pair.name), self.output_dir)
         return dirs
 
     @property
@@ -135,6 +138,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
             self._multiqc_inputs = {}
             for tumor_pair in self.tumor_pairs.values():
                 self._multiqc_inputs[tumor_pair.name] = []
+                if not os.path.exists(self.output_dirs['report'][tumor_pair.name]):
+                    os.makedirs(self.output_dirs['report'][tumor_pair.name])
         return self._multiqc_inputs
 
     @multiqc_inputs.setter
@@ -906,6 +911,16 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             pileup_normal,
                             pileup_tumor,
                             contamination_out
+                        ),
+                        bash.ln(
+                            os.path.relpath(concordance_out, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(concordance_out)),
+                            input=concordance_out
+                        ),
+                        bash.ln(
+                            os.path.relpath(contamination_out, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(contamination_out)),
+                            input=contamination_out
                         )
                     ],
                     name="conpair_concordance_contamination." + tumor_pair.name,
@@ -1640,121 +1655,215 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             )
 
             tumor_pair_jobs = []
-            tumor_pair_jobs.append(
-                concat_jobs(
-                    [
-                        mkdir_job_normal,
-                        gatk4.collect_multiple_metrics(
-                            normal_input,
-                            os.path.join(normal_picard_directory, tumor_pair.normal.name + ".all.metrics"),
-                            library_type=library[tumor_pair.normal]
-                        )
-                    ],
-                    name="picard_collect_multiple_metrics." + tumor_pair.name + "." + tumor_pair.normal.name,
-                    samples=[tumor_pair.normal]
-                )
+            collect_multiple_metrics_normal_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    gatk4.collect_multiple_metrics(
+                        normal_input,
+                        os.path.join(normal_picard_directory, tumor_pair.normal.name + ".all.metrics"),
+                        library_type=library[tumor_pair.normal]
+                    )
+                ]
             )
-            tumor_pair_jobs.append(
-                concat_jobs(
+            for outfile in collect_multiple_metrics_normal_job.output_files:
+                self.multiqc_inputs[tumor_pair.name].append(outfile)
+                collect_multiple_metrics_normal_job = concat_jobs(
                     [
-                        mkdir_job_normal,
-                        gatk4.collect_oxog_metrics(
-                            normal_input,
-                            os.path.join(normal_picard_directory, tumor_pair.normal.name + ".oxog_metrics.txt")
+                        collect_multiple_metrics_normal_job,
+                        bash.ln(
+                            os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(outfile)),
+                            input=outfile
                         )
-                    ],
-                    name="picard_collect_oxog_metrics." + tumor_pair.name + "." + tumor_pair.normal.name,
-                    samples=[tumor_pair.normal]
+                    ]
                 )
+            collect_multiple_metrics_normal_job.name = "picard_collect_multiple_metrics." + tumor_pair.name + "." + tumor_pair.normal.name
+            collect_multiple_metrics_normal_job.samples = [tumor_pair.normal]
+            tumor_pair_jobs.append(collect_multiple_metrics_normal_job)
+
+            collect_oxog_metrics_normal_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    gatk4.collect_oxog_metrics(
+                        normal_input,
+                        os.path.join(normal_picard_directory, tumor_pair.normal.name + ".oxog_metrics.txt")
+                    )
+                ]
             )
-            tumor_pair_jobs.append(
-                concat_jobs(
+            for outfile in collect_oxog_metrics_normal_job.output_files:
+                self.multiqc_inputs[tumor_pair.name].append(outfile)
+                collect_oxog_metrics_normal_job = concat_jobs(
                     [
-                        mkdir_job_normal,
-                        gatk4.collect_gcbias_metrics(
-                            normal_input,
-                            os.path.join(normal_picard_directory, tumor_pair.normal.name)
+                        collect_oxog_metrics_normal_job,
+                        bash.ln(
+                            os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(outfile)),
+                            input=outfile
                         )
-                    ],
-                    name="picard_collect_gcbias_metrics." + tumor_pair.name + "." + tumor_pair.normal.name,
-                    samples=[tumor_pair.normal]
+                    ]
                 )
+            collect_oxog_metrics_normal_job.name = "picard_collect_oxog_metrics." + tumor_pair.name + "." + tumor_pair.normal.name
+            collect_oxog_metrics_normal_job.samples = [tumor_pair.normal]
+            tumor_pair_jobs.append(collect_oxog_metrics_normal_job)
+
+            collect_gcbias_metrics_normal_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    gatk4.collect_gcbias_metrics(
+                        normal_input,
+                        os.path.join(normal_picard_directory, tumor_pair.normal.name)
+                    )
+                ]
             )
+            for outfile in collect_gcbias_metrics_normal_job.output_files:
+                self.multiqc_inputs[tumor_pair.name].append(outfile)
+                collect_gcbias_metrics_normal_job = concat_jobs(
+                    [
+                        collect_gcbias_metrics_normal_job,
+                        bash.ln(
+                            os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(outfile)),
+                            input=outfile
+                        )
+                    ]
+                )
+            collect_gcbias_metrics_normal_job.name = "picard_collect_gcbias_metrics." + tumor_pair.name + "." + tumor_pair.normal.name
+            collect_gcbias_metrics_normal_job.samples = [tumor_pair.normal]
+            tumor_pair_jobs.append(collect_gcbias_metrics_normal_job)
 
             mkdir_job_tumor = bash.mkdir(
                 tumor_picard_directory,
                 remove=True
             )
-            tumor_pair_jobs.append(
-                concat_jobs(
-                    [
-                        mkdir_job_tumor,
-                        gatk4.collect_multiple_metrics(
-                            tumor_input,
-                            os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".all.metrics"),
-                            library_type=library[tumor_pair.tumor]
-                        )
-                    ],
-                    name="picard_collect_multiple_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name,
-                    samples=[tumor_pair.tumor]
-                )
+
+            collect_multiple_metrics_tumor_job = concat_jobs(
+                [
+                    mkdir_job_tumor,
+                    gatk4.collect_multiple_metrics(
+                        tumor_input,
+                        os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".all.metrics"),
+                        library_type=library[tumor_pair.tumor]
+                    )
+                ]
             )
-            tumor_pair_jobs.append(
-                concat_jobs(
+            for outfile in collect_multiple_metrics_tumor_job.output_files:
+                self.multiqc_inputs[tumor_pair.name].append(outfile)
+                collect_multiple_metrics_tumor_job = concat_jobs(
                     [
-                        mkdir_job_tumor,
-                        gatk4.collect_oxog_metrics(
-                            tumor_input,
-                            os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".oxog_metrics.txt")
+                        collect_multiple_metrics_tumor_job,
+                        bash.ln(
+                            os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(outfile)),
+                            input=outfile
                         )
-                    ],
-                    name="picard_collect_oxog_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name,
-                    samples=[tumor_pair.tumor]
+                    ]
                 )
+            collect_multiple_metrics_tumor_job.name = "picard_collect_multiple_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name
+            collect_multiple_metrics_tumor_job.samples = [tumor_pair.tumor]
+            tumor_pair_jobs.append(collect_multiple_metrics_tumor_job)
+
+            collect_oxog_metrics_tumor_job = concat_jobs(
+                [
+                    mkdir_job_tumor,
+                    gatk4.collect_oxog_metrics(
+                        tumor_input,
+                        os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".oxog_metrics.txt")
+                    )
+                ]
             )
-            tumor_pair_jobs.append(
-                concat_jobs(
+            for outfile in collect_oxog_metrics_tumor_job.output_files:
+                self.multiqc_inputs[tumor_pair.name].append(outfile)
+                collect_oxog_metrics_tumor_job = concat_jobs(
                     [
-                        mkdir_job_tumor,
-                        gatk4.collect_gcbias_metrics(
-                            tumor_input,
-                            os.path.join(tumor_picard_directory, tumor_pair.tumor.name),
+                        collect_oxog_metrics_tumor_job,
+                        bash.ln(
+                            os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(outfile)),
+                            input=outfile
                         )
-                    ],
-                    name="picard_collect_gcbias_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name,
-                    samples=[tumor_pair.tumor]
+                    ]
                 )
+            collect_oxog_metrics_tumor_job.name = "picard_collect_oxog_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name
+            collect_oxog_metrics_tumor_job.samples = [tumor_pair.tumor]
+            tumor_pair_jobs.append(collect_oxog_metrics_tumor_job)
+
+            collect_gcbias_metrics_tumor_job = concat_jobs(
+                [
+                    mkdir_job_tumor,
+                    gatk4.collect_gcbias_metrics(
+                        tumor_input,
+                        os.path.join(tumor_picard_directory, tumor_pair.tumor.name),
+                    )
+                ]
             )
+            for outfile in collect_gcbias_metrics_tumor_job.output_files:
+                self.multiqc_inputs[tumor_pair.name].append(outfile)
+                collect_gcbias_metrics_tumor_job = concat_jobs(
+                    [
+                        collect_gcbias_metrics_tumor_job,
+                        bash.ln(
+                            os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(outfile)),
+                            input=outfile
+                        )
+                    ]
+                )
+            collect_gcbias_metrics_tumor_job.name = "picard_collect_gcbias_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name
+            collect_gcbias_metrics_tumor_job.samples = [tumor_pair.tumor]
+            tumor_pair_jobs.append(collect_gcbias_metrics_tumor_job)
+
             if ffpe:
-                tumor_pair_jobs.append(
-                    concat_jobs(
-                        [
-                            mkdir_job_normal,
-                            gatk4.collect_sequencing_artifacts_metrics(
-                                normal_input,
-                                os.path.join(normal_picard_directory, tumor_pair.normal.name)
-                            )
-                        ],
-                        name="picard_collect_sequencing_artifacts_metrics." + tumor_pair.name + "." + tumor_pair.normal.name,
-                        samples=[tumor_pair.normal]
-                    )
+                collect_sequencing_artifacts_metrics_normal_job = concat_jobs(
+                    [
+                        mkdir_job_normal,
+                        gatk4.collect_sequencing_artifacts_metrics(
+                            normal_input,
+                            os.path.join(normal_picard_directory, tumor_pair.normal.name)
+                        )
+                    ]
                 )
-                tumor_pair_jobs.append(
-                    concat_jobs(
+                for outfile in collect_sequencing_artifacts_metrics_normal_job.output_files:
+                    self.multiqc_inputs[tumor_pair.name].append(outfile)
+                    collect_sequencing_artifacts_metrics_normal_job = concat_jobs(
                         [
-                            mkdir_job_tumor,
-                            gatk4.collect_sequencing_artifacts_metrics(
-                                tumor_input,
-                                os.path.join(tumor_picard_directory, tumor_pair.tumor.name)
+                            collect_sequencing_artifacts_metrics_normal_job,
+                            bash.ln(
+                                os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
+                                os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(outfile)),
+                                input=outfile
                             )
-                        ],
-                        name="picard_collect_sequencing_artifacts_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name,
-                        samples=[tumor_pair.tumor]
+                        ]
                     )
+                collect_sequencing_artifacts_metrics_normal_job.name = "picard_collect_sequencing_artifacts_metrics." + tumor_pair.name + "." + tumor_pair.normal.name
+                collect_sequencing_artifacts_metrics_normal_job.samples = [tumor_pair.normal]
+                tumor_pair_jobs.append(collect_sequencing_artifacts_metrics_normal_job)
+
+                collect_sequencing_artifacts_metrics_tumor_job = concat_jobs(
+                    [
+                        mkdir_job_tumor,
+                        gatk4.collect_sequencing_artifacts_metrics(
+                            tumor_input,
+                            os.path.join(tumor_picard_directory, tumor_pair.tumor.name)
+                        )
+                    ]
                 )
-                for job in tumor_pair_jobs:
-                    self.multiqc_inputs[tumor_pair.name].extend(job.output_files)
-                jobs.extend(tumor_pair_jobs)
+                for outfile in collect_sequencing_artifacts_metrics_tumor_job.output_files:
+                    self.multiqc_inputs[tumor_pair.name].append(outfile)
+                    collect_sequencing_artifacts_metrics_tumor_job = concat_jobs(
+                        [
+                            collect_sequencing_artifacts_metrics_tumor_job,
+                            bash.ln(
+                                os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
+                                os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(outfile)),
+                                input=outfile
+                            )
+                        ]
+                    )
+                collect_sequencing_artifacts_metrics_tumor_job.name = "picard_collect_sequencing_artifacts_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name
+                collect_sequencing_artifacts_metrics_tumor_job.samples = [tumor_pair.tumor]
+                tumor_pair_jobs.append(collect_sequencing_artifacts_metrics_tumor_job)
+
+            jobs.extend(tumor_pair_jobs)
         return jobs
 
     def metrics_dna_sample_qualimap(self):
@@ -1805,44 +1914,71 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 options = config.param('dna_sample_qualimap', 'qualimap_options')
 
             tumor_pair_jobs = []
-            tumor_pair_jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            normal_qualimap_directory,
-                            remove=False
-                        ),
-                        qualimap.bamqc(
-                            normal_input,
-                            normal_qualimap_directory,
-                            normal_output,
-                            options
-                        )
-                    ],
-                    name="dna_sample_qualimap." + tumor_pair.name + "." + tumor_pair.normal.name,
-                    samples=[tumor_pair.normal]
-                )
+            qualimap_normal_job = concat_jobs(
+                [
+                    bash.mkdir(
+                        normal_qualimap_directory,
+                        remove=False
+                    ),
+                    qualimap.bamqc(
+                        normal_input,
+                        normal_qualimap_directory,
+                        normal_output,
+                        options
+                    )
+                ]
             )
-            tumor_pair_jobs.append(
-                concat_jobs(
+            for outfile in qualimap_normal_job.output_files:
+                self.multiqc_inputs[tumor_pair.name].append(outfile)
+                qualimap_normal_job = concat_jobs(
                     [
-                        bash.mkdir(
-                            tumor_qualimap_directory,
-                            remove=False
-                        ),
-                        qualimap.bamqc(
-                            tumor_input,
-                            tumor_qualimap_directory,
-                            tumor_output,
-                            options
+                        qualimap_normal_job,
+                        bash.ln(
+                            os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(outfile)),
+                            input=outfile
                         )
-                    ],
-                    name="dna_sample_qualimap." + tumor_pair.name + "." + tumor_pair.tumor.name,
-                    samples=[tumor_pair.tumor]
+                    ]
                 )
+            qualimap_normal_job.name = "dna_sample_qualimap." + tumor_pair.name + "." + tumor_pair.normal.name
+            qualimap_normal_job.samples = [tumor_pair.normal]
+            tumor_pair_jobs.append(qualimap_normal_job)
+
+            qualimap_tumor_job = concat_jobs(
+                [
+                    bash.mkdir(
+                        tumor_qualimap_directory,
+                        remove=False
+                    ),
+                    qualimap.bamqc(
+                        tumor_input,
+                        tumor_qualimap_directory,
+                        tumor_output,
+                        options
+                    ),
+                    bash.ln(
+                        os.path.relpath(tumor_output, self.output_dirs['report'][tumor_pair.name]),
+                        os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(tumor_output)),
+                        input=tumor_output
+                    )
+                ]
             )
-            for job in tumor_pair_jobs:
-                self.multiqc_inputs[tumor_pair.name].extend(job.output_files)
+            for outfile in qualimap_tumor_job.output_files:
+                self.multiqc_inputs[tumor_pair.name].append(outfile)
+                qualimap_tumor_job = concat_jobs(
+                    [
+                        qualimap_tumor_job,
+                        bash.ln(
+                            os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(outfile)),
+                            input=outfile
+                        )
+                    ]
+                )
+            qualimap_tumor_job.name = "dna_sample_qualimap." + tumor_pair.name + "." + tumor_pair.tumor.name
+            qualimap_tumor_job.samples = [tumor_pair.tumor]
+            tumor_pair_jobs.append(qualimap_tumor_job)
+
             jobs.extend(tumor_pair_jobs)
         return jobs
 
@@ -1921,6 +2057,11 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             normal_output_dir,
                             normal_output,
                             os.path.join(normal_output_dir, "adapter.tsv")
+                        ),
+                        bash.ln(
+                            os.path.relpath(normal_output, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(normal_output)),
+                            input=normal_output
                         )
                     ],
                     name="fastqc." + tumor_pair.name + "." + tumor_pair.normal.name,
@@ -1941,6 +2082,11 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             tumor_output_dir,
                             tumor_output,
                             os.path.join(tumor_output_dir, "adapter.tsv")
+                        ),
+                        bash.ln(
+                            os.path.relpath(tumor_output, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(tumor_output)),
+                            input=tumor_output
                         )
                     ],
                     name="fastqc." + tumor_pair.name + "." + tumor_pair.tumor.name,
@@ -1964,19 +2110,19 @@ echo -e "{normal_name}\\t{tumor_name}" \\
         metrics_directory = os.path.join(self.output_dirs['metrics_directory'], "dna")
         for tumor_pair in self.tumor_pairs.values():
             output = os.path.join(metrics_directory, tumor_pair.name + ".multiqc")
-            if len(self.multiqc_inputs[tumor_pair.name]):
-                jobs.append(
-                    concat_jobs(
-                        [
-                            multiqc.run(
-                                self.multiqc_inputs[tumor_pair.name],
-                                output
-                            )
-                        ],
-                        name="multiqc." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor]
-                    )
+            jobs.append(
+                concat_jobs(
+                    [
+                        multiqc.run(
+                            self.output_dirs['report'][tumor_pair.name],
+                            output
+                        )
+                    ],
+                    name="multiqc." + tumor_pair.name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    input_dependency=self.multiqc_inputs[tumor_pair.name]
                 )
+            )
         return jobs
 
     def sym_link_report(self):
@@ -5495,6 +5641,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     samples=[tumor_pair.normal, tumor_pair.tumor]
                 )
             )
+            purple_purity_output = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")
+            purple_qc_output = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.qc")
             jobs.append(
                 concat_jobs(
                     [
@@ -5511,7 +5659,17 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             somatic_hotspots,
                             germline_hotspots,
                             driver_gene_panel
-                        )  
+                        ),
+                        bash.ln(
+                            os.path.relpath(purple_purity_output, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(purple_purity_output)),
+                            input=purple_purity_output
+                        ),
+                        bash.ln(
+                            os.path.relpath(purple_qc_output, self.output_dirs['report'][tumor_pair.name]),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(purple_qc_output)),
+                            input=purple_qc_output
+                        )
                     ],
                     name="purple.purity." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor]
@@ -5519,8 +5677,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             )
             self.multiqc_inputs[tumor_pair.name].extend(
                 [
-                    os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv"),
-                    os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.qc")
+                    purple_purity_output,
+                    purple_qc_output
                 ]
             )
             
