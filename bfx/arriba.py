@@ -26,13 +26,14 @@ from core.job import *
 
 def run(fastqs1, fastqs2, output_dir):
     output_file = os.path.join(output_dir, "fusions.tsv")
+    output_log = os.path.join(output_dir, "Log.final.out")
     return Job(
         fastqs1,
-        [output_file],
+        [output_file, output_log],
         [
             ['run_arriba', 'module_arriba'],
             ['run_arriba', 'module_star'],
-	        ['run_arriba', 'module_samtools']
+	    ['run_arriba', 'module_samtools']
         ],
 
         command="""\

@@ -25,10 +25,10 @@ from core.config import *
 from core.job import *
 
 def run(input_bam, output_directory):
-    
+    input_base = os.path.basename(input_bam)    
     return Job(
         [input_bam],
-        [os.path.join(output_directory, "metrics.tsv")],
+        [os.path.join(output_directory, input_base + ".metrics.tsv")],
         [
             ['rnaseqc2', 'module_rnaseqc2']
         ],
