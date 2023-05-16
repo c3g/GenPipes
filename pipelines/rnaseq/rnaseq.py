@@ -1777,7 +1777,7 @@ pandoc \\
             )
             jobs.append(job)
     
-            self.multiqc_inputs.append(os.path.join(output_dir, "Log.final.out")
+            self.multiqc_inputs.append(os.path.join(output_dir, "Log.final.out"))
         return jobs
 
     def run_arriba(self):
