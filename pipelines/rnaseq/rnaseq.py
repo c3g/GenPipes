@@ -261,7 +261,7 @@ class RnaSeqRaw(common.Illumina):
                         ),
                         bash.mkdir(
                             link_directory
-                            )
+                            ),
                         adapter_job,
                         skewer.trim(
                             fastq1,
