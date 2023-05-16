@@ -309,19 +309,23 @@ def mark_duplicates(
     output,
     metrics_file,
     remove_duplicates="false",
+    create_index=True,
     ini_section='picard_mark_duplicates'
     ):
 
     if not isinstance(inputs, list):
         inputs=[inputs]
     if config.param(ini_section, 'module_picard').split("/")[2] < "2" and config.param(ini_section, 'module_gatk').split("/")[2] < "4":
-        return picard.mark_duplicates(inputs, output, metrics_file, remove_duplicates, ini_section=ini_section)
+        return picard.mark_duplicates(inputs, output, metrics_file, remove_duplicates, create_index, ini_section=ini_section)
     elif config.param(ini_section, 'module_gatk').split("/")[2] > "4":
-        return gatk4.mark_duplicates(inputs, output, metrics_file, remove_duplicates, ini_section=ini_section)
+        return gatk4.mark_duplicates(inputs, output, metrics_file, remove_duplicates, create_index, ini_section=ini_section)
     else:
+        outputs = [output, metrics_file]
+        if create_index:
+            outputs.append(re.sub("\.([sb])am$", ".\\1ai", output))
         return Job(
             inputs,
-            [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
+            outputs,
             [
                 [ini_section, 'module_java'],
                 [ini_section, 'module_picard']
@@ -329,7 +333,7 @@ def mark_duplicates(
             command="""\
 rm -rf {output}.part && \\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar MarkDuplicates \\
- REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
+ REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT {create_index} \\
  TMP_DIR={tmp_dir} \\
  {inputs} \\
  OUTPUT={output} \\
@@ -339,6 +343,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             java_other_options=config.param(ini_section, 'java_other_options'),
             ram=config.param(ini_section, 'ram'),
             remove_duplicates=remove_duplicates,
+            create_index="CREATE_INDEX=true" if create_index else "",
             inputs=" \\\n  ".join(["INPUT=" + str(input) for input in inputs]),
             output=output,
             metrics_file=metrics_file,

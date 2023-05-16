@@ -536,15 +536,25 @@ pandoc --to=markdown \\
         for sample in self.samples:
             alignment_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.")
 
-            job = picard.mark_duplicates(
-                [alignment_file_prefix + "bam"],
-                alignment_file_prefix + "mdup.bam",
-                alignment_file_prefix + "mdup.metrics",
-                ini_section='mark_duplicates'
+            jobs.append(
+                concat_jobs(
+                    [
+                        picard.mark_duplicates(
+                            [alignment_file_prefix + "bam"],
+                            alignment_file_prefix + "mdup.bam",
+                            alignment_file_prefix + "mdup.metrics",
+                            create_index=False,
+                            ini_section='mark_duplicates'
+                        ),
+                        sambamba.index(
+                            alignment_file_prefix + "mdup.bam",
+                            alignment_file_prefix + "mdup.bam.bai"
+                        )
+                    ],
+                    name="mark_duplicates." + sample.name,
+                    samples=[sample]
+                )
             )
-            job.name = "mark_duplicates." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
         return jobs
 
     def picard_rna_metrics(self):

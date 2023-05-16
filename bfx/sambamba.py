@@ -39,10 +39,10 @@ sambamba sort {options} \\
   {input} \\
   --tmpdir {tmp} \\
   {output}""".format(
-        options=other_options if other_options else "",
-        input=input_bam,
-        output="--out " + output_bam if output_bam else "",
-        tmp=tmp_dir
+            options=other_options if other_options else "",
+            input=input_bam,
+            output="--out " + output_bam if output_bam else "",
+            tmp=tmp_dir
         )
     )
 
@@ -61,9 +61,9 @@ def index(input,
 sambamba index {options} \\
   {input} \\
   {output}""".format(
-        options=other_options if other_options else "",
-        input=input,
-        output=output,
+            options=other_options if other_options else "",
+            input=input,
+            output=output
         )
     )
 
@@ -82,9 +82,9 @@ def merge(input_bams,
 sambamba merge {options} \\
   {output} \\
   {input}""".format(
-        options=config.param(ini_section, 'options'),
-        input="".join([" \\\n  " + input_bam for input_bam in input_bams]),
-        output=output_bam
+            options=config.param(ini_section, 'options'),
+            input="".join([" \\\n  " + input_bam for input_bam in input_bams]),
+            output=output_bam
         )
     )
 
@@ -107,10 +107,10 @@ sambamba markdup {other_options} \\
   {input} \\
   --tmpdir {tmp} \\
   {output}""".format(
-        other_options=other_options,
-        tmp=tmp_dir,
-        input=" \\\n  ".join(input for input in input_bam),
-        output=output_bam,
+            other_options=other_options,
+            tmp=tmp_dir,
+            input=" \\\n  ".join(input for input in input_bam),
+            output=output_bam
         )
     )
 
@@ -130,10 +130,10 @@ def view(input_bam,
 sambamba view {options} \\
   {input} \\
   {output} {chr}""".format(
-        options=options,
-        input=input_bam,
-        output="-o " + output_bam if output_bam else "",
-        chr=chr if chr else "",
+            options=options,
+            input=input_bam,
+            output="-o " + output_bam if output_bam else "",
+            chr=chr if chr else ""
         )
     )
 
@@ -149,8 +149,8 @@ def flagstat(input, output, options=None):
 sambamba flagstat {options} \\
   {input} \\
   {output}""".format(
-        options=options if options else "",
-        input=input,
-        output="> " + output,
+            options=options if options else "",
+            input=input,
+            output="> " + output
         )
     )
