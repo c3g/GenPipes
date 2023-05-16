@@ -1769,7 +1769,7 @@ pandoc \\
                         output_dir
                     ),
                     bash.ln(
-                        os.relpath(os.path.join(output_dir, "Log.final.out"), link_directory),
+                        os.path.relpath(os.path.join(output_dir, "Log.final.out"), link_directory),
                         os.path.join(link_directory, sample.name, "_star_fusion.Log.final.out"),
                         os.path.join(output_dir, "Log.final.out")
                         )
