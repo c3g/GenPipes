@@ -159,6 +159,6 @@ def tin(input, output_dir):
             -r {ref_gene_model} \\
             -i {input}""".format(
             ref_gene_model=config.param('rseqc', 'ref_gene_model'),
-            input=os.path.abspath(input)
+            input=input
         ),
     )
