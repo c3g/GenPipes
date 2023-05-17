@@ -125,7 +125,7 @@ parsed_folder <- function(folder_path_list){
                           Memory_Request = as.numeric())
   
   for (i in file_path_list){
-    
+    print("-----NEW FOLDER-----")
     #Create temporary dataframe 
     Info_df_temp <- data.frame(	JobName = as.character(),
                                 WaitingTime = as.character(),
@@ -136,7 +136,7 @@ parsed_folder <- function(folder_path_list){
                                 Memory_Request = as.numeric())
     
     for (j in i){
-      
+      print("-----NEW .O FILE-----") 
       #file reading
       FileInput = readLines(j)
       
@@ -165,7 +165,7 @@ parsed_folder <- function(folder_path_list){
       df_info$RunTime <- as.character(df_info$RunTime)
       
       print("DF_INFO") #modif
-      datatable(df_info)
+      print(datatable(df_info))
       print("\n")
       
       Info_df_temp <- rbind(Info_df_temp, df_info)
@@ -175,16 +175,23 @@ parsed_folder <- function(folder_path_list){
     #change TimeLimit format
     Info_df_temp$TimeLimit <- day_into_hours(Info_df_temp$TimeLimit)
     
-    print("CHANGE TIMELIMIT FORMAT DAY INTO HOUR") #modif
-    datatable(Info_df_temp)
-    print("\n")
+    #change TimeLimit format
+    Info_df_temp$RunTime <- day_into_hours(Info_df_temp$RunTime)
+
+    #print("CHANGE TIMELIMIT FORMAT DAY INTO HOUR") #modif
+    #print(datatable(Info_df_temp))
+    #print("\n")
 
     #Specfific dataframe for ploting
     DF_plot <- rbind(DF_plot, Info_df_temp)
     
     #compute average values if there is more than one .o file per folder
     if (nrow(Info_df_temp) > 1){
-      
+     
+	#print("RUNTIME ET TYPE")
+	#print(Info_df_temp$RunTime)
+	#print(typeof(Info_df_temp$RunTime))
+ 
       #re-create the dataframe with the average values
       Info_df_temp <- data.frame(JobName,
                                  mean_value(Info_df_temp$WaitingTime),
@@ -197,10 +204,16 @@ parsed_folder <- function(folder_path_list){
       #rename columns
       names(Info_df_temp) <- c("JobName", "WaitingTime", "RunTime", "TimeLimit", "NumCPUs", "Memory_Efficiency", "Memory_Request")
     }
-    
+    print("INFO_DF AVANT BIND")
+    print(Info_df_temp) 
     #put Info_df_temp at the end of the main dataframe containing all information
-    Info_df <- rbind(Info_df, Info_df_temp)
-    
+    Info_df <- rbind(Info_df, as.data.frame(Info_df_temp))
+    print("INFO_DF TOUTES LES MOYENNES TEMP")
+    print(Info_df_temp)
+
+    print("INFO_DF TOUTES LES MOYENNES")
+    print(Info_df)
+ 
   }
   
   #Change WaitingTime format
@@ -343,6 +356,7 @@ Values_PBS <- function(FileInput_List){
   #research JobId
   JobId <<- research_Element_PBS(FileInput_List, "ID")         #OK
   JobId <<- strsplit(x = JobId, split = "\\.")[[1]][1]
+  JobId <<- strsplit(x = JobId, split = ":")[[1]][2]
   
   #Memory_Limit
   Memory_Limit <<- as.numeric(NumCPUs) * 5                                     
@@ -401,16 +415,20 @@ Values_PBS <- function(FileInput_List){
   #)
   #return (out)
   #####
- 
+  print("JobId")
+  print(JobId) 
+  print("\n")
 
   checkjob_resp <<- system2("checkjob",
                         args = JobId,
                         stdout = TRUE,
-                        stderr = FALSE
+                        stderr = TRUE
                        )
-
+  #print("LENGTH CHECKJOB_RESP")
+  #print(length(checkjob_resp))
+  #print("\n")
  
-  if(length(checkjob_resp) == 0){
+  if(length(checkjob_resp) == 2){
 	return(list(JobName,                #OK
               #WaitingTime,            #OK
               NA,
@@ -590,18 +608,25 @@ mean_value <- function(df){
   
   #case where df contain character values
   if (is.character(df)){
+	print("DF MOYENNE")
+	print(df)
     df <- df %>%
-      hms()%>%
-      period_to_seconds()%>%
+      hms() %>%
+      period_to_seconds() %>%
       mean() %>%
-      seconds_to_period()#%>%
+      round() %>%
+      seconds_to_period() %>%
+      hms::hms()
       #seconds.to.hms()
-    
+    print("DF APRES MOYENNE CHARACT")
+    print(df)
+
     # df already contain numerical values
   }else{
     df <- mean(df)
   }
-  
+
+
   return (df)
 }
 ```
