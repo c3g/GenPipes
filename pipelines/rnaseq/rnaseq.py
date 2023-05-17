@@ -692,12 +692,13 @@ pandoc --to=markdown \\
                             output_directory
                         ),
                         rseqc.tin(
-                            input,
+                            os.path.relpath(input, output_directory),
                             output_directory
                         )
                     ],
                     name="rseqc.tin." + sample.name,
-                    samples=[sample]
+                    samples=[sample],
+                    input_dependency=[input]
                 )
             )
         return jobs
