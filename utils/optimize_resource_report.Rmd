@@ -164,7 +164,7 @@ parsed_folder <- function(folder_path_list){
       # #type change 
       # df_info$RunTime <- as.character(df_info$RunTime)
       
-      Info_df[1,] <- List_values
+      Info_df[nrow(Info_df)+1 ,] <- List_values
 
       
       print("Info_df") #modif
@@ -224,10 +224,10 @@ parsed_folder <- function(folder_path_list){
   print(Info_df)
   
   #change dataframe name
-  names(Info_df) <- c("JobName", "WaitingTime", "RunTime", "TimeLimit", "NumCPUs", "Memory_Efficiency", "Memory_Request")
+  #names(Info_df) <- c("JobName", "WaitingTime", "RunTime", "TimeLimit", "NumCPUs", "Memory_Efficiency", "Memory_Request")
   
-  print("Info_df nom colonnes")
-  print(Info_df)
+  #print("Info_df nom colonnes")
+  #print(Info_df)
   
   #change TimeLimit format
   Info_df$TimeLimit <- day_into_hours(Info_df$TimeLimit)
@@ -252,7 +252,13 @@ parsed_folder <- function(folder_path_list){
   
   #keep average value for each job in Info_df
   Info_df <- Info_df %>% group_by(JobName) %>%
-                                    mean_value()
+			 summarise(WaitingTime = WaitingTime %>% mean_value(),
+				   RunTime = RunTime %>% mean_value(),
+				   TimeLimit = TimeLimit %>% mean_value(),
+				   NumCPUs = NumCPUs %>% mean_value(),
+				   Memory_Efficiency = Memory_Efficiency %>% mean_value(),
+				   Memory_Request = Memory_Request %>% mean_value())
+
   
   print("Info_df keep moyenne pour chaque step")
   print(Info_df)
@@ -274,7 +280,7 @@ Values_SLURM <- function(FileInput_List){
   
   #research StepName
   JobName <<- research_Element_SLURM(FileInput_List, "JobName")
-  JobName <<- strsplit(x = JobName, split = "\\.")[[1]][1]
+  #JobName <<- strsplit(x = JobName, split = "\\.")[[1]][1]
   
   #research EligibleTime
   EligibleTime <<- String_to_Date(research_Element_SLURM(FileInput_List, "EligibleTime"))
