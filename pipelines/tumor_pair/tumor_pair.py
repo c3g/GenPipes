@@ -1928,7 +1928,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     )
                 ]
             )
-            for outfile in qualimap_normal_job.output_files:
+            for outfile in qualimap_normal_job.report_files:
                 self.multiqc_inputs[tumor_pair.name].append(outfile)
                 qualimap_normal_job = concat_jobs(
                     [
@@ -1955,15 +1955,10 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         tumor_qualimap_directory,
                         tumor_output,
                         options
-                    ),
-                    bash.ln(
-                        os.path.relpath(tumor_output, self.output_dirs['report'][tumor_pair.name]),
-                        os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(tumor_output)),
-                        input=tumor_output
                     )
                 ]
             )
-            for outfile in qualimap_tumor_job.output_files:
+            for outfile in qualimap_tumor_job.report_files:
                 self.multiqc_inputs[tumor_pair.name].append(outfile)
                 qualimap_tumor_job = concat_jobs(
                     [

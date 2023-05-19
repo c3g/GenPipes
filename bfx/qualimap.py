@@ -64,7 +64,8 @@ qualimap bamqc {other_options} \\
 #            bed="\\\n  --feature-file " + bed if bed else "",
             ram=config.param(ini_section, 'ram'),
         ),
-        removable_files=[]
+        removable_files=[],
+        report_files=outputs
     )
 
 def rnaseq(input_bam, output_directory, output):
