@@ -1249,7 +1249,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 ]
 
                 for input_vcf in all_inputs:
-                    if not self.is_gz_file(input_vcf):
+                    if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
                         log.error("Incomplete panel varscan2 vcf: %s\n" % input_vcf)
 
                 jobs.append(
@@ -2478,7 +2478,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             all_inputs = []
             if nb_jobs == 1:
-                all_inputs = os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")
+                all_inputs = [os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")]
 
             else:
                 all_inputs = [
@@ -2487,8 +2487,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 ]
 
             for input_vcf in all_inputs:
-                log.debug(input_vcf)
-                if not self.is_gz_file(input_vcf):
+                if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
                     log.error("Incomplete varscan2 vcf: %s\n" % input_vcf)
 
             all_output = os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz")
@@ -2504,7 +2503,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             pipe_jobs(
                                 [
                                     bcftools.view(
-                                        all_inputs,
+                                        all_inputs[0],
                                         None
                                     ),
                                     tools.fix_varscan_output(
@@ -2978,7 +2977,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 inputs.append(os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"))
 
                 for input_vcf in inputs:
-                    if not self.is_gz_file(input_vcf):
+                    if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
                         log.error("Incomplete mutect2 vcf: %s\n" % input_vcf)
 
                 if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
@@ -3922,7 +3921,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz"))
 
                 for input_vcf in inputVCFs:
-                    if not self.is_gz_file(input_vcf):
+                    if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
                         log.error("Incomplete vardict vcf: %s\n" % input_vcf)
 
                 jobs.append(
@@ -4041,7 +4040,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             inputs_somatic = [input_mutect2, input_strelka2, input_vardict, input_varscan2]
 
             for input_vcf in inputs_somatic:
-                if not self.is_gz_file(input_vcf):
+                if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
                     log.error("Incomplete ensemble vcf: %s\n" % input_vcf)
 
             output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vt.vcf.gz")
@@ -4098,7 +4097,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             inputs_germline = [input_strelka2, input_vardict, input_varscan2]
 
             for input_vcf in inputs_germline:
-                if not self.is_gz_file(input_vcf):
+                if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
                     log.error("Incomplete ensemble vcf: %s\n" % input_vcf)
 
             output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt.vcf.gz")
