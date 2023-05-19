@@ -138,8 +138,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
             self._multiqc_inputs = {}
             for tumor_pair in self.tumor_pairs.values():
                 self._multiqc_inputs[tumor_pair.name] = []
-                if not os.path.exists(self.output_dirs['report'][tumor_pair.name]):
-                    os.makedirs(self.output_dirs['report'][tumor_pair.name])
+#                if not os.path.exists(self.output_dirs['report'][tumor_pair.name]):
+#                    os.makedirs(self.output_dirs['report'][tumor_pair.name])
         return self._multiqc_inputs
 
     @multiqc_inputs.setter
@@ -902,6 +902,9 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             metrics_directory,
                             remove=False
                         ),
+                        bash.mkdir(
+                            self.output_dirs['report'][tumor_pair.name]
+                        ),
                         conpair.concordance(
                             pileup_normal,
                             pileup_tumor,
@@ -1247,7 +1250,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
                 for input_vcf in all_inputs:
                     if not self.is_gz_file(input_vcf):
-                        stderr.write("Incomplete panel varscan2 vcf: %s\n" % input_vcf)
+                        log.error("Incomplete panel varscan2 vcf: %s\n" % input_vcf)
 
                 jobs.append(
                     concat_jobs(
@@ -1662,6 +1665,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         normal_input,
                         os.path.join(normal_picard_directory, tumor_pair.normal.name + ".all.metrics"),
                         library_type=library[tumor_pair.normal]
+                    ),
+                    bash.mkdir(
+                        self.output_dirs['report'][tumor_pair.name]
                     )
                 ]
             )
@@ -1687,6 +1693,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     gatk4.collect_oxog_metrics(
                         normal_input,
                         os.path.join(normal_picard_directory, tumor_pair.normal.name + ".oxog_metrics.txt")
+                    ),
+                    bash.mkdir(
+                        self.output_dirs['report'][tumor_pair.name]
                     )
                 ]
             )
@@ -1712,6 +1721,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     gatk4.collect_gcbias_metrics(
                         normal_input,
                         os.path.join(normal_picard_directory, tumor_pair.normal.name)
+                    ),
+                    bash.mkdir(
+                        self.output_dirs['report'][tumor_pair.name]
                     )
                 ]
             )
@@ -1743,6 +1755,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         tumor_input,
                         os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".all.metrics"),
                         library_type=library[tumor_pair.tumor]
+                    ),
+                    bash.mkdir(
+                        self.output_dirs['report'][tumor_pair.name]
                     )
                 ]
             )
@@ -1768,6 +1783,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     gatk4.collect_oxog_metrics(
                         tumor_input,
                         os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".oxog_metrics.txt")
+                    ),
+                    bash.mkdir(
+                        self.output_dirs['report'][tumor_pair.name]
                     )
                 ]
             )
@@ -1793,6 +1811,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     gatk4.collect_gcbias_metrics(
                         tumor_input,
                         os.path.join(tumor_picard_directory, tumor_pair.tumor.name),
+                    ),
+                    bash.mkdir(
+                        self.output_dirs['report'][tumor_pair.name]
                     )
                 ]
             )
@@ -1819,6 +1840,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         gatk4.collect_sequencing_artifacts_metrics(
                             normal_input,
                             os.path.join(normal_picard_directory, tumor_pair.normal.name)
+                        ),
+                        bash.mkdir(
+                            self.output_dirs['report'][tumor_pair.name]
                         )
                     ]
                 )
@@ -1844,7 +1868,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         gatk4.collect_sequencing_artifacts_metrics(
                             tumor_input,
                             os.path.join(tumor_picard_directory, tumor_pair.tumor.name)
-                        )
+                        ),
+                        bash.mkdir(self.output_dirs['report'][tumor_pair.name])
                     ]
                 )
                 for outfile in collect_sequencing_artifacts_metrics_tumor_job.output_files:
@@ -1925,6 +1950,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         normal_qualimap_directory,
                         normal_output,
                         options
+                    ),
+                    bash.mkdir(
+                        self.output_dirs['report'][tumor_pair.name]
                     )
                 ]
             )
@@ -1955,6 +1983,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         tumor_qualimap_directory,
                         tumor_output,
                         options
+                    ),
+                    bash.mkdir(
+                        self.output_dirs['report'][tumor_pair.name]
                     )
                 ]
             )
@@ -2053,6 +2084,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             normal_output,
                             os.path.join(normal_output_dir, "adapter.tsv")
                         ),
+                        bash.mkdir(
+                            self.output_dirs['report'][tumor_pair.name]
+                        ),
                         bash.ln(
                             os.path.relpath(normal_output, self.output_dirs['report'][tumor_pair.name]),
                             os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(normal_output)),
@@ -2077,6 +2111,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             tumor_output_dir,
                             tumor_output,
                             os.path.join(tumor_output_dir, "adapter.tsv")
+                        ),
+                        bash.mkdir(
+                            self.output_dirs['report'][tumor_pair.name]
                         ),
                         bash.ln(
                             os.path.relpath(tumor_output, self.output_dirs['report'][tumor_pair.name]),
@@ -2451,7 +2488,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             for input_vcf in all_inputs:
                 if not self.is_gz_file(input_vcf):
-                    stderr.write("Incomplete varscan2 vcf: %s\n" % input_vcf)
+                    log.error("Incomplete varscan2 vcf: %s\n" % input_vcf)
 
             all_output = os.path.join(pair_directory, tumor_pair.name + ".varscan2.vcf.gz")
             all_output_vt = os.path.join(pair_directory, tumor_pair.name + ".varscan2.vt.vcf.gz")
@@ -2941,7 +2978,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
                 for input_vcf in inputs:
                     if not self.is_gz_file(input_vcf):
-                        stderr.write("Incomplete mutect2 vcf: %s\n" % input_vcf)
+                        log.error("Incomplete mutect2 vcf: %s\n" % input_vcf)
 
                 if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
 
@@ -3885,7 +3922,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
                 for input_vcf in inputVCFs:
                     if not self.is_gz_file(input_vcf):
-                        stderr.write("Incomplete vardict vcf: %s\n" % input_vcf)
+                        log.error("Incomplete vardict vcf: %s\n" % input_vcf)
 
                 jobs.append(
                     concat_jobs(
@@ -4004,7 +4041,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             for input_vcf in inputs_somatic:
                 if not self.is_gz_file(input_vcf):
-                    stderr.write("Incomplete ensemble vcf: %s\n" % input_vcf)
+                    log.error("Incomplete ensemble vcf: %s\n" % input_vcf)
 
             output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.somatic.vt.vcf.gz")
 
@@ -4061,7 +4098,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             for input_vcf in inputs_germline:
                 if not self.is_gz_file(input_vcf):
-                    stderr.write("Incomplete ensemble vcf: %s\n" % input_vcf)
+                    log.error("Incomplete ensemble vcf: %s\n" % input_vcf)
 
             output_ensemble = os.path.join(paired_ensemble_directory, tumor_pair.name + ".ensemble.germline.vt.vcf.gz")
 
@@ -5654,6 +5691,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             somatic_hotspots,
                             germline_hotspots,
                             driver_gene_panel
+                        ),
+                        bash.mkdir(
+                            self.output_dirs['report'][tumor_pair.name]
                         ),
                         bash.ln(
                             os.path.relpath(purple_purity_output, self.output_dirs['report'][tumor_pair.name]),
