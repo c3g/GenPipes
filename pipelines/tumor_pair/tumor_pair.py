@@ -1485,8 +1485,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
-            if not os.path.exists(varscan_directory):
-                os.makedirs(varscan_directory)
+        #    if not os.path.exists(varscan_directory):
+        #        os.makedirs(varscan_directory)
 
             temp_dir = config.param('DEFAULT', 'tmp_dir')
             gemini_prefix = os.path.join(pair_directory, tumor_pair.name)
@@ -2487,6 +2487,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 ]
 
             for input_vcf in all_inputs:
+                log.debug(input_vcf)
                 if not self.is_gz_file(input_vcf):
                     log.error("Incomplete varscan2 vcf: %s\n" % input_vcf)
 
