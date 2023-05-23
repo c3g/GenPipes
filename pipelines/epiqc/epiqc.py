@@ -461,6 +461,9 @@ ln -s -f {ihec_converteddir}/* {output_dir}/{user_converteddir}/""".format(
 
                     job = concat_jobs(
                         [
+                            bash.mkdir(
+                                output_dir
+                            ),
                             chromimpute.convert(
                                 input_dir,
                                 input_file,
