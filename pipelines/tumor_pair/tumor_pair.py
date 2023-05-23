@@ -138,8 +138,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
             self._multiqc_inputs = {}
             for tumor_pair in self.tumor_pairs.values():
                 self._multiqc_inputs[tumor_pair.name] = []
-#                if not os.path.exists(self.output_dirs['report'][tumor_pair.name]):
-#                    os.makedirs(self.output_dirs['report'][tumor_pair.name])
         return self._multiqc_inputs
 
     @multiqc_inputs.setter
@@ -1484,9 +1482,6 @@ echo -e "{normal_name}\\t{tumor_name}" \\
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
-
-        #    if not os.path.exists(varscan_directory):
-        #        os.makedirs(varscan_directory)
 
             temp_dir = config.param('DEFAULT', 'tmp_dir')
             gemini_prefix = os.path.join(pair_directory, tumor_pair.name)
