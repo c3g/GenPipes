@@ -1124,7 +1124,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 input=input,
                 output=output,
                 max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
-            )
+            ),
+            report_files=outputs
         )
 
 def collect_sequencing_artifacts_metrics(
@@ -1169,7 +1170,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             output=output,
             reference=reference_sequence if reference_sequence else config.param('picard_collect_sequencing_artifacts_metrics', 'genome_fasta'),
             max_records_in_ram=config.param('picard_collect_sequencing_artifacts_metrics', 'max_records_in_ram', param_type='int')
-        )    
+        )
     )
 
 def convert_sequencing_artifacts_metrics(
@@ -1267,11 +1268,11 @@ def collect_gcbias_metrics(
     reference_sequence=None
     ):
 
-    output = output_prefix +  ".qcbias_metrics.txt"
+    output = output_prefix +  ".gcbias_metrics.txt"
     if not chart:
-        chart = output_prefix + ".qcbias_metrics.pdf"
+        chart = output_prefix + ".gcbias_metrics.pdf"
     if not summary_file:
-        summary_file = output_prefix + ".qcbias_summary_metrics.txt"
+        summary_file = output_prefix + ".gcbias_summary_metrics.txt"
     outputs = [
         output,
         chart,
@@ -1317,7 +1318,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             summary_file=summary_file,
             reference=reference_sequence if reference_sequence else config.param('picard_collect_gcbias_metrics', 'genome_fasta'),
             max_records_in_ram=config.param('picard_collect_gcbias_metrics', 'max_records_in_ram', param_type='int')
-        )
+        ),
+        report_files=outputs
     )
 
 def fix_mate_information(
