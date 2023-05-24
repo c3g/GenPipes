@@ -1958,7 +1958,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         qualimap_normal_job,
                         bash.ln(
                             os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
-                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(outfile)),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.normal.name + "." + os.path.basename(outfile)),
                             input=outfile
                         )
                     ]
@@ -1991,7 +1991,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         qualimap_tumor_job,
                         bash.ln(
                             os.path.relpath(outfile, self.output_dirs['report'][tumor_pair.name]),
-                            os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(outfile)),
+                            os.path.join(self.output_dirs['report'][tumor_pair.name], tumor_pair.tumor.name + "." + os.path.basename(outfile)),
                             input=outfile
                         )
                     ]
