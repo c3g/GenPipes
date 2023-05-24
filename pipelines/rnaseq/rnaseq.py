@@ -703,37 +703,37 @@ pandoc --to=markdown \\
             )
         return jobs
     
-    def bam_hard_clip(self):
-        jobs = []
-
-        for sample in self.samples:
-            alignment_input = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.bam")
-            alignment_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.hardClip.bam")
-            job=pipe_jobs(
-                [
-                    samtools.view(
-                        alignment_input,
-                        None,
-                        "-h"
-                    ),
-                    Job(
-                        [None],
-                        [alignment_output],
-                        # awk to transform soft clip into hard clip for tuxedo suite
-                        command="""\
-                        awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/[0-9]*/); split($6,L,/[SMDIN]/); if (C[2]=="S") {{$10=substr($10,L[1]+1); $11=substr($11,L[1]+1)}}; if (C[length(C)]=="S") {{L1=length($10)-L[length(L)-1]; $10=substr($10,1,L1); $11=substr($11,1,L1); }}; gsub(/[0-9]*S/,"",$6); print}}' """.format()
-                    ),
-                    samtools.view(
-                        "-",
-                        alignment_output,
-                        "-hbS"
-                    )
-                ],
-                name="tuxedo_hard_clip."+ sample.name,
-                samples=[sample]
-            )
-            jobs.append(job)
-        return jobs
+#    def bam_hard_clip(self):
+#        jobs = []
+#
+#        for sample in self.samples:
+#            alignment_input = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.bam")
+#            alignment_output = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.hardClip.bam")
+#            job=pipe_jobs(
+#                [
+#                    samtools.view(
+#                        alignment_input,
+#                        None,
+#                        "-h"
+#                    ),
+#                    Job(
+#                        [None],
+#                        [alignment_output],
+#                        # awk to transform soft clip into hard clip for tuxedo suite
+#                        command="""\
+#                        awk 'BEGIN {{OFS="\\t"}} {{if (substr($1,1,1)=="@") {{print;next}}; split($6,C,/[0-9]*/); split($6,L,/[SMDIN]/); if (C[2]=="S") {{$10=substr($10,L[1]+1); $11=substr($11,L[1]+1)}}; if (C[length(C)]=="S") {{L1=length($10)-L[length(L)-1]; $10=substr($10,1,L1); $11=substr($11,1,L1); }}; gsub(/[0-9]*S/,"",$6); print}}' """.format()
+#                    ),
+#                    samtools.view(
+#                        "-",
+#                        alignment_output,
+#                        "-hbS"
+#                    )
+#                ],
+#                name="tuxedo_hard_clip."+ sample.name,
+#                samples=[sample]
+#            )
+#            jobs.append(job)
+#        return jobs
 
     def gatk_callable_loci(self):
         """
@@ -2294,7 +2294,7 @@ pandoc --to=markdown \\
         gtf = config.param('stringtie','gtf', param_type='filepath')
 
         for sample in self.samples:
-            input_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.hardClip.bam")
+            input_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.bam")
             output_directory = os.path.join(self.output_dirs["stringtie_directory"], sample.name)
 
             job = stringtie.stringtie(input_bam, output_directory, gtf)
@@ -2361,7 +2361,7 @@ END
 
         donejob_input_dep = []
         for sample in self.samples:
-            input_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.hardClip.bam")
+            input_bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.mdup.bam")
             output_directory = os.path.join(self.output_dirs["stringtie_directory"], sample.name)
 
             job = stringtie.stringtie(
@@ -2534,7 +2534,7 @@ END
                 self.mark_duplicates,
                 self.picard_rna_metrics,
                 self.estimate_ribosomal_rna,
-                self.bam_hard_clip,
+             #  self.bam_hard_clip,
                 self.rnaseqc,
                 self.wiggle,
                 self.raw_counts,
