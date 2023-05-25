@@ -56,7 +56,7 @@ def locatit(input,
             mode=None):
     return Job(
             [input],
-            [output, re.sub(".bam", ".bai", output)],
+            [output, re.sub(".bam", ".bai", output), re.sub(".bam", ".properties", output)],
             [
                 ['agent_locatit', 'module_java'],
                 ['agent_locatit', 'module_agent']
