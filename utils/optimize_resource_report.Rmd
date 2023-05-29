@@ -3,8 +3,8 @@ title: "optimize_resources_report.Rmd"
 date: "`r Sys.Date()`"
 # output: html_document
 # runtime: shiny
-# editor_options:
-#   chunk_output_type: console
+editor_options:
+  chunk_output_type: console
 params: 
    input: NULL
    output: NULL
@@ -19,28 +19,36 @@ output:
     df_print: paged
 ---
 
+```{r temp_setup}
+params$input <<- "~/scratch/job_output"
+params$output <<- NA
+params$name <<- "Optimize_ressource_report"
+params$verbose <<- TRUE
+params$scheduler <<- "SLURM"
+```
+
 ```{r setup}
-# knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis")
+knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis")
 
 ```
 
 ```{r lib}
 
-suppressMessages(library(dplyr, warn.conflicts = FALSE))  #avoid conflict message for duplicate functions
-suppressMessages(library(kimisc))                         #for seconds_to_hms function
-suppressMessages(library(lubridate))
-#suppressMessages(library(hms))
-suppressMessages(library(optparse))
-suppressMessages(library(DT))
-# Library for plot
-suppressMessages(library(ggplot2))
-
-#library for RMarkDown
-suppressMessages(library(knitr))
-#suppressMessages(library(markdown))
-suppressMessages(library(plotly))
-library(highcharter) 
+# suppressMessages(library(dplyr, warn.conflicts = FALSE))  #avoid conflict message for duplicate functions
+# suppressMessages(library(kimisc))                         #for seconds_to_hms function
+# suppressMessages(library(lubridate))
+# #suppressMessages(library(hms))
+# suppressMessages(library(optparse))
+# suppressMessages(library(DT))
+# # Library for plot
+# suppressMessages(library(ggplot2))
+# 
+# #library for RMarkDown
+# suppressMessages(library(knitr))
+# #suppressMessages(library(markdown))
+# suppressMessages(library(plotly))
+# library(highcharter) 
 ```
 
 ```{r folder_path_to_o_file_list}
@@ -148,6 +156,7 @@ parsed_folder <- function(folder_path_list){
       
       if(params$scheduler == "SLURM"){
         List_values <- Values_SLURM(FileInput_List)
+	#List_values <- c("JobName", "00:00:00", "00:11:00", "00:22:00", 3, 4, 5)
       }
       
       if(params$scheduler == "PBS"){
@@ -304,26 +313,29 @@ Values_SLURM <- function(FileInput_List){
   #research JobId
   JobId <<- research_Element_SLURM(FileInput_List, "JobId")
   
-  # #seff command give memory efficiency information (and more)                         ##modif
-  # #Memory_Efficiency
-  # seff_resp <<- system2(command = "seff",
-	#			stdout = TRUE, 
-	#		 	args = as.character(JobId),
-	#			#stdout = TRUE,
-	#			stderr = FALSE,
-	#			input = list())
-  # Pos_eli_time <<- grep("Memory Efficiency",seff_resp)
-  # 
-  # Memory_Efficiency <<- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
-  # Memory_Efficiency <<- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
-  # 
-  # Memory_Efficiency <<- as.numeric(as.character(Memory_Efficiency))
-  # 
-  # #Memory_Request
-  # Memory_Request <<- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][5]
+  print("JobId seff")
+  print(JobId)
   
-  Memory_Efficiency <<- NA
-  Memory_Request <<- NA
+   #seff command give memory efficiency information (and more)                         ##modif
+   #Memory_Efficiency
+   seff_resp <<- system2(command = "seff",
+				stdout = TRUE, 
+			 	args = as.character(JobId),
+				#stdout = TRUE,
+				stderr = FALSE,
+				input = list())
+   Pos_eli_time <<- grep("Memory Efficiency",seff_resp)
+   
+   Memory_Efficiency <<- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
+   Memory_Efficiency <<- strsplit(x = Memory_Efficiency, split = "%")[[1]][1]
+   
+   Memory_Efficiency <<- as.numeric(as.character(Memory_Efficiency))
+   
+   #Memory_Request
+   Memory_Request <<- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][5]
+  
+  #Memory_Efficiency <<- NA
+  #Memory_Request <<- NA
   
   return(list(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request))
 }
@@ -720,7 +732,7 @@ Keep_hour <- function(df, df2 = NA, unite = NA){
 }
 ```
 
-```{r result_csv}
+```{r result_creation}
 
 #
 job_output_path = params$input
@@ -736,6 +748,9 @@ output_path = params$output
 
 #function call with complete list of .o file
 result <- parsed_folder(job_output_path)
+
+```
+```{r result_div_register}
 
 Info_df <- result[[1]]
 
@@ -762,31 +777,31 @@ write.csv(Info_df, complete_path_name_csv, row.names=FALSE)
 ############## Custom specfific dataFrame for ploting ##########################
 #Change WaitingTime, RunTime and TimeLimit format
 
-if(!is.na(Keep_hour(DF_plot$WaitingTime))){
-	Waiting_unite <- Keep_hour(DF_plot$WaitingTime)[[2]]
-	DF_plot$WaitingTime <- Keep_hour(DF_plot$WaitingTime)[[1]]
-	Waiting_flag = TRUE
-}else{
-	Waiting_flag = FALSE
-}
+#if(!is.na(Keep_hour(DF_plot$WaitingTime))){
+#	Waiting_unite <- Keep_hour(DF_plot$WaitingTime)[[2]]
+#	DF_plot$WaitingTime <- Keep_hour(DF_plot$WaitingTime)[[1]]
+#	Waiting_flag = TRUE
+#}else{
+#	Waiting_flag = FALSE
+#}
 
-Run_Limit <- Keep_hour(DF_plot$RunTime, DF_plot$TimeLimit)
+#Run_Limit <- Keep_hour(DF_plot$RunTime, DF_plot$TimeLimit)
 
-DF_plot$RunTime <- Run_Limit[[1]]
-DF_plot$TimeLimit <- Run_Limit[[2]]     #RunTime and TimeLimit have the same format depending on RunTime values
-Time_unite <- Run_Limit[[3]]            #unite associated with RunTime and TimeLimit columns for plot
+#DF_plot$RunTime <- Run_Limit[[1]]
+#DF_plot$TimeLimit <- Run_Limit[[2]]     #RunTime and TimeLimit have the same format depending on RunTime values
+#Time_unite <- Run_Limit[[3]]            #unite associated with RunTime and TimeLimit columns for plot
 
 #computing percentage amount for RunTime compared to TimeLimit
-DF_plot$RunTime_Efficiency <- round((DF_plot$RunTime / DF_plot$TimeLimit) *100, 1)
+#DF_plot$RunTime_Efficiency <- round((DF_plot$RunTime / DF_plot$TimeLimit) *100, 1)
 
 #compute maximal Efficiency for each step
-DF_max_Eff <- DF_plot[c(1, 8)] %>% group_by(JobName) %>% top_n(1, RunTime_Efficiency)
+#DF_max_Eff <- DF_plot[c(1, 8)] %>% group_by(JobName) %>% top_n(1, RunTime_Efficiency)
 
 #Merge DF_max_Eff with DF_plot
-DF_plot <- merge(DF_plot, DF_max_Eff, by = "JobName")
+#DF_plot <- merge(DF_plot, DF_max_Eff, by = "JobName")
 
 #Change Memory_Request column type to numeric
-DF_plot$Memory_Request <- as.numeric(DF_plot$Memory_Request)
+#DF_plot$Memory_Request <- as.numeric(DF_plot$Memory_Request)
 ```
 
 ```{r comm}
@@ -926,24 +941,24 @@ DF_plot$Memory_Request <- as.numeric(DF_plot$Memory_Request)
 
 
 ```{r verbose, condition, eval=params$verbose, results='asis', echo=FALSE}
-cat("*** \n ")
+#cat("*** \n ")
 
-cat('\n##', "Verbose", '\n')
+#cat('\n##', "Verbose", '\n')
 
-cat(" \n ")
+#cat(" \n ")
 
 #Total steps
-cat(" \n ", paste(nrow(DF_plot),"files parsed." ," \n ", sep = " "))
+#cat(" \n ", paste(nrow(DF_plot),"files parsed." ," \n ", sep = " "))
 
 #Total differents steps
-cat(paste(nrow(Info_df),"differents steps in total among all files." ,"\n", sep = " "))
+#cat(paste(nrow(Info_df),"differents steps in total among all files." ,"\n", sep = " "))
 
 #Absolute path if the one gived is relative
 #cat(paste("", opt$in_path,"\n", sep = " ")) 
 
-cat("\n")
+#cat("\n")
 
-cat(paste(params$scheduler,"choosed" ,"\n", sep = " "))
+#cat(paste(params$scheduler,"choosed" ,"\n", sep = " "))
 
 
 ```
@@ -951,46 +966,46 @@ cat(paste(params$scheduler,"choosed" ,"\n", sep = " "))
 ***
 ## WaitingTime plot
 
-This plot represent the time spend in queue for each step. 
+#This plot represent the time spend in queue for each step. 
 
 ```{r p_WaitingTime, echo=FALSE, fig.height=10, out.width = '100%'}
-if(Waiting_flag){
-	dat1 <- data_to_boxplot(data = DF_plot,
-                       variable = WaitingTime,
-                       group_var = JobName, 
-                       name = paste(c("WaitingTime (", Waiting_unite, ")"), collapse ="")	)
+#if(Waiting_flag){
+#	dat1 <- data_to_boxplot(data = DF_plot,
+#                       variable = WaitingTime,
+#                       group_var = JobName, 
+#                       name = paste(c("WaitingTime (", Waiting_unite, ")"), collapse ="")	)
 
-	highchart() %>%
-  	hc_xAxis(type = "category") %>%
-  	hc_add_series_list(dat1)%>%
-  	hc_chart(type = "bar",
-           	height = "800px")
-}
+#	highchart() %>%
+#  	hc_xAxis(type = "category") %>%
+#  	hc_add_series_list(dat1)%>%
+#  	hc_chart(type = "bar",
+#           	height = "800px")
+#}
 
 ```
 ***
 ## RunTime plot
 
-This plot represent the running time for each steps and the associated efficiency compare to the time limit. The efficiency compare requested resources and  resources used.
+#This plot represent the running time for each steps and the associated efficiency compare to the time limit. The efficiency compare requested resources and  resources used.
 
 ```{r p_RunTime, echo=FALSE, fig.height=14, out.width = '100%'}
 
-dat1 <- data_to_boxplot(data = DF_plot,
-                       variable = RunTime,
-                       group_var = JobName,
-                       name = paste(c("RunTime (", Time_unite, ")"), collapse =""))
+#dat1 <- data_to_boxplot(data = DF_plot,
+#                       variable = RunTime,
+#                       group_var = JobName,
+#                       name = paste(c("RunTime (", Time_unite, ")"), collapse =""))
 
-dat2 <- data_to_boxplot(data = DF_plot,
-                       variable = RunTime_Efficiency.y,
-                       group_var = JobName,
-                       name = "RunTime_Efficiency (%)")
+#dat2 <- data_to_boxplot(data = DF_plot,
+#                       variable = RunTime_Efficiency.y,
+#                       group_var = JobName,
+#                       name = "RunTime_Efficiency (%)")
 
-highchart() %>%
-  hc_xAxis(type = "category") %>%
-  hc_add_series_list(dat1)%>%
-  hc_add_series_list(dat2)%>%
-  hc_chart(type = "bar",
-           height = "1000px")
+#highchart() %>%
+#  hc_xAxis(type = "category") %>%
+#  hc_add_series_list(dat1)%>%
+#  hc_add_series_list(dat2)%>%
+#  hc_chart(type = "bar",
+#           height = "1000px")
 
 # highchart() %>%
 #   # hc_xAxis(type = "category") %>%
@@ -1030,24 +1045,24 @@ highchart() %>%
 ***
 ## Memory plot
 
-This plot represent the amount of memory required and the associated efficiency. 
+#This plot represent the amount of memory required and the associated efficiency. 
 
 ```{r p_Memory, echo=FALSE}
-dat1 <- data_to_boxplot(data = DF_plot,
-                       variable = Memory_Request,
-                       group_var = JobName, 
-                       name = "Memory_Request (GB)")
+#dat1 <- data_to_boxplot(data = DF_plot,
+#                       variable = Memory_Request,
+#                       group_var = JobName, 
+#                       name = "Memory_Request (GB)")
 
-dat2 <- data_to_boxplot(data = DF_plot,
-                       variable = Memory_Efficiency,
-                       group_var = JobName, 
-                       name = "Memory_Efficiency (%)")
+#dat2 <- data_to_boxplot(data = DF_plot,
+#                       variable = Memory_Efficiency,
+#                       group_var = JobName, 
+#                       name = "Memory_Efficiency (%)")
 
-highchart() %>%
-  hc_xAxis(type = "category") %>%
-  hc_add_series_list(dat1)%>%
-  hc_add_series_list(dat2)%>%
-  hc_chart(type = "bar",
-           height = "1000px")
+#highchart() %>%
+#  hc_xAxis(type = "category") %>%
+#  hc_add_series_list(dat1)%>%
+#  hc_add_series_list(dat2)%>%
+#  hc_chart(type = "bar",
+#           height = "1000px")
 
 ```
