@@ -19,7 +19,7 @@ output:
     df_print: paged
 ---
 
-```{r temp_setup}
+```{r temp_setup, echo = FALSE}
 #params$input <<- "/Users/mleguen/Documents/local/projet/optimize_resources_report"
 #params$output <<- NA
 #params$name <<- "Optimize_ressource_report"
@@ -27,13 +27,13 @@ output:
 #params$scheduler <<- "SLURM"
 ```
 
-```{r setup}
+```{r setup, echo = FALSE}
 #knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis")
 
 ```
 
-```{r lib}
+```{r lib, echo = FALSE}
 
 suppressMessages(library(dplyr, warn.conflicts = FALSE))  #avoid conflict message for duplicate functions
 suppressMessages(library(kimisc))                         #for seconds_to_hms function
@@ -51,7 +51,7 @@ suppressMessages(library(plotly))
 library(highcharter)
 ```
 
-```{r folder_path_to_o_file_list}
+```{r folder_path_to_o_file_list, echo = FALSE}
 
 folder_path_to_o_file_list <- function(job_output_path){
   #IN : folder path as character
@@ -106,7 +106,7 @@ folder_path_to_o_file_list <- function(job_output_path){
 }
 ```
 
-```{r parsed_folder}
+```{r parsed_folder, echo = FALSE}
 parsed_folder <- function(folder_path_list){
   #IN :   list of .o file path
   #OUT :  dataset containing wanted information from these files
@@ -283,7 +283,7 @@ parsed_folder <- function(folder_path_list){
 }
 ```
 
-```{r Values_SLURM}
+```{r Values_SLURM, echo = FALSE}
 Values_SLURM <- function(FileInput_List){
   #IN : inputFile as a space separated list
   #out : list of all researched values into the input list
@@ -385,7 +385,7 @@ research_Element_SLURM <- function(Input_file, Researched_element){
 }
 ```
 
-```{r Values_PBS}
+```{r Values_PBS, echo = FALSE}
 
 Values_PBS <- function(FileInput_List){
   #IN : inputFile as a space separated list
@@ -568,7 +568,7 @@ research_Element_PBS <- function(Input_file, Researched_element){
 }
 ```
 
-```{r ChangeWaitingTimeFormat}
+```{r ChangeWaitingTimeFormat, echo = FALSE}
 
 ChangeWaitingTimeFormat <- function(df){
   #IN : WaitingTime column as dataframe with random format
@@ -607,7 +607,7 @@ ChangeWaitingTimeFormat <- function(df){
 }
 ```
 
-```{r day_into_hours}
+```{r day_into_hours, echo = FALSE}
 day_into_hours <- function(df){
   #IN :   data.frame object containing D-H:M:S format values
   #OUT :  data.frame object containing H:M:S format values where days are turned into hours 
@@ -642,7 +642,7 @@ day_into_hours <- function(df){
 }
 ```
 
-```{r add_0_time}
+```{r add_0_time, echo = FALSE}
 add_0_time <- function(number){
   #IN :   a number object
   #OUT :  same number with a 0 in front of it if it's smaller than 10
@@ -658,7 +658,7 @@ add_0_time <- function(number){
 }
 ```
 
-```{r String_to_Date}
+```{r String_to_Date, echo = FALSE}
 String_to_Date <- function(stringD){
   #IN : date as character type
   #OUT : date as Date type
@@ -669,7 +669,7 @@ String_to_Date <- function(stringD){
 }
 ```
 
-```{r mean_value}
+```{r mean_value, echo = FALSE}
 mean_value <- function(df){
   #IN : dataframe column containing numerical values or h:m:s values with character type
   #OUT : mean value of the dataframe column with character type
@@ -699,7 +699,7 @@ mean_value <- function(df){
 }
 ```
 
-```{r Keep_hour}
+```{r Keep_hour, echo = FALSE}
 Keep_hour <- function(df, df2 = NA, unite = NA){
   #Keep only hours or minutes or seconds depending on the value
   #IN : dataframe containing H:M:S values
@@ -741,7 +741,7 @@ Keep_hour <- function(df, df2 = NA, unite = NA){
 }
 ```
 
-```{r result_creation}
+```{r result_creation, echo = FALSE}
 
 #temp_setup
 job_output_path = params$input
@@ -760,7 +760,7 @@ result <- parsed_folder(job_output_path)
 
 ```
 
-```{r result_div_register}
+```{r result_div_register, echo = FALSE}
 
 Info_df <- result[[1]]
 DF_plot <- result[[2]]
@@ -780,7 +780,7 @@ write.csv(Info_df, complete_path_name_csv, row.names=FALSE)
 ```
 
 
-```{r plot}
+```{r plot, echo = FALSE}
 ############## Custom specfific dataFrame for ploting ##########################
 #Change WaitingTime, RunTime and TimeLimit format
 
@@ -812,7 +812,7 @@ DF_plot$Memory_Request <- as.numeric(DF_plot$Memory_Request)
 ```
 
 
-```{r comm}
+```{r comm, echo = FALSE}
 ############## WaitingTime Plot ################################################
 
 # p_WaitingTime <- ggplot(DF_plot, aes(x=as.factor(JobName), y=WaitingTime, label= as.numeric(WaitingTime))) + 
