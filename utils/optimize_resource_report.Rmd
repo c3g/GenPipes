@@ -28,8 +28,8 @@ output:
 ```
 
 ```{r setup}
-knitr::opts_chunk$set(echo = TRUE)
-#knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis")
+#knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis")
 
 ```
 
@@ -423,8 +423,8 @@ Values_PBS <- function(FileInput_List){
   Memory_use_kb <<- research_Element_PBS(FileInput_List, "Resources") 
   Memory_use_kb <<- strsplit(x = Memory_use_kb, split = "=")[[1]][4]
   Memory_use_kb <<- as.numeric(strsplit(x = Memory_use_kb, split = "kb" )[[1]][1])
-  Memory_use_Gb <<- Memory_use_kb / 8e+08
-  
+  Memory_use_Gb <<- Memory_use_kb / 1e+06
+  Memory_use_Gb <<- signif(Memory_use_Gb, digits = 2) 
   
   #research JobId
   JobId <<- research_Element_PBS(FileInput_List, "ID")         #OK
@@ -747,7 +747,7 @@ Keep_hour <- function(df, df2 = NA, unite = NA){
 job_output_path = params$input
 output_path = params$output
 
-job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
+#job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
 #job_output_path = "/scratch/matteol/genpipes_test/job_output"
 
 
@@ -947,7 +947,7 @@ DF_plot$Memory_Request <- as.numeric(DF_plot$Memory_Request)
 ```
 
 
-```{r verbose, condition, eval=params$verbose, results='asis', echo=FALSE}
+```{r verbose, condition, eval=params$verbose, echo = FALSE}
 #temp_setup
 cat("*** \n ")
 
@@ -956,17 +956,16 @@ cat('\n##', "Verbose", '\n')
 cat(" \n ")
 
 #Total steps
-cat(" \n ", paste(nrow(DF_plot),"files parsed." ," \n ", sep = " "))
+cat(paste0("**",nrow(DF_plot),"** files parsed." ,"  \n"))
 
 #Total differents steps
-cat(paste(nrow(Info_df),"differents steps in total among all files." ,"\n", sep = " "))
+cat(paste0("**", nrow(Info_df),"** differents steps in total among all files." ,"  \n"))
 
 #Absolute path if the one gived is relative
-cat(paste("", opt$in_path,"\n", sep = " "))
+cat(paste0("**", opt$in_path,"**  \n"))
 
-cat("\n")
-
-cat(paste(params$scheduler,"choosed" ,"\n", sep = " "))
+#scheduler choosed
+cat(paste0("**", params$scheduler,"** choosed"))
 
 
 ```
@@ -974,7 +973,7 @@ cat(paste(params$scheduler,"choosed" ,"\n", sep = " "))
 ***
 ## WaitingTime plot
 
-#This plot represent the time spend in queue for each step. 
+This plot represent the time spend in queue for each step. Boxplot gives average, lower and longer time spent in queue.
 
 ```{r p_WaitingTime, echo=FALSE, fig.height=10, out.width = '100%'}
 if(Waiting_flag){
@@ -988,15 +987,19 @@ highchart() %>%
  	hc_add_series_list(dat1)%>%
  	hc_chart(type = "bar",
           	height = "800px")
+}else{
+cat("**WaitingTime plot hasn't been displayed since no values have been found**")
+
 }
 
 ```
+
 ***
 ## RunTime plot
 
-#This plot represent the running time for each steps and the associated efficiency compare to the time limit. The efficiency compare requested resources and  resources used.
+This plot represent the running time for each steps and the associated efficiency compare to the time limit. The efficiency compare requested resources and  resources used.
 
-```{r p_RunTime, echo=FALSE, fig.height=14, out.width = '100%'}
+```{r p_RunTime, fig.height=14, out.width = '100%'}
 
 dat1 <- data_to_boxplot(data = DF_plot,
                       variable = RunTime,
@@ -1012,8 +1015,7 @@ highchart() %>%
  hc_xAxis(type = "category") %>%
  hc_add_series_list(dat1)%>%
  hc_add_series_list(dat2)%>%
- hc_chart(type = "bar",
-          height = "1000px")
+ hc_chart(type = "bar")
 
 # highchart() %>%
 #   # hc_xAxis(type = "category") %>%
@@ -1053,9 +1055,9 @@ highchart() %>%
 ***
 ## Memory plot
 
-#This plot represent the amount of memory required and the associated efficiency. 
+This plot represent the amount of memory required and the associated efficiency. 
 
-```{r p_Memory, echo=FALSE}
+```{r p_Memory}
 dat1 <- data_to_boxplot(data = DF_plot,
                       variable = Memory_Request,
                       group_var = JobName,
@@ -1070,7 +1072,6 @@ highchart() %>%
  hc_xAxis(type = "category") %>%
  hc_add_series_list(dat1)%>%
  hc_add_series_list(dat2)%>%
- hc_chart(type = "bar",
-          height = "1000px")
+ hc_chart(type = "bar")
 
 ```
