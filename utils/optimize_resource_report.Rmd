@@ -101,7 +101,7 @@ folder_path_to_o_file_list <- function(job_output_path){
     o_files_list <- append(o_files_list,new_list)
     
   }
-  print(o_files_list) #modif
+  #print(o_files_list) #modif
   return (o_files_list)
 }
 ```
@@ -133,7 +133,7 @@ parsed_folder <- function(folder_path_list){
                           Memory_Request = as.numeric())
   
   for (i in file_path_list){
-    print("-----NEW FOLDER-----")
+    #print("-----NEW FOLDER-----")
     #Create temporary dataframe 
     # Info_df_temp <- data.frame(	JobName = as.character(),
     #                             WaitingTime = as.character(),
@@ -144,7 +144,7 @@ parsed_folder <- function(folder_path_list){
     #                             Memory_Request = as.numeric())
     
     for (j in i){
-      print("-----NEW .O FILE-----") 
+      #print("-----NEW .O FILE-----") 
       #file reading
       FileInput = readLines(j)
       
@@ -164,9 +164,9 @@ parsed_folder <- function(folder_path_list){
         List_values <<- Values_PBS(FileInput_List)
       }
 
-      print("VALUES TROUVEES") #modif
-      print(List_values)
-      print("\n")
+      #print("VALUES TROUVEES") #modif
+      #print(List_values)
+      #print("\n")
       
       # #fill df_info with new information and rename columns
       # df_info <- data.frame(List_values)
@@ -177,9 +177,9 @@ parsed_folder <- function(folder_path_list){
       Info_df[nrow(Info_df)+1 ,] <- List_values
 
       
-      print("Info_df") #modif
-      #print(datatable(Info_df))
-      print("\n")
+      #print("Info_df") #modif
+      ##print(datatable(Info_df))
+      #print("\n")
       
       # Info_df_temp <- rbind(Info_df_temp, df_info)
       
@@ -219,7 +219,7 @@ parsed_folder <- function(folder_path_list){
     # }
     
     
-    # print("INFO_DF AVANT BIND")
+    # #print("INFO_DF AVANT BIND")
     # print(Info_df_temp) 
     #put Info_df_temp at the end of the main dataframe containing all information
     #Info_df <- rbind(Info_df, as.data.frame(Info_df_temp))
@@ -230,8 +230,8 @@ parsed_folder <- function(folder_path_list){
     # print(Info_df)
  
   }
-  print("Info_df avant modif")
-  print(Info_df)
+  #print("Info_df avant modif")
+  #print(Info_df)
   
   #change dataframe name
   #names(Info_df) <- c("JobName", "WaitingTime", "RunTime", "TimeLimit", "NumCPUs", "Memory_Efficiency", "Memory_Request")
@@ -245,20 +245,20 @@ parsed_folder <- function(folder_path_list){
   #change RunTime format
   Info_df$RunTime <- day_into_hours(Info_df$RunTime)
   
-  print("Info_df : RunTime et TimeLimit format")
-  print(Info_df)
+  #print("Info_df : RunTime et TimeLimit format")
+  #print(Info_df)
   
   #Change WaitingTime format
   Info_df$WaitingTime <- ChangeWaitingTimeFormat(Info_df$WaitingTime)
   
-  print("Info_df WaitingTime format")
-  print(Info_df)
+  #print("Info_df WaitingTime format")
+  #print(Info_df)
   
   #Specfific dataframe for ploting
   DF_plot <- Info_df
   
-  print("DF_plot après copie")
-  print(DF_plot)
+  #print("DF_plot après copie")
+  #print(DF_plot)
   
   #keep average value for each job in Info_df
   Info_df <- Info_df %>% group_by(JobName) %>%
@@ -270,8 +270,8 @@ parsed_folder <- function(folder_path_list){
 				   Memory_Request = Memory_Request %>% mean_value())
 
   
-  print("Info_df keep moyenne pour chaque step")
-  print(Info_df)
+  #print("Info_df keep moyenne pour chaque step")
+  #print(Info_df)
   
   #Change WaitingTime format
   # Info_df$WaitingTime <- ChangeWaitingTimeFormat(Info_df$WaitingTime)
@@ -314,9 +314,9 @@ Values_SLURM <- function(FileInput_List){
   #research JobId
   JobId <<- research_Element_SLURM(FileInput_List, "JobId")
   
-  print("type JobId & JobId seff")
-  print(typeof(JobId))
-  print(JobId)
+  #print("type JobId & JobId seff")
+  #print(typeof(JobId))
+  #print(JobId)
   
   out <- tryCatch(
     {
@@ -345,8 +345,8 @@ Values_SLURM <- function(FileInput_List){
     }
   )
   
-  print("out :")
-  print(out)
+  #print("out :")
+  #print(out)
   
   Memory_Efficiency <<- out[1]
   Memory_Request <<- out[2]
@@ -676,8 +676,8 @@ mean_value <- function(df){
   
   #case where df contain character values
   if (is.character(df)){
-	print("DF MOYENNE")
-	print(df)
+	#print("DF MOYENNE")
+	#print(df)
     df <- df %>%
       hms() %>%
       period_to_seconds() %>%
@@ -686,8 +686,8 @@ mean_value <- function(df){
       seconds_to_period() %>%
       hms::hms()
       #seconds.to.hms()
-    print("DF APRES MOYENNE CHARACT")
-    print(df)
+    #print("DF APRES MOYENNE CHARACT")
+    #print(df)
 
     # df already contain numerical values
   }else{
@@ -778,6 +778,7 @@ complete_path_name_csv <- paste(c(complete_path_name,"csv"), collapse =".")
 #Write csv in job_output folder
 write.csv(Info_df, complete_path_name_csv, row.names=FALSE)
 ```
+
 
 ```{r plot}
 ############## Custom specfific dataFrame for ploting ##########################
@@ -962,10 +963,10 @@ cat(paste0("**",nrow(DF_plot),"** files parsed." ,"  \n"))
 cat(paste0("**", nrow(Info_df),"** differents steps in total among all files." ,"  \n"))
 
 #Absolute path if the one gived is relative
-cat(paste0("**", opt$in_path,"**  \n"))
+cat(paste0("Path used : **", opt$in_path,"**  \n"))
 
 #scheduler choosed
-cat(paste0("**", params$scheduler,"** choosed"))
+cat(paste0("Scheduler choosed : **", params$scheduler,"**"))
 
 
 ```
@@ -1017,45 +1018,10 @@ highchart() %>%
  hc_add_series_list(dat2)%>%
  hc_chart(type = "bar")
 
-# highchart() %>%
-#   # hc_xAxis(type = "category") %>%
-#   # hc_chart(type = "bar",
-#   #          height = "1000px")%>%
-#   hc_yAxis_multiples(list(title = list(text = "RunTime_Efficiency (%)"),
-#                           labels=list(format = '{value}%'),
-#                           min=0,
-#                           max=100,
-#                           showFirstLabel = TRUE,
-#                           showLastLabel=TRUE,
-#                           opposite = FALSE),
-#                        
-#                      list(title = list(text = paste(c("RunTime (", Time_unite, ")"), collapse ="")),
-#                           min=5,
-#                           max = max(DF_plot$RunTime),
-#                           labels = list(format = "{value}"),
-#                           showLastLabel = FALSE,
-#                           opposite = TRUE)) %>%
-#     
-#     #hc_plotOptions(column = list(stacking = "normal")) %>%
-#     hc_add_series(DF_plot,
-#                   type="point",
-#                   hcaes(x=JobName,
-#                         y=RunTime_Efficiency.y,
-#                         group=JobName
-#                         ),
-#                         yAxis=1) %>%
-#     hc_add_series(DF_plot,
-#                   type="point",
-#                   hcaes(x=JobName,
-#                         y=RunTime,
-#                         group=JobName
-#                         ))
-
 ```
 ***
-## Memory plot
 
-This plot represent the amount of memory required and the associated efficiency. 
+## Memory plot
 
 ```{r p_Memory}
 dat1 <- data_to_boxplot(data = DF_plot,
@@ -1063,15 +1029,35 @@ dat1 <- data_to_boxplot(data = DF_plot,
                       group_var = JobName,
                       name = "Memory_Request (GB)")
 
-dat2 <- data_to_boxplot(data = DF_plot,
+##### WARNING #####
+# Memory_efficiency is displayed only if SLURM scheduler is chosen. PBS scheduler make mandatory to have 5Go of memory per CPU used.
+# This parameter is fixed but could be changed in the future.
+##### WARNING #####
+
+if (params$scheduler == "SLURM"){
+  # SLURM scheduler used, memory efficiency is available and displayed
+  
+  cat("This plot represent the amount of memory required and the associated efficiency.") 
+  
+  dat2 <- data_to_boxplot(data = DF_plot,
                       variable = Memory_Efficiency,
                       group_var = JobName,
                       name = "Memory_Efficiency (%)")
-
-highchart() %>%
- hc_xAxis(type = "category") %>%
- hc_add_series_list(dat1)%>%
- hc_add_series_list(dat2)%>%
- hc_chart(type = "bar")
-
+  
+  highchart() %>%
+   hc_xAxis(type = "category") %>%
+   hc_add_series_list(dat1) %>%
+   hc_add_series_list(dat2) %>%
+   hc_chart(type = "bar")
+  
+}else{
+  
+  cat("**When PBS scheduler is chosen, memory efficiency isn't available. Memory use can't be modified so this plot is only made for information.**")
+  
+  #PBS scheduler used, no memory efficiency
+  highchart() %>%
+   hc_xAxis(type = "category") %>%
+   hc_add_series_list(dat1) %>%
+   hc_chart(type = "bar")
+}
 ```
