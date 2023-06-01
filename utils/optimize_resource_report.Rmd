@@ -1036,7 +1036,7 @@ dat1 <- data_to_boxplot(data = DF_plot,
 
 if (params$scheduler == "SLURM"){
   # SLURM scheduler used, memory efficiency is available and displayed
-  if(!is.na(DF_plot$Memory_Efficiency)){  
+  if(all(!is.na(DF_plot$Memory_Efficiency))){  
     cat("This plot represent the amount of memory required and the associated efficiency.") 
   
     dat2 <- data_to_boxplot(data = DF_plot,
