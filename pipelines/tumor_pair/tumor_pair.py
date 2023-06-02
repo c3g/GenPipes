@@ -2113,19 +2113,13 @@ echo -e "{normal_name}\\t{tumor_name}" \\
         metrics_directory = os.path.join(self.output_dirs['metrics_directory'], "dna")
         for tumor_pair in self.tumor_pairs.values():
             output = os.path.join(metrics_directory, tumor_pair.name + ".multiqc")
-            jobs.append(
-                concat_jobs(
-                    [
-                        multiqc.run(
-                            self.output_dirs['report'][tumor_pair.name],
-                            output
-                        )
-                    ],
-                    name="multiqc." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                    input_dependency=self.multiqc_inputs[tumor_pair.name]
-                )
+            job = multiqc.run(
+                self.output_dirs['report'][tumor_pair.name],
+                output
             )
+            job.name="multiqc." + tumor_pair.name,
+            job.samples=[tumor_pair.normal, tumor_pair.tumor],
+            job.input_files=self.multiqc_inputs[tumor_pair.name]
         return jobs
 
     def sym_link_report(self):
