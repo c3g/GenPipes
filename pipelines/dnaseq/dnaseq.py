@@ -1444,7 +1444,6 @@ END
         )
         job.name = "multiqc_all_samples"
         job.samples = self.samples
-        log.debug(self.multiqc_inputs)
         job.input_files = self.multiqc_inputs
         jobs.append(job)
 

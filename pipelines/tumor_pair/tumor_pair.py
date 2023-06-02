@@ -2120,6 +2120,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             job.name="multiqc." + tumor_pair.name,
             job.samples=[tumor_pair.normal, tumor_pair.tumor],
             job.input_files=self.multiqc_inputs[tumor_pair.name]
+            jobs.append(job)
         return jobs
 
     def sym_link_report(self):
