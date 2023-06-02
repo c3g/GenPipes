@@ -123,14 +123,15 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  INPUT={input} \\
  OUTPUT={output} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_collect_multiple_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_multiple_metrics', 'java_other_options'),
-            ram=config.param('picard_collect_multiple_metrics', 'ram'),
-            reference_sequence=reference_sequence if reference_sequence else config.param('picard_collect_multiple_metrics', 'genome_fasta', param_type='filepath'),
-            input=input,
-            output=output,
-            max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
-            )
+                tmp_dir=config.param('picard_collect_multiple_metrics', 'tmp_dir'),
+                java_other_options=config.param('picard_collect_multiple_metrics', 'java_other_options'),
+                ram=config.param('picard_collect_multiple_metrics', 'ram'),
+                reference_sequence=reference_sequence if reference_sequence else config.param('picard_collect_multiple_metrics', 'genome_fasta', param_type='filepath'),
+                input=input,
+                output=output,
+                max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
+            ),
+            report_files=outputs
         )
 
 def fix_mate_information(input, output):

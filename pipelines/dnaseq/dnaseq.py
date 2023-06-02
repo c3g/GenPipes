@@ -126,6 +126,16 @@ class DnaSeqRaw(common.Illumina):
         return dirs
 
     @property
+    def multiqc_inputs(self):
+        if not hasattr(self, "_multiqc_inputs"):
+            self._multiqc_inputs = []
+        return self._multiqc_inputs
+
+    @multiqc_inputs.setter
+    def multiqc_inputs(self, value):
+        self._multiqc_inputs = value
+
+    @property
     def sequence_dictionary(self):
         if not hasattr(self, "_sequence_dictionary"):
             self._sequence_dictionary = parse_sequence_dictionary_file(config.param('DEFAULT', 'genome_dictionary', param_type='filepath'), variant=True)
@@ -1181,7 +1191,6 @@ END
                     [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
                 ]
             )
-            # log.info(input)
             mkdir_job = bash.mkdir(
                 picard_directory,
                 remove=True
@@ -1206,29 +1215,43 @@ END
                 concat_jobs(
                     [
                         mkdir_job,
+                        bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
                         gatk4.collect_oxog_metrics(
                             input,
                             os.path.join(picard_directory, sample.name + ".oxog_metrics.txt")
+                        ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(picard_directory, sample.name + ".oxog_metrics.txt"), os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, sample.name + ".oxog_metrics.txt"),
+                            input=os.path.join(picard_directory, sample.name + ".oxog_metrics.txt")
                         )
                     ],
                     name="picard_collect_oxog_metrics." + sample.name,
                     samples=[sample]
                 )
             )
+            self.multiqc_inputs.append(os.path.join(picard_directory, sample.name + ".oxog_metrics.txt"))
 
             jobs.append(
                 concat_jobs(
                     [
                         mkdir_job,
+                        bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
                         gatk4.collect_gcbias_metrics(
                             input,
                             os.path.join(picard_directory, sample.name)
+                        ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(picard_directory, sample.name + ".gcbias_metrics.txt"), os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, sample.name + ".gcbias_metrics.txt"),
+                            input=os.path.join(picard_directory, sample.name + ".gcbias_metrics.txt")
                         )
                     ],
                     name="picard_collect_gcbias_metrics." + sample.name,
                     samples=[sample]
                 )
             )
+            self.multiqc_inputs.append(os.path.join(picard_directory, sample.name + ".gcbias_metrics.txt"))
 
         return jobs
 
@@ -1274,18 +1297,25 @@ END
                             qualimap_directory,
                             remove=False
                         ),
+                        bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
                         qualimap.bamqc(
                             input,
                             qualimap_directory,
                             output,
                             options,
                             'dna_sample_qualimap'
+                        ),
+                        bash.ln(
+                            os.path.relpath(output, os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, os.path.basename(output)),
+                            input=output
                         )
                     ],
                     name="dna_sample_qualimap."+sample.name,
                     samples=[sample]
                 )
             )
+            self.multiqc_inputs.append(output)
         return jobs
 
     def metrics_dna_sambamba_flagstat(self):
@@ -1372,6 +1402,7 @@ END
                             output_dir,
                             remove=True
                         ),
+                        bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
                         adapter_job,
                         fastqc.fastqc(
                             input,
@@ -1379,12 +1410,18 @@ END
                             output_dir,
                             output,
                             adapter_file
+                        ),
+                        bash.ln(
+                            os.path.relpath(output, os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, os.path.basename(output)),
+                            input=output
                         )
                     ],
                     name="fastqc."+sample.name,
                     samples=[sample]
                 )
             )
+            self.multiqc_inputs.append(output)
 
         return jobs
 
@@ -1398,40 +1435,17 @@ END
 
         jobs = []
 
-        metrics_directory = os.path.join(self.output_dirs['metrics_directory'], "dna")
-        input_dep = []
-        inputs = []
-        for sample in self.samples:
-            input_oxog = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".oxog_metrics.txt")
-            input_gcbias = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".gcbias_metrics.txt")
-            input_all_picard = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".all.metrics.quality_distribution.pdf")
-            input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", sample.name, "genome_results.txt")
-            [input_fastqc] = self.select_input_files(
-                [
-                    [os.path.join(metrics_directory, sample.name, "fastqc", sample.name + ".sorted.dup_fastqc.zip")],
-                    [os.path.join(metrics_directory, sample.name, "fastqc", sample.name + "_fastqc.zip")],
-                ]
-            )
-
-            input_dep += [
-                input_oxog,
-                input_gcbias,
-                input_all_picard,
-                input_qualimap,
-                input_fastqc
-            ]
-
-            inputs += [os.path.join(metrics_directory, sample.name)]
-
-        output = os.path.join(metrics_directory, "multiqc_report")
+        multiqc_input_path = os.path.join(self.output_dirs['report_directory'], "multiqc_inputs")
+        output = os.path.join(self.output_dirs['metrics_directory'], "multiqc_report")
 
         job = multiqc.run(
-            input_dep,
+            [multiqc_input_path],
             output
         )
         job.name = "multiqc_all_samples"
         job.samples = self.samples
-
+        log.debug(self.multiqc_inputs)
+        job.input_files = self.multiqc_inputs
         jobs.append(job)
 
         return jobs
@@ -1471,47 +1485,85 @@ END
             )
             input_file_prefix = re.sub("bam$", "", input)
 
-            job = gatk4.collect_multiple_metrics(
-                input,
-                input_file_prefix + "all.metrics",
-                library_type=library[sample]
+            mkdir_job_normal = bash.mkdir(
+                os.path.dirname(input_file_prefix),
+                remove=True
             )
-            job.name = "picard_collect_multiple_metrics." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
+
+            collect_multiple_metrics_normal_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                    gatk4.collect_multiple_metrics(
+                        input,
+                        input_file_prefix + "all.metrics",
+                        library_type=library[sample]
+                    ),
+                ]
+            )
+            for outfile in collect_multiple_metrics_normal_job.report_files:
+                self.multiqc_inputs.append(outfile)
+                collect_multiple_metrics_normal_job = concat_jobs(
+                    [
+                        collect_multiple_metrics_normal_job,
+                        bash.ln(
+                            os.path.relpath(outfile, os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, os.path.basename(outfile)),
+                            input=outfile
+                        )
+                    ]
+                )
+            collect_multiple_metrics_normal_job.name = "picard_collect_multiple_metrics." + sample.name
+            collect_multiple_metrics_normal_job.samples = [sample]
+            jobs.append(collect_multiple_metrics_normal_job)
 
             # Compute genome coverage with gatk4
-            job = gatk4.depth_of_coverage(
-                input,
-                input_file_prefix + "all.coverage",
-                bvatools.resolve_readset_coverage_bed(
-                    sample.readsets[0]
-                )
+            gatk_depth_of_coverage_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    gatk4.depth_of_coverage(
+                        input,
+                        input_file_prefix + "all.coverage",
+                        bvatools.resolve_readset_coverage_bed(
+                            sample.readsets[0]
+                        )
+                    ),
+                ],
+                name="gatk_depth_of_coverage." + sample.name + ".genome",
+                samples=[sample]
             )
-            job.name = "gatk_depth_of_coverage." + sample.name + ".genome"
-            job.samples = [sample]
-            jobs.append(job)
+            jobs.append(gatk_depth_of_coverage_job)
 
             # Compute genome or target coverage with BVATools
-            job = bvatools.depth_of_coverage(
-                input,
-                input_file_prefix + "coverage.tsv",
-                bvatools.resolve_readset_coverage_bed(
-                    sample.readsets[0]
-                ),
-                other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
+            bvatools_depth_of_coverage_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    bvatools.depth_of_coverage(
+                        input,
+                        input_file_prefix + "coverage.tsv",
+                        bvatools.resolve_readset_coverage_bed(
+                            sample.readsets[0]
+                        ),
+                        other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
+                    )
+                ],
+                name="bvatools_depth_of_coverage." + sample.name,
+                samples=[sample]
             )
-            job.name = "bvatools_depth_of_coverage." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
+            jobs.append(bvatools_depth_of_coverage_job)
 
-            job = igvtools.compute_tdf(
-                input,
-                re.sub("\.bam$", ".tdf", input)
+            igvtools_compute_tdf_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    igvtools.compute_tdf(
+                        input,
+                        re.sub("\.bam$", ".tdf", input)
+                    )
+                ],
+                name="igvtools_compute_tdf." + sample.name,
+                samples=[sample]
             )
-            job.name = "igvtools_compute_tdf." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
+            jobs.append(igvtools_compute_tdf_job)
 
         return jobs
 

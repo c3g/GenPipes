@@ -74,14 +74,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  BAIT_INTERVALS={baits} \\
  TARGET_INTERVALS={intervals} \\
  REFERENCE_SEQUENCE={reference_sequence}""".format(
-            tmp_dir=config.param('picard_calculate_hs_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_calculate_hs_metrics', 'java_other_options'),
-            ram=config.param('picard_calculate_hs_metrics', 'ram'),
-            input=input,
-            output=output,
-            intervals=intervals,
-            baits=baits_intervals if baits_intervals != "" else intervals,
-            reference_sequence=reference_sequence if reference_sequence else config.param('picard_calculate_hs_metrics', 'genome_fasta', param_type='filepath')
+                tmp_dir=config.param('picard_calculate_hs_metrics', 'tmp_dir'),
+                java_other_options=config.param('picard_calculate_hs_metrics', 'java_other_options'),
+                ram=config.param('picard_calculate_hs_metrics', 'ram'),
+                input=input,
+                output=output,
+                intervals=intervals,
+                baits=baits_intervals if baits_intervals != "" else intervals,
+                reference_sequence=reference_sequence if reference_sequence else config.param('picard_calculate_hs_metrics', 'genome_fasta', param_type='filepath')
             )
         )
 
@@ -129,14 +129,15 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  INPUT={input} \\
  OUTPUT={output} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_collect_multiple_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_multiple_metrics', 'java_other_options'),
-            ram=config.param('picard_collect_multiple_metrics', 'ram'),
-            reference_sequence=reference_sequence if reference_sequence else config.param('picard_collect_multiple_metrics', 'genome_fasta', param_type='filepath'),
-            input=input,
-            output=output,
-            max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
-            )
+                tmp_dir=config.param('picard_collect_multiple_metrics', 'tmp_dir'),
+                java_other_options=config.param('picard_collect_multiple_metrics', 'java_other_options'),
+                ram=config.param('picard_collect_multiple_metrics', 'ram'),
+                reference_sequence=reference_sequence if reference_sequence else config.param('picard_collect_multiple_metrics', 'genome_fasta', param_type='filepath'),
+                input=input,
+                output=output,
+                max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
+            ),
+            report_files=outputs
         )
 def collect_sequencing_artifacts_metrics(input, output, annotation_flat=None,reference_sequence=None):
         output_dep = output + ".bait_bias_summary_metrics.txt"
@@ -157,14 +158,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  OUTPUT={output} \\
  REFERENCE_SEQUENCE={reference} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            options=config.param('picard_collect_sequencing_artifacts_metrics', 'options'),
-            tmp_dir=config.param('picard_collect_sequencing_artifacts_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_sequencing_artifacts_metrics', 'java_other_options'),
-            ram=config.param('picard_collect_sequencing_artifacts_metrics', 'ram'),
-            input=input,
-            output=output,
-            reference=reference_sequence if reference_sequence else config.param('picard_collect_sequencing_artifacts_metrics', 'genome_fasta'),
-            max_records_in_ram=config.param('picard_collect_sequencing_artifacts_metrics', 'max_records_in_ram', param_type='int')
+                options=config.param('picard_collect_sequencing_artifacts_metrics', 'options'),
+                tmp_dir=config.param('picard_collect_sequencing_artifacts_metrics', 'tmp_dir'),
+                java_other_options=config.param('picard_collect_sequencing_artifacts_metrics', 'java_other_options'),
+                ram=config.param('picard_collect_sequencing_artifacts_metrics', 'ram'),
+                input=input,
+                output=output,
+                reference=reference_sequence if reference_sequence else config.param('picard_collect_sequencing_artifacts_metrics', 'genome_fasta'),
+                max_records_in_ram=config.param('picard_collect_sequencing_artifacts_metrics', 'max_records_in_ram', param_type='int')
             )
         )
 
@@ -186,12 +187,12 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  INPUT_BASE={input} \\
  OUTPUT_BASE={output} \\
  REFERENCE_SEQUENCE={reference}""".format(
-            tmp_dir=config.param('picard_convert_sequencing_artifacts_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_convert_sequencing_artifacts_metrics', 'java_other_options'),
-            ram=config.param('picard_convert_sequencing_artifacts_metrics', 'ram'),
-            input=input,
-            output=output,
-            reference=reference_sequence if reference_sequence else config.param('picard_convert_sequencing_artifacts_metrics', 'genome_fasta'),
+                tmp_dir=config.param('picard_convert_sequencing_artifacts_metrics', 'tmp_dir'),
+                java_other_options=config.param('picard_convert_sequencing_artifacts_metrics', 'java_other_options'),
+                ram=config.param('picard_convert_sequencing_artifacts_metrics', 'ram'),
+                input=input,
+                output=output,
+                reference=reference_sequence if reference_sequence else config.param('picard_convert_sequencing_artifacts_metrics', 'genome_fasta'),
             )
         )
 
