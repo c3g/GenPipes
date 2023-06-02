@@ -234,11 +234,11 @@ def collect_gcbias_metrics(
     reference_sequence=None
     ):
 
-    output = output_prefix +  ".qcbias_metrics.txt"
+    output = output_prefix +  ".gcbias_metrics.txt"
     if not chart:
-        chart = output_prefix + ".qcbias_metrics.pdf"
+        chart = output_prefix + ".gcbias_metrics.pdf"
     if not summary_file:
-        summary_file = output_prefix + ".qcbias_summary_metrics.txt"
+        summary_file = output_prefix + ".gcbias_summary_metrics.txt"
     outputs = [
         output,
         chart,

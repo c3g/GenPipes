@@ -1403,7 +1403,7 @@ END
         inputs = []
         for sample in self.samples:
             input_oxog = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".oxog_metrics.txt")
-            input_qcbias = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".qcbias_metrics.txt")
+            input_gcbias = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".gcbias_metrics.txt")
             input_all_picard = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".all.metrics.quality_distribution.pdf")
             input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", sample.name, "genome_results.txt")
             [input_fastqc] = self.select_input_files(
@@ -1415,7 +1415,7 @@ END
 
             input_dep += [
                 input_oxog,
-                input_qcbias,
+                input_gcbias,
                 input_all_picard,
                 input_qualimap,
                 input_fastqc
