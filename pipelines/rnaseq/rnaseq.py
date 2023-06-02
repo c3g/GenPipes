@@ -2516,7 +2516,7 @@ END
                 output
                 )
         job.name = "multiqc"
-        job.input_dependency = self.multiqc_inputs
+        job.input_files = self.multiqc_inputs
         jobs.append(job)
 
         return jobs
