@@ -2117,8 +2117,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 self.output_dirs['report'][tumor_pair.name],
                 output
             )
-            job.name="multiqc." + tumor_pair.name,
-            job.samples=[tumor_pair.normal, tumor_pair.tumor],
+            job.name="multiqc." + tumor_pair.name
+            job.samples=[tumor_pair.normal, tumor_pair.tumor]
             job.input_files=self.multiqc_inputs[tumor_pair.name]
             jobs.append(job)
         return jobs
