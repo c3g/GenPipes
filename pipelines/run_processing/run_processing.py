@@ -793,8 +793,8 @@ class RunProcessing(common.MUGQICPipeline):
                 lane_jobs = []
 
                 input = os.path.join(self.run_dir, "RunInfo.xml")
-                output = os.path.join(self.output_dirs[lane]["index"],  f"{self.run_id}_{lane}.metrics")
-                basecalls_dir = os.path.join(self.output_dirs[lane]["index"], "BaseCalls")
+                output = os.path.join(self.output_dirs[lane]["index_directory"],  f"{self.run_id}_{lane}.metrics")
+                basecalls_dir = os.path.join(self.output_dirs[lane]["index_directory"], "BaseCalls")
 
                 barcode_file = config.param('index', 'barcode_file', param_type='filepath', required='false')
                 if not (barcode_file and os.path.isfile(barcode_file)):
@@ -806,33 +806,36 @@ class RunProcessing(common.MUGQICPipeline):
 
                 # CountIlluminaBarcode
                 lane_jobs.append(
-                    concat_jobs([
-                        bash.mkdir(basecalls_dir),
-                        bash.rm(
-                            os.path.join(basecalls_dir, f"L00{lane}"),
-                            force=True
-                        ),
-                        bash.ln(
-                            os.path.join(self.run_dir, "Data", "Intensities", "BaseCalls", f"L00{lane}"),
-                            os.path.join(basecalls_dir, f"L00{lane}")
-                        ),
-                        bash.ln(
-                            os.path.join(self.run_dir, "Data", "Intensities", "s.locs"),
-                            os.path.join(self.output_dirs[lane]["index"], "s.locs")
-                        ),
-                        run_processing_tools.index(
-                            input,
-                            barcode_file,
-                            basecalls_dir,
-                            self.number_of_mismatches,
-                            lane,
-                            mask,
-                            output
-                    )],
-                    name=f"index.{self.run_id}.{lane}",
-                    samples=self.samples[lane],
-                    report_files=[output]
-                ))
+                    concat_jobs(
+                    [
+                            bash.mkdir(basecalls_dir),
+                            bash.rm(
+                                os.path.join(basecalls_dir, f"L00{lane}"),
+                                force=True
+                            ),
+                            bash.ln(
+                                os.path.join(self.run_dir, "Data", "Intensities", "BaseCalls", f"L00{lane}"),
+                                os.path.join(basecalls_dir, f"L00{lane}")
+                            ),
+                            bash.ln(
+                                os.path.join(self.run_dir, "Data", "Intensities", "s.locs"),
+                                os.path.join(self.output_dirs[lane]["index_directory"], "s.locs")
+                            ),
+                            run_processing_tools.index(
+                                input,
+                                barcode_file,
+                                basecalls_dir,
+                                self.number_of_mismatches,
+                                lane,
+                                mask,
+                                output
+                            )
+                        ],
+                        name=f"index.{self.run_id}.{lane}",
+                        samples=self.samples[lane],
+                        report_files=[output]
+                    )
+                )
 
                 # for readset in self.readsets[lane]:
                 #     readset.report_files['index'] = [output]
