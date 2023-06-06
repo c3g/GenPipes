@@ -328,8 +328,6 @@ fi""".format(
 
         jobs = []
         metrics_inputs = []
-#        if self.contrasts:
-#            design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
@@ -491,6 +489,8 @@ done""".format(
                source = "_brush"
            elif sample.name in [pair.saliva.name for pair in self.dovee_pairs.values()]:
                source = "_saliva"
+           else:
+               _raise(SanitycheckError("Error: sample \"" + sample.name + "\" is not included in the pairs file! Cannot determine whether \"" + sample.name + "\" is a saliva or brush sample."))
 
            job = agent.locatit(
                    input_bam,
@@ -597,7 +597,9 @@ done""".format(
                 source = "_brush"
             elif sample.name in [pair.saliva.name for pair in self.dovee_pairs.values()]:
                 source = "_saliva"
-
+            else:
+                _raise(SanitycheckError("Error: sample \"" + sample.name + "\" is not included in the pairs file! Cannot determine whether \"" + sample.name + "\" is a saliva or brush sample."))
+            
             job = agent.creak(
                     input_bam,
                     output_hybrid,
@@ -704,8 +706,6 @@ done""".format(
 
         jobs = []
 
-#        if self.contrasts:
-#            design_file = os.path.relpath(self.args.design.name, self.output_dir)
         metrics_inputs = []
 
         for sample in self.samples:
@@ -871,9 +871,6 @@ done""".format(
         """
         jobs = []
 
-#        if self.contrasts:
-#            design_file = os.path.relpath(self.args.design.name, self.output_dir)
-
         for sample in self.samples:
             if sample in self.contrasts.brushes:
                 alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
@@ -924,8 +921,6 @@ else
         dovee_protocol = self.args.type
 
         if dovee_protocol == "vardict":
-#            if self.contrasts:
-#                design_file = os.path.relpath(self.args.design.name, self.output_dir)
 
             for sample in self.samples:
                 alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
@@ -1022,8 +1017,6 @@ else
                 alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
                 output_prefix = os.path.join(mosdepth_directory, sample.name)
                 input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
-        #        if self.contrasts:
-         #           design_file = os.path.relpath(self.args.design.name, self.output_dir)
                 if sample in self.contrasts.salivas:
                     region=config.param('mosdepth', 'region_bed', param_type='filepath')
                     source="_saliva"
@@ -1145,8 +1138,6 @@ else
                     )
                 )
 
- #       if self.contrasts:
-  #          design_file = os.path.relpath(self.args.design.name, self.output_dir)
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             input_bam = os.path.join(alignment_directory, sample.name + ".dedup.duplex.sorted.bam")
@@ -1319,12 +1310,12 @@ else
 
         jobs = []
         
-        for sample_pair in self.dovee_pairs.values(): # or another id that allows us to pair brush and saliva, using modified tumor pair system for now
+        for sample_pair in self.dovee_pairs.values(): # pairs in pair file must be complete
             wig_directory = self.output_dirs['wig_directory']
             input_brush = os.path.join(wig_directory, sample_pair.brush.name, sample_pair.brush.name + ".out.wig")
             input_saliva = os.path.join(wig_directory, sample_pair.saliva.name, sample_pair.saliva.name + ".out.wig")
             output_dir = os.path.join(self.output_dirs['cna_directory'], sample_pair.name)
-
+    
             jobs.append(
                     concat_jobs(
                         [
@@ -1340,7 +1331,7 @@ else
                         samples = [sample_pair.saliva, sample_pair.brush]
                     )
                 )
-
+    
         return jobs
 
     def bcftools_stats(self):
@@ -1357,13 +1348,14 @@ else
             link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
             output = os.path.join(output_directory, sample.name + ".bcftools.stats")
             
-    #        if self.contrasts:
-     #           design_file = os.path.relpath(self.args.design.name, self.output_dir)
             if sample in self.contrasts.salivas:
                 source="_saliva"
             elif sample in self.contrasts.brushes:
                 source="_brush"
-
+            else:
+                _raise(SanitycheckError("Error: sample \"" + sample.name +
+                "\" is not included in the design file! Cannot determine whether \"" + sample.name + "\" is a saliva or brush sample."))
+            
             jobs.append(
                     concat_jobs(
                         [
@@ -1457,7 +1449,7 @@ else
         job = multiqc.run(
             [input_links],
             output
-        )
+            )
         job.name = "multiqc"
         job.input_dependency = self.multiqc_inputs
         jobs.append(job)
@@ -1473,7 +1465,7 @@ else
                     self.bwa_mem_samtools_sort,
                     self.samtools_merge,
                     self.locatit_dedup_bam,
-                    #self.creak_dedup_bam,
+                   # self.creak_dedup_bam,
                     self.samtools_subsample,
                    # self.samtools_sort,
                     self.mosdepth,
