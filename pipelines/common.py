@@ -274,6 +274,7 @@ class Illumina(MUGQICPipeline):
             trim_directory = os.path.join(self.output_dirs["trim_directory"], readset.sample.name)
             trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
             trim_log = trim_file_prefix + "log"
+            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
             # Use adapter FASTA in config file if any, else create it from readset file
             adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
@@ -350,8 +351,14 @@ END
 
             jobs.append(concat_jobs([
                 # Trimmomatic does not create output directory by default
-                Job(command="mkdir -p " + trim_directory, samples=[readset.sample]),
-                job
+                bash.mkdir(trim_directory),
+                bash.mkdir(link_directory),
+                job,
+                bash.ln(
+                    os.path.relpath(trim_log, link_directory),
+                    os.path.join(link_directory, readset.name + ".trim.log"),
+                    trim_log
+                    )
             ], name="trimmomatic." + readset.name, samples=[readset.sample]))
         return jobs
 
