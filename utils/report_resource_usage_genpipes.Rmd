@@ -78,6 +78,7 @@ folder_path_to_o_file_list <- function(job_output_path){
   
   #create a dataframe containing all path as keys and associated name step as values
   for (path in list_path){
+    #print(path)
     file_step_name <- sapply(strsplit(x = path, split = "/"), tail, 1) %>% 	#element after last "/"
       strsplit(split = "\\.") %>%							#element before first "."
       sapply(head,1)
@@ -132,21 +133,18 @@ parsed_folder <- function(folder_path_list){
                           Memory_Efficiency = as.numeric(),
                           Memory_Request = as.numeric())
   
+
   for (i in file_path_list){
-    #print("-----NEW FOLDER-----")
-    #Create temporary dataframe 
-    # Info_df_temp <- data.frame(	JobName = as.character(),
-    #                             WaitingTime = as.character(),
-    #                             RunTime = as.character(),
-    #                             TimeLimit = as.character(),
-    #                             NumCPUs = as.integer(),
-    #                             Memory_Efficiency = as.numeric(),
-    #                             Memory_Request = as.numeric())
+    # print("-----NEW FOLDER-----")
     
     for (j in i){
-      #print("-----NEW .O FILE-----") 
+      # print("-----NEW .O FILE-----") 
+      # print("path (j) : ")
+      # print(j)
+      
       #file reading
-      FileInput = readLines(j)
+      #FileInput = readLines(j)
+      FileInput = scan(j ,sep="\n",what="char(0)",nlines=5000, quiet = TRUE)
       
       # Replace line feeds with spaces
       FileInput_Space <- gsub(pattern = "\\n", replacement = " ", x = FileInput)
@@ -154,19 +152,19 @@ parsed_folder <- function(folder_path_list){
       #split file to extract value
       FileInput_List <<- strsplit(x = FileInput_Space, split = " ")
       
-      #temp_setup
+      #temp_setup  params$scheduler
       if(params$scheduler == "SLURM"){ 
         List_values <<- Values_SLURM(FileInput_List)
       }
       
-      #temp_setup
+      #temp_setup params$scheduler
       if(params$scheduler == "PBS"){
         List_values <<- Values_PBS(FileInput_List)
       }
 
-      #print("VALUES TROUVEES") #modif
-      #print(List_values)
-      #print("\n")
+      # print("VALUES TROUVEES") #modif
+      # print(List_values)
+      # print("\n")
       
       # #fill df_info with new information and rename columns
       # df_info <- data.frame(List_values)
@@ -174,7 +172,13 @@ parsed_folder <- function(folder_path_list){
       # #type change 
       # df_info$RunTime <- as.character(df_info$RunTime)
       
-      Info_df[nrow(Info_df)+1 ,] <- List_values
+      # print("VERIF AJOUT")
+      # print(length(List_values) != 1)
+      
+      if (length(List_values) != 1){
+        Info_df[nrow(Info_df)+1 ,] <- List_values
+      }
+      
 
       
       #print("Info_df") #modif
@@ -184,51 +188,6 @@ parsed_folder <- function(folder_path_list){
       # Info_df_temp <- rbind(Info_df_temp, df_info)
       
     }
-    
-    # #change TimeLimit format
-    # Info_df_temp$TimeLimit <- day_into_hours(Info_df_temp$TimeLimit)
-    # 
-    # #change TimeLimit format
-    # Info_df_temp$RunTime <- day_into_hours(Info_df_temp$RunTime)
-
-    #print("CHANGE TIMELIMIT FORMAT DAY INTO HOUR") #modif
-    #print(datatable(Info_df_temp))
-    #print("\n")
-
-    #Specfific dataframe for ploting
-    #DF_plot <- rbind(DF_plot, Info_df_temp)
-    
-    #compute average values if there is more than one .o file per folder
-    # if (nrow(Info_df_temp) > 1){
-     
-	#print("RUNTIME ET TYPE")
-	#print(Info_df_temp$RunTime)
-	#print(typeof(Info_df_temp$RunTime))
- 
-      #re-create the dataframe with the average values
-      # Info_df_temp <- data.frame(JobName,
-      #                            mean_value(Info_df_temp$WaitingTime),
-      #                            mean_value(Info_df_temp$RunTime),
-      #                            mean_value(Info_df_temp$TimeLimit),
-      #                            mean_value(as.integer(Info_df_temp$NumCPUs)),
-      #                            mean_value(Info_df_temp$Memory_Efficiency),
-      #                            mean(as.numeric(Info_df_temp$Memory_Request)))
-      
-      #rename columns
-      # names(Info_df_temp) <- c("JobName", "WaitingTime", "RunTime", "TimeLimit", "NumCPUs", "Memory_Efficiency", "Memory_Request")
-    # }
-    
-    
-    # #print("INFO_DF AVANT BIND")
-    # print(Info_df_temp) 
-    #put Info_df_temp at the end of the main dataframe containing all information
-    #Info_df <- rbind(Info_df, as.data.frame(Info_df_temp))
-    # print("INFO_DF TOUTES LES MOYENNES TEMP")
-    # print(Info_df_temp)
-
-    # print("INFO_DF TOUTES LES MOYENNES")
-    # print(Info_df)
- 
   }
   #print("Info_df avant modif")
   #print(Info_df)
@@ -288,9 +247,27 @@ Values_SLURM <- function(FileInput_List){
   #IN : inputFile as a space separated list
   #out : list of all researched values into the input list
   
+  # out_JobName <- tryCatch(
+  #   {
+  #     
+  #     return(JobName)
+  #     
+  #   },error = function(cond){
+  #      #case where JobName isn't found, meaning job get cancelled and .o file doesn't have the same structure
+  #      return(NA)
+  #   }
+  # )
+  
   #research StepName
   JobName <<- research_Element_SLURM(FileInput_List, "JobName")
+  
+  #interrupt research by returning NA if JobName isn't found. This means that .o file doesn't have the same format due to a Job cancellation.
+  if (is.na(JobName)){
+    return(NA)
+  }
+  
   JobName <<- strsplit(x = JobName, split = "\\.")[[1]][1]
+  
   
   #research EligibleTime
   EligibleTime <<- String_to_Date(research_Element_SLURM(FileInput_List, "EligibleTime"))
@@ -375,8 +352,8 @@ research_Element_SLURM <- function(Input_file, Researched_element){
       return (Only_Element)
     },
     error = function(cond){
-      print("The following element asn't been found : ")
-      print(Researched_element)
+      #print("The following element asn't been found : ")
+      #print(Researched_element)
       
       return(NA)
     }
@@ -393,6 +370,12 @@ Values_PBS <- function(FileInput_List){
   
   #research StepName
   JobName <<- research_Element_PBS(FileInput_List, "Name:")  #OK
+  
+  #interrupt research by returning NA if JobName isn't found. This means that .o file doesn't have the same format due to a Job cancellation.
+  if (is.na(JobName)){
+    return(NA)
+  }
+  
   JobName <<- strsplit(x = JobName, split = "	")[[1]][2]
   JobName <<- strsplit(x = JobName, split = "\\.")[[1]][1]
   
@@ -492,47 +475,6 @@ Values_PBS <- function(FileInput_List){
     }
   )
   return (out)
-  
-  #####
-  # print("JobId")
-  # print(JobId) 
-  # print("\n")
-
-  # checkjob_resp <<- system2("checkjob",
-  #                       args = JobId,
-  #                       stdout = TRUE,
-  #                       stderr = TRUE
-  #                      )
-  # #print("LENGTH CHECKJOB_RESP")
-  # #print(length(checkjob_resp))
-  # #print("\n")
- 
-#   if(length(checkjob_resp) == 2){
-# 	return(list(JobName,                #OK
-#               #WaitingTime,           #OK
-#               NA,
-#               RunTime,                #OK
-#               TimeLimit,              #OK
-#               NumCPUs,                #OK
-#               Memory_Efficiency,      #OK
-#               Memory_use_Gb           #OK
-#               ))
-#   }else{
-# 
-# 	#calculation WaitingTime
-# 	Pos_cut <<-  grep("BecameEligible:",checkjob_resp)
-# 	checkjob_file_cut <<- checkjob_resp[c(Pos_cut+1:length(checkjob_resp))]
-# 	WaitingTime <<- hms::as_hms(research_Element_PBS(checkjob_file_cut, "Eligible:"))  #OK
-# 	
-# 	return(list(JobName,            #OK
-#               WaitingTime,            #OK
-#               RunTime,                #OK
-#               TimeLimit,              #OK
-#               NumCPUs,                #OK
-#               Memory_Efficiency,      #OK
-#               Memory_use_Gb           #OK
-#               ))
-#   }
 }
 research_Element_PBS <- function(Input_file, Researched_element){
   #Specific to PBS scheduler
@@ -558,8 +500,8 @@ research_Element_PBS <- function(Input_file, Researched_element){
       return(Only_Element)        #Only_Element
     },
     error = function(cond){
-      print("The following element hasn't been found : ")
-      print(Researched_element)
+      #print("The following element hasn't been found : ")
+      #print(Researched_element)
       
       return(NA)
     }
@@ -771,7 +713,7 @@ DF_plot <- result[[2]]
 actual_date_time <- strsplit(x= as.character(Sys.time()), split = " ")[[1]][1:2] %>%
   paste(collapse ="T") %>% 
   gsub(pattern = ":", replacement = ".")
-file_name <- paste(c(params$name, actual_date_time), collapse ="_") #temp_setup
+file_name <- paste(c(params$name, actual_date_time), collapse ="_")  #temp_setup  
 complete_path_name <- paste(c(output_path, file_name), collapse ="/")
 complete_path_name_csv <- paste(c(complete_path_name,"csv"), collapse =".")
 
@@ -812,144 +754,8 @@ DF_plot$Memory_Request <- as.numeric(DF_plot$Memory_Request)
 ```
 
 
-```{r comm, echo = FALSE}
-############## WaitingTime Plot ################################################
-
-# p_WaitingTime <- ggplot(DF_plot, aes(x=as.factor(JobName), y=WaitingTime, label= as.numeric(WaitingTime))) + 
-#   theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
-#         panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),) +
-#   
-#   #boxplot
-#   geom_boxplot(color="blue", 
-#                fill="#69b3a2",
-#                alpha=0.2) +     
-#   
-#   scale_x_discrete(expand = c(0.05, 0)) +
-#   
-#   #invert x and y axes
-#   coord_flip() + 
-#   
-#   #label on highest values
-#   # geom_text(data = . %>% group_by(JobName) %>% filter(WaitingTime == max(WaitingTime)), 
-#   #           nudge_y = 0.45,
-#   #           check_overlap = TRUE) +
-#   
-#   ylab(paste(c("WaitingTime (", Waiting_unite, ")"), collapse ="")) + 
-#   xlab("Step name") +
-#   ggtitle("WaitingTime for each step (EligibleTime to StartTime)")
-
-
-############## RunTime vs RunTime_Efficiency Plot ##############################
-#change JobName type in order to use it as x values
-# DF_plot$JobName <- as.factor(DF_plot$JobName)
-# #Change RunTime_Efficiency.y values and axes to keep them between 0 and 100%
-#   DF_plot$RunTime_Efficiency.y <- round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)
-
-# p_RunTime <- ggplot(DF_plot, aes(x=JobName)) +
-#   
-#   theme(panel.background = element_rect(fill = 'white', color = 'grey'), 
-#         panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
-#         axis.title.x.top = element_text(color = "red", size=13),
-#         axis.title.x.bottom = element_text(color = "blue", size=13),
-#         axis.title.y = element_text(size=13),
-#   ) +
-#   
-#   scale_x_discrete(expand = c(0.05, 0)) +
-#   
-#   coord_flip() +
-#   
-#   xlab("Step name") +
-#   
-#   ylab(paste(c("RunTime (", Time_unite, ")"), collapse ="")) +
-#   
-#   geom_boxplot( aes(y=RunTime),
-#                 alpha=0.2,
-#                 color="blue",
-#                 fill="#69b3a2",
-#   ) + 
-#   
-#   geom_boxplot( aes(y= RunTime_Efficiency.y),
-#               color="red",
-#               alpha=0.5) +
-#   
-#   ggtitle("RunTime_Efficiency (percentage)") #+
-  
-  #scale_x_discrete(expand = c(0.05, 0)) + 
-  
-  # geom_text(y =  as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
-  #           label = as.numeric(round(DF_plot$RunTime_Efficiency.y *100 / max(DF_plot$RunTime),1)),
-  #           color="red",
-  #           size=2.5,
-  #           nudge_x = 0.5, 
-  #           nudge_y = 0,
-  #           check_overlap = TRUE) +
-  
-  # scale_y_continuous(
-  #   
-  #   # Features of the first axis
-  #   name = paste(c("RunTime (", Time_unite, ")"), collapse =""),
-  #   
-  #   # Add a second axis and specify its features
-  #   sec.axis = sec_axis(~. *10 / max(DF_plot$RunTime),
-  #                       name="RunTime_Efficiency (percentage)")
-  # )
-
-
-
-############## Memory_Efficiency vs Memory_Request #############################
-
-
-# p_Memory <- ggplot(DF_plot, aes(x=as.factor(JobName))) +                               #CHANGER DF_MEMORY PAR DF_plot
-#                                                                                     #modif
-#   theme(panel.background = element_rect(fill = 'white', color = 'grey'),
-#         panel.grid.major = element_line(color = 'grey', linetype = 'dotted'),
-#         axis.title.x.top = element_text(color = "red", size=13),
-#         axis.title.x.bottom = element_text(color = "blue", size=13),
-#         axis.title.y = element_text(size=13),
-#   ) +
-# 
-#   scale_x_discrete(expand = c(0.05, 0)) +
-# 
-#   coord_flip() +
-# 
-#   xlab("Step name") +
-# 
-#   geom_boxplot( aes(y=DF_plot$Memory_Request),
-#                 alpha=0.1,
-#                 color="blue",
-#                 fill="#69b3a2",
-#   ) +
-# 
-#   geom_point( aes(y=round(Memory_Efficiency * 100 / max(DF_plot$Memory_Request),1)),
-#               color="red",
-#               alpha=0.5) +
-# 
-#   ggtitle("Memory_Request and RunTime_Efficiency") +
-# 
-# 
-# 
-#   geom_text( y = round(as.numeric(DF_plot$Memory_Efficiency * 100 / max(DF_plot$Memory_Request)),1),
-#              label = round(as.numeric(DF_plot$Memory_Efficiency * 100 / max(DF_plot$Memory_Request)),1),
-#              color="red",
-#              size=3,
-#              nudge_x = 0.5,
-#              check_overlap = TRUE) +
-# 
-#   scale_y_continuous(
-# 
-#     # Features of the first axis
-#     name = "Memory_Request (GB)" ,
-# 
-#     # Add a second axis and specify its features
-#     sec.axis = sec_axis(~. ,
-#                         name="Memory_Efficiency (%)")
-#   )
-
-```
-
-
 ```{r verbose, condition, eval=params$verbose, echo = FALSE}
-#temp_setup
+#temp_setup 
 cat("*** \n ")
 
 cat('\n##', "Verbose", '\n')
@@ -965,8 +771,8 @@ cat(paste0("**", nrow(Info_df),"** differents steps in total among all files." ,
 #Absolute path if the one gived is relative
 cat(paste0("Path used : **", opt$in_path,"**  \n"))
 
-#scheduler choosed
-cat(paste0("Scheduler choosed : **", params$scheduler,"**"))
+#scheduler choosed  params$scheduler
+cat(paste0("Scheduler choosed : **", params$scheduler ,"**"))
 
 
 ```
@@ -1033,8 +839,8 @@ dat1 <- data_to_boxplot(data = DF_plot,
 # Memory_efficiency is displayed only if SLURM scheduler is chosen. PBS scheduler make mandatory to have 5Go of memory per CPU used.
 # This parameter is fixed but could be changed in the future.
 ##### WARNING #####
-
-if (params$scheduler == "SLURM"){
+# params$scheduler
+if ( params$scheduler == "SLURM"){
   # SLURM scheduler used, memory efficiency is available and displayed
   if(all(!is.na(DF_plot$Memory_Efficiency))){  
     cat("This plot represent the amount of memory required and the associated efficiency.") 
