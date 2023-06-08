@@ -796,7 +796,7 @@ class RunProcessing(common.MUGQICPipeline):
                 output = os.path.join(self.output_dirs[lane]["index_directory"],  f"{self.run_id}_{lane}.metrics")
                 basecalls_dir = os.path.join(self.output_dirs[lane]["index_directory"], "BaseCalls")
 
-                barcode_file = config.param('index', 'barcode_file', param_type='filepath', required='false')
+                barcode_file = config.param('index', 'barcode_file', param_type='filepath', required=False)
                 if not (barcode_file and os.path.isfile(barcode_file)):
                     resources_dir = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'resources')
                     if (self.seqtype in ["hiseqx", "hiseq4000", "iSeq"] or (self.seqtype == 'novaseq' and self.sbs_consumable_version == 3)):
