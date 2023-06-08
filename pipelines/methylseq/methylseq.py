@@ -51,6 +51,7 @@ from bfx import fgbio
 from bfx import metrics
 from bfx import bash_cmd as bash
 from bfx import dragen
+from bfx import multiqc
 
 from pipelines.dnaseq import dnaseq
 
@@ -128,6 +129,16 @@ However, if you would like to setup and use dragen in own cluster please refer o
             'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
         }
         return dirs
+
+    @property
+    def multiqc_inputs(self):
+        if not hasattr(self, "_multiqc_inputs"):
+            self._multiqc_inputs = []
+        return self._multiqc_inputs
+
+    @multiqc_inputs.setter
+    def multiqc_inputs(self, value):
+        self._multiqc_inputs = value
 
     def bismark_align(self):
         """
@@ -320,29 +331,54 @@ pandoc --to=markdown \\
         """
 
         jobs = []
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+
         for sample in self.samples:
             alignment_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".")
             input = alignment_file_prefix + "sorted.bam"
             bam_output = alignment_file_prefix + "sorted.dedup.bam"
             metrics_file = alignment_file_prefix + "sorted.dedup.metrics"
+            flagstat_file = re.sub(".bam", "_flagstat.txt", bam_output)
 
-            job = picard.mark_duplicates(
-                [input],
-                bam_output,
-                metrics_file,
-                remove_duplicates="true",
-                ini_section='mark_duplicates'
-            )
+            job = concat_jobs(
+                    [
+                        bash.mkdir(link_directory),
+                        picard.mark_duplicates(
+                            [input],
+                            bam_output,
+                            metrics_file,
+                            remove_duplicates="true",
+                            ini_section='mark_duplicates'
+                            ),
+                        bash.ln(
+                            os.path.relpath(metrics_file, link_directory),
+                            os.path.join(link_directory, sample.name + ".sorted.dedup.metrics"),
+                            input=metrics_file
+                            )
+                    ]
+                )
             job.name = "mark_duplicates." + sample.name
             job.samples = [sample]
+            self.multiqc_inputs.append(metrics_file)
             jobs.append(job)
 
-            job = samtools.flagstat(
-                bam_output,
-                re.sub(".bam", "_flagstat.txt", bam_output),
-            )
+            job = concat_jobs(
+                    [
+                        bash.mkdir(link_directory),
+                        samtools.flagstat(
+                            bam_output,
+                            flagstat_file
+                            ),
+                        bash.ln(
+                            os.path.relpath(flagstat_file, link_directory),
+                            os.path.join(link_directory, sample.name + ".sorted.dedup_flagstat.txt"),
+                            input=flagstat_file
+                            )
+                    ]
+                )
             job.name = "samtools_flagstat_dedup." + sample.name
             job.samples = [sample]
+            self.multiqc_inputs.append(flagstat_file)
             jobs.append(job)
 
         report_file = os.path.join(self.output_dirs["report_directory"], "MethylSeq.picard_remove_duplicates.md")
@@ -393,6 +429,8 @@ cp \\
 
         jobs = []
         created_interval_lists = []
+
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
         for sample in self.samples:
             file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".sorted.dedup.")
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
@@ -402,11 +440,30 @@ cp \\
                 candidate_input_files.append([bam[sample]])
             [input] = self.select_input_files(candidate_input_files)
 
-            job = picard.collect_multiple_metrics(
-                input,
-                re.sub("bam", "all.metrics", input),
-                library_type=library[sample]
-            )
+            # picard collect multiple metrics
+            job = concat_jobs(
+                    [
+                        picard.collect_multiple_metrics(
+                        input,
+                        re.sub("bam", "all.metrics", input),
+                        library_type=library[sample]
+                        ),
+                        bash.mkdir(link_directory)
+                    ]
+                )
+            for outfile in job.report_files:
+                self.multiqc_inputs.append(outfile)
+                job = concat_jobs(
+                        [
+                            job,
+                            bash.ln(
+                                os.path.relpath(outfile, link_directory),
+                                os.path.join(link_directory, os.path.basename(outfile)),
+                                input=outfile
+                                )
+                        ]
+                    )
+
             job.name = "picard_collect_multiple_metrics." + sample.name
             job.samples = [sample]
             jobs.append(job)
@@ -576,6 +633,7 @@ cp \\
 
         methylation_protocol = config.param('dragen_align', 'methylation_protocol', param_type='string', required=False)
         mapping_implementation = config.param('dragen_align', 'mapping_implementation', param_type='string', required=False)
+        link_directory = os.path.join(self.output_dirs["metrics_directory"],"multiqc_inputs")
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], sample.name)
@@ -586,7 +644,9 @@ cp \\
             outputs = [
                 os.path.join(methyl_directory, "CpG_context_" + re.sub( ".bam", ".txt.gz", os.path.basename(input_file))),
                 os.path.join(methyl_directory, re.sub(".bam", ".bedGraph.gz", os.path.basename(input_file))),
-                os.path.join(methyl_directory, re.sub(".bam", ".CpG_report.txt.gz", os.path.basename(input_file)))
+                os.path.join(methyl_directory, re.sub(".bam", ".CpG_report.txt.gz", os.path.basename(input_file))),
+                os.path.join(methyl_directory, re.sub(".bam", "_splitting_report.txt", os.path.basename(input_file))),
+                os.path.join(methyl_directory, re.sub(".bam", ".M-bias.txt", os.path.basename(input_file)))
             ]
 
             if (methylseq_protocol == "hybrid" and methylation_protocol == "directional" and mapping_implementation=="single-pass"):
@@ -605,16 +665,7 @@ cp \\
                             )
                     ], name="picard_sort_sam." + sample.name, samples=[sample])
                 )
-                outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
-                bismark_job = bismark.methyl_call(
-                    re.sub("sorted", "readset_sorted", input_file),
-                    outputs,
-                    library[sample]
-                )
-                bismark_job.name = "bismark_methyl_call." + sample.name
-                bismark_job.samples = [sample]
-                jobs.append( bismark_job )
-
+            
             else:
                 jobs.append(
                     concat_jobs([
@@ -626,15 +677,34 @@ cp \\
                             )
                     ], name="picard_sort_sam." + sample.name, samples=[sample])
                 )
-                outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
-                bismark_job = bismark.methyl_call(
-                    re.sub("sorted", "readset_sorted", input_file),
-                    outputs,
-                    library[sample]
+            
+            outputs = [re.sub("sorted", "readset_sorted", output) for output in outputs]
+            bismark_job = concat_jobs(
+                    [
+                        bash.mkdir(link_directory),
+                        bismark.methyl_call(
+                            re.sub("sorted", "readset_sorted", input_file),
+                            outputs,
+                            library[sample]
+                            ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup_splitting_report.txt"), link_directory),
+                            os.path.join(link_directory, sample.name + ".dedup_splitting_report.txt"),
+                            input=os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup_splitting_report.txt")
+                            ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.M-bias.txt"), link_directory),
+                            os.path.join(link_directory, sample.name + ".dedup.M-bias.txt"),
+                            input=os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.M-bias.txt")
+                            )
+                    ]
                 )
-                bismark_job.name = "bismark_methyl_call." + sample.name
-                bismark_job.samples = [sample]
-                jobs.append( bismark_job )
+
+            bismark_job.name = "bismark_methyl_call." + sample.name
+            bismark_job.samples = [sample]
+            self.multiqc_inputs.append(os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.M-bias.txt"))
+            self.multiqc_inputs.append(os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup_splitting_report.txt"))
+            jobs.append( bismark_job )
     
         return jobs
 
@@ -1130,6 +1200,25 @@ pandoc \\
                     ], name="samtools_flagstat." + readset.name, samples=[readset.sample], output_dependency = [re.sub(".bam", "_flagstat.txt", dragen_bam)])
 
                 )
+                # create symlinks to dragen_align metrics outputs to be used for multiqc
+                link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+                symlink_job = bash.mkdir(link_directory)
+                for outfile in dragen_align.report_files:
+                    self.multiqc_inputs.append(os.path.join(alignment_directory, readset.sample.name, outfile))
+                    symlink_job = concat_jobs(
+                            [
+                                symlink_job,
+                                bash.ln(
+                                    os.path.relpath(os.path.join(alignment_directory, readset.sample.name, outfile), link_directory),
+                                    os.path.join(link_directory, outfile),
+                                    input=os.path.join(alignment_directory, readset.sample.name, outfile)
+                                    )
+                                ]
+                            )
+                symlink_job.name = "symlink_dragen_metrics." + readset.name
+                symlink_job.samples = [readset.sample]
+                jobs.append(symlink_job)
+
                 jobs.append(
                     concat_jobs([
                         Job(command="mkdir -p " + alignment_directory),
@@ -1300,6 +1389,27 @@ To create combined CSV CpGs should be extracted from the dragen methylation repo
 
         return jobs
 
+    def multiqc(self):
+        """
+        Aggregate results from bioinformatics analyses across many samples into a single report.
+        MultiQC searches a given directory for analysis logs and compiles a HTML report. It's a general use tool,
+        perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
+        """
+        jobs = []
+
+        input_links = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
+        output = os.path.join(self.output_dirs['metrics_directory'], "multiqc")
+
+        job = multiqc.run(
+                [input_links],
+                output
+                )
+        job.name = "multiqc"
+        job.input_files = self.multiqc_inputs
+        jobs.append(job)
+
+        return jobs
+
 
     @property
     def steps(self):
@@ -1321,6 +1431,7 @@ To create combined CSV CpGs should be extracted from the dragen methylation repo
             self.filter_snp_cpg,
             self.prepare_methylkit,         # step 15
             self.methylkit_differential_analysis,
+            self.multiqc,
             self.cram_output
         ], [
             self.picard_sam_to_fastq,
@@ -1339,6 +1450,7 @@ To create combined CSV CpGs should be extracted from the dragen methylation repo
             self.filter_snp_cpg,
             self.prepare_methylkit,  # step 15
             self.methylkit_differential_analysis,
+            self.multiqc,
             self.cram_output
         ],
             [
@@ -1360,6 +1472,7 @@ To create combined CSV CpGs should be extracted from the dragen methylation repo
             self.filter_snp_cpg,
             self.prepare_methylkit,
             self.methylkit_differential_analysis,
+            self.multiqc,
             self.cram_output
             ]
         ]
