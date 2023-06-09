@@ -146,13 +146,15 @@ However, if you would like to setup and use dragen in own cluster please refer o
         """
 
         jobs = []
+
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+
         for readset in self.readsets:
             trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name)
             no_readgroup_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted_noRG.bam")
             output_bam = re.sub("_noRG.bam", ".bam", no_readgroup_bam)
             index_bam = re.sub("_noRG.bam", ".bam.bai", no_readgroup_bam)
-            report_suffix = "_bismark_bt2_report.txt"
 
             # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
             if readset.run_type == "PAIRED_END":
@@ -166,6 +168,7 @@ However, if you would like to setup and use dragen in own cluster please refer o
                 # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
                 bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_pe.bam", os.path.basename(fastq1)))
                 bismark_out_report = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_PE_report.txt", os.path.basename(fastq1)))
+                report_suffix = "_bismark_bt2_PE_report.txt"
             elif readset.run_type == "SINGLE_END":
                 candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
                 if readset.fastq1:
@@ -178,6 +181,7 @@ However, if you would like to setup and use dragen in own cluster please refer o
                 # Note : these files will then be renamed (using a "mv" command) to fit with the mugqic pipelines nomenclature (cf. no_readgroup_bam)
                 bismark_out_bam = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2.bam", os.path.basename(fastq1)))
                 bismark_out_report = os.path.join(alignment_directory, readset.name, re.sub(r'(\.fastq\.gz|\.fq\.gz|\.fastq|\.fq)$', "_bismark_bt2_SE_report.txt", os.path.basename(fastq1)))
+                report_suffix = "_bismark_bt2_SE_report.txt"
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
@@ -185,6 +189,7 @@ However, if you would like to setup and use dragen in own cluster please refer o
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p " + os.path.dirname(output_bam)),
+                    bash.mkdir(link_directory),
                     bismark.align(
                         fastq1,
                         fastq2,
@@ -193,8 +198,15 @@ However, if you would like to setup and use dragen in own cluster please refer o
                     ),
                     Job(command="mv " + bismark_out_bam + " " + no_readgroup_bam),
                     Job(command="mv " + bismark_out_report + " " + re.sub(".bam", report_suffix, no_readgroup_bam)),
+                    bash.ln(
+                        os.path.relpath(re.sub(".bam", report_suffix, no_readgroup_bam), link_directory),
+                        os.path.join(link_directory, readset.name + report_suffix), 
+                        input=re.sub(".bam", report_suffix, no_readgroup_bam)
+                        )
                 ], name="bismark_align." + readset.name, samples=[readset.sample])
             )
+            self.multiqc_inputs.append(re.sub(".bam", report_suffix, no_readgroup_bam))
+
             jobs.append(
                 concat_jobs([
                     Job(command="mkdir -p " + alignment_directory),
