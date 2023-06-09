@@ -82,7 +82,7 @@ def merge(input_bams,
 sambamba merge {options} \\
   {output} \\
   {input}""".format(
-            options=config.param(ini_section, 'options'),
+            options=config.param(ini_section, 'options', required=False),
             input="".join([" \\\n  " + input_bam for input_bam in input_bams]),
             output=output_bam
         )
