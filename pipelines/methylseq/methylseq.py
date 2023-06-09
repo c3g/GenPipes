@@ -865,6 +865,8 @@ cp \\
         target_bed = bvatools.resolve_readset_coverage_bed(self.samples[0].readsets[0])
         metrics_all_file = os.path.join(self.output_dirs["metrics_directory"], "IHEC.sampleMetrics.stats")
         report_metrics_file = os.path.join(self.output_dirs["report_directory"], "IHEC.sampleMetricsTable.tsv")
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+        ihec_multiqc_file = os.path.join(link_directory, "IHEC.sampleMetrics_mqc.tsv")
 
         if target_bed:
             report_file = os.path.join(self.output_dirs["report_directory"], "MethylSeq.ihec_sample_metrics_targeted_report.md")
@@ -907,7 +909,11 @@ cp \\
             if self.protocol == "bismark":
                 # Bismark alignment files
                 for readset in sample.readsets:
-                    inputs.append(os.path.join(self.output_dirs["alignment_directory"], sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_report.txt"))
+                    [bismark_report] = self.select_input_files([
+                        [os.path.join(self.output_dirs["alignment_directory"], sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_PE_report.txt")],
+                        [os.path.join(self.output_dirs["alignment_directory"], sample.name, readset.name, readset.name + ".sorted_noRG_bismark_bt2_SE_report.txt")]
+                        ])
+                    inputs.append(bismark_report)
 
             # CpG coverage files
             inputs.append(os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + ".readset_sorted.dedup.median_CpG_coverage.txt"))
@@ -959,15 +965,11 @@ cp \\
             )
             counter+=1
 
-
-        jobs.append(
-            concat_jobs([
-                Job(command="mkdir -p metrics"),
-                Job(
-                    [metrics_all_file],
-                    [report_file],
-                    [['ihec_sample_metrics_report', 'module_pandoc']],
-                    command="""\
+        report_job = Job(
+                [metrics_all_file],
+                [report_file],
+                [['ihec_sample_metrics_report', 'module_pandoc']],
+                command="""\
 mkdir -p report && \\
 cp {metrics_all_file} {report_metrics_file} && \\
 metrics_table_md=`sed 's/\t/|/g' {metrics_file}`
@@ -977,16 +979,127 @@ pandoc \\
   --variable sequence_alignment_table="$metrics_table_md" \\
   --to markdown \\
   > {report_file}""".format(
-                        report_template_dir=self.report_template_dir,
-                        metrics_all_file=metrics_all_file,
-                        metrics_file=metrics_file,
-                        basename_report_file=os.path.basename(report_file),
-                        report_metrics_file=report_metrics_file,
-                        report_file=report_file
+                    report_template_dir=self.report_template_dir,
+                    metrics_all_file=metrics_all_file,
+                    metrics_file=metrics_file,
+                    basename_report_file=os.path.basename(report_file),
+                    report_metrics_file=report_metrics_file,
+                    report_file=report_file
                     ),
-                    report_files=[report_file]
+                report_files=[report_file]
+            )
+
+        report_multiqc_format_job = Job(
+                [metrics_all_file],
+                [ihec_multiqc_file],
+                command="""\
+echo -e "# plot_type: 'table'
+# section_name: 'IHEC'
+# description: 'Sequencing, Alignment and Methylation Metrics per Sample'
+# headers:
+#   raw_reads:
+#       title: 'Raw Reads'
+#       description: 'total number of reads obtained from the sequencer'
+#       format: '{{:,.0f}}'
+#       placement: 900
+#   trimmed_reads:
+#       title: 'Trimmed Reads'
+#       description: 'number of remaining reads after the trimming step'
+#       format: '{{:,.0f}}'
+#       placement: 910
+#   perc_survival_rate:
+#       title: '% Survival Rate'
+#       description: 'trimmed_reads / raw_reads * 100'
+#       placement: 920
+#   aligned_reads:
+#       title: 'Aligned Reads'
+#       description: 'number of aligned reads to the reference'
+#       format: '{{:,.0f}}'
+#       placement: 930
+#   perc_mapping_efficiency:
+#       title: '% Mapping Efficiency'
+#       description: 'aligned_reads / trimmed_reads * 100'
+#       placement: 940
+#   duplicated_reads:
+#       title: 'Duplicated Reads'
+#       description: 'number of duplicated read entries providing the same mapping coordinates (due to PCR duplicates)'
+#       format: '{{:,.0f}}'
+#       placement: 950
+#   perc_duplication_rate:
+#       title: '% Duplication Rate'
+#       description: 'duplicated_reads / aligned_reads * 100'
+#       placement: 960
+#   deduplicated_aligned_reads:
+#       title: 'Deduplicated Aligned Reads'
+#       description: 'aligned_reads - duplicated_reads'
+#       format: '{{:,.0f}}'
+#       placement: 970
+#   perc_useful_aligned_rate:
+#       title: '% Useful Aligned Rate'
+#       description: 'deduplicated_aligned_reads / raw_reads * 100'
+#       placement: 980
+#   perc_proportion_unique_filtered_reads_MAPQ>10:
+#       title: '% Unique Filtered Reads MAPQ>10'
+#       description: 'deduplicated_aligned_reads with mapping quality > 10 / trimmed_reads * 100'
+#       placement: 990
+#   GC_bias:
+#       title: 'GC bias'
+#       description: 'the Pearson correlation between coverage values and GC content for 1000 bins of 100 base pair across genome'
+#       placement: 1000
+#   perc_pUC19_methylation_rate:
+#       title: '% pUC19 methylation rate'
+#       description: '100 - C->T conversion rate on pUC19 * 100'
+#       placement: 1010
+#   perc_lambda_conversion_rate:
+#       title: '% Lambda Conversion Rate'
+#       description: 'C->T conversion rate on the lambda phage * 100 '
+#       placement: 1020
+#   perc_human_conversion:
+#       title: '% Human Conversion Rate'
+#       description: 'estimation of non-CpG methylation * 100'
+#       placement: 1030
+#   estimated_average_genome_coverage:
+#       title: 'Est. Avg. Genome Coverage'
+#       description: 'aligned_reads / genome size'
+#       placement: 1040
+#   median_CpG_coverage:
+#       title: 'Median CpG Coverage'
+#       description: 'median read coverage for on-target CpGs'
+#       placement: 1050
+#   num_CpG_1X:
+#       title: 'CpGs at 1X'
+#       description: 'total number of CpGs with a coverage >= 1x'
+#       format: '{{:,.0f}}'
+#       placement: 1060
+#   num_CpG_10X:
+#       title: 'CpGs at 10X'
+#       description: 'total number of CpGs with a coverage >= 10x'
+#       format: '{{:,.0f}}'
+#       placement: 1070
+#   num_CpG_30X:
+#       title: 'CpGs at 30X'
+#       description: 'total number of CpGs with a coverage >= 30x'
+#       placement: 1080
+#   estimate_library_size:
+#       title: 'Est. Library Size'
+#       description: 'estimate library size'
+#       format: '{{:,.0f}}'
+#       placement: 1090" > {ihec_multiqc_file}
+
+cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc_file}""".format(
+                ihec_multiqc_file=ihec_multiqc_file,
+                metrics_all_file=metrics_all_file
                 )
-            ], name="ihec_sample_metrics_report")
+            )
+
+        jobs.append(
+            concat_jobs([
+                bash.mkdir(self.output_dirs["metrics_directory"]),
+                bash.mkdir(link_directory),
+                report_job,
+                report_multiqc_format_job
+                ], 
+            name="ihec_sample_metrics_report")
         )
 
         return jobs
