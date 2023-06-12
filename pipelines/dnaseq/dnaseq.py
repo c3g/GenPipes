@@ -3452,11 +3452,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 jobs.append(
                     concat_jobs(
                         [
-                            Job(
-                                [coverage_bed],
-                                [coverage_bed + ".sort"],
-                                command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > "
-                                        + coverage_bed + ".sort ; sleep 180"
+                            bash.sort(
+                                coverage_bed,
+                                coverage_bed + ".sort",
+                                "-V -k1,1 -k2,2n -k3,3n",
+                                extra="; sleep 180"
                             ),
                             htslib.bgzip(
                                 coverage_bed + ".sort",
