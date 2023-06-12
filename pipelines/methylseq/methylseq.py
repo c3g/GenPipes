@@ -188,7 +188,7 @@ However, if you would like to setup and use dragen in own cluster please refer o
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.dirname(output_bam)),
+                    bash.mkdir(os.path.dirname(output_bam)),
                     bash.mkdir(link_directory),
                     bismark.align(
                         fastq1,
@@ -209,7 +209,7 @@ However, if you would like to setup and use dragen in own cluster please refer o
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory),
+                    bash.mkdir(alignment_directory),
                     picard.add_read_groups(
                         no_readgroup_bam,
                         output_bam,
@@ -222,7 +222,7 @@ However, if you would like to setup and use dragen in own cluster please refer o
             )
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory),
+                    bash.mkdir(alignment_directory),
                     sambamba.index(
                         output_bam,
                         index_bam
@@ -231,7 +231,7 @@ However, if you would like to setup and use dragen in own cluster please refer o
             )
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + alignment_directory),
+                    bash.mkdir(alignment_directory),
                     sambamba.flagstat(
                         output_bam,
                         re.sub(".bam", "_flagstat.txt", output_bam),
@@ -297,7 +297,7 @@ pandoc --to=markdown \\
 
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + os.path.dirname(output_bam)),
+                        bash.mkdir(os.path.dirname(output_bam)),
                         fgbio.addumi(
                             input_bam,
                             input_umi_corrected,
@@ -664,7 +664,7 @@ cp \\
             if (methylseq_protocol == "hybrid" and methylation_protocol == "directional" and mapping_implementation=="single-pass"):
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + methyl_directory),
+                        bash.mkdir(methyl_directory),
                         samtools.view(
                             input_file,
                             re.sub("sorted","sorted.filtered", input_file),
@@ -681,7 +681,7 @@ cp \\
             else:
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + methyl_directory),
+                        bash.mkdir(methyl_directory),
                         picard.sort_sam(
                             input_file,
                             re.sub("sorted", "readset_sorted", input_file),
@@ -741,7 +741,8 @@ cp \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], sample.name) + " " + os.path.join(self.output_dirs["tracks_directory"], "bigWig"), removable_files=["tracks"]),
+                    bash.mkdir(os.path.join(self.output_dirs["tracks_directory"], sample.name)),
+                    bash.mkdir(os.path.join(self.output_dirs["tracks_directory"], "bigWig")),
                     bedtools.graph(
                         input_bam,
                         bed_graph_output,
@@ -751,7 +752,7 @@ cp \\
             )
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + os.path.join(self.output_dirs["tracks_directory"], "bigWig")),
+                    bash.mkdir(os.path.join(self.output_dirs["tracks_directory"], "bigWig")),
                     ucsc.bedGraphToBigWig(
                         bed_graph_output,
                         big_wig_output,
@@ -767,7 +768,7 @@ cp \\
 
             jobs.append(
                 concat_jobs([
-                    Job(command="mkdir -p " + methyl_directory),
+                    bash.mkdir(methyl_directory),
                     ucsc.bedGraphToBigWig(
                         input_bed_graph,
                         output_wiggle
@@ -1346,7 +1347,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
 
                 jobs.append(
                     concat_jobs([
-                        Job(command="mkdir -p " + alignment_directory),
+                        bash.mkdir(alignment_directory),
                         sambamba.index(
                             dragen_bam,
                             index_bam
