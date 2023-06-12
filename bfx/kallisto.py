@@ -37,7 +37,7 @@ def quant(
 
     return Job(
         inputs,
-        [ 
+        [
             os.path.join(output_dir, "transcripts.tsv"),
             os.path.join(output_dir, "kallisto_quant.log")],
         [

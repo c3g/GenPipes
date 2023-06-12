@@ -29,10 +29,24 @@ from .config import config
 
 log = logging.getLogger(__name__)
 
-class Job(object):
-
-    def __init__(self, input_files=[], output_files=[], module_entries=[],
-                 name="", command="", report_files=[], multiqc_files=[], removable_files=[], samples=[]):
+class Job:
+    """
+    Defining Job object
+    """
+    def __init__(
+        self,
+        input_files=[],
+        output_files=[],
+        module_entries=[],
+        name="",
+        command="",
+        report_files=[],
+        multiqc_files=[],
+        removable_files=[],
+        samples=[],
+        readsets=[],
+        metrics=[]
+        ):
         # Remove undefined input/output/removable files if any
         self._input_files = [_f for _f in input_files if _f]
         self._output_files = [_f for _f in output_files if _f]
@@ -46,6 +60,8 @@ class Job(object):
         self._name = name
         self._command = command
         self._samples = samples
+        self._readsets = readsets
+        self._metrics = metrics
 
     @property
     def id(self):
@@ -152,6 +168,22 @@ class Job(object):
         self._samples = value
 
     @property
+    def readsets(self):
+        return self._readsets
+
+    @readsets.setter
+    def readsets(self, value):
+        self._readsets = value
+
+    @property
+    def metrics(self):
+        return self._metrics
+
+    @metrics.setter
+    def metrics(self, value):
+        self._metrics = value
+
+    @property
     def command_with_modules(self):
         command = self.command
         if self.modules:
@@ -168,8 +200,9 @@ class Job(object):
     def is_up2date(self):
         # If job has dependencies, job is not up to date
         if self.dependency_jobs:
-            log.debug("Job " + self.name + " NOT up to date")
-            log.debug("Dependency jobs:\n  " + "\n  ".join([job.name for job in self.dependency_jobs]) + "\n")
+            nl = '\n  '
+            log.debug(f"Job {self.name} NOT up to date")
+            log.debug(f"Dependency jobs:\n  {nl.join([job.name for job in self.dependency_jobs])}\n")
             return False
 
         # Retrieve absolute paths for .done, input and output files to avoid redundant OS function calls
@@ -181,8 +214,8 @@ class Job(object):
         for file in [abspath_done] + abspath_input_files + abspath_output_files:
             # Use 'exists' instead of 'isfile' since input/output files can be directories
             if not os.path.exists(file):
-                log.debug("Job " + self.name + " NOT up to date")
-                log.debug("Input, output or .done file missing: " + file)
+                log.debug(f"Job {self.name} NOT up to date")
+                log.debug(f"Input, output or .done file missing: {file}")
                 return False
 
         # Retrieve latest input file by modification time i.e. maximum stat mtime
@@ -196,15 +229,27 @@ class Job(object):
 
         # If any input file is strictly more recent than all output files, job is not up to date
         if latest_input_time > earliest_output_time:
-            log.debug("Job " + self.name + " NOT up to date")
-            log.debug("Latest input file modification time: " + latest_input_file + " " + datetime.datetime.fromtimestamp(latest_input_time).isoformat() + " > earliest output file modification time: " + earliest_output_file + " " + datetime.datetime.fromtimestamp(earliest_output_time).isoformat() + "\n")
+            log.debug(f"Job {self.name} NOT up to date")
+            log.debug(f"Latest input file modification time: {latest_input_file} {datetime.datetime.fromtimestamp(latest_input_time).isoformat()} > earliest output file modification time: {earliest_output_file} {datetime.datetime.fromtimestamp(earliest_output_time).isoformat()}\n")
             return False
 
         # If all previous tests passed, job is up to date
         return True
 
-# Create a new job by concatenating a list of jobs together
-def concat_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=[], removable_files=[], report_files=[]):
+def concat_jobs(
+    jobs,
+    name="",
+    input_dependency=[],
+    output_dependency=[],
+    samples=[],
+    readsets=[],
+    metrics=[],
+    removable_files=[],
+    report_files=[]
+    ):
+    """
+    Creates a new job by concatenating a list of jobs together
+    """
 
     # Merge all input/output/report/removable files and modules
     input_files = []
@@ -220,13 +265,25 @@ def concat_jobs(jobs, name="", input_dependency=[], output_dependency=[], sample
         removable_files.extend([removable_file for removable_file in job_item.removable_files if removable_file not in removable_files])
         modules.extend([module for module in job_item.modules if module not in modules])
         samples.extend([sample for sample in job_item.samples if sample not in samples])
+        readsets.extend([readset for readset in job_item.readsets if readset not in readsets])
+        metrics.extend([metric for metric in job_item.metrics if metric not in metrics])
 
     if input_dependency:
         input_files=input_dependency
     if output_dependency:
         output_files=output_dependency
 
-    job = Job(input_files, output_files, name=name, report_files=report_files, multiqc_files=multiqc_files, removable_files=removable_files, samples=samples)
+    job = Job(
+        input_files,
+        output_files,
+        name=name,
+        report_files=report_files,
+        multiqc_files=multiqc_files,
+        removable_files=removable_files,
+        samples=samples,
+        readsets=readsets,
+        metrics=metrics
+        )
     job.modules = modules
 
     # Merge commands
@@ -234,8 +291,20 @@ def concat_jobs(jobs, name="", input_dependency=[], output_dependency=[], sample
 
     return job
 
-# Create a new job by piping a list of jobs together
-def pipe_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=[], removable_files=[], report_files=[]):
+def pipe_jobs(
+    jobs,
+    name="",
+    input_dependency=[],
+    output_dependency=[],
+    samples=[],
+    readsets=[],
+    metrics=[],
+    removable_files=[],
+    report_files=[]
+    ):
+    """
+    Creates a new job by piping a list of jobs together
+    """
 
     # Remove 'None' jobs from the job list, may happened in the case of conditional jobs
     jobs = [job for job in jobs if job]
@@ -250,18 +319,24 @@ def pipe_jobs(jobs, name="", input_dependency=[], output_dependency=[], samples=
         removable_files.extend(job_item.removable_files)
         modules.extend(job_item.modules)
         samples.extend([sample for sample in job_item.samples if sample not in samples])
+        readsets.extend([readset for readset in job_item.readsets if readset not in readsets])
+        metrics.extend([metric for metric in job_item.metrics if metric not in metrics])
 
     # Remove duplicates if any, keeping the order
-    report_files = list(OrderedDict.fromkeys([report_file for report_file in report_files]))
+    report_files = list(OrderedDict.fromkeys(set(report_files)))
     job.report_files = report_files
-    multiqc_files = list(OrderedDict.fromkeys([multiqc_file for multiqc_file in multiqc_files]))
+    multiqc_files = list(OrderedDict.fromkeys(set(multiqc_files)))
     job.multiqc_files = multiqc_files
-    removable_files = list(OrderedDict.fromkeys([removable_file for removable_file in removable_files]))
+    removable_files = list(OrderedDict.fromkeys(set(removable_files)))
     job.removable_files = removable_files
-    modules = list(OrderedDict.fromkeys([module for module in modules]))
+    modules = list(OrderedDict.fromkeys(set(modules)))
     job.modules = modules
-    samples = list(OrderedDict.fromkeys([sample for sample in samples]))
+    samples = list(OrderedDict.fromkeys(set(samples)))
     job.samples = samples
+    readsets = list(OrderedDict.fromkeys(set(readsets)))
+    job.readsets = readsets
+    metrics = list(OrderedDict.fromkeys(set(metrics)))
+    job.metrics = metrics
 
     if input_dependency:
         job.input_files=input_dependency

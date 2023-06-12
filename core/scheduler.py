@@ -48,7 +48,10 @@ def create_scheduler(s_type, config_files, container=None, genpipes_file=None):
         raise Exception("Error: scheduler type \"" + s_type + "\" is invalid!")
 
 
-class Scheduler(object):
+class Scheduler:
+    """
+    Commun Scheduler
+    """
     def __init__(self, config_files, container=None, genpipes_file=None, **kwargs):
 
         self.name = 'generic'
@@ -93,18 +96,18 @@ class Scheduler(object):
         for condition in supported:
             if condition in dep_str:
                 return condition
-        raise ValueError('{} not part of cluster_dependency_arg supported value {}'.format(dep_str, supported))
+        raise ValueError(f'{dep_str} not part of cluster_dependency_arg supported value {supported}')
 
     def cpu(self, job_name_prefix):
         cpu_str = self.config.param(job_name_prefix, 'cluster_cpu', required=True)
         try:
             if "ppn" in cpu_str or '-c' in cpu_str:
                 # to be back compatible
-               cpu = re.search("(ppn=|-c\s)([0-9]+)", cpu_str).groups()[1]
+                cpu = re.search("(ppn=|-c\s)([0-9]+)", cpu_str).groups()[1]
             else:
                 cpu = re.search("[0-9]+", cpu_str).group()
         except AttributeError:
-            raise ValueError('"{}" is not a valid entry for "cluster_cpu"'.format(cpu_str))
+            raise ValueError(f'"{cpu_str}" is not a valid entry for "cluster_cpu"')
         return cpu
 
     def node(self, job_name_prefix):
@@ -119,9 +122,9 @@ class Scheduler(object):
             try:
                 if "nodes" in cpu_str or '-N' in cpu_str:
                     # to be back compatible
-                    return re.search("(nodes=|-N\s*)([0-9]+)",cpu_str).groups()[1]
-            except AttributeError:
-                raise ValueError('"{}" is not a valid entry for "cluster_cpu"'.format(cpu_str))
+                    return re.search(r"(nodes=|-N\s*)([0-9]+)",cpu_str).groups()[1]
+            except AttributeError as exc:
+                raise ValueError(f'"{cpu_str}" is not a valid entry for "cluster_cpu"') from exc
         try:
             return re.search("[0-9]+", node_str).group()
         except AttributeError:
@@ -190,22 +193,18 @@ class Scheduler(object):
                 network = " --network host"
                 user = " --user $UID:$GROUPS"
 
-                return ('docker run --env-file <( env| cut -f1 -d= ) --privileged '
-                        '{network} {user} {v_opt} {name} '
-                        .format(network=network, user=user, v_opt=v_opt
-                                , name=self.container.name))
+                return (f'docker run --env-file <( env| cut -f1 -d= ) --privileged {network} {user} {v_opt} {self.container.name} ')
 
             elif self.container.type == 'singularity':
-                b_opt = ' -B {}:{}'.format(self.host_cvmfs_cache, self.cvmfs_cache)
+                b_opt = f' -B {self.host_cvmfs_cache}:{self.cvmfs_cache}'
                 for b in self.bind:
                     b_opt += ' -B {0}:{0}'.format(b)
 
-                return ("singularity run {b_opt} {name}   "
-                        .format(b_opt=b_opt, name=self.container.name))
+                return (f"singularity run {b_opt} {self.container.name}   ")
 
             elif self.container.type == 'wrapper':
 
-                return "{name} ".format(name=self.container.name)
+                return f"{self.container.name} "
         else:
 
             return ""
@@ -220,8 +219,8 @@ class Scheduler(object):
         else:
             tmp_dir = config.param("DEFAULT", 'tmp_dir', required=True)
 
-            append_command = " | tee {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o ".format(tmp_dir=tmp_dir)
-            test_condition="""
+            append_command = f" | tee {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o "
+            test_condition = """
 grep {pattern} {tmp_dir}/${{JOB_NAME}}_${{TIMESTAMP}}.o
 NO_PROBLEM_IN_LOG=\$?
 
@@ -344,9 +343,42 @@ module unload {module_python} {command_separator}
             command_separator="&&" if (job_status=='\\"running\\"') else ""
         ) if json_file_list else ""
 
+    def job2json_project_tracking(self, pipeline, job, job_status):
+        if not pipeline.json:
+            return ""
+
+        pipeline_output_dir = pipeline.output_dir
+        json_folder = os.path.join(pipeline_output_dir, "json")
+        operation_name = pipeline.__class__.__name__
+        timestamp = pipeline.timestamp
+        json_outfile = os.path.join(json_folder, f"{operation_name}_{timestamp}.json")
+        return """\
+module load {module_python}
+{job2json_project_tracking_script} \\
+  -s \\"{samples}\\" \\
+  -r \\"{readsets}\\" \\
+  -j \\"{job_name}\\" \\
+  -m \\"{metrics}\\" \\
+  -o \\"{json_outfile}\\" \\
+  -f {status}
+module unload {module_python} {command_separator}
+""".format(
+            module_python=config.param('DEFAULT', 'module_python'),
+            job2json_project_tracking_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json_project_tracking.py"),
+            samples=",".join(job.samples),
+            readsets=",".join(job.readsets),
+            job_name=job.name,
+            metrics=",".join(job.metrics),
+            json_outfile=json_outfile,
+            status=job_status,
+            command_separator="&&" if (job_status=='\\"RUNNING\\"') else ""
+        ) if json_outfile else ""
+
 
 class PBSScheduler(Scheduler):
-
+    """
+    PBS Scheduler
+    """
     def __init__(self, *args, **kwargs):
         super(PBSScheduler, self).__init__(*args, **kwargs)
         self.name = 'PBS/TORQUE'
@@ -366,7 +398,7 @@ class PBSScheduler(Scheduler):
 
     def dependency_arg(self, job_name_prefix):
         condition = super().dependency_arg(job_name_prefix)
-        return '-W depend={}:'.format(condition)
+        return f'-W depend={condition}:'
 
     def memory(self, job_name_prefix, adapt=None, info=False):
         mem_str = self.config.param(job_name_prefix, 'cluster_mem', required=False)
@@ -388,7 +420,7 @@ class PBSScheduler(Scheduler):
         if info:
             return per_core, mem
 
-        return "{}{}".format(option, mem)
+        return f"{option}{mem}"
 
     def cpu(self, job_name_prefix, adapt=None):
         cpu = int(super().cpu(job_name_prefix))
@@ -413,9 +445,9 @@ class PBSScheduler(Scheduler):
         node = self.node(job_name_prefix)
         gpu = self.gpu(job_name_prefix)
         if gpu:
-            return "-l nodes={}:ppn={}:gpu{}".format(node, cpu, gpu)
+            return f"-l nodes={node}:ppn={cpu}:gpu{gpu}"
         else:
-            return "-l nodes={}:ppn={}".format(node, cpu)
+            return f"-l nodes={node}:ppn={cpu}"
 
     def submit(self, pipeline):
         self.print_header(pipeline)
@@ -460,10 +492,11 @@ chmod 755 $COMMAND
                     )
 
                     cmd = """\
-echo "rm -f $JOB_DONE && {job2json_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
+echo "rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line} $COMMAND {fail_on_pattern0}
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 {job2json_end}
+{job2json_project_tracking_end}
 {fail_on_pattern1}
 if [ \$MUGQIC_STATE -eq 0 ] ; then
   touch $JOB_DONE ;
@@ -471,6 +504,8 @@ fi
 exit \$MUGQIC_STATE" | \\
 """.format(
                         container_line=self.container_line,
+                        job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
+                        job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$MUGQIC_STATE'),
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                         job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE'),
                         step_wrapper=config_step_wrapper,
@@ -510,12 +545,13 @@ exit \$MUGQIC_STATE" | \\
         # Check cluster maximum job submission
         cluster_max_jobs = config.param('DEFAULT', 'cluster_max_jobs', param_type='posint', required=False)
         if cluster_max_jobs and len(pipeline.jobs) > cluster_max_jobs:
-            logging.warning("Number of jobs: " + str(len(pipeline.jobs)) + " > Cluster maximum number of jobs: " + str(
-                cluster_max_jobs) + "!")
+            logging.warning(f"Number of jobs: {str(len(pipeline.jobs))} > Cluster maximum number of jobs: {str(cluster_max_jobs)}!")
 
 
 class BatchScheduler(Scheduler):
-
+    """
+    No Scheduler: batch mode
+    """
     def __init__(self, *args, **kwargs):
         super(BatchScheduler, self).__init__(*args, **kwargs)
         self.name = 'Batch'
@@ -577,16 +613,19 @@ set -eu -o pipefail
 chmod 755 $COMMAND
 printf "\\n$SEPARATOR_LINE\\n"
 echo "Begin MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`" && \\
-rm -f $JOB_DONE && {job2json_start} {step_wrapper} $COMMAND &> $JOB_OUTPUT
+rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} $COMMAND &> $JOB_OUTPUT
 MUGQIC_STATE=$?
 echo "End MUGQIC Job $JOB_NAME at `date +%FT%H:%M:%S`"
 echo MUGQICexitStatus:$MUGQIC_STATE
 {job2json_end}
+{job2json_project_tracking_end}
 if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
 """.format(
                             job=job,
                             limit_string=os.path.basename(job.done),
                             separator_line=separator_line,
+                            job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
+                            job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$MUGQIC_STATE'),
                             job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                             job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE'),
                             step_wrapper=config_step_wrapper
@@ -595,7 +634,9 @@ if [ $MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; else exit $MUGQIC_STATE ; fi
 
 
 class SlurmScheduler(Scheduler):
-
+    """
+    Slurm Scheduler
+    """
     def __init__(self, *args, **kwargs):
         super(SlurmScheduler, self).__init__(*args, **kwargs)
         self.name = 'SLURM'
@@ -615,15 +656,15 @@ class SlurmScheduler(Scheduler):
         n_gpu = super().gpu(job_name_prefix)
         gpu_type = self.gpu_type(job_name_prefix)
         if gpu_type and n_gpu:
-            return '--gres=gpu:{}:{}'.format(gpu_type, n_gpu)
+            return f'--gres=gpu:{gpu_type}:{n_gpu}'
         elif n_gpu:
-            return '--gres=gpu:{}'.format(n_gpu)
+            return f'--gres=gpu:{n_gpu}'
         else:
             return ''
 
     def dependency_arg(self, job_name_prefix):
         condition = super().dependency_arg(job_name_prefix)
-        return '--depend={}:'.format(condition)
+        return f'--depend={condition}:'
 
     def memory(self, job_name_prefix):
         config_str = 'cluster_mem'
@@ -637,15 +678,15 @@ class SlurmScheduler(Scheduler):
             option = '--mem-per-cpu'
         else:
             option = '--mem'
-        return "{} {}".format(option, mem)
+        return f"{option} {mem}"
 
     def cpu(self, job_name_prefix):
         cpu = super().cpu(job_name_prefix)
-        return '-c {}'.format(cpu)
+        return f'-c {cpu}'
 
     def node(self, job_name_prefix):
         node = super().node(job_name_prefix)
-        return '-N {}'.format(node)
+        return f'-N {node}'
 
     def submit(self, pipeline):
         self.print_header(pipeline)
@@ -756,8 +797,7 @@ exit \$MUGQIC_STATE" | \\
         # Check cluster maximum job submission
         cluster_max_jobs = config.param('DEFAULT', 'cluster_max_jobs', param_type='posint', required=False)
         if cluster_max_jobs and len(pipeline.jobs) > cluster_max_jobs:
-            logger.warning("Number of jobs: " + str(len(pipeline.jobs)) + " > Cluster maximum number of jobs: " + str(
-                cluster_max_jobs) + "!")
+            logger.warning(f"Number of jobs: {str(len(pipeline.jobs))} > Cluster maximum number of jobs: {str(cluster_max_jobs)} !")
 
 
 class DaemonScheduler(Scheduler):
