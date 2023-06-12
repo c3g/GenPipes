@@ -2388,10 +2388,11 @@ class RunProcessing(common.MUGQICPipeline):
             self.add_copy_job_inputs(lane_jobs, lane)
             jobs.extend(lane_jobs)
 
-        if self.args.type == 'mgit7':
-            return jobs
-        else:
-            return self.throttle_jobs(jobs)
+        return jobs
+        # if self.args.type == 'mgit7':
+        #     return jobs
+        # else:
+        #     return self.throttle_jobs(jobs)
 
     def md5(self):
         """
