@@ -47,6 +47,7 @@ def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libra
             output_prefix + ".time_metrics.csv",
             output_prefix + ".fastqc_metrics.csv"
             ]
+    outputs = outputs.extend(report_files)
     if protocol == "dragen":
 
         duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='boolean')
@@ -62,7 +63,7 @@ def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libra
 
     return Job(
         inputs,
-        [outputs, report_files],
+        [outputs],
         [],
         command="""\
 dragen_reset && \\
