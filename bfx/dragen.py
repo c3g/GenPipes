@@ -37,7 +37,16 @@ def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libra
                       protocol="hybrid"):
     output_prefix = readsetName + ".sorted"
     outputs = output_prefix + ".bam"
-
+    report_files = [
+            output_prefix + ".mapping_metrics.csv",
+            output_prefix + ".wgs_coverage_metrics.csv",
+            output_prefix + ".wgs_fine_hist.csv",
+            output_prefix + ".wgs_contig_mean_cov.csv",
+            output_prefix + ".fragment_length_hist.csv",
+            output_prefix + ".trimmer_metrics.csv",
+            output_prefix + ".time_metrics.csv",
+            output_prefix + ".fastqc_metrics.csv"
+            ]
     if protocol == "dragen":
 
         duplicate_marking = config.param('dragen_align', 'duplicate_marking', param_type='boolean')
@@ -53,7 +62,7 @@ def align_methylation(fastq1, fastq2, output_dir, readsetName, sampleName, libra
 
     return Job(
         inputs,
-        [outputs],
+        [outputs]+report_files,
         [],
         command="""\
 dragen_reset && \\
@@ -89,6 +98,7 @@ dragen --enable-methylation-calling true \\
             fastq1=fastq1,
             fastq2="-2 " + fastq2 if fastq2 != None else ""
         ),
+        report_files = report_files
     )
 
 
