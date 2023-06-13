@@ -365,8 +365,8 @@ module unload {module_python} {command_separator}
 """.format(
             module_python=config.param('DEFAULT', 'module_python'),
             job2json_project_tracking_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json_project_tracking.py"),
-            samples=",".join(job.samples),
-            readsets=",".join(job.readsets),
+            samples=",".join([sample.name for sample in job.samples]),
+            readsets=",".join([readset.name for readset in job.readsets]),
             job_name=job.name,
             metrics=",".join(job.metrics),
             json_outfile=json_outfile,
