@@ -58,7 +58,7 @@ def create(pipeline, sample):
             }
         current_json_hash['sample'].append(sample_json)
     else:
-        sample_json = current_json_hash['sample'][int(''.join(sample_hash_position))]
+        sample_json = current_json_hash['sample'][sample_hash_position[0]]
 
     for readset in sample.readsets:
         readset_hash_position = [pos for pos, val in enumerate(sample_json['readset']) if val['readset_name'] == readset.name]
@@ -69,7 +69,7 @@ def create(pipeline, sample):
                 }
             sample_json['readset'].append(readset_json)
         else:
-            readset_json = sample_json[int(''.join(readset_hash_position))]
+            readset_json = sample_json['readset'][readset_hash_position[0]]
         for step in pipeline.step_range:
             for job in step.jobs:
                 if readset in job.readsets:
@@ -84,7 +84,7 @@ def create(pipeline, sample):
                             }
                         readset_json['job'].append(job_json)
                     else:
-                        job_json = readset_json[int(''.join(job_hash_position))]
+                        job_json = readset_json['job'][job_hash_position[0]]
                     for output_file in job.output_files:
                         file_hash_position = [pos for pos, val in enumerate(job_json['file']) if val['file_name'] == os.path.basename(output_file)]
                         if not file_hash_position:
@@ -95,7 +95,7 @@ def create(pipeline, sample):
                                 }
                             job_json['file'].append(file_json)
                         else:
-                            file_json = readset_json[int(''.join(file_hash_position))]
+                            file_json = job_json['file'][file_hash_position[0]]
 
     with open(json_file, 'w', encoding='utf-8') as j_file:
         json.dump(current_json_hash, j_file, ensure_ascii=False, indent=4)
@@ -131,8 +131,6 @@ def init(
 
     if not os.path.exists(json_folder):
         os.makedirs(json_folder)
-
-    print(json.dumps(json_output, indent=4))
 
     json_file = os.path.join(json_folder, f"{operation_name}_{timestamp}.json")
     log.debug(f"Initializing project_tracking JSON: {json_file}")
