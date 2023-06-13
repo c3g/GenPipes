@@ -737,10 +737,11 @@ date
 scontrol show job \$SLURM_JOBID
 sstat -j \$SLURM_JOBID.batch
 echo '#######################################'
-rm -f $JOB_DONE && {job2json_start} {step_wrapper} {container_line}  $COMMAND {fail_on_pattern0}
+rm -f $JOB_DONE && {job2json_project_tracking_start} {job2json_start} {step_wrapper} {container_line}  $COMMAND {fail_on_pattern0}
 MUGQIC_STATE=\$PIPESTATUS
 echo MUGQICexitStatus:\$MUGQIC_STATE
 {job2json_end}
+{job2json_project_tracking_end}
 {fail_on_pattern1}
 if [ \$MUGQIC_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
 echo '#######################################'
@@ -752,6 +753,8 @@ echo '#######################################'
 exit \$MUGQIC_STATE" | \\
 """.format(
                         job=job,
+                        job2json_project_tracking_start=self.job2json_project_tracking(pipeline, job, '\\"RUNNING\\"'),
+                        job2json_project_tracking_end=self.job2json_project_tracking(pipeline, job, '\\$MUGQIC_STATE'),
                         job2json_start=self.job2json(pipeline, step, job, '\\"running\\"'),
                         job2json_end=self.job2json(pipeline, step, job, '\\$MUGQIC_STATE') ,
                         container_line=self.container_line,
