@@ -130,6 +130,8 @@ def init(
     if not os.path.exists(json_folder):
         os.makedirs(json_folder)
 
+    print(json.dumps(json_output, indent=4))
+
     json_file = os.path.join(json_folder, f"{operation_name}_{timestamp}.json")
     log.debug(f"Initializing project_tracking JSON: {json_file}")
     with open(json_file, 'w', encoding='utf-8') as j_file:

@@ -48,7 +48,7 @@ class Pipeline:
     Pipeline class definition
     """
     def __init__(self):
-        self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        self._timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H.%M.%S")
         self._args = self.argparser.parse_args()
         self._genpipes_version = subprocess.check_output("cat " + os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))), "VERSION"), shell=True)
 
