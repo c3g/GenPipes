@@ -357,8 +357,7 @@ module load {module_python}
 {job2json_project_tracking_script} \\
   -s \\"{samples}\\" \\
   -r \\"{readsets}\\" \\
-  -j \\"{job_name}\\" \\
-  -m \\"{metrics}\\" \\
+  -j \\"{job_name}\\" \\{metrics}
   -o \\"{json_outfile}\\" \\
   -f {status}
 module unload {module_python} {command_separator}
@@ -368,7 +367,7 @@ module unload {module_python} {command_separator}
             samples=",".join([sample.name for sample in job.samples]),
             readsets=",".join([readset.name for readset in job.readsets]),
             job_name=job.name,
-            metrics=",".join(job.metrics),
+            metrics=('\n  -m \\"' + ','.join(job.metrics) + '\\" \\') if job.metrics else '',
             json_outfile=json_outfile,
             status=job_status,
             command_separator="&&" if (job_status=='\\"RUNNING\\"') else ""
