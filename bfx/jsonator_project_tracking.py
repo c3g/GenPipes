@@ -31,10 +31,12 @@ log = logging.getLogger(__name__)
 deliverable_job = []
 deliverable_file = []
 
-def create(pipeline, sample, json_file):
+def create(pipeline, sample):
     """
     Starts creating the json dump for the passed sample
     """
+
+    json_file = pipeline.project_tracking_json
 
     if not os.path.isabs(pipeline.output_dir):
         pipeline_output_dir = os.path.abspath(pipeline.output_dir)

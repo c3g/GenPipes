@@ -163,7 +163,7 @@ class Pipeline:
                     to_parse = True
                 if to_parse:
                     config_trace_content.append(line)
-        jsonator_project_tracking.init(
+        self._project_tracking_json = jsonator_project_tracking.init(
             operation_name=self.__class__.__name__,
             operation_config_version=self._genpipes_version,
             operation_cmd_line=full_command,
@@ -335,6 +335,10 @@ class Pipeline:
     @property
     def json(self):
         return self._json
+
+    @property
+    def project_tracking_json(self):
+        return self._project_tracking_json
 
     @property
     def genpipes_version(self):
