@@ -116,7 +116,7 @@ def init(
     json_output = {
         'project_name': config.param("DEFAULT", 'project_name', required=True),
         'operation_config_name': 'genpipes_ini',
-        'operation_config_version': operation_config_version,
+        'operation_config_version': f'{operation_config_version}',
         'operation_config_md5sum': operation_config_md5sum,
         'operation_config_data': ''.join(operation_config_data),
         'operation_platform': config.param("DEFAULT", 'cluster_server', required=True),
