@@ -28,9 +28,6 @@ from core.config import config
 
 log = logging.getLogger(__name__)
 
-deliverable_job = []
-deliverable_file = []
-
 def create(pipeline, sample):
     """
     Starts creating the json dump for the passed sample
@@ -90,12 +87,13 @@ def create(pipeline, sample):
                         file_hash_position = [pos for pos, val in enumerate(job_json['file']) if val['file_name'] == os.path.basename(output_file)]
                         if not file_hash_position:
                             # /!\ Can't os.path.join for location_uri otherwise the 'server://' disappears
-                            file_json = {
-                                'location_uri': f'{path_prefix}/{output_file}',
-                                'file_name': os.path.basename(output_file),
-                                'file_deliverable': True if (os.path.basename(output_file) in deliverable_file or job.name in deliverable_job) else False
-                                }
-                            job_json['file'].append(file_json)
+                            _, extension = os.path.splitext(os.path.basename(output_file))
+                            if extension:
+                                file_json = {
+                                    'location_uri': f'{path_prefix}/{output_file}',
+                                    'file_name': os.path.basename(output_file)
+                                    }
+                                job_json['file'].append(file_json)
                         else:
                             file_json = job_json['file'][file_hash_position[0]]
 
@@ -118,7 +116,7 @@ def init(
     """
 
     json_output = {
-        'project_name': config.param("DEFAULT", 'project_name', required=True),
+        'project_name': config.param("DEFAULT", 'project_name', required=False) if config.param("DEFAULT", 'project_name', required=False) else None,
         'operation_config_name': 'genpipes_ini',
         'operation_config_version': f'{operation_config_version.strip()}',
         'operation_config_md5sum': operation_config_md5sum,
