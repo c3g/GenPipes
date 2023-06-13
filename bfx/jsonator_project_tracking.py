@@ -42,7 +42,8 @@ def create(pipeline, sample):
         pipeline_output_dir = os.path.abspath(pipeline.output_dir)
     else:
         pipeline_output_dir = pipeline.output_dir
-    path_prefix = os.path.join(config.param("DEFAULT", 'cluster_server', required=True) + "://", pipeline_output_dir)
+    # /!\ Can't os.path.join otherwise the 'server://' disappears
+    path_prefix = config.param("DEFAULT", 'cluster_server', required=True) + "://" + pipeline_output_dir
 
     log.debug(f"Updating project_tracking JSON {json_file} for sample '{sample.name}'")
 
@@ -88,8 +89,9 @@ def create(pipeline, sample):
                     for output_file in job.output_files:
                         file_hash_position = [pos for pos, val in enumerate(job_json['file']) if val['file_name'] == os.path.basename(output_file)]
                         if not file_hash_position:
+                            # /!\ Can't os.path.join for location_uri otherwise the 'server://' disappears
                             file_json = {
-                                'location_uri': os.path.join(path_prefix, output_file),
+                                'location_uri': f'{path_prefix}/{output_file}',
                                 'file_name': os.path.basename(output_file),
                                 'file_deliverable': True if (os.path.basename(output_file) in deliverable_file or job.name in deliverable_job) else False
                                 }
@@ -118,12 +120,12 @@ def init(
     json_output = {
         'project_name': config.param("DEFAULT", 'project_name', required=True),
         'operation_config_name': 'genpipes_ini',
-        'operation_config_version': f'{operation_config_version}',
+        'operation_config_version': f'{operation_config_version.strip()}',
         'operation_config_md5sum': operation_config_md5sum,
         'operation_config_data': ''.join(operation_config_data),
         'operation_platform': config.param("DEFAULT", 'cluster_server', required=True),
         'operation_cmd_line': operation_cmd_line,
-        'operation_name': operation_name,
+        'operation_name': f'GenPipes_{operation_name}',
         'sample': []
     }
 
