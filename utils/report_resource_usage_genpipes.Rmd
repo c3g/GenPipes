@@ -20,11 +20,19 @@ output:
 ---
 
 ```{r temp_setup, echo = FALSE}
-#params$input <<- "/Users/mleguen/Documents/local/projet/optimize_resources_report"
-#params$output <<- NA
-#params$name <<- "Optimize_ressource_report"
-#params$verbose <<- TRUE
-#params$scheduler <<- "SLURM"
+input <- params$input
+output <- params$output
+name_doc <- params$name
+verbose <- params$verbose
+scheduler <- params$scheduler
+
+# input <- "/Users/mleguen/Documents/local/apps/job_output_PBS"
+# output <- NA
+# name_doc <- "Optimize_ressource_report"
+# verbose <- TRUE
+# scheduler <- "PBS"
+
+
 ```
 
 ```{r setup, echo = FALSE}
@@ -138,13 +146,29 @@ parsed_folder <- function(folder_path_list){
     # print("-----NEW FOLDER-----")
     
     for (j in i){
-      # print("-----NEW .O FILE-----") 
+      # print("-----NEW .O FILE-----")
       # print("path (j) : ")
       # print(j)
       
       #file reading
       #FileInput = readLines(j)
-      FileInput = scan(j ,sep="\n",what="char(0)",nlines=5000, quiet = TRUE)
+      #FileInput = scan(j ,sep="\n",what="char(0)",nlines=5000, quiet = TRUE)
+      
+      if(scheduler == "SLURM"){ 
+        start_val <- "EPILOGUE"
+      }
+      
+      #temp_setup params$scheduler
+      if(scheduler == "PBS"){
+        start_val <- "Epilogue"
+      }
+      
+      #bash function to open files starting at "Epilogue" or "EPILOGUE" string (depending on scheduler)
+      bash_readfile_com = paste(c("cat ", j , " | sed -e '1,/",  start_val ,"/d'"), collapse="")
+      FileInput <- system(bash_readfile_com, intern= TRUE)
+      
+      # print("BASH RETURN")
+      # print(FileInput)
       
       # Replace line feeds with spaces
       FileInput_Space <- gsub(pattern = "\\n", replacement = " ", x = FileInput)
@@ -153,25 +177,18 @@ parsed_folder <- function(folder_path_list){
       FileInput_List <<- strsplit(x = FileInput_Space, split = " ")
       
       #temp_setup  params$scheduler
-      if(params$scheduler == "SLURM"){ 
+      if(scheduler == "SLURM"){ 
         List_values <<- Values_SLURM(FileInput_List)
       }
       
       #temp_setup params$scheduler
-      if(params$scheduler == "PBS"){
+      if(scheduler == "PBS"){
         List_values <<- Values_PBS(FileInput_List)
       }
 
       # print("VALUES TROUVEES") #modif
       # print(List_values)
-      # print("\n")
-      
-      # #fill df_info with new information and rename columns
-      # df_info <- data.frame(List_values)
-      # names(df_info) <- c("JobName", "WaitingTime", "RunTime", "TimeLimit", "NumCPUs", "Memory_Efficiency", "Memory_Request")
-      # #type change 
-      # df_info$RunTime <- as.character(df_info$RunTime)
-      
+
       # print("VERIF AJOUT")
       # print(length(List_values) != 1)
       
@@ -338,7 +355,8 @@ research_Element_SLURM <- function(Input_file, Researched_element){
     {
       #research element 
       Pos_eli_time <- grep(Researched_element,Input_file)
-      Pos1 <- as.integer(strsplit(x = as.character(Pos_eli_time), split = " ")[[2]]) #position of list containing element
+      #Pos1 <- as.integer(strsplit(x = as.character(Pos_eli_time), split = " ")[[2]]) #position of list containing element
+      Pos1 <- tail(Pos_eli_time, n=1)
       
       #list containing research element
       list <- Input_file[Pos1]
@@ -686,8 +704,8 @@ Keep_hour <- function(df, df2 = NA, unite = NA){
 ```{r result_creation, echo = FALSE}
 
 #temp_setup
-job_output_path = params$input
-output_path = params$output
+job_output_path = input
+output_path = output
 
 #job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
 #job_output_path = "/scratch/matteol/genpipes_test/job_output"
@@ -713,7 +731,7 @@ DF_plot <- result[[2]]
 actual_date_time <- strsplit(x= as.character(Sys.time()), split = " ")[[1]][1:2] %>%
   paste(collapse ="T") %>% 
   gsub(pattern = ":", replacement = ".")
-file_name <- paste(c(params$name, actual_date_time), collapse ="_")  #temp_setup  
+file_name <- paste(c(name_doc, actual_date_time), collapse ="_")  #params$name
 complete_path_name <- paste(c(output_path, file_name), collapse ="/")
 complete_path_name_csv <- paste(c(complete_path_name,"csv"), collapse =".")
 
@@ -754,8 +772,8 @@ DF_plot$Memory_Request <- as.numeric(DF_plot$Memory_Request)
 ```
 
 
-```{r verbose, condition, eval=params$verbose, echo = FALSE}
-#temp_setup 
+```{r verbose, condition, eval=verbose, echo = FALSE}
+#temp_setup params$verbose
 cat("*** \n ")
 
 cat('\n##', "Verbose", '\n')
@@ -772,7 +790,7 @@ cat(paste0("**", nrow(Info_df),"** differents steps in total among all files." ,
 cat(paste0("Path used : **", opt$in_path,"**  \n"))
 
 #scheduler choosed  params$scheduler
-cat(paste0("Scheduler choosed : **", params$scheduler ,"**"))
+cat(paste0("Scheduler choosed : **", scheduler ,"**"))
 
 
 ```
@@ -840,7 +858,7 @@ dat1 <- data_to_boxplot(data = DF_plot,
 # This parameter is fixed but could be changed in the future.
 ##### WARNING #####
 # params$scheduler
-if ( params$scheduler == "SLURM"){
+if ( scheduler == "SLURM"){
   # SLURM scheduler used, memory efficiency is available and displayed
   if(all(!is.na(DF_plot$Memory_Efficiency))){  
     cat("This plot represent the amount of memory required and the associated efficiency.") 
