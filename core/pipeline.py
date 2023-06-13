@@ -165,7 +165,7 @@ class Pipeline:
                     config_trace_content.append(line)
         jsonator_project_tracking.init(
             operation_name=self.__class__.__name__,
-            operation_config_version=self._genpipes_version,
+            operation_config_version=self._genpipes_version.decode("utf-8"),
             operation_cmd_line=full_command,
             operation_config_md5sum=md5(config_trace_filename),
             operation_config_data=config_trace_content,

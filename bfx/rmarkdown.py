@@ -30,6 +30,7 @@ def render(
     job_name,
     input_rmarkdown_file,
     samples,
+    readsets,
     render_output_dir,
     module_section="DEFAULT",
     prerun_r=""
@@ -63,5 +64,6 @@ EOF""".format(
         ),
         name=job_name,
         samples=samples,
+        readsets=readsets,
         report_files=[output_markdown_file],
     )
