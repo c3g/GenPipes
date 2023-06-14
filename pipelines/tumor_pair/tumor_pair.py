@@ -247,7 +247,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             ],
                             name="sym_link_fastq.pairs." + str(read) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.tumor, tumor_pair.normal],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -351,7 +351,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         ],
                         name="gatk_indel_realigner." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -447,7 +447,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             ],
                             name="gatk_indel_realigner." + tumor_pair.name + "." + str(idx),
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -527,7 +527,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         ],
                         name="gatk_indel_realigner." + tumor_pair.name + ".others",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -713,7 +713,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             ],
                             name="interval_list." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -880,7 +880,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             ],
                             name="sym_link_final_bam.pairs." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
         return jobs
@@ -971,7 +971,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     ],
                     name="conpair_concordance_contamination." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
             self.multiqc_inputs[tumor_pair.name].extend(
@@ -1024,7 +1024,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         ],
                         name="rawmpileup_panel." + tumor_pair.name + ".all",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -1053,7 +1053,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 ],
                                 name="rawmpileup_panel." + tumor_pair.name + "." + sequence['name'],
                                 samples=[tumor_pair.tumor, tumor_pair.normal],
-                                readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                             )
                         )
         return jobs
@@ -1134,7 +1134,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         ],
                         name="varscan2_somatic_panel." + tumor_pair.name + ".all",
                         samples=[tumor_pair.tumor, tumor_pair.normal],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -1204,7 +1204,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 ],
                                 name="varscan2_somatic_panel." + tumor_pair.name + "." + sequence['name'],
                                 samples=[tumor_pair.tumor, tumor_pair.normal],
-                                readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                             )
                         )
         return jobs
@@ -1287,7 +1287,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         ],
                         name="merge_varscan2." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -1365,7 +1365,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         ],
                         name="merge_varscan2." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
         return jobs
@@ -1409,7 +1409,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     ],
                     name="preprocess_vcf_panel.somatic." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -1435,7 +1435,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     ],
                     name="preprocess_vcf_panel.germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -1481,7 +1481,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     ],
                     name="compute_cancer_effects_somatic.file." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets)),
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     removable_files=[varscan_directory]
                 )
             )
@@ -1503,7 +1503,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     ],
                     name = "compute_cancer_effects_somatic." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -1524,7 +1524,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     ],
                     name="compute_cancer_effects_germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
         return jobs
@@ -1552,7 +1552,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     ],
                     name="gemini_annotations.somatic." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -1567,7 +1567,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     ],
                     name="gemini_annotations.germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -1652,7 +1652,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             ],
                             name="sym_link_panel." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
         return jobs
@@ -2190,7 +2190,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             )
             job.name = "multiqc." + tumor_pair.name
             job.samples = [tumor_pair.normal, tumor_pair.tumor]
-            job.readsets = list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+            job.readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
             job.input_files = self.multiqc_inputs[tumor_pair.name]
             jobs.append(job)
         return jobs
@@ -2218,7 +2218,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             ],
                             name="sym_link_fastq.report." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
         return jobs
@@ -2291,7 +2291,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         ],
                         name="rawmpileup." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -2320,7 +2320,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                 ],
                                 name="rawmpileup." + tumor_pair.name + "." + sequence['name'],
                                 samples=[tumor_pair.normal, tumor_pair.tumor],
-                                readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                             )
                         )
 
@@ -2418,7 +2418,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         ],
                         name="varscan2_somatic." + tumor_pair.name,
                         samples=[tumor_pair.tumor, tumor_pair.normal],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -2499,7 +2499,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                 ],
                                 name="varscan2_somatic." + tumor_pair.name + "." + sequence['name'],
                                 samples=[tumor_pair.tumor, tumor_pair.normal],
-                                readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                             )
                         )
         return jobs
@@ -2617,7 +2617,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         ],
                         name="merge_varscan2." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -2704,7 +2704,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         ],
                         name="merge_varscan2." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
         return jobs
@@ -2767,7 +2767,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             ],
                             name="interval_list." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
                     created_interval_lists.append(interval_list)
@@ -2794,7 +2794,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         ],
                         name="gatk_mutect2." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -2826,7 +2826,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             ],
                             name="gatk_mutect2." + tumor_pair.name + "." + str(idx),
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -2852,7 +2852,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         ],
                         name="gatk_mutect2." + tumor_pair.name + ".others",
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -2944,7 +2944,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             ],
                             name="merge_filter_mutect2." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -3013,7 +3013,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             ],
                             name="symlink_mutect_vcf." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -3119,7 +3119,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             ],
                             name="merge_filter_mutect2." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -3203,7 +3203,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             ],
                             name="merge_filter_mutect2." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -3276,7 +3276,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         ],
                         name="bed_index." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -3316,7 +3316,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="strelka2_paired_somatic.call."+tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets)),
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=[input_normal, input_tumor, manta_indels, bed_file],
                     output_dependency=output_dep
                 )
@@ -3397,7 +3397,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="strelka2_paired_somatic.filter." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -3469,7 +3469,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="bed_index." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -3503,7 +3503,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="strelka2_paired_germline.call."+tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets)),
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=input + [bed_file],
                     output_dependency=output_dep
                 )
@@ -3579,7 +3579,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="strelka2_paired_germline.filter." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -3614,7 +3614,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         os.path.join(pair_directory, tumor_pair.tumor.name + ".vcf.gz")
                     ],
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -3809,7 +3809,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ],
                             name="vardict_paired." + tumor_pair.name + "." + str(idx).zfill(4),
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
                     idx += 1
@@ -3832,7 +3832,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="vardict.genome.beds." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
                 for idx in range(nb_jobs):
@@ -3872,7 +3872,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ],
                             name="vardict_paired." + tumor_pair.name + "." + str(idx),
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -3997,7 +3997,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="symlink_vardict_vcf." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
             else:
@@ -4101,7 +4101,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="merge_filter_paired_vardict." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -4158,7 +4158,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="bcbio_ensemble_somatic." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets)),
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=inputs_somatic
                 )
             )
@@ -4222,7 +4222,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="bcbio_ensemble_germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets)),
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=inputs_germline
                 )
             )
@@ -4285,7 +4285,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="gatk_variant_annotator_somatic." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -4312,7 +4312,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ],
                             name="gatk_variant_annotator_somatic." + str(idx) + "." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -4336,7 +4336,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="gatk_variant_annotator_somatic.others." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -4398,7 +4398,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="gatk_variant_annotator_germline." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -4425,7 +4425,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ],
                             name="gatk_variant_annotator_germline." + str(idx) + "." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -4449,7 +4449,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="gatk_variant_annotator_germline.others." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -4489,7 +4489,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="merge_gatk_variant_annotator.somatic." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -4530,7 +4530,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="merge_gatk_variant_annotator.germline." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -4599,7 +4599,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="filter_ensemble.germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -4641,7 +4641,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="report_cpsr." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -4790,7 +4790,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="report_pcgr." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets)),
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency = [header, input, input_cna, input_cpsr, output_cna_body],
                     output_dependency = [header, output_cna_body, output_cna, output]
                 )
@@ -4843,7 +4843,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="compute_cancer_effects_somatic." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -4890,7 +4890,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="compute_cancer_effects_germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -4930,7 +4930,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="dbnsfp_annotation.somatic." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
         return jobs
@@ -4969,7 +4969,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="dbnsfp_annotation.germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -5006,7 +5006,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="gemini_annotations.somatic." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -5041,7 +5041,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="gemini_annotations.germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -5123,7 +5123,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ],
                             name="sym_link_ensemble." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
         return jobs
@@ -5541,7 +5541,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="sequenza.create_seqz." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -5560,7 +5560,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="sequenza." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -5589,7 +5589,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 ],
                                 name="sequenza.create_seqz." + sequence['name'] + "." + tumor_pair.name,
                                 samples=[tumor_pair.normal, tumor_pair.tumor],
-                                readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                             )
                         )
 
@@ -5624,7 +5624,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="sequenza.merge_binned_seqz." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -5643,7 +5643,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="sequenza." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -5684,7 +5684,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ],
                             name="sym_link.sequenza." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -5738,7 +5738,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="purple.convert_strelka2." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -5779,7 +5779,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="purple.amber." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
             jobs.append(
@@ -5799,7 +5799,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="purple.cobalt." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
             purple_purity_output = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")
@@ -5837,7 +5837,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="purple.purity." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
             self.multiqc_inputs[tumor_pair.name].extend(
@@ -5919,7 +5919,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="delly_call_filter." + str(sv_type) + "." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -5978,7 +5978,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="sv_annotation.delly.merge_sort_filter." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -6013,7 +6013,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="sv_annotation.delly.somatic." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets)),
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=[output_flt_vcf]
                 )
             )
@@ -6049,7 +6049,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="sv_annotation.delly.germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -6095,7 +6095,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ],
                             name="sym_link_delly.somatic." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -6136,7 +6136,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ],
                             name="sym_link_delly.germline." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
         return jobs
@@ -6207,7 +6207,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ],
                         name="bed_index." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                     )
                 )
 
@@ -6268,7 +6268,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="manta_sv." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets)),
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=[input_normal, input_tumor, bed_file]
                 )
             )
@@ -6303,7 +6303,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="sv_annotation.manta_somatic." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -6328,7 +6328,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="sv_annotation.manta_germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -6374,7 +6374,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ],
                             name="sym_link_manta.somatic." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
 
@@ -6415,7 +6415,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ],
                             name="sym_link_manta.germline." + str(idx) + "." + tumor_pair.name + "." + key,
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
         return jobs
@@ -6495,7 +6495,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="cnvkit_batch." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -6520,7 +6520,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="cnvkit_batch.correction." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -6551,7 +6551,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="cnvkit_batch.call." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
 
@@ -6583,7 +6583,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="cnvkit_batch.metrics." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets))
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
         return jobs
@@ -6712,7 +6712,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="gridss_paired_somatic." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets)),
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency=[input_normal, input_tumor]
                 )
             )
@@ -6733,7 +6733,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="gripss_filter.somatic." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets)),
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                 )
             )
 
@@ -6753,7 +6753,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="gripss_filter.germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=list(tumor_pair.normal.readsets).extend(list(tumor_pair.tumor.readsets)),
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                  )
             )
         return jobs
