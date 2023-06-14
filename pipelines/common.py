@@ -513,7 +513,7 @@ pandoc \\
                         ],
                         name="symlink_readset_sample_bam." + sample.name,
                         samples=[sample],
-                        readsets=[readset for readset in sample.readset]
+                        readsets=list(sample.readsets)
                     )
                 )
 
