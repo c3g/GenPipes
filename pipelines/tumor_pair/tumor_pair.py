@@ -696,7 +696,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             interval_list = None
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(
-                tumor_pair.normal.readsetss[0]
+                tumor_pair.normal.readsets[0]
             )
             if coverage_bed:
                 interval_list = os.path.join(tumor_alignment_directory, re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed)))
@@ -1971,7 +1971,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             use_bed = config.param('dna_sample_qualimap', 'use_bed', param_type='boolean', required=True)
             options = None
             if use_bed:
-                bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsetss[0])
+                bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
                 options = config.param('dna_sample_qualimap', 'qualimap_options') + " --feature-file " + bed
             else:
                 options = config.param('dna_sample_qualimap', 'qualimap_options')
@@ -2098,12 +2098,12 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             if not adapter_file:
                 normal_adapter_job = adapters.create(
-                    tumor_pair.normal.readsetss[0],
+                    tumor_pair.normal.readsets[0],
                     os.path.join(normal_output_dir, "adapter.tsv"),
                     fastqc=True
                 )
                 tumor_adapter_job = adapters.create(
-                    tumor_pair.tumor.readsetss[0],
+                    tumor_pair.tumor.readsets[0],
                     os.path.join(tumor_output_dir, "adapter.tsv"),
                     fastqc=True
                 )
@@ -2243,7 +2243,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             bed_file = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(
-                tumor_pair.normal.readsetss[0]
+                tumor_pair.normal.readsets[0]
             )
 
             if coverage_bed:
@@ -2751,7 +2751,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             interval_list = None
 
-            coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsetss[0])
+            coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
             if coverage_bed:
                 interval_list = os.path.join(mutect_directory, re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed)))
 
@@ -3249,7 +3249,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             bed_file = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(
-                tumor_pair.normal.readsetss[0]
+                tumor_pair.normal.readsets[0]
             )
 
             if coverage_bed:
@@ -3442,7 +3442,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             input = [input_normal, input_tumor]
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(
-                tumor_pair.normal.readsetss[0]
+                tumor_pair.normal.readsets[0]
             )
 
             if coverage_bed:
@@ -6181,7 +6181,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
             bed_file = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(
-                tumor_pair.normal.readsetss[0]
+                tumor_pair.normal.readsets[0]
             )
 
             if coverage_bed:
@@ -6457,7 +6457,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 pool_ref_cnn = None
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(
-                tumor_pair.normal.readsetss[0]
+                tumor_pair.normal.readsets[0]
             )
 
             bed = None
