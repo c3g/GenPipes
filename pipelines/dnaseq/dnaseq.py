@@ -694,7 +694,7 @@ END
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             realign_directory = os.path.join(alignment_directory, "realign")
             readset = sample.readsets[0]
-            
+
             quality_offsets = [readset.quality_offset for readset in sample.readsets]
 
             [input] = self.select_input_files(
@@ -3839,7 +3839,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             pair_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
             cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
             inputNormal = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.recal.bam")
-            
+
             tarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.targetcoverage.cnn")
             antitarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.antitargetcoverage.cnn")
             ref_cnn = os.path.join(cnvkit_dir, sample.name + ".reference.cnn")
