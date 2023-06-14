@@ -343,7 +343,8 @@ END
                     ],
                     name="skewer_trimming." + readset.name,
                     removable_files=[output_dir],
-                    samples=[readset.sample]
+                    samples=[readset.sample],
+                    readsets=[readset]
                 )
             )
 
@@ -526,7 +527,8 @@ END
                         )
                     ],
                     name="bwa_mem_sambamba." + readset.name,
-                    samples=[readset.sample]
+                    samples=[readset.sample],
+                    readsets=[readset]
                 )
             )
 
@@ -561,7 +563,8 @@ END
                     ],
                     input_dependency=[readset_bam],
                     name="sambamba_sort." + readset.name,
-                    samples=[readset.sample]
+                    samples=[readset.sample],
+                    readsets=[readset]
                 )
             )
 

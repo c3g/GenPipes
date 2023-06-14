@@ -246,9 +246,13 @@ class Illumina(MUGQICPipeline):
                                 bam,
                                 fastq1,
                                 fastq2
+                                )
+                            ],
+                            name=f"picard_sam_to_fastq.{readset.name}",
+                            samples=[readset.sample],
+                            readsets=[readset]
                             )
-                        ], name="picard_sam_to_fastq."+readset.name, samples=[readset.sample])
-                    )
+                        )
                 else:
                     _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
         return jobs
@@ -508,7 +512,8 @@ pandoc \\
                             )
                         ],
                         name="symlink_readset_sample_bam." + sample.name,
-                        samples=[sample]
+                        samples=[sample],
+                        readsets=[readset for readset in sample.readset]
                     )
                 )
 
