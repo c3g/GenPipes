@@ -314,6 +314,7 @@ Pipelines require as input one Readset File, one or more Configuration File(s) a
 
 For more information about a specific pipeline, visit:
 
+### [DOvEE-Gene Pipeline](https://bitbucket.org/mugqic/genpipes/src/DOvEE_genpipes/pipelines/dovee_gene/)
 ### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq/)
 ### [DNA-Seq high Coverage Pipeline Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq_high_coverage/)
 ### [RNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/rnaseq/)
@@ -334,7 +335,7 @@ Readset File
 The Readset File is a TAB-separated values plain text file with one line per readset and the following columns in any order:
 
 
-### DNA-Seq, DNA-Seq high Coverage, RNA-Seq, RNA-Seq De Novo Assembly, Amplicon-Seq, Tumor Pair, Methyl-Seq, CoV-Seq
+### DOvEE-Gene, DNA-Seq, DNA-Seq high Coverage, RNA-Seq, RNA-Seq De Novo Assembly, Amplicon-Seq, Tumor Pair, Methyl-Seq, CoV-Seq
 
 * Sample: must contain letters A-Z, numbers 0-9, hyphens (-) or underscores (_) only; BAM files will be merged into a file named after this value; mandatory;
 * Readset: a unique readset name with the same allowed characters as above; mandatory;
@@ -476,6 +477,16 @@ $MUGQIC_PIPELINES_HOME/pipelines/dnaseq/dnaseq.py --config $MUGQIC_PIPELINES_HOM
 
 Design File
 -----------
+### DOvEE-Gene
+
+DOvEE-Gene uses the design file to assign samples to brush or saliva for purposes of analysis steps that differ between the two sample types.
+
+Example:
+
+    Sample  Source
+    SampleA saliva
+    SampleB brush
+
 RNA-Seq, RNA-Seq De Novo Assembly and ChIP-Seq pipelines can perform differential expression analysis if they are provided with an input Design File.
 
 The Design File is a TAB-separated values plain text file with one line per sample and the following columns:
