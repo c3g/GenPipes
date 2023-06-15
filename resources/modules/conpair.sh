@@ -3,18 +3,14 @@
 set -eu -o pipefail
 
 SOFTWARE=Conpair
-VERSION=0.2
+VERSION=0.2.1
 ARCHIVE=${SOFTWARE}-${VERSION}.zip
-ARCHIVE_URL=https://github.com/nygenome/$SOFTWARE/archive/master.zip
+ARCHIVE_URL=https://github.com/mareikejaniak/$SOFTWARE/archive/refs/tags/${VERSION}.zip
 SOFTWARE_DIR=${SOFTWARE}-${VERSION}
 
-# Specific commands to extract and build the software
-# $INSTALL_DIR and $INSTALL_DOWNLOAD have been set automatically
-# $ARCHIVE has been downloaded in $INSTALL_DOWNLOAD
 build() {
   cd $INSTALL_DOWNLOAD
   unzip $ARCHIVE
-  mv ${SOFTWARE}-master $SOFTWARE_DIR
 
   # Install software
   mv -i $SOFTWARE_DIR $INSTALL_DIR/
