@@ -49,8 +49,8 @@ from bfx import bcftools
 from bfx import conpair
 
 from bfx import bash_cmd as bash
-from core.sample_dovee_pairs import parse_dovee_pair_file # using modified tumor pair system to identify paired brush and saliva for ichorCNA step
-from core.dovee_design import parse_dovee_design_file # using modified design.py to distinguish brush from saliva in vardict protocol
+from core.sample_dovee_pairs import parse_dovee_pair_file
+from core.dovee_design import parse_dovee_design_file 
 
 log = logging.getLogger(__name__)
 
@@ -62,8 +62,8 @@ class DOvEE_gene(common.Illumina):
         self._protocol = protocol
         # Add pipeline specific arguments
         self.argparser.add_argument("-d", "--design", help="File indicating whether sample is saliva or brush", type=argparse.FileType('r')) # only needed for vardict protocol
-        self.argparser.add_argument("-p", "--pairs", help="File with sample pairing information", type=argparse.FileType('r')) # only needed for copy number protocol ichorCNA step and vardict protocol compare bams step
-        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default vardict)", choices=["vardict", "copy-number"], default="vardict") # FINAL NAMES of the two protocols TBD
+        self.argparser.add_argument("-p", "--pairs", help="File with sample pairing information", type=argparse.FileType('r')) # only needed for copy number protocol and for conpair compare bams step in vardict protocol
+        self.argparser.add_argument("-t", "--type", help="Type of pipeline (default vardict)", choices=["vardict", "copy-number"], default="vardict") 
         super(DOvEE_gene, self).__init__(protocol)
 
     @property
@@ -148,7 +148,7 @@ class DOvEE_gene(common.Illumina):
                                 trim_file_prefix + "_R1.fastq.gz"), # trimmer only allows specifying outfile prefix to which it adds _R1/2.fastq.gz
                             bash.ln(os.path.relpath(trim_file_prefix + "_R2.fastq.gz", os.path.dirname(trim_file_prefix + ".pair2.fastq.gz")), 
                                 trim_file_prefix + ".pair2.fastq.gz",
-                                trim_file_prefix + "_R2.fastq.gz")# can either rename here or change following to expect that naming
+                                trim_file_prefix + "_R2.fastq.gz")
                         ], name="agent_trimmer." + readset.name,
                         samples = [readset.sample]
                         )
@@ -775,7 +775,7 @@ done""".format(
                                     os.path.join(alignment_directory, sample.name + source + ".dedup.duplex.stats"),
                                     re.sub(".bam", ".stats", output_duplex),
                                     )
-                                #,     # skip this symlink creation here and create symlink instead after subsample? Would keep names between samples consistent.
+                                #,     # skip this symlink creation here and create symlink instead after subsample to keep names between samples consistent.
                                 #bash.ln(
                                 #    os.path.relpath(output_duplex, os.path.dirname(sorted_bam)),
                                 #    sorted_bam,
@@ -1457,7 +1457,7 @@ else
         return jobs
 
     @property
-    def steps(self): # Are additional metrics or reports requested?
+    def steps(self):
         return [
                 [
                     self.trimmer,
@@ -1465,9 +1465,8 @@ else
                     self.bwa_mem_samtools_sort,
                     self.samtools_merge,
                     self.locatit_dedup_bam,
-                   # self.creak_dedup_bam,
+                   # self.creak_dedup_bam,  # protocol can be switched to use agent creak deduplcation, instead of locatit
                     self.samtools_subsample,
-                   # self.samtools_sort,
                     self.mosdepth,
                     self.picard_metrics,
                     self.vardict_single,
@@ -1482,7 +1481,6 @@ else
                     self.samtools_merge,
                     self.locatit_hybrid_dedup,
                     #self.creak_hybrid_dedup,
-                    #self.samtools_sort,
                     self.mosdepth,
                     self.hmm_readCounter,
                     self.run_ichorCNA,
