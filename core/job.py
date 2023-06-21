@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -210,6 +210,7 @@ def concat_jobs(jobs, name="", input_dependency=[], output_dependency=[], sample
     input_files = []
     output_files = []
     multiqc_files = []
+    report_files = []
     modules = []
     for job_item in [job_item for job_item in jobs if job_item]:
         input_files.extend([input_file for input_file in job_item.input_files if input_file not in input_files and input_file not in output_files])

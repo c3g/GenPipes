@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -64,7 +64,8 @@ qualimap bamqc {other_options} \\
 #            bed="\\\n  --feature-file " + bed if bed else "",
             ram=config.param(ini_section, 'ram'),
         ),
-        removable_files=[]
+        removable_files=[],
+        report_files=outputs
     )
 
 def rnaseq(input_bam, output_directory, output):

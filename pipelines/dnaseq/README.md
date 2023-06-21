@@ -16,7 +16,7 @@ usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--genpipes_file GENPIPES_FILE]
                  [-t {mugqic,mpileup,light,sv}] [-r READSETS] [-v]
 
-Version: 4.4.1
+Version: 4.4.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -352,10 +352,23 @@ haplotype_caller_gemini_annotations
 -----------------------------------
 metrics_dna_picard_metrics
 --------------------------
+Generates metrics with picard, including:
+CollectMultipleMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-
+CollectOxoGMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-
+CollectGcBiasMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-
+
 metrics_dna_sample_qualimap
 ---------------------------
+Generates metrics with qualimap bamqc:
+BAM QC reports information for the evaluation of the quality of the provided alignment data (a BAM file). 
+In short, the basic statistics of the alignment (number of reads, coverage, GC-content, etc.) are summarized and a number of useful graphs are produced.
+http://qualimap.conesalab.org/doc_html/analysis.html#bamqc
+
 metrics_dna_fastqc
 ------------------
+QualityControl with fastqc.
+https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+
 picard_calculate_hs_metrics
 ---------------------------
 Compute on target percent of hybridisation based capture.
@@ -384,6 +397,11 @@ Plots DepthRatio and B allele frequency of previously extracted alleles.
 
 run_multiqc
 -----------
+Aggregate results from bioinformatics analyses across many samples into a single report.
+MultiQC searches a given directory for analysis logs and compiles a HTML report. 
+It's a general use tool, perfect for summarising the output from numerous bioinformatics tools.
+https://multiqc.info/
+
 cram_output
 -----------
 Generate long term storage version of the final alignment files in CRAM format.
@@ -395,6 +413,8 @@ sym_link_fastq
 
 sym_link_final_bam
 ------------------
+Create sym link of final bam for delivery of data to clients.
+
 metrics_ngscheckmate
 --------------------
 NGSCheckMate is a software package for identifying next generation sequencing (NGS) data files from the same individual.
@@ -500,6 +520,9 @@ summary of allele frequencies, codon changes, amino acid changes, changes per ch
 
 metrics_dna_sambamba_flagstat
 -----------------------------
+Outputs flag statistics from BAM file.
+https://lomereiter.github.io/sambamba/docs/sambamba-flagstat.html
+
 delly_call_filter
 -----------------
 Delly2 is an integrated structural variant prediction method that can
@@ -512,6 +535,10 @@ Returns: bcf file
 
 delly_sv_annotation
 -------------------
+Preprocess and annotate VCF with SnpEff.
+SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+https://pcingola.github.io/SnpEff/se_introduction/
+
 manta_sv_calls
 --------------
 Manta calls structural variants (SVs) and indels from mapped paired-end sequencing reads. It is optimized for
@@ -522,6 +549,10 @@ Returns:Manta accepts input read mappings from BAM or CRAM files and reports all
 
 manta_sv_annotation
 -------------------
+Annotate VCF with SnpEff.
+SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+https://pcingola.github.io/SnpEff/se_introduction/
+
 lumpy_paired_sv
 ---------------
 A probabilistic framework for structural variant discovery.
@@ -530,6 +561,10 @@ Returns: bams.
 
 lumpy_sv_annotation
 -------------------
+Annotate VCF with SnpEff.
+SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+https://pcingola.github.io/SnpEff/se_introduction/
+
 wham_call_sv
 ------------
 Wham (Whole-genome Alignment Metrics) to provide a single, integrated framework for both structural variant
@@ -539,18 +574,35 @@ Returns: vcf.
 
 wham_sv_annotation
 ------------------
+Annotate VCF with SnpEff.
+SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+https://pcingola.github.io/SnpEff/se_introduction/
+
 cnvkit_batch
 ------------
+CNVkit is a Python library and command-line software toolkit to infer and visualize copy number from high-throughput DNA sequencing data.
+https://cnvkit.readthedocs.io/en/stable/index.html
 
 cnvkit_sv_annotation
 --------------------
+Annotate VCF with SnpEff.
+SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+https://pcingola.github.io/SnpEff/se_introduction/
+
 run_breakseq2
 -------------
 BreakSeq2: Ultrafast and accurate nucleotide-resolution analysis of structural variants.
 
 ensemble_metasv
 ---------------
+MetaSV is an integrated SV caller which leverages multiple orthogonal SV signals for high accuracy and resolution.
+MetaSV proceeds by merging SVs from multiple tools for all types of SVs.
+http://bioinform.github.io/metasv/
 
 metasv_sv_annotation
 --------------------
+Annotate VCF with SnpEff.
+SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+https://pcingola.github.io/SnpEff/se_introduction/
+
 

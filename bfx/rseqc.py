@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -159,6 +159,6 @@ def tin(input, output_dir):
             -r {ref_gene_model} \\
             -i {input}""".format(
             ref_gene_model=config.param('rseqc', 'ref_gene_model'),
-            input=os.path.abspath(input)
+            input=input
         ),
     )

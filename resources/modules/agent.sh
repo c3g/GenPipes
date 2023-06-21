@@ -31,9 +31,9 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-setenv          AGENT_HOME          \$root;
-setenv          TRIMMER             \$root/lib/trimmer-3.0.5.jar;
-setenv          CREAKS              \$root/lib/creaks-1.0.5.jar;
+setenv          AGENT_HOME          \$root
+setenv          TRIMMER             \$root/lib/trimmer-3.0.5.jar
+setenv          CREAK               \$root/lib/creak-1.0.5.jar
 setenv          LOCATIT             \$root/lib/locatit-2.0.5.jar
 "
 }

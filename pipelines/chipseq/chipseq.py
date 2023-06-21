@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -51,6 +51,7 @@ from bfx import tools
 from bfx import trimmomatic
 from bfx import ucsc
 from bfx import differential_binding
+from bfx import bedtools
 # from pipelines.dnaseq import dnaseq
 
 from bfx import bash_cmd as bash
@@ -605,7 +606,7 @@ cp \\
                         sambamba.view(
                             input_bam,
                             output_bam,
-                            """-t {threads} -f bam -F \"not unmapped and not failed_quality_control and mapping_quality >= {min_mapq}\"""".format(
+                            """-t {threads} -f bam -F \"not unmapped and not failed_quality_control and mapping_quality >= {min_mapq}\" """.format(
                                 threads=config.param('sambamba_view_filter', 'threads'),
                                 min_mapq=config.param('sambamba_view_filter', 'min_mapq'))
                         ),
@@ -646,6 +647,43 @@ pandoc --to=markdown \\
 
         return jobs
 
+    def bedtools_blacklist_filter(self):
+        """
+        Remove reads in blacklist regions from bam with bedtools intersect if blacklist file is supplied. Do nothing otherwise. 
+        """
+        jobs = []
+
+        if config.param('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+            blacklist = config.param('bedtools_intersect', 'blacklist', param_type='filepath')
+
+            for sample in self.samples:
+                for mark_name in sample.marks:
+                    alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
+                    input_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                    output_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam")
+                    output_bam_index = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam.bai")
+                    
+
+                    jobs.append(
+                            concat_jobs(
+                                [
+                                    bedtools.intersect(
+                                        input_bam,
+                                        output_bam,
+                                        blacklist,
+                                        include_header=True
+                                        ),
+                                    sambamba.index(
+                                        output_bam,
+                                        output_bam_index
+                                        )
+                                    ],
+                                name = "bedtools_intersect." + sample.name + "." + mark_name,
+                                samples = [sample]
+                                )
+                            )
+        return jobs
+
 
     def metrics(self):
         """
@@ -665,7 +703,11 @@ pandoc --to=markdown \\
             for mark_name in sample.marks:
                 alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name)
                 raw_bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.bam")
-                bam_file = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                # select input from blacklist filtered (clean) or just sambamba filtered bam
+                filtered_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                clean_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam")
+                candidate_input_files = [[clean_bam], [filtered_bam]]
+                [bam_file] = self.select_input_files(candidate_input_files)
 
                 jobs.append(
                     concat_jobs(
@@ -703,7 +745,8 @@ pandoc --to=markdown \\
                     [
                         os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(raw_bam_file))),
                         os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("\.bam$", ".flagstat", os.path.basename(bam_file))),
-                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                        bam_file
+                        #os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
                     ]
                 )
 
@@ -711,6 +754,11 @@ pandoc --to=markdown \\
         metrics_file = os.path.join(metrics_output_directory, "SampleMetrics.tsv")
         report_metrics_file = os.path.join(self.output_dirs['report_output_directory'], "SampleMetrics.tsv")
         report_file = os.path.join(self.output_dirs['report_output_directory'], "ChipSeq.metrics.md")
+        if config.param('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+            bam_ext = "sorted.dup.filtered.cleaned.bam"
+        else:
+            bam_ext = "sorted.dup.filtered.bam"
+
         jobs.append(
             Job(
                 inputs_report,
@@ -730,7 +778,7 @@ do
   do
     raw_flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.flagstat
     filtered_flagstat_file={metrics_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.filtered.flagstat
-    bam_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.sorted.dup.filtered.bam
+    bam_file={alignment_dir}/$sample/$mark_name/$sample.$mark_name.{bam_ext}
     raw_supplementarysecondary_reads=`bc <<< $(grep "secondary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
     mapped_reads=`bc <<< $(grep "mapped (" $raw_flagstat_file | sed -e 's/ + [[:digit:]]* mapped (.*)//')-$raw_supplementarysecondary_reads`
     filtered_supplementarysecondary_reads=`bc <<< $(grep "secondary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* secondary.*//')+$(grep "supplementary" $filtered_flagstat_file | sed -e 's/ + [[:digit:]]* supplementary.*//')`
@@ -775,6 +823,7 @@ pandoc --to=markdown \\
                     # samples=" ".join([sample.name for sample in self.samples]),
                     samples_associative_array=" ".join(samples_associative_array),
                     alignment_dir=self.output_dirs['alignment_output_directory'],
+                    bam_ext=bam_ext,
                     report_dir=self.output_dirs['report_output_directory'],
                     trim_metrics_file=trim_metrics_file,
                     report_metrics_file=report_metrics_file,
@@ -790,6 +839,7 @@ pandoc --to=markdown \\
         )
         return jobs
 
+
     def homer_make_tag_directory(self):
         """
         The Homer Tag directories, used to check for quality metrics, are computed at this step.
@@ -798,7 +848,11 @@ pandoc --to=markdown \\
         jobs = []
         for sample in self.samples:
             for mark_name in sample.marks:
-                alignment_file = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                # add input selection that allows for use of blacklist-filtered and unfiltered bams
+                filtered_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                cleaned_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam")
+                candidate_input_files = [[cleaned_bam], [filtered_bam]]
+                [alignment_file] = self.select_input_files(candidate_input_files)
                 output_dir = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name)
                 other_options = config.param('homer_make_tag_directory', 'other_options', required=False)
                 genome = config.param('homer_make_tag_directory', 'genome', required=False) if config.param('homer_make_tag_directory', 'genome', required=False) else self.ucsc_genome
@@ -964,9 +1018,14 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
             mark_list = []
             # if no Input file
             input_file = []
-            input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                            sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                               mark_name, mark_type in sample.marks.items() if mark_type == "I"]
+            if config.param('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+                input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                        sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam") for
+                                        mark_name, mark_type in sample.marks.items() if mark_type == "I"]
+            else:
+                input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                        sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
+                                        mark_name, mark_type in sample.marks.items() if mark_type == "I"]
             if len(input_file_list) > 0:
                 if len(input_file_list) > 1:
                     raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
@@ -975,9 +1034,14 @@ cp {report_template_dir}/{basename_report_file} {report_dir}/""".format(
                 if mark_type != "I":
                     mark_list.append(mark_name)
 
-                    mark_file = [
+                    filtered_file = [
                         os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
                                      sample.name + "." + mark_name + ".sorted.dup.filtered.bam")]
+                    cleaned_file = [
+                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                    sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam")]
+                    candidate_input_files = [cleaned_file, filtered_file]
+                    mark_file = self.select_input_files(candidate_input_files)
                     output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
 
                     ## set macs2 variables:
@@ -1111,9 +1175,14 @@ done""".format(
             mark_list = []
             # if no Input file
             input_file = []
-            input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                            sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
-                               mark_name, mark_type in sample.marks.items() if mark_type == "I"]
+            if config.param('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+                input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                        sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam") for
+                                        mark_name, mark_type in sample.marks.items() if mark_type == "I"]
+            else:
+                input_file_list = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                        sample.name + "." + mark_name + ".sorted.dup.filtered.bam") for
+                                        mark_name, mark_type in sample.marks.items() if mark_type == "I"]
             if len(input_file_list) > 0:
                 if len(input_file_list) > 1:
                     raise Exception("Error: Sample \"" + sample.name + "\" has more than 1 Input!")
@@ -1122,9 +1191,14 @@ done""".format(
                 if mark_type != "I":
                     mark_list.append(mark_name)
 
-                    mark_file = [
+                    filtered_file = [
                         os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
                                      sample.name + "." + mark_name + ".sorted.dup.filtered.bam")]
+                    cleaned_file = [
+                        os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
+                                    sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam")]
+                    candidate_input_files = [cleaned_file, filtered_file]
+                    mark_file = self.select_input_files(candidate_input_files)
                     # control_files = [os.path.join(self.output_dirs['alignment_output_directory'], sample.name, sample.name + ".sorted.dup.filtered.bam") for sample in contrast.controls]
                     output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
 
@@ -1262,17 +1336,23 @@ done""".format(
             if controls_count < 2 or treatments_count < 2:
                 log.info(f"At leaset two treatments and  controls should be defined. Skipping differential binding analysis for {contrast.name}...")
             else:
+                if config.param('bedtools_intersect', 'blacklist', required=False, param_type='filepath'):
+                    bam_ext = "sorted.dup.filtered.cleaned.bam"
+                else:
+                    bam_ext = "sorted.dup.filtered.bam"
+
                 for control in contrast.controls:
                     control_sample_name, control_mark_name = control.split("-.-")
+
                     for sample in self.samples:
                         input_file_list = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "." + bam_ext)
                             for mark_name, mark_type in sample.marks.items() if mark_type == "I" and sample.name == control_sample_name
                         ]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "." + bam_ext)
                             for mark_name, mark_type in sample.marks.items() if mark_type != "I" and sample.name == control_sample_name and mark_name == control_mark_name
                         ]
                         bam_list.append(input_file_list)
@@ -1287,13 +1367,13 @@ done""".format(
                     treatment_sample_name, treatment_mark_name = treatment.split("-.-")
                     for sample in self.samples:
                         input_file_list = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "." + bam_ext)
                             for mark_name, mark_type in sample.marks.items() if mark_type == "I" and sample.name == treatment_sample_name
                         ]
                         bam_list.append(input_file_list)
 
                         input_file_list = [
-                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                            os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + "." + bam_ext)
                             for mark_name, mark_type in sample.marks.items() if mark_type != "I" and sample.name == treatment_sample_name and mark_name == treatment_mark_name
                         ]
                         bam_list.append(input_file_list)
@@ -1306,6 +1386,7 @@ done""".format(
 
                 bam_list = filter(None, bam_list)
                 bam_list = [item for sublist in bam_list for item in sublist]
+
                 diffbind_job = differential_binding.diffbind(
                     bam_list,
                     contrast.name,
@@ -1313,6 +1394,7 @@ done""".format(
                     readset_file,
                     self.output_dirs['dba_output_directory'],
                     self.output_dirs['alignment_output_directory'],
+                    bam_ext,
                     self.output_dirs['macs_output_directory'],
                     minOverlap,
                     minMembers,
@@ -1643,8 +1725,12 @@ perl -MReadMetrics -e 'ReadMetrics::parseHomerAnnotations(
                 for mark_name in sample.marks:
                     alignment_directory = os.path.join(self.output_dirs['alignment_output_directory'], sample.name,
                                                        mark_name)
-                    sample_merge_mdup_bam = os.path.join(alignment_directory,
-                                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                    filtered_file = [
+                        os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")]
+                    cleaned_file = [
+                        os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam")]
+                    candidate_input_files = [cleaned_file, filtered_file]
+                    [sample_merge_mdup_bam] = self.select_input_files(candidate_input_files)
                     output_dir = os.path.join(self.output_dirs['ihecM_output_directory'], sample.name, mark_name)
                     output = os.path.join(output_dir, sample.name + "." + mark_name + ".crosscor")
 
@@ -1835,7 +1921,12 @@ done""".format(
             metrics_output_directory = self.output_dirs['metrics_output_directory']
             for sample in self.samples:
                 for mark_name in sample.marks:
-                    picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.all.metrics.")
+                    # select input from blacklist filtered (clean) or just sambamba filtered bam
+                    filtered_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                    clean_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam")
+                    candidate_input_files = [[clean_bam], [filtered_bam]]
+                    [bam_file] = self.select_input_files(candidate_input_files)
+                    picard_prefix = os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("bam$", "all.metrics.", os.path.basename(bam_file)))
                     if self.run_type == 'SINGLE_END':
                         picard_files = [
                             picard_prefix + "quality_by_cycle.pdf",
@@ -1857,7 +1948,7 @@ done""".format(
 
                         ]
                     input_files.extend(picard_files)
-                    input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.flagstat"))
+                    input_files.append(os.path.join(metrics_output_directory, sample.name, mark_name, re.sub("bam$", "flagstat", os.path.basename(bam_file))))
                     homer_prefix = os.path.join(self.output_dirs['homer_output_directory'], sample.name, sample.name + "." + mark_name)
                     homer_files = [
                         os.path.join(homer_prefix, "tagGCcontent.txt"),
@@ -1890,8 +1981,10 @@ done""".format(
 
         for sample in self.samples:
             for mark_name in sample.marks:
-                input_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name,
-                                         sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                filtered_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                clean_bam = os.path.join(self.output_dirs['alignment_output_directory'], sample.name, mark_name, sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam")
+                candidate_input_files = [[clean_bam], [filtered_bam]]
+                [input_bam] = self.select_input_files(candidate_input_files)
                 output_cram = re.sub("\.bam$", ".cram", input_bam)
 
                 # Run samtools
@@ -1925,8 +2018,10 @@ done""".format(
 
                     macs_output_dir = os.path.join(self.output_dirs['macs_output_directory'], sample.name, mark_name)
 
-                    input_bam = os.path.join(alignment_directory,
-                                                 sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                    filtered_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.bam")
+                    clean_bam = os.path.join(alignment_directory, sample.name + "." + mark_name + ".sorted.dup.filtered.cleaned.bam")
+                    candidate_input_files = [[clean_bam], [filtered_bam]]
+                    [input_bam] = self.select_input_files(candidate_input_files)
 
                     #peak calling bed file from MACS2 is given here to restrict the variant calling to peaks regions
                     interval_list = None
@@ -2011,21 +2106,22 @@ done""".format(
                 self.sambamba_merge_bam_files, #5
                 self.sambamba_mark_duplicates,
                 self.sambamba_view_filter,
+                self.bedtools_blacklist_filter,
                 self.metrics,
                 self.homer_make_tag_directory,
                 self.qc_metrics,
-                self.homer_make_ucsc_file,  #11
+                self.homer_make_ucsc_file,  #12
                 self.macs2_callpeak,
                 self.homer_annotate_peaks,
                 self.homer_find_motifs_genome,
                 self.annotation_graphs,
                 self.run_spp,
-                self.differential_binding, #17
+                self.differential_binding, #18
                 self.ihec_metrics,
                 self.multiqc_report,
                 self.cram_output,
                 self.gatk_haplotype_caller,
-                self.merge_and_call_individual_gvcf #22
+                self.merge_and_call_individual_gvcf #23
             ],
             [
                 self.picard_sam_to_fastq,
@@ -2035,6 +2131,7 @@ done""".format(
                 self.sambamba_merge_bam_files,
                 self.sambamba_mark_duplicates,
                 self.sambamba_view_filter,
+                self.bedtools_blacklist_filter,
                 self.metrics,
                 self.homer_make_tag_directory,
                 self.qc_metrics,

@@ -96,12 +96,22 @@ def send_files(options, sample_name, details):
     detail = details[0]
     filepath = detail['filepath']
 
+    should_send = True
+    should_copy = True
+
+    data = None
     try:
         data = read_json(filepath)
+
     except Exception as e:
         print(e)
-        print(red('Failed to read file "%s": ' % filepath))
-        return
+        if not data:
+            print(red('  File is empty "%s". Deleting and skipping' % filepath))
+            should_send = False
+            should_copy = False
+        else:
+            print(red('Failed to read file "%s": ' % filepath))
+            return
 
     previous_data = None
     if os.path.isfile(cache_filepath):
@@ -113,9 +123,11 @@ def send_files(options, sample_name, details):
 
     url = None
     username = filepath.split('/')[-1].split('.')[0]
-    should_send = True
 
-    if not previous_data:
+    if not data:
+        should_send = False
+        should_copy = False
+    elif not previous_data:
         url = options.url + '/api/samples/external-update/' + username
     else:
         url = options.url + '/api/samples/external-update-diff/' + username
@@ -151,7 +163,9 @@ def send_files(options, sample_name, details):
                 ('[%s] %s: %s : %s' % (bold(url), filepath, response.reason, response.text)))
             return
 
-    shutil.copy(filepath, cache_filepath)
+    if should_copy:
+        shutil.copy(filepath, cache_filepath)
+
     for detail in details:
         os.remove(detail['filepath'])
 

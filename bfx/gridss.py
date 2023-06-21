@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -54,7 +54,6 @@ def paired_somatic(
 $GRIDSS_HOME/gridss \\
     -t {threads} \\
     --steps preprocess,assemble,call \\
-    --skipsoftcliprealignment \\
     -b {blacklist_bed} \\
     -r {reference_sequence} \\
     -w {outdir} \\
@@ -62,6 +61,7 @@ $GRIDSS_HOME/gridss \\
     -a {gridss_bam} \\
     -j $GRIDSS_JAR \\
     --jvmheap {ram} \\
+    {other_options} \\
     --labels {normal},{tumor} \\
     {input_normal} \\
     {input_tumor}""".format(
@@ -72,6 +72,7 @@ $GRIDSS_HOME/gridss \\
             gridss_vcf=gridss_vcf,
             gridss_bam=gridss_bam,
             ram=config.param('gridss_paired_somatic', 'ram'),
+            other_options=config.param('gridss_paired_somatic', 'other_options', param_type='string'),
             normal=normal_name,
             tumor=tumor_name,
             input_normal=input_normal,

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -1124,7 +1124,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 input=input,
                 output=output,
                 max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
-            )
+            ),
+            report_files=outputs
         )
 
 def collect_sequencing_artifacts_metrics(
@@ -1169,7 +1170,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             output=output,
             reference=reference_sequence if reference_sequence else config.param('picard_collect_sequencing_artifacts_metrics', 'genome_fasta'),
             max_records_in_ram=config.param('picard_collect_sequencing_artifacts_metrics', 'max_records_in_ram', param_type='int')
-        )    
+        )
     )
 
 def convert_sequencing_artifacts_metrics(
@@ -1267,11 +1268,11 @@ def collect_gcbias_metrics(
     reference_sequence=None
     ):
 
-    output = output_prefix +  ".qcbias_metrics.txt"
+    output = output_prefix +  ".gcbias_metrics.txt"
     if not chart:
-        chart = output_prefix + ".qcbias_metrics.pdf"
+        chart = output_prefix + ".gcbias_metrics.pdf"
     if not summary_file:
-        summary_file = output_prefix + ".qcbias_summary_metrics.txt"
+        summary_file = output_prefix + ".gcbias_summary_metrics.txt"
     outputs = [
         output,
         chart,
@@ -1317,7 +1318,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             summary_file=summary_file,
             reference=reference_sequence if reference_sequence else config.param('picard_collect_gcbias_metrics', 'genome_fasta'),
             max_records_in_ram=config.param('picard_collect_gcbias_metrics', 'max_records_in_ram', param_type='int')
-        )
+        ),
+        report_files=outputs
     )
 
 def fix_mate_information(
@@ -1365,6 +1367,7 @@ def mark_duplicates(
     output,
     metrics_file,
     remove_duplicates="false",
+    create_index=True,
     ini_section='gatk_mark_duplicates'
     ):
 
@@ -1377,16 +1380,16 @@ def mark_duplicates(
             output,
             metrics_file,
             remove_duplicates,
+            create_index,
             ini_section=ini_section
         )
     else:
+        outputs = [output, metrics_file]
+        if create_index:
+            outputs.append(re.sub("\.([sb])am$", ".\\1ai", output))
         return Job(
             inputs,
-            [
-                output,
-                re.sub("\.([sb])am$", ".\\1ai", output),
-                metrics_file
-            ],
+            outputs,
             [
                 [ini_section, 'module_java'],
                 [ini_section, 'module_gatk']
@@ -1397,7 +1400,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  MarkDuplicates \\
  --REMOVE_DUPLICATES {remove_duplicates} \\
  --VALIDATION_STRINGENCY SILENT \\
- --CREATE_INDEX true \\
+ {create_index} \\
  --TMP_DIR {tmp_dir} \\
  {inputs} \\
  --OUTPUT {output} \\
@@ -1407,6 +1410,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 java_other_options=config.param(ini_section, 'gatk4_java_options'),
                 ram=config.param(ini_section, 'ram'),
                 remove_duplicates=remove_duplicates,
+                create_index="--CREATE_INDEX true," if create_index else "",
                 inputs=" \\\n  ".join("--INPUT " + input for input in inputs),
                 output=output,
                 metrics_file=metrics_file,

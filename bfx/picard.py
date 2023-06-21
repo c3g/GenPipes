@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -123,14 +123,15 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  INPUT={input} \\
  OUTPUT={output} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_collect_multiple_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_multiple_metrics', 'java_other_options'),
-            ram=config.param('picard_collect_multiple_metrics', 'ram'),
-            reference_sequence=reference_sequence if reference_sequence else config.param('picard_collect_multiple_metrics', 'genome_fasta', param_type='filepath'),
-            input=input,
-            output=output,
-            max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
-            )
+                tmp_dir=config.param('picard_collect_multiple_metrics', 'tmp_dir'),
+                java_other_options=config.param('picard_collect_multiple_metrics', 'java_other_options'),
+                ram=config.param('picard_collect_multiple_metrics', 'ram'),
+                reference_sequence=reference_sequence if reference_sequence else config.param('picard_collect_multiple_metrics', 'genome_fasta', param_type='filepath'),
+                input=input,
+                output=output,
+                max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
+            ),
+            report_files=outputs
         )
 
 def fix_mate_information(input, output):
@@ -167,6 +168,7 @@ def mark_duplicates(
     output,
     metrics_file,
     remove_duplicates="false",
+    create_index=True,
     ini_section='picard_mark_duplicates'
     ):
 
@@ -175,9 +177,12 @@ def mark_duplicates(
     if config.param(ini_section, 'module_picard').split("/")[2] >= "2":
         return picard2.mark_duplicates(inputs, output, metrics_file, remove_duplicates, ini_section=ini_section)
     else:
+        outputs = [output, metrics_file]
+        if create_index:
+            outputs.append(re.sub("\.([sb])am$", ".\\1ai", output))
         return Job(
             inputs,
-            [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
+            outputs,
             [
                 [ini_section, 'module_java'],
                 [ini_section, 'module_picard']
@@ -185,7 +190,7 @@ def mark_duplicates(
             command="""\
 rm -rf {output}.part && \\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/MarkDuplicates.jar \\
- REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
+ REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT {create_index} \\
  TMP_DIR={tmp_dir} \\
  {inputs} \\
  OUTPUT={output} \\
@@ -195,6 +200,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
                 java_other_options=config.param(ini_section, 'java_other_options'),
                 ram=config.param(ini_section, 'ram'),
                 remove_duplicates=remove_duplicates,
+                create_index="CREATE_INDEX=true" if create_index else "",
                 inputs=" \\\n  ".join(["INPUT=" + input for input in inputs]),
                 output=output,
                 metrics_file=metrics_file,
@@ -282,16 +288,17 @@ def sam_to_fastq(input, fastq, second_end_fastq=None):
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/SamToFastq.jar \\
- VALIDATION_STRINGENCY=LENIENT \\
- CREATE_MD5_FILE=TRUE \\
- INPUT={input} \\
- FASTQ={fastq}{second_end_fastq}""".format(
-            tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir'),
-            java_other_options=config.param('picard_sam_to_fastq', 'java_other_options'),
-            ram=config.param('picard_sam_to_fastq', 'ram'),
-            input=input,
-            fastq=fastq,
-            second_end_fastq=" \\\n  SECOND_END_FASTQ=" + second_end_fastq if second_end_fastq else ""
+  {other_options} \\
+  CREATE_MD5_FILE=TRUE \\
+  INPUT={input} \\
+  FASTQ={fastq}{second_end_fastq}""".format(
+                tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir'),
+                java_other_options=config.param('picard_sam_to_fastq', 'java_other_options'),
+                ram=config.param('picard_sam_to_fastq', 'ram'),
+                other_options=config.param('picard_sam_to_fastq', 'other_options'),
+                input=input,
+                fastq=fastq,
+                second_end_fastq=" \\\n  SECOND_END_FASTQ=" + second_end_fastq if second_end_fastq else ""
             ),
             removable_files=[fastq, second_end_fastq]
         )
