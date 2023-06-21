@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -31,9 +31,11 @@ def run(fastqs1, fastqs2, output_dir):
     output_file = os.path.join(output_dir, "star-fusion.fusion_predictions.abridged.coding_effect.tsv")
     jxt_file = os.path.join(output_dir, "Chimeric.out.junction")
     star_file = os.path.join(output_dir, "Aligned.out.bam")
+    log_file = os.path.join(output_dir, "Log.final.out")
+    
     return Job(
         fastqs1,
-        [output_file,jxt_file,star_file],
+        [output_file,jxt_file,star_file,log_file],
         [
             ['run_star_fusion','module_perl'],
             ['run_star_fusion','module_star'],

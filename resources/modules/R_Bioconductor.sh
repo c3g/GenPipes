@@ -114,7 +114,7 @@ MODULEFILE="$MODULEFILE_DIR/$VERSION"
 MODULEVERSIONFILE="$MODULEFILE_DIR/.version"
 # NOTE: this is somewhat complicated because we want the ROOT dir MUGQIC_INSTALL_HOME to be resolved at module execution.
 # TCLROOT is just a variable holding the TCL script value for the 'root' variable in the module file.
-
+LIB=lib64
 if [[ $INSTALL_PREFIX_ENV_VARNAME != "MUGQIC_INSTALL_HOME_DEV" ]]
 then
   if [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="Ubuntu"' ]]; then echo "Ubuntu";  elif [[ `cat /etc/*-release | grep -P '^NAME'` == 'NAME="CentOS Linux"' ]]; then echo "CentOS"; fi
@@ -383,7 +383,7 @@ then
   sed -i "s,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}/R,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}.wrap/R," $INSTALL_DIR/bin/R
   sed -i "s,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}/R,R_binary=\"\${R_HOME}/bin/exec\${R_ARCH}.wrap/R," $INSTALL_DIR/$LIB/R/bin/R
   mkdir $INSTALL_DIR/$LIB/R/bin/exec.wrap
-  echo "$INTERPRETER --library-path $LIBDIR $INSTALL_DIR/$LIB/R/bin/exec/R \${args} \${@}" > $INSTALL_DIR/$LIB/R/bin/exec.wrap/R
+  echo "$INTERPRETER --library-path $LIBDIR $INSTALL_DIR/$LIB/R/bin/exec/R \${args} \"\${@}\"" > $INSTALL_DIR/$LIB/R/bin/exec.wrap/R
   chmod 775 $INSTALL_DIR/$LIB/R/bin/exec.wrap/R
   for i in $INSTALL_DIR/bin/Rscript $INSTALL_DIR/$LIB/R/bin/Rscript; do
     mv $i $i.raw;

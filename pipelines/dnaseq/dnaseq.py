@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -124,6 +124,16 @@ class DnaSeqRaw(common.Illumina):
             'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
         }
         return dirs
+
+    @property
+    def multiqc_inputs(self):
+        if not hasattr(self, "_multiqc_inputs"):
+            self._multiqc_inputs = []
+        return self._multiqc_inputs
+
+    @multiqc_inputs.setter
+    def multiqc_inputs(self, value):
+        self._multiqc_inputs = value
 
     @property
     def sequence_dictionary(self):
@@ -960,7 +970,12 @@ END
                             input,
                             output,
                             metrics_file,
+                            create_index=False,
                             ini_section='mark_duplicates'
+                        ),
+                        sambamba.index(
+                            output,
+                            output_index
                         ),
                         Job(
                             [metrics_file],
@@ -1067,6 +1082,9 @@ END
         return jobs
 
     def sym_link_final_bam(self):
+        """
+        Create sym link of final bam for delivery of data to clients.
+        """
         jobs = []
 
         for sample in self.samples:
@@ -1138,6 +1156,12 @@ END
         return jobs
 
     def metrics_dna_picard_metrics(self):
+        """
+        Generates metrics with picard, including:
+        CollectMultipleMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037594031-CollectMultipleMetrics-Picard-
+        CollectOxoGMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard-
+        CollectGcBiasMetrics: https://gatk.broadinstitute.org/hc/en-us/articles/360036481572-CollectGcBiasMetrics-Picard-
+        """
 
         ##check the library status
         library = {}
@@ -1167,7 +1191,6 @@ END
                     [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")]
                 ]
             )
-            # log.info(input)
             mkdir_job = bash.mkdir(
                 picard_directory,
                 remove=True
@@ -1192,33 +1215,53 @@ END
                 concat_jobs(
                     [
                         mkdir_job,
+                        bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
                         gatk4.collect_oxog_metrics(
                             input,
                             os.path.join(picard_directory, sample.name + ".oxog_metrics.txt")
+                        ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(picard_directory, sample.name + ".oxog_metrics.txt"), os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, sample.name + ".oxog_metrics.txt"),
+                            input=os.path.join(picard_directory, sample.name + ".oxog_metrics.txt")
                         )
                     ],
                     name="picard_collect_oxog_metrics." + sample.name,
                     samples=[sample]
                 )
             )
+            self.multiqc_inputs.append(os.path.join(picard_directory, sample.name + ".oxog_metrics.txt"))
 
             jobs.append(
                 concat_jobs(
                     [
                         mkdir_job,
+                        bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
                         gatk4.collect_gcbias_metrics(
                             input,
                             os.path.join(picard_directory, sample.name)
+                        ),
+                        bash.ln(
+                            os.path.relpath(os.path.join(picard_directory, sample.name + ".gcbias_metrics.txt"), os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, sample.name + ".gcbias_metrics.txt"),
+                            input=os.path.join(picard_directory, sample.name + ".gcbias_metrics.txt")
                         )
                     ],
                     name="picard_collect_gcbias_metrics." + sample.name,
                     samples=[sample]
                 )
             )
+            self.multiqc_inputs.append(os.path.join(picard_directory, sample.name + ".gcbias_metrics.txt"))
 
         return jobs
 
     def metrics_dna_sample_qualimap(self):
+        """
+        Generates metrics with qualimap bamqc:
+        BAM QC reports information for the evaluation of the quality of the provided alignment data (a BAM file). 
+        In short, the basic statistics of the alignment (number of reads, coverage, GC-content, etc.) are summarized and a number of useful graphs are produced.
+        http://qualimap.conesalab.org/doc_html/analysis.html#bamqc
+        """
 
         jobs = []
         for sample in self.samples:
@@ -1254,21 +1297,32 @@ END
                             qualimap_directory,
                             remove=False
                         ),
+                        bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
                         qualimap.bamqc(
                             input,
                             qualimap_directory,
                             output,
                             options,
                             'dna_sample_qualimap'
+                        ),
+                        bash.ln(
+                            os.path.relpath(output, os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, os.path.basename(output)),
+                            input=output
                         )
                     ],
                     name="dna_sample_qualimap."+sample.name,
                     samples=[sample]
                 )
             )
+            self.multiqc_inputs.append(output)
         return jobs
 
     def metrics_dna_sambamba_flagstat(self):
+        """
+        Outputs flag statistics from BAM file.
+        https://lomereiter.github.io/sambamba/docs/sambamba-flagstat.html
+        """
 
         jobs = []
         for sample in self.samples:
@@ -1307,6 +1361,10 @@ END
         return jobs
 
     def metrics_dna_fastqc(self):
+        """
+        QualityControl with fastqc.
+        https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+        """
 
         jobs = []
         for sample in self.samples:
@@ -1344,6 +1402,7 @@ END
                             output_dir,
                             remove=True
                         ),
+                        bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
                         adapter_job,
                         fastqc.fastqc(
                             input,
@@ -1351,53 +1410,41 @@ END
                             output_dir,
                             output,
                             adapter_file
+                        ),
+                        bash.ln(
+                            os.path.relpath(output, os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, os.path.basename(output)),
+                            input=output
                         )
                     ],
                     name="fastqc."+sample.name,
                     samples=[sample]
                 )
             )
+            self.multiqc_inputs.append(output)
 
         return jobs
 
     def run_multiqc(self):
+        """
+        Aggregate results from bioinformatics analyses across many samples into a single report.
+        MultiQC searches a given directory for analysis logs and compiles a HTML report. 
+        It's a general use tool, perfect for summarising the output from numerous bioinformatics tools.
+        https://multiqc.info/
+        """
 
         jobs = []
 
-        metrics_directory = os.path.join(self.output_dirs['metrics_directory'], "dna")
-        input_dep = []
-        inputs = []
-        for sample in self.samples:
-            input_oxog = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".oxog_metrics.txt")
-            input_qcbias = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".qcbias_metrics.txt")
-            input_all_picard = os.path.join(metrics_directory, sample.name, "picard_metrics", sample.name + ".all.metrics.quality_distribution.pdf")
-            input_qualimap = os.path.join(metrics_directory, sample.name, "qualimap", sample.name, "genome_results.txt")
-            [input_fastqc] = self.select_input_files(
-                [
-                    [os.path.join(metrics_directory, sample.name, "fastqc", sample.name + ".sorted.dup_fastqc.zip")],
-                    [os.path.join(metrics_directory, sample.name, "fastqc", sample.name + "_fastqc.zip")],
-                ]
-            )
-
-            input_dep += [
-                input_oxog,
-                input_qcbias,
-                input_all_picard,
-                input_qualimap,
-                input_fastqc
-            ]
-
-            inputs += [os.path.join(metrics_directory, sample.name)]
-
-        output = os.path.join(metrics_directory, "multiqc_report")
+        multiqc_input_path = os.path.join(self.output_dirs['report_directory'], "multiqc_inputs")
+        output = os.path.join(self.output_dirs['metrics_directory'], "multiqc_report")
 
         job = multiqc.run(
-            input_dep,
+            [multiqc_input_path],
             output
         )
         job.name = "multiqc_all_samples"
         job.samples = self.samples
-
+        job.input_files = self.multiqc_inputs
         jobs.append(job)
 
         return jobs
@@ -1437,47 +1484,85 @@ END
             )
             input_file_prefix = re.sub("bam$", "", input)
 
-            job = gatk4.collect_multiple_metrics(
-                input,
-                input_file_prefix + "all.metrics",
-                library_type=library[sample]
+            mkdir_job_normal = bash.mkdir(
+                os.path.dirname(input_file_prefix),
+                remove=True
             )
-            job.name = "picard_collect_multiple_metrics." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
+
+            collect_multiple_metrics_normal_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                    gatk4.collect_multiple_metrics(
+                        input,
+                        input_file_prefix + "all.metrics",
+                        library_type=library[sample]
+                    ),
+                ]
+            )
+            for outfile in collect_multiple_metrics_normal_job.report_files:
+                self.multiqc_inputs.append(outfile)
+                collect_multiple_metrics_normal_job = concat_jobs(
+                    [
+                        collect_multiple_metrics_normal_job,
+                        bash.ln(
+                            os.path.relpath(outfile, os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, os.path.basename(outfile)),
+                            input=outfile
+                        )
+                    ]
+                )
+            collect_multiple_metrics_normal_job.name = "picard_collect_multiple_metrics." + sample.name
+            collect_multiple_metrics_normal_job.samples = [sample]
+            jobs.append(collect_multiple_metrics_normal_job)
 
             # Compute genome coverage with gatk4
-            job = gatk4.depth_of_coverage(
-                input,
-                input_file_prefix + "all.coverage",
-                bvatools.resolve_readset_coverage_bed(
-                    sample.readsets[0]
-                )
+            gatk_depth_of_coverage_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    gatk4.depth_of_coverage(
+                        input,
+                        input_file_prefix + "all.coverage",
+                        bvatools.resolve_readset_coverage_bed(
+                            sample.readsets[0]
+                        )
+                    ),
+                ],
+                name="gatk_depth_of_coverage." + sample.name + ".genome",
+                samples=[sample]
             )
-            job.name = "gatk_depth_of_coverage." + sample.name + ".genome"
-            job.samples = [sample]
-            jobs.append(job)
+            jobs.append(gatk_depth_of_coverage_job)
 
             # Compute genome or target coverage with BVATools
-            job = bvatools.depth_of_coverage(
-                input,
-                input_file_prefix + "coverage.tsv",
-                bvatools.resolve_readset_coverage_bed(
-                    sample.readsets[0]
-                ),
-                other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
+            bvatools_depth_of_coverage_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    bvatools.depth_of_coverage(
+                        input,
+                        input_file_prefix + "coverage.tsv",
+                        bvatools.resolve_readset_coverage_bed(
+                            sample.readsets[0]
+                        ),
+                        other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
+                    )
+                ],
+                name="bvatools_depth_of_coverage." + sample.name,
+                samples=[sample]
             )
-            job.name = "bvatools_depth_of_coverage." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
+            jobs.append(bvatools_depth_of_coverage_job)
 
-            job = igvtools.compute_tdf(
-                input,
-                re.sub("\.bam$", ".tdf", input)
+            igvtools_compute_tdf_job = concat_jobs(
+                [
+                    mkdir_job_normal,
+                    igvtools.compute_tdf(
+                        input,
+                        re.sub("\.bam$", ".tdf", input)
+                    )
+                ],
+                name="igvtools_compute_tdf." + sample.name,
+                samples=[sample]
             )
-            job.name = "igvtools_compute_tdf." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
+            jobs.append(igvtools_compute_tdf_job)
 
         return jobs
 
@@ -2655,6 +2740,12 @@ pandoc \\
         output_vcf="variants/allSamples.merged.flt.vt.vcf.gz",
         job_name="decompose_and_normalize"
         ):
+        """
+        Variants with multiple alternate alleles will not be handled correctly by gemini (or by the tools used to annotate the variants).
+        To reduce the number of false negatives, the authors of gemini strongly recommend that gemini users split, left-align, and trim their variants.
+        For more info on preprocessing, see the gemini docs: https://gemini.readthedocs.io/en/latest/content/preprocessing.html
+        The tool used for decomposing and normalizing VCFs is vt: https://github.com/atks/vt
+        """
     
         jobs = []
         jobs.append(
@@ -3251,6 +3342,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
 
     def delly_sv_annotation(self):
+        """
+        Preprocess and annotate VCF with SnpEff.
+        SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+        https://pcingola.github.io/SnpEff/se_introduction/
+        """
         jobs = []
 
         for sample in self.samples:
@@ -3356,11 +3452,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 jobs.append(
                     concat_jobs(
                         [
-                            Job(
-                                [coverage_bed],
-                                [coverage_bed + ".sort"],
-                                command="sort -V -k1,1 -k2,2n -k3,3n " + coverage_bed + " | sed 's#chr##g' > "
-                                        + coverage_bed + ".sort ; sleep 180"
+                            bash.sort(
+                                coverage_bed,
+                                coverage_bed + ".sort",
+                                "-V -k1,1 -k2,2n -k3,3n",
+                                extra="; sleep 180"
                             ),
                             htslib.bgzip(
                                 coverage_bed + ".sort",
@@ -3413,7 +3509,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
 
     def manta_sv_annotation(self):
-
+        """
+        Annotate VCF with SnpEff.
+        SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+        https://pcingola.github.io/SnpEff/se_introduction/
+        """
         jobs = []
 
         for sample in self.samples:
@@ -3582,6 +3682,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
 
     def lumpy_sv_annotation(self):
+        """
+        Annotate VCF with SnpEff.
+        SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+        https://pcingola.github.io/SnpEff/se_introduction/
+        """
     
         jobs = []
     
@@ -3698,6 +3803,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
 
     def wham_sv_annotation(self):
+        """
+        Annotate VCF with SnpEff.
+        SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+        https://pcingola.github.io/SnpEff/se_introduction/
+        """
 
         jobs = []
         for sample in self.samples:
@@ -3717,6 +3827,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def cnvkit_batch(self):
         """
+        CNVkit is a Python library and command-line software toolkit to infer and visualize copy number from high-throughput DNA sequencing data.
+        https://cnvkit.readthedocs.io/en/stable/index.html
         """
         jobs = []
 
@@ -3926,7 +4038,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
 
     def cnvkit_sv_annotation(self):
-
+        """
+        Annotate VCF with SnpEff.
+        SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+        https://pcingola.github.io/SnpEff/se_introduction/
+        """
         jobs = []
 
         for sample in self.samples:
@@ -3997,7 +4113,10 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
     def ensemble_metasv(self):
         """
-		"""
+        MetaSV is an integrated SV caller which leverages multiple orthogonal SV signals for high accuracy and resolution.
+        MetaSV proceeds by merging SVs from multiple tools for all types of SVs.
+        http://bioinform.github.io/metasv/
+        """
         jobs = []
 
         for sample in self.samples:
@@ -4089,6 +4208,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         return jobs
 
     def metasv_sv_annotation(self):
+        """
+        Annotate VCF with SnpEff.
+        SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
+        https://pcingola.github.io/SnpEff/se_introduction/
+        """
 
         jobs = []
 

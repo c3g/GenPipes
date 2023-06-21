@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -74,14 +74,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  BAIT_INTERVALS={baits} \\
  TARGET_INTERVALS={intervals} \\
  REFERENCE_SEQUENCE={reference_sequence}""".format(
-            tmp_dir=config.param('picard_calculate_hs_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_calculate_hs_metrics', 'java_other_options'),
-            ram=config.param('picard_calculate_hs_metrics', 'ram'),
-            input=input,
-            output=output,
-            intervals=intervals,
-            baits=baits_intervals if baits_intervals != "" else intervals,
-            reference_sequence=reference_sequence if reference_sequence else config.param('picard_calculate_hs_metrics', 'genome_fasta', param_type='filepath')
+                tmp_dir=config.param('picard_calculate_hs_metrics', 'tmp_dir'),
+                java_other_options=config.param('picard_calculate_hs_metrics', 'java_other_options'),
+                ram=config.param('picard_calculate_hs_metrics', 'ram'),
+                input=input,
+                output=output,
+                intervals=intervals,
+                baits=baits_intervals if baits_intervals != "" else intervals,
+                reference_sequence=reference_sequence if reference_sequence else config.param('picard_calculate_hs_metrics', 'genome_fasta', param_type='filepath')
             )
         )
 
@@ -129,14 +129,15 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  INPUT={input} \\
  OUTPUT={output} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            tmp_dir=config.param('picard_collect_multiple_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_multiple_metrics', 'java_other_options'),
-            ram=config.param('picard_collect_multiple_metrics', 'ram'),
-            reference_sequence=reference_sequence if reference_sequence else config.param('picard_collect_multiple_metrics', 'genome_fasta', param_type='filepath'),
-            input=input,
-            output=output,
-            max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
-            )
+                tmp_dir=config.param('picard_collect_multiple_metrics', 'tmp_dir'),
+                java_other_options=config.param('picard_collect_multiple_metrics', 'java_other_options'),
+                ram=config.param('picard_collect_multiple_metrics', 'ram'),
+                reference_sequence=reference_sequence if reference_sequence else config.param('picard_collect_multiple_metrics', 'genome_fasta', param_type='filepath'),
+                input=input,
+                output=output,
+                max_records_in_ram=config.param('picard_collect_multiple_metrics', 'max_records_in_ram', param_type='int')
+            ),
+            report_files=outputs
         )
 def collect_sequencing_artifacts_metrics(input, output, annotation_flat=None,reference_sequence=None):
         output_dep = output + ".bait_bias_summary_metrics.txt"
@@ -157,14 +158,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  OUTPUT={output} \\
  REFERENCE_SEQUENCE={reference} \\
  MAX_RECORDS_IN_RAM={max_records_in_ram}""".format(
-            options=config.param('picard_collect_sequencing_artifacts_metrics', 'options'),
-            tmp_dir=config.param('picard_collect_sequencing_artifacts_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_collect_sequencing_artifacts_metrics', 'java_other_options'),
-            ram=config.param('picard_collect_sequencing_artifacts_metrics', 'ram'),
-            input=input,
-            output=output,
-            reference=reference_sequence if reference_sequence else config.param('picard_collect_sequencing_artifacts_metrics', 'genome_fasta'),
-            max_records_in_ram=config.param('picard_collect_sequencing_artifacts_metrics', 'max_records_in_ram', param_type='int')
+                options=config.param('picard_collect_sequencing_artifacts_metrics', 'options'),
+                tmp_dir=config.param('picard_collect_sequencing_artifacts_metrics', 'tmp_dir'),
+                java_other_options=config.param('picard_collect_sequencing_artifacts_metrics', 'java_other_options'),
+                ram=config.param('picard_collect_sequencing_artifacts_metrics', 'ram'),
+                input=input,
+                output=output,
+                reference=reference_sequence if reference_sequence else config.param('picard_collect_sequencing_artifacts_metrics', 'genome_fasta'),
+                max_records_in_ram=config.param('picard_collect_sequencing_artifacts_metrics', 'max_records_in_ram', param_type='int')
             )
         )
 
@@ -186,12 +187,12 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
  INPUT_BASE={input} \\
  OUTPUT_BASE={output} \\
  REFERENCE_SEQUENCE={reference}""".format(
-            tmp_dir=config.param('picard_convert_sequencing_artifacts_metrics', 'tmp_dir'),
-            java_other_options=config.param('picard_convert_sequencing_artifacts_metrics', 'java_other_options'),
-            ram=config.param('picard_convert_sequencing_artifacts_metrics', 'ram'),
-            input=input,
-            output=output,
-            reference=reference_sequence if reference_sequence else config.param('picard_convert_sequencing_artifacts_metrics', 'genome_fasta'),
+                tmp_dir=config.param('picard_convert_sequencing_artifacts_metrics', 'tmp_dir'),
+                java_other_options=config.param('picard_convert_sequencing_artifacts_metrics', 'java_other_options'),
+                ram=config.param('picard_convert_sequencing_artifacts_metrics', 'ram'),
+                input=input,
+                output=output,
+                reference=reference_sequence if reference_sequence else config.param('picard_convert_sequencing_artifacts_metrics', 'genome_fasta'),
             )
         )
 
@@ -234,11 +235,11 @@ def collect_gcbias_metrics(
     reference_sequence=None
     ):
 
-    output = output_prefix +  ".qcbias_metrics.txt"
+    output = output_prefix +  ".gcbias_metrics.txt"
     if not chart:
-        chart = output_prefix + ".qcbias_metrics.pdf"
+        chart = output_prefix + ".gcbias_metrics.pdf"
     if not summary_file:
-        summary_file = output_prefix + ".qcbias_summary_metrics.txt"
+        summary_file = output_prefix + ".gcbias_summary_metrics.txt"
     outputs = [
         output,
         chart,
@@ -309,19 +310,23 @@ def mark_duplicates(
     output,
     metrics_file,
     remove_duplicates="false",
+    create_index=True,
     ini_section='picard_mark_duplicates'
     ):
 
     if not isinstance(inputs, list):
         inputs=[inputs]
     if config.param(ini_section, 'module_picard').split("/")[2] < "2" and config.param(ini_section, 'module_gatk').split("/")[2] < "4":
-        return picard.mark_duplicates(inputs, output, metrics_file, remove_duplicates, ini_section=ini_section)
+        return picard.mark_duplicates(inputs, output, metrics_file, remove_duplicates, create_index, ini_section=ini_section)
     elif config.param(ini_section, 'module_gatk').split("/")[2] > "4":
-        return gatk4.mark_duplicates(inputs, output, metrics_file, remove_duplicates, ini_section=ini_section)
+        return gatk4.mark_duplicates(inputs, output, metrics_file, remove_duplicates, create_index, ini_section=ini_section)
     else:
+        outputs = [output, metrics_file]
+        if create_index:
+            outputs.append(re.sub("\.([sb])am$", ".\\1ai", output))
         return Job(
             inputs,
-            [output, re.sub("\.([sb])am$", ".\\1ai", output), metrics_file],
+            outputs,
             [
                 [ini_section, 'module_java'],
                 [ini_section, 'module_picard']
@@ -329,7 +334,7 @@ def mark_duplicates(
             command="""\
 rm -rf {output}.part && \\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar MarkDuplicates \\
- REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \\
+ REMOVE_DUPLICATES={remove_duplicates} VALIDATION_STRINGENCY=SILENT {create_index} \\
  TMP_DIR={tmp_dir} \\
  {inputs} \\
  OUTPUT={output} \\
@@ -339,6 +344,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             java_other_options=config.param(ini_section, 'java_other_options'),
             ram=config.param(ini_section, 'ram'),
             remove_duplicates=remove_duplicates,
+            create_index="CREATE_INDEX=true" if create_index else "",
             inputs=" \\\n  ".join(["INPUT=" + str(input) for input in inputs]),
             output=output,
             metrics_file=metrics_file,
@@ -461,16 +467,17 @@ def sam_to_fastq(input, fastq, second_end_fastq=None):
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME/picard.jar SamToFastq \\
- VALIDATION_STRINGENCY=LENIENT \\
- CREATE_MD5_FILE=TRUE \\
- INPUT={input} \\
- FASTQ={fastq}{second_end_fastq}""".format(
-            tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir'),
-            java_other_options=config.param('picard_sam_to_fastq', 'java_other_options'),
-            ram=config.param('picard_sam_to_fastq', 'ram'),
-            input=input,
-            fastq=fastq,
-            second_end_fastq=" \\\n  SECOND_END_FASTQ=" + second_end_fastq if second_end_fastq else ""
+  {other_options} \\
+  CREATE_MD5_FILE=TRUE \\
+  INPUT={input} \\
+  FASTQ={fastq}{second_end_fastq}""".format(
+                tmp_dir=config.param('picard_sam_to_fastq', 'tmp_dir'),
+                java_other_options=config.param('picard_sam_to_fastq', 'java_other_options'),
+                ram=config.param('picard_sam_to_fastq', 'ram'),
+                other_options=config.param('picard_sam_to_fastq', 'other_options'),
+                input=input,
+                fastq=fastq,
+                second_end_fastq=" \\\n  SECOND_END_FASTQ=" + second_end_fastq if second_end_fastq else ""
             ),
             removable_files=[fastq, second_end_fastq]
         )

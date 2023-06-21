@@ -17,7 +17,7 @@ usage: rnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [-t {stringtie,variants,cancer}] [-d DESIGN] [-b BATCH]
                  [-r READSETS] [-v]
 
-Version: 4.4.1
+Version: 4.4.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -92,16 +92,16 @@ stringtie:
 7- mark_duplicates
 8- picard_rna_metrics
 9- estimate_ribosomal_rna
-10- bam_hard_clip
-11- rnaseqc
-12- wiggle
-13- raw_counts
-14- raw_counts_metrics
-15- stringtie
-16- stringtie_merge
-17- stringtie_abund
-18- ballgown
-19- differential_expression
+10- rnaseqc
+11- wiggle
+12- raw_counts
+13- raw_counts_metrics
+14- stringtie
+15- stringtie_merge
+16- stringtie_abund
+17- ballgown
+18- differential_expression
+19- multiqc
 20- cram_output
 ----
 ```
@@ -131,7 +131,8 @@ variants:
 20- rnaseqc2
 21- gatk_callable_loci
 22- wiggle
-23- cram_output
+23- multiqc
+24- cram_output
 ----
 ```
 ![rnaseq cancer workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_rnaseq_cancer.resized.png)
@@ -164,7 +165,8 @@ cancer:
 24- rseqc
 25- gatk_callable_loci
 26- wiggle
-27- cram_output
+27- multiqc
+28- cram_output
 
 ```
 
@@ -230,8 +232,6 @@ BWA output BAM files are then sorted by coordinate using [Picard](http://broadin
 
 This step takes as input files: readset Bam files.
 
-bam_hard_clip
--------------
 rnaseqc
 -------
 Computes a series of quality control metrics using [RNA-SeQC](https://www.broadinstitute.org/cancer/cga/rna-seqc).
@@ -268,6 +268,12 @@ differential_expression
 -----------------------
 Performs differential gene expression analysis using [DESEQ](http://bioconductor.org/packages/release/bioc/html/DESeq.html) and [EDGER](http://www.bioconductor.org/packages/release/bioc/html/edgeR.html).
 Merge the results of the analysis in a single csv file.
+
+multiqc
+-------
+Aggregate results from bioinformatics analyses across many samples into a single report.
+MultiQC searches a given directory for analysis logs and compiles a HTML report. It's a general use tool,
+perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
 
 cram_output
 -----------
@@ -315,7 +321,7 @@ GATK haplotype caller for snps and small indels.
 
 merge_hc_vcf
 ------------
-Merges the gvcfs of haplotype caller and also generates a per sample vcf containing genotypes.
+Merges vcfs from haplotype caller to generate a sample level vcf
 
 run_vcfanno
 -----------

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -274,6 +274,7 @@ class Illumina(MUGQICPipeline):
             trim_directory = os.path.join(self.output_dirs["trim_directory"], readset.sample.name)
             trim_file_prefix = os.path.join(trim_directory, readset.name + ".trim.")
             trim_log = trim_file_prefix + "log"
+            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
             # Use adapter FASTA in config file if any, else create it from readset file
             adapter_fasta = config.param('trimmomatic', 'adapter_fasta', required=False, param_type='filepath')
@@ -350,8 +351,14 @@ END
 
             jobs.append(concat_jobs([
                 # Trimmomatic does not create output directory by default
-                Job(command="mkdir -p " + trim_directory, samples=[readset.sample]),
-                job
+                bash.mkdir(trim_directory),
+                bash.mkdir(link_directory),
+                job,
+                bash.ln(
+                    os.path.relpath(trim_log, link_directory),
+                    os.path.join(link_directory, readset.name + ".trim.log"),
+                    trim_log
+                    )
             ], name="trimmomatic." + readset.name, samples=[readset.sample]))
         return jobs
 
@@ -472,6 +479,7 @@ pandoc \\
 
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
             mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
+            
 
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
             if len(sample.readsets) == 1:
@@ -499,18 +507,23 @@ pandoc \\
                     )
                 )
 
+
+            # Sambamba merge fails if a file/symlink with the merged sample name already exists. Remove any existing file before merging.
             elif len(sample.readsets) > 1:
                 jobs.append(
                     concat_jobs(
                         [
                             mkdir_job,
+                            bash.rm(sample_bam),
+                            bash.rm(re.sub("\.bam$", ".bam.bai", sample_bam)),
                             sambamba.merge(
                                 readset_bams,
                                 sample_bam
                             )
                         ],
                         name="sambamba_merge_sam_files." + sample.name,
-                        samples=[sample]
+                        samples=[sample],
+                        input_dependency=readset_bams
                     )
                 )
 

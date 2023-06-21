@@ -1,20 +1,17 @@
-#!/bin/bash
 # Exit immediately on error
 set -eu -o pipefail
 
-SOFTWARE=SMRTLink
-VERSION=12.0.0
-SUBVERSION=177059
-ARCHIVE=${SOFTWARE,,}-${VERSION}.${SUBVERSION}.zip
-ARCHIVE_URL=https://downloads.pacbcloud.com/public/software/installers/${ARCHIVE/-/_}
-SOFTWARE_DIR=$SOFTWARE-${VERSION}
-NOPATCH=1
-NOWRAP=1
+SOFTWARE=BAMixChecker
+VERSION=1.0.1
+ARCHIVE=$SOFTWARE-${VERSION}.tar.gz
+ARCHIVE_URL=https://github.com/heinc1010/${SOFTWARE}/archive/refs/tags/${VERSION}.tar.gz
+SOFTWARE_DIR=$SOFTWARE-$VERSION
 
 build() {
   cd $INSTALL_DOWNLOAD
-  unzip $ARCHIVE
-  ./${SOFTWARE,,}_${VERSION}.${SUBVERSION}.run --rootdir $INSTALL_DIR/$SOFTWARE_DIR --smrttools-only
+  tar -xzvf $ARCHIVE
+  mv $SOFTWARE_DIR $INSTALL_DIR/
+
 }
 
 module_file() {
@@ -26,11 +23,11 @@ proc ModulesHelp { } {
 module-whatis \"$SOFTWARE\"
 
 set             root                $INSTALL_DIR/$SOFTWARE_DIR
-prepend-path    PATH                \$root/smrtcmds/bin
+prepend-path    PATH                \$root
+setenv          BAMixChecker_PATH   \$root 
 "
 }
 
 # Call generic module install script once all variables and functions have been set
 MODULE_INSTALL_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $MODULE_INSTALL_SCRIPT_DIR/install_module.sh $@
-

@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -24,6 +24,8 @@ from core.config import *
 from core.job import *
 
 def run(inputs, output, ini_section='multiqc'):
+    if not isinstance(inputs, list):
+        inputs = [inputs]
     output = output + ".html"
     return Job(
         inputs,

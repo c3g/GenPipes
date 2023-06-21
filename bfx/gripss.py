@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2023 GenAP, McGill University and Genome Quebec Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -30,8 +30,8 @@ def filter(
     gripss_vcf,
     gripss_filtered_vcf,
     output_id,
-    normal_name=None,
-    tumor_name=None
+    sample,
+    reference
     ):
     return Job(
         [gridss_vcf],
@@ -51,7 +51,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GRIPSS_JAR 
   -pon_sv_file {pon_sv} \\
   -vcf {gridss_vcf} \\
   -output_id {output_id} \\
-  -output_dir {outdir} {sample} {reference} """.format(
+  -output_dir {outdir} \\
+  -sample {sample} \\
+  -reference {reference}""".format(
             tmp_dir=config.param('gripss_filter', 'tmp_dir'),
             java_other_options=config.param('gripss_filter', 'java_other_options'),
             ram=config.param('gripss_filter', 'ram'),
@@ -60,9 +62,9 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GRIPSS_JAR 
             pon_sgl=config.param('gripss_filter', 'pon_sgl', param_type='filepath'),
             pon_sv=config.param('gripss_filter', 'pon_sv', param_type='filepath'),
             gridss_vcf=gridss_vcf,
+            output_id=output_id,
             outdir=os.path.dirname(gripss_vcf),
-            sample=" \\\n  -sample " + tumor_name if tumor_name else "",
-            reference=" \\\n  -reference " + normal_name if normal_name else "",
-            output_id=output_id
+            sample=sample,
+            reference=reference
         )
     )

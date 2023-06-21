@@ -44,7 +44,7 @@ usage: methylseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                     [--genpipes_file GENPIPES_FILE] [-d DESIGN]
                     [-t {bismark,hybrid,dragen}] [-r READSETS] [-v]
 
-Version: 4.4.1
+Version: 4.4.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -124,7 +124,8 @@ bismark:
 14- filter_snp_cpg
 15- prepare_methylkit
 16- methylkit_differential_analysis
-17- cram_output
+17- multiqc
+18- cram_output
 ----
 ```
 ![methylseq hybrid workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq_hybrid.resized.png)
@@ -147,7 +148,8 @@ hybrid:
 14- filter_snp_cpg
 15- prepare_methylkit
 16- methylkit_differential_analysis
-17- cram_output
+17- multiqc
+18- cram_output
 ----
 ```
 ![methylseq dragen workflow diagram](https://bitbucket.org/mugqic/genpipes/raw/master/resources/workflows/GenPipes_methylseq_dragen.resized.png)
@@ -172,7 +174,8 @@ dragen:
 16- filter_snp_cpg
 17- prepare_methylkit
 18- methylkit_differential_analysis
-19- cram_output
+19- multiqc
+20- cram_output
 
 ```
 
@@ -272,6 +275,12 @@ Prepare input file for [methylKit](https://www.bioconductor.org/packages/release
 methylkit_differential_analysis
 -------------------------------
 Run methylKit to get DMCs & DMRs for different design comparisons.
+
+multiqc
+-------
+Aggregate results from bioinformatics analyses across many samples into a single report.
+MultiQC searches a given directory for analysis logs and compiles a HTML report. It's a general use tool,
+perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
 
 cram_output
 -----------
