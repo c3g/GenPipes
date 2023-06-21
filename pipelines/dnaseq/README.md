@@ -16,7 +16,7 @@ usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--genpipes_file GENPIPES_FILE]
                  [-t {mugqic,mpileup,light,sv}] [-r READSETS] [-v]
 
-Version: 4.4.1
+Version: 4.4.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -321,11 +321,6 @@ slightly lower quality level.
 
 haplotype_caller_decompose_and_normalize
 ----------------------------------------
-Variants with multiple alternate alleles will not be handled correctly by gemini (or by the tools used to annotate the variants).
-To reduce the number of false negatives, the authors of gemini strongly recommend that gemini users split, left-align, and trim their variants.
-For more info on preprocessing, see the gemini docs: https://gemini.readthedocs.io/en/latest/content/preprocessing.html
-The tool used for decomposing and normalizing VCFs is vt: https://github.com/atks/vt
-
 haplotype_caller_flag_mappability
 ---------------------------------
 Mappability annotation applied to haplotype caller vcf.
@@ -355,9 +350,6 @@ and other function annotations).
 
 haplotype_caller_gemini_annotations
 -----------------------------------
-Load functionally annotated vcf file into a mysql lite annotation database :
-http://gemini.readthedocs.org/en/latest/index.html
-
 metrics_dna_picard_metrics
 --------------------------
 Generates metrics with picard, including:
@@ -453,10 +445,10 @@ ouput: idepth flat file
 
 metrics_gatk_sample_fingerprint
 -------------------------------
-CheckFingerprint (Picard)
-Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
-input: sample SAM/BAM or VCF
-output: fingerprint file
+		CheckFingerprint (Picard)
+        Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
+        input: sample SAM/BAM or VCF
+        output: fingerprint file
 
 metrics_gatk_cluster_fingerprint
 --------------------------------
@@ -489,11 +481,6 @@ for all samples in the experiment.
 
 mpileup_decompose_and_normalize
 -------------------------------
-Variants with multiple alternate alleles will not be handled correctly by gemini (or by the tools used to annotate the variants).
-To reduce the number of false negatives, the authors of gemini strongly recommend that gemini users split, left-align, and trim their variants.
-For more info on preprocessing, see the gemini docs: https://gemini.readthedocs.io/en/latest/content/preprocessing.html
-The tool used for decomposing and normalizing VCFs is vt: https://github.com/atks/vt
-
 mpileup_flag_mappability
 ------------------------
 Mappability annotation applied to mpileup vcf.
@@ -523,9 +510,6 @@ and other function annotations).
 
 mpileup_gemini_annotations
 --------------------------
-Load functionally annotated vcf file into a mysql lite annotation database :
-http://gemini.readthedocs.org/en/latest/index.html
-
 mpileup_metrics_vcf_stats
 -------------------------
 Metrics SNV applied to mpileup caller vcf.
@@ -620,3 +604,5 @@ metasv_sv_annotation
 Annotate VCF with SnpEff.
 SnpEff is a variant annotation and effect prediction tool. It annotates and predicts the effects of genetic variants (such as amino acid changes).
 https://pcingola.github.io/SnpEff/se_introduction/
+
+
