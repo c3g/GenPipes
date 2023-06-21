@@ -333,11 +333,19 @@ class IlluminaRawReadset(IlluminaReadset):
     @property
     def hercules_project_id(self):
         return self._hercules_project_id
-
+    
     @property
     def hercules_project_name(self):
         return self._hercules_project_name
 
+    @property
+    def external_project_id(self):
+        return self._external_project_id
+
+    @property
+    def external_project_name(self):
+        return self._external_project_name
+    
     @property
     def library_source(self):
         return self._library_source
@@ -499,8 +507,8 @@ def parse_freezeman_readset_file(
         readset._operator = None
         readset._project = rdst['project_name']
         readset._project_id = str(rdst['project_obj_id'])
-        readset._hercules_project = rdst['hercules_project_name']
-        readset._hercules_project_id = rdst['hercules_project_id']
+        readset._external_project = rdst['external_project_name']
+        readset._external_project_id = rdst['external_project_id']
         readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
         readset._is_10x = False
         readset._is_atac = False
