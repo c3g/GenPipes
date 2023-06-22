@@ -158,24 +158,25 @@ class Pipeline:
             log.warning("No step provided by the user => launching the entire pipeline\n")
             self._step_range = self.step_list
 
-        # Init project_tracking json
-        to_parse = False
-        config_trace_content = []
-        with open(config_trace_filename, 'r') as config_trace:
-            for line in config_trace:
-                if "[DEFAULT]" in line:
-                    to_parse = True
-                if to_parse:
-                    config_trace_content.append(line)
-        self._project_tracking_json = jsonator_project_tracking.init(
-            operation_name=self.__class__.__name__,
-            operation_config_version=self._genpipes_version,
-            operation_cmd_line=full_command,
-            operation_config_md5sum=md5(config_trace_filename),
-            operation_config_data=config_trace_content,
-            pipeline_output_dir=self._output_dir,
-            timestamp=self.timestamp
-            )
+        if self._project_tracking_json:
+            # Init project_tracking json
+            to_parse = False
+            config_trace_content = []
+            with open(config_trace_filename, 'r') as config_trace:
+                for line in config_trace:
+                    if "[DEFAULT]" in line:
+                        to_parse = True
+                    if to_parse:
+                        config_trace_content.append(line)
+            jsonator_project_tracking.init(
+                operation_name=self.__class__.__name__,
+                operation_config_version=self._genpipes_version,
+                operation_cmd_line=full_command,
+                operation_config_md5sum=md5(config_trace_filename),
+                operation_config_data=config_trace_content,
+                pipeline_output_dir=self._output_dir,
+                timestamp=self.timestamp
+                )
 
         self._sample_list = []
         self._sample_paths = []
@@ -507,7 +508,7 @@ class Pipeline:
             else:
                 for sample in self.sample_list:
                     self.sample_paths.append(jsonator.create(self, sample))
-            # No need to check portal_output_dir for project_tracking database json
+        if self.json_project_tracking:
             for sample in self.sample_list:
                 self.sample_paths.append(jsonator_project_tracking.create(self, sample))
 
