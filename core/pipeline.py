@@ -508,7 +508,7 @@ class Pipeline:
             else:
                 for sample in self.sample_list:
                     self.sample_paths.append(jsonator.create(self, sample))
-        if self.json_project_tracking:
+        if self.project_tracking_json:
             for sample in self.sample_list:
                 self.sample_paths.append(jsonator_project_tracking.create(self, sample))
 
