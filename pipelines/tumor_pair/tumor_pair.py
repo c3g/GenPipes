@@ -35,55 +35,51 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.config import config
 from core.job import Job, concat_jobs, pipe_jobs
 from core.sample_tumor_pairs import parse_tumor_pair_file
-from bfx.sequence_dictionary import split_by_size, parse_sequence_dictionary_file
 import utils.utils
 
 from pipelines.dnaseq import dnaseq
 
 #utilizes
-from bfx import sambamba
-from bfx import bcftools
-from bfx import tools
-from bfx import bvatools
-from bfx import vt
-from bfx import snpeff
-from bfx import vawk
-from bfx import deliverables
-from bfx import bash_cmd as bash
-
-#metrics
-from bfx import conpair
-from bfx import qualimap
-from bfx import adapters
-from bfx import fastqc
-from bfx import multiqc
-
-#variants
-from bfx import htslib
-from bfx import samtools
-from bfx import varscan
-from bfx import gatk
-from bfx import gatk4
-from bfx import vardict
-from bfx import strelka2
-from bfx import bcbio_variation_recall
-from bfx import cpsr
-from bfx import pcgr
-from bfx import gemini
-
-#sv
-from bfx import delly
-from bfx import manta
-from bfx import gridss
-from bfx import gripss
-from bfx import linx
-from bfx import cnvkit
-from bfx import sequenza
-from bfx import amber
-from bfx import cobalt
-from bfx import purple
-from bfx import annotations
-#from bfx import sv_prep
+from bfx import (
+    adapters,
+    amber,
+    annotations,
+    bash_cmd as bash,
+    bcbio_variation_recall,
+    bcftools,
+    bvatools,
+    cnvkit,
+    cobalt,
+    conpair,
+    cpsr,
+    deliverables,
+    delly,
+    fastqc,
+    gatk,
+    gatk4,
+    gemini,
+    gridss,
+    gripss,
+    htslib,
+    job2json_project_tracking,
+    linx,
+    manta,
+    multiqc,
+    pcgr,
+    purple,
+    qualimap,
+    sambamba,
+    samtools,
+    sequence_dictionary,
+    sequenza,
+    snpeff,
+    strelka2,
+    tools,
+    vardict,
+    varscan,
+    vawk,
+    vt
+    )
 
 log = logging.getLogger(__name__)
 
@@ -154,7 +150,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
     def sequence_dictionary_variant(self):
         if not hasattr(self, "_sequence_dictionary_variant"):
-            self._sequence_dictionary_variant = parse_sequence_dictionary_file(
+            self._sequence_dictionary_variant = sequence_dictionary.parse_sequence_dictionary_file(
                 config.param('DEFAULT', 'genome_dictionary', param_type='filepath'),
                 variant=True
             )
@@ -358,7 +354,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             else:
                 # The first sequences are the longest to process.
                 # Each of them must be processed in a separate job.
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(
+                unique_sequences_per_job, unique_sequences_per_job_others = sequence_dictionary.split_by_size(
                     self.sequence_dictionary,
                     nb_jobs - 1
                 )
@@ -552,7 +548,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             # if nb_jobs == 1, symlink has been created in indel_realigner and merging is not necessary
             if nb_jobs > 1:
-                unique_sequences_per_job, _ = split_by_size(self.sequence_dictionary, nb_jobs - 1)
+                unique_sequences_per_job, _ = sequence_dictionary.split_by_size(self.sequence_dictionary, nb_jobs - 1)
 
                 normal_inputs = []
                 for idx, _ in enumerate(unique_sequences_per_job):
@@ -572,7 +568,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 )
 
                 tumor_inputs = []
-                for idx, sequences in enumerate(unique_sequences_per_job):
+                for idx, _ in enumerate(unique_sequences_per_job):
                     tumor_inputs.append(
                         os.path.join(
                             tumor_alignment_directory,
@@ -796,7 +792,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
         jobs = []
 
-        inputs = dict()
+        inputs = {}
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
@@ -912,6 +908,38 @@ class TumorPair(dnaseq.DnaSeqRaw):
             concordance_out = os.path.join(metrics_directory, tumor_pair.tumor.name + ".concordance.tsv")
             contamination_out = os.path.join(metrics_directory, tumor_pair.tumor.name + ".contamination.tsv")
 
+            samples = [tumor_pair.normal, tumor_pair.tumor]
+            job_name = f"conpair_concordance_contamination.{tumor_pair.name}"
+            job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                job_project_tracking_metrics = concat_jobs(
+                    [
+                    conpair.parse_concordance_metrics_pt(concordance_out),
+                    job2json_project_tracking.run(
+                        pipeline=self,
+                        samples=",".join([sample.name for sample in samples]),
+                        readsets=",".join([readset.name for readset in sample.readsets for sample in samples]),
+                        job_name=job_name,
+                        metrics="concordance=$concordance"
+                        ),
+                    conpair.parse_contamination_normal_metrics_pt(contamination_out),
+                    job2json_project_tracking.run(
+                        pipeline=self,
+                        samples=",".join(tumor_pair.normal.name),
+                        readsets=",".join([readset.name for readset in tumor_pair.normal.readsets]),
+                        job_name=job_name,
+                        metrics="contamination=$contamination"
+                        ),
+                    conpair.parse_contamination_tumor_metrics_pt(contamination_out),
+                    job2json_project_tracking.run(
+                        pipeline=self,
+                        samples=",".join([tumor_pair.tumor]),
+                        readsets=",".join([readset.name for readset in tumor_pair.tumor.readsets]),
+                        job_name=job_name,
+                        metrics="contamination=$contamination"
+                        )
+                    ])
+
             jobs.append(
                 concat_jobs(
                     [
@@ -967,10 +995,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             os.path.relpath(contamination_out, self.output_dirs['report'][tumor_pair.name]),
                             os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(contamination_out)),
                             input=contamination_out
-                        )
+                        ),
+                        job_project_tracking_metrics
                     ],
-                    name="conpair_concordance_contamination." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    name=job_name,
+                    samples=samples,
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
@@ -1299,7 +1328,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
                 for input_vcf in all_inputs:
                     if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
-                        log.error("Incomplete panel varscan2 vcf: %s\n" % input_vcf)
+                        log.error(f"Incomplete panel varscan2 vcf: {input_vcf}\n")
 
                 jobs.append(
                     concat_jobs(
@@ -2799,7 +2828,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 )
 
             else:
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
+                unique_sequences_per_job, unique_sequences_per_job_others = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
 
                 # Create one separate job for each of the first sequences
                 for idx, sequences in enumerate(unique_sequences_per_job):
@@ -3018,7 +3047,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     )
 
             elif nb_jobs > 1:
-                unique_sequences_per_job, _ = split_by_size(
+                unique_sequences_per_job, _ = sequence_dictionary.split_by_size(
                     self.sequence_dictionary_variant(), nb_jobs - 1)
 
                 # Create one separate job for each of the first sequences
@@ -4290,7 +4319,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 )
 
             else:
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
+                unique_sequences_per_job, unique_sequences_per_job_others = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
                 for idx, sequences in enumerate(unique_sequences_per_job):
                     output_somatic_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot." + str(idx) + ".vcf.gz")
 
@@ -4403,7 +4432,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 )
 
             else:
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
+                unique_sequences_per_job, unique_sequences_per_job_others = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
                 for idx, sequences in enumerate(unique_sequences_per_job):
                     output_germline_variants = os.path.join(annot_directory, tumor_pair.name + ".ensemble.germline.vt.annot." + str(idx) + ".vcf.gz")
 
@@ -4469,7 +4498,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             annot_directory = os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation")
             output_somatic = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz")
             if nb_jobs > 1:
-                unique_sequences_per_job, _ = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
+                unique_sequences_per_job, _ = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
                 vcfs_to_merge = [os.path.join(annot_directory, tumor_pair.name + ".ensemble.somatic.vt.annot." + str(idx) +".vcf.gz")
                                   for idx in range(len(unique_sequences_per_job))]
 
@@ -4510,7 +4539,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             output_germline = os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz")
 
             if nb_jobs > 1:
-                unique_sequences_per_job, _ = split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
+                unique_sequences_per_job, _ = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
                 vcfs_to_merge = [os.path.join(ensemble_directory, tumor_pair.name, "rawAnnotation", tumor_pair.name + ".ensemble.germline.vt.annot." + str(idx) + ".vcf.gz")
                                  for idx in range(len(unique_sequences_per_job))]
 

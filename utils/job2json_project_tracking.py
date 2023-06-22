@@ -34,7 +34,7 @@ def main():
     # parser.add_argument('-c','--config', required=True, help="")
     # parser.add_argument('-u','--user', required=True, help="name of user running GenPipes")
     parser.add_argument('-o','--json_outfile', required=True, help="name of json output file")
-    parser.add_argument('-f', '--status', required=True, help="status of job")
+    parser.add_argument('-f', '--status', required=False, help="status of job")
     args = parser.parse_args()
 
     # step_name, job_name, job_log, job_done, json_files, config_files, user, status = getarg(sys.argv)

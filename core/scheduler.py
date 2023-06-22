@@ -344,7 +344,7 @@ module unload {module_python} {command_separator}
         ) if json_file_list else ""
 
     def job2json_project_tracking(self, pipeline, job, job_status):
-        if not pipeline.json:
+        if pipeline.project_tracking_json:
             return ""
 
         pipeline_output_dir = pipeline.output_dir

@@ -137,6 +137,10 @@ class Pipeline:
         if self.args.no_json:
             self._json = False
 
+        self._project_tracking_json = False
+        if self.args.json_pt:
+            self._project_tracking_json = True
+
         step_counter = collections.Counter(step_list)
         duplicated_steps = [step.__name__ for step in step_counter if step_counter[step] > 1]
         if duplicated_steps:
@@ -229,49 +233,92 @@ class Pipeline:
                     conflict_handler='resolve')
 
             # Common options for all pipelines
-            self._argparser.add_argument("--help", help="show detailed description of pipeline and steps",
-                                         action="store_true")
-            self._argparser.add_argument("-c", "--config", help="config INI-style list of files; config parameters are "
-                                                                "overwritten based on files order", nargs="+", type=argparse.FileType('r'))
-            self._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'")
-            self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)",
-                                         default=os.getcwd())
-            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: slurm)",
-                                         choices=["pbs", "batch", "daemon", "slurm"], default="slurm")
-            self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date "
-                                                               "(default: false)", action="store_true")
-            self._argparser.add_argument("--no-json", help="do not create JSON file per analysed sample to track the "
-                                                           "analysis status (default: false i.e. JSON file will be "
-                                                           "created)", action="store_true")
-            self._argparser.add_argument("--report", help="create 'pandoc' command to merge all job markdown report "
-                                                          "files in the given step range into HTML, if they exist; if "
-                                                          "--report is set, --job-scheduler, --force, --clean options "
-                                                          "and job up-to-date status are ignored (default: false)",
-                                         action="store_true")
-            self._argparser.add_argument("--clean", help="create 'rm' commands for all job removable files in the given"
-                                                         " step range, if they exist; if --clean is set,"
-                                                         " --job-scheduler, --force options and job up-to-date status "
-                                                         "are ignored (default: false)", action="store_true")
-            self._argparser.add_argument("-l", "--log", help="log level (default: info)",
-                                         choices=["debug", "info", "warning", "error", "critical"], default="info")
-            self._argparser.add_argument("--sanity-check", help="run the pipeline in `sanity check mode` to verify that"
-                                                                " all the input files needed for the pipeline to run "
-                                                                "are available on the system (default: false)",
-                                         action="store_true")
-            self._argparser.add_argument("--force_mem_per_cpu", default=None, help="Take the mem input in the ini "
-                                                                                   "file and force to have a minimum of"
-                                                                                   " mem_per_cpu by correcting the "
-                                                                                   "number of cpu (default: None)")
-            self._argparser.add_argument("--container", nargs=2,
-                                         help="Run inside a container providing a valid "
-                                         "singularity image path", action=ValidateContainer,
-                                          metavar=("{wrapper, singularity}",
-                                                   "<IMAGE PATH>"))
-            self._argparser.add_argument("--genpipes_file", '-g', default=sys.stdout, type=argparse.FileType('w'),
-                                         help="Command file output path. This is the command used to process "
-                                              "the data, or said otherwise, this command will \"run the "
-                                              "Genpipes pipeline\". Will be redirected to stdout if the "
-                                              "option is not provided.")
+            self._argparser.add_argument(
+                "--help",
+                help="show detailed description of pipeline and steps",
+                action="store_true"
+                )
+            self._argparser.add_argument(
+                "-c",
+                "--config",
+                help="config INI-style list of files; config parameters are overwritten based on files order",
+                nargs="+",
+                type=argparse.FileType('r')
+                )
+            self._argparser.add_argument(
+                "-s",
+                "--steps",
+                help="step range e.g. '1-5', '3,6,7', '2,4-8'"
+                )
+            self._argparser.add_argument(
+                "-o",
+                "--output-dir",
+                help="output directory (default: current)",
+                default=os.getcwd()
+                )
+            self._argparser.add_argument(
+                "-j",
+                "--job-scheduler",
+                help="job scheduler type (default: slurm)",
+                choices=["pbs", "batch", "daemon", "slurm"],
+                default="slurm"
+                )
+            self._argparser.add_argument(
+                "-f",
+                "--force",
+                help="force creation of jobs even if up to date (default: false)",
+                action="store_true"
+                )
+            self._argparser.add_argument(
+                "--no-json",
+                help="do not create JSON file per analysed sample to track the analysis status (default: false i.e. JSON file will be created)",
+                action="store_true"
+                )
+            self._argparser.add_argument(
+                "--json-pt",
+                help="create JSON file for project_tracking database ingestion (default: false i.e. JSON file will NOT be created)",
+                action="store_true"
+                )
+            self._argparser.add_argument(
+                "--report",
+                help="create 'pandoc' command to merge all job markdown report files in the given step range into HTML, if they exist; if --report is set, --job-scheduler, --force, --clean options and job up-to-date status are ignored (default: false)",
+                action="store_true"
+                )
+            self._argparser.add_argument(
+                "--clean",
+                help="create 'rm' commands for all job removable files in the given step range, if they exist; if --clean is set, --job-scheduler, --force options and job up-to-date status are ignored (default: false)",
+                action="store_true"
+                )
+            self._argparser.add_argument(
+                "-l",
+                "--log",
+                help="log level (default: info)",
+                choices=["debug", "info", "warning", "error", "critical"],
+                default="info"
+                )
+            self._argparser.add_argument(
+                "--sanity-check",
+                help="run the pipeline in `sanity check mode` to verify that all the input files needed for the pipeline to run are available on the system (default: false)",
+                action="store_true"
+                )
+            self._argparser.add_argument(
+                "--force_mem_per_cpu",
+                default=None,
+                help="Take the mem input in the ini file and force to have a minimum of mem_per_cpu by correcting the number of cpu (default: None)"
+                )
+            self._argparser.add_argument(
+                "--container",
+                nargs=2,
+                help="Run inside a container providing a valid singularity image path",
+                action=ValidateContainer,
+                metavar=("{wrapper, singularity}", "<IMAGE PATH>")
+                )
+            self._argparser.add_argument(
+                "--genpipes_file",
+                '-g',
+                default=sys.stdout,
+                type=argparse.FileType('w'),
+                help="Command file output path. This is the command used to process the data, or said otherwise, this command will \"run the Genpipes pipeline\". Will be redirected to stdout if the option is not provided.")
 
         return self._argparser
 
