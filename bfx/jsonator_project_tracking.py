@@ -33,7 +33,8 @@ def create(pipeline, sample):
     Starts creating the json dump for the passed sample
     """
 
-    json_file = pipeline.project_tracking_json
+    json_folder = os.path.join(pipeline.output_dir, "json")
+    json_file = os.path.join(json_folder, f"{pipeline.__class__.__name__}_{pipeline.timestamp}.json")
 
     if not os.path.isabs(pipeline.output_dir):
         pipeline_output_dir = os.path.abspath(pipeline.output_dir)
