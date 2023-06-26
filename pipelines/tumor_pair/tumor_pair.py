@@ -933,7 +933,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     conpair.parse_contamination_tumor_metrics_pt(contamination_out),
                     job2json_project_tracking.run(
                         pipeline=self,
-                        samples=",".join([tumor_pair.tumor]),
+                        samples=tumor_pair.tumor.name,
                         readsets=",".join([readset.name for readset in tumor_pair.tumor.readsets]),
                         job_name=job_name,
                         metrics="contamination=$contamination"
