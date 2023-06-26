@@ -41,8 +41,8 @@ def run(pipeline, samples, readsets, job_name, metrics):
   -o \\"{json_outfile}\\" \\
   -m {metrics}""".format(
     job2json_project_tracking_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json_project_tracking.py"),
-    samples=",".join([sample.name for sample in samples]),
-    readsets=",".join([readset.name for readset in readsets]),
+    samples=samples,
+    readsets=readsets,
     job_name=job_name,
     metrics=metrics,
     json_outfile=json_outfile
