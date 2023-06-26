@@ -21,9 +21,11 @@
 import logging
 import os
 
+from core.job import *
+
 log = logging.getLogger(__name__)
 
-def run(pipeline, samples, readsets, job_name, metrics):
+def run(input_file, pipeline, samples, readsets, job_name, metrics):
     """
     Calls job2json_project_tracking within jobs to update metrics
     """
@@ -33,7 +35,11 @@ def run(pipeline, samples, readsets, job_name, metrics):
     timestamp = pipeline.timestamp
     json_outfile = os.path.join(json_folder, f"{operation_name}_{timestamp}.json")
 
-    return """\
+    return Job(
+        [input_file],
+        [],
+        [],
+        command="""\
 {job2json_project_tracking_script} \\
   -s \\"{samples}\\" \\
   -r \\"{readsets}\\" \\
@@ -46,4 +52,5 @@ def run(pipeline, samples, readsets, job_name, metrics):
     job_name=job_name,
     metrics=metrics,
     json_outfile=json_outfile
+    )
   )

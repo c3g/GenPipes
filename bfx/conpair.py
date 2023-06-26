@@ -23,7 +23,6 @@ import os
 # MUGQIC Modules
 from core.config import *
 from core.job import *
-from bfx import job2json_project_tracking
 
 def pileup(input_bam, output):
     """

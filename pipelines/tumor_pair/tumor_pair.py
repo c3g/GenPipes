@@ -916,6 +916,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     [
                     conpair.parse_concordance_metrics_pt(concordance_out),
                     job2json_project_tracking.run(
+                        input_file=concordance_out,
                         pipeline=self,
                         samples=",".join([sample.name for sample in samples]),
                         readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
@@ -924,6 +925,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         ),
                     conpair.parse_contamination_normal_metrics_pt(contamination_out),
                     job2json_project_tracking.run(
+                        input_file=contamination_out,
                         pipeline=self,
                         samples=",".join(tumor_pair.normal.name),
                         readsets=",".join([readset.name for readset in tumor_pair.normal.readsets]),
@@ -932,6 +934,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         ),
                     conpair.parse_contamination_tumor_metrics_pt(contamination_out),
                     job2json_project_tracking.run(
+                        input_file=contamination_out,
                         pipeline=self,
                         samples=tumor_pair.tumor.name,
                         readsets=",".join([readset.name for readset in tumor_pair.tumor.readsets]),
