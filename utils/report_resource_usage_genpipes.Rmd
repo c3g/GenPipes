@@ -1,8 +1,6 @@
 ---
 title: "optimize_resources_report.Rmd"
 date: "`r Sys.Date()`"
-# output: html_document
-# runtime: shiny
 editor_options:
   chunk_output_type: console
 params: 
@@ -36,7 +34,6 @@ scheduler <- params$scheduler
 ```
 
 ```{r setup, echo = FALSE}
-#knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis")
 
 ```
@@ -46,15 +43,14 @@ knitr::opts_chunk$set(message=FALSE,warning=FALSE,results="asis")
 suppressMessages(library(dplyr, warn.conflicts = FALSE))  #avoid conflict message for duplicate functions
 suppressMessages(library(kimisc))                         #for seconds_to_hms function
 suppressMessages(library(lubridate))
-#suppressMessages(library(hms))
 suppressMessages(library(optparse))
 suppressMessages(library(DT))
+
 # Library for plot
 suppressMessages(library(ggplot2))
 
 #library for RMarkDown
 suppressMessages(library(knitr))
-#suppressMessages(library(markdown))
 suppressMessages(library(plotly))
 library(highcharter)
 ```
@@ -150,10 +146,6 @@ parsed_folder <- function(folder_path_list){
       # print("path (j) : ")
       # print(j)
       
-      #file reading
-      #FileInput = readLines(j)
-      #FileInput = scan(j ,sep="\n",what="char(0)",nlines=5000, quiet = TRUE)
-      
       if(scheduler == "SLURM"){ 
         start_val <- "EPILOGUE"
       }
@@ -189,52 +181,24 @@ parsed_folder <- function(folder_path_list){
       # print("VALUES TROUVEES") #modif
       # print(List_values)
 
-      # print("VERIF AJOUT")
-      # print(length(List_values) != 1)
-      
       if (length(List_values) != 1){
         Info_df[nrow(Info_df)+1 ,] <- List_values
       }
       
-
-      
-      #print("Info_df") #modif
-      ##print(datatable(Info_df))
-      #print("\n")
-      
-      # Info_df_temp <- rbind(Info_df_temp, df_info)
-      
     }
   }
-  #print("Info_df avant modif")
-  #print(Info_df)
-  
-  #change dataframe name
-  #names(Info_df) <- c("JobName", "WaitingTime", "RunTime", "TimeLimit", "NumCPUs", "Memory_Efficiency", "Memory_Request")
-  
-  #print("Info_df nom colonnes")
-  #print(Info_df)
-  
+
   #change TimeLimit format
   Info_df$TimeLimit <- day_into_hours(Info_df$TimeLimit)
     
   #change RunTime format
   Info_df$RunTime <- day_into_hours(Info_df$RunTime)
   
-  #print("Info_df : RunTime et TimeLimit format")
-  #print(Info_df)
-  
   #Change WaitingTime format
   Info_df$WaitingTime <- ChangeWaitingTimeFormat(Info_df$WaitingTime)
   
-  #print("Info_df WaitingTime format")
-  #print(Info_df)
-  
   #Specfific dataframe for ploting
   DF_plot <- Info_df
-  
-  #print("DF_plot après copie")
-  #print(DF_plot)
   
   #keep average value for each job in Info_df
   Info_df <- Info_df %>% group_by(JobName) %>%
@@ -244,15 +208,6 @@ parsed_folder <- function(folder_path_list){
 				   NumCPUs = NumCPUs %>% mean_value(),
 				   Memory_Efficiency = Memory_Efficiency %>% mean_value(),
 				   Memory_Request = Memory_Request %>% mean_value())
-
-  
-  #print("Info_df keep moyenne pour chaque step")
-  #print(Info_df)
-  
-  #Change WaitingTime format
-  # Info_df$WaitingTime <- ChangeWaitingTimeFormat(Info_df$WaitingTime)
-  # DF_plot$WaitingTime <- ChangeWaitingTimeFormat(DF_plot$WaitingTime)
-  
   
   #return complete dataframe
   return(list(Info_df, DF_plot))
@@ -263,17 +218,6 @@ parsed_folder <- function(folder_path_list){
 Values_SLURM <- function(FileInput_List){
   #IN : inputFile as a space separated list
   #out : list of all researched values into the input list
-  
-  # out_JobName <- tryCatch(
-  #   {
-  #     
-  #     return(JobName)
-  #     
-  #   },error = function(cond){
-  #      #case where JobName isn't found, meaning job get cancelled and .o file doesn't have the same structure
-  #      return(NA)
-  #   }
-  # )
   
   #research StepName
   JobName <<- research_Element_SLURM(FileInput_List, "JobName")
@@ -370,9 +314,7 @@ research_Element_SLURM <- function(Input_file, Researched_element){
       return (Only_Element)
     },
     error = function(cond){
-      #print("The following element asn't been found : ")
-      #print(Researched_element)
-      
+      #Element hasn’t been found 
       return(NA)
     }
   )
@@ -407,18 +349,12 @@ Values_PBS <- function(FileInput_List){
   TimeLimit <<- research_Element_PBS(FileInput_List, "Limits")   #OK
   TimeLimit <<- (tail(strsplit(x = TimeLimit, split = "=")[[1]],1)) #%>% period_to_seconds()     / hms() devant
   
-  
-  #TimeEfficiency
-  #TimeEfficiency <<- (RunTime / TimeLimit ) * 100                #OK
-  
-  
   #research NumCPUs
   NumCPUs <<- research_Element_PBS(FileInput_List, "Limits")       #OK
   NumCPUs <<- strsplit(x = NumCPUs, split = "=")[[1]]
   Pos_NumCPUs <<- grep(",nodes",NumCPUs)
   
   NumCPUs <<- as.numeric(strsplit(x = NumCPUs[Pos_NumCPUs +1], split = ":")[[1]][1])
-  
   
   #Memory_use                                                           #OK
   Memory_use_kb <<- research_Element_PBS(FileInput_List, "Resources") 
@@ -436,18 +372,6 @@ Values_PBS <- function(FileInput_List){
   Memory_Limit <<- as.numeric(NumCPUs) * 5                                     
   
   Memory_Efficiency <<- (Memory_use_Gb / Memory_Limit ) *100
-  
-  ##### checkjob command for additional information #####                                   
-    #checkjob_resp <<- system2("checkjob",
-    #				 args = JobId,
-    # 				 stdout = TRUE)
-    #checkjob_resp <<- checkjob_file
-
-    #calculation WaitingTime
-    #Pos_cut <<-  grep("BecameEligible:",checkjob_resp)
-    #checkjob_file_cut <<- checkjob_resp[c(Pos_cut+1:length(checkjob_resp))]
-    #WaitingTime <<- hms::as_hms(research_Element_PBS(checkjob_file_cut, "Eligible:"))  #OK
-  
 
   out <- tryCatch(
     {
@@ -458,11 +382,6 @@ Values_PBS <- function(FileInput_List){
                         stderr = TRUE
                        )
       
-      #calculation WaitingTime
-    	# Pos_cut <<-  grep("BecameEligible:",checkjob_resp)
-    	# checkjob_file_cut <<- checkjob_resp[c(Pos_cut+1:length(checkjob_resp))]
-    	# WaitingTime <<- hms::as_hms(research_Element_PBS(checkjob_file_cut, "Eligible:"))  #OK
-      
     	#Find WaitingTime
     	Pos_TimeQueued <<- grep("Time Queued  Total:",checkjob_resp)
     	Line_TimeQueued <<- checkjob_resp[Pos_TimeQueued]
@@ -470,25 +389,25 @@ Values_PBS <- function(FileInput_List){
     	WaitingTime <<- gsub(")", "", Time_TimeQueued)
 
     	
-      return(list(JobName,            #OK
-              WaitingTime,            #OK
-              RunTime,                #OK
-              TimeLimit,              #OK
-              NumCPUs,                #OK
-              Memory_Efficiency,      #OK
-              Memory_use_Gb           #OK
+      return(list(JobName,            
+              WaitingTime,            
+              RunTime,              
+              TimeLimit,              
+              NumCPUs,                
+              Memory_Efficiency,      
+              Memory_use_Gb           
               ))        
     },
     error = function(cond){
       
       #case where checkjob didn't worked
-      return(list(JobName,            #OK
+      return(list(JobName,            
               NA,                     #Replace WaitingTime
-              RunTime,                #OK
-              TimeLimit,              #OK
-              NumCPUs,                #OK
-              Memory_Efficiency,      #OK
-              Memory_use_Gb           #OK
+              RunTime,                
+              TimeLimit,            
+              NumCPUs,                
+              Memory_Efficiency,      
+              Memory_use_Gb           
               ))
     }
   )
@@ -502,25 +421,16 @@ research_Element_PBS <- function(Input_file, Researched_element){
     {
       #research element 
       Pos_eli_time <- grep(Researched_element,Input_file)
-      # Pos1 <- as.integer(strsplit(x = as.character(Pos_eli_time), split = " ")[[2]]) #position of list containing element
-      
+
       #list containing research element
       list <- Input_file[Pos_eli_time]
       
-      #position of element inside sub list
-      # Pos2 <- as.integer(grep(Researched_element,list[[1]]))
-      # Complet_Element <- Input_file[[Pos1]][Pos2]
-      
+      #keep lqst element of line containing researched element
       Only_Element <- list[[1]][length(list[[1]])]
-      
-      # Only_Element <- strsplit(x = Complet_Element, split = "=")[[1]][2]
       
       return(Only_Element)        #Only_Element
     },
     error = function(cond){
-      #print("The following element hasn't been found : ")
-      #print(Researched_element)
-      
       return(NA)
     }
   )
@@ -609,7 +519,7 @@ add_0_time <- function(number){
   if (is.na(number)){
     number <- 0
   }
-  
+  #if there is only one number, add a 0 in front of it
   if (floor(log10(number)) == 0 | number == 0){
     number <- paste(c(0,number), collapse="")
   }
@@ -636,8 +546,6 @@ mean_value <- function(df){
   
   #case where df contain character values
   if (is.character(df)){
-	#print("DF MOYENNE")
-	#print(df)
     df <- df %>%
       hms() %>%
       period_to_seconds() %>%
@@ -646,11 +554,9 @@ mean_value <- function(df){
       seconds_to_period() %>%
       hms::hms()
       #seconds.to.hms()
-    #print("DF APRES MOYENNE CHARACT")
-    #print(df)
 
-    # df already contain numerical values
   }else{
+    # df already contain numerical values
     df <- mean(df)
   }
 
@@ -707,12 +613,6 @@ Keep_hour <- function(df, df2 = NA, unite = NA){
 job_output_path = input
 output_path = output
 
-#job_output_path = "~/Documents/local/projet/optimize_resources_report/job_output" 	#à modifier, permet de pas avoir à rentrer le nom du fichier à chaque fois
-#job_output_path = "/scratch/matteol/genpipes_test/job_output"
-
-
-#main part of script
-
 ############## RESULT ###########################################################
 
 #function call with complete list of .o file
@@ -727,6 +627,7 @@ DF_plot <- result[[2]]
 
 ############## Register file ###################################################
 ##Register dataframe as CSV
+
 #Create name with date
 actual_date_time <- strsplit(x= as.character(Sys.time()), split = " ")[[1]][1:2] %>%
   paste(collapse ="T") %>% 
@@ -745,18 +646,22 @@ write.csv(Info_df, complete_path_name_csv, row.names=FALSE)
 #Change WaitingTime, RunTime and TimeLimit format
 
 if(!is.na(Keep_hour(DF_plot$WaitingTime)[1])){
-Waiting_unite <- Keep_hour(DF_plot$WaitingTime)[[2]]
-DF_plot$WaitingTime <- Keep_hour(DF_plot$WaitingTime)[[1]]
-Waiting_flag = TRUE
+  Waiting_unite <- Keep_hour(DF_plot$WaitingTime)[[2]]
+  DF_plot$WaitingTime <- Keep_hour(DF_plot$WaitingTime)[[1]]
+  
+  #Waiting_flag is used to create or not Waiting plot depending on if it was possible to find information
+  Waiting_flag = TRUE
 }else{
-Waiting_flag = FALSE
+  Waiting_flag = FALSE
 }
+
 
 Run_Limit <- Keep_hour(DF_plot$RunTime, DF_plot$TimeLimit)
 
 DF_plot$RunTime <- Run_Limit[[1]]
 DF_plot$TimeLimit <- Run_Limit[[2]]     #RunTime and TimeLimit have the same format depending on RunTime values
 Time_unite <- Run_Limit[[3]]            #unite associated with RunTime and TimeLimit columns for plot
+
 
 #computing percentage amount for RunTime compared to TimeLimit
 DF_plot$RunTime_Efficiency <- round((DF_plot$RunTime / DF_plot$TimeLimit) *100, 1)
