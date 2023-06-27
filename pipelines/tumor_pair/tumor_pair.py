@@ -927,7 +927,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     job2json_project_tracking.run(
                         input_file=contamination_out,
                         pipeline=self,
-                        samples=",".join(tumor_pair.normal.name),
+                        samples=tumor_pair.normal.name,
                         readsets=",".join([readset.name for readset in tumor_pair.normal.readsets]),
                         job_name=job_name,
                         metrics="contamination=$contamination"

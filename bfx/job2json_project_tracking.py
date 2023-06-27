@@ -44,7 +44,7 @@ def run(input_file, pipeline, samples, readsets, job_name, metrics):
   -s \\"{samples}\\" \\
   -r \\"{readsets}\\" \\
   -j \\"{job_name}\\" \\
-  -o \\"{json_outfile}\\" \\
+  -o {json_outfile} \\
   -m {metrics}""".format(
     job2json_project_tracking_script=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "utils", "job2json_project_tracking.py"),
     samples=samples,
