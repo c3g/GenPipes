@@ -2344,7 +2344,7 @@ END
                             gtf
                         )
                     ],
-                    name="stringtie-merge",
+                    name="stringtie_merge",
                     samples=self.samples
                 )
             ]
