@@ -113,7 +113,7 @@ def parse_concordance_metrics_pt(input_file):
         [],
         [],
         command=f"""\
-export concordance=`awk '{{if ($0 ~ /^Concordance:/) {{match($0,/[0-9]+.[0-9]+%/,value); print value[0]}}}}' {input_file}`"""
+export concordance=`awk '{{if ($0 ~ /^Concordance:/) {{match($0,/[0-9]+.[0-9]+/,value); print value[0]}}}}' {input_file}`"""
         )
 
 def parse_contamination_normal_metrics_pt(input_file):
@@ -124,7 +124,7 @@ def parse_contamination_normal_metrics_pt(input_file):
         [],
         [],
         command=f"""\
-export contamination=`awk '{{if ($0 ~ /^Normal/) {{match($0,/[0-9]+.[0-9]+%/,value); print value[0]}}}}' {input_file}`"""
+export contamination=`awk '{{if ($0 ~ /^Normal/) {{match($0,/[0-9]+.[0-9]+/,value); print value[0]}}}}' {input_file}`"""
     )
 
 def parse_contamination_tumor_metrics_pt(input_file):
@@ -135,5 +135,5 @@ def parse_contamination_tumor_metrics_pt(input_file):
         [],
         [],
         command=f"""\
-export contamination=`awk '{{if ($0 ~ /^Tumor/) {{match($0,/[0-9]+.[0-9]+%/,value); print value[0]}}}}' {input_file}`"""
+export contamination=`awk '{{if ($0 ~ /^Tumor/) {{match($0,/[0-9]+.[0-9]+/,value); print value[0]}}}}' {input_file}`"""
     )

@@ -5836,6 +5836,23 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             )
             purple_purity_output = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")
             purple_qc_output = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.qc")
+            samples = [tumor_pair.normal, tumor_pair.tumor]
+            job_name = f"conpair_concordance_contamination.{tumor_pair.name}"
+            job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                job_project_tracking_metrics = concat_jobs(
+                    [
+                    purple.parse_purity_metrics_pt(purple_purity_output),
+                    job2json_project_tracking.run(
+                        input_file=purple_purity_output,
+                        pipeline=self,
+                        samples=",".join([sample.name for sample in samples]),
+                        readsets=",".join([readset.name for sample in samples for readset in sample.readsets]),
+                        job_name=job_name,
+                        metrics="purity=$purity"
+                        )
+                    ])
+
             jobs.append(
                 concat_jobs(
                     [
@@ -5865,10 +5882,11 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             os.path.relpath(purple_qc_output, self.output_dirs['report'][tumor_pair.name]),
                             os.path.join(self.output_dirs['report'][tumor_pair.name], os.path.basename(purple_qc_output)),
                             input=purple_qc_output
-                        )
+                        ),
+                        job_project_tracking_metrics
                     ],
                     name="purple.purity." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                    samples=samples,
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
