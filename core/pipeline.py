@@ -173,7 +173,7 @@ class Pipeline:
                     if to_parse:
                         config_trace_content.append(line)
             jsonator_project_tracking.init(
-                operation_name=f"{self.__class__.__name__}.{self.protocol}",
+                operation_name=f"{self.__class__.__name__}.{self.args.type}",
                 operation_config_version=self._genpipes_version,
                 operation_cmd_line=full_command,
                 operation_config_md5sum=md5(config_trace_filename),
