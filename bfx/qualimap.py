@@ -33,9 +33,7 @@ def bamqc(
     ini_section='qualimap'
     ):
 
-    (input_basename, file_format) = os.path.splitext(input_bam)
     inputs = [input_bam]
-
     raw_data_qualimap_dir = os.path.join(os.path.dirname(output), "raw_data_qualimapReport")
     outputs = [
         output,
@@ -44,8 +42,6 @@ def bamqc(
         os.path.join(raw_data_qualimap_dir, "genome_fraction_coverage.txt"),
         os.path.join(raw_data_qualimap_dir, "mapped_reads_gc-content_distribution.txt")
     ]
-
-    
 
     return Job(
         inputs,
@@ -71,10 +67,7 @@ qualimap bamqc {other_options} \\
 def rnaseq(input_bam, output_directory, output):
 
     inputs = [input_bam]
-
     outputs = [output]
-
-    (input_basename, file_format) = os.path.splitext(input_bam)
 
     return Job(
         inputs,
@@ -105,7 +98,7 @@ def multibamqc(inputs, output_directory):
 
     outputs = [os.path.join(output_directory, "report.html")]
 
-    job=Job(
+    job = Job(
         inputs,
         outputs,
         [
@@ -123,7 +116,7 @@ qualimap multi-bamqc \\
         removable_files=[]
     )
 
-    job=concat_jobs([
+    job = concat_jobs([
         Job(command="""\
 for i in {input_files}; do \\
   path1=$(dirname $i); \\
@@ -137,3 +130,14 @@ done > {output_directory}/multi-bamqc_list.txt""".format(
     ])
 
     return job
+
+def parse_median_insert_size_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export median_insert_size=`awk '{{if ($0 ~ /median insert size/) {{match($0,/[0-9]+$/,value); print value[0]}}}}' {input_file}`"""
+        )

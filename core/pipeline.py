@@ -106,7 +106,10 @@ class Pipeline:
             self.argparser.error("argument -c/--config is required!")
 
         # Create a config trace from merged config file values
-        config_trace_filename = f"{self.__class__.__name__}.{self.timestamp}.config.trace.ini"
+        config_trace_filename = os.path.join(
+            self.output_dir,
+            f"{self.__class__.__name__}.{self.protocol}.{self.timestamp}.config.trace.ini"
+            )
         full_command = " ".join(sys.argv[0:])
         with open(config_trace_filename, 'w') as config_trace:
             config_trace.write(textwrap.dedent("""\
@@ -169,7 +172,7 @@ class Pipeline:
                     if to_parse:
                         config_trace_content.append(line)
             jsonator_project_tracking.init(
-                operation_name=self.__class__.__name__,
+                operation_name=f"{self.__class__.__name__}.{self.protocol}",
                 operation_config_version=self._genpipes_version,
                 operation_cmd_line=full_command,
                 operation_config_md5sum=md5(config_trace_filename),

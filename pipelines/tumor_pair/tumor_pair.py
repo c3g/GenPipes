@@ -2008,6 +2008,23 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             else:
                 options = config.param('dna_sample_qualimap', 'qualimap_options')
 
+            normal_samples = [tumor_pair.normal]
+            normal_job_name = f"dna_sample_qualimap.{tumor_pair.name}.{tumor_pair.normal.name}"
+            normal_job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                normal_job_project_tracking_metrics = concat_jobs(
+                    [
+                    qualimap.parse_median_insert_size_metrics_pt(normal_output),
+                    job2json_project_tracking.run(
+                        input_file=normal_output,
+                        pipeline=self,
+                        samples=",".join([sample.name for sample in normal_samples]),
+                        readsets=",".join([readset.name for sample in normal_samples for readset in sample.readsets]),
+                        job_name=normal_job_name,
+                        metrics="median_insert_size=$median_insert_size"
+                        )
+                    ])
+
             tumor_pair_jobs = []
             qualimap_normal_job = concat_jobs(
                 [
@@ -2023,7 +2040,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     ),
                     bash.mkdir(
                         self.output_dirs['report'][tumor_pair.name]
-                    )
+                    ),
+                    normal_job_project_tracking_metrics
                 ]
             )
             for outfile in qualimap_normal_job.report_files:
@@ -2038,10 +2056,27 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         )
                     ]
                 )
-            qualimap_normal_job.name = "dna_sample_qualimap." + tumor_pair.name + "." + tumor_pair.normal.name
-            qualimap_normal_job.samples = [tumor_pair.normal]
+            qualimap_normal_job.name = normal_job_name
+            qualimap_normal_job.samples = normal_samples
             qualimap_normal_job.readsets = list(tumor_pair.normal.readsets)
             tumor_pair_jobs.append(qualimap_normal_job)
+
+            tumor_samples = [tumor_pair.tumor]
+            tumor_job_name = f"dna_sample_qualimap.{tumor_pair.name}.{tumor_pair.tumor.name}"
+            tumor_job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                tumor_job_project_tracking_metrics = concat_jobs(
+                    [
+                    qualimap.parse_median_insert_size_metrics_pt(tumor_output),
+                    job2json_project_tracking.run(
+                        input_file=tumor_output,
+                        pipeline=self,
+                        samples=",".join([sample.name for sample in tumor_samples]),
+                        readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
+                        job_name=tumor_job_name,
+                        metrics="median_insert_size=$median_insert_size"
+                        )
+                    ])
 
             qualimap_tumor_job = concat_jobs(
                 [
@@ -2057,7 +2092,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                     ),
                     bash.mkdir(
                         self.output_dirs['report'][tumor_pair.name]
-                    )
+                    ),
+                    tumor_job_project_tracking_metrics
                 ]
             )
             for outfile in qualimap_tumor_job.report_files:
@@ -2072,8 +2108,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         )
                     ]
                 )
-            qualimap_tumor_job.name = "dna_sample_qualimap." + tumor_pair.name + "." + tumor_pair.tumor.name
-            qualimap_tumor_job.samples = [tumor_pair.tumor]
+            qualimap_tumor_job.name = tumor_job_name
+            qualimap_tumor_job.samples = tumor_samples
             qualimap_tumor_job.readsets = list(tumor_pair.tumor.readsets)
             tumor_pair_jobs.append(qualimap_tumor_job)
 
@@ -5837,7 +5873,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             purple_purity_output = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.purity.tsv")
             purple_qc_output = os.path.join(purple_dir, tumor_pair.tumor.name + ".purple.qc")
             samples = [tumor_pair.normal, tumor_pair.tumor]
-            job_name = f"conpair_concordance_contamination.{tumor_pair.name}"
+            job_name = f"purple.purity.{tumor_pair.name}"
             job_project_tracking_metrics = []
             if self.project_tracking_json:
                 job_project_tracking_metrics = concat_jobs(
@@ -5885,7 +5921,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ),
                         job_project_tracking_metrics
                     ],
-                    name="purple.purity." + tumor_pair.name,
+                    name=job_name,
                     samples=samples,
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
