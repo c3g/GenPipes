@@ -105,9 +105,11 @@ class Pipeline:
         else:
             self.argparser.error("argument -c/--config is required!")
 
+        self._output_dir = os.path.abspath(self.args.output_dir)
+
         # Create a config trace from merged config file values
         config_trace_filename = os.path.join(
-            self.output_dir,
+            self._output_dir,
             f"{self.__class__.__name__}.{self.protocol}.{self.timestamp}.config.trace.ini"
             )
         full_command = " ".join(sys.argv[0:])
@@ -127,7 +129,6 @@ class Pipeline:
             config.write(config_trace)
             config._filepath = os.path.abspath(config_trace.name)
 
-        self._output_dir = os.path.abspath(self.args.output_dir)
         self._scheduler = create_scheduler(
             self.args.job_scheduler,
             self.args.config,
