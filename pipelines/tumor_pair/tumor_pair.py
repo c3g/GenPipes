@@ -1745,8 +1745,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
 
             tumor_pair_jobs = []
 
-            normal_samples = [normal_pair.normal]
-            normal_job_name = f"picard_collect_multiple_metrics.{normal_pair.name}.{normal_pair.normal.name}"
+            normal_samples = [tumor_pair.normal]
+            normal_job_name = f"picard_collect_multiple_metrics.{tumor_pair.name}.{tumor_pair.normal.name}"
             normal_output_prefix = os.path.join(normal_picard_directory, tumor_pair.normal.name + ".all.metrics")
             normal_job_project_tracking_metrics = []
             if self.project_tracking_json:
@@ -2139,7 +2139,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         pipeline=self,
                         samples=",".join([sample.name for sample in tumor_samples]),
                         readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
-                        job_name=normal_job_name,
+                        job_name=tumor_job_name,
                         metrics="dedup_coverage=$dedup_coverage"
                         ),
                     qualimap.parse_aligned_reads_count_metrics_pt(normal_output),
@@ -2148,7 +2148,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         pipeline=self,
                         samples=",".join([sample.name for sample in tumor_samples]),
                         readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
-                        job_name=normal_job_name,
+                        job_name=tumor_job_name,
                         metrics="aligned_reads_count=$aligned_reads_count"
                         )
                     ])
