@@ -108,7 +108,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
         self._protocol = protocol
         self.argparser.add_argument("-p", "--pairs", help="pairs file", type=argparse.FileType('r'))
         self.argparser.add_argument("--profyle", help="adjust deliverables to PROFYLE folder conventions (Default: False)", action="store_true")
-        self.argparser.add_argument("-t", "--type", help="Tumor pair analysis type", choices = ["fastpass", "ensemble", "sv"], default="ensemble")
+        self.argparser.add_argument("-t", "--type", help="Tumor pair analysis type", choices=["fastpass", "ensemble", "sv"], default="ensemble")
         super(TumorPair, self).__init__(protocol)
 
     @property

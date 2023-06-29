@@ -34,7 +34,7 @@ def create(pipeline, sample):
     """
 
     json_folder = os.path.join(pipeline.output_dir, "json")
-    json_file = os.path.join(json_folder, f"{pipeline.__class__.__name__}_{pipeline.timestamp}.json")
+    json_file = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.protocol}_{pipeline.timestamp}.json")
 
     if not os.path.isabs(pipeline.output_dir):
         pipeline_output_dir = os.path.abspath(pipeline.output_dir)

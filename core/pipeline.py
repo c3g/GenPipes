@@ -110,7 +110,7 @@ class Pipeline:
         # Create a config trace from merged config file values
         config_trace_filename = os.path.join(
             self._output_dir,
-            f"{self.__class__.__name__}.{self.protocol}.{self.timestamp}.config.trace.ini"
+            f"{self.__class__.__name__}.{self.args.type}.{self.timestamp}.config.trace.ini"
             )
         full_command = " ".join(sys.argv[0:])
         with open(config_trace_filename, 'w') as config_trace:
