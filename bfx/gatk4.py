@@ -1097,9 +1097,9 @@ def collect_multiple_metrics(
             reference_sequence,
             library_type
         )
-    
+
     else:
-        
+
         return Job(
             [input],
             outputs,
@@ -1138,7 +1138,7 @@ def collect_sequencing_artifacts_metrics(
     ):
 
     output_dep = output + ".bait_bias_summary_metrics.txt"
-    
+
     if config.param('picard_collect_sequencing_artifacts_metrics', 'module_gatk').split("/")[2] < "4":
         return picard2.collect_sequencing_artifacts_metrics(
             input,
@@ -1146,7 +1146,7 @@ def collect_sequencing_artifacts_metrics(
             annotation_flat,
             reference_sequence
         )
-    
+
     else:
         return Job(
             [input],
@@ -1183,7 +1183,7 @@ def convert_sequencing_artifacts_metrics(
     ):
 
     input_dep = input + ".bait_bias_summary_metrics"
-    
+
     if config.param('picard_convert_sequencing_artifacts_metrics', 'module_gatk').split("/")[2] < "4":
         return picard2.convert_sequencing_artifacts_metrics(
             input,
@@ -1216,14 +1216,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 reference=reference_sequence if reference_sequence else config.param('picard_convert_sequencing_artifacts_metrics', 'genome_fasta'),
             )
         )
-    
+
 def collect_oxog_metrics(
     input,
     output,
     annotation_flat=None,
     reference_sequence=None
     ):
-    
+
     if config.param('picard_collect_oxog_metrics', 'module_gatk').split("/")[2] < "4":
         return picard2.collect_oxog_metrics(
             input,
@@ -1328,7 +1328,7 @@ def fix_mate_information(
     input,
     output
     ):
-    
+
     if config.param('picard_fix_mate_information', 'module_gatk').split("/")[2] < "4":
         return picard2.fix_mate_information(
             input,
@@ -1375,7 +1375,7 @@ def mark_duplicates(
 
     if not isinstance(inputs, list):
         inputs = [inputs]
-        
+
     if config.param(ini_section, 'module_gatk').split("/")[2] < "4":
         return picard2.mark_duplicates(
             inputs,
@@ -1433,7 +1433,7 @@ def mark_duplicates_mate_cigar(
     ):
 
     if not isinstance(inputs, list):
-        inputs = [inputs]    
+        inputs = [inputs]
     if config.param('mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] < "4":
         return picard2.mark_duplicates_mate_cigar(
             inputs,
@@ -1480,7 +1480,7 @@ def picard_mark_duplicates_mate_cigar(
     ):
 
     if not isinstance(inputs, list):
-        inputs = [inputs]    
+        inputs = [inputs]
     if config.param('picard_mark_duplicates_mate_cigar', 'module_gatk').split("/")[2] < "4":
         return picard2.mark_duplicates_mate_cigar(
             inputs,
@@ -1523,7 +1523,7 @@ def merge_sam_files(
     inputs,
     output
     ):
-    
+
     if not isinstance(inputs, list):
         inputs = [inputs]
     if config.param('picard_merge_sam_files', 'module_gatk').split("/")[2] < "4":
@@ -1642,7 +1642,7 @@ def sort_sam(
     sort_order="coordinate",
     ini_section='picard_sort_sam'
     ):
-    
+
     if config.param(ini_section, 'module_gatk').split("/")[2] < "4":
         return picard2.sort_sam(
             input,
@@ -1694,7 +1694,7 @@ def sort_vcfs(
 
     if not isinstance(inputs, list):
         inputs = [inputs]
-        
+
     return Job(
         inputs,
         # Add SAM/BAM index as output only when writing a coordinate-sorted BAM file
@@ -1838,7 +1838,7 @@ def bed2interval_list(
     bed,
     output
     ):
-	
+
     if config.param('gatk_bed2interval_list', 'module_gatk').split("/")[2] < "4":
         return gatk.bed2interval_list(
             dictionary,
@@ -1958,3 +1958,14 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             output=output
         )
     )
+
+def parse_bases_over_q30_percent_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export bases_over_q30_percent=`awk 'BEGIN {{FS="\t"}}; {{if ($1 ~ /^[0-9]+/) {{if ($1<30) {{below+=$2}} else if ($1>=30) {{above+=$2}}}}}} END {{printf "%.0f", 100*above/(above+below)}}'' {input_file}`"""
+        )

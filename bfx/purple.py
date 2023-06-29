@@ -136,5 +136,5 @@ def parse_purity_metrics_pt(input_file):
         [],
         [],
         command=f"""\
-export purity=`printf "%.0f" $(echo "$($awk 'NR>1{{print $1}}' {input_file})*100" | bc -l)`"""
+export purity=`$awk 'NR>1{{printf "%.0f", $1*100}}' {input_file}`"""
         )

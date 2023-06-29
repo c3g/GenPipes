@@ -141,3 +141,25 @@ def parse_median_insert_size_metrics_pt(input_file):
         command=f"""\
 export median_insert_size=`awk '{{if ($0 ~ /median insert size/) {{match($0,/[0-9]+$/,value); print value[0]}}}}' {input_file}`"""
         )
+
+def parse_dedup_coverage_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export dedup_coverage=`$awk '{{if ($0 ~ /mean coverage/) {{match($0,/[0-9]+.[0-9]+/,value); printf "%.0f", value[0]}}}}' {input_file})`"""
+        )
+
+def parse_aligned_reads_count_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export aligned_reads_count=`$awk '{{if ($0 ~ /number of mapped reads/) {{match($0,/[0-9]+.* /,value); print value[0]}}}}' {input_file} | head -n 1 | sed -e 's@,@@g' | sed -e 's@ @@g'`"""
+        )

@@ -1744,17 +1744,37 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             )
 
             tumor_pair_jobs = []
+
+            normal_samples = [normal_pair.normal]
+            normal_job_name = f"picard_collect_multiple_metrics.{normal_pair.name}.{normal_pair.normal.name}"
+            normal_output_prefix = os.path.join(normal_picard_directory, tumor_pair.normal.name + ".all.metrics")
+            normal_job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                normal_job_project_tracking_metrics = concat_jobs(
+                    [
+                    gatk4.parse_bases_over_q30_percent_metrics_pt(f"{normal_output_prefix}.quality_distribution_metrics"),
+                    job2json_project_tracking.run(
+                        input_file=f"{normal_output_prefix}.quality_distribution_metrics",
+                        pipeline=self,
+                        samples=",".join([sample.name for sample in normal_samples]),
+                        readsets=",".join([readset.name for sample in normal_samples for readset in sample.readsets]),
+                        job_name=normal_job_name,
+                        metrics="bases_over_q30_percent=$bases_over_q30_percent"
+                        )
+                    ])
+
             collect_multiple_metrics_normal_job = concat_jobs(
                 [
                     mkdir_job_normal,
                     gatk4.collect_multiple_metrics(
                         normal_input,
-                        os.path.join(normal_picard_directory, tumor_pair.normal.name + ".all.metrics"),
+                        normal_output_prefix,
                         library_type=library[tumor_pair.normal]
-                    ),
+                        ),
                     bash.mkdir(
                         self.output_dirs['report'][tumor_pair.name]
-                    )
+                        ),
+                    normal_job_project_tracking_metrics
                 ]
             )
             for outfile in collect_multiple_metrics_normal_job.report_files:
@@ -1769,8 +1789,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         )
                     ]
                 )
-            collect_multiple_metrics_normal_job.name = "picard_collect_multiple_metrics." + tumor_pair.name + "." + tumor_pair.normal.name
-            collect_multiple_metrics_normal_job.samples = [tumor_pair.normal]
+            collect_multiple_metrics_normal_job.name = normal_job_name
+            collect_multiple_metrics_normal_job.samples = normal_samples
             collect_multiple_metrics_normal_job.readsets = list(tumor_pair.normal.readsets)
             tumor_pair_jobs.append(collect_multiple_metrics_normal_job)
 
@@ -1831,17 +1851,36 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 remove=True
             )
 
+            tumor_samples = [tumor_pair.tumor]
+            tumor_job_name = f"picard_collect_multiple_metrics.{tumor_pair.name}.{tumor_pair.tumor.name}"
+            tumor_output_prefix = os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".all.metrics")
+            tumor_job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                tumor_job_project_tracking_metrics = concat_jobs(
+                    [
+                    purple.parse_purity_metrics_pt(f"{tumor_output_prefix}.quality_distribution_metrics"),
+                    job2json_project_tracking.run(
+                        input_file=f"{tumor_output_prefix}.quality_distribution_metrics",
+                        pipeline=self,
+                        samples=",".join([sample.name for sample in tumor_samples]),
+                        readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
+                        job_name=tumor_job_name,
+                        metrics="bases_over_q30_percent=$bases_over_q30_percent"
+                        )
+                    ])
+
             collect_multiple_metrics_tumor_job = concat_jobs(
                 [
                     mkdir_job_tumor,
                     gatk4.collect_multiple_metrics(
                         tumor_input,
-                        os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".all.metrics"),
+                        tumor_output_prefix,
                         library_type=library[tumor_pair.tumor]
                     ),
                     bash.mkdir(
                         self.output_dirs['report'][tumor_pair.name]
-                    )
+                    ),
+                    tumor_job_project_tracking_metrics
                 ]
             )
             for outfile in collect_multiple_metrics_tumor_job.report_files:
@@ -1856,8 +1895,8 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         )
                     ]
                 )
-            collect_multiple_metrics_tumor_job.name = "picard_collect_multiple_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name
-            collect_multiple_metrics_tumor_job.samples = [tumor_pair.tumor]
+            collect_multiple_metrics_tumor_job.name = tumor_job_name
+            collect_multiple_metrics_tumor_job.samples = tumor_samples
             collect_multiple_metrics_tumor_job.readsets = list(tumor_pair.tumor.readsets)
             tumor_pair_jobs.append(collect_multiple_metrics_tumor_job)
 
@@ -2022,6 +2061,24 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         readsets=",".join([readset.name for sample in normal_samples for readset in sample.readsets]),
                         job_name=normal_job_name,
                         metrics="median_insert_size=$median_insert_size"
+                        ),
+                    qualimap.parse_dedup_coverage_metrics_pt(normal_output),
+                    job2json_project_tracking.run(
+                        input_file=normal_output,
+                        pipeline=self,
+                        samples=",".join([sample.name for sample in normal_samples]),
+                        readsets=",".join([readset.name for sample in normal_samples for readset in sample.readsets]),
+                        job_name=normal_job_name,
+                        metrics="dedup_coverage=$dedup_coverage"
+                        ),
+                    qualimap.parse_aligned_reads_count_metrics_pt(normal_output),
+                    job2json_project_tracking.run(
+                        input_file=normal_output,
+                        pipeline=self,
+                        samples=",".join([sample.name for sample in normal_samples]),
+                        readsets=",".join([readset.name for sample in normal_samples for readset in sample.readsets]),
+                        job_name=normal_job_name,
+                        metrics="aligned_reads_count=$aligned_reads_count"
                         )
                     ])
 
@@ -2075,6 +2132,24 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
                         job_name=tumor_job_name,
                         metrics="median_insert_size=$median_insert_size"
+                        ),
+                    qualimap.parse_dedup_coverage_metrics_pt(normal_output),
+                    job2json_project_tracking.run(
+                        input_file=normal_output,
+                        pipeline=self,
+                        samples=",".join([sample.name for sample in tumor_samples]),
+                        readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
+                        job_name=normal_job_name,
+                        metrics="dedup_coverage=$dedup_coverage"
+                        ),
+                    qualimap.parse_aligned_reads_count_metrics_pt(normal_output),
+                    job2json_project_tracking.run(
+                        input_file=normal_output,
+                        pipeline=self,
+                        samples=",".join([sample.name for sample in tumor_samples]),
+                        readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
+                        job_name=normal_job_name,
+                        metrics="aligned_reads_count=$aligned_reads_count"
                         )
                     ])
 
