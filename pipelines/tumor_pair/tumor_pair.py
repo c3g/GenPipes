@@ -6067,11 +6067,11 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             ]
 
             sed_cmd = Job(
-                    [os.path.join(manta_dir, "runWorkflow.py")],
-                    [os.path.join(manta_dir, "runWorkflow.py")],
+                    [os.path.join(manta_directory, "runWorkflow.py")],
+                    [os.path.join(manta_directory, "runWorkflow.py")],
                     command="""\
 sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
-    input=os.path.join(manta_dir, "runWorkflow.py")
+    input=os.path.join(manta_directory, "runWorkflow.py")
     )
 )
             jobs.append(
