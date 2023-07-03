@@ -117,8 +117,7 @@ def run(
 python {input_dir}/runWorkflow.py \\
   -m {mode}  \\
   -j {nodes} \\
-  -g {ram} \\
-  --quiet""".format(
+  -g {ram}""".format(
             input_dir=input_dir,
             mode=config.param('strelka2_paired_somatic','option_mode'),
             nodes=config.param('strelka2_paired_somatic','option_nodes'),
