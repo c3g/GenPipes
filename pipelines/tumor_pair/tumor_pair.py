@@ -6092,7 +6092,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         manta.manta_run(
                             "$SLURM_TMPDIR",
                             output_dep=output_dep
-                        )#,
+                        ),
+                        bash.cp(
+                            "$SLURM_TMPDIR/results",
+                            os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "rawManta", "results"),
+                            recursive = true
+                            )#,
 #                        bash.ln(
 #                            os.path.relpath(manta_somatic_output, os.path.dirname(output_prefix)),
 #                            output_prefix + ".manta.somatic.vcf.gz",
