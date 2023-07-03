@@ -6085,39 +6085,34 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         manta.manta_config(
                             inputNormal,
                             inputTumor,
-                            "$SLURM_TMPDIR",
+                            manta_directory,
                             bed_file
                         ),
-                        #sed_cmd,
+                        sed_cmd,
                         manta.manta_run(
-                            "$SLURM_TMPDIR",
+                            manta_directory,
                             output_dep=output_dep
                         ),
-                        bash.cp(
-                            "$SLURM_TMPDIR/results",
-                            os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "rawManta", "results"),
-                            recursive = true
-                            )#,
-#                        bash.ln(
-#                            os.path.relpath(manta_somatic_output, os.path.dirname(output_prefix)),
-#                            output_prefix + ".manta.somatic.vcf.gz",
-#                            input=manta_somatic_output,
-#                        ),
-#                        bash.ln(
-#                            os.path.relpath(manta_somatic_output + ".tbi", os.path.dirname(output_prefix)),
-#                            output_prefix + ".manta.somatic.vcf.gz.tbi",
-#                            input=manta_somatic_output + ".tbi"
-#                        ),
-#                        bash.ln(
-#                            os.path.relpath(manta_germline_output, os.path.dirname(output_prefix)),
-#                            output_prefix + ".manta.germline.vcf.gz",
-#                            input=manta_germline_output
-#                        ),
-#                        bash.ln(
-#                            os.path.relpath(manta_germline_output + ".tbi", os.path.dirname(output_prefix)),
-#                            output_prefix + ".manta.germline.vcf.gz.tbi",
-#                            input=manta_germline_output + ".tbi"
-#                        )
+                        bash.ln(
+                            os.path.relpath(manta_somatic_output, os.path.dirname(output_prefix)),
+                            output_prefix + ".manta.somatic.vcf.gz",
+                            input=manta_somatic_output,
+                        ),
+                        bash.ln(
+                            os.path.relpath(manta_somatic_output + ".tbi", os.path.dirname(output_prefix)),
+                            output_prefix + ".manta.somatic.vcf.gz.tbi",
+                            input=manta_somatic_output + ".tbi"
+                        ),
+                        bash.ln(
+                            os.path.relpath(manta_germline_output, os.path.dirname(output_prefix)),
+                            output_prefix + ".manta.germline.vcf.gz",
+                            input=manta_germline_output
+                        ),
+                        bash.ln(
+                            os.path.relpath(manta_germline_output + ".tbi", os.path.dirname(output_prefix)),
+                            output_prefix + ".manta.germline.vcf.gz.tbi",
+                            input=manta_germline_output + ".tbi"
+                        )
                     ],
                     name="manta_sv." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
