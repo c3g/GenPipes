@@ -6066,6 +6066,14 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 manta_germline_output + ".tbi"
             ]
 
+            sed_cmd = Job(
+                    [os.path.join(manta_dir, "runWorkflow.py")],
+                    [os.path.join(manta_dir, "runWorkflow.py")],
+                    command="""\
+sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
+    input=os.path.join(manta_dir, "runWorkflow.py")
+    )
+)
             jobs.append(
                 concat_jobs(
                     [
@@ -6080,6 +6088,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             manta_directory,
                             bed_file
                         ),
+                        sed_cmd,
                         manta.manta_run(
                             manta_directory,
                             output_dep=output_dep
