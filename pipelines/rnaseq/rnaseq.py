@@ -2522,7 +2522,7 @@ END
         by_sample = config.param("multiqc", "by_sample", required=False) # option to also generate individual multiqc reports for each sample
  
         if by_sample == "true":
-            for sample in self.samples():
+            for sample in self.samples:
                 input = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs", sample.name)
                 output = os.path.join(self.output_dirs['metrics_directory'], "multiqc_by_sample", sample.name, "multiqc_" + sample.name)
 
