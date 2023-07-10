@@ -1838,6 +1838,7 @@ pandoc \\
 
             job = concat_jobs(
                 [
+                    bash.rm(output_dir),
                     bash.mkdir(output_dir),
                     bash.mkdir(link_directory),
                     bash.chdir(output_dir),
