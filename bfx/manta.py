@@ -77,7 +77,8 @@ def manta_run(input_dir, output_dep):
 python {input_dir}/runWorkflow.py \\
         -m {mode}  \\
         -j {nodes} \\
-        -g {ram}""".format(
+        -g {ram} \\
+        --quiet""".format(
             input_dir=input_dir,
             mode=config.param('manta_sv', 'option_mode'),
             nodes=config.param('manta_sv', 'option_nodes'),
