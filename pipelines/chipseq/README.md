@@ -33,7 +33,7 @@ usage: chipseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                   [--genpipes_file GENPIPES_FILE] [-d DESIGN]
                   [-t {chipseq,atacseq}] [-r READSETS] [-v]
 
-Version: 4.4.1
+Version: 4.4.2
 
 For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
 
@@ -209,11 +209,6 @@ Filter out unmapped reads and low quality reads [Sambamba](http://www.htslib.org
 bedtools_blacklist_filter
 -------------------------
 Remove reads in blacklist regions from bam with bedtools intersect if blacklist file is supplied. Do nothing otherwise. 
-It is recommended to filter regions of reference genomes with abnormal pileups of short sequencing reads to improve biological signal
-and avoid false positives in peak calls and differential binding.
-Blacklists that include these problematic regions are available for model organisms and one should be provided if available.
-For more information about exclusion sets: https://doi.org/10.1093/bioinformatics/btad198
-The blacklist can be supplied/removed in the config file under ['bedtools_intersect', 'blacklist'].
 
 metrics
 -------
