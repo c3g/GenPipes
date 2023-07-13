@@ -31,9 +31,8 @@ def run(input_file, pipeline, samples, readsets, job_name, metrics):
     """
     pipeline_output_dir = pipeline.output_dir
     json_folder = os.path.join(pipeline_output_dir, "json")
-    operation_name = f"{pipeline.__class__.__name__}.{pipeline.args.type}"
     timestamp = pipeline.timestamp
-    json_outfile = os.path.join(json_folder, f"{operation_name}_{timestamp}.json")
+    json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.args.type}_{timestamp}.json")
 
     return Job(
         [input_file],

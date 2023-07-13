@@ -349,9 +349,8 @@ module unload {module_python} {command_separator}
 
         pipeline_output_dir = pipeline.output_dir
         json_folder = os.path.join(pipeline_output_dir, "json")
-        operation_name = pipeline.__class__.__name__
         timestamp = pipeline.timestamp
-        json_outfile = os.path.join(json_folder, f"{operation_name}_{timestamp}.json")
+        json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.args.type}_{timestamp}.json")
         return """\
 module load {module_python}
 {job2json_project_tracking_script} \\
