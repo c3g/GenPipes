@@ -1838,6 +1838,7 @@ pandoc \\
 
             job = concat_jobs(
                 [
+                    bash.rm(output_dir),
                     bash.mkdir(output_dir),
                     bash.mkdir(link_directory),
                     bash.chdir(output_dir),
@@ -2518,6 +2519,21 @@ END
         job.name = "multiqc"
         job.input_files = self.multiqc_inputs
         jobs.append(job)
+
+        by_sample = config.param("multiqc", "by_sample", required=False) # option to also generate individual multiqc reports for each sample
+ 
+        if by_sample == "true":
+            for sample in self.samples:
+                input = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs", sample.name)
+                output = os.path.join(self.output_dirs['metrics_directory'], "multiqc_by_sample", sample.name, "multiqc_" + sample.name)
+
+                job = multiqc.run(
+                        input + "*",
+                        output
+                        )
+                job.name = "multiqc." + sample.name
+                job.input_files = self.multiqc_inputs
+                jobs.append(job)
 
         return jobs
 
