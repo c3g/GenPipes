@@ -1858,7 +1858,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
             if self.project_tracking_json:
                 tumor_job_project_tracking_metrics = concat_jobs(
                     [
-                    purple.parse_purity_metrics_pt(f"{tumor_output_prefix}.quality_distribution_metrics"),
+                    gatk4.parse_bases_over_q30_percent_metrics_pt(f"{tumor_output_prefix}.quality_distribution_metrics"),
                     job2json_project_tracking.run(
                         input_file=f"{tumor_output_prefix}.quality_distribution_metrics",
                         pipeline=self,
