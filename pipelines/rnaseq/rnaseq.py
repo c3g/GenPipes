@@ -1547,7 +1547,8 @@ pandoc \\
         gemini_version = ".".join([gemini_module[-2], gemini_module[-1]])
     
         for sample in self.samples:
-            temp_dir = os.path.join(self.output_dirs["alignment_directory"])
+            #temp_dir = os.path.join(self.output_dirs["alignment_directory"])
+            temp_dir = config.param('gemini_annotations', 'tmp_dir')
             input_file_prefix = os.path.join(temp_dir, sample.name, sample.name)
         
             job = concat_jobs(
