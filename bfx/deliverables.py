@@ -91,7 +91,7 @@ ln -s -f \\
 def md5sum(input, output, out_dir):
     return Job(
         [input],
-        [output],
+        [os.path.join(out_dir, output)],
     command="""\
 md5sum {input} \\
   > {output}""".format(
