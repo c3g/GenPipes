@@ -1849,7 +1849,7 @@ pandoc \\
                     ),
                     bash.ln(
                         os.path.relpath(os.path.join(output_dir, "Log.final.out"), link_directory),
-                        os.path.abspath(os.path.join(link_directory, sample.name + "_arriba.Log.final.out"), output_dir),
+                        os.path.join(os.path.abspath(link_directory), sample.name + "_arriba.Log.final.out"), output_dir),
                         os.path.join(output_dir, "Log.final.out")
                         )
                 ],
