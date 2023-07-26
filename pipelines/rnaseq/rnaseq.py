@@ -77,6 +77,7 @@ from bfx import rnaseqc2
 
 #Metrics tools
 from bfx import multiqc
+from bfx import gtex_pipeline
 
 from bfx import bash_cmd as bash
 
@@ -308,6 +309,7 @@ class RnaSeqRaw(common.Illumina):
         """
 
         jobs = []
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
         project_index_directory = "reference.Merged"
         project_junction_file = os.path.join(self.output_dirs["alignment_1stPass_directory"], "AllSamples.SJ.out.tab")
         individual_junction_list=[]
@@ -400,6 +402,7 @@ class RnaSeqRaw(common.Illumina):
         for readset in self.readsets:
             trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
             alignment_pass_directory = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name)
+            sample_log = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name, "Log.final.out")
 
             if readset.run_type == "PAIRED_END":
                 candidate_input_files = [
@@ -438,22 +441,34 @@ class RnaSeqRaw(common.Illumina):
             rg_platform = config.param('star_align', 'platform', required=False)
             rg_center = config.param('star_align', 'sequencing_center', required=False)
 
-            job = star.align(
-                reads1=fastq1,
-                reads2=fastq2,
-                output_directory=alignment_pass_directory,
-                genome_index_folder=project_index_directory if not mapping or mapping=="2-pass" else None,
-                rg_id=readset.name,
-                rg_sample=readset.sample.name,
-                rg_library=readset.library if readset.library else "",
-                rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
-                rg_platform=rg_platform if rg_platform else "",
-                rg_center=rg_center if rg_center else "",
-                create_wiggle_track=True,
-                search_chimeres=True,
-                cuff_follow=True,
-                sort_bam=True
+            job = concat_jobs(
+                [
+                    star.align(
+                    reads1=fastq1,
+                    reads2=fastq2,
+                    output_directory=alignment_pass_directory,
+                    genome_index_folder=project_index_directory if not mapping or mapping=="2-pass" else None,
+                    rg_id=readset.name,
+                    rg_sample=readset.sample.name,
+                    rg_library=readset.library if readset.library else "",
+                    rg_platform_unit=readset.run + "_" + readset.lane if readset.run and readset.lane else "",
+                    rg_platform=rg_platform if rg_platform else "",
+                    rg_center=rg_center if rg_center else "",
+                    create_wiggle_track=True,
+                    search_chimeres=True,
+                    cuff_follow=True,
+                    sort_bam=True
+                    ),
+                    bash.mkdir(link_directory),
+                    bash.ln(
+                        os.path.relpath(sample_log, link_directory),
+                        os.path.join(link_directory, readset.sample.name + ".Log.final.out"),
+                        sample_log
+                    )
+                ]
             )
+            self.multiqc_inputs.append(sample_log)
+
             job.samples = [readset.sample]
             if not mapping or mapping == "2-pass":
                 job.input_files.append(os.path.join(project_index_directory, "SAindex"))
@@ -464,6 +479,7 @@ class RnaSeqRaw(common.Illumina):
             if len(readset.sample.readsets) == 1:
                 readset_bam = os.path.join(alignment_pass_directory, "Aligned.sortedByCoord.out.bam")
                 sample_bam = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.sample.name + ".sorted.bam")
+                
                 job = concat_jobs(
                     [
                         job,
@@ -471,11 +487,18 @@ class RnaSeqRaw(common.Illumina):
                             os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
                             sample_bam,
                             input=readset_bam
-                        )
+                        ),
+                        bash.mkdir(link_directory),
+                        bash.ln(
+                            os.path.relpath(sample_log, link_directory),
+                            os.path.join(link_directory, readset.sample.name + "_star.Log.final.out"),
+                            sample_log
+                            )
                     ],
                     removable_files=[sample_bam]
                 )
 
+            self.multiqc_inputs.append(sample_log)
             job.name = "star_align.2." + readset.name if not mapping or mapping == "2-pass" else "star_align." + readset.name
             job.samples = [readset.sample]
             jobs.append(job)
@@ -701,6 +724,8 @@ pandoc --to=markdown \\
                     input_dependency=[input]
                 )
             )
+
+        #self.multiqc_inputs.append(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"))
         return jobs
     
 #    def bam_hard_clip(self):
@@ -878,7 +903,26 @@ pandoc \\
             """
             jobs = []
 
+            output_directory = os.path.join(self.output_dirs["metrics_directory"], "rna")
             link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+
+            if os.path.isfile(os.path.join(config.param('DEFAULT', 'annotations_prefix', param_type='prefixpath', required=False) + ".rnaseqc2.gtf")):
+                input_gtf = os.path.join(config.param('DEFAULT', 'annotations_prefix', param_type='prefixpath', required=False) + ".rnaseqc2.gtf")
+            else:
+                jobs.append(
+                    concat_jobs(
+                        [
+                        bash.mkdir(output_directory),
+                        gtex_pipeline.collapse_gtf(
+                            input_gtf=config.param('DEFAULT', 'gtf', param_type='filepath', required=True),
+                            output_gtf=os.path.join(output_directory, "collapsed.gtf")
+                        )
+                        ],
+                        name="collapse_gtf"
+                    )
+                )
+                input_gtf = os.path.join(output_directory, "collapsed.gtf")
+
 
             # Use GTF with transcript_id only otherwise RNASeQC fails
             for sample in self.samples:
@@ -898,6 +942,7 @@ pandoc \\
                             bash.mkdir(link_directory),
                             rnaseqc2.run(
                                 input,
+                                input_gtf,
                                 output_directory,
                             ),
                             bash.ln(
@@ -1907,6 +1952,9 @@ pandoc \\
         """
 
         jobs = []
+
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+
         for readset in self.readsets:
             readset_bam = os.path.join(self.output_dirs["alignment_directory"], readset.sample.name, readset.name , "Aligned.sortedByCoord.out.bam")
             output_folder = os.path.join(self.output_dirs["metrics_directory"], readset.sample.name, readset.name)
@@ -1915,6 +1963,7 @@ pandoc \\
             job = concat_jobs(
                 [
                     bash.mkdir(os.path.dirname(readset_bam)),
+                    bash.mkdir(link_directory),
                     bash.mkdir(output_folder),
                     pipe_jobs(
                         [
@@ -1948,6 +1997,11 @@ pandoc \\
                         gtf=config.param('bwa_mem_rRNA', 'gtf'),
                         output=os.path.join(output_folder, readset.name+"rRNA.stats.tsv"),
                         typ="transcript"
+                    ),
+                    bash.ln(
+                        target_file=os.path.relpath(os.path.join(output_folder, readset.name+"rRNA.stats.tsv"), link_directory),
+                        link=os.path.join(link_directory,  readset.name+"rRNA.stats.tsv"),
+                        input=os.path.join(output_folder, readset.name+"rRNA.stats.tsv")
                     )
                 ],
                 name=f"bwa_mem_rRNA.{readset.name}",
@@ -1957,6 +2011,7 @@ pandoc \\
             job.removable_files=[readset_metrics_bam]
             job.samples = [readset.sample]
             jobs.append(job)
+            self.multiqc_inputs.append(os.path.join(output_folder, readset.name+"rRNA.stats.tsv"))
         return jobs
 
     def wiggle(self):
@@ -1989,7 +2044,7 @@ pandoc \\
 
                         )
                     ],
-                    name="wiggle_"+ sample.name,
+                    name="wiggle."+ sample.name,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -2008,7 +2063,7 @@ pandoc \\
 
                         )
                     ],
-                    name="wiggle_"+ sample.name,
+                    name="wiggle."+ sample.name,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -2026,7 +2081,7 @@ pandoc \\
                             strand
                         )
                     ],
-                    name="wiggle_"+sample.name+"_"+strand,
+                    name="wiggle."+sample.name+"_"+strand,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -2044,7 +2099,7 @@ pandoc \\
                             strand
                         )
                     ],
-                    name="wiggle_"+sample.name+"_"+strand,
+                    name="wiggle."+sample.name+"_"+strand,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -2057,6 +2112,7 @@ pandoc \\
         """
 
         jobs = []
+        link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
         for sample in self.samples:
             alignment_file_prefix = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name)
@@ -2068,6 +2124,7 @@ pandoc \\
             job = concat_jobs(
                 [
                     bash.mkdir(f"{self.output_dirs['raw_counts_directory']}"),
+                    bash.mkdir(link_directory),## ensure existance of link directory
                     pipe_jobs(
                         [
                             samtools.view(
@@ -2080,15 +2137,21 @@ pandoc \\
                                 output_count,
                                 config.param('htseq_count', 'options'),
                                 stranded
-                            )
+                            ),
                         ]
-                    )
+                    ),
+                    bash.ln(
+                        target_file=os.path.relpath(output_count, link_directory),
+                        link=os.path.join(link_directory, sample.name + ".tsv"),
+                        input=output_count
+                        )
                 ],
                 name="htseq_count." + sample.name,
                 samples=[sample]
             )
             jobs.append(job)
 
+            self.multiqc_inputs.append(output_count)
         return jobs
 
     def raw_counts_metrics(self):
@@ -2134,45 +2197,45 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
         job.samples = self.samples
         jobs.append(job)
 
-#         # Create Wiggle tracks archive
-#         library = {}
-#         for readset in self.readsets:
-#             if not readset.sample in library:
-#                 library[readset.sample]="PAIRED_END"
-#             if readset.run_type == "SINGLE_END" :
-#                 library[readset.sample]="SINGLE_END"
+        # Create Wiggle tracks archive
+        library = {}
 
-#         wiggle_directory = os.path.join(self.output_dirs["tracks_directory"], "bigWig")
-#         wiggle_archive = os.path.join(self.output_dir, "tracks.zip")
-#         if config.param('DEFAULT', 'strand_info') != 'fr-unstranded':
-#             wiggle_files = []
-#             for sample in self.samples:
-#                 if library[sample] == "PAIRED_END":
-#                     wiggle_files.extend([os.path.join(wiggle_directory, sample.name) + ".forward.bw", os.path.join(wiggle_directory, sample.name) + ".reverse.bw"])
-#         else:
-#             wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
-#         jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
+        wiggle_directory = os.path.join(self.output_dirs["tracks_directory"], "bigWig")
+        wiggle_archive = os.path.join(self.output_dir, "tracks.zip")
+        
+        if (config.param('wiggle', 'separate_strand') == 'NO'):
+            wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
+        else:
+            wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
+            strand="forward"
+            wiggle_files = wiggle_files + [os.path.join(wiggle_directory, sample.name+"_"+strand +".bw") for sample in self.samples]
+            strand="reverse"
+            wiggle_files = wiggle_files + [os.path.join(wiggle_directory, sample.name+"_"+strand +".bw") for sample in self.samples]
 
-#         # RPKM and Saturation
-#         count_file = os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.tsv")
-#         gene_size_file = config.param('rpkm_saturation', 'gene_size', param_type='filepath')
-#         rpkm_directory = self.output_dirs["raw_counts_directory"]
-#         saturation_directory = os.path.join(self.output_dirs["metrics_directory"], "saturation")
 
-#         job = concat_jobs(
-#             [
-#                 bash.mkdir(saturation_directory),
-#                 metrics.rpkm_saturation(
-#                     count_file,
-#                     gene_size_file,
-#                     rpkm_directory,
-#                     saturation_directory
-#                 )
-#             ],
-#             name="rpkm_saturation",
-#             samples=self.samples
-#         )
-#         jobs.append(job)
+        jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
+
+        # RPKM and Saturation
+        count_file = os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.tsv")
+        gene_size_file = config.param('rpkm_saturation', 'gene_size', param_type='filepath')
+        rpkm_directory = self.output_dirs["raw_counts_directory"]
+        saturation_directory = os.path.join(self.output_dirs["metrics_directory"], "saturation")
+
+        job = concat_jobs(
+            [
+                bash.mkdir(saturation_directory),
+                bash.mkdir(rpkm_directory),
+                metrics.rpkm_saturation(
+                    count_file,
+                    gene_size_file,
+                    rpkm_directory,
+                    saturation_directory
+                )
+            ],
+            name="rpkm_saturation",
+            samples=self.samples
+        )
+        jobs.append(job)
 
 #         report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeq.raw_counts_metrics.md")
 #         jobs.append(
@@ -2207,82 +2270,6 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
 #                 samples=self.samples
 #             )
 #         )
-
-#         return jobs
-
-
-        # Create Wiggle tracks archive
-        library = {}
-
-        wiggle_directory = os.path.join(self.output_dirs["tracks_directory"], "bigWig")
-        wiggle_archive = os.path.join(self.output_dir, "tracks.zip")
-        
-        if (config.param('wiggle', 'separate_strand') == 'NO'):
-            wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
-        else:
-            wiggle_files = [os.path.join(wiggle_directory, sample.name + ".bw") for sample in self.samples]
-            strand="forward"
-            wiggle_files = wiggle_files + [os.path.join(wiggle_directory, sample.name+"_"+strand +".bw") for sample in self.samples]
-            strand="reverse"
-            wiggle_files = wiggle_files + [os.path.join(wiggle_directory, sample.name+"_"+strand +".bw") for sample in self.samples]
-
-
-        jobs.append(Job(wiggle_files, [wiggle_archive], name="metrics.wigzip", command="zip -r " + wiggle_archive + " " + wiggle_directory, samples=self.samples))
-
-        # RPKM and Saturation
-        count_file = os.path.join(self.output_dirs["DGE_directory"], "rawCountMatrix.tsv")
-        gene_size_file = config.param('rpkm_saturation', 'gene_size', param_type='filepath')
-        rpkm_directory = self.output_dirs["raw_counts_directory"]
-        saturation_directory = os.path.join(self.output_dirs["metrics_directory"], "saturation")
-
-        job = concat_jobs(
-            [
-                bash.mkdir(saturation_directory),
-                metrics.rpkm_saturation(
-                    count_file,
-                    gene_size_file,
-                    rpkm_directory,
-                    saturation_directory
-                )
-            ],
-            name="rpkm_saturation",
-            samples=self.samples
-        )
-        jobs.append(job)
-
-        report_file = os.path.join(self.output_dirs["report_directory"], "RnaSeq.raw_counts_metrics.md")
-        jobs.append(
-            Job(
-                [
-                    wiggle_archive,
-                    saturation_directory + ".zip",
-                    f"{self.output_dirs['metrics_directory']}/rnaseqRep/corrMatrixSpearman.txt"
-                ],
-                [report_file],
-                [['raw_counts_metrics', 'module_pandoc']],
-                command="""\
-mkdir -p {report_dir} && \\
-cp {metrics_dir}/rnaseqRep/corrMatrixSpearman.txt {report_dir}/corrMatrixSpearman.tsv && \\
-cp {wiggle_archive} {report_dir}/ && \\
-cp {saturation_archive} {report_dir}/ && \\
-pandoc --to=markdown \\
-  --template {report_template_dir}/{basename_report_file} \\
-  --variable corr_matrix_spearman_table="`head -16 {report_dir}/corrMatrixSpearman.tsv | cut -f-16| awk -F"\t" '{{OFS="\t"; if (NR==1) {{$0="Vs"$0; print; gsub(/[^\t]/, "-"); print}} else {{printf $1; for (i=2; i<=NF; i++) {{printf "\t"sprintf("%.2f", $i)}}; print ""}}}}' | sed 's/\t/|/g'`" \\
-  {report_template_dir}/{basename_report_file} \\
-  > {report_file}""".format(
-                    wiggle_archive=wiggle_archive,
-                    saturation_archive=saturation_directory + ".zip",
-                    report_template_dir=self.report_template_dir,
-                    basename_report_file=os.path.basename(report_file),
-                    metrics_dir=self.output_dirs["metrics_directory"],
-                    report_dir=self.output_dirs["report_directory"],
-                    report_file=report_file
-                ),
-                report_files=[report_file],
-                name="raw_count_metrics_report",
-                samples=self.samples
-            )
-        )
         return jobs
 
 
@@ -2550,8 +2537,9 @@ END
                 self.mark_duplicates,
                 self.picard_rna_metrics,
                 self.estimate_ribosomal_rna,
-             #  self.bam_hard_clip,
-                self.rnaseqc,
+                # self.bam_hard_clip,
+                # self.rnaseqc,
+                self.rnaseqc2,
                 self.wiggle,
                 self.raw_counts,
                 self.raw_counts_metrics,

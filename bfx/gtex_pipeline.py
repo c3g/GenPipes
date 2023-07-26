@@ -24,23 +24,20 @@ import os
 from core.config import *
 from core.job import *
 
-def run(input_bam, input_gtf, output_directory):
-    input_base = os.path.basename(input_bam)    
+def collapse_gtf(input_gtf, output_gtf):
     return Job(
-        [input_bam, input_gtf],
-        [os.path.join(output_directory, input_base + ".metrics.tsv")],
-        [
-            ['rnaseqc2', 'module_rnaseqc2']
+        input_files=[input_gtf],
+        output_files=[output_gtf],
+        module_entries=[
+            ['gtex_pipeline', 'module_gtex-pipeline'],
+            ['gtex_pipeline', 'module_python']
         ],
         command="""\
-rnaseqc \\
-  {input_gtf} \\
-  {input_bam} \\
-  {output_directory}""".format(
-            input_gtf=input_gtf,
-            input_bam=input_bam,
-            output_directory=output_directory,
-            other_options=(" \\\n  " + config.param('rnaseqc2', 'other_options', required=False)) if config.param('rnaseqc2', 'other_options', required=False) else ""
+        collapse_annotation.py \\
+        {input_gtf} \\
+        {output_gtf} """.format(
+        	input_gtf=input_gtf,
+            output_gtf=output_gtf
         )
-    )
 
+    )
