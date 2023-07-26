@@ -1847,9 +1847,10 @@ pandoc \\
                         [os.path.relpath(fastq2, output_dir) for fastq2 in right_fastqs[sample.name] if fastq2],
                         output_dir
                     ),
+                    bash.chdir(self.output_dir),
                     bash.ln(
                         os.path.relpath(os.path.join(output_dir, "Log.final.out"), link_directory),
-                        os.path.abspath(os.path.join(link_directory, sample.name + "_arriba.Log.final.out")),
+                        os.path.join(link_directory, sample.name + "_arriba.Log.final.out"),
                         os.path.join(output_dir, "Log.final.out")
                         )
                 ],
