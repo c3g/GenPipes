@@ -921,7 +921,7 @@ def filter_snp_cpg(input, output):
         ],
         command="""\
 awk '$11>={cpg_threshold}' {input} | sort-bed - > {sorted_bed} && \\
-zcat {filter_file} | vcf2bed - > {filter_sorted_bed} && \\
+zcat {filter_file} | vcf2bed --sort-tmpdir={tmp_dir} --max-mem={ram} - > {filter_sorted_bed} && \\
 bedops --not-element-of \\
   {sorted_bed} \\
   {filter_sorted_bed} \\
@@ -930,6 +930,8 @@ bedops --not-element-of \\
             input=input,
             sorted_bed=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(input)+".tmp.sorted.bed"),
             filter_file=config.param('filter_snp_cpg', 'known_variants'),
+            tmp_dir=config.param('filter_snp_cpg', 'tmp_dir'),
+            ram=config.param('filter_snp_cpg', 'ram'),
             filter_sorted_bed=os.path.join(config.param('filter_snp_cpg', 'tmp_dir'), os.path.basename(config.param('filter_snp_cpg', 'known_variants'))+".tmp.sorted.bed"),
             output=output
         )

@@ -3200,6 +3200,15 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 os.path.join(somatic_dir, "results/variants/somatic.indels.vcf.gz")
             ]
 
+            sed_cmd = Job(
+                    [os.path.join(somatic_dir, "runWorkflow.py")],
+                    [os.path.join(somatic_dir, "runWorkflow.py")],
+                    command="""\
+sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
+    input=os.path.join(somatic_dir, "runWorkflow.py")
+    )
+)
+            
             jobs.append(
                 concat_jobs(
                     [
@@ -3211,6 +3220,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             bed_file,
                             mantaIndels
                         ),
+                        sed_cmd,
                         strelka2.run(
                             somatic_dir,
                             output_dep=output_dep
@@ -3377,6 +3387,14 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 
             output_dep = [os.path.join(germline_dir, "results", "variants", "variants.vcf.gz")]
         
+            sed_cmd = Job(
+                    [os.path.join(germline_dir, "runWorkflow.py")],
+                    [os.path.join(germline_dir, "runWorkflow.py")],
+                    command="""\
+sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
+    input=os.path.join(germline_dir, "runWorkflow.py")
+    )
+)
             jobs.append(
                 concat_jobs(
                     [
@@ -3386,6 +3404,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             germline_dir,
                             bed_file,
                         ),
+                        sed_cmd,
                         strelka2.run(
                             germline_dir,
                             output_dep=output_dep
@@ -6047,6 +6066,14 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 manta_germline_output + ".tbi"
             ]
 
+            sed_cmd = Job(
+                    [os.path.join(manta_directory, "runWorkflow.py")],
+                    [os.path.join(manta_directory, "runWorkflow.py")],
+                    command="""\
+sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
+    input=os.path.join(manta_directory, "runWorkflow.py")
+    )
+)
             jobs.append(
                 concat_jobs(
                     [
@@ -6061,6 +6088,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                             manta_directory,
                             bed_file
                         ),
+                        sed_cmd,
                         manta.manta_run(
                             manta_directory,
                             output_dep=output_dep
