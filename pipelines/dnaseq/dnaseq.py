@@ -54,11 +54,14 @@ from bfx import vt
 from bfx import htslib
 from bfx import gemini
 from bfx import qualimap
+from bfx import mosdepth
 from bfx import fastqc
 from bfx import ngscheckmate
 from bfx import verify_bam_id
 from bfx import multiqc
 from bfx import deliverables
+from bfx import cpsr
+from bfx import pcgr
 
 from bfx import bash_cmd as bash
 
@@ -1257,6 +1260,62 @@ END
             self.multiqc_inputs.append(os.path.join(picard_directory, sample.name + ".gcbias_metrics.txt"))
 
         return jobs
+    
+    def metrics_dna_sample_mosdepth(self):
+        """
+        Calculate depth stats for captured regions with mosdepth.
+        """
+        
+        jobs = []
+        
+        mosdepth_directory = os.path.join(self.output_dirs['metrics_directory'], "mosdepth")
+        link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
+        
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            output_prefix = os.path.join(mosdepth_directory, sample.name)
+            [input] = self.select_input_files(
+                [
+                    # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                ]
+            )
+            region = None
+            
+            coverage_bed = bvatools.resolve_readset_coverage_bed(
+                sample.readsets[0]
+            )
+            if coverage_bed:
+                region = coverage_bed
+                
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(mosdepth_directory),
+                        bash.mkdir(link_directory),
+                        mosdepth.mosdepth(
+                            input,
+                            output_prefix,
+                            True,
+                            region
+                        ),
+                        bash.ln(
+                            os.path.relpath(output_prefix + ".mosdepth.region.dist.txt", link_directory),
+                            os.path.join(link_directory, sample.name + ".mosdepth.region.dist.txt"),
+                            output_prefix + ".mosdepth.region.dist.txt"
+                        )
+                    ],
+                    name="mosdepth." + sample.name,
+                    samples=sample.name
+                )
+            )
+            self.multiqc_inputs.append(output_prefix + ".mosdepth.region.dist.txt")
+            return jobs
 
     def metrics_dna_sample_qualimap(self):
         """
@@ -1916,37 +1975,6 @@ END
         jobs.append(job)
 
         return jobs
-
-    # def metrics_gatk_cluster_fingerprint_sample(self):
-    #     """
-    #     CheckFingerprint (Picard)
-    #     Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
-    #     input: sample SAM/BAM or VCF
-    #     output: fingerprint file
-    #     """
-    #     job = self.metrics_gatk_cluster_fingerprint(
-    #         os.path.join("metrics", "dna", "sample.fingerprint"),
-    #         os.path.join("metrics", "dna", "sample.cluster.fingerprint"),
-    #         "gatk_cluster_fingerprint.sample"
-    #     )
-    #     return job
-    #
-    # def metrics_gatk_cluster_fingerprint_variant(self) :
-    #     """
-    #     CheckFingerprint (Picard)
-    #     Checks the sample identity of the sequence/genotype data in the provided file (SAM/BAM or VCF) against a set of known genotypes in the supplied genotype file (in VCF format).
-    #     input: sample SAM/BAM or VCF
-    #     output: fingerprint file
-    #     """
-    #
-    #     job = self.metrics_gatk_cluster_fingerprint(
-    #         os.path.join("metrics", "dna", "variant.fingerprint"),
-    #         os.path.join("metrics", "dna", "variant.cluster.fingerprint"),
-    #         "gatk_cluster_fingerprint.variant"
-    #     )
-    #     #job.samples = self.samples
-    #
-    #     return job
 
     def gatk_haplotype_caller(self):
         """
@@ -3128,8 +3156,203 @@ pandoc \\
             job_name="gemini_annotations"
         )
         return job
+    
+    def split_tumor_only(self):
+        """
 
-
+        """
+        
+        input = self.select_input_files([[f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.vcf.gz"]])
+        output = f"{self.output_dirs['variants_directory']}/split"
+        output_files = [os.path.join(output, sample.name + ".vcf.gz") for sample in self.samples]
+        options = config.param('bcftools_split_tumor_only', 'options')
+        
+        job = bcftools.split(
+            input,
+            output_files,
+            options
+        )
+        job.name = "split_filter_tumor_only"
+        job.samples = self.samples
+        
+        return [job]
+    
+    def filter_tumor_only(self):
+        """
+                Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
+                the filter on those generated fields.
+                """
+        jobs = []
+        
+        output_directory = f"{self.output_dirs['variants_directory']}/split"
+        
+        for sample in self.samples:
+            input = os.path.join(
+                output_directory,
+                sample.name + ".vcf.gz"
+            )
+            output = os.path.join(
+                output_directory,
+                sample.name + ".annot.vcf.gz"
+            )
+            
+            jobs.append(
+                concat_jobs(
+                    [
+                        tools.format2pcgr(
+                            input,
+                            output,
+                            config.param('filter_tumor_only', 'call_filter'),
+                            "somatic",
+                            sample.name,
+                            ini_section='filter_tumor_only'
+                        ),
+                        htslib.tabix(
+                            output,
+                            options="-pvcf"
+                        )
+                    ],
+                    name="filter_tumor_only." + sample.name,
+                    samples=sample.name
+                )
+            )
+        
+        return jobs
+    
+    def report_cpsr(self):
+        """
+        Creates a cpsr gremline report (https://sigven.github.io/cpsr/)
+        input: annotated/filter vcf
+        output: html report and addtional flat files
+        """
+        jobs = []
+        
+        output_directory = f"{self.output_dirs['variants_directory']}"
+        
+        for sample in self.samples:
+            input = os.path.join(
+                output_directory,
+                sample.name,
+                sample.name + ".annot.vcf.gz"
+            )
+            cpsr_directory = os.path.join(
+                output_directory,
+                sample.name,
+                "cpsr"
+            )
+            
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            cpsr_directory,
+                        ),
+                        cpsr.report(
+                            input,
+                            cpsr_directory,
+                            sample.name
+                        )
+                    ],
+                    name="report_cpsr." + sample.name,
+                    samples=sample.name
+                )
+            )
+        
+        return jobs
+    
+    def report_pcgr(self):
+        """
+        Creates a PCGR somatic + germline report (https://sigven.github.io/cpsr/)
+        input: filtered somatic vcf
+        output: html report and addtional flat files
+        """
+        jobs = []
+        
+        output_directory = f"{self.output_dirs['variants_directory']}"
+        
+        assembly = config.param('report_pcgr', 'assembly')
+        
+        for sample in self.samples:
+            cpsr_directory = os.path.join(
+                output_directory,
+                sample.name,
+                "cpsr"
+            )
+            input_cpsr = os.path.join(
+                cpsr_directory,
+                sample.name + ".cpsr." + assembly + ".json.gz"
+            )
+            input = os.path.join(
+                output_directory,
+                sample.name,
+                sample.name + ".annot.vcf.gz"
+            )
+            input_cna = os.path.join(
+                self.output_dirs['sv_variants_directory'],
+                sample.name,
+                sample.name + ".cnvkit.vcf.gz"
+            )
+            header = os.path.join(
+                self.output_dirs['sv_variants_directory'],
+                sample.name + ".header"
+            )
+            output_cna_body = os.path.join(
+                self.output_dirs['sv_variants_directory'],
+                sample.name + ".cnvkit.body.tsv"
+            )
+            output_cna = os.path.join(
+                self.output_dirs['sv_variants_directory'],
+                sample.name + ".cnvkit.cna.tsv"
+            )
+            pcgr_directory = os.path.join(
+                output_directory,
+                sample.name,
+                "pcgr"
+            )
+            output = os.path.join(
+                pcgr_directory,
+                sample.name + ".pcgr_acmg." + assembly + ".flexdb.html"
+            )
+            
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            pcgr_directory,
+                        ),
+                        pcgr.create_header(
+                            header,
+                        ),
+                        bcftools.query(
+                            input_cna,
+                            output_cna_body,
+                            query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
+                        ),
+                        bash.cat(
+                            [
+                                header,
+                                output_cna_body,
+                            ],
+                            output_cna
+                        ),
+                        pcgr.report(
+                            input,
+                            input_cpsr,
+                            pcgr_directory,
+                            sample.name,
+                            input_cna=output_cna
+                        ),
+                        bash.ls(output)
+                    ],
+                    name="report_pcgr." + sample.name,
+                    samples=sample.name,
+                    input_dependency=[header, input, input_cna, input_cpsr, output_cna_body],
+                    output_dependency=[header, output_cna_body, output_cna, output]
+                )
+            )
+        
+        return jobs
+    
     def metrics_vcf_stats(
         self,
         variants_file_prefix="variants/allSamples.hc.vqsr.vt.mil.snpId.snpeff",
@@ -4406,7 +4629,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.recalibration,
                 self.sym_link_final_bam,
                 self.metrics_dna_picard_metrics,
-                self.metrics_dna_sample_qualimap,
+                self.metrics_dna_sample_mosdepth,
                 self.metrics_dna_sambamba_flagstat,
                 self.metrics_dna_fastqc,
                 self.picard_calculate_hs_metrics,
@@ -4419,11 +4642,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.merge_and_call_combined_gvcf,
                 self.variant_recalibrator,
                 self.haplotype_caller_decompose_and_normalize,
-                self.haplotype_caller_flag_mappability,
-                self.haplotype_caller_snp_id_annotation,
-                self.haplotype_caller_snp_effect,
-                self.haplotype_caller_dbnsfp_annotation,
-                self.haplotype_caller_gemini_annotations,
+                self.cnvkit_batch,
+                self.split_tumor_only,
+                self.filter_tumor_only,
+                self.report_cpsr,
+                self.report_pcgr,
                 self.run_multiqc,
                 self.cram_output
             ],
@@ -4468,4 +4691,4 @@ if __name__ == '__main__':
     if '--wrap' in argv:
         utils.utils.container_wrapper_argparse(argv)
     else:
-        DnaSeq(protocol=['mugqic', 'mpileup', "light", "sv"])
+        DnaSeq(protocol=['mugqic', 'mpileup', "tumor_only", "sv"])
