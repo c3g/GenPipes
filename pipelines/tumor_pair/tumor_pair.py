@@ -1430,12 +1430,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 ),
                                 htslib.bgzip_tabix(
                                     None,
-                                    prefix + ".prep.vt.vcf.gz"
+                                    prefix + "varscan2.somatic.prep.vt.vcf.gz"
                                 )
                             ]
                         ),
                         tools.preprocess_varscan(
-                            prefix + ".prep.vt.vcf.gz",
+                            prefix + "varscan2.somatic.prep.vt.vcf.gz",
                             output_somatic
                         )
                     ],
@@ -1456,12 +1456,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 ),
                                 htslib.bgzip_tabix(
                                     None,
-                                    prefix + ".germline.prep.vt.vcf.gz"
+                                    prefix + "varscan2.germline.prep.vt.vcf.gz"
                                 )
                             ]
                         ),
                         tools.preprocess_varscan(
-                            prefix + ".germline.prep.vt.vcf.gz",
+                            prefix + "varscan2.germline.prep.vt.vcf.gz",
                             output_germline
                         )
                     ],
@@ -1472,137 +1472,251 @@ class TumorPair(dnaseq.DnaSeqRaw):
             )
 
         return jobs
-
-    def snp_effect_panel(self):
+    
+    def filter_fastpass_germline(self):
         """
-        Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
-        [SnpEff](https://pcingola.github.io/SnpEff/) annotates and predicts the effects of variants on genes (such as amino acid changes).
+        Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
+        the filter on those generated fields.
         """
-
         jobs = []
-
+        
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
-            varscan_directory = os.path.join(pair_directory, "rawVarscan2")
-
-            input_somatic = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vt.vcf.gz")
-            output_somatic = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vt.snpeff.vcf")
-            output_somatic_gz = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vt.snpeff.vcf.gz")
-
-            input_germline = os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vt.vcf.gz")
-            output_germline = os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vt.snpeff.vcf")
-            output_germline_gz = os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vt.snpeff.vcf.gz")
-
-            cancer_pair_filename = os.path.join(varscan_directory, tumor_pair.name + '.tsv')
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(varscan_directory),
-                        Job(
-                            [input_somatic, input_germline],
-                            [cancer_pair_filename],
-                            command="""\
-echo -e "{normal_name}\\t{tumor_name}" \\
-  > {cancer_pair_filename}""".format(
-                                normal_name=tumor_pair.normal.name,
-                                tumor_name=tumor_pair.tumor.name,
-                                cancer_pair_filename=cancer_pair_filename
-                            )
-                        )
-                    ],
-                    name="compute_cancer_effects_somatic.file." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    removable_files=[varscan_directory]
-                )
+            panel_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
+            
+            input = os.path.join(
+                panel_directory,
+                tumor_pair.name + ".varscan2.germline.vt.vcf.gz"
             )
-
+            output = os.path.join(
+                panel_directory,
+                tumor_pair.name + ".varscan2.germline.annot.vcf.gz"
+            )
+            output_filter = os.path.join(
+                panel_directory,
+                tumor_pair.name + ".varscan2.germline.annot.flt.vcf.gz"
+            )
+            
             jobs.append(
                 concat_jobs(
                     [
-                        snpeff.compute_effects(
-                            input_somatic,
-                            output_somatic,
-                            cancer_sample_file=cancer_pair_filename,
-                            ini_section='compute_cancer_effects_somatic',
-                            options=config.param('compute_cancer_effects_somatic', 'options')
+                        tools.format2pcgr(
+                            input,
+                            output,
+                            config.param('filter_fastpass', 'call_filter'),
+                            "germline",
+                            tumor_pair.tumor.name,
+                            ini_section='filter_fastpss'
                         ),
-                        htslib.bgzip_tabix(
-                            output_somatic,
-                            output_somatic_gz
-                        )
-                    ],
-                    name = "compute_cancer_effects_somatic." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                )
-            )
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        snpeff.compute_effects(
-                            input_germline,
-                            output_germline,
-                            cancer_sample_file=cancer_pair_filename,
-                            ini_section='compute_cancer_effects_germline',
-                            options=config.param('compute_cancer_effects_germline', 'options')
+                        pipe_jobs(
+                            [
+                                bcftools.view(
+                                    output,
+                                    None,
+                                    filter_options=config.param('filter_fastpass', 'germline_filter_options'),
+                                ),
+                                bcftools.view(
+                                    None,
+                                    None,
+                                    filter_options="-Oz -s ^" + tumor_pair.normal.name
+                                ),
+                                bcftools.sort(
+                                    None,
+                                    output_filter,
+                                    sort_options="-Oz"
+                                )
+                            ]
                         ),
-                        htslib.bgzip_tabix(
-                            output_germline,
-                            output_germline_gz
+                        htslib.tabix(
+                            output_filter,
+                            options="-pvcf"
                         )
                     ],
-                    name="compute_cancer_effects_germline." + tumor_pair.name,
+                    name="filter_fastpass.germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    output_dependency = [output, output_filter, output_filter + ".tbi"]
                 )
             )
+        
         return jobs
-
-    def gemini_annotations_panel(self):
+    
+    def report_cpsr_fastpass(self):
         """
-        Load functionally annotated vcf file into a mysql lite annotation database [Gemini] (http://gemini.readthedocs.org/en/latest/index.html).
+        Creates a cpsr gremline report (https://sigven.github.io/cpsr/)
+        input: filtered ensemble gremline vcf
+        output: html report and addtionalflat files
         """
-
         jobs = []
-
+        
         for tumor_pair in self.tumor_pairs.values():
-            pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
-
-            temp_dir = config.param('DEFAULT', 'tmp_dir')
-            gemini_prefix = os.path.join(pair_directory, tumor_pair.name)
-
+            panel_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
+            
+            input = os.path.join(
+                panel_directory,
+                tumor_pair.name + ".varscan2.germline.annot.flt.vcf.gz"
+            )
+            cpsr_directory = os.path.join(
+                panel_directory,
+                "cpsr"
+            )
+            
             jobs.append(
                 concat_jobs(
                     [
-                        gemini.gemini_annotations(
-                            gemini_prefix + ".varscan2.somatic.vt.snpeff.vcf.gz",
-                            gemini_prefix + ".somatic.gemini.db", temp_dir
+                        bash.mkdir(
+                            cpsr_directory,
+                        ),
+                        cpsr.report(
+                            input,
+                            cpsr_directory,
+                            tumor_pair.name
                         )
                     ],
-                    name="gemini_annotations.somatic." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    name="report_cpsr." + tumor_pair.name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor]
                 )
             )
-
+        
+        return jobs
+    
+    def filter_fastpass_somatic(self):
+        """
+        Applies custom script to inject FORMAT information - tumor/normal DP and VAP into the INFO field
+        the filter on those generated fields.
+        """
+        jobs = []
+        
+        for tumor_pair in self.tumor_pairs.values():
+            panel_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
+            
+            input = os.path.join(
+                panel_directory,
+                tumor_pair.name + ".varscan2.somatic.vt.vcf.gz"
+            )
+            output = os.path.join(
+                panel_directory,
+                tumor_pair.name + ".varscan2.somatic.annot.vcf.gz"
+            )
+            output_filter = os.path.join(
+                panel_directory,
+                tumor_pair.name + ".varscan2.somatic.annot.flt.vcf.gz"
+            )
+            
             jobs.append(
                 concat_jobs(
                     [
-                        gemini.gemini_annotations(
-                            gemini_prefix + ".varscan2.germline.vt.snpeff.vcf.gz",
-                            gemini_prefix + ".germline.gemini.db",
-                            temp_dir
+                        tools.format2pcgr(
+                            input,
+                            output,
+                            config.param('filter_fastpass', 'call_filter'),
+                            "somatic",
+                            tumor_pair.tumor.name,
+                            ini_section='filter_fastpass'
+                        ),
+                        bcftools.view(
+                            output,
+                            output_filter,
+                            filter_options=config.param('filter_fastpass', 'somatic_filter_options'),
+                        ),
+                        htslib.tabix(
+                            output_filter,
+                            options="-pvcf"
                         )
+                    ],
+                    name="filter_fastpass.somatic." + tumor_pair.name,
+                    samples=[tumor_pair.tumor],
+                    output_dependency=[output, output_filter, output_filter + ".tbi"]
+                )
+            )
+        
+        return jobs
+    
+    def report_pcgr_fastpass(self):
+        """
+        Creates a PCGR somatic + germline report (https://sigven.github.io/cpsr/)
+        input: filtered ensemble gremline vcf
+        output: html report and addtional flat files
+        """
+        jobs = []
+        
+        assembly = config.param('report_pcgr_fastpass', 'assembly')
+        
+        for tumor_pair in self.tumor_pairs.values():
+            panel_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")
+            
+            cpsr_directory = os.path.join(
+                panel_directory,
+                "cpsr"
+            )
+            input_cpsr = os.path.join(
+                cpsr_directory,
+                tumor_pair.name + ".cpsr." + assembly + ".json.gz"
+            )
+            input = os.path.join(
+                panel_directory,
+                tumor_pair.name + ".varscan2.somatic.annot.flt.vcf.gz"
+            )
+            input_cna = os.path.join(
+                self.output_dirs['sv_variants_directory'],
+                tumor_pair.name,
+                tumor_pair.name + ".cnvkit.vcf.gz"
+            )
+            header = os.path.join(
+                self.output_dirs['sv_variants_directory'],
+                tumor_pair.name + ".header"
+            )
+            output_cna_body = os.path.join(
+                self.output_dirs['sv_variants_directory'],
+                tumor_pair.name + ".cnvkit.body.tsv"
+            )
+            output_cna = os.path.join(
+                self.output_dirs['sv_variants_directory'],
+                tumor_pair.name + ".cnvkit.cna.tsv"
+            )
+            pcgr_directory = os.path.join(
+                panel_directory,
+                "pcgr"
+            )
+            output = os.path.join(
+                pcgr_directory,
+                tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"
+            )
+            
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            pcgr_directory,
+                        ),
+                        pcgr.create_header(
+                            header,
+                        ),
+                        bcftools.query(
+                            input_cna,
+                            output_cna_body,
+                            query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
+                        ),
+                        bash.cat(
+                            [
+                                header,
+                                output_cna_body,
+                            ],
+                            output_cna
+                        ),
+                        pcgr.report(
+                            input,
+                            input_cpsr,
+                            pcgr_directory,
+                            tumor_pair.name,
+                            input_cna=output_cna
+                        ),
+                        bash.ls(output)
                     ],
                     name="gemini_annotations.germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
-
+        
         return jobs
 
     def sym_link_panel(self):
@@ -1610,10 +1724,12 @@ echo -e "{normal_name}\\t{tumor_name}" \\
         Create sym links of panel variants for deliverables to the clients.
         """
         jobs = []
+        
+        assembly = config.param('report_pcgr_fastpass', 'assembly')
 
         inputs = {}
         for tumor_pair in self.tumor_pairs.values():
-            inputs["Tumor"] =  [os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel", tumor_pair.name)]
+            inputs["Tumor"] =  [os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "panel")]
 
             for key, input_files in inputs.items():
                 for idx, sample_prefix in enumerate(input_files):
@@ -1621,14 +1737,14 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         concat_jobs(
                             [
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".varscan2.vcf.gz",
+                                    os.path.join(sample_prefix, tumor_pair.name + ".varscan2.vcf.gz"),
                                     tumor_pair, self.output_dir,
                                     type="snv/panel",
                                     sample=key,
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".varscan2.vcf.gz.tbi",
+                                    os.path.join(sample_prefix, tumor_pair.name + ".varscan2.vcf.gz.tbi"),
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",
@@ -1636,7 +1752,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".varscan2.somatic.vt.snpeff.vcf.gz",
+                                    os.path.join(sample_prefix, tumor_pair.name + ".varscan2.somatic.annot.flt.vcf.gz"),
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",
@@ -1644,14 +1760,14 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".varscan2.somatic.vt.snpeff.vcf.gz.tbi",
+                                    os.path.join(sample_prefix, tumor_pair.name + ".varscan2.somatic.annot.flt.vcf.gz.tbi"),
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",
                                     sample=key,
                                     profyle=self.args.profyle),
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".varscan2.germline.vt.snpeff.vcf.gz",
+                                    os.path.join(sample_prefix, tumor_pair.name+ ".varscan2.germline.annot.flt.vcf.gz"),
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",
@@ -1659,7 +1775,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".varscan2.germline.vt.snpeff.vcf.gz.tbi",
+                                    os.path.join(sample_prefix, tumor_pair.name + ".varscan2.germline.annot.flt.vcf.gz.tbi"),
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",
@@ -1667,7 +1783,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".somatic.gemini.db",
+                                    os.path.join(sample_prefix, "cpsr", tumor_pair.name + ".cpsr." + assembly + ".html"),
                                     tumor_pair,
                                     self.output_dir,
                                     type="snv/panel",
@@ -1675,8 +1791,9 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     profyle=self.args.profyle
                                 ),
                                 deliverables.sym_link_pair(
-                                    sample_prefix + ".germline.gemini.db",
-                                    tumor_pair, self.output_dir,
+                                    os.path.join(sample_prefix, "pcgr", tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"),
+                                    tumor_pair,
+                                    self.output_dir,
                                     type="snv/panel",
                                     sample=key,
                                     profyle=self.args.profyle
@@ -5327,358 +5444,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     )
         return jobs
 
-    def combine_tumor_pairs_somatic(self):
-        """
-        Combine numerous ensemble vcfs into one vcf for gemini annotations.
-        """
-
-        jobs = []
-
-        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
-        input_merged_vcfs = [os.path.join(ensemble_directory, tumor_pair.name, tumor_pair.name + ".ensemble.somatic.vt.annot.vcf.gz") for tumor_pair in self.tumor_pairs.values()]
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.vcf.gz")
-
-        sample_list = []
-        for tumor_pair in self.tumor_pairs.values():
-            sample_list.extend([tumor_pair.normal, tumor_pair.tumor])
-
-        if len(input_merged_vcfs) == 1:
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            ensemble_directory,
-                            remove=True
-                        ),
-                        Job(
-                            [input_merged_vcfs[0]],
-                            [output],
-                            command="ln -s -f " + os.path.relpath(input_merged_vcfs[0], os.path.dirname(output)) + " " + output
-                        )
-                    ],
-                    name="gatk_combine_variants.somatic.allPairs",
-                    samples=self.samples,
-                    readsets=self.readsets
-                )
-            )
-
-        else:
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            ensemble_directory,
-                            remove=True
-                        ),
-                        gatk.combine_variants(
-                            input_merged_vcfs,
-                            output
-                        )
-                    ],
-                    name="gatk_combine_variants.somatic.allPairs",
-                    samples=self.samples,
-                    readsets=self.readsets
-                )
-            )
-
-        return jobs
-
-    def combine_tumor_pairs_germline(self):
-        """
-        Combine numerous ensemble vcfs into one vcf for gemini annotations.
-        """
-
-        jobs = []
-
-        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
-        input_merged_vcfs = [os.path.join(ensemble_directory, tumor_pair.name,
-                                          tumor_pair.name + ".ensemble.germline.vt.annot.vcf.gz") for tumor_pair in
-                             self.tumor_pairs.values()]
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.vcf.gz")
-
-        sample_list = []
-        for tumor_pair in self.tumor_pairs.values():
-            sample_list.extend([tumor_pair.normal, tumor_pair.tumor])
-
-        if len(input_merged_vcfs) == 1:
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            ensemble_directory,
-                            remove=True
-                        ),
-                        bash.ln(
-                            os.path.relpath(input_merged_vcfs[0], os.path.dirname(output)),
-                            output,
-                            intput=input_merged_vcfs[0]
-                        )
-                    ],
-                    name="gatk_combine_variants.germline.allPairs",
-                    samples=sample_list,
-                    readsets=[sample.readsets for sample in sample_list]
-                )
-            )
-
-        else:
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(
-                            ensemble_directory,
-                            remove=True
-                        ),
-                        gatk.combine_variants(
-                            input_merged_vcfs,
-                            output
-                        )
-                    ],
-                    name="gatk_combine_variants.germline.allPairs",
-                    samples=sample_list,
-                    readsets=[sample.readsets for sample in sample_list]
-                )
-            )
-
-        return jobs
-
-    def decompose_and_normalize_mnps_somatic(self):
-        """
-        Processes include normalization and decomposition of MNPs by [vt](http://genome.sph.umich.edu/wiki/Vt).
-        """
-
-        jobs = []
-
-        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
-        input = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.annot.vcf.gz")
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.vcf.gz")
-
-        sample_list = []
-        for tumor_pair in self.tumor_pairs.values():
-            sample_list.extend([tumor_pair.normal, tumor_pair.tumor])
-
-        jobs.append(
-            concat_jobs(
-                [
-                    bash.mkdir(
-                        ensemble_directory,
-                        remove=True
-                    ),
-                    vt.decompose_and_normalize_mnps(
-                        input,
-                        output
-                    )
-                ],
-                name="decompose_and_normalize_mnps.somatic.allPairs",
-                samples=sample_list,
-                readsets=[sample.readsets for sample in sample_list]
-            )
-        )
-
-        return jobs
-
-    def decompose_and_normalize_mnps_germline(self):
-        """
-        Processes include normalization and decomposition of MNPs by [vt](http://genome.sph.umich.edu/wiki/Vt).
-        """
-
-        jobs = []
-
-        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
-        input_vcf = os.path.join(ensemble_directory, "allPairs.ensemble.germline.annot.vcf.gz")
-        output_vcf = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.vcf.gz")
-
-        job = vt.decompose_and_normalize_mnps(input_vcf, output_vcf)
-        job.name = "decompose_and_normalize_mnps.germline.allPairs"
-
-        sample_list = []
-        for tumor_pair in self.tumor_pairs.values():
-            sample_list.extend([tumor_pair.normal, tumor_pair.tumor])
-
-        jobs.append(
-            concat_jobs(
-                [
-                    bash.mkdir(
-                        ensemble_directory,
-                        remove=True
-                    ),
-                    vt.decompose_and_normalize_mnps(
-                        input_vcf,
-                        output_vcf
-                    )
-                ],
-                name="decompose_and_normalize_mnps.somatic.allPairs",
-                samples=sample_list,
-                readsets=[sample.readsets for sample in sample_list]
-            )
-        )
-
-        return jobs
-
-    def all_pairs_compute_effects_somatic(self):
-        """
-        Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
-        SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
-        Modified arguments to consider paired cancer data.
-        Applied to all tumor pairs.
-        """
-
-        jobs = []
-
-        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
-        input = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.vcf.gz")
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.snpeff.vcf")
-        output_gz = os.path.join(ensemble_directory, "allPairs.ensemble.somatic.vt.annot.snpeff.vcf.gz")
-
-        cancer_pair_filename = os.path.join('cancer_snpeff.tsv')
-        with open(cancer_pair_filename, 'w') as cancer_pair:
-            sample_list = []
-            for tumor_pair in self.tumor_pairs.values():
-                cancer_pair.write(tumor_pair.normal.name + "\t" + tumor_pair.tumor.name + "\n")
-                sample_list.extend([tumor_pair.normal, tumor_pair.tumor])
-
-        jobs.append(
-            concat_jobs(
-                [
-                    bash.mkdir(
-                        ensemble_directory,
-                        remove=True
-                    ),
-                    snpeff.compute_effects(
-                        input,
-                        output,
-                        cancer_sample_file=cancer_pair_filename,
-                        options=config.param('compute_cancer_effects_somatic', 'options')
-                    ),
-                    htslib.bgzip_tabix(
-                        output,
-                        output_gz
-                    )
-                ],
-                name="compute_effects.somatic.allPairs",
-                samples=sample_list,
-                readsets=[sample.readsets for sample in sample_list]
-            )
-        )
-
-        return jobs
-
-    def all_pairs_compute_effects_germline(self):
-        """
-        Variant effect annotation. The .vcf files are annotated for variant effects using the SnpEff software.
-        SnpEff annotates and predicts the effects of variants on genes (such as amino acid changes).
-        Modified arguments to consider paired cancer data.
-        Applied to all tumor pairs.
-        """
-
-        jobs = []
-
-        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
-        input = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.vcf.gz")
-        output = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.snpeff.vcf")
-        output_gz = os.path.join(ensemble_directory, "allPairs.ensemble.germline.vt.annot.snpeff.vcf.gz")
-
-        sample_list = []
-        for tumor_pair in self.tumor_pairs.values():
-            sample_list.extend([tumor_pair.normal, tumor_pair.tumor])
-
-        jobs.append(
-            concat_jobs(
-                [
-                    bash.mkdir(
-                        ensemble_directory,
-                        remove=True
-                    ),
-                    snpeff.compute_effects(
-                        input,
-                        output,
-                        options=config.param('compute_cancer_effects_germline', 'options')
-                    ),
-                    htslib.bgzip_tabix(
-                        output,
-                        output_gz
-                    )
-                ],
-                name="compute_effects.germline.allPair",
-                samples=sample_list,
-                readsets=[sample.readsets for sample in sample_list]
-            )
-        )
-
-        return jobs
-
-    def gemini_annotations_somatic(self):
-        """
-        Load functionally annotated vcf file into a mysql lite annotation database: [Gemini](http://gemini.readthedocs.org/en/latest/index.html).
-        """
-
-        jobs = []
-
-        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
-        temp_dir = os.path.join(os.getcwd(), ensemble_directory)
-        gemini_prefix = os.path.join(ensemble_directory, "allPairs")
-
-        sample_list = []
-        for tumor_pair in self.tumor_pairs.values():
-            sample_list.extend([tumor_pair.normal, tumor_pair.tumor])
-
-        jobs.append(
-            concat_jobs(
-                [
-                    bash.mkdir(
-                        ensemble_directory,
-                        remove=True
-                    ),
-                    gemini.gemini_annotations(
-                        gemini_prefix + ".ensemble.somatic.vt.annot.snpeff.vcf.gz",
-                        gemini_prefix + ".somatic.gemini.db",
-                        temp_dir
-                    )
-                ],
-                name="gemini_annotations.somatic.allPairs",
-                samples=sample_list,
-                readsets=[sample.readsets for sample in sample_list]
-            )
-        )
-
-        return jobs
-
-    def gemini_annotations_germline(self):
-        """
-        Load functionally annotated vcf file into a mysql lite annotation database: [Gemini](http://gemini.readthedocs.org/en/latest/index.html).
-        """
-
-        jobs = []
-
-        ensemble_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble")
-        temp_dir = os.path.join(os.getcwd(), ensemble_directory)
-        gemini_prefix = os.path.join(ensemble_directory, "allPairs")
-
-        sample_list = []
-        for tumor_pair in self.tumor_pairs.values():
-            sample_list.extend([tumor_pair.normal, tumor_pair.tumor])
-
-        jobs.append(
-            concat_jobs(
-                [
-                    bash.mkdir(
-                        ensemble_directory,
-                        remove=True
-                    ),
-                    gemini.gemini_annotations(
-                        gemini_prefix + ".ensemble.germline.vt.annot.snpeff.vcf.gz",
-                        gemini_prefix + ".germline.gemini.db",
-                        temp_dir
-                    )
-                ],
-                name="gemini_annotations.germline.allPairs",
-                samples=sample_list,
-                readsets=[sample.readsets for sample in sample_list]
-            )
-        )
-
-        return jobs
-
     def sequenza(self):
         """
         Sequenza is a novel set of tools providing a fast Python script to genotype cancer samples,
@@ -7010,22 +6775,25 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.sambamba_merge_realigned,
                 self.sambamba_mark_duplicates,
                 self.recalibration,
-                self.manta_sv_calls, #10
+                self.sequenza, #10
+                self.manta_sv_calls,
+                self.cnvkit_batch,
                 self.rawmpileup_panel,
                 self.paired_varscan2_panel,
-                self.merge_varscan2_panel,
+                self.merge_varscan2_panel, #15
                 self.preprocess_vcf_panel,
-                self.snp_effect_panel, #15
-                self.gemini_annotations_panel,
+                self.filter_fastpass_germline,
+                self.report_cpsr_fastpass,
+                self.filter_fastpass_somatic,
+                self.report_pcgr_fastpass, #20
                 self.conpair_concordance_contamination,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_qualimap,
-                self.metrics_dna_fastqc, #20
-                self.sequenza,
-                self.run_pair_multiqc,
+                self.metrics_dna_fastqc,
+                self.run_pair_multiqc,  #25
                 self.sym_link_report,
                 self.sym_link_fastq_pair,
-                self.sym_link_panel #25
+                self.sym_link_panel
             ],
             [
                 self.picard_sam_to_fastq,

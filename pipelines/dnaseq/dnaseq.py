@@ -1274,13 +1274,11 @@ END
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             output_prefix = os.path.join(mosdepth_directory, sample.name)
+            
             [input] = self.select_input_files(
                 [
-                    # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.realigned.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
                 ]
@@ -1305,17 +1303,18 @@ END
                             region
                         ),
                         bash.ln(
-                            os.path.relpath(output_prefix + ".mosdepth.region.dist.txt", link_directory),
-                            os.path.join(link_directory, sample.name + ".mosdepth.region.dist.txt"),
-                            output_prefix + ".mosdepth.region.dist.txt"
+                            os.path.relpath(output_prefix + ".mosdepth.global.dist.txt", link_directory),
+                            os.path.join(link_directory, sample.name + ".mosdepth.global.dist.txt"),
+                            output_prefix + ".mosdepth.global.dist.txt"
                         )
                     ],
                     name="mosdepth." + sample.name,
-                    samples=sample.name
+                    samples=[sample]
                 )
             )
-            self.multiqc_inputs.append(output_prefix + ".mosdepth.region.dist.txt")
-            return jobs
+            self.multiqc_inputs.append(output_prefix + ".mosdepth.global.dist.txt")
+            
+        return jobs
 
     def metrics_dna_sample_qualimap(self):
         """
@@ -3161,21 +3160,30 @@ pandoc \\
         """
 
         """
-        
-        input = self.select_input_files([[f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.vcf.gz"]])
+
+        jobs = []
+
+        [input] = self.select_input_files([[f"{self.output_dirs['variants_directory']}/allSamples.hc.vqsr.vt.vcf.gz"]])
         output = f"{self.output_dirs['variants_directory']}/split"
         output_files = [os.path.join(output, sample.name + ".vcf.gz") for sample in self.samples]
-        options = config.param('bcftools_split_tumor_only', 'options')
+        options = config.param('split_tumor_only', 'options')
         
-        job = bcftools.split(
-            input,
-            output_files,
-            options
+        jobs.append(
+            concat_jobs(
+                [
+                    bash.mkdir(output),
+                    bcftools.split(
+                        input,
+                        output,
+                        options
+                    )
+                ],
+                name="split_tumor_only",
+                samples=[self.samples],
+                output_dependency=output_files
+            )
         )
-        job.name = "split_filter_tumor_only"
-        job.samples = self.samples
-        
-        return [job]
+        return jobs
     
     def filter_tumor_only(self):
         """
@@ -3213,7 +3221,7 @@ pandoc \\
                         )
                     ],
                     name="filter_tumor_only." + sample.name,
-                    samples=sample.name
+                    samples=[self.samples]
                 )
             )
         
@@ -3227,18 +3235,17 @@ pandoc \\
         """
         jobs = []
         
-        output_directory = f"{self.output_dirs['variants_directory']}"
+        output_directory = f"{self.output_dirs['variants_directory']}/split"
         
         for sample in self.samples:
             input = os.path.join(
                 output_directory,
-                sample.name,
                 sample.name + ".annot.vcf.gz"
             )
             cpsr_directory = os.path.join(
                 output_directory,
-                sample.name,
-                "cpsr"
+                "cpsr",
+                sample.name
             )
             
             jobs.append(
@@ -3254,7 +3261,7 @@ pandoc \\
                         )
                     ],
                     name="report_cpsr." + sample.name,
-                    samples=sample.name
+                    samples=self.samples
                 )
             )
         
@@ -3268,15 +3275,15 @@ pandoc \\
         """
         jobs = []
         
-        output_directory = f"{self.output_dirs['variants_directory']}"
+        output_directory = f"{self.output_dirs['variants_directory']}/split"
         
         assembly = config.param('report_pcgr', 'assembly')
         
         for sample in self.samples:
             cpsr_directory = os.path.join(
                 output_directory,
-                sample.name,
-                "cpsr"
+                "cpsr",
+                sample.name
             )
             input_cpsr = os.path.join(
                 cpsr_directory,
@@ -3284,30 +3291,29 @@ pandoc \\
             )
             input = os.path.join(
                 output_directory,
-                sample.name,
                 sample.name + ".annot.vcf.gz"
             )
             input_cna = os.path.join(
-                self.output_dirs['sv_variants_directory'],
+                self.output_dirs['SVariants_directory'],
                 sample.name,
                 sample.name + ".cnvkit.vcf.gz"
             )
             header = os.path.join(
-                self.output_dirs['sv_variants_directory'],
+                self.output_dirs['SVariants_directory'],
                 sample.name + ".header"
             )
             output_cna_body = os.path.join(
-                self.output_dirs['sv_variants_directory'],
+                self.output_dirs['SVariants_directory'],
                 sample.name + ".cnvkit.body.tsv"
             )
             output_cna = os.path.join(
-                self.output_dirs['sv_variants_directory'],
+                self.output_dirs['SVariants_directory'],
                 sample.name + ".cnvkit.cna.tsv"
             )
             pcgr_directory = os.path.join(
                 output_directory,
-                sample.name,
-                "pcgr"
+                "pcgr",
+                sample.name
             )
             output = os.path.join(
                 pcgr_directory,
@@ -3345,7 +3351,7 @@ pandoc \\
                         bash.ls(output)
                     ],
                     name="report_pcgr." + sample.name,
-                    samples=sample.name,
+                    samples=self.samples,
                     input_dependency=[header, input, input_cna, input_cpsr, output_cna_body],
                     output_dependency=[header, output_cna_body, output_cna, output]
                 )
@@ -4224,7 +4230,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                                     ),
                                     htslib.bgzip_tabix(
                                         None,
-                                        os.path.join(pair_directory, sample.name + ".cnvkit.germline.vcf.gz")
+                                        os.path.join(pair_directory, sample.name + ".cnvkit.vcf.gz")
                                     )
                                 ]
                             )
@@ -4683,7 +4689,7 @@ class DnaSeq(DnaSeqRaw):
     def __init__(self, protocol=None):
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "light", "sv"], default="mugqic")
+        self.argparser.add_argument("-t", "--type", help="DNAseq analysis type", choices=["mugqic", "mpileup", "tumor_only", "sv"], default="mugqic")
         super(DnaSeq, self).__init__(protocol)
 
 if __name__ == '__main__':
