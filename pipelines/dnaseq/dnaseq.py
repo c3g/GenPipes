@@ -3179,7 +3179,7 @@ pandoc \\
                     )
                 ],
                 name="split_tumor_only",
-                samples=[self.samples],
+                samples=self.samples,
                 output_dependency=output_files
             )
         )
@@ -3221,7 +3221,7 @@ pandoc \\
                         )
                     ],
                     name="filter_tumor_only." + sample.name,
-                    samples=[self.samples]
+                    samples=[sample]
                 )
             )
         
@@ -3261,7 +3261,7 @@ pandoc \\
                         )
                     ],
                     name="report_cpsr." + sample.name,
-                    samples=self.samples
+                    samples=[sample]
                 )
             )
         
@@ -3351,7 +3351,7 @@ pandoc \\
                         bash.ls(output)
                     ],
                     name="report_pcgr." + sample.name,
-                    samples=self.samples,
+                    samples=[sample],
                     input_dependency=[header, input, input_cna, input_cpsr, output_cna_body],
                     output_dependency=[header, output_cna_body, output_cna, output]
                 )
