@@ -301,7 +301,6 @@ def split(input, output, options, ini_section='bcftools_split'):
     """
     split vcf by sample
     """
-    output_directory = os.path.dirname(output[0])
     
     return Job(
         [input],
@@ -316,6 +315,6 @@ bcftools \\
   -o {output}""".format(
         options=options if options else "",
         input=input,
-        output=output_directory
+        output=output
         )
     )
