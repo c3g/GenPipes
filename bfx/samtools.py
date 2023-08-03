@@ -372,7 +372,7 @@ samtools bam2fq {other_options} \\
 def quickcheck(input, output=None, options=None):
 
     return Job(
-            [input]
+            [input],
             [output],
             [
                 ['samtools', 'module_samtools'],
