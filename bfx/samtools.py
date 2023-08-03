@@ -379,8 +379,7 @@ def quickcheck(input, output=None, options=None):
             ],
             command="""\
 samtools quickcheck {options} \\
-  {input} \\
-  {output}""".format(
+  {input} {output}""".format(
       options=options if options else "",
       input=input,
       output="> " + output if output else ""
