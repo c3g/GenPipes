@@ -3257,7 +3257,8 @@ pandoc \\
                         cpsr.report(
                             input,
                             cpsr_directory,
-                            sample.name
+                            sample.name,
+                            ini_section='report_cpsr_tumor_only'
                         )
                     ],
                     name="report_cpsr." + sample.name,
@@ -3346,7 +3347,8 @@ pandoc \\
                             input_cpsr,
                             pcgr_directory,
                             sample.name,
-                            input_cna=output_cna
+                            input_cna=output_cna,
+                            ini_section='report_pcgr_tumor_only'
                         ),
                         bash.ls(output)
                     ],

@@ -1568,7 +1568,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         cpsr.report(
                             input,
                             cpsr_directory,
-                            tumor_pair.name
+                            tumor_pair.name,
+                            ini_section='report_cpsr_fastpass'
                         )
                     ],
                     name="report_cpsr." + tumor_pair.name,
@@ -1707,7 +1708,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             input_cpsr,
                             pcgr_directory,
                             tumor_pair.name,
-                            input_cna=output_cna
+                            input_cna=output_cna,
+                            ini_section='report_pcgr_fastpass'
                         ),
                         bash.ls(output)
                     ],

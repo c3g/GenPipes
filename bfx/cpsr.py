@@ -28,7 +28,8 @@ from core.job import *
 def report(
     input,
     output_dir,
-    tumor_id
+    tumor_id,
+    ini_section = 'DEFAULT'
     ):
 
     assembly = config.param('report_cpsr', 'assembly')
@@ -48,7 +49,7 @@ def report(
         [input],
         output,
         [
-            ['report_cpsr', module],
+            [ini_section, module],
         ],
         command="""\
 {call} {options} \\
@@ -58,10 +59,10 @@ def report(
     --genome_assembly {assembly} \\
     --sample_id {tumor_id}""".format(
             call=call,
-            options=config.param('report_cpsr', 'options'),
+            options=config.param(ini_section, 'options'),
             input=input,
             output_dir=output_dir,
-            assembly=config.param('report_cpsr', 'assembly'),
+            assembly=config.param(ini_section, 'assembly'),
             tumor_id=tumor_id
         )
     )
