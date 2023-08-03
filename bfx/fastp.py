@@ -66,12 +66,14 @@ fastp -V \\
     )
 
 def trim(
+        adapter,
         input1,
         input2,
         output1,
         output2,
         output_json_path,
         output_html_path=None,
+        ini_section = 'DEFAULT'
 ):
 
     if input2:
@@ -84,8 +86,8 @@ def trim(
     else:
         outputs = [output1, output_json_path, output_html_path]
 
-    num_threads = config.param('fastp_trim', 'threads', required=False, param_type='posint')
-    paramters = config.param('fastp_trim', 'options', required=False)
+    num_threads = config.param(ini_section, 'threads', required=False, param_type='posint')
+    paramters = config.param(ini_section, 'options', required=False)
 
     return Job(
         inputs,
@@ -96,6 +98,7 @@ def trim(
         command="""\
 fastp -V \\
   {options} \\
+  {adapter} \\
   {rds1} \\
   {rds2} \\
   {out1} \\
@@ -103,13 +106,14 @@ fastp -V \\
   {cpus} \\
   {json} \\
   {html}""".format(
-            options = "\\\n  "       + paramters,
-            rds1 = "\\\n  --in1 "    + input1,
-            rds2 = "\\\n  --in2 "    + input2 if input2 else "",
-            out1 = "\\\n  "          + output1,
-            out2 = "\\\n  "          + output2 if output2 else "",
-            cpus = "\\\n  --thread " + str(num_threads) if num_threads else "",
-            json = "\\\n  --json "   + output_json_path if output_json_path else "",
-            html = "\\\n  --html "   + output_html_path if output_html_path else "",
+            options = "\\\n  "                  + paramters,
+            adapter = "\\\n  --adapter_fasta "  + adapter,
+            rds1 = "\\\n  --in1 "               + input1,
+            rds2 = "\\\n  --in2 "               + input2 if input2 else "",
+            out1 = "\\\n  --out1 "              + output1,
+            out2 = "\\\n  --out2 "              + output2 if output2 else "",
+            cpus = "\\\n  --thread "            + str(num_threads) if num_threads else "",
+            json = "\\\n  --json "              + output_json_path if output_json_path else "",
+            html = "\\\n  --html "              + output_html_path if output_html_path else "",
         )
     )

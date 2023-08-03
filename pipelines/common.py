@@ -29,7 +29,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))))
 
 # MUGQIC Modules
 from core.config import config, _raise, SanitycheckError
-from core.job import Job, concat_jobs
+from core.job import Job, concat_jobs, pipe_jobs
 from core.pipeline import Pipeline
 from core.design import parse_design_file
 from core.readset import parse_illumina_readset_file
@@ -38,7 +38,12 @@ from core.sample_tumor_pairs import *
 from bfx import bvatools
 from bfx import verify_bam_id
 from bfx import picard
+from bfx import adapters
 from bfx import trimmomatic
+from bfx import skewer
+from bfx import fastp
+from bfx import bwa2
+from bfx import gatk4
 from bfx import variantBam
 from bfx import samtools
 from bfx import rmarkdown
@@ -465,6 +470,320 @@ pandoc \\
                 name="merge_trimmomatic_stats"
             )
         ]
+        
+    def build_adapter_file(self, directory, readset):
+        adapter_file = os.path.join(directory, "adapter.tsv")
+        if readset.run_type == "SINGLE_END":
+            if readset.adapter1:
+                adapter_job = Job(
+                    command="""\
+`cat > {adapter_file} << END
+>Adapter\n{sequence}\n
+END
+`""".format(
+                        adapter_file=adapter_file,
+                        sequence=readset.adapter1
+                    )
+                )
+            else:
+                raise Exception(
+                    "Error: missing adapter1 for SINGLE_END readset \"" + readset.name + "\", or missing adapter_file parameter in config file!")
+        
+        elif readset.run_type == "PAIRED_END":
+            if readset.adapter1 and readset.adapter2:
+                adapter_job = Job(
+                    command="""\
+`cat > {adapter_file} << END
+>Adapter1\n{sequence1}\n
+>Adapter2\n{sequence2}\n
+END
+`""".format(
+                        adapter_file=adapter_file,
+                        sequence1=readset.adapter1,
+                        sequence2=readset.adapter2,
+                    )
+                )
+        
+        return adapter_job
+
+    def skewer_trimming(self):
+        """
+        Trimming using [skewer](https://sourceforge.net/projects/skewer/)
+        """
+
+        jobs = []
+
+        for readset in self.readsets:
+            output_dir = os.path.join(self.output_dirs['trim_directory'], readset.sample.name)
+            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+            
+            trim_file_prefix = os.path.join(output_dir, readset.name)
+            trim_log = trim_file_prefix + ".log"
+
+            adapter_file = config.param('skewer_trimming', 'adapter_file', required=False, param_type='filepath')
+            adapter_job = None
+
+            quality_offset = readset.quality_offset
+
+            if not adapter_file:
+                adapter_file = os.path.join(output_dir, "adapter.tsv")
+                adapter_job = adapters.create(
+                    readset,
+                    adapter_file
+                )
+
+            fastq1 = ""
+            fastq2 = ""
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[readset.fastq1, readset.fastq2]]
+                if readset.bam:
+                    prefix = os.path.join(
+                        self.output_dirs["raw_reads_directory"],
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                    prefix = os.path.join(
+                        self.output_dirs["raw_reads_directory"],
+                        readset.sample.name,
+                        readset.name + "."
+                    )
+                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [[readset.fastq1]]
+                if readset.bam:
+                    prefix = os.path.join(
+                        self.output_dirs["raw_reads_directory"],
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + ".single.fastq.gz"])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
+
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            output_dir,
+                            remove=True
+                        ),
+                        bash.mkdir(link_directory),
+                        adapter_job,
+                        skewer.trim(
+                            fastq1,
+                            fastq2,
+                            trim_file_prefix,
+                            adapter_file,
+                            quality_offset
+                        ),
+                        bash.ln(
+                            os.path.relpath(trim_log, link_directory),
+                            os.path.join(link_directory, readset.name + ".trim.log"),
+                            trim_log
+                        )
+                    ],
+                    name="skewer_trimming." + readset.name,
+                    removable_files=[output_dir],
+                    samples=[readset.sample]
+                )
+            )
+
+        return jobs
+
+    def trim_fastp(self):
+        """
+        [Fastp](https://github.com/OpenGene/fastp): A tool designed to provide fast all-in-one preprocessing for FastQ
+        files. This tool is developed in C++ with multithreading supported to afford high performance.
+        """
+
+        jobs = []
+
+        for readset in self.readsets:
+            output_dir = os.path.join(self.output_dirs['trim_directory'], readset.sample.name)
+            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+            
+            trim_file_prefix = os.path.join(output_dir, readset.name)
+            trim_json = trim_file_prefix + ".json"
+            trim_html = trim_file_prefix + ".html"
+            
+            adapter_file = config.param('trim_fastp', 'adapter_file', required=False, param_type='filepath')
+            adapter_job = None
+
+
+            if not adapter_file:
+                adapter_file = os.path.join(output_dir, "adapter.tsv")
+                adapter_job = adapters.create(
+                    readset,
+                    adapter_file
+                )
+
+            fastq1 = ""
+            fastq2 = ""
+            output1 = ""
+            output2 = ""
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[readset.fastq1, readset.fastq2]]
+                if readset.bam:
+                    prefix = os.path.join(
+                        self.output_dirs["raw_reads_directory"],
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                    prefix = os.path.join(
+                        self.output_dirs["raw_reads_directory"],
+                        readset.sample.name,
+                        readset.name + "."
+                    )
+                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                output1 = trim_file_prefix + ".trim.pair1.fastq.gz"
+                output2 = trim_file_prefix + ".trim.pair2.fastq.gz"
+
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [[readset.fastq1]]
+                if readset.bam:
+                    prefix = os.path.join(
+                        self.output_dirs["raw_reads_directory"],
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + ".single.fastq.gz"])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
+                output1 = trim_file_prefix + ".trim.single.fastq.gz"
+                output2 = None
+
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(
+                            output_dir,
+                            remove=True
+                        ),
+                        bash.mkdir(link_directory),
+                        adapter_job,
+                        fastp.trim(
+                            adapter_file,
+                            fastq1,
+                            fastq2,
+                            output1,
+                            output2,
+                            trim_json,
+                            trim_html,
+                            ini_section='trim_fastp'
+                        ),
+                        bash.ln(
+                            os.path.relpath(trim_json, link_directory),
+                            os.path.join(link_directory, readset.name + ".trim.json"),
+                            trim_json
+                        )
+                    ],
+                    name="trim_fastp." + readset.name,
+                    removable_files=[output_dir],
+                    samples=[readset.sample]
+                )
+            )
+
+        return jobs
+
+    def bwa_mem2_samtools_sort_cram(self):
+        """
+        The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
+        The alignment software used is [BWA-MEM2](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
+        BWA output BAM files are then sorted by coordinate using [Sambamba](http://lomereiter.github.io/sambamba/index.html)
+        This step takes as input files:
+
+        1. Trimmed FASTQ files if available
+        2. Else, FASTQ files from the readset file if available
+        3. Else, FASTQ output files from previous picard_sam_to_fastq conversion of BAM files
+        """
+
+        jobs = []
+        for readset in self.readsets:
+            trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.")
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], readset.sample.name)
+            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
+            index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
+
+            fastq1 = ""
+            fastq2 = ""
+            # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+            if readset.run_type == "PAIRED_END":
+                candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                if readset.fastq1 and readset.fastq2:
+                    candidate_input_files.append([readset.fastq1, readset.fastq2])
+                if readset.bam:
+                    prefix = os.path.join(
+                        self.output_dirs["raw_reads_directory"],
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + "pair1.fastq.gz", prefix + "pair2.fastq.gz"])
+                [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+
+            elif readset.run_type == "SINGLE_END":
+                candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                if readset.fastq1:
+                    candidate_input_files.append([readset.fastq1])
+                if readset.bam:
+                    prefix = os.path.join(
+                        self.output_dirs["raw_reads_directory"],
+                        readset.sample.name,
+                        re.sub("\.bam$", ".", os.path.basename(readset.bam))
+                    )
+                    candidate_input_files.append([prefix + ".single.fastq.gz"])
+                [fastq1] = self.select_input_files(candidate_input_files)
+                fastq2 = None
+
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(os.path.dirname(readset_bam)),
+                        pipe_jobs(
+                            [
+                                bwa2.mem(
+                                    fastq1,
+                                    fastq2,
+                                    read_group="'@RG" + \
+                                        "\\tID:" + readset.name + \
+                                        "\\tSM:" + readset.sample.name + \
+                                        "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
+                                        ("\\tPU:" + readset.sample.name + "." + readset.run + "." + readset.lane if readset.sample.name and readset.run and readset.lane else "") + \
+                                        ("\\tCN:" + config.param('align_bwa_mem2', 'sequencing_center') if config.param('align_bwa_mem2', 'sequencing_center', required=False) else "") + \
+                                        ("\\tPL:" + config.param('align_bwa_mem2', 'sequencing_technology') if config.param('align_bwa_mem2', 'sequencing_technology', required=False) else "Illumina") + \
+                                        "'",
+                                        ini_section='align_bwa_mem2'
+                                ),
+                                samtools.sort(
+                                    "/dev/stdin",
+                                    readset_bam,
+                                    ini_section='samtools_sort_cram'
+                                )
+                            ]
+                        )
+                    ],
+                    name="bwa_mem_sambamba_sort_sam." + readset.name,
+                    samples=[readset.sample]
+                )
+            )
+
+        return jobs
 
     def sambamba_merge_sam_files(self):
         """
@@ -482,10 +801,10 @@ pandoc \\
             # Find input readset BAMs first from previous bwa_mem_picard_sort_sam job, then from original BAMs in the readset sheet.
             # Find input readset BAMs first from previous bwa_mem_sambamba_sort_sam job, then from original BAMs in the readset sheet.
             candidate_readset_bams = [
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in sample.readsets],
-                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in sample.readsets]
-            ]
-            candidate_readset_bams.append([readset.bam for readset in sample.readsets if readset.bam])
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in
+                 sample.readsets],
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in
+                 sample.readsets], [readset.bam for readset in sample.readsets if readset.bam]]
             readset_bams = self.select_input_files(candidate_readset_bams)
 
             sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
@@ -548,6 +867,69 @@ pandoc \\
 
         return jobs
 
+    def gatk_mark_duplicates(self):
+        """
+        Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
+        (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
+        will be marked as a duplicate in the BAM file. Marking duplicates is done using [GATK](http://broadinstitute.github.io/picard/).
+        """
+
+        jobs = []
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+            
+            # Find input readset CRAMs/BAMs first from previous bwa_mem2_sambamba_sort_sam job, then from original BAMs in the readset sheet.
+            candidate_readset_bams = [
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.UMI.bam") for readset in
+                 sample.readsets],
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.cram") for readset in
+                 sample.readsets], [readset.bam for readset in sample.readsets if readset.bam],
+                [os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam") for readset in
+                 sample.readsets], [readset.bam for readset in sample.readsets if readset.bam]
+            ]
+            input = self.select_input_files(candidate_readset_bams)
+
+            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
+            mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
+            
+            if config.param("gatk_mark_duplicates", 'compression') == "cram":
+                output = alignment_directory + "sorted.dup.cram"
+                output_index = alignment_directory + "sorted.dup.cram.crai"
+            else:
+                output = alignment_directory + "sorted.dup.bam"
+                output_index = alignment_directory + "sorted.dup.bam.bai"
+
+            metrics_file = alignment_directory + "sorted.dup.metrics"
+
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(alignment_directory),
+                        bash.mkdir(link_directory),
+                        gatk4.mark_duplicates(
+                            input,
+                            output,
+                            metrics_file,
+                            create_index=False,
+                            ini_section='gatk_mark_duplicates'
+                        ),
+                        samtools.index(
+                            output,
+                            output_index
+                        ),
+                        bash.ln(
+                            os.path.relpath(metrics_file, link_directory),
+                            os.path.join(link_directory, sample.name + ".trim.json"),
+                            metrics_file
+                        )
+                    ],
+                    name="gatk_mark_duplicates." + sample.name,
+                    samples=[sample]
+                )
+            )
+        return jobs
+    
     def verify_bam_id(self):
         """
         verifyBamID is a software that verifies whether the reads in particular file match previously known
@@ -559,8 +941,8 @@ pandoc \\
 
         # Known variants file
         population_AF = config.param('verify_bam_id', 'population_AF', required=False)
-        candidate_input_files = [[config.param('verify_bam_id', 'verifyBamID_variants_file', required=False)]]
-        candidate_input_files.append([config.param('verify_bam_id', 'verifyBamID_variants_file', required=False) + ".gz"])
+        candidate_input_files = [[config.param('verify_bam_id', 'verifyBamID_variants_file', required=False)],
+                                 [config.param('verify_bam_id', 'verifyBamID_variants_file', required=False) + ".gz"]]
         [known_variants_annotated] = self.select_input_files(candidate_input_files)
         verify_bam_id_directory = "verify_bam_id"
         variants_directory = "variants"
@@ -580,9 +962,9 @@ pandoc \\
         for sample in self.samples:
             alignment_directory = os.path.join("alignment", sample.name)
 
-            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")]]
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")])
-            candidate_input_files.append([os.path.join(alignment_directory, sample.name + ".sorted.mdup.bam")]) # this one is for RnaSeq pipeline
+            candidate_input_files = [[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                                     [os.path.join(alignment_directory, sample.name + ".sorted.dedup.bam")],
+                                     [os.path.join(alignment_directory, sample.name + ".sorted.mdup.bam")]]
             [input_bam] = self.select_input_files(candidate_input_files)
 
             output_prefix = os.path.join(verify_bam_id_directory, sample.name)
