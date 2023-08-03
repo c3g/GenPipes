@@ -43,6 +43,7 @@ from bfx import pycoqc
 from bfx import tools
 from bfx import gatk4
 from bfx import bash_cmd as bash
+from bfx import samtools
 
 log = logging.getLogger(__name__)
 
