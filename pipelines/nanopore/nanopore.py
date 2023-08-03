@@ -190,6 +190,9 @@ class Nanopore(common.MUGQICPipeline):
                             )
                         ]
                     ),
+                    samtools.quickcheck(
+                        out_bam
+                    ),
                     sambamba.index(
                         out_bam,
                         out_bai,
