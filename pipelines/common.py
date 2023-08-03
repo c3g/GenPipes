@@ -130,6 +130,19 @@ class Illumina(MUGQICPipeline):
         super(Illumina, self).__init__(protocol)
 
     @property
+    def output_dirs(self):
+        dirs = {
+            'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
+            'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
+            'metrics_directory': os.path.relpath(os.path.join(self.output_dir, 'metrics'), self.output_dir),
+            'variants_directory': os.path.relpath(os.path.join(self.output_dir, 'variants'), self.output_dir),
+            'SVariants_directory': os.path.relpath(os.path.join(self.output_dir, 'SVariants'), self.output_dir),
+            'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
+        }
+        return dirs
+
+    @property
     def readsets(self):
         if not hasattr(self, "_readsets"):
             if self.args.readsets:
@@ -616,7 +629,6 @@ END
             adapter_file = config.param('trim_fastp', 'adapter_file', required=False, param_type='filepath')
             adapter_job = None
 
-
             if not adapter_file:
                 adapter_file = os.path.join(output_dir, "adapter.tsv")
                 adapter_job = adapters.create(
@@ -698,7 +710,7 @@ END
 
         return jobs
 
-    def bwa_mem2_samtools_sort_cram(self):
+    def bwa_mem2_samtools_sort(self):
         """
         The filtered reads are aligned to a reference genome. The alignment is done per sequencing readset.
         The alignment software used is [BWA-MEM2](http://bio-bwa.sourceforge.net/) with algorithm: bwa mem.
@@ -714,8 +726,8 @@ END
         for readset in self.readsets:
             trim_file_prefix = os.path.join(self.output_dirs['trim_directory'], readset.sample.name, readset.name + ".trim.")
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], readset.sample.name)
-            readset_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam")
-            index_bam = os.path.join(alignment_directory, readset.name, readset.name + ".sorted.bam.bai")
+            compression_postfix = config.param("bwa_mem2_samtools_sort", 'compression')
+            readset_prefix = os.path.join(alignment_directory, readset.name, readset.name + ".sorted." + compression_postfix)
 
             fastq1 = ""
             fastq2 = ""
@@ -754,7 +766,7 @@ END
             jobs.append(
                 concat_jobs(
                     [
-                        bash.mkdir(os.path.dirname(readset_bam)),
+                        bash.mkdir(alignment_directory),
                         pipe_jobs(
                             [
                                 bwa2.mem(
@@ -765,20 +777,24 @@ END
                                         "\\tSM:" + readset.sample.name + \
                                         "\\tLB:" + (readset.library if readset.library else readset.sample.name) + \
                                         ("\\tPU:" + readset.sample.name + "." + readset.run + "." + readset.lane if readset.sample.name and readset.run and readset.lane else "") + \
-                                        ("\\tCN:" + config.param('align_bwa_mem2', 'sequencing_center') if config.param('align_bwa_mem2', 'sequencing_center', required=False) else "") + \
-                                        ("\\tPL:" + config.param('align_bwa_mem2', 'sequencing_technology') if config.param('align_bwa_mem2', 'sequencing_technology', required=False) else "Illumina") + \
+                                        ("\\tCN:" + config.param('bwa_mem2_samtools_sort', 'sequencing_center') if config.param('bwa_mem2_samtools_sort', 'sequencing_center', required=False) else "") + \
+                                        ("\\tPL:" + config.param('bwa_mem2_samtools_sort', 'sequencing_technology') if config.param('bwa_mem2_samtools_sort', 'sequencing_technology', required=False) else "Illumina") + \
                                         "'",
-                                        ini_section='align_bwa_mem2'
+                                        ini_section='bwa_mem2_samtools_sort'
                                 ),
                                 samtools.sort(
                                     "/dev/stdin",
-                                    readset_bam,
+                                    readset_prefix,
                                     ini_section='samtools_sort_cram'
                                 )
                             ]
+                        ),
+                        samtools.index(
+                            readset_prefix,
+                            ini_section='samtools_index_cram'
                         )
                     ],
-                    name="bwa_mem_sambamba_sort_sam." + readset.name,
+                    name="bwa_mem2_samtools_sort." + readset.name,
                     samples=[readset.sample]
                 )
             )
@@ -890,17 +906,14 @@ END
             ]
             input = self.select_input_files(candidate_readset_bams)
 
-            sample_bam = os.path.join(alignment_directory, sample.name + ".sorted.bam")
-            mkdir_job = bash.mkdir(os.path.dirname(sample_bam))
-            
             if config.param("gatk_mark_duplicates", 'compression') == "cram":
-                output = alignment_directory + "sorted.dup.cram"
-                output_index = alignment_directory + "sorted.dup.cram.crai"
+                output = os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")
+                output_index = os.path.join(alignment_directory, sample.name + ".sorted.dup.cram.crai")
             else:
-                output = alignment_directory + "sorted.dup.bam"
-                output_index = alignment_directory + "sorted.dup.bam.bai"
+                output =os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")
+                output_index = os.path.join(alignment_directory, sample.name + ".sorted.dup.bam.bai")
 
-            metrics_file = alignment_directory + "sorted.dup.metrics"
+            metrics_file = os.path.join(alignment_directory, sample.name + ".sorted.dup.metrics")
 
             jobs.append(
                 concat_jobs(
@@ -911,12 +924,13 @@ END
                             input,
                             output,
                             metrics_file,
+                            remove_duplicates="false",
                             create_index=False,
                             ini_section='gatk_mark_duplicates'
                         ),
                         samtools.index(
                             output,
-                            output_index
+                            ini_section='samtools_index_cram'
                         ),
                         bash.ln(
                             os.path.relpath(metrics_file, link_directory),
@@ -925,7 +939,8 @@ END
                         )
                     ],
                     name="gatk_mark_duplicates." + sample.name,
-                    samples=[sample]
+                    samples=[sample],
+                    output_dependency=[output, output_index]
                 )
             )
         return jobs

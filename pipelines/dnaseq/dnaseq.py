@@ -1100,6 +1100,7 @@ END
 
             [input_bam] = self.select_input_files(
                 [
+                    [alignment_file_prefix + "sorted.dup.cram"],
                     [alignment_file_prefix + "sorted.dup.recal.bam"],
                     [alignment_file_prefix + "sorted.dup.bam"],
                     [alignment_file_prefix + "sorted.matefixed.bam"],
@@ -1111,6 +1112,7 @@ END
             )
             [input_bai] = self.select_input_files(
                 [
+                    [alignment_file_prefix + "sorted.dup.cram.crai"],
                     [alignment_file_prefix + "sorted.dup.recal.bam.bai"],
                     [alignment_file_prefix + "sorted.dup.recal.bai"],
                     [alignment_file_prefix + "sorted.dup.bam.bai"],
@@ -1187,6 +1189,7 @@ END
             [input] = self.select_input_files(
                 [
                     # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
@@ -1277,6 +1280,7 @@ END
             
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
@@ -1330,6 +1334,7 @@ END
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                     # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
@@ -1391,6 +1396,7 @@ END
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
@@ -1433,6 +1439,7 @@ END
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                     #[os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
@@ -1534,6 +1541,7 @@ END
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                     # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
@@ -1652,6 +1660,7 @@ END
                 alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
                 [input] = self.select_input_files(
                     [
+                        [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                         # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                         [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                         [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
@@ -1684,6 +1693,7 @@ END
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
@@ -1715,6 +1725,7 @@ END
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
@@ -1805,6 +1816,7 @@ END
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.cram")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
@@ -1925,6 +1937,7 @@ END
             output = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "verifyBamId")
             [input] = self.select_input_files(
                 [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
@@ -1993,6 +2006,7 @@ END
             [input_bam] = self.select_input_files(
                 [
                     # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.matefixed.bam")],
@@ -4067,10 +4081,18 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         jobs = []
 
         for sample in self.samples:
+            input_prefix = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)
+
+            [inputNormal] = self.select_input_files(
+                [
+                    [input_prefix + ".sorted.dup.cram"],
+                    [input_prefix + ".sorted.dup.bam"],
+                    [input_prefix + ".sorted.bam"],
+                ]
+            )
+            
             pair_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
             cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
-            inputNormal = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.recal.bam")
-
             tarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.targetcoverage.cnn")
             antitarcov_cnn = os.path.join(cnvkit_dir, sample.name + ".sorted.dup.antitargetcoverage.cnn")
             ref_cnn = os.path.join(cnvkit_dir, sample.name + ".reference.cnn")
@@ -4627,36 +4649,28 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             ],
             [
                 self.picard_sam_to_fastq,
-                self.skewer_trimming,
-                self.bwa_mem_sambamba,
-                self.sambamba_sort,
-                self.sambamba_merge_sam_extract_unmapped,
-                self.gatk_indel_realigner,
-                self.sambamba_merge_realigned,
-                self.mark_duplicates,
-                self.recalibration,
-                self.sym_link_final_bam,
+                self.trim_fastp,
+                self.bwa_mem2_samtools_sort,
+                self.gatk_mark_duplicates,
+                self.sym_link_final_bam, #5
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_mosdepth,
                 self.metrics_dna_sambamba_flagstat,
                 self.metrics_dna_fastqc,
-                self.picard_calculate_hs_metrics,
+                self.picard_calculate_hs_metrics, # 10
                 self.gatk_callable_loci,
-                self.extract_common_snp_freq,
-                self.baf_plot,
                 self.gatk_haplotype_caller,
                 self.merge_and_call_individual_gvcf,
                 self.combine_gvcf,
-                self.merge_and_call_combined_gvcf,
+                self.merge_and_call_combined_gvcf, #15
                 self.variant_recalibrator,
                 self.haplotype_caller_decompose_and_normalize,
                 self.cnvkit_batch,
                 self.split_tumor_only,
-                self.filter_tumor_only,
+                self.filter_tumor_only, #20
                 self.report_cpsr,
                 self.report_pcgr,
-                self.run_multiqc,
-                self.cram_output
+                self.run_multiqc
             ],
             [
                 self.picard_sam_to_fastq,
