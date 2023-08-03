@@ -140,25 +140,29 @@ bcftools mpileup {options} \\
          )
     )
 
-def sort(input_bam, output_prefix, sort_by_name=False):
-    output_bam = output_prefix + ".bam"
+def sort(input, output_prefix, sort_by_name=False, ini_section='DEFAULT'):
+    if config.param(ini_section, 'compression') == "cram":
+        output = output_prefix + ".cram"
+    else:
+        output = output_prefix + ".bam"
+        
     return Job(
-        [input_bam],
-        [output_bam],
+        [input],
+        [output],
         [
-            ['samtools_sort', 'module_samtools']
+            [ini_section, 'module_samtools']
         ],
         command="""\
 samtools sort \\
   {other_options} {sort_by_name} \\
   {input_bam} \\
   {output_prefix}""".format(
-            other_options=config.param('samtools_sort', 'other_options', required=False),
+            other_options=config.param(ini_section, 'other_options', required=False),
             sort_by_name="-n " if sort_by_name else " ",
-            input_bam=input_bam,
-            output_prefix=output_prefix if config.param('samtools_sort', 'module_samtools').split("/")[2] == "0.1.19" else "> " + output_bam
+            input_bam=input,
+            output_prefix=output_prefix if config.param(ini_section, 'module_samtools').split("/")[2] == "0.1.19" else "> " + output
             ),
-        removable_files=[output_bam]
+        removable_files=[output]
         )
 
 def view(input, output=None, options="", removable=True):
