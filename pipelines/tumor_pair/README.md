@@ -37,7 +37,13 @@ usage: tumor_pair.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
 
 Version: 4.4.2
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
+For more details, visit:
+
+https://genpipes.readthedocs.io/en/latest/user_guide/pipelines/gp_tumourpair.html
+
+or refer to the pipeline source here:
+
+https://bitbucket.org/mugqic/genpipes/src/master/pipelines/tumor_pair/
 
 optional arguments:
   -h                    show this help message and exit
