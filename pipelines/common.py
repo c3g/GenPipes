@@ -766,7 +766,7 @@ END
             jobs.append(
                 concat_jobs(
                     [
-                        bash.mkdir(alignment_directory),
+                        bash.mkdir(os.path.join(alignment_directory,readset.name)),
                         pipe_jobs(
                             [
                                 bwa2.mem(
