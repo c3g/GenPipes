@@ -4,11 +4,7 @@
 Tumor Pair Pipeline
 =================
 
-The Tumor Pair pipeline inherits the initial bam preparation steps of the DNA-Seq pipeline with the exception of the
-indel realignment (IR) step. In the tumor pipeline the IR step utilizes both the normal and tumor bam to further reduce
-false positives (FPs) in and around indels. The tumor pipeline deviates from the DNA-seq pipeline at the variant calling step.
-At this point, a paired caller is used to call SNVs and Indels from the pairs given as input. Additional, muliple cancer callers
-are utilized using an ensemble approach and SNVs and Indels seen in at least 2 different callers are retained for further
+The Tumor Pair pipeline inherits the initial bam preparation steps of the DNA-Seq pipeline except for the indel realignment (IR) step. In the tumor pipeline, the IR step utilizes both the normal and tumor bam to further reduce false positives (FPs) in and around indels. The tumor pipeline deviates from the DNA-seq pipeline at the variant calling step. At this point, a paired caller is used to call SNVs and Indels from the pairs given as input. Additionally, multiple cancer callers are utilized using an ensemble approach and SNVs and Indels seen in at least 2 different callers are retained for further
 investigation.
 
 Example command:
@@ -16,7 +12,7 @@ python tumor_pair.py -c a.ini b.base.ini -s x-y,z -r readset.tsv -p pairs.csv
 
 -c ini files: multiple can be specified e.g WGS or exome, or different clusters e.g. base (abacus) or guillimin
 
--r readset: derived from GQ lims or made yourself. See : https://bitbucket.org/mugqic/mugqic_pipelines#markdown-header-readset-file
+-r readset: derived from GQ lims or made yourself. See : https://genpipes.readthedocs.io/en/latest/get-started/concepts/readset_file.html#docs-readset-file
 
 -p pairs : format - patient_name,normal_sample_name,tumor_sample_name
 
@@ -236,7 +232,7 @@ BAM readset files are merged into one file per sample. Merge is done using [Samb
 
 This step takes as input files:
 
-1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
+1. Aligned and sorted BAM output files from the previous bwa_mem_picard_sort_sam step if available
 2. Else, BAM files from the readset file
 
 gatk_indel_realigner
@@ -245,7 +241,7 @@ Insertion and deletion realignment is performed on regions where multiple base m
 are preferred over indels by the aligner since it can appear to be less costly by the algorithm.
 Such regions will introduce false positive variant calls which may be filtered out by realigning
 those regions properly. Realignment is done using [GATK](https://www.broadinstitute.org/gatk/).
-The reference genome is divided by a number regions given by the `nb_jobs` parameter.
+The reference genome is divided by the number regions given by the `nb_jobs` parameter.
 
 Note: modified to use both normal and tumor bams to reduce FPs around indels.
 
@@ -257,7 +253,7 @@ sambamba_mark_duplicates
 ------------------------
 Mark duplicates. Aligned reads per sample are duplicates if they have the same 5' alignment positions
 (for both mates in the case of paired-end reads). All but the best pair (based on alignment score)
-will be marked as a duplicate in the BAM file. Marking duplicates is done using Sambamba](http://lomereiter.github.io/sambamba/index.html).
+will be marked as a duplicate in the BAM file. Marking duplicates is done using [Sambamba](http://lomereiter.github.io/sambamba/index.html).
 
 recalibration
 -------------
@@ -271,10 +267,10 @@ more widely dispersed ones.
 manta_sv_calls
 --------------
 Manta calls structural variants (SVs) and indels from mapped paired-end sequencing reads. It is optimized for
-analysis of germline variation in small sets of individuals and somatic variation in tumor/normal sample pairs.
+the analysis of germline variation in small sets of individuals and somatic variation in tumor/normal sample pairs.
 Manta discovers, assembles and scores large-scale SVs, medium-sized indels and large insertions within a
 single efficient workflow.
-Returns:Manta accepts input read mappings from BAM or CRAM files and reports all SV and indel inferences
+Returns: Manta accepts input read mappings from BAM or CRAM files and reports all SV and indel inferences
 in VCF 4.1 format.
 
 rawmpileup_panel
@@ -293,9 +289,9 @@ Merge mpileup files per sample/chromosome into one compressed gzip file per samp
 
 preprocess_vcf_panel
 --------------------
-Preprocess vcf for loading into a annotation database - gemini : http://gemini.readthedocs.org/en/latest/index.html
+Preprocess vcf for loading into an annotation database - Gemini : http://gemini.readthedocs.org/en/latest/index.html
 Processes include normalization and decomposition of MNPs by vt (http://genome.sph.umich.edu/wiki/Vt) and
-vcf FORMAT modification for correct loading into gemini.
+vcf FORMAT modification for correct loading into Gemini.
 
 snp_effect_panel
 ----------------
@@ -308,10 +304,10 @@ Load functionally annotated vcf file into a mysql lite annotation database [Gemi
 
 conpair_concordance_contamination
 ---------------------------------
-Conpair is a fast and robust method dedicated for human tumor-normal studies to perform concordance verification
+Conpair is a fast and robust method dedicated to human tumor-normal studies to perform concordance verification
 (= samples coming from the same individual), as well as cross-individual contamination level estimation in
-whole-genome and whole-exome sequencing experiments. Importantly, the method of estimates contamination in
-the tumor samples not affected by copy number changes and is able to detect contamination levels as low as 0.1%.
+whole-genome and whole-exome sequencing experiments. Importantly, the method of estimating contamination in
+the tumor samples is not affected by copy number changes and is able to detect contamination levels as low as 0.1%.
 
 metrics_dna_picard_metrics
 --------------------------
@@ -325,18 +321,17 @@ QC alignment metrics generated by [Qualimap](http://qualimap.conesalab.org/).
 
 metrics_dna_fastqc
 ------------------
-QCing metrics generated on the read level using [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/).
+QCing metrics are generated on the read level using [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/).
 
 sequenza
 --------
-Sequenza is a novel set of tools providing a fast python script to genotype cancer samples,
-and an R package to estimate cancer cellularity, ploidy, genome wide copy number profile and infer
-for mutated alleles.
+Sequenza is a novel set of tools providing a fast Python script to genotype cancer samples,
+and an R package to estimate cancer cellularity, ploidy, genome-wide copy number profile and infer mutated alleles.
 
 run_pair_multiqc
 ----------------
 Aggregate results from bioinformatics analyses across many samples into a single report
-MultiQC searches a given directory for analysis logs and compiles a HTML report. It's a general use tool,
+MultiQC searches a given directory for analysis logs and compiles an HTML report. It's a general-use tool,
 perfect for summarising the output from numerous bioinformatics tools [MultiQC](https://multiqc.info/).
 
 sym_link_report
@@ -381,8 +376,8 @@ paired_varscan2
 ---------------
 Variant calling and somatic mutation/CNV detection for next-generation sequencing data. 
 Koboldt et al., 2012. VarScan 2: Somatic mutation and copy number alteration discovery in cancer by exome sequencing
-Varscan2 thresholds based on DREAM3 results generated by author see: https://github.com/dkoboldt/varscan/releases
-SSC INFO field remove to prevent collison with Samtools output during ensemble.
+Varscan2 thresholds based on DREAM3 results generated by the author see: https://github.com/dkoboldt/varscan/releases
+SSC INFO field remove to prevent collision with Samtools output during ensemble.
 
 merge_varscan2
 --------------
@@ -401,7 +396,7 @@ Generate a somatic vcf containing only PASS variants.
 vardict_paired
 --------------
 vardict caller for SNVs and Indels.
-Note: variants are filtered to remove instantance where REF == ALT and REF modified to 'N' when REF is
+Note: variants are filtered to remove the instance where REF == ALT and REF is modified to 'N' when REF is
 AUPAC nomenclature.
 
 merge_filter_paired_vardict
@@ -466,10 +461,13 @@ output: html report and addtionalflat files
 
 sym_link_final_bam
 ------------------
-Create sym link of final bam for delivery of data to clients.
+Create sym link of the final bam for delivery of data to clients.
 
 sym_link_ensemble
 -----------------
+
+Create sym link of ensemble for delivery of data to clients.
+
 gridss_paired_somatic
 ---------------------
 
@@ -485,4 +483,4 @@ linx_annotations_germline
 linx_plot
 ---------
 
-
+Generate Linx Plot of the Tumor Pair analysis for delivery to the clients.
