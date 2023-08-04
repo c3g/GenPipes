@@ -16,7 +16,7 @@ python tumor_pair.py -c a.ini b.base.ini -s x-y,z -r readset.tsv -p pairs.csv
 
 -c ini files: multiple can be specified e.g WGS or exome, or different clusters e.g. base (abacus) or guillimin
 
--r readset: derived from GQ lims or made yourself. See : https://bitbucket.org/mugqic/mugqic_pipelines#markdown-header-readset-file
+-r readset: derived from GQ lims or made yourself. See : https://genpipes.readthedocs.io/en/latest/get-started/concepts/readset_file.html#docs-readset-file
 
 -p pairs : format - patient_name,normal_sample_name,tumor_sample_name
 
