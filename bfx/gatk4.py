@@ -1446,7 +1446,7 @@ def mark_duplicates(
             command="""\
 rm -rf {output}.part && \\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- MarkDuplicates \\
+ MarkDuplicates {other_options} \\
  --REMOVE_DUPLICATES {remove_duplicates} \\
  --VALIDATION_STRINGENCY SILENT \\
  {create_index} \\
@@ -1455,6 +1455,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --OUTPUT {output} \\
  --METRICS_FILE {metrics_file} \\
  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
+                other_options=config.param(ini_section, 'other_options'),
                 tmp_dir=config.param(ini_section, 'tmp_dir'),
                 java_other_options=config.param(ini_section, 'gatk4_java_options'),
                 ram=config.param(ini_section, 'ram'),
