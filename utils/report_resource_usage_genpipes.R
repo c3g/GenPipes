@@ -15,7 +15,7 @@ option_list = list(
               action = "store",
               type = "character",
               default=NA, 
-              help="Job_Output path to analyse"),
+              help="Job_Output path to analyse."),
   
   make_option(c("-o", "--out_path"),
               action = "store",
@@ -29,13 +29,16 @@ option_list = list(
               default="Optimize_ressource_report", 
               help="Name of the report file [default %default]"),
   
-  make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
-              help="Should the program print extra stuff out? [default %default]"),
+  make_option(c("-v", "--verbose"), 
+              action="store_true",
+              type = "logical",
+              default=FALSE,
+              help="Should the program print extra information out? [default %default]"),
   
   make_option(c("-s", "--scheduler"),
               action="store",
               default="SLURM",
-              help="Choose the scheduler you are currently using : PBS or SLURM [default %default]")  
+              help="Choose the scheduler you are currently using : PBS or SLURM. [default %default]")  
 )
 
 opt = parse_args(OptionParser(option_list=option_list))
