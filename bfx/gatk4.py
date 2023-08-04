@@ -1447,6 +1447,7 @@ def mark_duplicates(
 rm -rf {output}.part && \\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
  MarkDuplicates {other_options} \\
+ --REFERENCE_SEQUENCE {reference} \\
  --REMOVE_DUPLICATES {remove_duplicates} \\
  --VALIDATION_STRINGENCY SILENT \\
  {create_index} \\
@@ -1456,6 +1457,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
  --METRICS_FILE {metrics_file} \\
  --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
                 other_options=config.param(ini_section, 'other_options'),
+                reference=config.param(ini_section, 'genome_fasta', param_type='filepath'),
                 tmp_dir=config.param(ini_section, 'tmp_dir'),
                 java_other_options=config.param(ini_section, 'gatk4_java_options'),
                 ram=config.param(ini_section, 'ram'),
