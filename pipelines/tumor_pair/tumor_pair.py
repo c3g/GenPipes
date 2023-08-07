@@ -4493,9 +4493,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
     def report_cpsr(self):
         """
-        Creates a cpsr gremline report (https://sigven.github.io/cpsr/)
-        input: filtered ensemble gremline vcf
-        output: html report and addtionalflat files
+        Creates a CPSR germline report (https://sigven.github.io/cpsr/)
+        input: filtered ensemble germline vcf
+        output: html report and addtional flat files
         """
         jobs = []
     
@@ -4589,7 +4589,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
     def report_pcgr(self):
         """
         Creates a PCGR somatic + germline report (https://sigven.github.io/cpsr/)
-        input: filtered ensemble gremline vcf
+        input: filtered ensemble germline vcf
         output: html report and addtionalflat files
         """
         jobs = []
