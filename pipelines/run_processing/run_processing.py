@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 ################################################################################
-# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec Innovation Centre
+# Copyright (C) 2014, 2022 GenAP, McGill University and Genome Quebec
+# Innovation Centre
 #
 # This file is part of MUGQIC Pipelines.
 #
@@ -89,15 +90,19 @@ class RunProcessing(common.MUGQICPipeline):
     MGI Run Processing Pipeline
     ================================
 
-    The standard Run Processing pipeline handles both Illumina and MGI sequencing technologies.
-    It uses the Illumina bcl2fastq software to convert and demultiplex Illumina base call files to fastq files.
-    In the case of MGI run processing, it uses fastq files produced by the MGI-G400 sequencer, or MGI-T7 base call files,
-    then does demultiplexing. Finally, the pipeline runs some QCs on the raw data, on the fastq and on the alignment.
+    The standard Run Processing pipeline handles both Illumina and MGI
+    sequencing technologies.  It uses the Illumina bcl2fastq software to
+    convert and demultiplex Illumina base call files to fastq files.  In the
+    case of MGI run processing, it uses fastq files produced by the MGI-G400
+    sequencer, or MGI-T7 base call files, then does demultiplexing. Finally,
+    the pipeline runs some QCs on the raw data, on the fastq and on the
+    alignment.
 
     Sample Sheets
     -------------
 
-    The pipeline uses one input sample sheet, a tsv file having the following columns:
+    The pipeline uses one input sample sheet, a tsv file having the following
+    columns:
 
     - ProjectLUID
     - ProjectName
@@ -138,17 +143,74 @@ class RunProcessing(common.MUGQICPipeline):
         self._protocol=protocol
         self.copy_job_inputs = {}
 
-        self.argparser.add_argument("-t", "--type", help = "Sequencing technology : Illumina, MGI G400 or MGI T7 (mandatory)", choices=['illumina', 'mgig400', 'mgit7'], required=False)
-        self.argparser.add_argument("-r", "--readsets", help="Sample sheet for the MGI run to process (mandatory)", type=argparse.FileType('r'), required=False)
-        self.argparser.add_argument("-d", "--run", help="Run directory (mandatory)", required=False, dest="run_dir")
-        self.argparser.add_argument("--run-id", help="Run ID. Default is parsed from the run folder", required=False, dest="run_id")
-        self.argparser.add_argument("-f", "--flag", help="T7 flag files directory (mandatory for MGI T7 runs)", type=pathlib.Path, dest="raw_flag_dir", required=False)
-        self.argparser.add_argument("--splitbarcode-demux", help="demultiplexing done while basecalling with MGI splitBarcode  (only affect MGI G400 or T7 runs)", action="store_true", required=False, dest="splitbarcode_demux")
-        self.argparser.add_argument("--lane", help="Lane number (to only process the given lane)", type=int, required=False, dest="lane_number")
-        self.argparser.add_argument("-x", help="First index base to use for demultiplexing (inclusive). The index from the sample sheet will be adjusted according to that value.", type=int, required=False, dest="first_index")
-        self.argparser.add_argument("-y", help="Last index base to use for demultiplexing (inclusive)", type=int, required=False, dest="last_index")
-        self.argparser.add_argument("-m", help="Number of index mistmaches allowed for demultiplexing (default 1). Barcode collisions are always checked.", type=int, required=False, dest="number_of_mismatches")
-        self.argparser.add_argument("--allow-barcode-collision", help="Allow barcode collision by not comparing barcode sequences to each other (usually decreases the demultiplexing efficiency).", action="store_true", required=False, dest="allow_barcode_collision")
+        self.argparser.add_argument(
+                "-t", "--type",
+                help="""Sequencing technology : Illumina, MGI G400 or MGI T7
+                (mandatory)""",
+                choices=['illumina', 'mgig400', 'mgit7'],
+                required=False)
+        self.argparser.add_argument(
+                "-r", "--readsets",
+                help="Sample sheet for the MGI run to process (mandatory)",
+                type=argparse.FileType('r'),
+                required=False)
+        self.argparser.add_argument(
+                "-d", "--run",
+                help="Run directory (mandatory)",
+                required=False,
+                dest="run_dir")
+        self.argparser.add_argument(
+                "--run-id",
+                help="Run ID. Default is parsed from the run folder",
+                required=False,
+                dest="run_id")
+        self.argparser.add_argument(
+                "-f", "--flag",
+                help="T7 flag files directory (mandatory for MGI T7 runs)",
+                type=pathlib.Path, dest="raw_flag_dir",
+                required=False)
+        self.argparser.add_argument(
+                "--splitbarcode-demux",
+                help="""demultiplexing done while basecalling with MGI
+                splitBarcode (only affect MGI G400 or T7 runs)""",
+                action="store_true",
+                required=False,
+                dest="splitbarcode_demux")
+        self.argparser.add_argument(
+                "--lane",
+                help="Lane number (to only process the given lane)",
+                type=int,
+                required=False,
+                dest="lane_number")
+        self.argparser.add_argument(
+                "-x",
+                help="""First index base to use for demultiplexing (inclusive).
+                The index from the sample sheet will be adjusted according to
+                that value.""",
+                type=int,
+                required=False,
+                dest="first_index")
+        self.argparser.add_argument(
+                "-y",
+                help="Last index base to use for demultiplexing (inclusive)",
+                type=int,
+                required=False,
+                dest="last_index")
+        self.argparser.add_argument(
+                "-m",
+                help="""Number of index mistmaches allowed for demultiplexing
+                (default 1). Barcode collisions are always checked.""",
+                type=int,
+                required=False,
+                dest="number_of_mismatches")
+        self.argparser.add_argument(
+                "--allow-barcode-collision",
+                help="""Allow barcode collision by not comparing barcode
+                sequences to each other (usually decreases the demultiplexing
+                efficiency).""",
+                action="store_true",
+                required=False,
+                dest="allow_barcode_collision")
 
         args = sys.argv[1:]
         typearg = ""
@@ -1081,10 +1143,10 @@ class RunProcessing(common.MUGQICPipeline):
                 demultiplexing_done_file = os.path.join(self.output_dir, f"{self.run_id}.{lane}.demultiplexingDone")
 
                 if int(self.index1cycles[lane]) + int(self.index2cycles[lane]) == 0 and len(self.readsets[lane]) > 1:
-                     err_msg = "LANE SETTING ERROR :\n"
-                     err_msg += f"Unable to demultiplex {str(len(self.readsets[lane]))} samples : No barcode in fastq files...\n"
-                     err_msg += f"(in {self.run_dir})"
-                     _raise(SanitycheckError(err_msg))
+                    err_msg = "LANE SETTING ERROR :\n"
+                    err_msg += f"Unable to demultiplex {str(len(self.readsets[lane]))} samples : No barcode in fastq files...\n"
+                    err_msg += f"(in {self.run_dir})"
+                    _raise(SanitycheckError(err_msg))
 
                 elif os.path.exists(demultiplexing_done_file) and not self.force_jobs:
                     log.info(f"Demultiplexing done already... Skipping fastq step for lane {lane}...")
@@ -3449,7 +3511,7 @@ class RunProcessing(common.MUGQICPipeline):
         step_list = [step for step in self.step_list if step.jobs]
         self.report_hash[lane]["multiqc_inputs"] = list(set([report_file for step in step_list for job in step.jobs for report_file in job.report_files if f"ligned.{lane}" in report_file]))
         self.report_hash[lane]["multiqc_inputs"].append(os.path.join(self.output_dirs[lane]["report_directory"], f"{self.run_id}.{lane}.run_validation_report.json"))
-        self.report_hash[lane]["multiqc_report_url"] = f"https://datahub-297-p25.p.genap.ca/MGI_validation/{self.year}/{self.run_id}.report.html"
+        self.report_hash[lane]["metrics_report_url"] = f"https://datahub-297-p25.p.genap.ca/MGI_validation/{self.year}/{self.run_id}.report.html"
 
         if not os.path.exists(os.path.join(self.output_dir, os.path.dirname(self.run_validation_report_json[lane]))):
             os.makedirs(os.path.join(self.output_dir, os.path.dirname(self.run_validation_report_json[lane])))
