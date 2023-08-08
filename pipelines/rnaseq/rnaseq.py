@@ -1990,7 +1990,7 @@ pandoc \\
 
                         )
                     ],
-                    name="wiggle_"+ sample.name,
+                    name="wiggle."+ sample.name,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -2009,7 +2009,7 @@ pandoc \\
 
                         )
                     ],
-                    name="wiggle_"+ sample.name,
+                    name="wiggle."+ sample.name,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -2027,7 +2027,7 @@ pandoc \\
                             strand
                         )
                     ],
-                    name="wiggle_"+sample.name+"_"+strand,
+                    name="wiggle."+sample.name+"_"+strand,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -2045,7 +2045,7 @@ pandoc \\
                             strand
                         )
                     ],
-                    name="wiggle_"+sample.name+"_"+strand,
+                    name="wiggle."+sample.name+"_"+strand,
                     samples=[sample]  
                 )
                 jobs.append(job)
