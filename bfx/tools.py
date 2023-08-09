@@ -327,6 +327,30 @@ python $PYTHON_TOOLS/runProcessingMetricsToJson.py \\
         )
     )
 
+def run_processing_file_sizes_to_json(
+        json_file,
+        input_files,
+        readset
+        ):
+            
+    return Job(
+        [json_file] + input_files,
+        [json_file],
+        [
+            ['file_sizes_to_json', 'module_mugqic_tools'],
+            ['file_sizes_to_json', 'module_python']
+        ],
+        command="""\
+python $PYTHON_TOOLS/runProcessingFileSizesToJson.py \\
+  -j {json} \\
+  {inputs} \\
+  {readset}""".format(
+            json=json_file,
+            inputs="-i " + " -i ".join(input_files),
+            readset="-r " + readset
+        )
+    )
+
 def fix_genotypes_strelka(input, output, normal, tumor):
         return Job(
             [input],
