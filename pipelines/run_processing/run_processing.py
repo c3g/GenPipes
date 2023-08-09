@@ -564,7 +564,7 @@ class RunProcessing(common.MUGQICPipeline):
     @property
     def year(self):
         """
-        Get year of the from sample sheet
+        Get year of the run from sample sheet
         """
         if not hasattr(self, "_year"):
             if is_json(self.readset_file):
@@ -623,6 +623,10 @@ class RunProcessing(common.MUGQICPipeline):
                                     "fastq_2": readset.fastq2 if self.is_paired_end[lane] else None,
                                     "bam": readset.bam + ".bam" if readset.bam else None,
                                     "bai": readset.bam + ".bai" if readset.bam else None,
+                                    "fastq_1_size": None,
+                                    "fastq_2_size": None,
+                                    "bam_size": None,
+                                    "bai_size": None,
                                     "derived_sample_obj_id": readset.library,
                                     "project_obj_id": readset.project_id,
                                     "hercules_project_id": readset.hercules_project_id if is_json(self.readset_file) else None
@@ -2532,6 +2536,25 @@ class RunProcessing(common.MUGQICPipeline):
                             samples=self.samples[lane]
                         )
                     )
+            
+            # loop over readsets and add file sizes of fastqs and bams to json
+            for readset in self.readsets[lane]:
+
+                if self.is_paired_end[lane]:
+                    input_files = [readset.fastq1, readset.fastq2]
+                else:
+                    input_files = [readset.fastq1]
+                if readset.bam:
+                    input_files.extend([readset.bam + ".bam", readset.bam + ".bai"])
+
+                size_job = tools.run_processing_file_sizes_to_json(
+                    self.run_validation_report_json[lane],
+                    input_files,
+                    readset.name
+                )
+                size_job.name = f"report.file_sizes." + readset.name + "." + self.run_id + "." + lane
+                size_job.samples = self.samples[lane]
+                lane_jobs.append(size_job)
 
             self.add_copy_job_inputs(lane_jobs, lane)
 
@@ -4487,8 +4510,8 @@ def distance(
 
 def is_json(filepath):
     """
-    Checks wether a file is a JSON file or not.
-    Returns True of False
+    Checks whether a file is a JSON file or not.
+    Returns True or False
     """
     with open(filepath) as f:
         if f.read(1) in '{[':
