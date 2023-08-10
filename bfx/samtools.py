@@ -70,9 +70,12 @@ def flagstat(input, output):
             ['samtools_flagstat', 'module_samtools']
         ],
         command="""\
-samtools flagstat \\
+samtools flagstat {other_options} \\
+  {threads} \\
   {input} \\
   > {output}""".format(
+            other_options=config.param('samtools_flagstat', 'other_options') if config.param('samtools_flagstat', 'other_options') else "",
+            threads="--threads " + config.param('samtools_flagstat', 'threads'),
             input=input,
             output=output
             ),

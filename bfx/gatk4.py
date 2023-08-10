@@ -367,7 +367,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             options=config.param(ini_section, 'options'),
             reference_sequence=config.param(ini_section, 'reference', param_type='filepath'),
             input=input,
-            input_bam=" \\\n  --input " + input_bam if input_bam else "",
+            input_bam=" \\\n  --tensor-type read-tensor --input " + input_bam if input_bam else "",
             interval_list=" \\\n --intervals " + interval_list if interval_list else "",
             output=output
         )
@@ -1888,6 +1888,32 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             ram=config.param(ini_section, 'ram'),
             input=input,
             output=output,
+        )
+    )
+def ScatterIntervalsByNs(
+    reference,
+    output,
+    ):
+    # exclude_intervals=None
+
+    return Job(
+        [reference],
+        [output],
+        [
+            ['gatk_ScatterIntervalsByNs', 'module_java'],
+            ['gatk_ScatterIntervalsByNs', 'module_gatk']
+        ],
+        command="""\
+gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
+  ScatterIntervalsByNs {options} \\
+  --REFERENCE {reference} \\
+  --OUTPUT {output}""".format(
+            tmp_dir=config.param('gatk_splitInterval', 'tmp_dir'),
+            options=config.param('gatk_splitInterval', 'options'),
+            java_other_options=config.param('gatk_splitInterval', 'gatk4_java_options'),
+            ram=config.param('gatk_splitInterval', 'ram'),
+            reference=reference,
+            output=output
         )
     )
 

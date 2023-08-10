@@ -1384,7 +1384,7 @@ END
             self.multiqc_inputs.append(output)
         return jobs
 
-    def metrics_dna_sambamba_flagstat(self):
+    def metrics_dna_samtools_flagstat(self):
         """
         Outputs flag statistics from BAM file.
         https://lomereiter.github.io/sambamba/docs/sambamba-flagstat.html
@@ -1414,13 +1414,12 @@ END
                             flagstat_directory,
                             remove=True
                         ),
-                        sambamba.flagstat(
+                        samtools.flagstat(
                             input,
-                            output,
-                            config.param('dna_sambamba_flagstat', 'flagstat_options')
+                            output
                         )
                     ],
-                    name="dna_sambamba_flagstat." + sample.name,
+                    name="dna_samtools_flagstat." + sample.name,
                     samples=[sample]
                 )
             )
