@@ -36,12 +36,14 @@ def mosdepth(input, output_prefix, per_base=False, regions=None):
             ],
             command="""\
 mosdepth {other_options} \\
+{reference} \\
 {per_base} \\
 {regions} \\
 {chrom} \\
 {output_prefix} \\
 {input}""".format(
     other_options=config.param('mosdepth', 'other_options'),
+    reference="--fasta " + config.param('mosdepth', 'genome_fasta', param_type='filepath'),
     per_base="--no-per-base " if not per_base else "",
     regions="--by " + regions if regions else "",
     chrom="--chrom " + config.param('mosdepth', 'chrom') if config.param('mosdepth', 'chrom', required=False) else "",

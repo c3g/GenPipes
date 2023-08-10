@@ -3366,7 +3366,7 @@ pandoc \\
                         ),
                         bash.ls(output)
                     ],
-                    name="report_pcgr." + sample.name,
+                    name="report_pcgr_tumor_only." + sample.name,
                     samples=[sample],
                     input_dependency=[header, input, input_cna, input_cpsr, output_cna_body],
                     output_dependency=[header, output_cna_body, output_cna, output]
