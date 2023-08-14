@@ -598,6 +598,22 @@ class RunProcessing(common.MUGQICPipeline):
     def report_hash(self):
         if not hasattr(self, "_report_hash"):
             self._report_hash = {}
+
+
+            if not self.args.type == 'illumina':
+                full_destination_folder = os.path.join(
+                    config.param("copy", "destination_folder", param_type="dirpath"),
+                    self.seq_category,
+                    self.year,
+                    self.date + "_" + self.instrument + "_" + self.run_number + "_" + self.flowcell_position + self.flowcell_id + "_" + self.sequencer_run_id + "-" + self.seqtype
+                    )
+            else:
+                full_destination_folder = os.path.join(
+                    config.param("copy", "destination_folder", param_type="dirpath"),
+                    self.seq_category,
+                    self.year,
+                    os.path.basename(self.run_dir.rstrip('/')) + "-" + self.seqtype
+                    )
             for lane in self.lanes:
                 self._report_hash[lane] = {
                     "version" : "3.0",
@@ -619,14 +635,26 @@ class RunProcessing(common.MUGQICPipeline):
                                     "reported_sex": readset.gender,
                                     "pool_fraction": readset.pool_fraction,
                                     "library_type": readset.protocol,
-                                    "fastq_1": readset.fastq1,
-                                    "fastq_2": readset.fastq2 if self.is_paired_end[lane] else None,
-                                    "bam": readset.bam + ".bam" if readset.bam else None,
-                                    "bai": readset.bam + ".bai" if readset.bam else None,
-                                    "fastq_1_size": None,
-                                    "fastq_2_size": None,
-                                    "bam_size": None,
-                                    "bai_size": None,
+                                    "fastq_1": {
+                                            "path": readset.fastq1,
+                                            "size": None,
+                                            "final_path": os.path.join(full_destination_folder, os.path.relpath(readset.fastq1, self.output_dir)) 
+                                            },
+                                    "fastq_2": {
+                                            "path": readset.fastq2 if self.is_paired_end[lane] else None,
+                                            "size": None,
+                                            "final_path": os.path.join(full_destination_folder, os.path.relpath(readset.fastq2, self.output_dir)) if self.is_paired_end[lane] else None
+                                            },
+                                    "bam": {
+                                            "path": readset.bam + ".bam" if readset.bam else None,
+                                            "size": None,
+                                            "final_path": os.path.join(full_destination_folder, os.path.relpath(readset.bam + ".bam", self.output_dir)) if readset.bam else None
+                                            },
+                                    "bai": {
+                                            "path": readset.bam + ".bai" if readset.bam else None,
+                                            "size": None,
+                                            "final_path": os.path.join(full_destination_folder, os.path.relpath(readset.bam + ".bai", self.output_dir)) if readset.bam else None
+                                            },
                                     "derived_sample_obj_id": readset.library,
                                     "project_obj_id": readset.project_id,
                                     "hercules_project_id": readset.hercules_project_id if is_json(self.readset_file) else None
