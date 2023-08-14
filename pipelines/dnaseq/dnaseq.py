@@ -1288,35 +1288,37 @@ END
                 ]
             )
             region = None
+            output_dependency = output_prefix + ".mosdepth.global.dist.txt"
             
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 sample.readsets[0]
             )
             if coverage_bed:
                 region = coverage_bed
+                output_dependency = output_prefix + ".mosdepth.region.dist.txt"
                 
             jobs.append(
                 concat_jobs(
                     [
                         bash.mkdir(mosdepth_directory),
                         bash.mkdir(link_directory),
-                        mosdepth.mosdepth(
+                        mosdepth.run(
                             input,
                             output_prefix,
                             True,
                             region
                         ),
                         bash.ln(
-                            os.path.relpath(output_prefix + ".mosdepth.global.dist.txt", link_directory),
-                            os.path.join(link_directory, sample.name + ".mosdepth.global.dist.txt"),
-                            output_prefix + ".mosdepth.global.dist.txt"
+                            os.path.relpath(output_dependency, link_directory),
+                            os.path.join(link_directory, os.path.basename(output_dependency)),
+                            output_dependency
                         )
                     ],
                     name="mosdepth." + sample.name,
                     samples=[sample]
                 )
             )
-            self.multiqc_inputs.append(output_prefix + ".mosdepth.global.dist.txt")
+            self.multiqc_inputs.append(output_dependency)
             
         return jobs
 
@@ -4654,21 +4656,19 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.sym_link_final_bam, #5
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_mosdepth,
-                self.metrics_dna_sambamba_flagstat,
-                self.metrics_dna_fastqc,
-                self.picard_calculate_hs_metrics, # 10
-                self.gatk_callable_loci,
-                self.gatk_haplotype_caller,
+                self.metrics_dna_samtools_flagstat,
+                self.picard_calculate_hs_metrics,
+                self.gatk_haplotype_caller, #10
                 self.merge_and_call_individual_gvcf,
                 self.combine_gvcf,
-                self.merge_and_call_combined_gvcf, #15
+                self.merge_and_call_combined_gvcf,
                 self.variant_recalibrator,
-                self.haplotype_caller_decompose_and_normalize,
+                self.haplotype_caller_decompose_and_normalize, #15
                 self.cnvkit_batch,
                 self.split_tumor_only,
-                self.filter_tumor_only, #20
+                self.filter_tumor_only,
                 self.report_cpsr,
-                self.report_pcgr,
+                self.report_pcgr, #20
                 self.run_multiqc
             ],
             [

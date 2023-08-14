@@ -934,7 +934,7 @@ END
                         ),
                         bash.ln(
                             os.path.relpath(metrics_file, link_directory),
-                            os.path.join(link_directory, sample.name + ".trim.json"),
+                            os.path.join(link_directory, sample.name + ".sorted.dup.metrics"),
                             metrics_file
                         )
                     ],
