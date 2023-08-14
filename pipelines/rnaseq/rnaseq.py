@@ -1769,6 +1769,9 @@ pandoc \\
                 [
                     bash.mkdir(output_dir),
                     bash.mkdir(link_directory),
+                    bash.rm(
+                        os.path.join(output_dir, "_starF_checkpoints")
+                        ),
                     star_fusion.run(
                         left_fastqs[sample.name],
                         right_fastqs[sample.name],
