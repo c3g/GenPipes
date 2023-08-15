@@ -1993,6 +1993,7 @@ END
         jobs = []
         
         reference = config.param('gatk_scatterIntervalsByNs', 'genome_fasta', param_type='filepath')
+        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
         
         for sample in self.samples:
             interval_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name, "intervals")
@@ -2041,7 +2042,36 @@ END
                         samples=[sample]
                     )
                 )
-                
+            elif scatter_jobs == 1:
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(interval_directory),
+                            gatk4.scatterIntervalsByNs(
+                                reference,
+                                output
+                            ),
+                            pipe_jobs(
+                                [
+                                    bash.grep(
+                                        output,
+                                        None,
+                                        '-Ev "_GL|_K"'
+                                    ),
+                                    bash.grep(
+                                        None,
+                                        os.path.join(interval_directory,
+                                                     os.path.basename(reference).replace('.fa',
+                                                                                         '.ACGT.noALT.interval_list')),
+                                        '-v "EBV"'
+                                    )
+                                ]
+                            ),
+                        ],
+                        name="gatk_scatterIntervalsByNs." + sample.name,
+                        samples=[sample]
+                    )
+                )
             else:
                 jobs.append(
                     concat_jobs(
@@ -2109,7 +2139,7 @@ END
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             
-            interval_list = None
+            interval_list = ""
             if coverage_bed:
                 interval_list = os.path.join(interval_directory,
                                              os.path.basename(coverage_bed).replace('.bed',
@@ -2132,7 +2162,7 @@ END
                             gatk4.haplotype_caller(
                                 input_bam,
                                 os.path.join(haplotype_directory, sample.name + ".hc.g.vcf.gz"),
-                                interval_list
+                                interval_list[0]
                             )
                         ],
                         name="gatk_haplotype_caller." + sample.name,
