@@ -664,6 +664,7 @@ class RunProcessing(common.MUGQICPipeline):
                 self._report_hash[lane] = {
                     "version" : "3.0",
                     "run" : self.run_id,
+                    #"run_obj_id": self.run_obj_id,
                     "instrument" : self.instrument,
                     "flowcell" : self.flowcell_id,
                     "lane" : lane,
@@ -687,7 +688,7 @@ class RunProcessing(common.MUGQICPipeline):
                                     "bai": readset.bam + ".bai" if readset.bam else None,
                                     "derived_sample_obj_id": readset.library,
                                     "project_obj_id": readset.project_id,
-                                    "hercules_project_id": readset.hercules_project_id if is_json(self.readset_file) else None
+                                    "external_project_id": readset.external_project_id if is_json(self.readset_file) else None
                                 }
                             ) for readset in self.readsets[lane]
                         ]
