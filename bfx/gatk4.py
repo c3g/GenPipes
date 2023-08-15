@@ -467,37 +467,38 @@ def callable_loci(
 # GATK4 - Short Variant Discovery
 
 def haplotype_caller(
-    inputs,
+    input,
     output,
-    intervals=[],
-    exclude_intervals=[],
-    interval_list=None,
+    #intervals=[],
+    #exclude_intervals=[],
+    interval_list,
     ini_section='gatk_haplotype_caller'
     ):
 
     interval_padding = config.param(ini_section, 'interval_padding')
 
 #added interval_padding as a varibale. Because in chipseq we don't need to add any padding to the peaks
-    if not isinstance(inputs, list):
-        inputs = [inputs]
+    inputs = []
+    if not isinstance(input, list):
+        inputs = [input]
 
     # Added this to check intervel_list (peak file) availability in the chip-seq pipeline
     inputs_list = inputs.copy()
     if not interval_list is None:
-        inputs_list.extend([interval_list])
+       inputs_list.append(interval_list)
 
     if config.param(ini_section, 'module_gatk').split("/")[2] < "4":
         return gatk.haplotype_caller(
-            inputs,
+            input,
             output,
-            intervals=intervals,
-            exclude_intervals=exclude_intervals,
-            interval_list=interval_list
+#            intervals=intervals,
+#            exclude_intervals=exclude_intervals,
+            interval_list
         )
     else:
         return Job(
             #to track all files as input files replaced input with input_lists
-            inputs_list,
+            [input, interval_list],
             [output, output + ".tbi"],
             [
                 [ini_section, 'module_java'],
@@ -508,20 +509,21 @@ gatk --java-options "{java_other_options} -Xmx{ram}" \\
   HaplotypeCaller {options} --native-pair-hmm-threads {threads} \\
   --reference {reference_sequence} \\
   --input {input} \\
-  --output {output}{interval_padding} {interval_list}{intervals}{exclude_intervals}""".format(
-                tmp_dir=config.param(ini_section, 'tmp_dir'),
-                java_other_options=config.param(ini_section, 'gatk4_java_options'),
-                ram=config.param(ini_section, 'ram'),
-                options=config.param(ini_section, 'options'),
-                threads=config.param(ini_section, 'threads'),
-                reference_sequence=config.param(ini_section, 'genome_fasta', param_type='filepath'),
-                interval_list=" --intervals " + interval_list if interval_list else "",
+  --output {output} \\
+  {interval_list} {interval_padding}""".format(
+                tmp_dir=config.param('gatk_haplotype_caller', 'tmp_dir'),
+                java_other_options=config.param('gatk_haplotype_caller', 'gatk4_java_options'),
+                ram=config.param('gatk_haplotype_caller', 'ram'),
+                options=config.param('gatk_haplotype_caller', 'options'),
+                threads=config.param('gatk_haplotype_caller', 'threads'),
+                reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
+                interval_list="--intervals " + str(interval_list) if interval_list else "",
                 interval_padding=" \\\n --interval-padding " + str(interval_padding)  if interval_padding else "",
-                input=" \\\n  ".join(input for input in inputs),
+                input=input,
                 output=output,
-                intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-                exclude_intervals="".join(
-                    " \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
+  #              intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+  #              exclude_intervals="".join(
+  #                  " \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
             )
         )
 
@@ -1353,7 +1355,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --TMP_DIR {tmp_dir} \\
   --INPUT {input} \\
   --OUTPUT {output} \\
-  --CHART {chart} \\
+  --CHART_OUTPUT {chart} \\
   --SUMMARY_OUTPUT {summary_file} \\
   --REFERENCE_SEQUENCE {reference} \\
   --MAX_RECORDS_IN_RAM {max_records_in_ram}""".format(
@@ -1890,7 +1892,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             output=output,
         )
     )
-def ScatterIntervalsByNs(
+def scatterIntervalsByNs(
     reference,
     output,
     ):
@@ -1900,18 +1902,19 @@ def ScatterIntervalsByNs(
         [reference],
         [output],
         [
-            ['gatk_ScatterIntervalsByNs', 'module_java'],
-            ['gatk_ScatterIntervalsByNs', 'module_gatk']
+            ['gatk_scatterIntervalsByNs', 'module_java'],
+            ['gatk_scatterIntervalsByNs', 'module_gatk']
         ],
         command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
-  ScatterIntervalsByNs {options} \\
+  ScatterIntervalsByNs \\
+  {options} \\
   --REFERENCE {reference} \\
   --OUTPUT {output}""".format(
-            tmp_dir=config.param('gatk_splitInterval', 'tmp_dir'),
-            options=config.param('gatk_splitInterval', 'options'),
-            java_other_options=config.param('gatk_splitInterval', 'gatk4_java_options'),
-            ram=config.param('gatk_splitInterval', 'ram'),
+            tmp_dir=config.param('gatk_scatterIntervalsByNs', 'tmp_dir'),
+            options=config.param('gatk_scatterIntervalsByNs', 'options'),
+            java_other_options=config.param('gatk_scatterIntervalsByNs', 'gatk4_java_options'),
+            ram=config.param('gatk_scatterIntervalsByNs', 'ram'),
             reference=reference,
             output=output
         )

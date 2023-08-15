@@ -1650,7 +1650,7 @@ END
                     interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
                 else:
                     interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
-                    job = picard2.bed2interval_list(
+                    job = gatk4.bed2interval_list(
                         None,
                         coverage_bed,
                         interval_list
@@ -1676,7 +1676,7 @@ END
                     re.sub("bam$", "onTarget.tsv", input),
                     interval_list
                 )
-                job.name = "picard_calculate_hs_metrics." + sample.name
+                job.name = "gatk_calculate_hs_metrics." + sample.name
                 job.samples = [sample]
                 jobs.append(job)
 
@@ -1989,19 +1989,110 @@ END
 
         return jobs
 
+    def set_interval_list(self):
+        jobs = []
+        
+        reference = config.param('gatk_scatterIntervalsByNs', 'genome_fasta', param_type='filepath')
+        
+        for sample in self.samples:
+            interval_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name, "intervals")
+            output = os.path.join(interval_directory,
+                                  os.path.basename(reference).replace('.fa',
+                                                                      '.ACGT.interval_list'))
+            
+            coverage_bed = bvatools.resolve_readset_coverage_bed(
+                sample.readsets[0]
+            )
+            if coverage_bed:
+                dictionary = config.param('gatk_scatterIntervalsByNs', 'genome_dictionary', param_type='filepath')
+                region = coverage_bed
+                
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(interval_directory),
+                            gatk4.bed2interval_list(
+                                dictionary,
+                                region,
+                                os.path.join(interval_directory,
+                                             os.path.basename(region).replace('.bed',
+                                                                              '.interval_list'))
+                            ),
+                            pipe_jobs(
+                                [
+                                    bash.grep(
+                                        os.path.join(interval_directory,
+                                                     os.path.basename(region).replace('.bed',
+                                                                                      '.interval_list')),
+                                        None,
+                                        '-Ev "_GL|_K"'
+                                    ),
+                                    bash.grep(
+                                        None,
+                                        os.path.join(interval_directory,
+                                                     os.path.basename(region).replace('.bed',
+                                                                                         '.noALT.interval_list')),
+                                        '-v "EBV"'
+                                    )
+                                ]
+                            ),
+                        ],
+                        name="gatk_scatterIntervalsByNs." + sample.name,
+                        samples=[sample]
+                    )
+                )
+                
+            else:
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(interval_directory),
+                            gatk4.scatterIntervalsByNs(
+                                reference,
+                                output
+                            ),
+                            pipe_jobs(
+                                [
+                                    bash.grep(
+                                        output,
+                                        None,
+                                        '-Ev "_GL|_K"'
+                                    ),
+                                    bash.grep(
+                                        None,
+                                        os.path.join(interval_directory,
+                                                     os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list')),
+                                        '-v "EBV"'
+                                        )
+                                ]
+                            ),
+                            gatk4.splitInterval(
+                                os.path.join(interval_directory,
+                                             os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list')),
+                                interval_directory,
+                                config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
+                            )
+                        ],
+                        name="gatk_scatterIntervalsByNs." + sample.name,
+                        samples=[sample]
+                    )
+                )
+        
+        return jobs
+
     def gatk_haplotype_caller(self):
         """
         GATK haplotype caller for snps and small indels.
         """
 
         jobs = []
-
-        nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
-        if nb_haplotype_jobs > 50:
-            log.warning("Number of haplotype jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
+        
+        reference = config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath')
+        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            interval_directory = os.path.join(alignment_directory, "intervals")
             haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
 
             [input_bam] = self.select_input_files(
@@ -2016,80 +2107,65 @@ END
                 ]
             )
 
-            interval_list = None
-
-            mkdir_job = bash.mkdir(
-                haplotype_directory,
-                remove=True
-            )
-
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            
+            interval_list = None
             if coverage_bed:
-                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                interval_list = os.path.join(interval_directory,
+                                             os.path.basename(coverage_bed).replace('.bed',
+                                                                              '.noALT.interval_list'))
 
-                if not os.path.isfile(interval_list):
-                    job = tools.bed2interval_list(
-                        coverage_bed,
-                        interval_list
-                    )
-                    job.name = "interval_list." + os.path.basename(coverage_bed)
-                    jobs.append(job)
+            elif scatter_jobs == 1:
+                interval_list = os.path.join(interval_directory,
+                                             os.path.basename(reference).replace('.fa',
+                                                                                 '.ACGT.noALT.interval_list')),
 
-            if nb_haplotype_jobs == 1 or interval_list:
+            if scatter_jobs == 1 or interval_list is not None:
                 jobs.append(
                     concat_jobs(
                         [
                             # Create output directory since it is not done by default by GATK tools
-                            mkdir_job,
+                            bash.mkdir(
+                                haplotype_directory,
+                                remove=True
+                            ),
                             gatk4.haplotype_caller(
                                 input_bam,
                                 os.path.join(haplotype_directory, sample.name + ".hc.g.vcf.gz"),
-                                interval_list=interval_list
+                                interval_list
                             )
                         ],
                         name="gatk_haplotype_caller." + sample.name,
                         samples=[sample]
                     )
                 )
+                
             else:
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
-
+                interval_list = [os.path.join(interval_directory,
+                                              f"{idx:04d}-scattered.interval_list") for idx in range(scatter_jobs)]
+                print(interval_list)
                 # Create one separate job for each of the first sequences
-                for idx, sequences in enumerate(unique_sequences_per_job):
+                for idx, sequences in enumerate(interval_list):
+                    print(sequences)
                     jobs.append(
                         concat_jobs(
                             [
                                 # Create output directory since it is not done by default by GATK tools
-                                mkdir_job,
+                                bash.mkdir(
+                                    haplotype_directory,
+                                    remove=True
+                                ),
                                 gatk4.haplotype_caller(
                                     input_bam,
                                     os.path.join(haplotype_directory, sample.name + "." + str(idx) + ".hc.g.vcf.gz"),
-                                    intervals=sequences,
-                                    interval_list=interval_list
+                                    sequences
                                 )
                             ],
                             name="gatk_haplotype_caller." + sample.name + "." + str(idx),
                             samples=[sample]
                         )
                     )
-
-                # Create one last job to process the last remaining sequences and 'others' sequences
-                jobs.append(
-                    concat_jobs(
-                        [
-                            # Create output directory since it is not done by default by GATK tools
-                            mkdir_job,
-                            gatk4.haplotype_caller(
-                                input_bam,
-                                os.path.join(haplotype_directory, sample.name + ".others.hc.g.vcf.gz"),
-                                exclude_intervals=unique_sequences_per_job_others,
-                                interval_list=interval_list
-                            )
-                        ],
-                        name="gatk_haplotype_caller." + sample.name + ".others",
-                        samples=[sample]
-                    )
-                )
+                    
         return jobs
 
     def merge_and_call_individual_gvcf(self):
@@ -2098,21 +2174,30 @@ END
         """
 
         jobs = []
-        nb_haplotype_jobs = config.param('gatk_haplotype_caller', 'nb_jobs', param_type='posint')
+        reference = config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath')
+        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            interval_directory = os.path.join(alignment_directory, "intervals")
             haplotype_directory = os.path.join(alignment_directory, "rawHaplotypeCaller")
             haplotype_file_prefix = os.path.join(haplotype_directory, sample.name)
             output_haplotype_file_prefix = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name)
 
             interval_list = None
-
+            
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
-                interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                interval_list = re.sub("\.[^.]+$",
+                                       ".noALT.interval_list",
+                                       os.path.join(interval_directory, coverage_bed))
+            
+            elif scatter_jobs == 1:
+                interval_list = os.path.join(interval_directory,
+                                             os.path.basename(reference).replace('.fa',
+                                                                                 '.ACGT.noALT.interval_list')),
 
-            if nb_haplotype_jobs == 1 or interval_list is not None:
+            if scatter_jobs == 1 or interval_list is not None:
                 jobs.append(
                     concat_jobs(
                         [
@@ -2137,10 +2222,7 @@ END
                     )
                 )
             else:
-                unique_sequences_per_job, unique_sequences_per_job_others = split_by_size(self.sequence_dictionary_variant(), nb_haplotype_jobs - 1, variant=True)
-                gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in range(len(unique_sequences_per_job))]
-
-                gvcfs_to_merge.append(haplotype_file_prefix + ".others.hc.g.vcf.gz")
+                gvcfs_to_merge = [haplotype_file_prefix + "." + str(idx) + ".hc.g.vcf.gz" for idx in range(scatter_jobs)]
 
                 job = gatk4.cat_variants(
                     gvcfs_to_merge,
@@ -4658,6 +4740,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.metrics_dna_sample_mosdepth,
                 self.metrics_dna_samtools_flagstat,
                 self.picard_calculate_hs_metrics,
+                self.set_interval_list,
                 self.gatk_haplotype_caller, #10
                 self.merge_and_call_individual_gvcf,
                 self.combine_gvcf,

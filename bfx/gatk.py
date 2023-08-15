@@ -227,31 +227,31 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
 
 def haplotype_caller(
-    inputs,
+    input,
     output,
-    intervals=[],
-    exclude_intervals=[],
-    interval_list=None
+#   intervals=[],
+#   exclude_intervals=[],
+    interval_list
     ):
     interval_padding = config.param('gatk_haplotype_caller', 'interval_padding')
-    if not isinstance(inputs, list):
-        inputs = [inputs]
-
-    inputs_list = inputs.copy()
-    if not interval_list is None:
-       inputs_list.extend([interval_list])
+    if not isinstance(input, list):
+        inputs = [input, interval_list]
+    
+    # inputs_list = []
+    # if not interval_list is None:
+    #    inputs_list = [input, interval_list]
 
     if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] >= "4":
         return gatk4.haplotype_caller(
             inputs,
             output,
-            intervals=intervals,
-            exclude_intervals=exclude_intervals,
+#            intervals=intervals,
+#            exclude_intervals=exclude_intervals,
             interval_list=interval_list
         )
     else:
         return Job(
-            inputs_list,
+            inputs,
             [output, output + ".tbi"],
             [
                 ['gatk_haplotype_caller', 'module_java'],
@@ -263,18 +263,19 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence} \\
   --input_file {input} \\
-  --out {output}{interval_padding} {interval_list}{intervals}{exclude_intervals}""".format(
+  --out {output} \\
+{interval_list} {interval_padding}""".format(
             tmp_dir=config.param('gatk_haplotype_caller', 'tmp_dir'),
             java_other_options=config.param('gatk_haplotype_caller', 'java_other_options'),
             ram=config.param('gatk_haplotype_caller', 'ram'),
             options=config.param('gatk_haplotype_caller', 'options'),
             reference_sequence=config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath'),
-            interval_list=" --intervals " + interval_list if interval_list else "",
+            interval_list="--intervals " + str(interval_list) if interval_list else "",
             interval_padding=" \\\n --interval_padding " + str(interval_padding) if interval_padding else "",
-            input=" \\\n  ".join(input for input in inputs),
+            input=input,
             output=output,
-            intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+#           intervals="".join(" \\\n  --intervals " + interval for interval in intervals),#
+#           exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
 
