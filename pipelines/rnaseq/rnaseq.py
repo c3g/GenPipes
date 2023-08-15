@@ -1783,6 +1783,7 @@ pandoc \\
                         os.path.join(output_dir, "Log.final.out")
                         )
                 ],
+                input_dependency=left_fastqs[sample.name] + right_fastqs[sample.name],
                 name="run_star_fusion." + sample.name,
                 samples=[sample]
             )
