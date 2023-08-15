@@ -2143,10 +2143,9 @@ END
             else:
                 interval_list = [os.path.join(interval_directory,
                                               f"{idx:04d}-scattered.interval_list") for idx in range(scatter_jobs)]
-                print(interval_list)
+
                 # Create one separate job for each of the first sequences
                 for idx, sequences in enumerate(interval_list):
-                    print(sequences)
                     jobs.append(
                         concat_jobs(
                             [
