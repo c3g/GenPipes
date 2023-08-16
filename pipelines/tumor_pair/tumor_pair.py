@@ -719,11 +719,27 @@ class TumorPair(dnaseq.DnaSeqRaw):
             job.samples = [tumor_pair.normal]
             jobs.append(job)
         
-            job = gatk4.print_reads(
-                normal_input,
-                normal_print_reads_output,
-                normal_base_recalibrator_output
-            )
+            if config.param('gatk_print_reads', 'module_gatk').split("/")[2] > "4":
+                job = concat_jobs(
+                        [
+                            gatk4.print_reads(
+                                normal_input,
+                                normal_print_reads_output,
+                                normal_base_recalibrator_output
+                            ),
+                            deliverables.md5sum(
+                                normal_print_reads_output,
+                                normal_print_reads_output + ".md5",
+                                self.output_dir
+                            )
+                        ]
+                    )
+            else:
+                job = gatk4.print_reads(
+                    normal_input,
+                    normal_print_reads_output,
+                    normal_base_recalibrator_output
+                )
             job.name = "gatk_print_reads." + tumor_pair.name + "." + tumor_pair.normal.name
             job.samples = [tumor_pair.normal]
             jobs.append(job)
@@ -737,11 +753,27 @@ class TumorPair(dnaseq.DnaSeqRaw):
             job.samples = [tumor_pair.tumor]
             jobs.append(job)
 
-            job = gatk4.print_reads(
-                tumor_input,
-                tumor_print_reads_output,
-                tumor_base_recalibrator_output
-            )
+            if config.param('gatk_print_reads', 'module_gatk').split("/")[2] > "4":
+                job = concat_jobs(
+                        [
+                            gatk4.print_reads(
+                                tumor_input,
+                                tumor_print_reads_output,
+                                tumor_base_recalibrator_output
+                            ),
+                            deliverables.md5sum(
+                                tumor_print_reads_output,
+                                tumor_print_reads_output + ".md5",
+                                self.output_dir
+                            )
+                        ]
+                    )
+            else:
+                job = gatk4.print_reads(
+                    tumor_input,
+                    tumor_print_reads_output,
+                    tumor_base_recalibrator_output
+                )
             job.name = "gatk_print_reads." + tumor_pair.name + "." + tumor_pair.tumor.name
             job.samples = [tumor_pair.tumor]
             jobs.append(job)
