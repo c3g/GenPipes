@@ -37,6 +37,7 @@ from core.job import Job, concat_jobs, pipe_jobs
 from core.sample_tumor_pairs import parse_tumor_pair_file
 import utils.utils
 
+import gzip
 from pipelines.dnaseq import dnaseq
 
 #utilizes
@@ -105,12 +106,19 @@ class TumorPair(dnaseq.DnaSeqRaw):
     """
 
     def __init__(self, protocol=None):
+        self._arguments = None
         self._protocol = protocol
         self.argparser.add_argument("-p", "--pairs", help="pairs file", type=argparse.FileType('r'))
         self.argparser.add_argument("--profyle", help="adjust deliverables to PROFYLE folder conventions (Default: False)", action="store_true")
         self.argparser.add_argument("-t", "--type", help="Tumor pair analysis type", choices=["fastpass", "ensemble", "sv"], default="ensemble")
         super(TumorPair, self).__init__(protocol)
-
+    
+    def parse(self):
+        self._arguments = self.argparser.parse_args()
+        return self._arguments
+    def get_type(self):
+        return self.parse().type
+    
     @property
     def output_dirs(self):
         dirs = {
@@ -1014,6 +1022,131 @@ class TumorPair(dnaseq.DnaSeqRaw):
             )
 
         return jobs
+    
+    def set_interval_list(self):
+        jobs = []
+        
+        reference = config.param('gatk_scatterIntervalsByNs', 'genome_fasta', param_type='filepath')
+        dictionary = config.param('gatk_scatterIntervalsByNs', 'genome_dictionary', param_type='filepath')
+        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
+        
+        for tumor_pair in self.tumor_pairs.values():
+            interval_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "intervals")
+            output = os.path.join(interval_directory,
+                                  os.path.basename(reference).replace('.fa',
+                                                                      '.ACGT.interval_list'))
+            
+            coverage_bed = bvatools.resolve_readset_coverage_bed(
+                tumor_pair.normal.readsets[0]
+            )
+
+            if self.get_type() == "fastpass":
+                coverage_bed = config.param('rawmpileup_panel', 'panel')
+
+            if coverage_bed:
+                region = coverage_bed
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(interval_directory),
+                            gatk4.bed2interval_list(
+                                dictionary,
+                                region,
+                                os.path.join(interval_directory,
+                                             os.path.basename(region).replace('.bed',
+                                                                              '.interval_list'))
+                            ),
+                            pipe_jobs(
+                                [
+                                    bash.grep(
+                                        os.path.join(interval_directory,
+                                                     os.path.basename(region).replace('.bed',
+                                                                                      '.interval_list')),
+                                        None,
+                                        '-Ev "_GL|_K"'
+                                    ),
+                                    bash.grep(
+                                        None,
+                                        os.path.join(interval_directory,
+                                                     os.path.basename(region).replace('.bed',
+                                                                                      '.noALT.interval_list')),
+                                        '-v "EBV"'
+                                    )
+                                ]
+                            ),
+                        ],
+                        name="gatk_scatterIntervalsByNs." + tumor_pair.name,
+                        samples=[tumor_pair.tumor, tumor_pair.normal]
+                    )
+                )
+            elif scatter_jobs == 1:
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(interval_directory),
+                            gatk4.scatterIntervalsByNs(
+                                reference,
+                                output
+                            ),
+                            pipe_jobs(
+                                [
+                                    bash.grep(
+                                        output,
+                                        None,
+                                        '-Ev "_GL|_K"'
+                                    ),
+                                    bash.grep(
+                                        None,
+                                        os.path.join(interval_directory,
+                                                     os.path.basename(reference).replace('.fa',
+                                                                                         '.ACGT.noALT.interval_list')),
+                                        '-v "EBV"'
+                                    )
+                                ]
+                            ),
+                        ],
+                        name="gatk_scatterIntervalsByNs." + tumor_pair.name,
+                        samples=[tumor_pair.tumor, tumor_pair.normal]
+                    )
+                )
+            else:
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(interval_directory),
+                            gatk4.scatterIntervalsByNs(
+                                reference,
+                                output
+                            ),
+                            pipe_jobs(
+                                [
+                                    bash.grep(
+                                        output,
+                                        None,
+                                        '-Ev "_GL|_K"'
+                                    ),
+                                    bash.grep(
+                                        None,
+                                        os.path.join(interval_directory,
+                                                     os.path.basename(reference).replace('.fa',
+                                                                                         '.ACGT.noALT.interval_list')),
+                                        '-v "EBV"'
+                                    )
+                                ]
+                            ),
+                            gatk4.splitInterval(
+                                os.path.join(interval_directory,
+                                             os.path.basename(reference).replace('.fa', '.ACGT.noALT.interval_list')),
+                                interval_directory,
+                                config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
+                            )
+                        ],
+                        name="gatk_scatterIntervalsByNs." + tumor_pair.name,
+                        samples=[tumor_pair.tumor, tumor_pair.normal]
+                    )
+                )
+        
+        return jobs
 
     def rawmpileup_panel(self):
         """
@@ -1505,7 +1638,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             config.param('filter_fastpass', 'call_filter'),
                             "germline",
                             tumor_pair.tumor.name,
-                            ini_section='filter_fastpss'
+                            ini_section='filter_fastpass'
                         ),
                         pipe_jobs(
                             [
@@ -6420,8 +6553,20 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
             pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
             cnvkit_dir = os.path.join(pair_directory, "rawCNVkit")
-            input_normal = os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")
-            input_tumor = os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")
+
+            [inputNormal] = self.select_input_files(
+                [
+                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")]
+                ]
+            )
+            [inputTumor] = self.select_input_files(
+                [
+                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")]
+                ]
+            )
+
             tarcov_cnn = os.path.join(cnvkit_dir, tumor_pair.tumor.name + ".sorted.dup.targetcoverage.cnn")
             antitarcov_cnn = os.path.join(cnvkit_dir, tumor_pair.tumor.name + ".sorted.dup.antitargetcoverage.cnn")
             ref_cnn = os.path.join(cnvkit_dir, tumor_pair.name + ".reference.cnn")
@@ -6465,8 +6610,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             remove=True
                         ),
                         cnvkit.batch(
-                            input_tumor,
-                            input_normal,
+                            inputTumor,
+                            inputNormal,
                             cnvkit_dir,
                             tar_dep=tarcov_cnn,
                             antitar_dep=antitarcov_cnn,
@@ -6769,30 +6914,26 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         return [
             [
                 self.picard_sam_to_fastq,
-                self.skewer_trimming,
-                self.bwa_mem_sambamba,
-                self.sambamba_sort,
-                self.sambamba_merge_sam_files, #5
-                self.gatk_indel_realigner,
-                self.sambamba_merge_realigned,
-                self.sambamba_mark_duplicates,
-                self.recalibration,
-                self.sequenza, #10
+                self.trim_fastp,
+                self.bwa_mem2_samtools_sort,
+                self.gatk_mark_duplicates,
+                self.set_interval_list,
+                self.sequenza,
                 self.manta_sv_calls,
                 self.cnvkit_batch,
                 self.rawmpileup_panel,
                 self.paired_varscan2_panel,
-                self.merge_varscan2_panel, #15
+                self.merge_varscan2_panel,
                 self.preprocess_vcf_panel,
                 self.filter_fastpass_germline,
                 self.report_cpsr_fastpass,
                 self.filter_fastpass_somatic,
-                self.report_pcgr_fastpass, #20
+                self.report_pcgr_fastpass,
                 self.conpair_concordance_contamination,
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_qualimap,
                 self.metrics_dna_fastqc,
-                self.run_pair_multiqc,  #25
+                self.run_pair_multiqc,
                 self.sym_link_report,
                 self.sym_link_fastq_pair,
                 self.sym_link_panel

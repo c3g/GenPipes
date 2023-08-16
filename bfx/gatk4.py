@@ -482,12 +482,20 @@ def haplotype_caller(
     if not isinstance(input, list):
         inputs = [input]
 
+<<<<<<< HEAD
     # Added this to check intervel_list (peak file) availability in the chip-seq pipeline
+=======
+# Added this to check intervel_list (peak file) availability in the chip-seq pipeline
+>>>>>>> Fixed metrics steps for multiqc inputs, migrated TP fastpass to new BAM processing SOP
     inputs_list = inputs.copy()
     if not interval_list is None:
        inputs_list.append(interval_list)
 
+<<<<<<< HEAD
     if config.param(ini_section, 'module_gatk').split("/")[2] < "4":
+=======
+    if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
+>>>>>>> Fixed metrics steps for multiqc inputs, migrated TP fastpass to new BAM processing SOP
         return gatk.haplotype_caller(
             input,
             output,

@@ -1181,7 +1181,8 @@ END
 
         jobs = []
         for sample in self.samples:
-            picard_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "picard_metrics")
+            picard_directory = os.path.join(self.output_dirs['metrics_directory'], "picard_metrics" , sample.name)
+            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
             readset = sample.readsets[0]
@@ -1213,7 +1214,39 @@ END
                             input,
                             os.path.join(picard_directory, sample.name + ".all.metrics"),
                             library_type=library[sample]
-                        )
+                        ),
+                        bash.ln(
+                            os.path.relpath(
+                                os.path.join(picard_directory, sample.name + ".all.metrics.alignment_summary_metrics"),
+                                link_directory
+                            ),
+                            os.path.join(link_directory, sample.name + ".all.metrics.alignment_summary_metrics"),
+                            os.path.join(picard_directory, sample.name + ".all.metrics.alignment_summary_metrics")
+                        ),
+                        bash.ln(
+                            os.path.relpath(
+                                os.path.join(picard_directory, sample.name + ".all.metrics.insert_size_metrics"),
+                                link_directory
+                            ),
+                            os.path.join(link_directory, sample.name + ".all.metrics.insert_size_metrics"),
+                            os.path.join(picard_directory, sample.name + ".all.metrics.insert_size_metrics")
+                        ),
+                        bash.ln(
+                            os.path.relpath(
+                                os.path.join(picard_directory, sample.name + ".all.metrics.quality_by_cycle_metrics"),
+                                link_directory
+                            ),
+                            os.path.join(link_directory, sample.name + ".all.metrics.quality_by_cycle_metrics"),
+                            os.path.join(picard_directory, sample.name + ".all.metrics.quality_by_cycle_metrics")
+                        ),
+                        bash.ln(
+                            os.path.relpath(
+                                os.path.join(picard_directory, sample.name + ".all.metrics.quality_distribution_metrics"),
+                                link_directory
+                            ),
+                            os.path.join(link_directory, sample.name + ".all.metrics.quality_distribution_metrics"),
+                            os.path.join(picard_directory, sample.name + ".all.metrics.quality_distribution_metrics")
+                        ),
                     ],
                     name="picard_collect_multiple_metrics." + sample.name,
                     samples=[sample]
@@ -1230,9 +1263,13 @@ END
                             os.path.join(picard_directory, sample.name + ".oxog_metrics.txt")
                         ),
                         bash.ln(
-                            os.path.relpath(os.path.join(picard_directory, sample.name + ".oxog_metrics.txt"), os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
-                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, sample.name + ".oxog_metrics.txt"),
-                            input=os.path.join(picard_directory, sample.name + ".oxog_metrics.txt")
+                            os.path.relpath(
+                                os.path.join(picard_directory,
+                                             sample.name + ".oxog_metrics.txt"),
+                                link_directory
+                            ),
+                            os.path.join(link_directory, sample.name + ".oxog_metrics.txt"),
+                            os.path.join(picard_directory, sample.name + ".oxog_metrics.txt")
                         )
                     ],
                     name="picard_collect_oxog_metrics." + sample.name,
@@ -1251,9 +1288,13 @@ END
                             os.path.join(picard_directory, sample.name)
                         ),
                         bash.ln(
-                            os.path.relpath(os.path.join(picard_directory, sample.name + ".gcbias_metrics.txt"), os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
-                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, sample.name + ".gcbias_metrics.txt"),
-                            input=os.path.join(picard_directory, sample.name + ".gcbias_metrics.txt")
+                            os.path.relpath(
+                                os.path.join(picard_directory,
+                                             sample.name + ".gcbias_metrics.txt"),
+                                link_directory
+                            ),
+                            os.path.join(link_directory, sample.name + ".gcbias_metrics.txt"),
+                            os.path.join(picard_directory, sample.name + ".gcbias_metrics.txt")
                         )
                     ],
                     name="picard_collect_gcbias_metrics." + sample.name,
@@ -1394,8 +1435,10 @@ END
 
         jobs = []
         for sample in self.samples:
-            flagstat_directory = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "flagstat")
+            flagstat_directory = os.path.join(self.output_dirs['metrics_directory'], "flagstat", sample.name)
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+            
             [input] = self.select_input_files(
                 [
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
@@ -1419,13 +1462,22 @@ END
                         samtools.flagstat(
                             input,
                             output
+                        ),
+                        bash.ln(
+                            os.path.relpath(
+                                output,
+                                link_directory
+                            ),
+                            os.path.join(link_directory, sample.name + ".flagstat"),
+                            output
                         )
                     ],
                     name="dna_samtools_flagstat." + sample.name,
                     samples=[sample]
                 )
             )
-
+            self.multiqc_inputs.append(output)
+            
         return jobs
 
     def metrics_dna_fastqc(self):
@@ -1644,6 +1696,9 @@ END
         jobs = []
 
         for sample in self.samples:
+            hs_directory = os.path.join(self.output_dirs['metrics_directory'], "picard", sample.name)
+            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+            
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
                 if os.path.isfile(re.sub("\.[^.]+$", ".interval_list", coverage_bed)):
@@ -1671,15 +1726,28 @@ END
                         [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
                     ]
                 )
-                job = gatk4.calculate_hs_metrics(
-                    input,
-                    re.sub("bam$", "onTarget.tsv", input),
-                    interval_list
+                jobs.append(
+                    concat_jobs(
+                        [
+                            gatk4.calculate_hs_metrics(
+                                input,
+                                os.path.join(hs_directory, sample.name + ".onTarget.tsv"),
+                                interval_list
+                            ),
+                            bash.ln(
+                                os.path.relpath(
+                                    os.path.join(hs_directory, sample.name + ".onTarget.tsv"),
+                                    link_directory
+                                ),
+                                os.path.join(link_directory, sample.name + ".onTarget.tsv"),
+                                os.path.join(hs_directory, sample.name + ".onTarget.tsv")
+                            )
+                        ],
+                        name="gatk_calculate_hs_metrics." + sample.name,
+                        samples=[sample]
+                    )
                 )
-                job.name = "gatk_calculate_hs_metrics." + sample.name
-                job.samples = [sample]
-                jobs.append(job)
-
+                self.multiqc_inputs.append(os.path.join(hs_directory, sample.name + ".onTarget.tsv"))
         return jobs
 
     def gatk_callable_loci(self):
