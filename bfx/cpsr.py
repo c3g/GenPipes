@@ -29,7 +29,7 @@ def report(
     input,
     output_dir,
     tumor_id,
-    ini_section = 'DEFAULT'
+    ini_section = None
     ):
 
     assembly = config.param('report_cpsr', 'assembly')

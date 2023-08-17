@@ -281,7 +281,13 @@ def fix_genotypes_strelka(input, output, normal, tumor):
             )
         )
 
-def format2pcgr(input, output, filter, variant_type, tumor, ini_section='DEFAULT'):
+def format2pcgr(input,
+                output,
+                filter,
+                variant_type,
+                tumor,
+                ini_section='DEFAULT'):
+    
     return Job(
         [input],
         [output],
@@ -297,10 +303,33 @@ python3 $PYTHON_TOOLS/format2pcgr.py \\
 	-v {variant_type} \\
 	-t {tumor}""".format(
             input=input if input else "",
-            output=output if input else "",
+            output=output if output else "",
             filter=filter,
             variant_type=variant_type,
             tumor=tumor,
+        )
+    )
+
+def chunkBedbyFileNumber(
+        input,
+        output,
+        chunk,
+):
+    output_list = [os.path.join(output,
+                                f"{idx:04d}-scattered.bed") for idx in range(1, chunk + 1)]
+    return Job(
+        [input],
+        output_list,
+        [
+            ['vardict_scatter_jobs', 'module_mugqic_tools'],
+            ['vardict_scatter_jobs', 'module_python']
+        ],
+        command="""\
+python3 $PYTHON_TOOLS/chunkBedbyFileNumber.py \\
+	--input {input} \\
+	--chunk {chunk}""".format(
+            input=input,
+            chunk=chunk,
         )
     )
 

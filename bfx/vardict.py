@@ -35,11 +35,11 @@ def paired(input_normal, input_tumor, tumor_name, output=None, region=[]):
         ],
         command="""\
 vardict \\
-  -G {reference_fasta} \\
+  -G {reference} \\
   -N {tumor_name} \\
   -b "{paired_samples}" \\
   {vardict_options}{region}{output}""".format(
-        reference_fasta=config.param('vardict_paired', 'genome_fasta', param_type='filepath'),
+        reference=config.param('vardict_paired', 'genome_fasta', param_type='filepath'),
         tumor_name=tumor_name,
         paired_samples=input_tumor + "|" + input_normal,
         vardict_options=config.param('vardict_paired', 'vardict_options'),
@@ -61,12 +61,12 @@ def paired_java(input_normal, input_tumor, tumor_name, output=None, region=[]):
         ],
         command="""\
 java {java_other_options} -Djava.io.tmpdir={tmp_dir} -Xms768m -Xmx{ram} -classpath {classpath} \\
-  -G {reference_fasta} \\
+  -G {reference} \\
   -N {tumor_name} \\
   -b "{paired_samples}" \\
   {vardict_options}{region}{output}""".format(
         tmp_dir=config.param('vardict_paired', 'tmp_dir'),
-        reference_fasta=config.param('vardict_paired', 'genome_fasta', param_type='filepath'),
+        reference=config.param('vardict_paired', 'genome_fasta', param_type='filepath'),
         tumor_name=tumor_name,
         paired_samples=input_tumor + "|" + input_normal,
         java_other_options=config.param('vardict_paired', 'java_other_options'),

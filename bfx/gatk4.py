@@ -482,20 +482,12 @@ def haplotype_caller(
     if not isinstance(input, list):
         inputs = [input]
 
-<<<<<<< HEAD
     # Added this to check intervel_list (peak file) availability in the chip-seq pipeline
-=======
-# Added this to check intervel_list (peak file) availability in the chip-seq pipeline
->>>>>>> Fixed metrics steps for multiqc inputs, migrated TP fastpass to new BAM processing SOP
     inputs_list = inputs.copy()
     if not interval_list is None:
        inputs_list.append(interval_list)
 
-<<<<<<< HEAD
     if config.param(ini_section, 'module_gatk').split("/")[2] < "4":
-=======
-    if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
->>>>>>> Fixed metrics steps for multiqc inputs, migrated TP fastpass to new BAM processing SOP
         return gatk.haplotype_caller(
             input,
             output,
@@ -655,11 +647,12 @@ def mutect2(inputNormal,
             tumor_name,
             outputVCF,
             read_orientation,
-            intervals=[],
-            exclude_intervals=[],
+#            intervals=[],
+#            exclude_intervals=[],
             interval_list=None,
             ini_section='gatk_mutect2'
             ):
+    interval_padding = config.param('gatk_mutect2', 'interval_padding')
 
     if interval_list:
         inputs = [inputNormal, inputTumor, interval_list]
@@ -673,8 +666,8 @@ def mutect2(inputNormal,
                             inputTumor,
                             tumor_name,
                             outputVCF,
-                            intervals,
-                            exclude_intervals,
+                            #intervals,
+                            #exclude_intervals,
                             interval_list)
     else:
         return Job(
@@ -694,12 +687,13 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --input {inputNormal} \\
   --normal-sample {normal_name} \\
   --germline-resource {known_sites} \\
-  --output {outputVCF}{interval_list}{intervals}{exclude_intervals}{pon}""".format(
-        tmp_dir=config.param(ini_section, 'tmp_dir'),
-        java_other_options=config.param(ini_section, 'gatk4_java_options'),
-        ram=config.param(ini_section, 'ram'),
-        options=config.param(ini_section, 'options'),
-        reference_sequence=config.param(ini_section, 'genome_fasta', param_type='filepath'),
+  --intervals {interval_list} \\
+  --output {outputVCF}{pon}""".format(
+        tmp_dir=config.param('gatk_mutect2', 'tmp_dir'),
+        java_other_options=config.param('gatk_mutect2', 'gatk4_java_options'),
+        ram=config.param('gatk_mutect2', 'ram'),
+        options=config.param('gatk_mutect2', 'options'),
+        reference_sequence=config.param('gatk_mutect2', 'genome_fasta', param_type='filepath'),
         read_orientation=read_orientation,
         known_sites=config.param(ini_section, 'known_sites', param_type='filepath'),
         inputNormal=inputNormal,
@@ -707,11 +701,12 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
         inputTumor=inputTumor,
         tumor_name=tumor_name,
         outputVCF=outputVCF,
-        interval_list=" \\\n  --interval-padding 100 --intervals " + interval_list if interval_list else "",
-        intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-        pon=" --panel-of-normals " + config.param(ini_section, 'pon', param_type='filepath') if config.param(ini_section, 'pon', param_type='filepath', required=False) else "",
-        exclude_intervals="".join(
-            " \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
+        interval_list=str(interval_list) if interval_list else "",
+        interval_padding=" \\\n --interval-padding " + str(interval_padding) if interval_padding else "",
+        pon=" --panel-of-normals " + config.param('gatk_mutect2', 'pon', param_type='filepath') if config.param('gatk_mutect2', 'pon', param_type='filepath', required=False) else "",
+        #      intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+  #      exclude_intervals="".join(
+  #          " \\\n  --exclude-intervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
 
@@ -993,7 +988,6 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
 
 #####################
 #  Copy Number Variant Discovery
-
 def preprocessIntervals(
     input,
     output,
@@ -1009,8 +1003,9 @@ def preprocessIntervals(
         ],
         command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
-  PreprocessIntervals {options} --interval-merging-rule OVERLAPPING_ONLY \\
-  --reference {reference_sequence} {intervals} \\
+  PreprocessIntervals {options} \\
+  --reference {reference_sequence} \\
+  --intervals {intervals} \\
   --bin-length {bin_length} \\
   --padding {padding} \\
   --output {output}""".format(
@@ -1019,8 +1014,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
             ram=config.param(ini_section, 'ram'),
             options=config.param(ini_section, 'options'),
             reference_sequence=config.param(ini_section, 'genome_fasta', param_type='filepath'),
-            intervals=" \\\n --intervals " + intervals if intervals else "",
-            bin_length=config.param(ini_section, 'bin-length'),
+            intervals=input,
+            bin_length=config.param(ini_section, 'bin_length'),
             padding=config.param(ini_section, 'padding'),
             output=output
         )

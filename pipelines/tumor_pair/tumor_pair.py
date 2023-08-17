@@ -68,6 +68,7 @@ from bfx import (
     multiqc,
     pcgr,
     purple,
+    mosdepth,
     qualimap,
     sambamba,
     samtools,
@@ -1071,8 +1072,16 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                                      os.path.basename(region).replace('.bed',
                                                                                       '.noALT.interval_list')),
                                         '-v "EBV"'
-                                    )
+                                    ),
                                 ]
+                            ),
+                            gatk4.interval_list2bed(
+                                os.path.join(interval_directory,
+                                             os.path.basename(region).replace('.bed',
+                                                                              '.noALT.interval_list')),
+                                os.path.join(interval_directory,
+                                             os.path.basename(region).replace('.bed',
+                                                                              '.noALT.bed'))
                             ),
                         ],
                         name="gatk_scatterIntervalsByNs." + tumor_pair.name,
@@ -1104,6 +1113,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     )
                                 ]
                             ),
+                             gatk4.interval_list2bed(
+                                os.path.join(interval_directory,
+                                             os.path.basename(reference).replace('.fa',
+                                                                                 '.ACGT.noALT.interval_list')),
+                                os.path.join(interval_directory,
+                                             os.path.basename(reference).replace('.fa',
+                                                                                 '.ACGT.noALT.bed'))
+                            ),
                         ],
                         name="gatk_scatterIntervalsByNs." + tumor_pair.name,
                         samples=[tumor_pair.tumor, tumor_pair.normal]
@@ -1133,6 +1150,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                         '-v "EBV"'
                                     )
                                 ]
+                            ),
+                            gatk4.interval_list2bed(
+                                os.path.join(interval_directory,
+                                             os.path.basename(reference).replace('.fa',
+                                                                                 '.ACGT.noALT.interval_list')),
+                                os.path.join(interval_directory,
+                                             os.path.basename(reference).replace('.fa',
+                                                                                '.ACGT.noALT.bed'))
                             ),
                             gatk4.splitInterval(
                                 os.path.join(interval_directory,
@@ -2496,6 +2521,65 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             jobs.extend(tumor_pair_jobs)
         return jobs
+    
+    def metrics_dna_sample_mosdepth(self):
+        """
+        Calculate depth stats for captured regions with mosdepth.
+        """
+        
+        jobs = []
+        
+        mosdepth_directory = os.path.join(self.output_dirs['metrics_directory'], "mosdepth")
+        link_directory = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
+        
+        for sample in self.samples:
+            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
+            output_prefix = os.path.join(mosdepth_directory, sample.name)
+            
+            [input] = self.select_input_files(
+                [
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
+                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
+                ]
+            )
+            region = None
+            output_dependency = output_prefix + ".mosdepth.global.dist.txt"
+            
+            coverage_bed = bvatools.resolve_readset_coverage_bed(
+                sample.readsets[0]
+            )
+            if coverage_bed:
+                region = coverage_bed
+                output_dependency = output_prefix + ".mosdepth.region.dist.txt"
+            
+            jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(mosdepth_directory),
+                        bash.mkdir(link_directory),
+                        mosdepth.run(
+                            input,
+                            output_prefix,
+                            True,
+                            region
+                        ),
+                        bash.ln(
+                            os.path.relpath(output_dependency, link_directory),
+                            os.path.join(link_directory, os.path.basename(output_dependency)),
+                            output_dependency
+                        )
+                    ],
+                    name="mosdepth." + sample.name,
+                    samples=[sample]
+                )
+            )
+            #self.multiqc_inputs.append(output_dependency)
+        
+        return jobs
+
 
     def metrics_dna_fastqc(self):
         """
@@ -2677,7 +2761,14 @@ class TumorPair(dnaseq.DnaSeqRaw):
         Full pileup (optional). A raw mpileup file is created using samtools mpileup and compressed in gz format.
         One packaged mpileup file is created per sample/chromosome.
         """
-
+        
+        reference = config.param('rawpileup', 'genome_fasta', param_type='filepath')
+        
+        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
+        if scatter_jobs > 50:
+            log.warning(
+                "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
+        
         jobs = []
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
@@ -2689,8 +2780,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
+            
+            interval_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "intervals")
+            bed_file = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
+                                                                                           '.ACGT.noALT.bed'))
 
-            bed_file = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 tumor_pair.normal.readsets[0]
             )
@@ -2713,13 +2807,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
                 ]
             )
-
-            nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
-            if nb_jobs > 50:
-                log.warning(
-                    "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
-
-            if nb_jobs == 1:
+            
+            if scatter_jobs == 1:
                 pair_output = os.path.join(varscan_directory, tumor_pair.name + ".mpileup")
                 jobs.append(
                     concat_jobs(
@@ -2784,17 +2873,18 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
+        
+        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
+        if scatter_jobs > 50:
+            log.warning(
+                "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
+            
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
             output = os.path.join(varscan_directory, tumor_pair.name)
 
-            nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
-            if nb_jobs > 50:
-                log.warning(
-                    "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
-
-            if nb_jobs == 1:
+            if scatter_jobs == 1:
                 input_pair = os.path.join(varscan_directory, tumor_pair.name + ".mpileup")
 
                 output_snp = os.path.join(varscan_directory, tumor_pair.name + ".snp.vcf")
@@ -2872,7 +2962,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 )
 
             else:
-
                 for sequence in self.sequence_dictionary_variant():
                     if sequence['type'] == 'primary':
                         input_pair = os.path.join(varscan_directory, tumor_pair.name + "." + sequence['name'] + ".mpileup")
@@ -2959,17 +3048,17 @@ class TumorPair(dnaseq.DnaSeqRaw):
         """
 
         jobs = []
+        
+        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
+        if scatter_jobs > 50:
+            log.warning(
+                "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
+        
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             varscan_directory = os.path.join(pair_directory, "rawVarscan2")
 
-            nb_jobs = config.param('rawmpileup', 'nb_jobs', param_type='posint')
-            if nb_jobs > 50:
-                log.warning(
-                    "Number of mpileup jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
-
-            all_inputs = []
-            if nb_jobs == 1:
+            if scatter_jobs == 1:
                 all_inputs = [os.path.join(varscan_directory, tumor_pair.name + ".varscan2.vcf.gz")]
 
             else:
@@ -2988,7 +3077,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             somtic_output_vt = os.path.join(pair_directory, tumor_pair.name + ".varscan2.somatic.vt.vcf.gz")
             germline_output_vt = os.path.join(pair_directory, tumor_pair.name + ".varscan2.germline.vt.vcf.gz")
 
-            if nb_jobs == 1:
+            if scatter_jobs == 1:
                 jobs.append(
                     concat_jobs(
                         [
@@ -3124,7 +3213,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     bcftools.view(
                                         all_output_vt,
                                         None,
-                                        config.param('varscan2_readcount_fpfilter', 'somatic_filter_options')
+                                        config.param('merge_varscan2', 'somatic_filter_options')
                                     ),
                                     htslib.bgzip_tabix(
                                         None,
@@ -3137,12 +3226,12 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     bcftools.view(
                                         all_output_vt,
                                         None,
-                                        config.param('varscan2_readcount_fpfilter', 'germline_filter_options')
+                                        config.param('merge_varscan2', 'germline_filter_options')
                                     ),
                                     bcftools.view(
                                         None,
                                         None,
-                                        config.param('varscan2_readcount_fpfilter', 'genotype_filter_options')
+                                        config.param('merge_varscan2', 'genotype_filter_options')
                                     ),
                                     htslib.bgzip_tabix(
                                         None,
@@ -3165,10 +3254,10 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        created_interval_lists = []
-
-        nb_jobs = config.param('gatk_mutect2', 'nb_jobs', param_type='posint')
-        if nb_jobs > 50:
+        reference = config.param('paired_mutect2', 'genome_fasta', param_type='filepath')
+        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
+        
+        if scatter_jobs > 50:
             log.warning("Number of mutect jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
         for tumor_pair in self.tumor_pairs.values():
@@ -3181,6 +3270,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             mutect_directory = os.path.join(pair_directory, "rawMuTect2")
+            interval_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "intervals")
 
             [input_normal] = self.select_input_files(
                 [
@@ -3197,32 +3287,19 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
                 ]
             )
-
-            interval_list = None
-
+            
             coverage_bed = bvatools.resolve_readset_coverage_bed(tumor_pair.normal.readsets[0])
+
             if coverage_bed:
-                interval_list = os.path.join(mutect_directory, re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed)))
-
-                if not interval_list in created_interval_lists:
-                    jobs.append(
-                        concat_jobs(
-                            [
-                                bash.mkdir(mutect_directory),
-                                tools.bed2interval_list(
-                                    coverage_bed,
-                                    interval_list
-                                )
-                            ],
-                            name="interval_list." + tumor_pair.name,
-                            samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                        )
-                    )
-                    created_interval_lists.append(interval_list)
-
-            if nb_jobs == 1:
-
+                interval_list = [os.path.join(interval_directory, os.path.basename(coverage_bed).replace('.bed',
+                                                                                                        '.noALT.interval_list'))]
+            
+            else:
+                interval_list = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
+                                                                                                     '.ACGT.noALT.interval_list')),
+            
+            if scatter_jobs == 1 and interval_list is not None:
+                print(interval_list)
                 jobs.append(
                     concat_jobs(
                         [
@@ -3238,7 +3315,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 tumor_pair.tumor.name,
                                 os.path.join(mutect_directory, tumor_pair.name + ".mutect2.vcf.gz"),
                                 os.path.join(mutect_directory, tumor_pair.name + ".f1r2.tar.gz"),
-                                interval_list=interval_list
+                                interval_list=interval_list[0]
                             )
                         ],
                         name="gatk_mutect2." + tumor_pair.name,
@@ -3247,13 +3324,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     )
                 )
 
-            else:
-                unique_sequences_per_job, unique_sequences_per_job_others = sequence_dictionary.split_by_size(self.sequence_dictionary_variant(), nb_jobs - 1, variant=True)
-
+            elif scatter_jobs > 1:
+                interval_list = [os.path.join(interval_directory,
+                                              f"{idx:04d}-scattered.interval_list") for idx in range(scatter_jobs)]
+                
                 # Create one separate job for each of the first sequences
-                for idx, sequences in enumerate(unique_sequences_per_job):
+                for idx, intervals in enumerate(interval_list):
 
-                    outprefix = tumor_pair.name + "." + str(idx) + ".mutect2"
                     jobs.append(
                         concat_jobs(
                             [
@@ -3267,10 +3344,9 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     tumor_pair.normal.name,
                                     input_tumor,
                                     tumor_pair.tumor.name,
-                                    os.path.join(mutect_directory, outprefix + ".vcf.gz"),
+                                    os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".mutect2.vcf.gz"),
                                     os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".f1r2.tar.gz"),
-                                    intervals=sequences,
-                                    interval_list=interval_list
+                                    interval_list=intervals
                                 )
                             ],
                             name="gatk_mutect2." + tumor_pair.name + "." + str(idx),
@@ -3278,33 +3354,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                         )
                     )
-
-                # Create one last job to process the last remaining sequences and 'others' sequences
-                jobs.append(
-                    concat_jobs(
-                        [
-                            # Create output directory since it is not done by default by GATK tools
-                            bash.mkdir(
-                                mutect_directory,
-                                remove=True
-                            ),
-                            gatk4.mutect2(
-                                input_normal,
-                                tumor_pair.normal.name,
-                                input_tumor,
-                                tumor_pair.tumor.name,
-                                os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"),
-                                os.path.join(mutect_directory, tumor_pair.name + ".others.f1r2.tar.gz"),
-                                exclude_intervals=unique_sequences_per_job_others,
-                                interval_list=interval_list
-                            )
-                        ],
-                        name="gatk_mutect2." + tumor_pair.name + ".others",
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
-                )
-
         return jobs
 
     def merge_mutect2(self):
@@ -3316,18 +3365,20 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         jobs = []
 
-        nb_jobs = config.param('gatk_mutect2', 'nb_jobs', param_type='posint')
+        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
 
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             mutect_directory = os.path.join(pair_directory, "rawMuTect2")
+            output_prefix = os.path.join(mutect_directory, tumor_pair.name)
+            
             # If this sample has one readset only, create a sample BAM symlink to the readset BAM, along with its index.
-            output_gz = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz")
-            output_flt = os.path.join(pair_directory, tumor_pair.name + ".mutect2.flt.vcf.gz")
-            output_vt_gz = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vt.vcf.gz")
+            output_gz = os.path.join(pair_directory, tumor_pair.name  + ".mutect2.vcf.gz")
+            output_flt = os.path.join(pair_directory, tumor_pair.name  + ".mutect2.flt.vcf.gz")
+            output_vt_gz = os.path.join(pair_directory, tumor_pair.name  + ".mutect2.vt.vcf.gz")
             output_somatic_vt = os.path.join(pair_directory, tumor_pair.name + ".mutect2.somatic.vt.vcf.gz")
 
-            if nb_jobs == 1:
+            if scatter_jobs == 1:
                 if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
                     jobs.append(
                         concat_jobs(
@@ -3466,35 +3517,24 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         )
                     )
 
-            elif nb_jobs > 1:
-                unique_sequences_per_job, _ = sequence_dictionary.split_by_size(
-                    self.sequence_dictionary_variant(), nb_jobs - 1)
-
-                # Create one separate job for each of the first sequences
-                inputs = []
-                for idx, _ in enumerate(unique_sequences_per_job):
-                    inputs.append(os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".mutect2.vcf.gz"))
-                inputs.append(os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz"))
-
-                for input_vcf in inputs:
+            elif scatter_jobs > 1:
+                merge_list = [f"{output_prefix}.{idx}.mutect2.vcf.gz" for idx in range(scatter_jobs)]
+                
+                for input_vcf in merge_list:
                     if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
                         log.error(f"Incomplete mutect2 vcf: {input_vcf}\n")
 
                 if config.param('gatk_mutect2', 'module_gatk').split("/")[2] > "4":
-
                     output_stats = os.path.join(pair_directory, tumor_pair.name + ".mutect2.vcf.gz.stats")
+                    output_models = os.path.join(pair_directory, tumor_pair.name + ".read-orientation-model.tar.gz")
+                    
                     stats = []
-                    for idx, _ in enumerate(unique_sequences_per_job):
+                    models = []
+                    for idx, vcf in enumerate(merge_list):
                         stats.append(
                             os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".mutect2.vcf.gz.stats"))
-                    stats.append(os.path.join(mutect_directory, tumor_pair.name + ".others.mutect2.vcf.gz.stats"))
-
-                    output_models = os.path.join(pair_directory, tumor_pair.name + ".read-orientation-model.tar.gz")
-                    models = []
-                    for idx, sequences in enumerate(unique_sequences_per_job):
                         models.append(
                             os.path.join(mutect_directory, tumor_pair.name + "." + str(idx) + ".f1r2.tar.gz"))
-                    models.append(os.path.join(mutect_directory, tumor_pair.name + ".others.f1r2.tar.gz"))
 
                     jobs.append(
                         concat_jobs(
@@ -3504,7 +3544,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     output_models
                                 ),
                                 gatk4.cat_variants(
-                                    inputs,
+                                    merge_list,
                                     output_gz
                                 ),
                                 gatk4.merge_stats(
@@ -3579,7 +3619,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 pipe_jobs(
                                     [
                                         bcftools.concat(
-                                            inputs,
+                                            merge_list,
                                             None,
                                             config.param('merge_filter_mutect2', 'bcftools_options')
                                         ),
@@ -3665,7 +3705,9 @@ class TumorPair(dnaseq.DnaSeqRaw):
         This implementation is optimized for somatic calling.
         """
         jobs = []
-
+        
+        reference = config.param('strelka2_paired_somatic', 'genome_fasta', param_type='filepath')
+        
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
@@ -3675,6 +3717,9 @@ class TumorPair(dnaseq.DnaSeqRaw):
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+            interval_directory = os.path.join(pair_directory, "intervals")
+            interval_bed = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
+                                                                                                '.ACGT.noALT.bed'))
             somatic_dir = os.path.join(pair_directory, "rawStrelka2_somatic")
             output_prefix = os.path.join(pair_directory, tumor_pair.name)
 
@@ -3696,20 +3741,26 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             manta_indels = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "rawManta", "results", "variants", "candidateSmallIndels.vcf.gz")
 
-            bed_file = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 tumor_pair.normal.readsets[0]
             )
 
             if coverage_bed:
-                local_coverage_bed = os.path.join(pair_directory, os.path.basename(coverage_bed))
+                interval_bed = coverage_bed
+
+            else:
+                interval_bed = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
+                                                                                                    '.ACGT.noALT.bed'))
+
+            if interval_bed:
+                local_coverage_bed = os.path.join(somatic_dir, os.path.basename(interval_bed))
                 bed_file = local_coverage_bed + ".gz"
                 jobs.append(
                     concat_jobs(
                         [
-                            bash.mkdir(pair_directory),
+                            bash.mkdir(somatic_dir),
                             bash.sort(
-                                coverage_bed,
+                                interval_bed,
                                 local_coverage_bed + ".sort",
                                 "-V -k1,1 -k2,2n -k3,3n",
                                 extra="; sleep 15"
@@ -3859,7 +3910,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         This implementation is optimized for germline calling in cancer pairs.
         """
         jobs = []
-
+        
+        reference = config.param('strelka2_paired_germline', 'genome_fasta', param_type='filepath')
+        
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
@@ -3869,6 +3922,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+            interval_directory = os.path.join(pair_directory, "intervals")
+            interval_bed = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
+                                                                                                '.ACGT.noALT.bed'))
             germline_dir = os.path.join(pair_directory, "rawStrelka2_germline")
             output_prefix = os.path.join(pair_directory, tumor_pair.name)
 
@@ -3895,14 +3951,21 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             )
 
             if coverage_bed:
-                local_coverage_bed = os.path.join(pair_directory, os.path.basename(coverage_bed))
+                interval_bed = coverage_bed
+
+            else:
+                interval_bed = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
+                                                                                                    '.ACGT.noALT.bed'))
+
+            if interval_bed:
+                local_coverage_bed = os.path.join(germline_dir, os.path.basename(interval_bed))
                 bed_file = local_coverage_bed + ".gz"
                 jobs.append(
                     concat_jobs(
                         [
-                            bash.mkdir(pair_directory),
+                            bash.mkdir(germline_dir),
                             bash.sort(
-                                coverage_bed,
+                                interval_bed,
                                 local_coverage_bed + ".sort",
                                 "-V -k1,1 -k2,2n -k3,3n",
                                 extra="; sleep 15"
@@ -4112,45 +4175,13 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         Note: variants are filtered to remove the instance where REF == ALT and REF is modified to 'N' when REF is
         AUPAC nomenclature.
         """
-
-        ##TO DO - the BED system needs to be revisted !!
         jobs = []
-
-        nb_jobs = config.param('vardict_paired', 'nb_jobs', param_type='posint')
-        if nb_jobs > 50:
+        
+        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
+        if scatter_jobs > 50:
             log.warning("Number of vardict jobs is > 50. This is usually much. Anything beyond 20 can be problematic.")
 
-        use_bed = config.param('vardict_paired', 'use_bed', param_type='boolean', required=True)
-        genome_dictionary = config.param('DEFAULT', 'genome_dictionary', param_type='filepath')
-
-        interval_list = []
-
-        splitjobs_dir = os.path.join(self.output_dirs['paired_variants_directory'], "splitjobs", "vardict" )
-        if use_bed:
-            for idx in range(nb_jobs):
-                interval_list.append(os.path.join(splitjobs_dir, "exome", "interval_list", str(idx).zfill(4) + "-scattered.interval_list"))
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(os.path.join(splitjobs_dir, "exome", "interval_list"), remove=True),
-                        gatk4.bed2interval_list(
-                            genome_dictionary,
-                            self.samples[0].readsets[0].beds[0],
-                            os.path.join(splitjobs_dir, "exome", "interval_list", config.param('vardict_paired', 'assembly') + ".interval_list")
-                        ),
-                        gatk4.splitInterval(
-                            os.path.join(splitjobs_dir, "exome", "interval_list", config.param('vardict_paired', 'assembly') + ".interval_list"),
-                            os.path.join(splitjobs_dir, "exome", "interval_list"),
-                            nb_jobs,
-                            options="--subdivision-mode BALANCING_WITHOUT_INTERVAL_SUBDIVISION"
-                        )
-                    ],
-                    name="vardict_paired.create_splitjobs",
-                    samples=self.samples,
-                    readsets=self.readsets
-                )
-            )
+        reference = config.param('vardict_paired', 'genome_fasta', param_type='filepath')
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
@@ -4161,6 +4192,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
+            interval_directory = os.path.join(pair_directory, "intervals")
+
             vardict_directory = os.path.join(pair_directory, "rawVardict")
 
             [input_normal] = self.select_input_files(
@@ -4179,21 +4212,103 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 ]
             )
 
-            if use_bed:
-                idx = 0
-                for interval in interval_list:
-                    bed = re.sub("interval_list$", "bed", interval)
-                    output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx).zfill(4) + ".vardict.vcf.gz")
+            coverage_bed = bvatools.resolve_readset_coverage_bed(
+                tumor_pair.normal.readsets[0]
+            )
+            if coverage_bed:
+                coverage_bed = os.path.join(interval_directory, os.path.basename(coverage_bed).replace('.bed',
+                                                                                                    '.noALT.bed'))
+
+            else:
+                coverage_bed = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
+                                                                                                    '.ACGT.noALT.bed'))
+
+            if coverage_bed and scatter_jobs == 1:
+                output = os.path.join(vardict_directory, tumor_pair.name + ".vardict.vcf.gz")
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                vardict_directory,
+                                remove=True
+                            ),
+                            pipe_jobs(
+                                [
+                                    vardict.paired_java(
+                                        input_normal,
+                                        input_tumor,
+                                        tumor_pair.name,
+                                        None,
+                                        coverage_bed
+                                    ),
+                                    vardict.testsomatic(
+                                        None,
+                                        None
+                                    ),
+                                    vardict.var2vcf(
+                                        None,
+                                        tumor_pair.normal.name,
+                                        tumor_pair.tumor.name,
+                                        None
+                                    ),
+                                    htslib.bgzip_tabix(
+                                        None,
+                                        output
+                                    )
+                                ]
+                            )
+                        ],
+                        name="vardict_paired." + tumor_pair.name,
+                        samples=[tumor_pair.normal, tumor_pair.tumor]
+                    )
+                )
+            elif scatter_jobs > 1:
+                interval_list = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
+                                                                                                     '.ACGT.noALT.interval_list'))
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                vardict_directory,
+                                remove=True
+                            ),
+                            gatk4.preprocessIntervals(
+                                interval_list,
+                                os.path.join(vardict_directory,
+                                             os.path.basename(interval_list).replace('.interval_list',
+                                                                                     '.padded.interval_list'))
+                            ),
+                            gatk4.interval_list2bed(
+                                os.path.join(vardict_directory,
+                                             os.path.basename(interval_list).replace('.interval_list',
+                                                                                     '.padded.interval_list')),
+                                os.path.join(vardict_directory,
+                                             os.path.basename(interval_list).replace('.interval_list',
+                                                                                     '.padded.bed'))
+                            ),
+                            tools.chunkBedbyFileNumber(
+                                os.path.join(vardict_directory,
+                                             os.path.basename(interval_list).replace('.interval_list',
+                                                                                     '.padded.bed')),
+                                vardict_directory,
+                                scatter_jobs
+                            )
+                        ],
+                        name="vardict.genome.beds." + tumor_pair.name,
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    )
+                )
+                for idx in range(1, scatter_jobs + 1):
+                    bed = os.path.join(vardict_directory, f"{idx:04d}-scattered.bed")
+                    output = os.path.join(vardict_directory, f"{tumor_pair.name}.{idx}.vardict.vcf.gz")
+                    
                     jobs.append(
                         concat_jobs(
                             [
                                 bash.mkdir(
                                     vardict_directory,
                                     remove=True
-                                ),
-                                gatk4.interval_list2bed(
-                                    interval,
-                                    bed
                                 ),
                                 pipe_jobs(
                                     [
@@ -4203,69 +4318,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                             tumor_pair.name,
                                             None,
                                             bed
-                                        ),
-                                        vardict.testsomatic(
-                                            None,
-                                            None
-                                        ),
-                                        vardict.var2vcf(
-                                            None,
-                                            tumor_pair.normal.name,
-                                            tumor_pair.tumor.name,
-                                            None
-                                        ),
-                                        htslib.bgzip_tabix(
-                                            None,
-                                            output
-                                        )
-                                    ]
-                                )
-                            ],
-                            name="vardict_paired." + tumor_pair.name + "." + str(idx).zfill(4),
-                            samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                        )
-                    )
-                    idx += 1
-            else:
-                beds = []
-                for idx in range(nb_jobs):
-                    beds.append(os.path.join(vardict_directory, "chr." + str(idx) + ".bed"))
-
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(
-                                vardict_directory,
-                                remove=True
-                            ),
-                            vardict.dict2beds(
-                                genome_dictionary,
-                                beds
-                            )
-                        ],
-                        name="vardict.genome.beds." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
-                )
-                for idx in range(nb_jobs):
-                    output = os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz")
-                    jobs.append(
-                        concat_jobs(
-                            [
-                                bash.mkdir(
-                                    vardict_directory,
-                                    remove=True
-                                ),
-                                pipe_jobs(
-                                    [
-                                        vardict.paired_java(
-                                            input_normal,
-                                            input_tumor,
-                                            tumor_pair.name,
-                                            None,
-                                            beds[idx]
                                         ),
                                         vardict.testsomatic(
                                             None,
@@ -4300,20 +4352,21 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         """
 
         jobs = []
-        nb_jobs = config.param('vardict_paired', 'nb_jobs', param_type='posint')
-        use_bed = config.param('vardict_paired', 'use_bed', param_type='boolean', required=True)
-
+        scatter_jobs = config.param('gatk_splitInterval', 'scatter_jobs', param_type='posint')
+        
         for tumor_pair in self.tumor_pairs.values():
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             vardict_directory = os.path.join(pair_directory, "rawVardict")
+            output_prefix = os.path.join(vardict_directory, tumor_pair.name)
+            
             output_tmp = os.path.join(pair_directory, tumor_pair.name + ".vardict.tmp.vcf.gz")
             output = os.path.join(pair_directory, tumor_pair.name + ".vardict.vcf.gz")
             output_vt = os.path.join(pair_directory, tumor_pair.name + ".vardict.vt.vcf.gz")
             output_somatic = os.path.join(pair_directory, tumor_pair.name + ".vardict.somatic.vt.vcf.gz")
             output_germline_loh = os.path.join(pair_directory, tumor_pair.name + ".vardict.germline.vt.vcf.gz")
 
-            if nb_jobs == 1 and use_bed:
-                input = os.path.join(vardict_directory, tumor_pair.name + "." + str(0).zfill(4) + ".vardict.vcf.gz")
+            if scatter_jobs == 1:
+                input = os.path.join(vardict_directory, tumor_pair.name + ".vardict.vcf.gz")
                 jobs.append(
                     concat_jobs(
                         [
@@ -4415,12 +4468,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     )
                 )
             else:
-                input_vcfs = []
-                for idx in range(nb_jobs):
-                    input_vcfs.append(
-                        os.path.join(vardict_directory, tumor_pair.name + "." + str(idx) + ".vardict.vcf.gz"))
+                merge_list = [f"{output_prefix}.{idx}.vardict.vcf.gz" for idx in range(1, scatter_jobs + 1)]
 
-                for input_vcf in input_vcfs:
+                for input_vcf in merge_list:
                     if not self.is_gz_file(os.path.join(self.output_dir, input_vcf)):
                         log.error(f"Incomplete vardict vcf: {input_vcf}\n")
 
@@ -4430,7 +4480,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             pipe_jobs(
                                 [
                                     bcftools.concat(
-                                        input_vcfs,
+                                        merge_list,
                                         None
                                     ),
                                     bash.awk(
@@ -5049,7 +5099,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         cpsr.report(
                             input,
                             cpsr_directory,
-                            tumor_pair.name
+                            tumor_pair.name,
+                            ini_section='report_cpsr'
                         )
                     ],
                     name="report_cpsr." + tumor_pair.name,
@@ -5235,7 +5286,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             input_cpsr,
                             pcgr_directory,
                             tumor_pair.name,
-                            input_cna=output_cna
+                            input_cna=output_cna,
+                            ini_section = 'report_pcgr'
                         ),
                         final_command
                     ],
@@ -6266,7 +6318,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
         in VCF 4.1 format.
         """
         jobs = []
-
+        
+        reference = config.param('gatk_haplotype_caller', 'genome_fasta', param_type='filepath')
+        
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
                 normal_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.normal.name, tumor_pair.name)
@@ -6276,6 +6330,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             tumor_alignment_directory = os.path.join(self.output_dirs['alignment_directory'], tumor_pair.tumor.name)
 
             pair_directory = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name)
+            interval_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name, "intervals")
+
             manta_directory = os.path.join(pair_directory, "rawManta")
             output_prefix = os.path.join(pair_directory, tumor_pair.name)
 
@@ -6293,21 +6349,28 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             )
             manta_somatic_output = os.path.join(manta_directory, "results/variants/somaticSV.vcf.gz")
             manta_germline_output = os.path.join(manta_directory, "results/variants/diploidSV.vcf.gz")
-
+            
             bed_file = None
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 tumor_pair.normal.readsets[0]
             )
 
             if coverage_bed:
-                local_coverage_bed = os.path.join(pair_directory, os.path.basename(coverage_bed))
+                interval_bed = coverage_bed
+
+            else:
+                interval_bed = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
+                                                                                                    '.ACGT.noALT.bed'))
+
+            if interval_bed:
+                local_coverage_bed = os.path.join(manta_directory, os.path.basename(interval_bed))
                 bed_file = local_coverage_bed + ".gz"
                 jobs.append(
                     concat_jobs(
                         [
                             bash.mkdir(manta_directory),
                             bash.sort(
-                                coverage_bed,
+                                interval_bed,
                                 local_coverage_bed + ".sort",
                                 "-V -k1,1 -k2,2n -k3,3n"
                             ),
@@ -6931,8 +6994,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.report_pcgr_fastpass,
                 self.conpair_concordance_contamination,
                 self.metrics_dna_picard_metrics,
-                self.metrics_dna_sample_qualimap,
-                self.metrics_dna_fastqc,
+                self.metrics_dna_sample_mosdepth,
                 self.run_pair_multiqc,
                 self.sym_link_report,
                 self.sym_link_fastq_pair,
@@ -6940,18 +7002,13 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             ],
             [
                 self.picard_sam_to_fastq,
-                self.skewer_trimming,
-                self.bwa_mem_sambamba,
-                self.sambamba_sort,
-                self.sambamba_merge_sam_files, #5
-                self.gatk_indel_realigner,
-                self.sambamba_merge_realigned,
-                self.sambamba_mark_duplicates,
-                self.recalibration,
+                self.trim_fastp,
+                self.bwa_mem2_samtools_sort,
+                self.gatk_mark_duplicates,
+                self.set_interval_list,
                 self.conpair_concordance_contamination, #10
                 self.metrics_dna_picard_metrics,
-                self.metrics_dna_sample_qualimap,
-                self.metrics_dna_fastqc,
+                self.metrics_dna_sample_mosdepth,
                 self.sequenza,
                 self.manta_sv_calls, #15
                 self.strelka2_paired_somatic,
@@ -6984,14 +7041,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             ],
             [
                 self.picard_sam_to_fastq,
-                self.skewer_trimming,
-                self.bwa_mem_sambamba,
-                self.sambamba_sort,
-                self.sambamba_merge_sam_files, #5
-                self.gatk_indel_realigner,
-                self.sambamba_merge_realigned,
-                self.sambamba_mark_duplicates,
-                self.recalibration,
+                self.trim_fastp,
+                self.bwa_mem2_samtools_sort,
+                self.gatk_mark_duplicates,
                 self.manta_sv_calls, #10
                 self.strelka2_paired_somatic,
                 #self.sv_prep,

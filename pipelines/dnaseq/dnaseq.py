@@ -2135,6 +2135,14 @@ END
                                     )
                                 ]
                             ),
+                            gatk4.interval_list2bed(
+                                os.path.join(interval_directory,
+                                             os.path.basename(reference).replace('.fa',
+                                                                                 '.ACGT.noALT.interval_list')),
+                                os.path.join(interval_directory,
+                                             os.path.basename(reference).replace('.ACGT.noALT.interval_list',
+                                                                                 '.bed'))
+                            ),
                         ],
                         name="gatk_scatterIntervalsByNs." + sample.name,
                         samples=[sample]
@@ -2243,7 +2251,7 @@ END
                                               f"{idx:04d}-scattered.interval_list") for idx in range(scatter_jobs)]
 
                 # Create one separate job for each of the first sequences
-                for idx, sequences in enumerate(interval_list):
+                for idx, intervals in enumerate(interval_list):
                     jobs.append(
                         concat_jobs(
                             [
@@ -2255,7 +2263,7 @@ END
                                 gatk4.haplotype_caller(
                                     input_bam,
                                     os.path.join(haplotype_directory, sample.name + "." + str(idx) + ".hc.g.vcf.gz"),
-                                    sequences
+                                    intervals
                                 )
                             ],
                             name="gatk_haplotype_caller." + sample.name + "." + str(idx),
