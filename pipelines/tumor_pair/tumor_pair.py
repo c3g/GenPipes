@@ -6982,7 +6982,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.gatk_mark_duplicates,
                 self.set_interval_list,
                 self.sequenza,
-                self.manta_sv_calls,
                 self.cnvkit_batch,
                 self.rawmpileup_panel,
                 self.paired_varscan2_panel,
@@ -7044,6 +7043,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.trim_fastp,
                 self.bwa_mem2_samtools_sort,
                 self.gatk_mark_duplicates,
+                self.set_interval_list,
                 self.manta_sv_calls, #10
                 self.strelka2_paired_somatic,
                 #self.sv_prep,
