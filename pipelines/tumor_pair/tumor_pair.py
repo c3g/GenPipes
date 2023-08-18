@@ -3753,34 +3753,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
             if interval_bed:
                 local_coverage_bed = os.path.join(somatic_dir, os.path.basename(interval_bed))
                 bed_file = local_coverage_bed + ".gz"
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(somatic_dir),
-                            bash.sort(
-                                interval_bed,
-                                local_coverage_bed + ".sort",
-                                "-V -k1,1 -k2,2n -k3,3n",
-                                extra="; sleep 15"
-                            ),
-                            htslib.bgzip(
-                                local_coverage_bed + ".sort",
-                                bed_file
-                            ),
-                            htslib.tabix(
-                                bed_file,
-                                "-f -p bed"
-                            )
-                        ],
-                        output_dependency=[bed_file],
-                        name="bed_index." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
-                )
-
-            else:
-                bed_file=config.param('strelka2_paired_somatic', 'bed_file')
 
             output_dep = [
                 os.path.join(somatic_dir, "results/variants/somatic.snvs.vcf.gz"),
@@ -3800,6 +3772,21 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 concat_jobs(
                     [
                         bash.rm(somatic_dir),
+                        bash.mkdir(somatic_dir),
+                        bash.sort(
+                            interval_bed,
+                            local_coverage_bed + ".sort",
+                            "-V -k1,1 -k2,2n -k3,3n",
+                            extra="; sleep 15"
+                        ),
+                        htslib.bgzip(
+                            local_coverage_bed + ".sort",
+                            bed_file
+                        ),
+                        htslib.tabix(
+                            bed_file,
+                            "-f -p bed"
+                        ),
                         strelka2.somatic_config(
                             input_normal,
                             input_tumor,
@@ -3922,8 +3909,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             interval_directory = os.path.join(pair_directory, "intervals")
-            interval_bed = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
-                                                                                                '.ACGT.noALT.bed'))
+
             germline_dir = os.path.join(pair_directory, "rawStrelka2_germline")
             output_prefix = os.path.join(pair_directory, tumor_pair.name)
 
@@ -3959,33 +3945,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             if interval_bed:
                 local_coverage_bed = os.path.join(germline_dir, os.path.basename(interval_bed))
                 bed_file = local_coverage_bed + ".gz"
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(germline_dir),
-                            bash.sort(
-                                interval_bed,
-                                local_coverage_bed + ".sort",
-                                "-V -k1,1 -k2,2n -k3,3n",
-                                extra="; sleep 15"
-                            ),
-                            htslib.bgzip(
-                                local_coverage_bed + ".sort",
-                                bed_file
-                            ),
-                            htslib.tabix(
-                                bed_file,
-                                "-f -p bed"
-                            )
-                        ],
-                        name="bed_index." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
-                )
-
-            else:
-                bed_file = config.param('strelka2_paired_germline', 'bed_file')
 
             output_dep = [os.path.join(germline_dir, "results", "variants", "variants.vcf.gz")]
 
@@ -4001,6 +3960,21 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 concat_jobs(
                     [
                         bash.rm(germline_dir),
+                        bash.mkdir(germline_dir),
+                        bash.sort(
+                            interval_bed,
+                            local_coverage_bed + ".sort",
+                            "-V -k1,1 -k2,2n -k3,3n",
+                            extra="; sleep 15"
+                        ),
+                        htslib.bgzip(
+                            local_coverage_bed + ".sort",
+                            bed_file
+                        ),
+                        htslib.tabix(
+                            bed_file,
+                            "-f -p bed"
+                        ),
                         strelka2.germline_config(
                             input,
                             germline_dir,
@@ -6364,30 +6338,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             if interval_bed:
                 local_coverage_bed = os.path.join(manta_directory, os.path.basename(interval_bed))
                 bed_file = local_coverage_bed + ".gz"
-                jobs.append(
-                    concat_jobs(
-                        [
-                            bash.mkdir(manta_directory),
-                            bash.sort(
-                                interval_bed,
-                                local_coverage_bed + ".sort",
-                                "-V -k1,1 -k2,2n -k3,3n"
-                            ),
-                            htslib.bgzip(
-                                local_coverage_bed + ".sort",
-                                bed_file
-                            ),
-                            htslib.tabix(
-                                bed_file,
-                                "-f -p bed"
-                            )
-                        ],
-                        output_dependency=[bed_file],
-                        name="bed_index." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-                    )
-                )
 
             output_dep = [
                 manta_somatic_output,
@@ -6411,6 +6361,20 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         bash.mkdir(
                             manta_directory,
                             remove=True
+                        ),
+                        bash.sort(
+                            interval_bed,
+                            local_coverage_bed + ".sort",
+                            "-k1,1V -k2,2n -k3,3n",
+                            extra="; sleep 15"
+                        ),
+                        htslib.bgzip(
+                            local_coverage_bed + ".sort",
+                            bed_file
+                        ),
+                        htslib.tabix(
+                            bed_file,
+                            "-f -p bed"
                         ),
                         manta.manta_config(
                             input_normal,
