@@ -3803,7 +3803,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     name="strelka2_paired_somatic.call."+tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    input_dependency=[input_normal, input_tumor, manta_indels, bed_file],
+                    input_dependency=[input_normal, input_tumor, manta_indels],
                     output_dependency=output_dep
                 )
             )
@@ -6411,7 +6411,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     name="manta_sv." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    input_dependency=[input_normal, input_tumor, bed_file]
+                    input_dependency=[input_normal, input_tumor]
                 )
             )
 
