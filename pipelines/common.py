@@ -275,6 +275,61 @@ class Illumina(MUGQICPipeline):
                     _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
         return jobs
 
+    def gatk_sam_to_fastq(self):
+        """
+        Converts SAM/BAM files from the input readset file into FASTQ format.
+        if FASTQ files are not already specified in the readset file. Do nothing otherwise.
+        """
+        jobs = []
+        analyses_dir = os.path.join("analyses")
+
+        for readset in self.readsets:
+            # If readset FASTQ files are available, skip this step
+            sym_link_job = []
+            if not readset.fastq1:
+                if readset.bam:
+                    ## check if bam file has been sorted:
+                    sortedBam = os.path.join(
+                        self.output_dir,
+                        "temporary_bams",
+                        readset.sample.name,
+                        readset.name + ".sorted.bam"
+                    )
+                    candidate_input_files = [
+                        [sortedBam],
+                        [readset.bam]
+                    ]
+                    [bam] = self.select_input_files(candidate_input_files)
+
+                    rawReadsDirectory = os.path.join(
+                        self.output_dirs['raw_reads_directory'],
+                        readset.sample.name,
+                    )
+                    if readset.run_type == "PAIRED_END":
+                        fastq1 = os.path.join(rawReadsDirectory, readset.name + ".pair1.fastq.gz")
+                        fastq2 = os.path.join(rawReadsDirectory, readset.name + ".pair2.fastq.gz")
+                    elif readset.run_type == "SINGLE_END":
+                        fastq1 = os.path.join(rawReadsDirectory, readset.name + ".single.fastq.gz")
+                        fastq2 = None
+                    else:
+                        _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                        "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+                    mkdir_job = bash.mkdir(rawReadsDirectory)
+                    jobs.append(
+                        concat_jobs([
+                            mkdir_job,
+                            gatk4.sam_to_fastq(
+                                bam,
+                                fastq1,
+                                fastq2
+                            )
+                        ], name="gatk_sam_to_fastq."+readset.name, samples=[readset.sample])
+                    )
+                else:
+                    _raise(SanitycheckError("Error: BAM file not available for readset \"" + readset.name + "\"!"))
+        return jobs
+
     def trimmomatic(self):
         """
         Raw reads quality trimming and removing of Illumina adapters is performed using [Trimmomatic](http://www.usadellab.org/cms/index.php?page=trimmomatic).

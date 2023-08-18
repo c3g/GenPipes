@@ -1680,7 +1680,7 @@ def sam_to_fastq(
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
  SamToFastq \\
  --VALIDATION_STRINGENCY LENIENT \\
- --CREATE_MD5_FILE TRUE \\
+ --CREATE_MD5_FILE true \\
  --INPUT {input} \\
  --FASTQ {fastq}{second_end_fastq}""".format(
                 tmp_dir=config.param(ini_section, 'tmp_dir'),

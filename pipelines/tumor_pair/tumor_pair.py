@@ -6976,7 +6976,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
     def steps(self):
         return [
             [
-                self.picard_sam_to_fastq,
+                self.gatk_sam_to_fastq,
                 self.trim_fastp,
                 self.bwa_mem2_samtools_sort,
                 self.gatk_mark_duplicates,
@@ -7000,7 +7000,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.sym_link_panel
             ],
             [
-                self.picard_sam_to_fastq,
+                self.gatk_sam_to_fastq,
                 self.trim_fastp,
                 self.bwa_mem2_samtools_sort,
                 self.gatk_mark_duplicates,
@@ -7039,7 +7039,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.sym_link_ensemble
             ],
             [
-                self.picard_sam_to_fastq,
+                self.gatk_sam_to_fastq,
                 self.trim_fastp,
                 self.bwa_mem2_samtools_sort,
                 self.gatk_mark_duplicates,

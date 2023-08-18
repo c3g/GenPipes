@@ -279,7 +279,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def mutect(inputNormal, inputTumor, outputStats, outputVCF, intervals=[], exclude_intervals=[]):
+def mutect(inputNormal, inputTumor, outputStats, outputVCF):
     cosmic = config.param('gatk_mutect', 'cosmic', param_type='filepath', required=False)
     # if set add arg prefix
     if cosmic :
@@ -300,7 +300,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $MUTECT_JAR 
   --input_file:normal {inputNormal} \\
   --input_file:tumor {inputTumor} \\
   --out {outputStats} \\
-  --vcf {outputVCF}{intervals}{exclude_intervals}""".format(
+  --vcf {outputVCF}""".format(
             tmp_dir=config.param('gatk_mutect', 'tmp_dir'),
             java_other_options=config.param('gatk_mutect', 'java_other_options'),
             ram=config.param('gatk_mutect', 'ram'),
@@ -312,8 +312,8 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $MUTECT_JAR 
             inputTumor=inputTumor,
             outputStats=outputStats,
             outputVCF=outputVCF,
-            intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
-            exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
+            #intervals="".join(" \\\n  --intervals " + interval for interval in intervals),
+            #exclude_intervals="".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals)
         )
     )
 
