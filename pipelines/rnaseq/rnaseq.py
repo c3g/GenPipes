@@ -1765,7 +1765,7 @@ pandoc \\
         for sample in self.samples:
             output_dir = os.path.join(self.output_dirs["fusion_directory"], sample.name, "star_fusion")
                 
-            job = concat_jobs(
+            star_fusion_job = concat_jobs(
                 [
                     bash.mkdir(output_dir),
                     bash.mkdir(link_directory),
@@ -1779,10 +1779,24 @@ pandoc \\
                         os.path.join(link_directory, sample.name + "_star_fusion.Log.final.out"),
                         os.path.join(output_dir, "Log.final.out")
                         )
-                ],
-                name="run_star_fusion." + sample.name,
-                samples=[sample]
-            )
+                ]
+                )
+
+            if config.param('run_star_fusion', 'force') == "True":
+                job = concat_jobs(
+                        [
+                            bash.rm(
+                                os.path.join(output_dir, "_starF_checkpoints")
+                            ),
+                            star_fusion_job
+                        ],
+                        input_dependency=left_fastqs[sample.name] + right_fastqs[sample.name]
+                    )
+            else:
+                job = star_fusion_job
+
+            job.name="run_star_fusion." + sample.name
+            job.samples=[sample]
             jobs.append(job)
     
             self.multiqc_inputs.append(os.path.join(output_dir, "Log.final.out"))
