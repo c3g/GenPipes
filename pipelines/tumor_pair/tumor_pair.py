@@ -37,7 +37,6 @@ from core.job import Job, concat_jobs, pipe_jobs
 from core.sample_tumor_pairs import parse_tumor_pair_file
 import utils.utils
 
-import gzip
 from pipelines.dnaseq import dnaseq
 
 #utilizes
@@ -3774,6 +3773,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 "-f -p bed"
                             )
                         ],
+                        output_dependency=[bed_file],
                         name="bed_index." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
@@ -6383,6 +6383,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 "-f -p bed"
                             )
                         ],
+                        output_dependency=[bed_file],
                         name="bed_index." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
                         readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
