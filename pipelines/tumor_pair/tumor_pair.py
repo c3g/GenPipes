@@ -3717,8 +3717,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             pair_directory = os.path.join(self.output_dirs['paired_variants_directory'], tumor_pair.name)
             interval_directory = os.path.join(pair_directory, "intervals")
-            interval_bed = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
-                                                                                                '.ACGT.noALT.bed'))
+
             somatic_dir = os.path.join(pair_directory, "rawStrelka2_somatic")
             output_prefix = os.path.join(pair_directory, tumor_pair.name)
 
@@ -3752,7 +3751,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                                                                                     '.ACGT.noALT.bed'))
 
             if interval_bed:
-                local_coverage_bed = os.path.abspath(os.path.join(somatic_dir, os.path.basename(interval_bed)))
+                local_coverage_bed = os.path.join(somatic_dir, os.path.basename(interval_bed))
                 bed_file = local_coverage_bed + ".gz"
                 jobs.append(
                     concat_jobs(
@@ -6363,7 +6362,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                                                                                     '.ACGT.noALT.bed'))
 
             if interval_bed:
-                local_coverage_bed = os.path.abspath(os.path.join(manta_directory, os.path.basename(interval_bed)))
+                local_coverage_bed = os.path.join(manta_directory, os.path.basename(interval_bed))
                 bed_file = local_coverage_bed + ".gz"
                 jobs.append(
                     concat_jobs(
