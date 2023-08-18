@@ -3752,7 +3752,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                                                                                     '.ACGT.noALT.bed'))
 
             if interval_bed:
-                local_coverage_bed = os.path.join(somatic_dir, os.path.basename(interval_bed))
+                local_coverage_bed = os.path.abspath(os.path.join(somatic_dir, os.path.basename(interval_bed)))
                 bed_file = local_coverage_bed + ".gz"
                 jobs.append(
                     concat_jobs(
@@ -6363,7 +6363,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                                                                                     '.ACGT.noALT.bed'))
 
             if interval_bed:
-                local_coverage_bed = os.path.join(manta_directory, os.path.basename(interval_bed))
+                local_coverage_bed = os.path.abspath(os.path.join(manta_directory, os.path.basename(interval_bed)))
                 bed_file = local_coverage_bed + ".gz"
                 jobs.append(
                     concat_jobs(
