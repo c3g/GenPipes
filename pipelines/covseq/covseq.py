@@ -1514,7 +1514,7 @@ if [ "$(ls -1 {filtered_bam})" != "" ] && [ "$(ls -1 {primer_trimmed_bam})" != "
     ln -fs {rel_primer_trimmed_bam} {ivar_output_primer_trimmed_bam} && \\
     ln -fs {rel_ivar_consensus} {ivar_output_consensus} && \\
     ln -fs {rel_ivar_variants} {ivar_output_variants} && \\
-    grep {sample_name} {readset_file} >> {ivar_readset_file_report} && \\
+    grep -w {sample_name} {readset_file} >> {ivar_readset_file_report} && \\
     echo -e "{sample_name}\\tNA\\tNA" >> {ivar_metadata}
 fi""".format(
                             readset_file=readset_file,
@@ -1660,7 +1660,7 @@ if [ "$(ls -1 {filtered_bam})" != "" ] && [ "$(ls -1 {primer_trimmed_bam})" != "
     ln -fs {rel_primer_trimmed_bam} {freebayes_output_primer_trimmed_bam} && \\
     ln -fs {rel_freebayes_consensus} {freebayes_output_consensus} && \\
     ln -fs {rel_freebayes_variants} {freebayes_output_variants} && \\
-    grep {sample_name} {readset_file} >> {freebayes_readset_file_report} && \\
+    grep -w {sample_name} {readset_file} >> {freebayes_readset_file_report} && \\
     echo -e "{sample_name}\\tNA\\tNA" >> {freebayes_metadata}
 fi""".format(
                             sample_name=sample.name,
