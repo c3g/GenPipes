@@ -3941,7 +3941,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             else:
                 interval_bed = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
                                                                                                     '.ACGT.noALT.bed'))
-
             if interval_bed:
                 local_coverage_bed = os.path.join(germline_dir, os.path.basename(interval_bed))
                 bed_file = local_coverage_bed + ".gz"
@@ -4191,13 +4190,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             if coverage_bed:
                 coverage_bed = os.path.join(interval_directory, os.path.basename(coverage_bed).replace('.bed',
                                                                                                     '.noALT.bed'))
-
-            else:
-                coverage_bed = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
-                                                                                                    '.ACGT.noALT.bed'))
-
-            if coverage_bed and scatter_jobs == 1:
-                output = os.path.join(vardict_directory, tumor_pair.name + ".vardict.vcf.gz")
+                output = os.path.join(vardict_directory, f"{tumor_pair.name}.vardict.vcf.gz")
                 jobs.append(
                     concat_jobs(
                         [
@@ -4235,6 +4228,77 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         samples=[tumor_pair.normal, tumor_pair.tumor]
                     )
                 )
+            elif scatter_jobs == 1:
+                interval_list = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
+                                                                                                     '.ACGT.noALT.interval_list'))
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                vardict_directory,
+                                remove=True
+                            ),
+                            gatk4.preprocessIntervals(
+                                interval_list,
+                                os.path.join(vardict_directory,
+                                             os.path.basename(interval_list).replace('.interval_list',
+                                                                                     '.padded.interval_list'))
+                            ),
+                            gatk4.interval_list2bed(
+                                os.path.join(vardict_directory,
+                                             os.path.basename(interval_list).replace('.interval_list',
+                                                                                     '.padded.interval_list')),
+                                os.path.join(vardict_directory,
+                                             os.path.basename(interval_list).replace('.interval_list',
+                                                                                     '.padded.bed'))
+                            ),
+                        ],
+                        name="vardict.genome.beds." + tumor_pair.name,
+                        samples=[tumor_pair.normal, tumor_pair.tumor]
+                    )
+                )
+                output = os.path.join(vardict_directory, f"{tumor_pair.name}.vardict.vcf.gz")
+                
+                jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(
+                                vardict_directory,
+                                remove=True
+                            ),
+                            pipe_jobs(
+                                [
+                                    vardict.paired_java(
+                                        input_normal,
+                                        input_tumor,
+                                        tumor_pair.name,
+                                        None,
+                                        os.path.join(vardict_directory,
+                                                     os.path.basename(interval_list).replace('.interval_list',
+                                                                                             '.padded.bed'))
+                                    ),
+                                    vardict.testsomatic(
+                                        None,
+                                        None
+                                    ),
+                                    vardict.var2vcf(
+                                        None,
+                                        tumor_pair.normal.name,
+                                        tumor_pair.tumor.name,
+                                        None
+                                    ),
+                                    htslib.bgzip_tabix(
+                                        None,
+                                        output
+                                    )
+                                ]
+                            )
+                        ],
+                        name="vardict_paired." + tumor_pair.name,
+                        samples=[tumor_pair.normal, tumor_pair.tumor]
+                    )
+                )
+                
             elif scatter_jobs > 1:
                 interval_list = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
                                                                                                      '.ACGT.noALT.interval_list'))
