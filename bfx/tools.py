@@ -208,24 +208,36 @@ $PYTHON_TOOLS/filterAssemblyToFastaToXls.py -f {fasta_file} \\
         )
     )
 
-def dict2beds(dictionary,beds):
+def dict2beds(
+        dictionary,
+        beds):
+    
+    inputs = []
+    if not isinstance(beds, list):
+        inputs = [beds]
+    
     return Job(
         [dictionary],
-        beds,
+        inputs,
         [
-            ['dict2beds', 'module_mugqic_tools'],
-            ['dict2beds', 'module_python']
+            ['py_processIntervals', 'module_mugqic_tools'],
+            ['py_processIntervals', 'module_python']
         ],
         command="""\
 python3 $PYTHON_TOOLS/dict2BEDs.py \\
   --dict {dictionary} \\
-  --beds {beds}""".format(
-            dictionary=dictionary if dictionary else config.param('dict2beds', 'genome_dictionary', param_type='filepath'),
-            beds=' '.join(beds)
+  --beds {beds}{chunk}{overlap}""".format(
+            dictionary=dictionary if dictionary else config.param('py_processIntervals', 'genome_dictionary', param_type='filepath'),
+            chunk=" --chunk " + config.param('py_processIntervals', 'chunk') if config.param('py_processIntervals', 'chunk') else "",
+            overlap=" --overlap " + config.param('py_processIntervals', 'overlap') if config.param('py_processIntervals', 'overlap') else "",
+            beds=' '.join(inputs)
         )
     )
 
-def preprocess_varscan(input,output):
+def preprocess_varscan(
+        input,
+        output):
+    
     return Job(
         [input],
         [output],
@@ -243,7 +255,11 @@ python $PYTHON_TOOLS/preprocess.py \\
         )
     )
 
-def fix_varscan_output(input, output=None, options=None):
+def fix_varscan_output(
+        input,
+        output=None,
+        options=None):
+    
     return Job(
         [input],
         [output],

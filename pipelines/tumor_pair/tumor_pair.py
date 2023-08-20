@@ -4238,16 +4238,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 vardict_directory,
                                 remove=True
                             ),
-                            gatk4.preprocessIntervals(
+                            tools.dict2beds(
                                 interval_list,
-                                os.path.join(vardict_directory,
-                                             os.path.basename(interval_list).replace('.interval_list',
-                                                                                     '.padded.interval_list'))
-                            ),
-                            gatk4.interval_list2bed(
-                                os.path.join(vardict_directory,
-                                             os.path.basename(interval_list).replace('.interval_list',
-                                                                                     '.padded.interval_list')),
                                 os.path.join(vardict_directory,
                                              os.path.basename(interval_list).replace('.interval_list',
                                                                                      '.padded.bed'))
@@ -4309,16 +4301,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 vardict_directory,
                                 remove=True
                             ),
-                            gatk4.preprocessIntervals(
+                            tools.dict2beds(
                                 interval_list,
-                                os.path.join(vardict_directory,
-                                             os.path.basename(interval_list).replace('.interval_list',
-                                                                                     '.padded.interval_list'))
-                            ),
-                            gatk4.interval_list2bed(
-                                os.path.join(vardict_directory,
-                                             os.path.basename(interval_list).replace('.interval_list',
-                                                                                     '.padded.interval_list')),
                                 os.path.join(vardict_directory,
                                              os.path.basename(interval_list).replace('.interval_list',
                                                                                      '.padded.bed'))
