@@ -7058,6 +7058,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 self.set_interval_list,
                 self.manta_sv_calls, #10
                 self.strelka2_paired_somatic,
+                self.cnvkit_batch,
                 #self.sv_prep,
                 self.gridss_paired_somatic,
                 self.purple_sv,
