@@ -626,7 +626,7 @@ class RunProcessing(common.MUGQICPipeline):
     @property
     def year(self):
         """
-        Get year of the from sample sheet
+        Get year of the run from sample sheet
         """
         if not hasattr(self, "_year"):
             if is_json(self.readset_file):
@@ -660,6 +660,22 @@ class RunProcessing(common.MUGQICPipeline):
     def report_hash(self):
         if not hasattr(self, "_report_hash"):
             self._report_hash = {}
+
+
+            if not self.args.type == 'illumina':
+                full_destination_folder = os.path.join(
+                    config.param("copy", "destination_folder", param_type="dirpath"),
+                    self.seq_category,
+                    self.year,
+                    self.date + "_" + self.instrument + "_" + self.run_number + "_" + self.flowcell_position + self.flowcell_id + "_" + self.sequencer_run_id + "-" + self.seqtype
+                    )
+            else:
+                full_destination_folder = os.path.join(
+                    config.param("copy", "destination_folder", param_type="dirpath"),
+                    self.seq_category,
+                    self.year,
+                    os.path.basename(self.run_dir.rstrip('/')) + "-" + self.seqtype
+                    )
             for lane in self.lanes:
                 self._report_hash[lane] = {
                     "version" : "3.0",
@@ -682,10 +698,26 @@ class RunProcessing(common.MUGQICPipeline):
                                     "reported_sex": readset.gender,
                                     "pool_fraction": readset.pool_fraction,
                                     "library_type": readset.protocol,
-                                    "fastq_1": readset.fastq1,
-                                    "fastq_2": readset.fastq2 if self.is_paired_end[lane] else None,
-                                    "bam": readset.bam + ".bam" if readset.bam else None,
-                                    "bai": readset.bam + ".bai" if readset.bam else None,
+                                    "fastq_1": {
+                                            "path": readset.fastq1,
+                                            "size": None,
+                                            "final_path": os.path.join(full_destination_folder, os.path.relpath(readset.fastq1, self.output_dir)) 
+                                            },
+                                    "fastq_2": {
+                                            "path": readset.fastq2 if self.is_paired_end[lane] else None,
+                                            "size": None,
+                                            "final_path": os.path.join(full_destination_folder, os.path.relpath(readset.fastq2, self.output_dir)) if self.is_paired_end[lane] else None
+                                            },
+                                    "bam": {
+                                            "path": readset.bam + ".bam" if readset.bam else None,
+                                            "size": None,
+                                            "final_path": os.path.join(full_destination_folder, os.path.relpath(readset.bam + ".bam", self.output_dir)) if readset.bam else None
+                                            },
+                                    "bai": {
+                                            "path": readset.bam + ".bai" if readset.bam else None,
+                                            "size": None,
+                                            "final_path": os.path.join(full_destination_folder, os.path.relpath(readset.bam + ".bai", self.output_dir)) if readset.bam else None
+                                            },
                                     "derived_sample_obj_id": readset.library,
                                     "project_obj_id": readset.project_id,
                                     "external_project_id": readset.external_project_id if is_json(self.readset_file) else None
@@ -2595,6 +2627,25 @@ class RunProcessing(common.MUGQICPipeline):
                             samples=self.samples[lane]
                         )
                     )
+
+            # loop over readsets and add file sizes of fastqs and bams to json
+            for readset in self.readsets[lane]:
+
+                if self.is_paired_end[lane]:
+                    input_files = [readset.fastq1, readset.fastq2]
+                else:
+                    input_files = [readset.fastq1]
+                if readset.bam:
+                    input_files.extend([readset.bam + ".bam", readset.bam + ".bai"])
+
+                size_job = tools.run_processing_file_sizes_to_json(
+                    self.run_validation_report_json[lane],
+                    input_files,
+                    readset.name
+                )
+                size_job.name = f"report.file_sizes." + readset.name + "." + self.run_id + "." + lane
+                size_job.samples = self.samples[lane]
+                lane_jobs.append(size_job)
 
             self.add_copy_job_inputs(lane_jobs, lane)
 
@@ -4550,8 +4601,8 @@ def distance(
 
 def is_json(filepath):
     """
-    Checks wether a file is a JSON file or not.
-    Returns True of False
+    Checks whether a file is a JSON file or not.
+    Returns True or False
     """
     with open(filepath) as f:
         if f.read(1) in '{[':
