@@ -1,10 +1,10 @@
 GenPipes
 ================
-This repository holds several bioinformatics pipelines developed at [McGill University and Génome Québec Innovation Centre](http://gqinnovationcenter.com) (MUGQIC), as part of the [GenAP project](https://genap.ca).
+This repository holds several bioinformatics pipelines developed at the [Canadian Centre for Computational Genomics](https://computationalgenomics.ca/) (C3G).
 
-GenPipes consists of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by being sent to a PBS scheduler like Torque or by being run as a series of commands in batch through a Bash script. Job commands and parameters can be modified through several configuration files.
+GenPipes consists of Python scripts which create a list of jobs running Bash commands. Those scripts support dependencies between jobs and a smart restart mechanism if some jobs fail during pipeline execution. Jobs can be submitted in different ways: by being sent to a scheduler like SLURM or PBS/Torque or by being run as a series of commands in batch through a Bash script. Job commands and parameters can be modified through several configuration files.
 
-**For a more detailed tutorial on how to use GenPipes, please visit our [tutorial page](http://www.computationalgenomics.ca/tutorials/).**  
+**For a more detailed tutorial on how to use GenPipes, please visit our [documentation page](https://genpipes.readthedocs.io/en/latest/).**  
 
 
 On this page:
@@ -17,7 +17,7 @@ Software requirement
 GenPipes have been tested with Python 3.6+
 
 
-Quick setup for Abacus, Beluga, Narval, Graham and cedar users
+Quick setup for Abacus, Beluga, Narval, Graham and Cedar users
 --------------------------------------------------------------
 Genomes and modules used by the pipelines are already installed on a CVMFS partition mounted on all those clusters in `/cvmfs/soft.mugqic/root`.
 To access them, add the following lines to your *$HOME/.bash_profile*:
@@ -312,7 +312,10 @@ $MUGQIC_PIPELINES_HOME/pipelines/<pipeline_name>/<pipeline_name>.py --help
 
 Pipelines require as input one Readset File, one or more Configuration File(s) and possibly one Design File, all described below.
 
-For more information about a specific pipeline, visit:
+For documentation on how to use each of the pipelines, visit:
+### [Pipelines Reference Guide](https://genpipes.readthedocs.io/en/latest/user_guide/pipeline_ref.html)
+
+For more information about and source code for a specific pipeline, visit:
 
 ### [DNA-Seq Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq/)
 ### [DNA-Seq high Coverage Pipeline Pipeline](https://bitbucket.org/mugqic/genpipes/src/master/pipelines/dnaseq_high_coverage/)
@@ -556,9 +559,9 @@ You can also edit the partial Markdown reports before running the pandoc script,
 For developers: if you want to modify the Markdown report templates, they are all located in `$MUGQIC_PIPELINES_HOME/bfx/report/`.
 
 
-PBS Job Logs
+PBS/Slurm Job Logs
 ------------
-When pipelines are run in PBS (Portable Batch System) job scheduler mode (default), a job list file is created in `<output_dir>/job_output/<PipelineName>_job_list_<timestamp>` and subsequent job log files are placed in `<output_dir>/job_output/<step_name>/<job_name>_<timestamp>.o` e.g.:
+When pipelines are run in PBS (Portable Batch System)  or SLURM job scheduler mode (default), a job list file is created in `<output_dir>/job_output/<PipelineName>_job_list_<timestamp>` and subsequent job log files are placed in `<output_dir>/job_output/<step_name>/<job_name>_<timestamp>.o` e.g.:
 ```
 #!text
 my_output_dir/job_output/
