@@ -649,7 +649,7 @@ END
 
         This step takes as input files:
 
-        1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
+        1. Aligned and sorted BAM output files from the previous bwa_mem_picard_sort_sam step if available
         2. Else, BAM files from the readset file
         """
 
@@ -678,7 +678,7 @@ END
         are preferred over indels by the aligner since it can appear to be less costly by the algorithm.
         Such regions will introduce false positive variant calls which may be filtered out by realigning
         those regions properly. Realignment is done using [GATK](https://www.broadinstitute.org/gatk/).
-        The reference genome is divided by a number regions given by the `nb_jobs` parameter.
+        The reference genome is divided by the number of regions given by the `nb_jobs` parameter.
         """
 
         jobs = []

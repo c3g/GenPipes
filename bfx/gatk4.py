@@ -228,7 +228,8 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --input {input} \\
   --bqsr-recal-file {bqsr_file} \\
   --spark-master local[{threads}] \\
-  --output {output}""".format(
+  --output {output} && \\
+chmod 660 {outputs}""".format(
                 tmp_dir=config.param('gatk_apply_bqsr', 'tmp_dir'),
                 java_other_options=config.param('gatk_apply_bqsr', 'gatk4_java_options'),
                 ram=config.param('gatk_apply_bqsr', 'ram'),
@@ -237,6 +238,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
                 input=input,
                 bqsr_file=base_quality_score_recalibration,
                 output=output,
+                outputs=f"{output} {re.sub('.bam', '.bam.bai', output)}"
             )
         )
 

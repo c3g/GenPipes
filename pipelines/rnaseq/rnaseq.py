@@ -1765,7 +1765,7 @@ pandoc \\
         for sample in self.samples:
             output_dir = os.path.join(self.output_dirs["fusion_directory"], sample.name, "star_fusion")
                 
-            job = concat_jobs(
+            star_fusion_job = concat_jobs(
                 [
                     bash.mkdir(output_dir),
                     bash.mkdir(link_directory),
@@ -1779,10 +1779,24 @@ pandoc \\
                         os.path.join(link_directory, sample.name + "_star_fusion.Log.final.out"),
                         os.path.join(output_dir, "Log.final.out")
                         )
-                ],
-                name="run_star_fusion." + sample.name,
-                samples=[sample]
-            )
+                ]
+                )
+
+            if config.param('run_star_fusion', 'force') == "True":
+                job = concat_jobs(
+                        [
+                            bash.rm(
+                                os.path.join(output_dir, "_starF_checkpoints")
+                            ),
+                            star_fusion_job
+                        ],
+                        input_dependency=left_fastqs[sample.name] + right_fastqs[sample.name]
+                    )
+            else:
+                job = star_fusion_job
+
+            job.name="run_star_fusion." + sample.name
+            job.samples=[sample]
             jobs.append(job)
     
             self.multiqc_inputs.append(os.path.join(output_dir, "Log.final.out"))
@@ -1838,6 +1852,7 @@ pandoc \\
 
             job = concat_jobs(
                 [
+                    bash.rm(output_dir),
                     bash.mkdir(output_dir),
                     bash.mkdir(link_directory),
                     bash.chdir(output_dir),
@@ -1846,9 +1861,10 @@ pandoc \\
                         [os.path.relpath(fastq2, output_dir) for fastq2 in right_fastqs[sample.name] if fastq2],
                         output_dir
                     ),
+                    bash.chdir(self.output_dir),
                     bash.ln(
                         os.path.relpath(os.path.join(output_dir, "Log.final.out"), link_directory),
-                        os.path.relpath(os.path.join(link_directory, sample.name + "_arriba.Log.final.out"), output_dir),
+                        os.path.join(link_directory, sample.name + "_arriba.Log.final.out"),
                         os.path.join(output_dir, "Log.final.out")
                         )
                 ],
@@ -1988,7 +2004,7 @@ pandoc \\
 
                         )
                     ],
-                    name="wiggle_"+ sample.name,
+                    name="wiggle."+ sample.name,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -2007,7 +2023,7 @@ pandoc \\
 
                         )
                     ],
-                    name="wiggle_"+ sample.name,
+                    name="wiggle."+ sample.name,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -2025,7 +2041,7 @@ pandoc \\
                             strand
                         )
                     ],
-                    name="wiggle_"+sample.name+"_"+strand,
+                    name="wiggle."+sample.name+"_"+strand,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -2043,7 +2059,7 @@ pandoc \\
                             strand
                         )
                     ],
-                    name="wiggle_"+sample.name+"_"+strand,
+                    name="wiggle."+sample.name+"_"+strand,
                     samples=[sample]  
                 )
                 jobs.append(job)
@@ -2344,7 +2360,7 @@ END
                             gtf
                         )
                     ],
-                    name="stringtie-merge",
+                    name="stringtie_merge",
                     samples=self.samples
                 )
             ]
@@ -2518,6 +2534,21 @@ END
         job.name = "multiqc"
         job.input_files = self.multiqc_inputs
         jobs.append(job)
+
+        by_sample = config.param("multiqc", "by_sample", required=False) # option to also generate individual multiqc reports for each sample
+ 
+        if by_sample == "true":
+            for sample in self.samples:
+                input = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs", sample.name)
+                output = os.path.join(self.output_dirs['metrics_directory'], "multiqc_by_sample", sample.name, "multiqc_" + sample.name)
+
+                job = multiqc.run(
+                        input + "*",
+                        output
+                        )
+                job.name = "multiqc." + sample.name
+                job.input_files = self.multiqc_inputs
+                jobs.append(job)
 
         return jobs
 

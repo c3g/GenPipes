@@ -16,9 +16,11 @@ usage: dnaseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                  [--genpipes_file GENPIPES_FILE]
                  [-t {mugqic,mpileup,light,sv}] [-r READSETS] [-v]
 
-Version: 4.4.2
+Version: 4.4.3
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
+For more documentation, visit our website: https://genpipes.readthedocs.io/en/latest/user_guide/user_guide.html
+
+For source code, visit our bitbucket repository : https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
@@ -255,7 +257,7 @@ BAM readset files are merged into one file per sample. Merge is done using [Samb
 
 This step takes as input files:
 
-1. Aligned and sorted BAM output files from previous bwa_mem_picard_sort_sam step if available
+1. Aligned and sorted BAM output files from the previous bwa_mem_picard_sort_sam step if available
 2. Else, BAM files from the readset file
 
 gatk_indel_realigner
@@ -264,7 +266,7 @@ Insertion and deletion realignment is performed on regions where multiple base m
 are preferred over indels by the aligner since it can appear to be less costly by the algorithm.
 Such regions will introduce false positive variant calls which may be filtered out by realigning
 those regions properly. Realignment is done using [GATK](https://www.broadinstitute.org/gatk/).
-The reference genome is divided by a number regions given by the `nb_jobs` parameter.
+The reference genome is divided by the number of regions given by the `nb_jobs` parameter.
 
 sambamba_merge_realigned
 ------------------------
