@@ -20,9 +20,11 @@ usage: ampliconseq.py [-h] [--help] [-c CONFIG [CONFIG ...]] [-s STEPS]
                       [--genpipes_file GENPIPES_FILE] [-t {qiime,dada2}]
                       [-d DESIGN] [-r READSETS] [-v]
 
-Version: 4.4.2
+Version: 4.4.3
 
-For more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/
+For more documentation, visit our website: https://genpipes.readthedocs.io/en/latest/user_guide/user_guide.html
+
+For source code, visit our bitbucket repository : https://bitbucket.org/mugqic/genpipes/
 
 optional arguments:
   -h                    show this help message and exit
