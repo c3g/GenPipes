@@ -6658,6 +6658,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 input_vcf = vardict_vcf
                 normal = tumor_pair.normal.name
                 tumor = tumor_pair.tumor.name
+            
+            call_cns = os.path.join(
+                cnvkit_dir, tumor_pair.name + ".call.cns")
 
             input_cna = os.path.join(
                 self.output_dirs['sv_variants_directory'],
@@ -6735,12 +6738,12 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         ),
                         cnvkit.call(
                             tumor_cns,
-                            os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns")
+                            call_cns
                         ),
                         pipe_jobs(
                             [
                                 cnvkit.export(
-                                    os.path.join(cnvkit_dir, tumor_pair.name + ".call.cns"),
+                                    call_cns,
                                     None,
                                     sample_id=tumor_pair.tumor.name
                                 ),
@@ -6770,7 +6773,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
                     input_dependency = [header, input_cna],
-                    output_dependency = [vcf_gz, header, output_cna_body, output_cna]
+                    output_dependency = [vcf_gz, header, output_cna_body, output_cna, call_cns]
                 )
             )
 
