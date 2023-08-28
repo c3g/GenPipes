@@ -1678,13 +1678,13 @@ def sam_to_fastq(
         ],
             command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
- SamToFastq \\
- --VALIDATION_STRINGENCY LENIENT \\
+ SamToFastq {other_options} \\
  --CREATE_MD5_FILE true \\
  --INPUT {input} \\
  --FASTQ {fastq}{second_end_fastq}""".format(
                 tmp_dir=config.param(ini_section, 'tmp_dir'),
                 java_other_options=config.param(ini_section, 'gatk4_java_options'),
+                other_options = config.param(ini_section, 'other_options'),
                 ram=config.param(ini_section, 'ram'),
                 input=input,
                 fastq=fastq,

@@ -1815,19 +1815,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
             )
             input_cna = os.path.join(
                 self.output_dirs['sv_variants_directory'],
-                tumor_pair.name,
-                tumor_pair.name + ".cnvkit.vcf.gz"
-            )
-            header = os.path.join(
-                self.output_dirs['sv_variants_directory'],
-                tumor_pair.name + ".header"
-            )
-            output_cna_body = os.path.join(
-                self.output_dirs['sv_variants_directory'],
-                tumor_pair.name + ".cnvkit.body.tsv"
-            )
-            output_cna = os.path.join(
-                self.output_dirs['sv_variants_directory'],
                 tumor_pair.name + ".cnvkit.cna.tsv"
             )
             pcgr_directory = os.path.join(
@@ -1838,27 +1825,20 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 pcgr_directory,
                 tumor_pair.name + ".pcgr_acmg." + assembly + ".flexdb.html"
             )
-            
+
+            if input_cna + ".pass":
+                output_cna = os.path.join(
+                    self.output_dirs['sv_variants_directory'],
+                    tumor_pair.name + ".cnvkit.cna.tsv"
+                )
+            else:
+                output_cna = None
+                    
             jobs.append(
                 concat_jobs(
                     [
                         bash.mkdir(
                             pcgr_directory,
-                        ),
-                        pcgr.create_header(
-                            header,
-                        ),
-                        bcftools.query(
-                            input_cna,
-                            output_cna_body,
-                            query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
-                        ),
-                        bash.cat(
-                            [
-                                header,
-                                output_cna_body,
-                            ],
-                            output_cna
                         ),
                         pcgr.report(
                             input,
@@ -1872,7 +1852,9 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     ],
                     name="gemini_annotations.germline." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                    input_dependency=[input, input_cpsr],
+                    output_dependency=[output_cna, output]
                 )
             )
         
@@ -5221,24 +5203,24 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 tumor_pair.name,
                 tumor_pair.name + ".cnvkit.vcf.gz"
             )
-            header = os.path.join(
-                self.output_dirs['sv_variants_directory'],
-                tumor_pair.name + ".header"
-            )
-            output_cna_body = os.path.join(
-                self.output_dirs['sv_variants_directory'],
-                tumor_pair.name + ".cnvkit.body.tsv"
-            )
+            # header = os.path.join(
+            #     self.output_dirs['sv_variants_directory'],
+            #     tumor_pair.name + ".header"
+            # )
+            # output_cna_body = os.path.join(
+            #     self.output_dirs['sv_variants_directory'],
+            #     tumor_pair.name + ".cnvkit.body.tsv"
+            # )
             output_cna = os.path.join(
-                self.output_dirs['sv_variants_directory'],
-                tumor_pair.name + ".cnvkit.cna.tsv"
+                 self.output_dirs['sv_variants_directory'],
+                 tumor_pair.name + ".cnvkit.cna.tsv"
             )
             pcgr_directory = os.path.join(
                 ensemble_directory,
                 tumor_pair.name,
                 "pcgr"
             )
-           
+
             # PCGR does not accept sample IDs longer than 35 characters and uses the sample ID to name output files.
             # For samples that have longer sample IDs the output files will have non-matching names, so create symlinks with full-length names.
             if tumor_pair.name != tumor_pair.name[:35]:
@@ -5287,21 +5269,21 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         bash.mkdir(
                             pcgr_directory,
                         ),
-                        pcgr.create_header(
-                            header,
-                        ),
-                        bcftools.query(
-                            input_cna,
-                            output_cna_body,
-                            query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
-                        ),
-                        bash.cat(
-                            [
-                                header,
-                                output_cna_body,
-                            ],
-                            output_cna
-                        ),
+                        # pcgr.create_header(
+                        #     header,
+                        # ),
+                        # bcftools.query(
+                        #     input_cna,
+                        #     output_cna_body,
+                        #     query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
+                        # ),
+                        # bash.cat(
+                        #     [
+                        #         header,
+                        #         output_cna_body,
+                        #     ],
+                        #     output_cna
+                        # ),
                         pcgr.report(
                             input,
                             input_cpsr,
@@ -5315,8 +5297,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     name="report_pcgr." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    input_dependency = [header, input, input_cna, input_cpsr, output_cna_body],
-                    output_dependency = [header, output_cna_body, output_cna] + output
+                    input_dependency = [input, input_cna, input_cpsr],
+                    output_dependency = [output_cna, output]
                 )
             )
 
@@ -6677,6 +6659,24 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                 normal = tumor_pair.normal.name
                 tumor = tumor_pair.tumor.name
 
+            input_cna = os.path.join(
+                self.output_dirs['sv_variants_directory'],
+                tumor_pair.name,
+                tumor_pair.name + ".cnvkit.vcf.gz"
+            )
+            header = os.path.join(
+                self.output_dirs['sv_variants_directory'],
+                tumor_pair.name + ".header"
+            )
+            output_cna_body = os.path.join(
+                self.output_dirs['sv_variants_directory'],
+                tumor_pair.name + ".cnvkit.body.tsv"
+            )
+            output_cna = os.path.join(
+                self.output_dirs['sv_variants_directory'],
+                tumor_pair.name + ".cnvkit.cna.tsv"
+            )
+
             jobs.append(
                 concat_jobs(
                     [
@@ -6749,11 +6749,28 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                     vcf_gz
                                 )
                             ]
+                        ),
+                        pcgr.create_header(
+                            header,
+                        ),
+                        bcftools.query(
+                            input_cna,
+                            output_cna_body,
+                            query_options="-f '%CHROM\\t%POS\\t%END\\t%FOLD_CHANGE_LOG\\n'"
+                        ),
+                        bash.cat(
+                            [
+                                header,
+                                output_cna_body,
+                            ],
+                            output_cna
                         )
                     ],
                     name="cnvkit_batch.call." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                    readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                    input_dependency = [header, input_cna],
+                    output_dependency = [vcf_gz, header, output_cna_body, output_cna]
                 )
             )
 
