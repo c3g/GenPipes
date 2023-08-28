@@ -6772,7 +6772,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     name="cnvkit_batch.call." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    input_dependency = [header, input_cna],
+                    input_dependency = [header, tumor_cns, input_cna],
                     output_dependency = [vcf_gz, header, output_cna_body, output_cna, call_cns]
                 )
             )
