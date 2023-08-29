@@ -3654,7 +3654,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.picard_calculate_hs_metrics,
                 self.metrics,
                 self.run_multiqc,
-                self.cram_output,
                 self.sym_link_fastq,
                 self.sym_link_final_bam,
                 self.metrics_verify_bam_id,
