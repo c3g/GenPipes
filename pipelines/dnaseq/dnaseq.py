@@ -36,10 +36,8 @@ from pipelines import common
 from bfx.sequence_dictionary import parse_sequence_dictionary_file, split_by_size
 import utils.utils
 
-from bfx import adapters
 from bfx import bvatools
 from bfx import bwa
-from bfx import bwakit
 from bfx import gatk4
 from bfx import igvtools
 from bfx import metrics
@@ -47,16 +45,11 @@ from bfx import samtools
 from bfx import snpeff
 from bfx import tools
 from bfx import vcftools
-from bfx import skewer
 from bfx import sambamba
-from bfx import picard2
 from bfx import vt
 from bfx import htslib
 from bfx import gemini
-from bfx import qualimap
 from bfx import mosdepth
-from bfx import fastqc
-from bfx import ngscheckmate
 from bfx import verify_bam_id
 from bfx import multiqc
 from bfx import deliverables
@@ -1481,7 +1474,7 @@ END
                             gatk4.haplotype_caller(
                                 input_bam,
                                 os.path.join(haplotype_directory, sample.name + ".hc.g.vcf.gz"),
-                                interval_list
+                                interval_list[0]
                             )
                         ],
                         name="gatk_haplotype_caller." + sample.name,

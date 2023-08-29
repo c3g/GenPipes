@@ -41,7 +41,6 @@ from pipelines.dnaseq import dnaseq
 
 #utilizes
 from bfx import (
-    adapters,
     amber,
     annotations,
     bash_cmd as bash,
@@ -53,11 +52,8 @@ from bfx import (
     conpair,
     cpsr,
     deliverables,
-    delly,
-    fastqc,
     gatk,
     gatk4,
-    gemini,
     gridss,
     gripss,
     htslib,
@@ -68,7 +64,6 @@ from bfx import (
     pcgr,
     purple,
     mosdepth,
-    qualimap,
     sambamba,
     samtools,
     sequence_dictionary,
@@ -2395,7 +2390,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                                                                                      '.ACGT.noALT.interval_list')),
             
             if scatter_jobs == 1 and interval_list is not None:
-                print(interval_list)
                 jobs.append(
                     concat_jobs(
                         [
