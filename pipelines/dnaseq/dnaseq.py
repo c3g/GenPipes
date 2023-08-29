@@ -868,121 +868,6 @@ END
 
         return jobs
 
-    def metrics(self):
-        """
-        Compute metrics and generate coverage tracks per sample. Multiple metrics are computed at this stage:
-        Number of raw reads, Number of filtered reads, Number of aligned reads, Number of duplicate reads,
-        Median, mean and standard deviation of insert sizes of reads after alignment, percentage of bases
-        covered at X reads (%_bases_above_50 means the % of exons bases which have at least 50 reads)
-        whole genome or targeted percentage of bases covered at X reads (%_bases_above_50 means the % of exons
-        bases which have at least 50 reads). A TDF (.tdf) coverage track is also generated at this step
-        for easy visualization of coverage in the IGV browser.
-        """
-
-        ##check the library status
-        library = {}
-        for readset in self.readsets:
-            if not readset.sample in library:
-                library[readset.sample] = "SINGLE_END"
-            if readset.run_type == "PAIRED_END":
-                library[readset.sample] = "PAIRED_END"
-
-        jobs = []
-        for sample in self.samples:
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            [input] = self.select_input_files(
-                [
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
-                    # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
-                ]
-            )
-            input_file_prefix = re.sub("bam$", "", input)
-
-            mkdir_job_normal = bash.mkdir(
-                os.path.dirname(input_file_prefix),
-                remove=True
-            )
-
-            collect_multiple_metrics_normal_job = concat_jobs(
-                [
-                    mkdir_job_normal,
-                    bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
-                    gatk4.collect_multiple_metrics(
-                        input,
-                        input_file_prefix + "all.metrics",
-                        library_type=library[sample]
-                    ),
-                ]
-            )
-            for outfile in collect_multiple_metrics_normal_job.report_files:
-                self.multiqc_inputs.append(outfile)
-                collect_multiple_metrics_normal_job = concat_jobs(
-                    [
-                        collect_multiple_metrics_normal_job,
-                        bash.ln(
-                            os.path.relpath(outfile, os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
-                            os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name, os.path.basename(outfile)),
-                            input=outfile
-                        )
-                    ]
-                )
-            collect_multiple_metrics_normal_job.name = "picard_collect_multiple_metrics." + sample.name
-            collect_multiple_metrics_normal_job.samples = [sample]
-            jobs.append(collect_multiple_metrics_normal_job)
-
-            # Compute genome coverage with gatk4
-            gatk_depth_of_coverage_job = concat_jobs(
-                [
-                    mkdir_job_normal,
-                    gatk4.depth_of_coverage(
-                        input,
-                        input_file_prefix + "all.coverage",
-                        bvatools.resolve_readset_coverage_bed(
-                            sample.readsets[0]
-                        )
-                    ),
-                ],
-                name="gatk_depth_of_coverage." + sample.name + ".genome",
-                samples=[sample]
-            )
-            jobs.append(gatk_depth_of_coverage_job)
-
-            # Compute genome or target coverage with BVATools
-            bvatools_depth_of_coverage_job = concat_jobs(
-                [
-                    mkdir_job_normal,
-                    bvatools.depth_of_coverage(
-                        input,
-                        input_file_prefix + "coverage.tsv",
-                        bvatools.resolve_readset_coverage_bed(
-                            sample.readsets[0]
-                        ),
-                        other_options=config.param('bvatools_depth_of_coverage', 'other_options', required=False)
-                    )
-                ],
-                name="bvatools_depth_of_coverage." + sample.name,
-                samples=[sample]
-            )
-            jobs.append(bvatools_depth_of_coverage_job)
-
-            igvtools_compute_tdf_job = concat_jobs(
-                [
-                    mkdir_job_normal,
-                    igvtools.compute_tdf(
-                        input,
-                        re.sub("\.bam$", ".tdf", input)
-                    )
-                ],
-                name="igvtools_compute_tdf." + sample.name,
-                samples=[sample]
-            )
-            jobs.append(igvtools_compute_tdf_job)
-
-        return jobs
-
     def picard_calculate_hs_metrics(self):
         """
         Compute on target percent of hybridisation based capture.
@@ -3652,7 +3537,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.metrics_dna_sample_mosdepth,
                 self.metrics_dna_samtools_flagstat,
                 self.picard_calculate_hs_metrics,
-                self.metrics,
                 self.run_multiqc,
                 self.sym_link_fastq,
                 self.sym_link_final_bam,
