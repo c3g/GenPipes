@@ -1458,7 +1458,7 @@ END
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             
-            interval_list = ""
+            interval_list = None
             if coverage_bed:
                 interval_list = os.path.join(interval_directory,
                                              os.path.basename(coverage_bed).replace('.bed',
@@ -1481,7 +1481,7 @@ END
                             gatk4.haplotype_caller(
                                 input_bam,
                                 os.path.join(haplotype_directory, sample.name + ".hc.g.vcf.gz"),
-                                interval_list[0]
+                                interval_list
                             )
                         ],
                         name="gatk_haplotype_caller." + sample.name,
@@ -2751,7 +2751,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
             [input] = self.select_input_files(
                 [
-                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.bam")],
                     [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.bam")]
                 ]
@@ -2860,7 +2859,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         for sample in self.samples:
             pair_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
             lumpy_directory = os.path.join(pair_directory, "rawLumpy")
-            inputNormal = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.recal.bam")
+            inputNormal = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.bam")
         
             discordants_normal = os.path.join(lumpy_directory, sample.name + ".discordants.sorted.bam")
         
@@ -3033,7 +3032,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         for sample in self.samples:
             pair_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
             wham_directory = os.path.join(pair_directory, "rawWham")
-            inputNormal = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.recal.bam")
+            inputNormal = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.bam")
 
             output_vcf = os.path.join(wham_directory, sample.name + ".wham.vcf")
             merge_vcf = os.path.join(wham_directory, sample.name + ".wham.merged.vcf")
@@ -3374,7 +3373,7 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
             jobs.append(
                 concat_jobs(
                     [
-                        snpeff.compute_effects(pair_directory + ".cnvkit.germline.vcf.gz", pair_directory + ".cnvkit.snpeff.vcf"),
+                        snpeff.compute_effects(pair_directory + ".cnvkit.vcf.gz", pair_directory + ".cnvkit.snpeff.vcf"),
                     ],
                     name="sv_annotation.cnvkit." + sample.name,
                     samples=[sample]
@@ -3398,7 +3397,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
         
             [input] = self.select_input_files(
                 [
-                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.bam")],
                     [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.bam")]
                 ]
@@ -3448,7 +3446,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 		
             [inputTumor] = self.select_input_files(
                 [
-                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.bam")],
                     [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.bam")]
                 ]
