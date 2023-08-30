@@ -680,7 +680,7 @@ class RunProcessing(common.MUGQICPipeline):
                 self._report_hash[lane] = {
                     "version" : "3.0",
                     "run" : self.run_id,
-                    #"run_obj_id": self.run_obj_id,
+                    "run_obj_id": self.readsets[lane][0].run_obj_id if self.readsets[lane][0].run_obj_id else None,
                     "instrument" : self.instrument,
                     "flowcell" : self.flowcell_id,
                     "lane" : lane,
@@ -701,22 +701,22 @@ class RunProcessing(common.MUGQICPipeline):
                                     "fastq_1": {
                                             "path": readset.fastq1,
                                             "size": None,
-                                            "final_path": os.path.join(full_destination_folder, os.path.relpath(readset.fastq1, self.output_dir)) 
+                                            "final_path": os.path.join(full_destination_folder, readset.fastq1)
                                             },
                                     "fastq_2": {
                                             "path": readset.fastq2 if self.is_paired_end[lane] else None,
                                             "size": None,
-                                            "final_path": os.path.join(full_destination_folder, os.path.relpath(readset.fastq2, self.output_dir)) if self.is_paired_end[lane] else None
+                                            "final_path": os.path.join(full_destination_folder, readset.fastq2) if self.is_paired_end[lane] else None
                                             },
                                     "bam": {
                                             "path": readset.bam + ".bam" if readset.bam else None,
                                             "size": None,
-                                            "final_path": os.path.join(full_destination_folder, os.path.relpath(readset.bam + ".bam", self.output_dir)) if readset.bam else None
+                                            "final_path": os.path.join(full_destination_folder, readset.bam + ".bam") if readset.bam else None
                                             },
                                     "bai": {
                                             "path": readset.bam + ".bai" if readset.bam else None,
                                             "size": None,
-                                            "final_path": os.path.join(full_destination_folder, os.path.relpath(readset.bam + ".bai", self.output_dir)) if readset.bam else None
+                                            "final_path": os.path.join(full_destination_folder, readset.bam + ".bai") if readset.bam else None
                                             },
                                     "derived_sample_obj_id": readset.library,
                                     "project_obj_id": readset.project_id,

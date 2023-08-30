@@ -375,6 +375,10 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._species
 
     @property
+    def run_obj_id(self):
+        return self._run_obj_id
+
+    @property
     def flow_cell(self):
         return self._flow_cell
 
@@ -493,6 +497,7 @@ def parse_freezeman_readset_file(
         readset._lane = current_lane
         readset._sample_number = str(len(readsets) + 1)
 
+        readset._run_obj_id = readset_json['run_obj_id']
         readset._flow_cell = readset_json['container_barcode']
         readset._control = "N"
         readset._recipe = None
@@ -1088,7 +1093,7 @@ def get_index(
                     {
                         'SAMPLESHEET_NAME': readset.name,
                         'LIBRARY': readset.library,
-                        'PROJECT': readset.project_id,
+                        'PROJECT': readset.external_project_id,
                         'INDEX_NAME': readset.index_name,
                         'INDEX1': actual_index1seq,
                         'INDEX2': actual_index2seq,
@@ -1116,7 +1121,7 @@ def get_index(
             indexes.append({
                 'SAMPLESHEET_NAME': readset.name if len(index_seq) == 1 else readset.name + "_" + chr(char),
                 'LIBRARY': readset.library,
-                'PROJECT': readset.project_id,
+                'PROJECT': readset.external_project_id,
                 'INDEX_NAME': readset.index_name,
                 'INDEX1': actual_index1seq,
                 'INDEX2': actual_index2seq,
