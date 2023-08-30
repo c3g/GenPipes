@@ -22,6 +22,7 @@ import itertools
 import logging
 import os
 import re
+import csv
 
 # GenPipes Modules
 from ...core.config import global_conf, _raise, SanitycheckError
@@ -37,6 +38,7 @@ from ...bfx import (
     dragen,
     fgbio,
     gatk,
+    gembs,
     htslib,
     igvtools,
     metrics,
@@ -55,13 +57,17 @@ class MethylSeq(dnaseq.DnaSeqRaw):
 Methyl-Seq Pipeline
 ================
 
-The GenPIpes Methyl-Seq pipeline now has three protocols.
-1. bismark
-2. hybrid
-3. dragen
+The GenPIpes Methyl-Seq pipeline now has four protocols.
+ 1. bismark
+ 2. gembs
+ 3. hybrid
+ 4. dragen
 
-The "bismark" protocol uses Bismark to align reads to the reference genome.
-Picard is used to mark and remove duplicates and generate metric files. The "hybrid" protocl uses [Illumina Dragen Bio-IT processor](https://www.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html) and [dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm) software to align the reads to the reference genome. All the other steps are common with bismark protocol. The "dragen" protocol uses Dragen to align reads to the reference genome, call methylation, mark and remove duplicates.
+The "bismark" protocol uses Bismark to align reads to the reference genome. Picard is used to mark and remove duplicates and generate metric files. 
+
+The "gembs" procotol uses GemBS for mapping and methylation and variant calling (http://statgen.cnag.cat/GEMBS/UserGuide/_build/html/index.html).
+
+The "hybrid" protocl uses [Illumina Dragen Bio-IT processor](https://www.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html) and [dragen](https://support-docs.illumina.com/SW/DRAGEN_v310/Content/SW/FrontPages/DRAGEN.htm) software to align the reads to the reference genome. All the other steps are common with bismark protocol. The "dragen" protocol uses Dragen to align reads to the reference genome, call methylation, mark and remove duplicates.
 
 Although dragen provides higher rate of mapping percentage with in a very short time duration (approximately three hours compared to 30 hours from bismark), it only accessible through McGill Genome Center cluster Abacus and The jobs cannot be submitted to any of the HPCs from the [Digital Research Aliance](https://status.computecanada.ca/). Importantly, the user needs to have permission to submit jobs to Abacus. Therefore, other users may continue to use only bismark protocol since it works in all the clusters.
 
@@ -263,6 +269,123 @@ Parameters:
 
         return jobs
 
+    def gembs_prepare(self):
+        """
+        Prepare metadata and config files for mapping with gemBS.
+        """
+
+        jobs = []
+
+        metadata_file = os.path.join(self.output_dir, "metadata.csv")
+        gembs_config_file = os.path.join(self.output_dir, "gembs.config")
+        index_dir = os.path.join(self.output_dirs["alignment_directory"], "index")
+        gembs_dir = os.path.join(self.output_dir, ".gemBS")
+
+        # write directly, instead of parsing readset file. It's already parsed and info already available.
+        #gembs.make_metadata(self.args.readsets.name, metadata_file)
+        with open(metadata_file, 'w') as f:
+            writer = csv.writer(f)
+            writer.writerow(["sampleID","dataset","library","file1","file2"])
+            for readset in self.readsets:
+                
+                trim_file_prefix = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim.")
+                
+                # Find input readset FASTQs first from previous trimmomatic job, then from original FASTQs in the readset sheet
+                if readset.run_type == "PAIRED_END":
+                    candidate_input_files = [[trim_file_prefix + "pair1.fastq.gz", trim_file_prefix + "pair2.fastq.gz"]]
+                    if readset.fastq1 and readset.fastq2:
+                        candidate_input_files.append([readset.fastq1, readset.fastq2])
+                    if readset.bam:
+                        candidate_input_files.append([re.sub("\.bam$", ".pair1.fastq.gz", readset.bam), re.sub("\.bam$", ".pair2.fastq.gz", readset.bam)])
+                    [fastq1, fastq2] = self.select_input_files(candidate_input_files)
+                
+                    metadata = [readset.sample.name,readset.name,readset.library,fastq1,fastq2]
+                
+                elif readset.run_type == "SINGLE_END":
+                    candidate_input_files = [[trim_file_prefix + "single.fastq.gz"]]
+                    if readset.fastq1:
+                        candidate_input_files.append([readset.fastq1])
+                    if readset.bam:
+                        candidate_input_files.append([re.sub("\.bam$", ".single.fastq.gz", readset.bam)])
+                    [fastq1] = self.select_input_files(candidate_input_files)
+                    fastq2 = None
+    
+                    metadata = [readset.sample.name, readset.name, readset.library, fastq1]
+    
+                else:
+                    _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                    "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+                
+                writer.writerow(metadata)
+
+        gembs.make_config(self.output_dir, gembs_config_file)
+
+        jobs.append(
+                concat_jobs(
+                    [
+                        bash.rm(index_dir),
+                        bash.mkdir(index_dir),
+                        bash.rm(gembs_dir),
+                        gembs.prepare(
+                            metadata_file,
+                            gembs_config_file,
+                            self.output_dir
+                            )
+                        ],
+                    name="gembs_prepare",
+                    input_dependency=[metadata_file,gembs_config_file]
+                    )
+                )
+
+        return jobs
+
+        # TBD, find out what this is supposed to look like
+        # Sent out as jobs in draft, but could be generated as part of set up (no need to do as job, IMO)
+        # (Maybe not, might create indexes with samtools and some other stuff )
+
+    def gembs_map(self):
+        """
+        Map reads to reference genome with GemBS's gem-mapper.
+        """
+
+        jobs = []
+
+        metadata = os.path.join(self.output_dir, "metadata.csv") 
+        gembs_config = os.path.join(self.output_dir, ".gemBS/gemBS.mpn")
+        index = os.path.join(self.output_dirs["alignment_directory"], "index", global_conf.global_get('default', 'scientific_name') + ".BS.gem")
+
+        jobs.append(
+                concat_jobs(
+                    [
+                        bash.rm(index),
+                        gembs.index(
+                            gembs_config,
+                            index
+                            )
+                        ],
+                    name = "gembs_index",
+                    input_dependency=[gembs_config]
+                    )
+                )
+
+        for sample in self.samples:
+            alignment_dir = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            
+            jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(alignment_dir),
+                            gembs.map(
+                                sample.name, 
+                                gembs_config,
+                                index
+                                )
+                        ],
+                        name = "gembs_map." + sample.name,
+                        samples = [sample]
+                        )
+                    )
+        return jobs
 
     def add_bam_umi(self):
         """
@@ -1596,7 +1719,30 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 self.methylkit_differential_analysis,
                 self.multiqc,
                 self.cram_output
-            ], 'hybrid':
+            ], 'gembs':
+            [
+                self.picard_sam_to_fastq,
+                self.trimmomatic,
+                self.merge_trimmomatic_stats,
+                self.gembs_prepare,
+                self.gembs_map,   
+            #    self.add_bam_umi, # important to include? Slightly annoying because merge step not needed for gemBS
+                self.picard_remove_duplicates,
+                self.metrics,
+                self.gembs_call,
+                self.gembs_bcf_to_vcf,
+                self.gembs_format_cpg_report,
+                self.methylation_profile,
+                self.dragen_bedgraph,
+                self.wiggle_tracks,
+                self.ihec_sample_metrics_report,
+                self.gembs_report,
+                self.filter_snp_cpg,
+                self.prepare_methylkit,
+                self.methylkit_differential_analysis,
+                self.multiqc,
+                self.cram_output
+            ], 'hybrid': 
             [
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
