@@ -1847,6 +1847,7 @@ def crosscheck_fingerprint(
         command="""\
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   CrosscheckFingerprints {options} \\
+  --REFERENCE_SEQUENCE {reference} \\
   --VALIDATION_STRINGENCY SILENT \\
   --TMP_DIR {tmp_dir} \\
   {inputs} \\
@@ -1856,6 +1857,7 @@ gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" 
   --MATRIX_OUTPUT {matrix}""".format(
                 tmp_dir=config.param(ini_section, 'tmp_dir'),
                 options=config.param(ini_section, 'options'),
+                reference = config.param(ini_section, 'genome_fasta', param_type='filepath'),
                 java_other_options=config.param(ini_section, 'gatk4_java_options'),
                 haplotype_database=config.param(ini_section, 'haplotype_database'),
                 lod_threshold=config.param(ini_section, 'lod_threshold'),

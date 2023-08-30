@@ -3087,8 +3087,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                         [
                             bash.mkdir(cnvkit_dir, remove=True),
                             cnvkit.batch(
-                                None,
                                 inputNormal,
+                                None,
                                 cnvkit_dir,
                                 tar_dep=tarcov_cnn,
                                 antitar_dep=antitarcov_cnn,
