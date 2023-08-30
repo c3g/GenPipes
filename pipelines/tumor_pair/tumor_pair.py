@@ -1759,9 +1759,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
             [input] = self.select_input_files(
                 [
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
                 ]
             )
@@ -1922,7 +1920,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         ],
                         name="rawmpileup." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        input_dependency=[input_normal, input_tumor, bed_file]
                     )
                 )
 
@@ -1951,7 +1950,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                 ],
                                 name="rawmpileup." + tumor_pair.name + "." + sequence['name'],
                                 samples=[tumor_pair.normal, tumor_pair.tumor],
-                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                                readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                                input_dependency=[input_normal, input_tumor, bed_file]
                             )
                         )
 
@@ -2410,7 +2410,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         ],
                         name="gatk_mutect2." + tumor_pair.name,
                         samples=[tumor_pair.normal, tumor_pair.tumor],
-                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                        readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                        input_dependency = [input_normal, input_tumor, interval_list[0]]
                     )
                 )
 
@@ -2441,7 +2442,8 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             ],
                             name="gatk_mutect2." + tumor_pair.name + "." + str(idx),
                             samples=[tumor_pair.normal, tumor_pair.tumor],
-                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
+                            readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
+                            input_dependency=[input_normal, input_tumor, intervals]
                         )
                     )
         return jobs
@@ -2814,7 +2816,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
                     [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
                     [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
                 ]
@@ -2822,13 +2823,13 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
                     [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
                     [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
                 ]
             )
 
-            manta_indels = os.path.join(self.output_dirs['sv_variants_directory'], tumor_pair.name, "rawManta", "results", "variants", "candidateSmallIndels.vcf.gz")
+            manta_indels = os.path.join(self.output_dirs['sv_variants_directory'],
+                                       tumor_pair.name, "rawManta", "results", "variants", "candidateSmallIndels.vcf.gz")
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 tumor_pair.normal.readsets[0]
@@ -2878,6 +2879,14 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             bed_file,
                             "-f -p bed"
                         ),
+                    ],
+                    name="strelka2_paired_somatic_bed." + tumor_pair.name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor]
+                )
+            )
+            jobs.append(
+                concat_jobs(
+                    [
                         strelka2.somatic_config(
                             input_normal,
                             input_tumor,
@@ -2891,10 +2900,10 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             output_dep=output_dep
                         )
                     ],
-                    name="strelka2_paired_somatic.call."+tumor_pair.name,
+                    name="strelka2_paired_somatic.call." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    input_dependency=[input_normal, input_tumor, manta_indels],
+                    input_dependency=[input_normal, input_tumor, manta_indels, bed_file],
                     output_dependency=output_dep
                 )
             )
@@ -3006,7 +3015,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
                     [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
                     [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
                 ]
@@ -3014,13 +3022,10 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
                     [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
                     [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
                 ]
             )
-
-            input = [input_normal, input_tumor]
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(
                 tumor_pair.normal.readsets[0]
@@ -3065,8 +3070,17 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             bed_file,
                             "-f -p bed"
                         ),
+                    ],
+                    name="strelka2_paired_germline_bed." + tumor_pair.name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor],
+                )
+            )
+            
+            jobs.append(
+                concat_jobs(
+                    [
                         strelka2.germline_config(
-                            input,
+                            [input_normal, input_tumor],
                             germline_dir,
                             bed_file,
                         ),
@@ -3076,10 +3090,10 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             output_dep=output_dep
                         )
                     ],
-                    name="strelka2_paired_germline.call."+tumor_pair.name,
+                    name="strelka2_paired_germline.call." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    input_dependency=input + [bed_file],
+                    input_dependency=[input_normal, input_tumor, bed_file],
                     output_dependency=output_dep
                 )
             )
@@ -3261,7 +3275,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
                     [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")],
                     [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.bam")]
                 ]
@@ -3269,7 +3282,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
                     [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")],
                     [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.bam")]
                 ]
@@ -3316,12 +3328,16 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             )
                         ],
                         name="vardict_paired." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor]
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        input_dependency=[input_normal, input_tumor, coverage_bed]
                     )
                 )
             elif scatter_jobs == 1:
                 interval_list = os.path.join(interval_directory, os.path.basename(reference).replace('.fa',
                                                                                                      '.ACGT.noALT.interval_list'))
+                bed_file = os.path.join(vardict_directory,
+                                        os.path.basename(interval_list).replace('.interval_list',
+                                                                                '.padded.bed'))
                 jobs.append(
                     concat_jobs(
                         [
@@ -3331,9 +3347,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             ),
                             tools.dict2beds(
                                 interval_list,
-                                os.path.join(vardict_directory,
-                                             os.path.basename(interval_list).replace('.interval_list',
-                                                                                     '.padded.bed'))
+                                bed_file
                             ),
                         ],
                         name="vardict.genome.beds." + tumor_pair.name,
@@ -3356,9 +3370,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                         input_tumor,
                                         tumor_pair.name,
                                         None,
-                                        os.path.join(vardict_directory,
-                                                     os.path.basename(interval_list).replace('.interval_list',
-                                                                                             '.padded.bed'))
+                                        bed_file
                                     ),
                                     vardict.testsomatic(
                                         None,
@@ -3378,7 +3390,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             )
                         ],
                         name="vardict_paired." + tumor_pair.name,
-                        samples=[tumor_pair.normal, tumor_pair.tumor]
+                        samples=[tumor_pair.normal, tumor_pair.tumor],
+                        input_dependency=[input_normal, input_tumor, bed_file]
                     )
                 )
                 
@@ -4956,6 +4969,15 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             bed_file,
                             "-f -p bed"
                         ),
+                    ],
+                    name="manta_sv_bed." + tumor_pair.name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor]
+                )
+            )
+            
+            jobs.append(
+                concat_jobs(
+                    [
                         manta.manta_config(
                             input_normal,
                             input_tumor,
@@ -4991,7 +5013,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     name="manta_sv." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    input_dependency=[input_normal, input_tumor]
+                    input_dependency=[input_normal, input_tumor, bed_file]
                 )
             )
 
