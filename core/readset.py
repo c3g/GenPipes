@@ -331,12 +331,12 @@ class IlluminaRawReadset(IlluminaReadset):
         return self._project
     
     @property
-    def hercules_project_id(self):
-        return self._hercules_project_id
+    def external_project_id(self):
+        return self._external_project_id
 
     @property
-    def hercules_project_name(self):
-        return self._hercules_project_name
+    def external_project_name(self):
+        return self._external_project_name
 
     @property
     def library_source(self):
@@ -373,6 +373,10 @@ class IlluminaRawReadset(IlluminaReadset):
     @property
     def species(self):
         return self._species
+
+    @property
+    def run_obj_id(self):
+        return self._run_obj_id
 
     @property
     def flow_cell(self):
@@ -493,14 +497,15 @@ def parse_freezeman_readset_file(
         readset._lane = current_lane
         readset._sample_number = str(len(readsets) + 1)
 
+        readset._run_obj_id = readset_json['run_obj_id']
         readset._flow_cell = readset_json['container_barcode']
         readset._control = "N"
         readset._recipe = None
         readset._operator = None
         readset._project = rdst['project_name']
         readset._project_id = str(rdst['project_obj_id'])
-        readset._hercules_project = rdst['hercules_project_name']
-        readset._hercules_project_id = rdst['hercules_project_id']
+        readset._external_project_name = rdst['external_project_name']
+        readset._external_project_id = rdst['external_project_id']
         readset._is_rna = re.search("RNA|cDNA", readset.library_source) or (readset.library_source == "Library" and re.search("RNA", readset.library_type))
         readset._is_10x = False
         readset._is_atac = False
@@ -1088,7 +1093,7 @@ def get_index(
                     {
                         'SAMPLESHEET_NAME': readset.name,
                         'LIBRARY': readset.library,
-                        'PROJECT': readset.project_id,
+                        'PROJECT': readset.external_project_id,
                         'INDEX_NAME': readset.index_name,
                         'INDEX1': actual_index1seq,
                         'INDEX2': actual_index2seq,
@@ -1116,7 +1121,7 @@ def get_index(
             indexes.append({
                 'SAMPLESHEET_NAME': readset.name if len(index_seq) == 1 else readset.name + "_" + chr(char),
                 'LIBRARY': readset.library,
-                'PROJECT': readset.project_id,
+                'PROJECT': readset.external_project_id,
                 'INDEX_NAME': readset.index_name,
                 'INDEX1': actual_index1seq,
                 'INDEX2': actual_index2seq,
