@@ -86,9 +86,6 @@ def mpileup(inputs, output, other_options=None, region=None, regionFile=None, in
 
     if not isinstance(inputs, list):
         inputs = [inputs]
-        
-    if regionFile is not None:
-        inputs.append(regionFile)
 
     return Job(
         inputs,

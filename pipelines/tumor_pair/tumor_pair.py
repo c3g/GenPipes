@@ -2574,21 +2574,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                                     None,
                                                     "'s/Number=R/Number=./g'"
                                                 ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-v 'GL00'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-Ev 'chrUn|random'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-vE 'EBV|hs37d5'"
-                                                ),
                                                 bash.sed(
                                                     None,
                                                     None,
@@ -2656,21 +2641,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                         ),
                                         pipe_jobs(
                                             [
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-v 'GL00'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-Ev 'chrUn|random'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-vE 'EBV|hs37d5'"
-                                                ),
                                                 bash.sed(
                                                     None,
                                                     None,
@@ -2732,21 +2702,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                                     None,
                                                     "'s/Number=R/Number=./g'"
                                                 ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-v 'GL00'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-Ev 'chrUn|random'"
-                                                ),
-                                                bash.grep(
-                                                    None,
-                                                    None,
-                                                    "-v 'EBV'"
-                                                )
                                             ]
                                         ),
                                         htslib.bgzip_tabix(
@@ -2879,14 +2834,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             bed_file,
                             "-f -p bed"
                         ),
-                    ],
-                    name="strelka2_paired_somatic_bed." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor]
-                )
-            )
-            jobs.append(
-                concat_jobs(
-                    [
                         strelka2.somatic_config(
                             input_normal,
                             input_tumor,
@@ -2903,7 +2850,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     name="strelka2_paired_somatic.call." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    input_dependency=[input_normal, input_tumor, manta_indels, bed_file],
+                    input_dependency=[input_normal, input_tumor, manta_indels, interval_bed],
                     output_dependency=output_dep
                 )
             )
@@ -2934,21 +2881,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                             None,
                                             "'s/Number=R/Number=./g'"
                                         ),
-                                        bash.grep(
-                                            None,
-                                            None,
-                                            " -v 'GL00'"
-                                        ),
-                                        bash.grep(
-                                            None,
-                                            None,
-                                            "-Ev 'chrUn|random'"
-                                        ),
-                                        bash.grep(
-                                            None,
-                                            None,
-                                            "-v 'EBV'"
-                                        )
                                     ]
                                 ),
                                 htslib.bgzip_tabix(
@@ -3070,15 +3002,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             bed_file,
                             "-f -p bed"
                         ),
-                    ],
-                    name="strelka2_paired_germline_bed." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor],
-                )
-            )
-            
-            jobs.append(
-                concat_jobs(
-                    [
                         strelka2.germline_config(
                             [input_normal, input_tumor],
                             germline_dir,
@@ -3093,7 +3016,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     name="strelka2_paired_germline.call." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    input_dependency=[input_normal, input_tumor, bed_file],
+                    input_dependency=[input_normal, input_tumor, interval_bed],
                     output_dependency=output_dep
                 )
             )
@@ -3125,21 +3048,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                             None,
                                             's/Number=R/Number=./g'""
                                         ),
-                                        bash.grep(
-                                            None,
-                                            None,
-                                            "-vE 'GL00|hs37d5'"
-                                        ),
-                                        bash.grep(
-                                            None,
-                                            None,
-                                            "-Ev 'chrUn|random'"
-                                        ),
-                                        bash.grep(
-                                            None,
-                                            None,
-                                            "-v 'EBV'"
-                                        )
                                     ]
                                 ),
                                 htslib.bgzip_tabix(
@@ -3522,21 +3430,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                         None,
                                         "-F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"
                                     ),
-                                    bash.grep(
-                                        None,
-                                        None,
-                                        "-v 'GL00' | grep -Ev 'chrUn|random' | grep -v 'EBV'"
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        None,
-                                        "-Ev 'chrUn|random'"
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        None,
-                                        "-v 'EBV'"
-                                    ),
                                     htslib.bgzip_tabix(
                                         None,
                                         output
@@ -3622,21 +3515,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                         None,
                                         None,
                                         "-F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {next} {print}'"
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        None,
-                                        "-v 'GL00'"
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        None,
-                                        "-Ev 'chrUn|random'"
-                                    ),
-                                    bash.grep(
-                                        None,
-                                        None,
-                                        "-v 'EBV'"
                                     ),
                                     htslib.bgzip_tabix(
                                         None,
@@ -4969,15 +4847,6 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             bed_file,
                             "-f -p bed"
                         ),
-                    ],
-                    name="manta_sv_bed." + tumor_pair.name,
-                    samples=[tumor_pair.normal, tumor_pair.tumor]
-                )
-            )
-            
-            jobs.append(
-                concat_jobs(
-                    [
                         manta.manta_config(
                             input_normal,
                             input_tumor,
@@ -5013,7 +4882,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     name="manta_sv." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    input_dependency=[input_normal, input_tumor, bed_file]
+                    input_dependency=[input_normal, input_tumor, interval_bed]
                 )
             )
 
@@ -5325,6 +5194,15 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                                 )
                             ]
                         ),
+                    ],
+                    name="cnvkit_batch.call." + tumor_pair.name,
+                    samples=[tumor_pair.normal, tumor_pair.tumor]
+                )
+            )
+            
+            jobs.append(
+                concat_jobs(
+                    [
                         pcgr.create_header(
                             header,
                         ),
@@ -5341,11 +5219,11 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             output_cna
                         )
                     ],
-                    name="cnvkit_batch.call." + tumor_pair.name,
+                    name="cnvkit_batch.cna." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)],
-                    input_dependency = [header, tumor_cns, input_cna],
-                    output_dependency = [vcf_gz, header, output_cna_body, output_cna, call_cns]
+                    input_dependency = [input_cna],
+                    output_dependency = [header, output_cna_body]
                 )
             )
 

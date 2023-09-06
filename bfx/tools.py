@@ -343,8 +343,10 @@ def chunkBedbyFileNumber(
         command="""\
 python3 $PYTHON_TOOLS/chunkBedbyFileNumber.py \\
 	--input {input} \\
+	--output_dir {output} \\
 	--chunk {chunk}""".format(
             input=input,
+            output=output,
             chunk=chunk,
         )
     )

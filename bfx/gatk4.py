@@ -1914,10 +1914,12 @@ def scatterIntervalsByNs(
 gatk --java-options "-Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram}" \\
   ScatterIntervalsByNs \\
   {options} \\
+  --OUTPUT_TYPE {output_type} \\
   --REFERENCE {reference} \\
   --OUTPUT {output}""".format(
             tmp_dir=config.param('gatk_scatterIntervalsByNs', 'tmp_dir'),
             options=config.param('gatk_scatterIntervalsByNs', 'options'),
+            output_type=config.param('gatk_scatterIntervalsByNs', 'output_type'),
             java_other_options=config.param('gatk_scatterIntervalsByNs', 'gatk_java_options'),
             ram=config.param('gatk_scatterIntervalsByNs', 'ram'),
             reference=reference,

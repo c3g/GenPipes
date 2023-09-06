@@ -56,9 +56,12 @@ def run(input, output_prefix, per_base=False, regions=None):
     outputs = [
             output_prefix + ".mosdepth.global.dist.txt",
             output_prefix + ".mosdepth.summary.txt",
-            output_prefix + ".mosdepth.region.dist.txt",
-            output_prefix + ".mosdepth.quantized.bed.gz"
+            output_prefix + ".quantized.bed.gz"
             ]
+    
+    if regions is not None:
+        outputs.append(output_prefix + ".mosdepth.region.dist.txt")
+        
     return Job(
             [input],
             outputs,
