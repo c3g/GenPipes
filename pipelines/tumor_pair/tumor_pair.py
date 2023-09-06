@@ -704,7 +704,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                                     interval_list
                                 )
                             ],
-                            name="interval_list." + os.path.basename(coverage_bed),
+                            name="interval_list." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
                         )
                     )
