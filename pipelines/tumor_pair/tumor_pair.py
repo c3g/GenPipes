@@ -2717,7 +2717,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                                     interval_list
                                 )
                             ],
-                            name="interval_list." + os.path.basename(coverage_bed),
+                            name="interval_list." + tumor_pair.name,
                             samples=[tumor_pair.normal, tumor_pair.tumor]
                         )
                     )
@@ -3259,7 +3259,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="strelka2_paired_somatic.call."+tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    input_dependency=[input_normal, input_tumor, mantaIndels],
+                    input_dependency=[input_normal, input_tumor, mantaIndels, bed_file],
                     output_dependency=output_dep
                 )
             )
@@ -3443,7 +3443,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="strelka2_paired_germline.call."+tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    input_dependency=input,
+                    input_dependency=input + [bed_file],
                     output_dependency=output_dep
                 )
             )
@@ -6150,7 +6150,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="manta_sv." + tumor_pair.name,
                     samples=[tumor_pair.normal, tumor_pair.tumor],
-                    input_dependency=[inputNormal, inputTumor]
+                    input_dependency=[inputNormal, inputTumor, bed_file]
                 )
             )
 
