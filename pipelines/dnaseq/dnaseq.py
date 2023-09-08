@@ -640,6 +640,7 @@ END
                 concat_jobs(
                     [
                         mkdir_job,
+                        bash.mkdir(link_directory),
                         gatk4.collect_multiple_metrics(
                             input,
                             os.path.join(picard_directory, sample.name + ".all.metrics"),
@@ -682,12 +683,20 @@ END
                     samples=[sample]
                 )
             )
-
+            self.multiqc_inputs.append(
+                os.path.join(link_directory, sample.name + ".all.metrics.alignment_summary_metrics"))
+            self.multiqc_inputs.append(
+                os.path.join(link_directory, sample.name + ".all.metrics.insert_size_metrics"))
+            self.multiqc_inputs.append(
+                os.path.join(link_directory, sample.name + ".all.metrics.quality_by_cycle_metrics"))
+            self.multiqc_inputs.append(
+                os.path.join(link_directory, sample.name + ".all.metrics.quality_distribution_metrics"))
+            
             jobs.append(
                 concat_jobs(
                     [
                         mkdir_job,
-                        bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                        bash.mkdir(link_directory),
                         gatk4.collect_oxog_metrics(
                             input,
                             os.path.join(picard_directory, sample.name + ".oxog_metrics.txt")
@@ -706,7 +715,7 @@ END
                     samples=[sample]
                 )
             )
-            self.multiqc_inputs.append(os.path.join(picard_directory, sample.name + ".oxog_metrics.txt"))
+            self.multiqc_inputs.append(os.path.join(link_directory, sample.name + ".oxog_metrics.txt"))
 
             jobs.append(
                 concat_jobs(
@@ -731,7 +740,7 @@ END
                     samples=[sample]
                 )
             )
-            self.multiqc_inputs.append(os.path.join(picard_directory, sample.name + ".gcbias_metrics.txt"))
+            self.multiqc_inputs.append(os.path.join(link_directory, sample.name + ".gcbias_metrics.txt"))
 
         return jobs
     
@@ -788,7 +797,7 @@ END
                     samples=[sample]
                 )
             )
-            self.multiqc_inputs.append(output_dependency)
+            self.multiqc_inputs.append(os.path.join(link_directory, os.path.basename(output_dependency)))
             
         return jobs
 
@@ -821,6 +830,7 @@ END
                             flagstat_directory,
                             remove=True
                         ),
+                        bash.mkdir(link_directory),
                         samtools.flagstat(
                             input,
                             output
@@ -838,7 +848,7 @@ END
                     samples=[sample]
                 )
             )
-            self.multiqc_inputs.append(output)
+            self.multiqc_inputs.append(os.path.join(link_directory, sample.name + ".flagstat"))
             
         return jobs
 
@@ -853,7 +863,7 @@ END
 
         jobs = []
 
-        multiqc_input_path = os.path.join(self.output_dirs['report_directory'], "multiqc_inputs")
+        multiqc_input_path = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
         output = os.path.join(self.output_dirs['metrics_directory'], "multiqc_report")
 
         job = multiqc.run(
@@ -904,6 +914,7 @@ END
                 jobs.append(
                     concat_jobs(
                         [
+                            bash.mkdir(link_directory),
                             gatk4.calculate_hs_metrics(
                                 input,
                                 os.path.join(hs_directory, sample.name + ".onTarget.tsv"),
@@ -1172,7 +1183,7 @@ END
                     samples=[sample]
                 )
             )
-
+            self.multiqc_inputs.append(os.path.join(link_directory, sample.name + ".selfSM"))
         return jobs
 
     def gatk_readset_fingerprint(self):

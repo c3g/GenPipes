@@ -762,7 +762,8 @@ END
                     samples=[readset.sample]
                 )
             )
-
+            self.multiqc_inputs.append(os.path.join(link_directory, readset.name + ".trim.json"))
+            
         return jobs
 
     def bwa_mem2_samtools_sort(self):
@@ -998,6 +999,8 @@ END
                     output_dependency=[output, output_index]
                 )
             )
+            self.multiqc_inputs.append(os.path.join(link_directory, sample.name + ".sorted.dup.metrics"))
+            
         return jobs
     
     def verify_bam_id(self):
