@@ -1,6 +1,28 @@
-43 tags, 10110 commits
+44 tags, 10124 commits
 
-HEAD        Wed Aug 23 14:28:42 2023 -0400        0 commits
+HEAD        Fri Sep 8 17:48:23 2023 +0000        0 commits
+
+4.4.4        Fri Sep 8 18:46:58 2023 +0000        14 commits
+
+  Mareike Janiak <mareike.janiak@computationalgenomics.ca>      11 commits
+
+       0dc54c46 Merged in release_4.4.4 (pull request #451)
+       70066e40 Merged in mutect_fix (pull request #448)
+       a8545574 Merged dev into mutect_fix
+       fa9ea1e6 Version bump to 4.4.4
+       657dae58 GenPipes tumor_pair : interval_list job name and dependency issues
+       70c286ef Merged in interval_list_fix (pull request #447)
+       bd975f7a GenPipes : change job name for interval list creation in recalibration step
+       6e3217b8 VERSION bump to 4.4.4.-beta
+       7d0f747f Merged master into dev
+       718ffd77 Merged in release_4.4.3 (pull request #445)
+       7b1ac61a Version bump to 4.4.3
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      3 commits
+
+       422e4afb Merged in kallisto_index_renaming (pull request #449)
+       47db2c7c rnaseq_light - kallisto - Upgrading kallisto to latest + increasing resources for cit
+       49f00cc7 rnaseq_light - kallisto - index renaming to match kallisto version
 
 4.4.3        Wed Aug 23 18:37:11 2023 +0000        338 commits
 
