@@ -22,6 +22,7 @@ import itertools
 import logging
 import os
 import re
+import itertools
 import csv
 
 # GenPipes Modules
@@ -318,14 +319,16 @@ Parameters:
                 
                 writer.writerow(metadata)
 
-        gembs.make_config(self.output_dir, gembs_config_file)
-
         jobs.append(
                 concat_jobs(
                     [
                         bash.rm(index_dir),
                         bash.mkdir(index_dir),
                         bash.rm(gembs_dir),
+                        gembs.make_config(
+                            self.output_dir,
+                            gembs_config_file
+                            ),
                         gembs.prepare(
                             metadata_file,
                             gembs_config_file,
@@ -339,10 +342,6 @@ Parameters:
 
         return jobs
 
-        # TBD, find out what this is supposed to look like
-        # Sent out as jobs in draft, but could be generated as part of set up (no need to do as job, IMO)
-        # (Maybe not, might create indexes with samtools and some other stuff )
-
     def gembs_map(self):
         """
         Map reads to reference genome with GemBS's gem-mapper.
@@ -351,7 +350,7 @@ Parameters:
         jobs = []
 
         metadata = os.path.join(self.output_dir, "metadata.csv") 
-        gembs_config = os.path.join(self.output_dir, ".gemBS/gemBS.mpn")
+        gembs_config = os.path.join(self.output_dir, ".gemBS/gemBS.mp")
         index = os.path.join(self.output_dirs["alignment_directory"], "index", global_conf.global_get('default', 'scientific_name') + ".BS.gem")
 
         jobs.append(
@@ -370,19 +369,23 @@ Parameters:
 
         for sample in self.samples:
             alignment_dir = os.path.join(self.output_dirs["alignment_directory"], sample.name)
+            output_prefix = os.path.join(alignment_dir, sample.name)
             
             jobs.append(
                     concat_jobs(
                         [
+                            bash.rm(alignment_dir),
                             bash.mkdir(alignment_dir),
                             gembs.map(
                                 sample.name, 
                                 gembs_config,
-                                index
+                                index,
+                                output_prefix
                                 )
                         ],
                         name = "gembs_map." + sample.name,
-                        samples = [sample]
+                        samples = [sample],
+                        input_dependency=[gembs_config,index]
                         )
                     )
         return jobs
@@ -1219,6 +1222,84 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 )
             )
 
+        return jobs
+
+    def gembs_call(self):
+        """
+        Methylation calling with bs_call as part of GemBS pipeline
+        """
+        jobs = []
+        
+        for sample in self.samples:
+            bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".bam")
+            output_dir = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
+            output_prefix = os.path.join(output_dir, sample.name)
+            
+            jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(output_dir),
+                            gembs.call(
+                                sample.name,
+                                bam,
+                                output_prefix
+                                )
+                            ],
+                        name = "gembs_call." + sample.name,
+                        samples = [sample]
+                        )
+                    )
+        # add extract here or in separate step?
+            variants_dir = os.path.join(self.output_dirs["variants_directory"], sample.name)
+            input = output_prefix + ".bcf"
+
+            jobs.append(
+                    concat_jobs(
+                        [
+                            bash.mkdir(variants_dir),
+                            gembs.extract(
+                                input,
+                                sample.name,
+                                output_prefix
+                                ) #,
+                            # add symlink for snp output to variants dir?
+                            ],
+                        name = "gembs_extract." + sample.name,
+                        samples = [sample]
+                        )
+                    )
+
+        return jobs
+
+    def gembs_report(self):
+        """
+        GemBS report
+        """
+        jobs = []
+
+        # inputs are jsons generated for each sample during mapping and calling - not needed for command, but for dependencies
+        report_dir = self.output_dirs["report_directory"]
+        report = os.path.join(report_dir, "gembs.report")
+        inputs = []
+
+        for sample in self.samples:
+            map_json = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".json")
+            call_json = os.path.join(self.output_dirs["methylation_call_directory"], sample.name, sample.name + "_call.json")
+            inputs.extend([map_json, call_json])
+
+        jobs.append(
+                concat_jobs(
+                    [
+                        bash.mkdir(report_dir),
+                        gembs.report(
+                            inputs,
+                            report
+                            )
+                    ],
+                    name = "gembs_report"
+                )
+            )
+        
         return jobs
 
     def filter_snp_cpg(self):

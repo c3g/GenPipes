@@ -36,15 +36,25 @@ reference = {global_conf.global_get('gembs_prepare', 'genome_fasta')}
 index_dir = {genpipes_dir}/alignment/index
 sequence_dir = {genpipes_dir}
 bam_dir = {genpipes_dir}/alignment/@BARCODE
-bcf_dir = {genpipes_dir}/call/@BARCODE
-extract_dir = {genpipes_dir}/extract/@BARCODE
+bcf_dir = {genpipes_dir}/methylation_call/@BARCODE
+extract_dir = {genpipes_dir}/variants/@BARCODE
 report_dir = {genpipes_dir}/report
 
 project = GenPipes
 species = {global_conf.global_get('default', 'scientific_name')}
 
+# Default parameters
+threads = 1
+cores = 1
+jobs = 1
+
+[index]
+threads = {global_conf.global_get('gembs_index', 'threads')}
+memory = {global_conf.global_get('gembs_index', 'ram')}
+
 [mapping]
 memory = {global_conf.global_get('gembs_map', 'ram')}
+threads = {global_conf.global_get('gembs_map', 'threads')}
 cores = {global_conf.global_get('gembs_map', 'cores')}
 merge_cores = {global_conf.global_get('gembs_map', 'merge_cores')}
 merge_memory = {global_conf.global_get('gembs_map', 'merge_ram')}
@@ -58,8 +68,9 @@ merge_memory = {global_conf.global_get('gembs_map', 'merge_ram')}
 {"include " + global_conf.global_get('gembs_map', 'standard_IHEC') if global_conf.global_get('gembs_map', 'standard_IHEC', required = False) else ""}
  
 [calling]
+contig_pool_limit = {global_conf.global_get('gembs_call', 'contig_pool_limit')}
 cores = {global_conf.global_get('gembs_call', 'cores')}
-threads = {global_conf.global_get('gembs_call', 'threads')}
+call_threads = {global_conf.global_get('gembs_call', 'threads')}
 memory = {global_conf.global_get('gembs_call', 'ram')}
 left_trim = {global_conf.global_get('gembs_call', 'left_trim')}
 right_trim = {global_conf.global_get('gembs_call', 'right_trim')}
@@ -74,14 +85,22 @@ make_non_cpg = {global_conf.global_get('gembs_extract', 'make_non_cpg')}
 make_bedmethyl = {global_conf.global_get('gembs_extract', 'make_bedmethyl')}
 make_snps = {global_conf.global_get('gembs_extract', 'make_snps')}"""
 
-    with open(output, "w") as config_file:
-        config_file.write(config_content)
+    return Job(
+            output_files = [output],
+            command="""\
+echo \"{config_content}\" > {config_file}""".format(
+        config_content=config_content,
+        config_file=output
+            )
+        )
+   # with open(output, "w") as config_file:
+   #     config_file.write(config_content)
 
 def prepare(metadata, config_file, output_dir):
 
     prefix = os.path.join(output_dir, "alignment/index", global_conf.global_get('default', 'scientific_name') + ".gemBS.")
     output = [
-            output_dir + "/.gemBS/gemBS.mpn",
+            output_dir + "/.gemBS/gemBS.mp",
             prefix + "ref",
             prefix + "ref.fai",
             prefix + "ref.gzi",
@@ -110,10 +129,9 @@ gemBS prepare {flags} {options} \\
 def index(input, output):
 
     output_info = re.sub(".gem", ".info", output)
-    output_log = os.path.join(os.path.dirname(output), "index.log")
     return Job(
         [input],
-        [output, output_info, output_log],
+        [output, output_info],
         [
             ['gembs_index', 'module_gembs'],
             ['gembs_index', 'module_htslib']
@@ -125,12 +143,17 @@ gemBS index {flags} {options}""".format(
             )
         )
 
-def map(sample, gembs_config, index):
-    outputs = "tbd?"
+def map(sample, gembs_config, index, output_prefix):
+    outputs = [
+            output_prefix + ".bam",
+            output_prefix + ".bam.csi",
+            output_prefix + ".bam.md5",
+            output_prefix + ".json"
+            ]
 
     return Job(
         [gembs_config, index],
-        [outputs],
+        outputs,
         [
             ['gembs_map', 'module_gembs'],
             ['gembs_map', 'module_samtools'],
@@ -147,19 +170,24 @@ gemBS map {flags} {options} \\
       )
     )
 
-def call(sample, input, prepare_output, index):
-    outputs = "tbd?"
+def call(sample, input, output_prefix):
+    outputs = [
+            output_prefix + "_call.json",
+            output_prefix + ".bcf",
+            output_prefix + ".bcf.csi",
+            output_prefix + ".bcf.md5"
+            ]
 
     return Job(
         [input],
-        [outputs],
+        outputs,
         [
             ['gembs_call', 'module_gembs'],
             ['gembs_call', 'module_htslib']
         ],
         command = """\
 gemBS call {flags} {options} \\
-  --sample {sample} \\
+  --barcode {sample} \\
   --tmp-dir {tmp_dir}""".format(
       flags=global_conf.global_get('gembs_call', 'flags', required=False),
       options=global_conf.global_get('gembs_call', 'options', required=False),
@@ -168,18 +196,26 @@ gemBS call {flags} {options} \\
       )
     )
 
-def extract(input, sample, output):
+def extract(input, sample, output_dir):
+    output = [
+            output_dir + "/" + sample + "_cpg.bb",
+            output_dir + "/" + sample + "_cpg.bed.gz"
+            ]
 
     return Job(
         [input],
         output,
         [
-            ['gembs_extract', 'module_gembs'],
-            ['gembs_extract', 'module_htslib']
+            ['gembs_extract', 'module_gembs']
         ],
         command="""\
-gemBS extract {flags} {options} \\
---sample {sample}""".format(
+gemBS {gembs_flags} {gembs_options} \\
+  --dir {working_dir} \\
+  extract {flags} {options} \\
+  --barcode {sample}""".format(
+    gembs_flags=global_conf.global_get('gembs_extract', 'gembs_flags', required=False),
+    gembs_options=global_conf.global_get('gembs_extract', 'gembs_options', required=False),
+    working_dir=output_dir,
     flags=global_conf.global_get('gembs_extract', 'flags', required=False),
     options=global_conf.global_get('gembs_extract', 'options', required=False),
     sample=sample
@@ -189,8 +225,8 @@ gemBS extract {flags} {options} \\
 def report(inputs, output):
 
     return Job(
-        [inputs],
-        output,
+        inputs,
+        [output],
         [
             ['gembs_report', 'module_gembs'],
             ['gembs_report', 'module_htslib']
