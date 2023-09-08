@@ -50,7 +50,7 @@ from bfx import vt
 from bfx import htslib
 from bfx import gemini
 from bfx import mosdepth
-from bfx import verify_bam_id
+from bfx import verify_bam_id2
 from bfx import multiqc
 from bfx import deliverables
 from bfx import cpsr
@@ -70,7 +70,6 @@ from bfx import svtyper
 from bfx import bcftools
 from bfx import metric_tools
 from bfx import vawk
-from bfx import svaba
 
 log = logging.getLogger(__name__)
 
@@ -868,7 +867,7 @@ END
 
         return jobs
 
-    def picard_calculate_hs_metrics(self):
+    def metrics_picard_calculate_hs(self):
         """
         Compute on target percent of hybridisation based capture.
         """
@@ -899,7 +898,6 @@ END
                         [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
                         # [os.path.join(alignment_directory, sample.name + ".sorted.primerTrim.bam")],
                         [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                        [os.path.join(alignment_directory, sample.name + ".sorted.filtered.bam")],
                         [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
                     ]
                 )
@@ -1127,15 +1125,21 @@ END
 
         for sample in self.samples:
             alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            output = os.path.join(self.output_dirs['metrics_directory'], "dna", sample.name, "verifyBamId")
+            output = os.path.join(self.output_dirs['metrics_directory'], "verifyBamId", sample.name)
+            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
             [input] = self.select_input_files(
                 [
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.recal.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
                     [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
                 ]
             )
+            
+            coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
+            
+            bed_file = None
+            if coverage_bed is not None:
+                bed_file = coverage_bed
 
             jobs.append(
                 concat_jobs(
@@ -1144,12 +1148,27 @@ END
                             output,
                             remove=False
                         ),
-                        verify_bam_id.verify(
+                        bash.mkdir(os.path.join(
+                            self.output_dirs['report_directory'],
+                            "multiqc_inputs",
+                            sample.name)
+                        ),
+                        verify_bam_id2.verify(
                             input,
-                            os.path.join(output, sample.name)
+                            os.path.join(output, sample.name),
+                            bed_file
+                        ),
+                        bash.ln(
+                            os.path.relpath(
+                                os.path.join(os.path.join(output, sample.name + ".selfSM")),
+                                link_directory
+                            ),
+                            os.path.join(link_directory, sample.name + ".selfSM"),
+                            os.path.join(output, sample.name + ".selfSM")
                         )
+                        
                     ],
-                    name="verify_bam_id." + sample.name,
+                    name="verify_bam_id2." + sample.name,
                     samples=[sample]
                 )
             )
@@ -3432,87 +3451,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
 
         return jobs
 
-    def svaba_assemble(self):
-        jobs = []
-
-        for sample in self.samples:
-            pair_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
-            svaba_directory = os.path.join(pair_directory, "rawSvaba")
-
-            input_normal = self.select_input_files(
-                [
-                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.recal.bam")],
-                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".sorted.bam")]
-                ]
-            )
-
-            germline_input = os.path.join(svaba_directory, sample.name + ".svaba.sv.vcf")
-            germline_output = os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.vcf.gz")
-
-            coverage_bed = bvatools.resolve_readset_coverage_bed(
-                sample.readsets[0]
-            )
-
-            bed = None
-
-            if coverage_bed:
-                bed = coverage_bed
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        bash.mkdir(svaba_directory, remove=True),
-                        svaba.run(input_normal, os.path.join(svaba_directory, sample.name), None, bed),
-                        pipe_jobs(
-                            [
-                                Job(
-                                    [germline_input],
-                                    [None],
-                                    command="sed -e 's#" + os.path.abspath(input_normal) + "#" + sample.name + "#g' " + germline_input
-                                ),
-                                htslib.bgzip_tabix(None, germline_output)
-                            ]
-                        )
-                    ],
-                    name="svaba_run." + sample.name,
-                    samples=[sample]
-                )
-            )
-
-        return jobs
-
-    def svaba_sv_annotation(self):
-
-        jobs = []
-        for sample in self.samples:
-            pair_directory = os.path.join(self.output_dirs["SVariants_directory"], sample.name)
-
-            jobs.append(
-                concat_jobs(
-                    [
-                        Job(
-                            [os.path.abspath(pair_directory) + ".svaba.germline.vcf"],
-                            [os.path.abspath(pair_directory) + ".svaba.germline.flt.vcf"],
-                            command="cat <(grep \"^#\" " + os.path.abspath(pair_directory) + ".svaba.germline.vcf) <(grep -v \"^#\" " + os.path.abspath(pair_directory) + ".svaba.germline.vcf | cut -f1-9,13-14) > "
-                                    + os.path.abspath(pair_directory) + ".svaba.germline.flt.vcf"
-                        ),
-                        snpeff.compute_effects(
-                            os.path.join(os.path.abspath(pair_directory), sample.name + ".svaba.germline.flt.vcf.gz"),
-                            os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf")
-                        ),
-                        htslib.bgzip_tabix(
-                            os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf"),
-                            os.path.join(pair_directory, sample.name + ".svaba.germline.snpeff.vcf.gz")
-                        )
-                    ],
-                    name=f"sv_annotation.svaba_germline.{sample.name}",
-                    samples=[sample]
-                )
-            )
-
-        return jobs
-
     @property
     def steps(self):
         return [
@@ -3536,11 +3474,11 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_mosdepth,
                 self.metrics_dna_samtools_flagstat,
-                self.picard_calculate_hs_metrics,
+                self.metrics_picard_calculate_hs,
+                self.metrics_verify_bam_id,
                 self.run_multiqc,
                 self.sym_link_fastq,
                 self.sym_link_final_bam,
-                self.metrics_verify_bam_id,
                 self.metrics_vcftools_missing_indiv,
                 self.metrics_vcftools_depth_indiv,
                 self.metrics_gatk_sample_fingerprint,
@@ -3555,7 +3493,9 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_mosdepth,
                 self.metrics_dna_samtools_flagstat,
-                self.picard_calculate_hs_metrics,
+                self.metrics_picard_calculate_hs,
+                self.metrics_verify_bam_id,
+                self.run_multiqc,
                 self.set_interval_list,
                 self.gatk_haplotype_caller, #10
                 self.merge_and_call_individual_gvcf,
@@ -3582,7 +3522,8 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.metrics_dna_picard_metrics,
                 self.metrics_dna_sample_mosdepth,
                 self.metrics_dna_samtools_flagstat,
-                self.picard_calculate_hs_metrics,
+                self.metrics_picard_calculate_hs,
+                self.run_multiqc,
                 self.delly_call_filter,
                 self.delly_sv_annotation,
                 self.manta_sv_calls,
