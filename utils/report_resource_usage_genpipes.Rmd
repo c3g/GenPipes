@@ -704,6 +704,9 @@ cat(paste0("**", nrow(Info_df),"** different steps in total among all files." ,"
 #Absolute path if the one gived is relative
 cat(paste0("Path used : **", opt$in_path,"**  \n"))
 
+#Timestamp used?
+cat(paste0("Run specified : **", opt$timestamp,"**  \n"))
+
 #scheduler chosen  params$scheduler
 cat(paste0("Scheduler chosen : **", scheduler ,"**"))
 
