@@ -247,7 +247,9 @@ Values_SLURM <- function(FileInput_List){
   StartTime <<- String_to_Date(research_Element_SLURM(FileInput_List, "StartTime"))
   
   #calculation WaitingTime
-  WaitingTime <<- as.character(difftime(StartTime, EligibleTime, units = "mins"))
+  WaitingTime <<- as.character(difftime(gsub('T', ' ', research_Element_SLURM(FileInput_List, "StartTime")), 
+                                        gsub('T', ' ', research_Element_SLURM(FileInput_List, "EligibleTime")), 
+                                        units = "mins"))
   
   #research RunTime
   RunTime <<- research_Element_SLURM(FileInput_List, "RunTime")
