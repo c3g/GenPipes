@@ -6,6 +6,7 @@ editor_options:
 params: 
    input: NULL
    output: NULL
+   timestamp: NULL
    name: NULL
    verbose: NULL
    scheduler: NULL
@@ -19,6 +20,7 @@ output:
 
 ```{r temp_setup, echo = FALSE}
 input <- params$input
+timestamp <- params$timestamp
 output <- params$output
 name_doc <- params$name
 verbose <- params$verbose
@@ -57,8 +59,8 @@ library(highcharter)
 
 ```{r folder_path_to_o_file_list, echo = FALSE}
 
-folder_path_to_o_file_list <- function(job_output_path){
-  #IN : folder path as character
+folder_path_to_o_file_list <- function(job_output_path,timestamp){
+  #IN : folder path as character, optional timestamp
   #OUT : list containing sub list for each step type containing .o file path
   
   #list all folders path in job_output folder as list
@@ -68,12 +70,20 @@ folder_path_to_o_file_list <- function(job_output_path){
   #folder path list
   list_path = list()
   
+  #pattern to find
+  pattern = "*.o"
+  if(!is.null(timestamp)) pattern <- paste0('*', timestamp, '.o')
+#  pattern = "\\.o$"
+#  if(!is.null(timestamp)) pattern <- paste0(timestamp, '.o')
+
   for (path in job_output_list_folder){
+#    if(!is.null(timestamp)) pattern <- paste0('*', timestamp, '.o')
+#    list_path <- append(list_path,list.files(path,
+#                                             pattern = pattern,
+#                                             recursive = TRUE,
+#                                             full.names = TRUE))
     
-    list_path <- append(list_path,list.files(path,
-                                             pattern = "\\.o$",
-                                             recursive = TRUE,
-                                             full.names = TRUE))
+    list_path <- append(list_path,system(sprintf('find "%s" -name "%s"', path, pattern), intern = TRUE))
   }
   
   #dataframe containing path and associated type of step
@@ -112,12 +122,12 @@ folder_path_to_o_file_list <- function(job_output_path){
 ```
 
 ```{r parsed_folder, echo = FALSE}
-parsed_folder <- function(folder_path_list){
+parsed_folder <- function(folder_path_list,timestamp){
   #IN :   list of .o file path
   #OUT :  dataset containing wanted information from these files
   
   #récup path list
-  file_path_list <- folder_path_to_o_file_list(folder_path_list)
+  file_path_list <- folder_path_to_o_file_list(folder_path_list,timestamp)
   
   #creating df for parsed informations
   Info_df <<- data.frame(	JobName = as.character(),
@@ -616,7 +626,7 @@ output_path = output
 ############## RESULT ###########################################################
 
 #function call with complete list of .o file
-result <- parsed_folder(job_output_path)
+result <- parsed_folder(job_output_path,timestamp)
 
 ```
 
@@ -688,14 +698,14 @@ cat(" \n ")
 #Total steps
 cat(paste0("**",nrow(DF_plot),"** files parsed." ,"  \n"))
 
-#Total differents steps
-cat(paste0("**", nrow(Info_df),"** differents steps in total among all files." ,"  \n"))
+#Total different steps
+cat(paste0("**", nrow(Info_df),"** different steps in total among all files." ,"  \n"))
 
 #Absolute path if the one gived is relative
 cat(paste0("Path used : **", opt$in_path,"**  \n"))
 
-#scheduler choosed  params$scheduler
-cat(paste0("Scheduler choosed : **", scheduler ,"**"))
+#scheduler chosen  params$scheduler
+cat(paste0("Scheduler chosen : **", scheduler ,"**"))
 
 
 ```
@@ -703,7 +713,7 @@ cat(paste0("Scheduler choosed : **", scheduler ,"**"))
 ***
 ## WaitingTime plot
 
-This plot represent the time spend in queue for each step. Boxplot gives average, lower and longer time spent in queue.
+This plot represents the time spend in queue for each step. Boxplot gives average, lower and longer time spent in queue.
 
 ```{r p_WaitingTime, echo=FALSE, fig.height=10, out.width = '100%'}
 if(Waiting_flag){
