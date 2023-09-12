@@ -268,16 +268,15 @@ Values_SLURM <- function(FileInput_List){
   #print(typeof(JobId))
   #print(JobId)
   
-  out <- tryCatch(
+  mem_out <- tryCatch(
     {
        #seff command give memory efficiency information (and more)                                    ##modif
        #Memory_Efficiency
        seff_resp <<- system2(command = "seff",
     				stdout = TRUE, 
     			 	args = as.character(JobId),
-    				#stdout = TRUE,
     				stderr = FALSE,
-    				input = list())
+    				input = NULL)
        Pos_eli_time <<- grep("Memory Efficiency",seff_resp)
        
        Memory_Efficiency <<- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][3]
@@ -287,19 +286,18 @@ Values_SLURM <- function(FileInput_List){
        
        #Memory_Request
        Memory_Request <<- strsplit(x = seff_resp[Pos_eli_time], split = " ")[[1]][5]
-       
-       return(c(Memory_Efficiency,Memory_Request))
-    },error = function(cond){
+       Memory_Request <<- as.numeric(Memory_Request)
+
+       c(Memory_Efficiency,Memory_Request)
+    },
+    error = function(cond){
        #case where seff didn't worked
        return(c(NA,NA))
     }
   )
   
-  #print("out :")
-  #print(out)
-  
-  Memory_Efficiency <<- out[1]
-  Memory_Request <<- out[2]
+  Memory_Efficiency <<- mem_out[1]
+  Memory_Request <<- mem_out[2]
   
   return(list(JobName, WaitingTime, RunTime, TimeLimit, NumCPUs, Memory_Efficiency, Memory_Request))
 }
