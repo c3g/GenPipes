@@ -16,12 +16,18 @@ option_list = list(
               type = "character",
               default=NA, 
               help="Job_Output path to analyse."),
-  
+
+  make_option(c("-t", "--timestamp"),
+              action = "store",
+              type = "character",
+              default=NULL,
+              help="Format:YYYY-MM-DDTHH.MM.SS\nShould the program report only on out files from a specific run? If no timestamp is provided, all out files will be considered."),
+
   make_option(c("-o", "--out_path"),
               action = "store",
               type = "character",
               default=NA, 
-              help="Folder where report is registered. If any folder is specified, the output folder will be the same as input folder."),
+              help="Folder where report is registered. If no folder is specified, the output folder will be the same as input folder."),
   
   make_option(c("-n", "--name"),
               action = "store",
@@ -78,6 +84,7 @@ if(file.exists(opt$in_path) & file.exists(opt$out_path)) {
   rmarkdown::render(input = "report_resource_usage_genpipes.Rmd",
                     params = list(
                       input = opt$in_path,             #joboutput path
+                      timestamp = opt$timestamp,       #timestamp of run
                       output = opt$out_path,           #report output path
                       name = opt$name,                 #name of document (if needed)
                       verbose = opt$verbose,           #verbose option
@@ -98,18 +105,5 @@ if  (!file.exists(opt$in_path)){
 if  (!file.exists(opt$out_path)){
   cat(paste("The specified output path doesn't exist :", opt$out_path,"\n", sep = " "), file=stderr()) # print error messages to stderr
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
