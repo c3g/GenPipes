@@ -349,7 +349,7 @@ Parameters:
 
         jobs = []
 
-        metadata = os.path.join(self.output_dir, "metadata.csv") 
+        #metadata = os.path.join(self.output_dir, "metadata.csv") 
         gembs_config = os.path.join(self.output_dir, ".gemBS/gemBS.mp")
         index = os.path.join(self.output_dirs["alignment_directory"], "index", global_conf.global_get('default', 'scientific_name') + ".BS.gem")
 
@@ -369,18 +369,22 @@ Parameters:
 
         for sample in self.samples:
             alignment_dir = os.path.join(self.output_dirs["alignment_directory"], sample.name)
-            output_prefix = os.path.join(alignment_dir, sample.name)
+            config_dir = os.path.join(alignment_dir, ".gemBS")
             
             jobs.append(
                     concat_jobs(
                         [
                             bash.rm(alignment_dir),
                             bash.mkdir(alignment_dir),
+                            bash.mkdir(config_dir),
+                            bash.cp(
+                                gembs_config,
+                                config_dir
+                                ),
                             gembs.map(
                                 sample.name, 
-                                gembs_config,
                                 index,
-                                output_prefix
+                                alignment_dir
                                 )
                         ],
                         name = "gembs_map." + sample.name,
@@ -1234,11 +1238,19 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
             bam = os.path.join(self.output_dirs["alignment_directory"], sample.name, sample.name + ".bam")
             output_dir = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
             output_prefix = os.path.join(output_dir, sample.name)
+            config_dir = os.path.join(output_dir, ".gemBS")
+            gembs_config = os.path.join(self.output_dir, ".gemBS/gemBS.mp")
             
             jobs.append(
                     concat_jobs(
                         [
+                            bash.rm(output_dir),
                             bash.mkdir(output_dir),
+                            bash.mkdir(config_dir),
+                            bash.cp(
+                                gembs_config,
+                                config_dir
+                                ),
                             gembs.call(
                                 sample.name,
                                 bam,
@@ -1246,7 +1258,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                                 )
                             ],
                         name = "gembs_call." + sample.name,
-                        samples = [sample]
+                        samples = [sample],
+                        input_dependency=[bam,gembs_config]
                         )
                     )
         # add extract here or in separate step?
@@ -1256,6 +1269,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
             jobs.append(
                     concat_jobs(
                         [
+                            bash.rm(variants_dir),
                             bash.mkdir(variants_dir),
                             gembs.extract(
                                 input,
@@ -1265,7 +1279,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                             # add symlink for snp output to variants dir?
                             ],
                         name = "gembs_extract." + sample.name,
-                        samples = [sample]
+                        samples = [sample],
+                        input_dependency = [input]
                         )
                     )
 

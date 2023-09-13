@@ -143,32 +143,36 @@ gemBS index {flags} {options}""".format(
             )
         )
 
-def map(sample, gembs_config, index, output_prefix):
+def map(sample, index, output_dir):
     outputs = [
-            output_prefix + ".bam",
-            output_prefix + ".bam.csi",
-            output_prefix + ".bam.md5",
-            output_prefix + ".json"
+            output_dir + "/" + sample + ".bam",
+            output_dir + "/" + sample + ".bam.csi",
+            output_dir + "/" + sample + ".bam.md5",
+            output_dir + "/" + sample + ".json"
             ]
 
     return Job(
-        [gembs_config, index],
+        index,
         outputs,
         [
-            ['gembs_map', 'module_gembs'],
-            ['gembs_map', 'module_samtools'],
-            ['gembs_map', 'module_htslib']
+            ['gembs_map', 'module_gembs']
         ],
         command="""\
-gemBS map {flags} {options} \\
+gemBS {gembs_flags} {gembs_options} \\
+  --dir {working_dir} \\
+  map {flags} {options} \\
   --barcode {sample} \\
   --tmp-dir {tmp_dir}""".format(
+      gembs_flags=global_conf.global_get('gembs_map', 'gembs_flags', required=False),
+      gembs_options=global_conf.global_get('gembs_map', 'gembs_options', required=False),
+      working_dir=output_dir,
       flags=global_conf.global_get('gembs_map', 'flags', required=False),
       options=global_conf.global_get('gembs_map', 'options', required=False),
       sample=sample,
       tmp_dir=global_conf.global_get('gembs_map', 'tmp_dir')
       )
     )
+
 
 def call(sample, input, output_prefix):
     outputs = [
@@ -182,19 +186,25 @@ def call(sample, input, output_prefix):
         [input],
         outputs,
         [
-            ['gembs_call', 'module_gembs'],
-            ['gembs_call', 'module_htslib']
+            ['gembs_call', 'module_gembs']
         ],
         command = """\
-gemBS call {flags} {options} \\
+gemBS {gembs_flags} {gembs_options} \\
+  --dir {working_dir} \\
+  call {flags} {options} \\
   --barcode {sample} \\
-  --tmp-dir {tmp_dir}""".format(
+  --tmp-dir {tmp_dir} {dbSNP}""".format(
+      gembs_flags=global_conf.global_get('gembs_call', 'gembs_flags', required=False),
+      gembs_options=global_conf.global_get('gembs_call', 'gembs_options', required=False),
+      working_dir=os.path.dirname(output_prefix),
       flags=global_conf.global_get('gembs_call', 'flags', required=False),
       options=global_conf.global_get('gembs_call', 'options', required=False),
       sample=sample,
-      tmp_dir=global_conf.global_get('gembs_call', 'tmp_dir')
+      tmp_dir=global_conf.global_get('gembs_call', 'tmp_dir'),
+      dbSNP="-D " + global_conf.global_get('gembs_call', 'dbSNP_index') if global_conf.global_get('gembs_call', 'dbSNP_index', required=False) else ""
       )
     )
+
 
 def extract(input, sample, output_dir):
     output = [
