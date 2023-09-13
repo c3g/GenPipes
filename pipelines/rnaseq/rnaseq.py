@@ -487,13 +487,7 @@ class RnaSeqRaw(common.Illumina):
                             os.path.relpath(readset_bam, os.path.dirname(sample_bam)),
                             sample_bam,
                             input=readset_bam
-                        ),
-                        bash.mkdir(link_directory),
-                        bash.ln(
-                            os.path.relpath(sample_log, link_directory),
-                            os.path.join(link_directory, readset.sample.name + "_star.Log.final.out"),
-                            sample_log
-                            )
+                        )
                     ],
                     removable_files=[sample_bam]
                 )
@@ -725,7 +719,6 @@ pandoc --to=markdown \\
                 )
             )
 
-        #self.multiqc_inputs.append(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"))
         return jobs
     
 #    def bam_hard_clip(self):
@@ -905,6 +898,7 @@ pandoc \\
 
             output_directory = os.path.join(self.output_dirs["metrics_directory"], "rna")
             link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+            scientific_name = config.param('star', 'scientific_name')
 
             if os.path.isfile(os.path.join(config.param('DEFAULT', 'annotations_prefix', param_type='prefixpath', required=False) + ".rnaseqc2.gtf")):
                 input_gtf = os.path.join(config.param('DEFAULT', 'annotations_prefix', param_type='prefixpath', required=False) + ".rnaseqc2.gtf")
@@ -915,13 +909,13 @@ pandoc \\
                         bash.mkdir(output_directory),
                         gtex_pipeline.collapse_gtf(
                             input_gtf=config.param('DEFAULT', 'gtf', param_type='filepath', required=True),
-                            output_gtf=os.path.join(output_directory, "collapsed.gtf")
+                            output_gtf=os.path.join(output_directory, scientific_name + "_collapsed.gtf")
                         )
                         ],
                         name="collapse_gtf"
                     )
                 )
-                input_gtf = os.path.join(output_directory, "collapsed.gtf")
+                input_gtf = os.path.join(output_directory, scientific_name + "_collapsed.gtf")
 
 
             # Use GTF with transcript_id only otherwise RNASeQC fails
@@ -2537,8 +2531,6 @@ END
                 self.mark_duplicates,
                 self.picard_rna_metrics,
                 self.estimate_ribosomal_rna,
-                # self.bam_hard_clip,
-                # self.rnaseqc,
                 self.rnaseqc2,
                 self.wiggle,
                 self.raw_counts,
