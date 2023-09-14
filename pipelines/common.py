@@ -762,7 +762,7 @@ END
                     samples=[readset.sample]
                 )
             )
-            self.multiqc_inputs.append(os.path.join(link_directory, readset.name + ".trim.json"))
+            self.multiqc_inputs[readset.sample.name].append(os.path.join(link_directory, readset.name + ".trim.json"))
             
         return jobs
 
@@ -964,10 +964,10 @@ END
 
             if config.param("gatk_mark_duplicates", 'compression') == "cram":
                 output = os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")
-                output_index = os.path.join(alignment_directory, sample.name + ".sorted.dup.cram.crai")
+                output_index = output + ".crai"
             else:
                 output =os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")
-                output_index = os.path.join(alignment_directory, sample.name + ".sorted.dup.bam.bai")
+                output_index = output + ".bai"
 
             metrics_file = os.path.join(alignment_directory, sample.name + ".sorted.dup.metrics")
 
@@ -996,10 +996,9 @@ END
                     ],
                     name="gatk_mark_duplicates." + sample.name,
                     samples=[sample],
-                    output_dependency=[output, output_index]
                 )
             )
-            self.multiqc_inputs.append(os.path.join(link_directory, sample.name + ".sorted.dup.metrics"))
+            self.multiqc_inputs[sample.name].append(os.path.join(link_directory, sample.name + ".sorted.dup.metrics"))
             
         return jobs
     

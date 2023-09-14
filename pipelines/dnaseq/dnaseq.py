@@ -119,11 +119,12 @@ class DnaSeqRaw(common.Illumina):
             'report_directory': os.path.relpath(os.path.join(self.output_dir, 'report'), self.output_dir)
         }
         return dirs
-
     @property
     def multiqc_inputs(self):
         if not hasattr(self, "_multiqc_inputs"):
-            self._multiqc_inputs = []
+            self._multiqc_inputs = {}
+            for sample in self.samples:
+                self._multiqc_inputs[sample.name] = []
         return self._multiqc_inputs
 
     @multiqc_inputs.setter
@@ -683,14 +684,6 @@ END
                     samples=[sample]
                 )
             )
-            self.multiqc_inputs.append(
-                os.path.join(link_directory, sample.name + ".all.metrics.alignment_summary_metrics"))
-            self.multiqc_inputs.append(
-                os.path.join(link_directory, sample.name + ".all.metrics.insert_size_metrics"))
-            self.multiqc_inputs.append(
-                os.path.join(link_directory, sample.name + ".all.metrics.quality_by_cycle_metrics"))
-            self.multiqc_inputs.append(
-                os.path.join(link_directory, sample.name + ".all.metrics.quality_distribution_metrics"))
             
             jobs.append(
                 concat_jobs(
@@ -715,13 +708,12 @@ END
                     samples=[sample]
                 )
             )
-            self.multiqc_inputs.append(os.path.join(link_directory, sample.name + ".oxog_metrics.txt"))
-
+            
             jobs.append(
                 concat_jobs(
                     [
                         mkdir_job,
-                        bash.mkdir(os.path.join(self.output_dirs['report_directory'], "multiqc_inputs", sample.name)),
+                        bash.mkdir(link_directory),
                         gatk4.collect_gcbias_metrics(
                             input,
                             os.path.join(picard_directory, sample.name)
@@ -740,7 +732,16 @@ END
                     samples=[sample]
                 )
             )
-            self.multiqc_inputs.append(os.path.join(link_directory, sample.name + ".gcbias_metrics.txt"))
+            self.multiqc_inputs[sample.name].extend(
+                [
+                    os.path.join(link_directory, sample.name + ".all.metrics.alignment_summary_metrics"),
+                    os.path.join(link_directory, sample.name + ".all.metrics.insert_size_metrics"),
+                    os.path.join(link_directory, sample.name + ".all.metrics.quality_by_cycle_metrics"),
+                    os.path.join(link_directory, sample.name + ".all.metrics.quality_distribution_metrics"),
+                    os.path.join(link_directory, sample.name + ".oxog_metrics.txt"),
+                    os.path.join(link_directory, sample.name + ".gcbias_metrics.txt")
+                ]
+            )
 
         return jobs
     
@@ -797,7 +798,9 @@ END
                     samples=[sample]
                 )
             )
-            self.multiqc_inputs.append(os.path.join(link_directory, os.path.basename(output_dependency)))
+            self.multiqc_inputs[sample.name].append(
+                    os.path.join(link_directory, os.path.basename(output_dependency))
+            )
             
         return jobs
 
@@ -848,7 +851,7 @@ END
                     samples=[sample]
                 )
             )
-            self.multiqc_inputs.append(os.path.join(link_directory, sample.name + ".flagstat"))
+            self.multiqc_inputs[sample.name].append(os.path.join(link_directory, sample.name + ".flagstat"))
             
         return jobs
 
@@ -862,6 +865,8 @@ END
         """
 
         jobs = []
+        
+        multiqc_input_paths = [item for sample in self.samples for item in self.multiqc_inputs[sample.name]]
 
         multiqc_input_path = os.path.join(self.output_dirs['metrics_directory'], "multiqc_inputs")
         output = os.path.join(self.output_dirs['metrics_directory'], "multiqc_report")
@@ -872,7 +877,7 @@ END
         )
         job.name = "multiqc_all_samples"
         job.samples = self.samples
-        job.input_files = self.multiqc_inputs
+        job.input_files = multiqc_input_paths
         jobs.append(job)
 
         return jobs
@@ -933,87 +938,9 @@ END
                         samples=[sample]
                     )
                 )
-                self.multiqc_inputs.append(os.path.join(hs_directory, sample.name + ".onTarget.tsv"))
-        return jobs
-
-    def gatk_callable_loci(self):
-        """
-        Computes the callable region or the genome as a bed track.
-        """
-
-        jobs = []
-
-        for sample in self.samples:
-            alignment_file_prefix = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".")
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            [input] = self.select_input_files(
-                [
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
-                ]
-            )
-
-            job = gatk4.callable_loci(
-                input,
-                alignment_file_prefix + "callable.bed",
-                alignment_file_prefix + "callable.summary.txt"
-            )
-            job.name = "gatk_callable_loci." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
-
-        return jobs
-
-    def extract_common_snp_freq(self):
-        """
-        Extracts allele frequencies of possible variants accross the genome.
-        """
-
-        jobs = []
-
-        for sample in self.samples:
-            alignment_file_prefix = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".")
-            alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
-            [input] = self.select_input_files(
-                [
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.cram")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.dup.bam")],
-                    [os.path.join(alignment_directory, sample.name + ".sorted.bam")]
-                ]
-            )
-
-            job = bvatools.basefreq(
-                input,
-                alignment_file_prefix+"commonSNPs.alleleFreq.csv",
-                config.param('extract_common_snp_freq', 'common_snp_positions', param_type='filepath'),
-                0
-            )
-            job.name = "extract_common_snp_freq." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
-
-        return jobs
-
-    def baf_plot(self):
-        """
-        Plots DepthRatio and B allele frequency of previously extracted alleles.
-        """
-
-        jobs = []
-
-        for sample in self.samples:
-            alignment_file_prefix = os.path.join(self.output_dirs['alignment_directory'], sample.name, sample.name + ".")
-
-            job = bvatools.ratiobaf(
-                alignment_file_prefix+"commonSNPs.alleleFreq.csv",
-                alignment_file_prefix+"ratioBAF",
-                config.param('baf_plot', 'common_snp_positions', param_type='filepath')
-            )
-            job.name = "baf_plot." + sample.name
-            job.samples = [sample]
-            jobs.append(job)
-
+                self.multiqc_inputs[sample.name].append(
+                        os.path.join(hs_directory, sample.name + ".onTarget.tsv")
+                )
         return jobs
 
     def metrics_vcftools_missing_indiv(self):
@@ -1183,7 +1110,9 @@ END
                     samples=[sample]
                 )
             )
-            self.multiqc_inputs.append(os.path.join(link_directory, sample.name + ".selfSM"))
+            self.multiqc_inputs[sample.name].append(
+                    os.path.join(link_directory, sample.name + ".selfSM")
+            )
         return jobs
 
     def gatk_readset_fingerprint(self):
@@ -3519,7 +3448,6 @@ cp {snv_metrics_prefix}.chromosomeChange.zip report/SNV.chromosomeChange.zip""".
                 self.filter_tumor_only,
                 self.report_cpsr,
                 self.report_pcgr, #20
-                self.run_multiqc
             ],
             [
                 self.gatk_sam_to_fastq,

@@ -130,18 +130,6 @@ class TumorPair(dnaseq.DnaSeqRaw):
         return dirs
 
     @property
-    def multiqc_inputs(self):
-        if not hasattr(self, "_multiqc_inputs"):
-            self._multiqc_inputs = {}
-            for tumor_pair in self.tumor_pairs.values():
-                self._multiqc_inputs[tumor_pair.name] = []
-        return self._multiqc_inputs
-
-    @multiqc_inputs.setter
-    def multiqc_inputs(self, value):
-        self._multiqc_inputs = value
-
-    @property
     def tumor_pairs(self):
         if not hasattr(self, "_tumor_pairs"):
             self._tumor_pairs = parse_tumor_pair_file(
@@ -456,7 +444,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
-            self.multiqc_inputs[tumor_pair.name].extend(
+            self.multiqc_inputs[tumor_pair.tumor.name].extend(
                 [
                     concordance_out,
                     contamination_out
@@ -1474,7 +1462,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 ]
             )
             for outfile in collect_multiple_metrics_normal_job.report_files:
-                self.multiqc_inputs[tumor_pair.name].append(outfile)
+                self.multiqc_inputs[tumor_pair.normal.name].append(outfile)
                 collect_multiple_metrics_normal_job = concat_jobs(
                     [
                         collect_multiple_metrics_normal_job,
@@ -1507,7 +1495,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         )
                 ]
             )
-            self.multiqc_inputs[tumor_pair.name].append(os.path.join(normal_picard_directory, tumor_pair.normal.name + ".oxog_metrics.txt"))
+            self.multiqc_inputs[tumor_pair.normal.name].append(os.path.join(normal_picard_directory, tumor_pair.normal.name + ".oxog_metrics.txt"))
             collect_oxog_metrics_normal_job.name = "picard_collect_oxog_metrics." + tumor_pair.name + "." + tumor_pair.normal.name
             collect_oxog_metrics_normal_job.samples = [tumor_pair.normal]
             collect_oxog_metrics_normal_job.readsets = list(tumor_pair.normal.readsets)
@@ -1549,7 +1537,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 ]
             )
             for outfile in collect_gcbias_metrics_normal_job.report_files:
-                self.multiqc_inputs[tumor_pair.name].append(outfile)
+                self.multiqc_inputs[tumor_pair.normal.name].append(outfile)
                 collect_gcbias_metrics_normal_job = concat_jobs(
                     [
                         collect_gcbias_metrics_normal_job,
@@ -1603,7 +1591,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 ]
             )
             for outfile in collect_multiple_metrics_tumor_job.report_files:
-                self.multiqc_inputs[tumor_pair.name].append(outfile)
+                self.multiqc_inputs[tumor_pair.tumor.name].append(outfile)
                 collect_multiple_metrics_tumor_job = concat_jobs(
                     [
                         collect_multiple_metrics_tumor_job,
@@ -1636,7 +1624,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                         )
                 ]
             )
-            self.multiqc_inputs[tumor_pair.name].append(os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".oxog_metrics.txt"))
+            self.multiqc_inputs[tumor_pair.tumor.name].append(os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".oxog_metrics.txt"))
             collect_oxog_metrics_tumor_job.name = "picard_collect_oxog_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name
             collect_oxog_metrics_tumor_job.samples = [tumor_pair.tumor]
             collect_oxog_metrics_tumor_job.readsets = list(tumor_pair.tumor.readsets)
@@ -1678,7 +1666,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                 ]
             )
             for outfile in collect_gcbias_metrics_tumor_job.report_files:
-                self.multiqc_inputs[tumor_pair.name].append(outfile)
+                self.multiqc_inputs[tumor_pair.tumor.name].append(outfile)
                 collect_gcbias_metrics_tumor_job = concat_jobs(
                     [
                         collect_gcbias_metrics_tumor_job,
@@ -1712,7 +1700,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             )
                     ]
                 )
-                self.multiqc_inputs[tumor_pair.name].append(os.path.join(normal_picard_directory, tumor_pair.normal.name + ".bait_bias_summary_metrics.txt"))
+                self.multiqc_inputs[tumor_pair.normal.name].append(os.path.join(normal_picard_directory, tumor_pair.normal.name + ".bait_bias_summary_metrics.txt"))
                 collect_sequencing_artifacts_metrics_normal_job.name = "picard_collect_sequencing_artifacts_metrics." + tumor_pair.name + "." + tumor_pair.normal.name
                 collect_sequencing_artifacts_metrics_normal_job.samples = [tumor_pair.normal]
                 collect_sequencing_artifacts_metrics_normal_job.readsets = list(tumor_pair.normal.readsets)
@@ -1733,7 +1721,7 @@ class TumorPair(dnaseq.DnaSeqRaw):
                             )
                     ]
                 )
-                self.multiqc_inputs[tumor_pair.name].append(os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".bait_bias_summary_metrics.txt"))
+                self.multiqc_inputs[tumor_pair.tumor.name].append(os.path.join(tumor_picard_directory, tumor_pair.tumor.name + ".bait_bias_summary_metrics.txt"))
                 collect_sequencing_artifacts_metrics_tumor_job.name = "picard_collect_sequencing_artifacts_metrics." + tumor_pair.name + "." + tumor_pair.tumor.name
                 collect_sequencing_artifacts_metrics_tumor_job.samples = [tumor_pair.tumor]
                 collect_sequencing_artifacts_metrics_tumor_job.readsets = list(tumor_pair.tumor.readsets)
@@ -1794,11 +1782,11 @@ class TumorPair(dnaseq.DnaSeqRaw):
                     samples=[sample]
                 )
             )
-            #self.multiqc_inputs.append(output_dependency)
+            self.multiqc_inputs[sample.name].append(output_dependency)
         
         return jobs
 
-    def run_pair_multiqc(self):
+    def run_pair_multiqc(self): 
         """
         Aggregate results from bioinformatics analyses across many samples into a single report
         MultiQC searches a given directory for analysis logs and compiles an HTML report. It's a general-use tool,
@@ -1809,16 +1797,22 @@ class TumorPair(dnaseq.DnaSeqRaw):
 
         metrics_directory = os.path.join(self.output_dirs['metrics_directory'], "dna")
         for tumor_pair in self.tumor_pairs.values():
+            multiqc_input_paths = []
+            for metrics in self.multiqc_inputs[tumor_pair.normal.name] + self.multiqc_inputs[tumor_pair.tumor.name]:
+                multiqc_input_paths.append(metrics)
+
             output = os.path.join(metrics_directory, tumor_pair.name + ".multiqc")
             job = multiqc.run(
                 self.output_dirs['report'][tumor_pair.name],
                 output
             )
-            job.name = "multiqc." + tumor_pair.name
-            job.samples = [tumor_pair.normal, tumor_pair.tumor]
+
+            job.name="multiqc." + tumor_pair.name
+            job.samples=[tumor_pair.normal, tumor_pair.tumor]
             job.readsets = [*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
-            job.input_files = self.multiqc_inputs[tumor_pair.name]
+            job.input_files=multiqc_input_paths
             jobs.append(job)
+            
         return jobs
 
     def sym_link_report(self):
@@ -3719,13 +3713,13 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             annot_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, "rawAnnotation")
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.cram")],
                     [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")]
                 ]
             )
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.cram")],
                     [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")]
                 ]
             )
@@ -3832,13 +3826,13 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
             annot_directory = os.path.join(self.output_dirs['paired_variants_directory'], "ensemble", tumor_pair.name, "rawAnnotation")
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.cram")],
                     [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")]
                 ]
             )
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.cram")],
                     [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")]
                 ]
             )
@@ -4743,7 +4737,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     readsets=[*list(tumor_pair.normal.readsets), *list(tumor_pair.tumor.readsets)]
                 )
             )
-            self.multiqc_inputs[tumor_pair.name].extend(
+            self.multiqc_inputs[tumor_pair.tumor.name].extend(
                 [
                     purple_purity_output,
                     purple_qc_output
@@ -4781,13 +4775,13 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
             [input_normal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.cram")],
                     [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")]
                 ]
             )
             [input_tumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.cram")],
                     [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")]
                 ]
             )
@@ -5054,13 +5048,13 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
 
             [inputNormal] = self.select_input_files(
                 [
-                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.cram")],
                     [os.path.join(normal_alignment_directory, tumor_pair.normal.name + ".sorted.dup.bam")]
                 ]
             )
             [inputTumor] = self.select_input_files(
                 [
-                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.recal.bam")],
+                    [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.cram")],
                     [os.path.join(tumor_alignment_directory, tumor_pair.tumor.name + ".sorted.dup.bam")]
                 ]
             )

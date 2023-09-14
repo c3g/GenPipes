@@ -24,14 +24,13 @@ from core.config import *
 from core.job import *
 
 def index(input, ini_section='DEFAULT'):
-    if config.param(ini_section, 'compression') == "cram":
-        output = input + ".crai"
-    else:
-        output = input + ".bai"
+    output = [re.sub(r'\b(bam|cram)\b',
+                      lambda match: match.group() + (".bai" if match.group() == "bam" else ".crai"),
+                      input)]
 
     return Job(
         [input],
-        [output],
+        output,
         [
             ['samtools_index', 'module_samtools']
         ],

@@ -1440,7 +1440,10 @@ def mark_duplicates(
     else:
         outputs = [output, metrics_file]
         if create_index:
-            outputs.append(re.sub("\.([sb])am$", ".\\1ai", output))
+            outputs.append(re.sub(r'\b(bam|cram)\b',
+                                  lambda match: match.group() + (".bai" if match.group() == "bam" else ".crai"),
+                                  output)
+                           )
         return Job(
             inputs,
             outputs,
