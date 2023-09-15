@@ -934,7 +934,7 @@ pandoc \\
             if self.project_tracking_json:
                 job_project_tracking_metrics = concat_jobs(
                     [
-                    rnaseqc2.parse_aligned_reads_ratio_metrics_pt(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
+                    rnaseqc2.parse_aligned_reads_ratio_metrics_pt(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv")),
                     job2json_project_tracking.run(
                         input_file=os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
                         pipeline=self,
@@ -943,7 +943,7 @@ pandoc \\
                         job_name=job_name,
                         metrics="aligned_reads_ratio=$aligned_reads_ratio"
                         ),
-                    rnaseqc2.parse_rrna_rate_metrics_pt(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
+                    rnaseqc2.parse_rrna_rate_metrics_pt(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv")),
                     job2json_project_tracking.run(
                         input_file=os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
                         pipeline=self,
@@ -967,7 +967,8 @@ pandoc \\
                             os.path.relpath(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"), link_directory),
                             os.path.join(link_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
                             os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv")
-                        )
+                        ),
+                        job_project_tracking_metrics
                     ],
                     name=job_name,
                     removable_files=[output_directory],
