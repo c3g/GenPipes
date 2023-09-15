@@ -37,7 +37,7 @@ def create(pipeline, sample):
     try:
         json_file = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.args.type}_{pipeline.timestamp}.json")
     except AttributeError:
-        json_file = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.timestamp}.json")
+        json_file = os.path.join(json_folder, f"{pipeline.__class__.__name__}_{pipeline.timestamp}.json")
 
     if not os.path.isabs(pipeline.output_dir):
         pipeline_output_dir = os.path.abspath(pipeline.output_dir)
