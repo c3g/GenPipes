@@ -108,9 +108,13 @@ class Pipeline:
         self._output_dir = os.path.abspath(self.args.output_dir)
 
         # Create a config trace from merged config file values
+        if self.args.type:
+            config_trace_basename = f"{self.__class__.__name__}.{self.args.type}.{self.timestamp}.config.trace.ini"
+        else:
+            config_trace_basename = f"{self.__class__.__name__}.{self.timestamp}.config.trace.ini"
         config_trace_filename = os.path.join(
             self._output_dir,
-            f"{self.__class__.__name__}.{self.args.type}.{self.timestamp}.config.trace.ini"
+            config_trace_basename
             )
         full_command = " ".join(sys.argv[0:])
         with open(config_trace_filename, 'w') as config_trace:
