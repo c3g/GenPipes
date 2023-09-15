@@ -383,7 +383,7 @@ class RnaSeqRaw(common.Illumina):
                         #pass 1 - contatenate junction
                         Job(
                             samples=self.samples,
-                            readsets=list(self.samples.readsets)
+                            readsets=self.readsets
                             ),
                         star.concatenate_junction(
                             input_junction_files_list=individual_junction_list,
@@ -398,7 +398,7 @@ class RnaSeqRaw(common.Illumina):
                     ],
                     name="star_index.AllSamples",
                     samples=self.samples,
-                    readsets=list(self.samples.readsets)
+                    readsets=self.readsets
                 )
             )
 
@@ -529,7 +529,7 @@ pandoc --to=markdown \\
                 report_files=[report_file],
                 name="star_report",
                 samples=self.samples,
-                readsets=list(self.samples.readsets)
+                readsets=self.readsets
             )
         )
         return jobs
@@ -826,7 +826,7 @@ echo "Sample\tBamFile\tNote
                 name="rnaseqc",
                 removable_files=[output_directory],
                 samples=self.samples,
-                readsets=list(self.samples.readsets)
+                readsets=self.readsets
             )
         )
 
@@ -887,7 +887,7 @@ pandoc \\
                 report_files=[report_file],
                 name="rnaseqc_report",
                 samples=self.samples,
-                readsets=list(self.samples.readsets)
+                readsets=self.readsets
             )
         )
         return jobs
@@ -973,7 +973,7 @@ pandoc \\
                     name=job_name,
                     removable_files=[output_directory],
                     samples=self.samples,
-                readsets=list(self.samples.readsets)
+                    readsets=self.readsets
                 )
             )
             self.multiqc_inputs.append(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"))
@@ -2283,7 +2283,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
                 name="metrics.wigzip",
                 command=f"zip -r {wiggle_archive} {wiggle_directory}",
                 samples=self.samples,
-                readsets=list(self.samples.readsets)
+                readsets=self.readsets
                 )
             )
 
@@ -2306,7 +2306,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
             ],
             name="rpkm_saturation",
             samples=self.samples,
-            readsets=list(self.samples.readsets)
+            readsets=self.readsets
         )
         jobs.append(job)
 
@@ -2375,7 +2375,7 @@ END
                     ],
                     name="stringtie_merge",
                     samples=self.samples,
-                    readsets=list(self.samples.readsets)
+                    readsets=self.readsets
                 )
             ]
 
@@ -2416,7 +2416,7 @@ END
                 ],
                 name="stringtie_abund.donefile",
                 samples=self.samples,
-                readsets=list(self.samples.readsets),
+                readsets=self.readsets,
                 input_dependency=donejob_input_dep,
                 output_dependency=[done_file]
             )
@@ -2509,7 +2509,7 @@ END
                 ],
                 name="differential_expression",
                 samples=self.samples,
-                readsets=list(self.samples.readsets)
+                readsets=self.readsets
             )
         ]
 

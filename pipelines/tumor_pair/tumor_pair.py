@@ -3842,44 +3842,9 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="vardict_paired.create_splitjobs",
                     samples=self.samples,
-                    readsets=list(self.samples.readsets)
+                    readsets=self.readsets
                 )
             )
-        # else:
-        #     for idx in range(nb_jobs):
-        #         interval_list.append(os.path.join(splitjobs_dir,
-        #                                           "wgs",
-        #                                           "interval_list",
-        #                                           str(idx).zfill(4) + "-scattered.interval_list"
-        #                                           )
-        #                              )
-        #     jobs.append(concat_jobs([
-        #         bash.mkdir(
-        #             os.path.join(splitjobs_dir, "wgs", "interval_list"),
-        #             remove=True
-        #         ),
-        #         picard2.scatterIntervalsByNs(
-        #             config.param('vardict_paired', 'genome_fasta', type='filepath'),
-        #             os.path.join(splitjobs_dir,
-        #                          "wgs",
-        #                          "interval_list",
-        #                          config.param('vardict_paired', 'assembly') + ".interval_list"
-        #                          ),
-        #             options="OUTPUT_TYPE=ACGT"
-        #         ),
-        #         gatk4.splitInterval(
-        #             os.path.join(splitjobs_dir,
-        #                          "wgs",
-        #                          "interval_list",
-        #                          config.param('vardict_paired', 'assembly') + ".interval_list"
-        #                          ),
-        #             os.path.join(splitjobs_dir,
-        #                          "wgs",
-        #                          "interval_list"),
-        #             nb_jobs,
-        #         ),
-        #         ], name="vardict_paired.create_splitjobs")
-        #     )
 
         for tumor_pair in self.tumor_pairs.values():
             if tumor_pair.multiple_normal == 1:
@@ -5302,7 +5267,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="gatk_combine_variants.somatic.allPairs",
                     samples=self.samples,
-                    readsets=list(self.samples.readsets)
+                    readsets=self.readsets
                 )
             )
 
@@ -5322,7 +5287,7 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                     ],
                     name="gatk_combine_variants.somatic.allPairs",
                     samples=self.samples,
-                    readsets=list(self.samples.readsets)
+                    readsets=self.readsets
                 )
             )
 
