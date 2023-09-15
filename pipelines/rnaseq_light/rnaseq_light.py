@@ -36,12 +36,15 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 import utils.utils
 
-from bfx import bash_cmd as bash
-from bfx import gq_seq_utils
-from bfx import kallisto
-from bfx import rmarkdown
-from bfx import differential_expression
-from bfx import tools
+from bfx import (
+    bash_cmd as cmd,
+    differential_expression,
+    gq_seq_utils,
+    job2json_project_tracking,
+    kallisto,
+    rmarkdown,
+    tools
+    )
 
 from pipelines import common
 from pipelines.rnaseq import rnaseq
@@ -123,6 +126,30 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
 
             output_dir = os.path.join(self.output_dirs["kallisto_directory"], sample.name)
             parameters = " ".join([other_param, parameters]) if other_param else parameters
+            job_name = f"kallisto.{sample.name}"
+            job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                job_project_tracking_metrics = concat_jobs(
+                    [
+                    kallisto.parse_mean_insert_size_metrics_pt(os.path.join(output_dir, "abundance.h5")),
+                    job2json_project_tracking.run(
+                        input_file=os.path.join(output_dir, "abundance.h5"),
+                        pipeline=self,
+                        samples=sample.name,
+                        readsets=",".join([readset.name for readset in sample.readsets]),
+                        job_name=job_name,
+                        metrics="mean_insert_size=$mean_insert_size"
+                        ),
+                    kallisto.parse_median_insert_size_metrics_pt(os.path.join(output_dir, "abundance.h5")),
+                    job2json_project_tracking.run(
+                        input_file=os.path.join(output_dir, "abundance.h5"),
+                        pipeline=self,
+                        samples=sample.name,
+                        readsets=",".join([readset.name for readset in sample.readsets]),
+                        job_name=job_name,
+                        metrics="median_insert_size=$median_insert_size"
+                        )
+                    ])
             jobs.append(
                 concat_jobs(
                     [
@@ -141,15 +168,17 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                             os.path.join(output_dir, "abundance_transcripts.tsv"),
                             os.path.join(output_dir, "abundance_genes.tsv"),
                             tx2genes_file
-                        )
+                        ),
+                        job_project_tracking_metrics
                     ],
                     input_dependency=input_fastqs,
                     output_dependency=[
                         os.path.join(output_dir, "abundance_transcripts.tsv"),
                         os.path.join(output_dir, "abundance_genes.tsv"),
+                        os.path.join(output_dir, "abundance.h5"),
                         os.path.join(output_dir, "kallisto_quant.log")
                     ],
-                    name="kallisto." + sample.name,
+                    name=job_name,
                     samples=[sample],
                     readsets=sample.readsets
                 )

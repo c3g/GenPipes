@@ -98,7 +98,7 @@ def split_n_cigar_reads(
             exclude_intervals,
             interval_list
         )
-    
+
     else:
         return Job(
             [input],
@@ -510,11 +510,11 @@ gatk --java-options "{java_other_options} -Xmx{ram}" \\
 def combine_gvcf(inputs, output, intervals=[], exclude_intervals=[]):
     if not isinstance(inputs, list):
         inputs = [inputs]
-        
+
     if config.param('gatk_haplotype_caller', 'module_gatk').split("/")[2] < "4":
         return gatk.combine_gvcf(inputs, output, intervals, exclude_intervals)
     else:
-        
+
         return Job(
             inputs,
             [output],
@@ -815,7 +815,7 @@ def variant_recalibrator(variants,
         return gatk.variant_recalibrator(variants, other_options, recal_output, tranches_output,
                                          R_output, small_sample_check=small_sample_check)
     else:
-        
+
         if small_sample_check:
             try:
                 small_sample_option = config.param('gatk_variant_recalibrator', 'small_sample_option')
@@ -823,7 +823,7 @@ def variant_recalibrator(variants,
                 small_sample_option = ''
             else:
                 small_sample_option = ''
-            
+
         return Job(
             variants,
             [recal_output, tranches_output],
@@ -912,7 +912,7 @@ def variant_filtration(
     output,
     other_options
     ):
-    
+
     if config.param('gatk_variant_filtration', 'module_gatk').split("/")[2] < "4":
         return gatk.variant_filtration(
             input,
@@ -1022,7 +1022,7 @@ def calculate_hs_metrics(
 
     baits_intervals = ""
     baits_intervals = config.param('picard_calculate_hs_metrics', 'baits_intervals', required=False)
-    
+
     if config.param('picard_calculate_hs_metrics', 'module_gatk').split("/")[2] < "4":
         return picard2.calculate_hs_metrics(
             input,

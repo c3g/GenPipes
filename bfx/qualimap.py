@@ -142,6 +142,25 @@ def parse_median_insert_size_metrics_pt(input_file):
 export median_insert_size=`awk '{{if ($0 ~ /median insert size/) {{match($0,/[0-9]+$/,value); print value[0]}}}}' {input_file}`"""
         )
 
+def parse_mean_insert_size_metrics_pt(input_file):
+    """
+    Calculus coming from https://stackoverflow.com/questions/46086663/how-to-get-mean-and-standard-deviation-from-a-frequency-distribution-table
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+module load mugqic/python/3.10.4 &&
+export mean_insert_size=`python <<EOF
+import numpy as np
+dataset = np.genfromtxt(fname="{input_file}", delimiter="\t", skip_header=1)
+frequencies = dataset[:, 1]
+values = dataset[:, 0]
+print(np.around(np.average(values, weights=frequencies), decimals=1))
+EOF`"""
+        )
+
 def parse_dedup_coverage_metrics_pt(input_file):
     """
     """
