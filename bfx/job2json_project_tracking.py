@@ -32,7 +32,10 @@ def run(input_file, pipeline, samples, readsets, job_name, metrics):
     pipeline_output_dir = pipeline.output_dir
     json_folder = os.path.join(pipeline_output_dir, "json")
     timestamp = pipeline.timestamp
-    json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.args.type}_{timestamp}.json")
+    try:
+          json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{pipeline.args.type}_{timestamp}.json")
+      except AttributeError:
+          json_outfile = os.path.join(json_folder, f"{pipeline.__class__.__name__}.{timestamp}.json")
 
     return Job(
         [input_file],
