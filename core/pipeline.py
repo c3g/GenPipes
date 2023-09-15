@@ -110,8 +110,10 @@ class Pipeline:
         # Create a config trace from merged config file values
         try:
             config_trace_basename = f"{self.__class__.__name__}.{self.args.type}.{self.timestamp}.config.trace.ini"
+            operation_name = f"{self.__class__.__name__}.{self.args.type}"
         except AttributeError:
             config_trace_basename = f"{self.__class__.__name__}.{self.timestamp}.config.trace.ini"
+            operation_name = self.__class__.__name__
         config_trace_filename = os.path.join(
             self._output_dir,
             config_trace_basename
@@ -177,7 +179,7 @@ class Pipeline:
                     if to_parse:
                         config_trace_content.append(line)
             jsonator_project_tracking.init(
-                operation_name=f"{self.__class__.__name__}.{self.args.type}",
+                operation_name=operation_name,
                 operation_config_version=self._genpipes_version,
                 operation_cmd_line=full_command,
                 operation_config_md5sum=md5(config_trace_filename),
