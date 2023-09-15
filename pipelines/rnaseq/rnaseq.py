@@ -934,14 +934,14 @@ pandoc \\
             if self.project_tracking_json:
                 job_project_tracking_metrics = concat_jobs(
                     [
-                    rnaseqc2.parse_aligned_reads_ratio_metrics_pt(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv")),
+                    rnaseqc2.parse_expression_profiling_efficiency_metrics_pt(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv")),
                     job2json_project_tracking.run(
                         input_file=os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
                         pipeline=self,
                         samples=sample.name,
                         readsets=",".join([readset.name for readset in sample.readsets]),
                         job_name=job_name,
-                        metrics="aligned_reads_ratio=$aligned_reads_ratio"
+                        metrics="expression_profiling_efficiency=$expression_profiling_efficiency"
                         ),
                     rnaseqc2.parse_rrna_rate_metrics_pt(os.path.join(output_directory, sample.name + ".sorted.mdup.bam.metrics.tsv")),
                     job2json_project_tracking.run(
