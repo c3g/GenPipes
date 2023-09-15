@@ -37,7 +37,7 @@ from core.job import Job, concat_jobs
 import utils.utils
 
 from bfx import (
-    bash_cmd as cmd,
+    bash_cmd as bash,
     differential_expression,
     gq_seq_utils,
     job2json_project_tracking,
