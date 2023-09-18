@@ -891,21 +891,15 @@ END
 
         for sample in self.samples:
             hs_directory = os.path.join(self.output_dirs['metrics_directory'], "picard", sample.name)
+            interval_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name, "intervals")
             link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
             
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
-                if os.path.isfile(re.sub("\.[^.]+$", ".interval_list", coverage_bed)):
-                    interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
-                else:
-                    interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
-                    job = gatk4.bed2interval_list(
-                        None,
-                        coverage_bed,
-                        interval_list
-                    )
-                    job.name = "interval_list." + os.path.basename(coverage_bed)
-                    jobs.append(job)
+                [interval_list] = os.path.join(interval_directory,
+                             os.path.basename(coverage_bed).replace('.bed',
+                                                              '.noALT.interval_list')),
+
 
                 alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
                 [input] = self.select_input_files(
@@ -919,6 +913,7 @@ END
                 jobs.append(
                     concat_jobs(
                         [
+                            bash.mkdir(hs_directory),
                             bash.mkdir(link_directory),
                             gatk4.calculate_hs_metrics(
                                 input,
@@ -1318,7 +1313,7 @@ END
                             gatk4.haplotype_caller(
                                 input_bam,
                                 os.path.join(haplotype_directory, sample.name + ".hc.g.vcf.gz"),
-                                interval_list[0]
+                                interval_list
                             )
                         ],
                         name="gatk_haplotype_caller." + sample.name,
@@ -2207,7 +2202,7 @@ pandoc \\
                             ini_section='report_cpsr_tumor_only'
                         )
                     ],
-                    name="report_cpsr." + sample.name,
+                    name="report_cpsr_tumor_only." + sample.name,
                     samples=[sample]
                 )
             )
