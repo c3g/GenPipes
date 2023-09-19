@@ -54,7 +54,7 @@ class MUGQICPipeline(Pipeline):
         self.version = open(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "VERSION"), 'r').read().split('\n')[0]
         self._protocol = protocol
         # Add pipeline specific arguments
-        self.argparser.description = "Version: " + self.version + "\n\nFor more documentation, visit our website: https://bitbucket.org/mugqic/genpipes/"
+        self.argparser.description = "Version: " + self.version + "\n\nFor more documentation, visit our website: https://genpipes.readthedocs.io/en/latest/user_guide/user_guide.html\n\nFor source code, visit our bitbucket repository : https://bitbucket.org/mugqic/genpipes/"
         self.argparser.add_argument("-v", "--version", action="version", version="genpipes " + self.version, help="show the version information and exit")
 
         super(MUGQICPipeline, self).__init__()

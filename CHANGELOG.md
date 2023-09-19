@@ -1,6 +1,496 @@
-41 tags, 9976 commits
+44 tags, 10124 commits
 
-HEAD        Wed Jun 21 11:54:55 2023 -0400        0 commits
+HEAD        Fri Sep 8 17:48:23 2023 +0000        0 commits
+
+4.4.4        Fri Sep 8 18:46:58 2023 +0000        14 commits
+
+  Mareike Janiak <mareike.janiak@computationalgenomics.ca>      11 commits
+
+       0dc54c46 Merged in release_4.4.4 (pull request #451)
+       70066e40 Merged in mutect_fix (pull request #448)
+       a8545574 Merged dev into mutect_fix
+       fa9ea1e6 Version bump to 4.4.4
+       657dae58 GenPipes tumor_pair : interval_list job name and dependency issues
+       70c286ef Merged in interval_list_fix (pull request #447)
+       bd975f7a GenPipes : change job name for interval list creation in recalibration step
+       6e3217b8 VERSION bump to 4.4.4.-beta
+       7d0f747f Merged master into dev
+       718ffd77 Merged in release_4.4.3 (pull request #445)
+       7b1ac61a Version bump to 4.4.3
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      3 commits
+
+       422e4afb Merged in kallisto_index_renaming (pull request #449)
+       47db2c7c rnaseq_light - kallisto - Upgrading kallisto to latest + increasing resources for cit
+       49f00cc7 rnaseq_light - kallisto - index renaming to match kallisto version
+
+4.4.3        Wed Aug 23 18:37:11 2023 +0000        338 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      43 commits
+
+       cf60298e Utils - added dump_ChangeLog.sh in utils
+       2c745e14 DNASeq - removed `sed` call in manta_sv_calls command
+       80ecce89 Tumor Pair - Fix run_pair_multiqc job name
+       2f31d6bf Tumor Pair - fix multiqc step
+       a20dfc84 Tumor Pair - Fixed multiqc step dependencies
+       98aac8e8 RNASeq - Fixed multiqc step dependencies
+       8172a2ad DNASeq - Fixed multiqc step dependencies
+       58dfc13d DNASeq - Fix gcbias output deps for multiqc
+       187a10cf HiCSeq - updated mugqic_tools to 2.12.1 to fix hicrep
+       9fdf08ec Core - Job : fix report_files in concat_jobs
+       a5f1fbb2 GenPipes - updated dates in licence
+       352863a1 Tumor Pair - Updated multiqc prep steps and job
+       f83b6e9a DNASeq - stop index bams with picard_mark_duplicates, now using sambamba index instead to create bam.bai files
+       f265ce31 RNASeq - Fix rnaseqc2 call : now uses sambamba to index the .bam as .bam.bai instead of picard creating .bai
+       b19bfb05 Tumor Pair - Fixing MultiQC jobs in cases of missing dependencies
+       db6c00eb RNASeq - cancer : Updated pcrg version to 1.0.3
+       51ea7fdb BFX - fixed jsonator update
+       5f89f78d Utils - remove JSON file when empty
+       876ad395 Tumor Pair - updated bam input selecton for manta_sv and gatk_variant_annotator steps
+       c175aef3 RNASeq - varianats/cancer : update docstring for merge_vcfs step
+       ea76e9da RNASeq - varinats/cancer : updated merge_hc_vcf removing contigs/super contigs when merging vcf
+       7258e70b RNASeq - variants/cancer : allow gatk_indel_realigner step to be skipped
+       31ddad76 DNASeq / Tumor Pair - Picard SamToFastq : improved passing of resource parameters
+       e09c760c Resources - updated SMRTLink install script with latest version
+       9bbaf26d Tumor PAir - fixed typo in gripss wrapper
+       fe29ad4c Version bump to 4.3.2
+       ca99865e Merge remote-tracking branch 'origin/dev' into release_4.3.2
+       a34fda40 Core - Scheduler : corrected `memory` call in `cpu` from dev
+       80afe6df Version bump to 4.3.1
+       a647b011 Merge remote-tracking branch 'origin/dev' into release_4.3.1
+       57667889 Version bump to 4.3.0 - for real
+       937a5ca4 Version bump to 4.3.0
+       69d74b05 Merge remote-tracking branch 'origin/dev' into release_4.3.0.1
+       3f33a35a Version bump to 4.3.0
+       76b0b626 Merge remote-tracking branch 'origin/dev' into release_4.3.0
+       1e06b04a Version bump to 4.2.1
+       460b6a3c Version bump to 4.2.0
+       695798b1 Generating READMEs for 4.2.0
+       9947d057 Version bump to 4.1.3
+       d7f19424 Merge remote-tracking branch 'origin/dev' into release_4.1.3
+       1ef5a9ec Version bump to 4.1.2
+       7997ec59 Merge remote-tracking branch 'origin/dev' into release_4.1.2
+       c83a283f Version bump to 4.1.2
+
+  ehenrion <edouard.henrion@mcgill.ca>      77 commits
+
+       f7b553c3 Resources - Updating Conpair and Mugqic_Tools installation scripts with latest versions
+       f592c031 Merged in multiqc_cit_fix (pull request #427)
+       b8244276 HiCSeq - updated mugqic_tools to 2.12.0 to use the fixed version of hicrep.R (for no down-sampling cases)
+       2e15b7fa Merged in update_licence (pull request #422)
+       4d8e1f59 RNASeq - fixed rnaseqc2 output dependencies
+       fdfb9b43 Modules - Updated binary wrapping done by installation scripts
+       369653aa Modules - Added bamixchecker installation script
+       171a7445 Module - Updated mugqic_tools.sh with latest version
+       a1d73e3c Utils - fixed watch_portal_folder for some cases with empty json : stop throwing error and remove the json instead
+       4b8c7bde Resources - AGeNT : fixed typo in module
+       dcdd1814 fix typo
+       fcc76d83 GenPipes - improving job2json
+       a458c390 GenPipes - strengthening the jsonator
+       f869fdc4 Tumor Pair - refining resources assigned to gridss_paired_somatic jobs
+       a6e9a3b1 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into dev
+       a756c811 Tumor Pair - Fixed inputs for "sequenza.create_seqz" jobs
+       3d9b5c00 Tumor Pair - fix linx_plot output dependency to avoid useless restart of the step
+       55ceb6d9 HiCSeq - RobusTAD : fixed output name to fix restart issue
+       b1d7edca Utils - made mugqicValidator.py Python3-compatible
+       59f2a414 Tumor Pair - fixed gatk4.ini for cobalt, amber and purple
+       5ed67ce2 Tumor Pair - fixed gripss.py arguments in bfx
+       6d511de6 Tumor Pair - fixed settings for mutect2 when using gatk4
+       1a0c1066 Core - Add details to some sanity check error messages
+       2419d273 RNASeq - fixed stringtie-merge dependencies
+       47cf66ad Merged in tumor_pair_dependency_fix (pull request #413)
+       acd69760 Tumor Pair - Fixed gripss calls
+       6793fdf9 Version bump to 4.4.2-beta
+       f40eae05 Merged in release_4.4.1 (pull request #412)
+       e9cd38bb Version bump to 4.4.1
+       0d2e78fc Merged in release_4.4.1 (pull request #411)
+       412c2e3d GenPipes - in prep for bug-fix release 4.4.1
+       c27edf15 Resources - update mosdepth version to 0.3.3 in install script
+       6a5222f2 EpiQC - correcting chromimpute_preprocess command : do not use "rm" and force symlink creation with the "-f" flag
+       087fd9b3 Resources - adding / updating install scripts
+       252b6ee5 RNASeq Light - Added mkdir to the kalliso command
+       07f45a23 Resources - adding 'gget' install script and updating others
+       ed8e359e Version bump to 4.4.1-beta
+       20c470b7 Merged in release_4.4.0 (pull request #410)
+       8cabdc1c Version bump to 4.4.0
+       1c294768 Merged in release_4.4.0 (pull request #409)
+       bc806684 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into release_4.4.0
+       468975cb updating README
+       b0db9b96 Merge branch 'dev' of bitbucket.org:mugqic/genpipes into release_4.4.0
+       67fe5bbe RNASEq Light - Fixed Kallisto step
+       9e014170 Resources - added HMMcopy package in defaults R libraries
+       ffd223d0 RNASeq Light - Adding kallisto wrapper in bfx
+       91bca69e RNASeq Light - revamping the call to Kallisto to have per gene counts instead of per readset
+       d83071de Resources - Adding install script for hmmcopy-utils and ichorCNA
+       79b74d03 Resources - Adding AGeNT install script and updating script for VarDict
+       d2a8fef7 RNASeq Denovo Assembly - fixed trinity job dependencies
+       9629f9a3 RNASeq Light - removing kallisto output folder before runnig kallisto to avoid mixed or bad results in case of pipeline restart
+       eb7df8b1 EpiQC - fixed signal_to_noise dependencies
+       48f936c1 DNASeq High Coverage - increased default walltime for gemini_annotations
+       43121ea9 HiCSeq - fixing "homer_tag_directory" outputs
+       4f7bfea4 Merge remote-tracking branch 'origin/dev' into release_4.4.0
+       cf282891 GenPipes - updating READMEs before release
+       70d27f7c Resources - Adding some new install scripts
+       699683ca Resources - updated version in some install scripts
+       3d0c96d9 EpiQC - improved restart mechanisms
+       aa742e32 Merged in release_4.3.2 (pull request #389)
+       ed7c1835 Merged in release_4.3.2 (pull request #388)
+       118309c8 Merged in release_4.3.1 (pull request #383)
+       baeee47d Merged in release_4.3.1 (pull request #382)
+       f0feb9ad Merged in release_4.3.1 (pull request #381)
+       e5980e36 Merged in release_4.3.0.1 (pull request #367)
+       110f8ad7 Merged in release_4.3.0.1 (pull request #366)
+       2e0a7ecc Merged in release_4.3.0 (pull request #364)
+       390169f3 Merged in release_4.3.0 (pull request #363)
+       47523b32 Merged in release_4.2.1 (pull request #359)
+       9f80a8c9 Merged in release_4.2.0 (pull request #354)
+       927e40e4 Merged in release_4.2.0 (pull request #353)
+       a546428e Merged in release_4.1.3 (pull request #352)
+       f1e6716e Merged in release_4.1.3 (pull request #351)
+       a1be2b96 Merged in release_4.1.2 (pull request #314)
+       e5a64db9 Merged in release_4.1.2 (pull request #313)
+       99b40bf6 Merged in release_4.1.2 (pull request #312)
+       dc6f51e6 Merged in release_4.1.2 (pull request #311)
+
+  mareike.janiak@computationalgenomics.ca <mareike.janiak@computationalgenomics.ca>      118 commits
+
+       52df2e50 GenPipes tumor_pair : add md5 for recalibration output bam
+       3e62f88d GenPipes rnaseq : add option to force complete restart of star_fusion
+       5fd625d6 GenPipes rnaseq : adjust dependencies for run_star_fusion
+       d76554e5 pipelines/rnaseq/rnaseq.py
+       7b508019 bfx : fetched gatk4 updates from MOH_permissions branch
+       7c49ea5d GenPipes rnaseq: fix wiggle job name error
+       5055a0d2 GenPipes tumor_pair : improve documentation
+       16a7cc8a GenPipes : updating documentation with Shaloos suggestions
+       6e3f2c76 bfx : samtools quickcheck move output to same line as input
+       40db2942 bfx : samtools quickcheck fix options
+       1a7b4a28 bfx : samtools quickcheck add missing comma
+       c5bf16b4 GenPipes nanopore : import samtools from bfx
+       7d9e01a0 bfx : add samtools quickcheck
+       f77c7c2f GenPipes nanopore : add bam check to minimap2_align to avoid false 0 exit
+       b091b4cf GenPipes tumor_pair : increase cit walltime for manta
+       3f27c218 Genpipes hicseq : increase cit walltime for identify_peaks
+       8e4ddc05 GenPipes methylseq : increase bowtie2 threads during bismark_align for cit
+       1f131de6 GenPipes dnaseq : add default walltime back in
+       0bea2387 bfx : deliverables revert change, causing issue on abacus
+       addefee4 GenPipes rnaseq : arriba symlink troubleshooting
+       aaf7037d Genpipes rnaseq : fixed typo run_arriba
+       8de3b516 GenPipes rnaseq : fix multiqc symlink in run_arriba
+       ced167c8 bfx : change deliverables md5 output to fix restarts
+       70b9907e GenPipes rnaseq : change multiqc symlink in run_arriba to fix restarts
+       d0da2678 GenPipes : cit adjustments for walltime
+       27f92861 GenPipes methylseq : reduce cit walltime for new bissnp version
+       a84f76f2 GenPipes methylseq : update bissnp version
+       7068c8e2 GenPipes rnaseq : increase cit walltime gemini_annotations
+       5be926ab GenPipes rnaseq : revert tmp dir change for gemini, did not speed up analysis
+       a588b66d GenPipes cit : small walltime and ram adjustments
+       063c60d9 GenPipes hicseq : rm default cit walltime, too low for design file step
+       4da926d3 GenPipes methylseq : update bissnp version
+       6190d8d4 GenPipes hicseq_hic : increase cit mem for identify_peaks
+       f1971b34 GenPipes rnaseq : fix error in gemini_annotations tmp dir change
+       fcbbd6ec GenPipes : cit ini updates for beluga
+       3e777360 GenPipes rnaseq : use tmp_dir for gemini annotations
+       2999d0bc GenPipes methylseq : reduce mem for filter_snp_cpg, oom resolved
+       ed53a240 GenPipes dnaseq_hcov : reduce resource request for symlink
+       71d6390a Merge branch 'improve_cit_inis' of bitbucket.org:mugqic/genpipes into improve_cit_inis
+       e09758ab GenPipes methylseq : use tmpdir for filter_snp_cpg to resolve OOM errors
+       65d34518 Genpipes rnaseq : resolve conflict
+       dbe3e99c bfx : revert removal of quiet flag in manta and strelka2
+       71e949ae GenPipes hicseq : cit mem adjust
+       b7e0c294 GenPipes hicseq : cit walltime adjust
+       27beaad6 GenPipes hicseq : adjust cit mem for homer_tag_dir
+       49206402 GenPipes hicseq : cit mem and walltime adjustment
+       82a233e7 GenPipes : small cit adjustments
+       33e9a345 GenPipes cit : fix errors in ini
+       58a5fde5 GenPipes methylseq : increase cit mem for filter_snp_cpg
+       d8fd13d6 GenPipes hicseq : adjusting cit resource requests
+       a154ba68 GenPipes ampliconseq: adjust cit resource requests
+       a48d26d2 GenPipes nanopore : cit resource adjustments
+       be9e2cef GenPipes rnaseq_denovo : cit walltime adjustment
+       b604cee3 GenPipes methylseq : adjust cit resource requests
+       f8db6f7b GenPipes rnaseq_denovo : adjust cit mem
+       13eab33e GenPipes rnaseq_denovo : adjust jellyfish cit mem
+       789324cc GenPipes rnaseq_light : adjust cit report mem
+       bc0bf9bf GenPipes rnaseq_denovo : adjust cit mem seq2fun_pathway
+       944fedf2 GenPipes rnaseq_denovo : fixed typo
+       1509fa4d GenPipes rnaseq_denovo : adjusting cit resources for trinity and seq2fun
+       004b4328 GenPipes rnaseq : add multiqc by_sample, adjust walltime
+       61cc2df9 GenPipes rnaseq : rm output dir for run_arriba to fix issue with restarts after timeout
+       597c31bf GenPipes dnaseq_light : adjust cit resource requests
+       c9a76714 GenPipes dnaseq : adjust cit cnvkit walltime
+       9f0eaf5f GenPipes dnaseq : adjust cit cnvkit correction settings
+       95f4f64d GenPipes dnaseq : adjust cit ini for dnaseq_sv
+       36d09308 GenPipes dnaseq : adjust cit ini for dnaseq_light
+       cb7479c1 GenPipes rnaseq : fix typo
+       3e0f1776 GenPipes dnaseq : cit default cluster walltime
+       c62be41e GenPipes dnaseq : adjust cit resource requests for mpileup protocol
+       5b21f181 GenPipes dnaseq : reduce walltime request for sym link
+       7dc2c37d GenPipes dnaseq : mugqic reduce cit resource requests
+       a11e1d7f GenPipes tumor_pair : increase cit walltime vardict_paired
+       040acdc6 GenPipes rnaseq : add option to generate individual multiqc reports by sample
+       fe38d8d3 GenPipes tumor_pair : rm slurm_tmpdir for manta
+       a07ff8bc GenPipes tumor_pair : testing slurm_tmpdir for manta
+       dae1d6bd GenPipes tumor_pair : testing slurm tmpdir for manta
+       33342c35 GenPipes tumor_pair : adjust cit ini for vardict
+       a9c6d462 bfx : manta - remove --quiet for troubleshooting
+       dba72aaa GenPipes tumor_pair : fixed typo
+       376761d7 GenPipes tumor_pair : add sed cmd to remove email from manta
+       474cab94 GenPipes tumor_pair : add sed to strelka to investigate timeouts
+       db730355 GenPipes tumor_pair : reduce bwa_mem cpus, increase strelka time
+       afe1f5b0 bfx : remove quiet flag from strelka run for troubleshooting
+       3adc05a7 GenPipes rnaseq : cit ini updates
+       3ced8462 GenPipes rnaseq : adjusting cit ini
+       a098e83e GenPipes rnaseq : adjust cit resources in ini
+       d77f50df GenPipes rnaseq : adjust cit walltimes
+       4dc49323 GenPipes rnaseq : adjust star_align cit walltime
+       4321b40f GenPipes tumor_pair: changed ini section skewer to skewer_trimming
+       4e69f6eb Genpipes chipseq : adjustments in cit ini
+       0b7c7f2e GenPipes rnaseq : reduce cit resource requests for rnaseq_cancer
+       64cbe652 GenPipes chipseq : adjust cit resources
+       f573d5f9 GenPipes tumor_pair : adjsut cit resources
+       6e3f4de6 GenPipes rnaseq : adjust cit resource requests
+       8abb0818 GenPipes rnaseq : change rnaseq-merge to rnaseq_merge job name
+       6d16303e GenPipes rnaseq : adjust multiqc walltime
+       7e5f91e0 GenPipes tumor_pair : adjust cit resources
+       ecbf35e6 GenPipes tumor_pair : improve cit resource requests for tumor_pair_fastpass
+       44dbfa29 GenPipes tumor_pair : reduce cit resource requests for tumor_pair_sv
+       5c45e46f GenPipes dnaseq : reduce resource requests for symlinks, trimming
+       93ba9d6c GenPipes : update cit ini resources
+       1916eb07 GenPipes covseq : update resource requests in cit ini
+       8f95886f GenPipes chipseq : improve resource requests
+       43767b82 Genpipes : methylseq - clarifying multiqc comment
+       df70dbfa GenPipes : methylseq - update mkdir commands
+       9614d14f GenPipes : methylseq - add comments to explain multiqc options
+       918d8ac3 bfx : dragen.py - add report_files to outputs
+       1ce17811 bfx : dragen.py - extend outputs to avoid list within list
+       2da1c94d GenPipes : methylseq - change automatic sample naming for trimmomatic multiqc
+       60baae95 GenPipes : methylseq ini add multiqc options
+       8961e31d GenPipes : methylseq - ihec table to multiqc format
+       04d0de10 GenPipes : methylseq - add multiqc to bismark align
+       3bdff148 bfx : make sambamba options ini section not required
+       f2b9ccb0 GenPipes methylseq : add multiqc to pipeline
+       37608f3d GenPipes methylseq : add symlink_dragen_metrics section to ini
+       776f679f GenPipes methylseq : add multiqc to base ini
+       97ba46ee bfx : add metrics files to expected dragen output and report files
+
+  Mareike Janiak <mareike.janiak@computationalgenomics.ca>      94 commits
+
+       1589b386 Merged in release_4.4.3 (pull request #444)
+       de07ec66 version bump to 4.4.3
+       08a6d65e update README
+       14242b6b update pipeline READMEs prior to release
+       58f611b2 Merged in cit_fixes (pull request #443)
+       eac2d6a0 Merged dev into cit_fixes
+       de5b7b84 GenPipes rnaseq : cit walltime fixes
+       3389502c GenPipes cit : adjust mem and walltime
+       ca2dd54d GenPipes cit : adjustments to fix oom and timeouts
+       1dd76522 Merged in readme_improvements (pull request #442)
+       87678ae9 Merged in prepare_table_fix (pull request #441)
+       449261a4 Merged in star_fusion_restart (pull request #439)
+       dea5d5ea Merged in tumorpair_md5 (pull request #440)
+       010f817c GenPipes covseq : fix version of covseq_tools module
+       75bca38c Resources : update covseq_tools install script for new version
+       36799c9b GenPipes covseq : bump version of covseq tools
+       9d47d35d GenPipes covseq : increase cit mem for prepare_report job
+       45d1bd46 GenPipes covseq : make grep specific with -w flag, avoids clashes with closely named samples
+       3eab9c34 Merged in wiggle_fix (pull request #438)
+       892d9717 Merged in minimap2_align_check (pull request #437)
+       007c1d41 Merged in improve_cit_inis (pull request #435)
+       e25ea829 Merged in improve_cit_inis (pull request #433)
+       c7b8d537 Merged dev into improve_cit_inis
+       5b835c14 Merged in rnaseq_moh_multiqc (pull request #432)
+       e332b3e4 Version bump to 4.4.3-beta
+       765847eb Merged master into dev
+       42492bf5 Merged in release_4.4.2 (pull request #431)
+       b6f7e639 Version bump to 4.4.2
+       485c806f Merged in release_4.4.2 (pull request #430)
+       ed55718f Merge remote-tracking branch 'origin/dev' into release_4.4.2
+       8888ad03 update pipeline READMEs prior to release
+       b1c13898 Merged in methylseq_multiqc (pull request #429)
+       15780ffb Merged in trimmomatic_multiqc (pull request #428)
+       b2387dcc GenPipes : add symlink for trimmomatic log to use with multiqc
+       5a068a98 GenPipes methylseq : increase mem for filter_snp_cpg step in cit
+       9f728b78 Merged in rm_hard_clip (pull request #426)
+       a0b21222 GenPipes tumor_pair : loop over report_files output for multiqc symlinks
+       1850d23d bfx : add report_files output to picard metrics
+       8726b5c3 GenPipes tumor_pair : multiqc - add sample name to qualimap symlinks
+       271b96ec GenPipes : rm sequencing_center refs to wrong centre, add underscores to McGill_Genome_Centre
+       7eb52d45 GenPipes rnaseq : rm bam_hard_clip step
+       f40ed17b GenPipes : rm wrong sequencing centre, add underscores to McGill_Genome_Centre
+       5c6fe1c3 Merged in cit_multiqc_fixes (pull request #424)
+       621b0f6a Genpipes methylseq : increased mem for bissnip and filtering steps during cit
+       4b739b5a GenPipes tumor_pair : cleaned up commented out and unnecessary lines
+       03c3e8ac GenPipes epiqc : add mkdir to chromimpute convert step
+       6e1c8747 Genpipes tumor_pair : fix path for is_gz file check
+       68baa958 GenPipes tumor_pair : remove unnecessary os.mkdir call
+       0eae1f99 Genpipes tumor_pair : create multiqc report dir as part of jobs
+       859c1cc7 GenPipes tumor_pair : fix multiqc symlink creation for qualimap outputs
+       8ee7b43d Merged in rnaseq_multiqc (pull request #423)
+       21db3e9d GenPipes rnaseq : multiqc module order
+       1128cb75 GenPipes rnaseq : fix relative path for input of rseqc.tin step
+       477a6893 bfx : rm abspath in input for rseqc.tin
+       cd04bf45 GenPipes rnaseq : fixed interactive option for multiqc in ini
+       f448b924 GenPipes rnaseq : fixed symlink in run_arriba, change dependency exit status for multiqc
+       916d36de GenPipes rnaseq : fixed symlink in run_arriba
+       efd63a17 GenPipes rnaseq : merged and resolved conflict with dev
+       13ab19dd GenPipes rnaseq : fix symlink relative path
+       8fb9e184 GenPipes rnaseq : make multiqc interactive
+       ba66e8b9 GenPipes rnaseq : fixed symlink names for multiqc inputs
+       70db4203 GenPipes rnaseq : removed stray commas, fixed typos
+       30ce0929 GenPipes rnaseq : removed stray comma
+       c56ce402 GenPipes rnaseq : fix job name
+       e851d87b GenPipes rnaseq : fixed another relative path command
+       c02906b4 GenPipes rnaseq : added missing link directory assignment
+       b1796d83 GenPipes rnaseq : fixed relative path command
+       451dbf41 GenPipes rnaseq : added missing parenthesis
+       d92e2603 GenPipes rnaseq : added missing comma
+       eae40ef6 GenPipes rnaseq : add multiqc section to base ini
+       97a255fd GenPipes rnaseq : add multiqc to pipeline
+       9481206e bfx : add log files to expected output for multiqc integration
+       baa0813b Merged in tp_ensemble_fix (pull request #421)
+       72b3853f GenPipes tumor_pair : add remove command before bcbio_ensembl call to avoid silent error when output exists
+       70b3e161 Merged in chipseq_blacklist_filter (pull request #418)
+       63d8fe7a Chipseq : add blacklist path to ini
+       02a2c734 Merged in readme_updates (pull request #417)
+       1d18f5e3 GenPipes chipseq : update README to include blacklist filtering step
+       6ac84851 GenPipes chipseq : added input selection to cram, variant calling steps
+       5e3f6139 GenPipes chipseq : fix inputs for diffbind and run_spp depending on blacklist removal step
+       2c510bd8 bfx differential_binding : add option to specify alignment file extension
+       b6cbc84a GenPipes chipseq : fixed various typos, add multiqc inputs
+       86f54efe GenPipes chipseq : add blacklist and bedtools module to base ini
+       30bc6ff0 GenPipes chipseq : fixed typo
+       3660c64d GenPipes chipseq : add bedtools intersect step to pipeline, add ini section
+       45093bbf GenPipes chipseq : add bedtools intersect to remove blacklist reads prior to peak calling
+       b6fb9469 GenPipes : improved README for dnaseq pipeline
+       f47ca3af Merged in Mareike-Janiak/commonpy-edited-online-with-bitbucket-1681414777818 (pull request #416)
+       bc8ecef5 common.py edited online with Bitbucket - fix for sambamba merge dependency
+       420681f8 Merged in sambamba_merge_fix (pull request #415)
+       be8788f4 GenPipes common : simplified rm command before sambamba_merge
+       d6b84fb5 GenPipes common : add comments to rm command before sambamba merge
+       05957e7a Common : sambamba_merge_sam_files fix typos
+       f45b8300 Common sambamba_merge_sam_files : remove any existing file/link before merge
+
+  Pascale Marquis <pascale.marquis2@mcgill.ca>      1 commits
+
+       88ebed7a Merged in new_branch_pascale (pull request #420)
+
+  Pascale Marquis <pmarquis@Weigela.local>      1 commits
+
+       e622624b changed the cpulimit
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      2 commits
+
+       f8296f6c Merged in MOH_permissions (pull request #436)
+       666fa64b kallisto upgrade
+
+  Pierre-Olivier Quirion <pierre-olivier.quirion@computationalgenomics.ca>      1 commits
+
+       cf3d7277 Merged in release_4.2.1 (pull request #358)
+
+  P-O Quirion <pierre-olivier.quirion@computationalgenomics.ca>      1 commits
+
+       c7b3aa6d Merge remote-tracking branch 'origin/dev' into release_4.2.1
+
+DOvEE-4.3.3        Thu Jul 20 13:24:33 2023 -0400        91 commits
+
+  ehenrion <edouard.henrion@mcgill.ca>      2 commits
+
+       5dc6ac85 Merged in dovee_multiqc (pull request #414)
+       24f8c8f0 DOvEE - set multiqc_inputs as a pipeline attribute and make changes accordingly
+
+  mareike.janiak@computationalgenomics.ca <mareike.janiak@computationalgenomics.ca>      79 commits
+
+       51d29451 Version bump to 4.3.3 changelog
+       cb3ace90 DOvEE : add dump_ChangeLog.sh from dev
+       df08b457 Version bump to 4.3.3
+       6a2e1547 DOvEE : update job2json to work with dovee user
+       a8d140f9 Genpipes dovee : update main README
+       386226da GenPipes dovee : add README
+       03850c76 GenPipes dovee : cleaning up old comments
+       dc28a034 GenPipes dovee : update filepaths in ini
+       1cc87e8a cleaning up
+       01a9d91a bfx : add missing output file to locatit
+       cf82e8de DOvEE : added parsing of locatit and creak output metrics, added to multiqc
+       22a18b43 DOvEE : changed options for multiqc and bcftools_stats in ini
+       6d46406d DOvEE : add parsing of creak metrics, picard gcbias metrics to pipeline
+       616abcae DOvEE : add picard collect gcbias metrics to ini, add multiqc options
+       7e156953 bfx picard2 : fixed typo in collect_gcbias_metrics - qcbias = gcbias
+       e243f8fa bfx agent : add stats file to expected creak outputs
+       67161bd9 DOvee : add creak and subsample sections to ini
+       9f0a8e76 dovee : add creak dedup and samtools subsample steps
+       caee1e3c bfx : add creak to agent wrapper
+       c0ee6560 dovee : add sample source to symlink names for multiqc display
+       0caca75e dovee : change mosdepth bed file used
+       7a5287a2 DOvEE : add bam matching step with conpair to that samples are from same patient
+       40d46af7 Merge branch 'DOvEE_genpipes_Sflag' into DOvEE_genpipes
+       f18819e1 DOvEE : modified bwa mem settings in ini
+       32f21dd3 DOvEE : add option to picard HS metrics to ignore validation errors
+       732ebaef DOvEE : use sorted locatit output to side step sort error
+       86218505 DOvEE : update multiqc to look for symlink inputs in one directory, set order of modules in report
+       d04276f2 DOvEE : change multiqc job dependencies to run even if jobs fail
+       8c6cecd6 DOvEE : multiqc inputs changed to directories to avoid error with failed samples
+       3adb81cc DOvEE : fix error in trimmed read symlink creation
+       829ff3ca DOvEE : add --interactive option to multiqc to prevent flat plots
+       7dbc1405 DOvEE : fix bed files used for mosdepth
+       7cf8ad0b DOvEE : add readset level directories to mapping step
+       20a7fdd9 DOvEE : add tmp directory to samtools sort
+       e9dc8019 DOvEE : make files executable
+       7e2daa44 DOvEE : remove -K flag from locatit call to avoid keeping tmp files
+       7f32db9d DOvEE vardict : add bcftools stats step
+       210429f6 DOvEE : add bcftools stats to vardict protocol
+       d4401227 cleaning up, fixing indents, copyrights
+       eac8909c dovee : cleaning up and adding comments
+       54cd4c4a adding copyright sections
+       01913ce8 dovee : added option to distinguish between brush and saliva via modified version of design file
+       841ae379 small dovee ini fixes
+       adb834e6 add output file to mosdepth
+       ecd7b09d created dovee sample pair parser based on tumor pair system
+       b9b8f34f adding multiqc
+       eed14380 dovee samtools sort : changed to avoid restart errors
+       bd3c654f dovee metrics : add picard HS metrics
+       a3984061 dovee : added metrics steps
+       8764ebbc mosdepth : fixed typo
+       4f0edd44 trimmer : edits to STATS rm command
+       2a211153 trimmer : changed mv to ln to prevent job restarts
+       dda4c1b5 dovee : adjust resources
+       4f6a4283 dovee ini : ichor version change, other small fixes
+       5e3db81e ichorCNA : fixed typo
+       83338513 dovee : merge sort & index steps, update sort to look for inputs from previous jobs, add hybrid dedup for copy-number protocol
+       cebe94f3 dovee ini : add/fix filepaths
+       e3a2fe4a vardict : add module call for vardict_single
+       74431a8f dovee small fixes
+       6579f709 dovee resource and other ini updates
+       95eb5438 samtools merge : change module call and add other_options
+       eed26dd5 hmm : add module call
+       cd9d0eac tweaked job names to be consistent with ini
+       4cea397d updating resources and filepaths
+       0d1da041 dovee : add bam merge to allow for top ups
+       42146308 ichorCNA : removed # from module call
+       dc9aa5d6 bwa mem : remove single end option
+       2e60edbe update bwa options, update agent calls
+       de382e3b combine trimmer and locatit into single agent script
+       cc534520 trimmer and locatit updates now that modules are installed
+       3935a130 DOvEE : add placeholder wig file paths
+       08a0c453 DOvEE : fixing small errors
+       7c697e2a DOvEE : add init
+       7bb7402f fixed small errors and indentation throughout
+       47894372 fixed indentation
+       3b0fe908 moved comment
+       c7f73451 fixes in pipeline and ini for new dovee pipeline
+       f9495d5e new trimmer trimming function added
+       912643ea new locatit dedup function added
+
+  Mareike Janiak <mareike.janiak@computationalgenomics.ca>      9 commits
+
+       3c7f0b42 adding fastp.py from run_processing branch to dovee
+       6b549b30 mosdepth : add to genpipes
+       9f2ae202 trimmer : remove STATS file if already exists
+       84a8ff7b DOvEE : add tumor pair pairing system
+       27a4d74c DOvEE : add pairs file option
+       9db0a250 GenPipes DOvEE : add copy number protocol to pipeline
+       921ca329 GenPipes DOvEE : add hmm and ichorCNA sections to ini
+       41bb80d8 GenPipes DOvEE : create script for ichorCNA
+       f8fdbb48 GenPipes DOvEE : create script for hmm readCounter
 
 4.4.2        Wed Jun 21 15:59:13 2023 +0000        204 commits
 

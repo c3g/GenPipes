@@ -43,6 +43,7 @@ from bfx import pycoqc
 from bfx import tools
 from bfx import gatk4
 from bfx import bash_cmd as bash
+from bfx import samtools
 
 log = logging.getLogger(__name__)
 
@@ -189,6 +190,9 @@ class Nanopore(common.MUGQICPipeline):
                                 tmp_dir=config.param('minimap2_align', 'tmp_dir', required=True),
                             )
                         ]
+                    ),
+                    samtools.quickcheck(
+                        out_bam
                     ),
                     sambamba.index(
                         out_bam,
