@@ -462,7 +462,7 @@ class RnaSeqRaw(common.Illumina):
                     bash.mkdir(link_directory),
                     bash.ln(
                         os.path.relpath(sample_log, link_directory),
-                        os.path.join(link_directory, readset.sample.name + ".Log.final.out"),
+                        os.path.join(link_directory, readset.sample.name + "_star.Log.final.out"),
                         sample_log
                     )
                 ]
