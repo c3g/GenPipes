@@ -322,7 +322,7 @@ Parameters:
         jobs.append(
                 concat_jobs(
                     [
-                        bash.rm(index_dir),
+                        #bash.rm(index_dir),
                         bash.mkdir(index_dir),
                         bash.rm(gembs_dir),
                         gembs.make_config(
@@ -385,7 +385,11 @@ Parameters:
                                 sample.name, 
                                 index,
                                 alignment_dir
-                                )
+                                ),
+                            bash.ln(
+                                sample.name + ".bam",
+                                os.path.join(alignment_dir, sample.name + ".sorted.bam"),
+                                input = os.path.join(alignment_dir, sample.name + ".bam"))
                         ],
                         name = "gembs_map." + sample.name,
                         samples = [sample],
@@ -1264,6 +1268,7 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                     )
         # add extract here or in separate step?
             variants_dir = os.path.join(self.output_dirs["variants_directory"], sample.name)
+            config_dir = os.path.join(variants_dir, ".gemBS")
             input = output_prefix + ".bcf"
 
             jobs.append(
@@ -1271,10 +1276,15 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                         [
                             bash.rm(variants_dir),
                             bash.mkdir(variants_dir),
+                            bash.mkdir(config_dir),
+                            bash.cp(
+                                gembs_config,
+                                config_dir
+                                ),
                             gembs.extract(
                                 input,
                                 sample.name,
-                                output_prefix
+                                variants_dir
                                 ) #,
                             # add symlink for snp output to variants dir?
                             ],

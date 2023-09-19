@@ -19,11 +19,10 @@
 
 # Python Standard Modules
 import os
-import re
 
 # MUGQIC Modules
-from ..core.config import global_conf
-from ..core.job import Job
+from core.config import *
+from core.job import *
 
 def make_config(genpipes_dir, output):
 
@@ -31,7 +30,7 @@ def make_config(genpipes_dir, output):
 # gemBS config file 
 # base = {genpipes_dir}
 
-reference = {global_conf.global_get('gembs_prepare', 'genome_fasta')}
+reference = {global_conf.global_get('gembs_prepare', 'gem3_genome_fasta')}
 
 index_dir = {genpipes_dir}/alignment/index
 sequence_dir = {genpipes_dir}
@@ -40,7 +39,7 @@ bcf_dir = {genpipes_dir}/methylation_call/@BARCODE
 extract_dir = {genpipes_dir}/variants/@BARCODE
 report_dir = {genpipes_dir}/report
 
-project = GenPipes
+project = {global_conf.global_get('gembs_report', 'project_name')}
 species = {global_conf.global_get('default', 'scientific_name')}
 
 # Default parameters
@@ -51,6 +50,12 @@ jobs = 1
 [index]
 threads = {global_conf.global_get('gembs_index', 'threads')}
 memory = {global_conf.global_get('gembs_index', 'ram')}
+
+[dbsnp]
+dbsnp_files = {global_conf.global_get('default', 'known_variants')}
+dbsnp_index = {genpipes_dir}/alignment/index/dbSNP_gemBS.idx
+{"dbsnp_selected = " + global_conf.global_get('default', 'selected_snps') if global_conf.global_get('default', 'selected_snps', required = False) else ""}
+{"dbsnp_chrom_alias = " + global_conf.global_get('default', 'alias_file') if global_conf.global_get('default', 'alias_file', required = False) else ""}
 
 [mapping]
 memory = {global_conf.global_get('gembs_map', 'ram')}
@@ -77,6 +82,7 @@ right_trim = {global_conf.global_get('gembs_call', 'right_trim')}
 
 [extract]
 cores = {global_conf.global_get('gembs_extract', 'cores')}
+extract_threads = {global_conf.global_get('gembs_extract', 'extract_threads')}
 threads = {global_conf.global_get('gembs_extract', 'threads')}
 memory = {global_conf.global_get('gembs_extract', 'ram')}
 
@@ -93,8 +99,17 @@ echo \"{config_content}\" > {config_file}""".format(
         config_file=output
             )
         )
-   # with open(output, "w") as config_file:
-   #     config_file.write(config_content)
+
+def make_metadata(metadata_list, metadata_file):
+    
+    return Job(
+            output_files = [metadata_file],
+            command="""\
+echo -e 'sampleID,dataset,library,sample,file1,file2 {metadata_list}' > {metadata_file}""".format(
+    metadata_list = " ".join(["\\n" + metadata for metadata in metadata_list]),
+    metadata_file=metadata_file
+                )
+            )
 
 def prepare(metadata, config_file, output_dir):
 
@@ -112,13 +127,14 @@ def prepare(metadata, config_file, output_dir):
         [metadata,config_file],
         output,
         [
-            ['gembs_prepare', 'module_htslib'],
             ['gembs_prepare', 'module_gembs']
         ],
         command="""\
+rm -rf {hidden_dir}
 gemBS prepare {flags} {options} \\
   --config {config_file} \\
   --text-metadata {metadata}""".format(
+      hidden_dir=output_dir + "/.gemBS",
       flags=global_conf.global_get('gembs_prepare', 'flags', required=False),
       options=global_conf.global_get('gembs_prepare', 'options', required=False),
       config_file=config_file,
@@ -133,11 +149,13 @@ def index(input, output):
         [input],
         [output, output_info],
         [
-            ['gembs_index', 'module_gembs'],
-            ['gembs_index', 'module_htslib']
+            ['gembs_index', 'module_gembs']
         ],
         command="""\
-gemBS index {flags} {options}""".format(
+gemBS {gembs_flags} {gembs_options} \\
+  index {flags} {options}""".format(
+    gembs_flags=global_conf.global_get('gembs_index', 'gembs_flags', required=False),
+    gembs_options=global_conf.global_get('gembs_index', 'gembs_options', required=False),
     flags=global_conf.global_get('gembs_index', 'flags', required=False),
     options=global_conf.global_get('gembs_index', 'options', required=False)
             )
@@ -173,7 +191,6 @@ gemBS {gembs_flags} {gembs_options} \\
       )
     )
 
-
 def call(sample, input, output_prefix):
     outputs = [
             output_prefix + "_call.json",
@@ -205,7 +222,6 @@ gemBS {gembs_flags} {gembs_options} \\
       )
     )
 
-
 def extract(input, sample, output_dir):
     output = [
             output_dir + "/" + sample + "_cpg.bb",
@@ -234,12 +250,18 @@ gemBS {gembs_flags} {gembs_options} \\
 
 def report(inputs, output):
 
+    output_dir = os.path.dirname(output)
+    outputs = [
+            output,
+            re.sub(".html", ".tex", output),
+            output_dir + "/mapping/map_report.tex",
+            output_dir + "/calling/call_report.tex"
+            ]
     return Job(
         inputs,
-        [output],
+        outputs,
         [
-            ['gembs_report', 'module_gembs'],
-            ['gembs_report', 'module_htslib']
+            ['gembs_report', 'module_gembs']
         ],
         command="""\
 gemBS report {flags} {options}""".format(
