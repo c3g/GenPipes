@@ -72,7 +72,7 @@ module load mugqic/python/3.10.4 &&
 export mean_insert_size=`python <<EOF
 import h5py
 import numpy as np
-with h5py.File({input_file}, 'r') as h5file:
+with h5py.File('{input_file}', 'r') as h5file:
     frequencies = np.asarray(h5file['aux']['fld'])
     values = np.arange(0, len(frequencies), 1)
     print(np.around(np.average(values, weights=frequencies), decimals=1))
@@ -92,7 +92,7 @@ module load mugqic/python/3.10.4 &&
 export median_insert_size=`python <<EOF
 import h5py
 import numpy as np
-with h5py.File({input_file}, 'r') as h5file:
+with h5py.File('{input_file}', 'r') as h5file:
     frequencies = np.asarray(h5file['aux']['fld'])
     values = np.arange(0, len(frequencies), 1)
     ord = np.argsort(values)
