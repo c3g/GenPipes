@@ -891,15 +891,21 @@ END
 
         for sample in self.samples:
             hs_directory = os.path.join(self.output_dirs['metrics_directory'], "picard", sample.name)
-            interval_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name, "intervals")
             link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
             
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             if coverage_bed:
-                [interval_list] = os.path.join(interval_directory,
-                             os.path.basename(coverage_bed).replace('.bed',
-                                                              '.noALT.interval_list')),
-
+                if os.path.isfile(re.sub("\.[^.]+$", ".interval_list", coverage_bed)):
+                    interval_list = re.sub("\.[^.]+$", ".interval_list", coverage_bed)
+                else:
+                    interval_list = re.sub("\.[^.]+$", ".interval_list", os.path.basename(coverage_bed))
+                    job = gatk4.bed2interval_list(
+                        None,
+                        coverage_bed,
+                        interval_list
+                    )
+                    job.name = "interval_list." + os.path.basename(coverage_bed)
+                    jobs.append(job)
 
                 alignment_directory = os.path.join(self.output_dirs['alignment_directory'], sample.name)
                 [input] = self.select_input_files(
