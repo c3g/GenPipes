@@ -2258,7 +2258,7 @@ rm {output_directory}/tmpSort.txt {output_directory}/tmpMatrix.txt""".format(
             output_matrix=output_matrix
         )
         job.samples = self.samples
-        job.readsets = list(self.sample.readsets)
+        job.readsets = self.readsets
         jobs.append(job)
 
         # Create Wiggle tracks archive
@@ -2446,7 +2446,7 @@ END
         )
         ballgown_job.name = "ballgown"
         ballgown_job.samples = self.samples
-        ballgown_job.readsets = list(self.samples.readsets)
+        ballgown_job.readsets = self.readsets
         jobs.append(ballgown_job)
 
         return jobs
