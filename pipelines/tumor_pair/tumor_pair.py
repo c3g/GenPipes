@@ -2028,6 +2028,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 ]
             )
             normal_output = os.path.join(normal_qualimap_directory, "genome_results.txt")
+            normal_output_histogram = os.path.join(normal_qualimap_directory, "raw_data_qualimapReport", "insert_size_histogram.txt")
 
             [tumor_input] = self.select_input_files(
                 [
@@ -2038,6 +2039,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                 ]
             )
             tumor_output = os.path.join(tumor_qualimap_directory, "genome_results.txt")
+            tumor_output_histogram = os.path.join(tumor_qualimap_directory, "raw_data_qualimapReport", "insert_size_histogram.txt")
 
             use_bed = config.param('dna_sample_qualimap', 'use_bed', param_type='boolean', required=True)
             options = None
@@ -2062,7 +2064,7 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         job_name=normal_job_name,
                         metrics="median_insert_size=$median_insert_size"
                         ),
-                    qualimap.parse_mean_insert_size_metrics_pt(normal_output),
+                    qualimap.parse_mean_insert_size_metrics_pt(normal_output_histogram),
                     job2json_project_tracking.run(
                         input_file=normal_output,
                         pipeline=self,
@@ -2142,27 +2144,27 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         job_name=tumor_job_name,
                         metrics="median_insert_size=$median_insert_size"
                         ),
-                    qualimap.parse_mean_insert_size_metrics_pt(normal_output),
+                    qualimap.parse_mean_insert_size_metrics_pt(tumor_output_histogram),
                     job2json_project_tracking.run(
-                        input_file=normal_output,
+                        input_file=tumor_output_histogram,
                         pipeline=self,
-                        samples=",".join([sample.name for sample in normal_samples]),
-                        readsets=",".join([readset.name for sample in normal_samples for readset in sample.readsets]),
+                        samples=",".join([sample.name for sample in tumor_samples]),
+                        readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
                         job_name=normal_job_name,
                         metrics="mean_insert_size=$mean_insert_size"
                         ),
-                    qualimap.parse_dedup_coverage_metrics_pt(normal_output),
+                    qualimap.parse_dedup_coverage_metrics_pt(tumor_output),
                     job2json_project_tracking.run(
-                        input_file=normal_output,
+                        input_file=tumor_output,
                         pipeline=self,
                         samples=",".join([sample.name for sample in tumor_samples]),
                         readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
                         job_name=tumor_job_name,
                         metrics="dedup_coverage=$dedup_coverage"
                         ),
-                    qualimap.parse_aligned_reads_count_metrics_pt(normal_output),
+                    qualimap.parse_aligned_reads_count_metrics_pt(tumor_output),
                     job2json_project_tracking.run(
-                        input_file=normal_output,
+                        input_file=tumor_output,
                         pipeline=self,
                         samples=",".join([sample.name for sample in tumor_samples]),
                         readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
