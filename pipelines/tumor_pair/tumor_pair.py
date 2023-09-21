@@ -2062,6 +2062,15 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         job_name=normal_job_name,
                         metrics="median_insert_size=$median_insert_size"
                         ),
+                    qualimap.parse_mean_insert_size_metrics_pt(normal_output),
+                    job2json_project_tracking.run(
+                        input_file=normal_output,
+                        pipeline=self,
+                        samples=",".join([sample.name for sample in normal_samples]),
+                        readsets=",".join([readset.name for sample in normal_samples for readset in sample.readsets]),
+                        job_name=normal_job_name,
+                        metrics="mean_insert_size=$mean_insert_size"
+                        ),
                     qualimap.parse_dedup_coverage_metrics_pt(normal_output),
                     job2json_project_tracking.run(
                         input_file=normal_output,
@@ -2132,6 +2141,15 @@ echo -e "{normal_name}\\t{tumor_name}" \\
                         readsets=",".join([readset.name for sample in tumor_samples for readset in sample.readsets]),
                         job_name=tumor_job_name,
                         metrics="median_insert_size=$median_insert_size"
+                        ),
+                    qualimap.parse_mean_insert_size_metrics_pt(normal_output),
+                    job2json_project_tracking.run(
+                        input_file=normal_output,
+                        pipeline=self,
+                        samples=",".join([sample.name for sample in normal_samples]),
+                        readsets=",".join([readset.name for sample in normal_samples for readset in sample.readsets]),
+                        job_name=normal_job_name,
+                        metrics="mean_insert_size=$mean_insert_size"
                         ),
                     qualimap.parse_dedup_coverage_metrics_pt(normal_output),
                     job2json_project_tracking.run(

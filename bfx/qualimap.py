@@ -169,7 +169,7 @@ def parse_dedup_coverage_metrics_pt(input_file):
         [],
         [],
         command=f"""\
-export dedup_coverage=`awk '{{if ($0 ~ /mean coverage/) {{match($0,/[0-9]+.[0-9]+/,value); printf "%.0f", value[0]}}}}' {input_file}`"""
+export dedup_coverage=`awk '{{if ($0 ~ /mean coverage/) {{match($0,/[0-9]+.[0-9]+/,value); printf "%.2f", value[0]}}}}' {input_file}`"""
         )
 
 def parse_aligned_reads_count_metrics_pt(input_file):
