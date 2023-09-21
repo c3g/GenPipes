@@ -35,7 +35,7 @@ def run(input_bam, input_gtf, output_directory):
         command="""\
 rnaseqc \\
   {input_gtf} \\
-  {input_bam} \\ 
+  {input_bam} \\
   {other_options} \\
   {output_directory}""".format(
             input_gtf=input_gtf,
