@@ -346,7 +346,7 @@ class RnaSeqRaw(common.Illumina):
                     )
                 )
 
-                self.multiqc_inputs.append(output_dir_sample, readset.sample.name + ".aligned.log")
+                self.multiqc_inputs.append(os.path.join(output_dir_sample, readset.sample.name + ".aligned.log"))
 
             elif readset.run_type == "SINGLE_END":
                 trim_fastq1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim." + "single.fastq.gz")
@@ -378,7 +378,7 @@ class RnaSeqRaw(common.Illumina):
                     )
                 )
 
-                self.multiqc_inputs.append(output_dir_sample, readset.sample.name + ".aligned.log")
+                self.multiqc_inputs.append(os.path.join(output_dir_sample, readset.sample.name + ".aligned.log"))
 
 
             else:
