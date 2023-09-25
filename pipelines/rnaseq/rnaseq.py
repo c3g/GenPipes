@@ -342,7 +342,7 @@ class RnaSeqRaw(common.Illumina):
                         ), 
                         bash.ln(
                             os.path.relpath(os.path.join(output_dir_sample, readset.sample.name + ".aligned.log"), link_directory),
-                            os.path.join(link_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
+                            os.path.join(link_directory, readset.sample.name + ".aligned.log"),
                             os.path.join(output_dir_sample, readset.sample.name + ".aligned.log")
                             )
                     ],
@@ -379,7 +379,7 @@ class RnaSeqRaw(common.Illumina):
                         ), 
                         bash.ln(
                             os.path.relpath(os.path.join(output_dir_sample, readset.sample.name + ".aligned.log"), link_directory),
-                            os.path.join(link_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
+                            os.path.join(link_directory, readset.sample.name + ".aligned.log"),
                             os.path.join(output_dir_sample, readset.sample.name + ".aligned.log")
                         )
                     ],
