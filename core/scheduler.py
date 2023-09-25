@@ -50,7 +50,7 @@ def create_scheduler(s_type, config_files, container=None, genpipes_file=None):
 
 class Scheduler:
     """
-    Commun Scheduler
+    Common Scheduler
     """
     def __init__(self, config_files, container=None, genpipes_file=None, **kwargs):
 

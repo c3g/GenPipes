@@ -46,7 +46,9 @@ def run(
 
     purple_outputs = [
         os.path.join(output_dir, tumor_name + ".purple.purity.tsv"),
-        os.path.join(output_dir, tumor_name + ".purple.qc")
+        os.path.join(output_dir, tumor_name + ".purple.qc"),
+        os.path.join(output_dir, tumor_name + ".driver.catalog.somatic.tsv"),
+        os.path.join(output_dir, tumor_name + ".driver.catalog.germline.tsv")
     ]
 
     if structural_sv is not None and sv_recovery is not None:
