@@ -30,7 +30,7 @@ from core.job import *
 def paired(input1, input2, output_directory, output_directory_sample, sample):
 	return Job(
 		input_files=[input1, input2],
-		output_files=[output_directory, output_directory_sample, os.path.join(output_dir_sample, readset.sample.name + ".aligned.log")],
+		output_files=[output_directory, output_directory_sample, os.path.join(output_directory_sample, sample + ".aligned.log")],
 		module_entries=[
             ['default', 'module_sortmerna']
         ],
@@ -63,7 +63,7 @@ sortmerna --threads {cpu} \\
 def single(input1, output_directory, output_directory_sample, sample):
 	return Job(
 		input_files=[input1],
-		output_files=[output_directory, output_directory_sample, os.path.join(output_dir_sample, readset.sample.name + ".aligned.log")],
+		output_files=[output_directory, output_directory_sample, os.path.join(output_directory_sample, sample + ".aligned.log")],
 		module_entries=[
             ['default', 'module_sortmerna'],
         ],
