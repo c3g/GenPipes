@@ -55,6 +55,7 @@ sortmerna --threads {cpu} \\
         	cpu=config.param('sortmerna', 'cluster_cpu', required=True), 
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
+        	sample=sample,
         	other_options=(" \\\n  " + config.param('sortmerna', 'other_options', required=False)) if config.param('sortmerna', 'other_options', required=False) else ""
         )
 	)
