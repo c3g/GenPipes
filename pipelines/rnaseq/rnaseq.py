@@ -330,7 +330,7 @@ class RnaSeqRaw(common.Illumina):
                         ),
                         bash.mkdir(
                             link_directory
-                            ),
+                        ),
                         sortmerna.paired(
                             trim_fastq1,
                             trim_fastq2,
@@ -342,7 +342,7 @@ class RnaSeqRaw(common.Illumina):
                             os.path.relpath(os.path.join(output_dir_sample, readset.sample.name + ".aligned.log"), link_directory),
                             os.path.join(link_directory, readset.sample.name + ".aligned.log"),
                             os.path.join(output_dir_sample, readset.sample.name + ".aligned.log")
-                            )
+                        )
                     ],
                     name="sortmerna." + readset.name,
                     samples=[readset.sample]
@@ -366,7 +366,7 @@ class RnaSeqRaw(common.Illumina):
                         ),
                         bash.mkdir(
                             link_directory
-                            ),
+                        ),
                         sortmerna.single(
                             trim_fastq1,
                             output_dir,
