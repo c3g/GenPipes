@@ -550,7 +550,7 @@ pandoc --to=markdown \\
                 job = picard.merge_sam_files(inputs, output)
                 job.name = "picard_merge_sam_files." + sample.name
                 job.samples = [sample]
-                job.readsets = [list(sample.readset)]
+                job.readsets = list(sample.readsets)
                 jobs.append(job)
         return jobs
 
