@@ -27,10 +27,10 @@ from core.job import *
 
 ### Start from here ###
 
-def paired(input1, input2, output_directory, sample):
+def paired(input1, input2, output_directory, output_directory_sample, sample):
 	return Job(
 		input_files=[input1, input2],
-		output_files=[output_directory, sample],
+		output_files=[output_directory, output_directory_sample, sample],
 		module_entries=[
             ['sortmerna', 'module_sortmerna']
         ],
@@ -46,23 +46,23 @@ sortmerna --threads {cpu} \\
 	--ref $SORTMERNA_DATA/rRNA_databases/silva-euk-28s-id98.fasta \\
 	--reads {input1} \\
 	--reads {input2} \\
-    --aligned {output_directory}/${sample}/${sample}.aligned \\
-    --kvdb {output_directory}/${sample}/kvdb \\
-    --readb {output_directory}/${sample}/readb \\
+    --aligned {output_directory_sample}/{sample}.aligned \\
+    --kvdb {output_directory_sample}/kvdb \\
+    --readb {output_directory_sample}/readb \\
     --idx-dir {output_directory}/idx-dir""".format(
 			input1=input1,
 			input2=input2,
         	cpu=config.param('sortmerna', 'cluster_cpu', required=True), 
         	output_directory=output_directory,
-        	sample=sample,
+        	output_directory_sample=output_directory_sample,
         	other_options=(" \\\n  " + config.param('sortmerna', 'other_options', required=False)) if config.param('sortmerna', 'other_options', required=False) else ""
         )
 	)
 
-def single(input1, output_directory, sample):
+def single(input1, output_directory, output_directory_sample, sample):
 	return Job(
 		input_files=[input1],
-		output_files=[output_directory, sample],
+		output_files=[output_directory, output_directory_sample, sample],
 		module_entries=[
             ['sortmerna', 'module_sortmerna'],
         ],
@@ -77,13 +77,14 @@ sortmerna --threads {cpu} \\
 	--ref $SORTMERNA_DATA/rRNA_databases/silva-euk-18s-id95.fasta \\
 	--ref $SORTMERNA_DATA/rRNA_databases/silva-euk-28s-id98.fasta \\
 	--reads {input1} \\ 
-    --aligned {output_directory}/${sample}/${sample}.aligned \\
-    --kvdb {output_directory}/${sample}/kvdb \\
-    --readb {output_directory}/${sample}/readb \\
+    --aligned {output_directory_sample}/{sample}.aligned \\
+    --kvdb {output_directory_sample}/kvdb \\
+    --readb {output_directory_sample}/readb \\
     --idx-dir {output_directory}/idx-dir""".format(
 			input1=input1,
         	cpu=config.param('sortmerna', 'cluster_cpu', required=True), 
         	output_directory=output_directory,
+        	output_directory_sample=output_directory_sample,
         	sample=sample,
         	other_options=(" \\\n  " + config.param('sortmerna', 'other_options', required=False)) if config.param('sortmerna', 'other_options', required=False) else ""
         )

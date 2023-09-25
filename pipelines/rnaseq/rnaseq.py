@@ -309,8 +309,9 @@ class RnaSeqRaw(common.Illumina):
         jobs = []
         for readset in self.readsets:
             output_dir = self.output_dirs["sortmerna_directory"]
-            output_dir_sample = os.path.join(self.output_dirs["sortmerna_directory"], readset.sample.name)
-            
+            output_dir_sample = os.path.join(self.output_dirs["sortmerna_directory"], readset.sample.name, readset.name)
+            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+
             trim.fastq1 = ""
             trim.fastq2 = ""
 
@@ -336,6 +337,7 @@ class RnaSeqRaw(common.Illumina):
                             trim.fastq1,
                             trim.fastq2,
                             output_dir,
+                            output_dir_sample, 
                             readset.sample.name
                         )
                     ],
@@ -367,6 +369,7 @@ class RnaSeqRaw(common.Illumina):
                         sortmerna.single(
                             trim.fastq1,
                             output_dir,
+                            output_dir_sample,
                             readset.sample.name
                         )
                     ],
