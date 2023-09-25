@@ -32,7 +32,7 @@ def paired(input1, input2, output_directory, output_directory_sample, sample):
 		input_files=[input1, input2],
 		output_files=[output_directory, output_directory_sample, sample],
 		module_entries=[
-            ['sortmerna', 'module_sortmerna']
+            ['default', 'module_sortmerna']
         ],
         command="""\
 sortmerna --threads {cpu} \\
@@ -64,7 +64,7 @@ def single(input1, output_directory, output_directory_sample, sample):
 		input_files=[input1],
 		output_files=[output_directory, output_directory_sample, sample],
 		module_entries=[
-            ['sortmerna', 'module_sortmerna'],
+            ['default', 'module_sortmerna'],
         ],
         command="""\
 sortmerna --threads {cpu} \\
