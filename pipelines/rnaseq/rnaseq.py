@@ -339,7 +339,12 @@ class RnaSeqRaw(common.Illumina):
                             output_dir,
                             output_dir_sample, 
                             readset.sample.name
-                        )
+                        ), 
+                        bash.ln(
+                            os.path.relpath(os.path.join(output_dir_sample, readset.sample.name + ".aligned.log"), link_directory),
+                            os.path.join(link_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
+                            os.path.join(output_dir_sample, readset.sample.name + ".aligned.log")
+                            )
                     ],
                     name="sortmerna." + readset.name,
                     samples=[readset.sample]
@@ -371,6 +376,11 @@ class RnaSeqRaw(common.Illumina):
                             output_dir,
                             output_dir_sample,
                             readset.sample.name
+                        ), 
+                        bash.ln(
+                            os.path.relpath(os.path.join(output_dir_sample, readset.sample.name + ".aligned.log"), link_directory),
+                            os.path.join(link_directory, sample.name + ".sorted.mdup.bam.metrics.tsv"),
+                            os.path.join(output_dir_sample, readset.sample.name + ".aligned.log")
                         )
                     ],
                     name="sortmerna." + readset.name,
@@ -379,6 +389,7 @@ class RnaSeqRaw(common.Illumina):
                 )
 
                 self.multiqc_inputs.append(os.path.join(output_dir_sample, readset.sample.name + ".aligned.log"))
+                os.path.join(link_directory, sample.name + "_star_fusion.Log.final.out")
 
 
             else:
