@@ -136,6 +136,7 @@ class RnaSeqRaw(common.Illumina):
         dirs = {
             'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
             'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
+            'sortmerna_directory': os.path.relpath(os.path.join(self.output_dir, 'sortmerna'), self.output_dir),            
             'alignment_1stPass_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment_1stPass'), self.output_dir),
             'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
             'stringtie_directory': os.path.relpath(os.path.join(self.output_dir, 'stringtie'), self.output_dir),
@@ -296,6 +297,93 @@ class RnaSeqRaw(common.Illumina):
 
             self.multiqc_inputs.append(trim_file_prefix + "-trimmed.log")
         return jobs
+
+    def sortmerna(self):
+        """
+        Calculation of ribosomal RNA per read based on known ribosomal sequences from archea, bacteria and eukaryotes.
+        Using [sortmeRNA] (https://github.com/sortmerna/sortmerna)
+
+        Taking trimmed fastqs and reporting on each read, either paired-end or single end.
+        """
+
+        jobs = []
+        for readset in self.readsets:
+            output_dir = self.output_dirs["sortmerna_directory"]
+            output_dir_sample = os.path.join(self.output_dirs["sortmerna_directory"], readset.sample.name)
+            
+            trim.fastq1 = ""
+            trim.fastq2 = ""
+
+            if readset.run_type == "PAIRED_END":
+                trim.fastq1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim." + "pair1.fastq.gz")
+                trim.fastq2 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim." + "pair2.fastq.gz")
+
+                jobs.append(
+                    concat_jobs(
+                    [
+                        bash.mkdir(
+                            output_dir,
+                            remove=True
+                        ),
+                        bash.mkdir(
+                            output_dir_sample,
+                            remove=True
+                        ),
+                        bash.mkdir(
+                            link_directory
+                            ),
+                        sortmerna.paired(
+                            trim.fastq1,
+                            trim.fastq2,
+                            output_dir,
+                            readset.sample.name
+                        )
+                    ],
+                    name="sortmerna." + readset.name,
+                    samples=[readset.sample]
+                    )
+                )
+
+                self.multiqc_inputs.append(output_dir_sample, readset.sample.name + ".aligned.log")
+
+            elif readset.run_type == "SINGLE_END":
+                trim.fastq1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim." + "single.fastq.gz")
+                trim.fastq2 = None
+
+                jobs.append(
+                    concat_jobs(
+                    [
+                        bash.mkdir(
+                            output_dir,
+                            remove=True
+                        ),
+                        bash.mkdir(
+                            output_dir_sample,
+                            remove=True
+                        ),
+                        bash.mkdir(
+                            link_directory
+                            ),
+                        sortmerna.single(
+                            trim.fastq1,
+                            output_dir,
+                            readset.sample.name
+                        )
+                    ],
+                    name="sortmerna." + readset.name,
+                    samples=[readset.sample]
+                    )
+                )
+
+                self.multiqc_inputs.append(output_dir_sample, readset.sample.name + ".aligned.log")
+
+
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+        return jobs
+    
 
     def star(self):
         """
@@ -2582,6 +2670,7 @@ END
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
+                self.sortmerna,
                 self.star,
                 self.picard_merge_sam_files,
                 self.picard_sort_sam,
