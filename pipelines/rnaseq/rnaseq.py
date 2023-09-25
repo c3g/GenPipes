@@ -324,11 +324,9 @@ class RnaSeqRaw(common.Illumina):
                     [
                         bash.mkdir(
                             output_dir,
-                            remove=True
                         ),
                         bash.mkdir(
                             output_dir_sample,
-                            remove=True
                         ),
                         bash.mkdir(
                             link_directory
@@ -362,11 +360,9 @@ class RnaSeqRaw(common.Illumina):
                     [
                         bash.mkdir(
                             output_dir,
-                            remove=True
                         ),
                         bash.mkdir(
                             output_dir_sample,
-                            remove=True
                         ),
                         bash.mkdir(
                             link_directory
@@ -389,8 +385,6 @@ class RnaSeqRaw(common.Illumina):
                 )
 
                 self.multiqc_inputs.append(os.path.join(output_dir_sample, readset.sample.name + ".aligned.log"))
-                os.path.join(link_directory, sample.name + "_star_fusion.Log.final.out")
-
 
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
