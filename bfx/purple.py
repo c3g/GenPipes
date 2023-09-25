@@ -55,7 +55,11 @@ def run(
         input_files.append(structural_sv)
         input_files.append(sv_recovery)
         purple_sv = os.path.join(output_dir, tumor_name + ".purple.sv.vcf.gz")
+        driver_somatic = os.path.join(output_dir, tumor_name + ".driver.catalog.somatic.tsv")
+        driver_germline = os.path.join(output_dir, tumor_name + ".driver.catalog.germline.tsv")
         purple_outputs.append(purple_sv)
+        purple_outputs.append(driver_somatic)
+        purple_outputs.append(driver_germline)
 
     if structural_sv is not None:
         circos_plot = os.path.join(output_dir, "plot", tumor_name + ".circos.png")
