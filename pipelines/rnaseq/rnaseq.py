@@ -81,6 +81,8 @@ from bfx import gtex_pipeline
 
 from bfx import bash_cmd as bash
 
+# test for me 
+
 log = logging.getLogger(__name__)
 
 class RnaSeqRaw(common.Illumina):
