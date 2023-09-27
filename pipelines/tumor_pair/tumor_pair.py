@@ -6861,7 +6861,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                             purple_vcf,
                             purple_dir,
                             tumor_pair.tumor.name,
-                            linx_output_dir
+                            linx_output_dir,
+                            ini_section="linx_annotations_somatic"
                         )
                     ],
                     name="linx_annotations_somatic." + tumor_pair.name,
@@ -6888,7 +6889,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                            linx.germline(
                             purple_vcf,
                             tumor_pair.tumor.name,
-                            linx_output_dir
+                            linx_output_dir,
+                            ini_section="linx_annotations_germline"
                            )
                     ],
                     name="linx_annotations_germline." + tumor_pair.name,
@@ -6913,7 +6915,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         bash.mkdir(linx_output_dir),
                         linx.plot(
                             tumor_pair.tumor.name,
-                            linx_output_dir
+                            linx_output_dir,
+                            ini_section="linx_plot"
                         ),
                         bash.touch(os.path.join(linx_output_dir, "linx_plot." + tumor_pair.name + ".Done"))
                     ],
