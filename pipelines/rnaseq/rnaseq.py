@@ -1956,6 +1956,11 @@ pandoc \\
                         )
                 ],
                 input_dependency=left_fastqs[sample.name] + right_fastqs[sample.name],
+                output_dependency=[
+                    os.path.join(output_dir, "Log.final.out"), os.path.join(output_dir, "fusions.tsv"),
+                    os.path.join(link_directory, sample.name + "_arriba.Log.final.out"),
+                    link_directory
+                    ],
                 name="run_arriba." + sample.name,
                 samples=[sample],
                 readsets=list(sample.readsets)
