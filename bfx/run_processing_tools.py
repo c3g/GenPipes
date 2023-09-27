@@ -382,6 +382,45 @@ bcl2fastq \\
             other_options=config.param('bcl2fastq_index', 'other_options'),
         )
     )
+def mgi_splitbarcode(
+    input,
+    run_dir,
+    flowcell_id,
+    fastq_outputs,
+    output_dir,
+    json_flag_file,
+    barcode_file,   # here check if we use flag file or barcode file : first draft of barcode file creation already in pipelines/run_processing/run_processing.py
+    ini_section='basecall'
+    ):
+
+    return Job(
+        [input, json_flag_file],
+        fastq_outputs,
+        [
+            [ini_section, 'module_basecall_t7'],
+            [ini_section, 'module_python']
+        ],
+        command="""\
+splitBarcode \\
+  -F /nb/Research/MGISeq/T7/R1100600200054/upload/workspace/E200002940/L01/calFile \\
+  -C 322 \\
+  --Col 42 \\
+  --Row 42 \\
+  -N {flowcell_id} \\
+  -B {barcode_file} \\
+  -o {output_dir} \\
+  -r 1 \\
+  -i 303 20 1 \\
+  -E 3 \\
+  -P 151 \\
+  --filter_param 2 23 22 1 1 0.78 0.71""".format(
+            flowcell_id=flowcell_id,
+            barcode_file=barcode_file,
+            json_flag_file=json_flag_file  # if using json_flag_file, need to write : `-j {json_flag_file}` 
+            output_dir=output_dir
+            # some other parameters could be parsed from the json file as well i.e. -C 322 stands for total number of cycles+2 (here 151+151+10+10), -P 151 stands for size of read1+1 (here 150+1), -i 303 20 1 stands for start cycle of 1st barcode+3 (here 151+151+1), then total size of barcode (here 10+10), then number of allowed mismatches, --Col and --Row are for last column and row on the flowcell
+        )
+    )
 
 def mgi_t7_basecall(
     input,

@@ -3263,10 +3263,14 @@ class RunProcessing(common.MUGQICPipeline):
     def edit_mgi_t7_flag_file(self, lane):
         """
         insert the barcode information in the flag file output from the sequencer
-        This Flag file is used to call splitBarcode
+        This Flag file is used to call client_linux (i.e wrapper of splitBarcode and more)
+        ### TEST : at the same time, create the so-called barcode file used to call
+        ### splitBarcode directly --> could be useless in the end because it seems
+        ### splitBarcode could also use the flag file (still need to be tested)
         """
 
         json_flag_file = self.json_flag_files[lane]
+        barcode_file = os.path.join(os.path.dirname(self.json_flag_files[lane]), "barcodes."+self.run_id+".txt")
 
         # get the barcode names & sequences to add in the JSON flag file
         all_indexes = {}
@@ -3275,6 +3279,9 @@ class RunProcessing(common.MUGQICPipeline):
                 all_indexes[readset.index_name] = index_dict
         with open(json_flag_file, 'r') as json_fh:
             json_flag_content = json.load(json_fh)
+        with open(barcode_file, 'w') as barcode_fh:
+            json_flag_content = json.load(json_fh)
+
         if self.is_dual_index[lane]:
             json_flag_content['speciesBarcodes'] = dict([(index_name, index_dict['INDEX2']+index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
         else:
@@ -3284,8 +3291,11 @@ class RunProcessing(common.MUGQICPipeline):
 
         with open(json_flag_file, 'w') as out_json_fh:
             json.dump(json_flag_content, out_json_fh, indent=4)
+        with open(barcode_file, 'w') as barcode_fh:
+            barcode_fh.write(json_flag_content['speciesBarcodes']) # Untested... I may have been to quick there...
 
         log.info("BARCODES added in FLAG file : " + json_flag_file)
+        log.info("BARCODE FILE created : " + barcode_file)
 
     def generate_lane_sample_sheet(self, lane):
         if self.args.type == 'illumina':
