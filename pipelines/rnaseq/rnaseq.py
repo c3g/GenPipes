@@ -2700,6 +2700,7 @@ END
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
+                self.sortmerna,
                 self.star,
                 self.picard_merge_sam_files,
                 self.mark_duplicates,
@@ -2726,6 +2727,7 @@ END
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
+                self.sortmerna, 
                 self.star,
                 self.picard_merge_sam_files,
                 self.mark_duplicates,
