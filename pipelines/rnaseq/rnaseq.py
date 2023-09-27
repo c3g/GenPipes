@@ -2018,7 +2018,7 @@ pandoc \\
                    # bash.chdir(self.output_dir),
                     bash.ln(
                         os.path.relpath(os.path.join(output_dir, "Log.final.out"), link_directory),
-                        os.path.abspath(os.path.join(link_directory, sample.name + "_arriba.Log.final.out")),
+                        os.path.abspath(os.path.join(self.output_dir, link_directory, sample.name + "_arriba.Log.final.out")),
                         os.path.join(output_dir, "Log.final.out")
                         )
                 ],
