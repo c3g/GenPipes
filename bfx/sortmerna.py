@@ -25,17 +25,15 @@ import logging
 from core.config import *
 from core.job import *
 
-### Start from here ###
-
-def paired(input1, input2, output_directory, output_directory_sample, sample):
+def paired(input1, input2, output_directory, output_directory_sample, sample, ini_section = "sortmerna"):
 	return Job(
 		input_files=[input1, input2],
 		output_files=[output_directory, output_directory_sample, os.path.join(output_directory_sample, sample + ".aligned.log")],
 		module_entries=[
-            ['default', 'module_sortmerna']
+            ['ini_section', 'module_sortmerna']
         ],
         command="""\
-sortmerna --threads {cpu} \\
+sortmerna --threads {threads} \\
 	--ref $SORTMERNA_DATA/rRNA_databases/rfam-5.8s-database-id98.fasta \\
 	--ref $SORTMERNA_DATA/rRNA_databases/rfam-5s-database-id98.fasta \\
 	--ref $SORTMERNA_DATA/rRNA_databases/silva-arc-16s-id95.fasta \\
@@ -46,29 +44,30 @@ sortmerna --threads {cpu} \\
 	--ref $SORTMERNA_DATA/rRNA_databases/silva-euk-28s-id98.fasta \\
 	--reads {input1} \\
 	--reads {input2} \\
+	{other_options} \\
     --aligned {output_directory_sample}/{sample}.aligned \\
     --kvdb {output_directory_sample}/kvdb \\
     --readb {output_directory_sample}/readb \\
     --idx-dir {output_directory}/idx-dir""".format(
 			input1=input1,
 			input2=input2,
-        	cpu=config.param('sortmerna', 'cluster_cpu', required=True), 
+        	threads=config.param('ini_section', 'threads', required=True), 
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
         	sample=sample,
-        	other_options=(" \\\n  " + config.param('sortmerna', 'other_options', required=False)) if config.param('sortmerna', 'other_options', required=False) else ""
+        	other_options = config.param('sortmerna', 'other_options')
         )
 	)
 
-def single(input1, output_directory, output_directory_sample, sample):
+def single(input1, output_directory, output_directory_sample, sample, ini_section = "sortmerna"):
 	return Job(
 		input_files=[input1],
 		output_files=[output_directory, output_directory_sample, os.path.join(output_directory_sample, sample + ".aligned.log")],
 		module_entries=[
-            ['default', 'module_sortmerna'],
+            ['ini_section', 'module_sortmerna'],
         ],
         command="""\
-sortmerna --threads {cpu} \\
+sortmerna --threads {threads} \\
 	--ref $SORTMERNA_DATA/rRNA_databases/rfam-5.8s-database-id98.fasta \\
 	--ref $SORTMERNA_DATA/rRNA_databases/rfam-5s-database-id98.fasta \\
 	--ref $SORTMERNA_DATA/rRNA_databases/silva-arc-16s-id95.fasta \\
@@ -78,15 +77,16 @@ sortmerna --threads {cpu} \\
 	--ref $SORTMERNA_DATA/rRNA_databases/silva-euk-18s-id95.fasta \\
 	--ref $SORTMERNA_DATA/rRNA_databases/silva-euk-28s-id98.fasta \\
 	--reads {input1} \\ 
+	{other_options} \\
     --aligned {output_directory_sample}/{sample}.aligned \\
     --kvdb {output_directory_sample}/kvdb \\
     --readb {output_directory_sample}/readb \\
     --idx-dir {output_directory}/idx-dir""".format(
 			input1=input1,
-        	cpu=config.param('sortmerna', 'cluster_cpu', required=True), 
+        	threads=config.param('ini_section', 'threads', required=True), 
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
         	sample=sample,
-        	other_options=(" \\\n  " + config.param('sortmerna', 'other_options', required=False)) if config.param('sortmerna', 'other_options', required=False) else ""
-        )
+        	other_options = config.param('sortmerna', 'other_options')
+		)
 	)

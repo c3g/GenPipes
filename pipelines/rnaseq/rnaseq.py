@@ -135,8 +135,7 @@ class RnaSeqRaw(common.Illumina):
     def output_dirs(self):
         dirs = {
             'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
-            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
-            'sortmerna_directory': os.path.relpath(os.path.join(self.output_dir, 'sortmerna'), self.output_dir),            
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),            
             'alignment_1stPass_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment_1stPass'), self.output_dir),
             'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
             'stringtie_directory': os.path.relpath(os.path.join(self.output_dir, 'stringtie'), self.output_dir),
@@ -308,8 +307,8 @@ class RnaSeqRaw(common.Illumina):
 
         jobs = []
         for readset in self.readsets:
-            output_dir = self.output_dirs["sortmerna_directory"]
-            output_dir_sample = os.path.join(self.output_dirs["sortmerna_directory"], readset.sample.name, readset.name)
+            output_dir = os.path.join(self.output_dirs["metrics_directory"], "sortmerna")
+            output_dir_sample = os.path.join(output_dir, readset.sample.name, readset.name)
             link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
             trim_fastq1 = ""
@@ -322,15 +321,8 @@ class RnaSeqRaw(common.Illumina):
                 jobs.append(
                     concat_jobs(
                     [
-                        bash.mkdir(
-                            output_dir,
-                        ),
-                        bash.mkdir(
-                            output_dir_sample,
-                        ),
-                        bash.mkdir(
-                            link_directory
-                        ),
+                        bash.mkdir(output_dir_sample),
+                        bash.mkdir(link_directory),
                         sortmerna.paired(
                             trim_fastq1,
                             trim_fastq2,
@@ -358,15 +350,8 @@ class RnaSeqRaw(common.Illumina):
                 jobs.append(
                     concat_jobs(
                     [
-                        bash.mkdir(
-                            output_dir,
-                        ),
-                        bash.mkdir(
-                            output_dir_sample,
-                        ),
-                        bash.mkdir(
-                            link_directory
-                        ),
+                        bash.mkdir(output_dir_sample),
+                        bash.mkdir(link_directory),
                         sortmerna.single(
                             trim_fastq1,
                             output_dir,
