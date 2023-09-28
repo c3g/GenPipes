@@ -336,7 +336,7 @@ class RnaSeqRaw(common.Illumina):
                             trim_fastq2,
                             output_dir,
                             output_dir_sample, 
-                            readset.sample.name
+                            readset.name
                         ), 
                         bash.ln(
                             os.path.relpath(os.path.join(output_dir_sample, readset.name + ".aligned.log"), link_directory),
@@ -371,7 +371,7 @@ class RnaSeqRaw(common.Illumina):
                             trim_fastq1,
                             output_dir,
                             output_dir_sample,
-                            readset.sample.name
+                            readset.name
                         ), 
                         bash.ln(
                             os.path.relpath(os.path.join(output_dir_sample, readset.name + ".aligned.log"), link_directory),
