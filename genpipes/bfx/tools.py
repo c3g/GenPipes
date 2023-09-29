@@ -1214,6 +1214,26 @@ awk -F"\t" '$11>={cutoff} {{print $1"."$2"\t"$1"\t"$2"\tF\t"$11"\t"$12"\t"(100-$
         )
     )
 
+def gembs_format_cpg_report(
+        input, 
+        output,
+        ini_section='methylseq_gembs_format_cpg_report'
+        ):
+    return Job(
+            [input],
+            [output],
+            [
+                [ini_section, 'module_mugqic_tools']
+            ],
+            command="""\
+zcat {input} | tail -n +2 | \\
+awk -F"\t" -v OFS="\t" '{{print $1, $3, $6, int($10*($11/100)+0.5), int($10*((100-$11)/100)+0.5), $12, $13}}' | \\
+gzip -c > {output}""".format(
+    input=input,
+    output=output
+    )
+  )
+
 def methylseq_metrics_report(
         sample_list, 
         inputs, 
