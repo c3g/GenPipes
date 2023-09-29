@@ -318,63 +318,48 @@ class RnaSeqRaw(common.Illumina):
                 trim_fastq1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim." + "pair1.fastq.gz")
                 trim_fastq2 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim." + "pair2.fastq.gz")
 
-                jobs.append(
-                    concat_jobs(
-                    [
-                        bash.mkdir(output_dir_sample),
-                        bash.mkdir(link_directory),
-                        sortmerna.paired(
+                sortmerna_job=sortmerna.paired(
                             trim_fastq1,
                             trim_fastq2,
                             output_dir,
                             output_dir_sample, 
                             readset.name
-                        ), 
-                        bash.ln(
-                            os.path.relpath(os.path.join(output_dir_sample, readset.name + ".aligned.log"), link_directory),
-                            os.path.join(link_directory, readset.name + ".aligned.log"),
-                            os.path.join(output_dir_sample, readset.name + ".aligned.log")
                         )
-                    ],
-                    name="sortmerna." + readset.name,
-                    samples=[readset.sample]
-                    )
-                )
-
-                self.multiqc_inputs.append(os.path.join(output_dir_sample, readset.name + ".aligned.log"))
-
+                
             elif readset.run_type == "SINGLE_END":
                 trim_fastq1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim." + "single.fastq.gz")
                 trim_fastq2 = None
 
-                jobs.append(
-                    concat_jobs(
-                    [
-                        bash.mkdir(output_dir_sample),
-                        bash.mkdir(link_directory),
-                        sortmerna.single(
+                sortmerna_job=sortmerna.single(
                             trim_fastq1,
                             output_dir,
                             output_dir_sample,
                             readset.name
-                        ), 
-                        bash.ln(
-                            os.path.relpath(os.path.join(output_dir_sample, readset.name + ".aligned.log"), link_directory),
-                            os.path.join(link_directory, readset.name + ".aligned.log"),
-                            os.path.join(output_dir_sample, readset.name + ".aligned.log")
                         )
-                    ],
-                    name="sortmerna." + readset.name,
-                    samples=[readset.sample]
-                    )
-                )
-
-                self.multiqc_inputs.append(os.path.join(output_dir_sample, readset.name + ".aligned.log"))
-
+                
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
 
+            jobs.append(
+                concat_jobs(
+                [
+                    bash.mkdir(output_dir_sample),
+                    bash.mkdir(link_directory),
+                    sortmerna_job, 
+                    bash.ln(
+                        os.path.relpath(os.path.join(output_dir_sample, readset.name + ".aligned.log"), link_directory),
+                        os.path.join(link_directory, readset.name + ".aligned.log"),
+                        os.path.join(output_dir_sample, readset.name + ".aligned.log")
+                    )
+                ],
+                name="sortmerna." + readset.name,
+                samples=[readset.sample]
+                )
+            )
+
+            self.multiqc_inputs.append(os.path.join(output_dir_sample, readset.name + ".aligned.log"))
+        
         return jobs
     
 
