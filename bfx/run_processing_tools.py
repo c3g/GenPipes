@@ -388,10 +388,21 @@ def mgi_splitbarcode(
     flowcell_id,
     fastq_outputs,
     output_dir,
-    json_flag_file,
+    json_flag_hash,
     barcode_file,   # here check if we use flag file or barcode file : first draft of barcode file creation already in pipelines/run_processing/run_processing.py
+    mismatches,
     ini_section='basecall'
     ):
+
+    read1len = int(json_flag_hash['Read1'])
+    read2len = int(json_flag_hash['Read2']) if json_flag_hash['Read2'] else 0
+
+    barcode1len = int(json_flag_hash['Barcode']) if json_flag_hash['Barcode'] else 0
+    barcode2len = int(json_flag_hash['Dual Barcode']) if json_flag_hash['Dual Barcode'] else 0
+    barcodelen = barcode1len + barcode2len
+
+    total_cycles = read1len + read2len + barcode1len + barcode2len
+    barcode_start_cycle = read1len + read2len + 1
 
     return Job(
         [input, json_flag_file],
@@ -403,23 +414,28 @@ def mgi_splitbarcode(
         command="""\
 splitBarcode \\
   -F {run_dir}/L01/calFile \\
-  -C 322 \\
+  -C {total_cycles} \\
   --Col 42 \\
   --Row 42 \\
   -N {flowcell_id} \\
   -B {barcode_file} \\
   -o {output_dir} \\
   -r 1 \\
-  -i 303 20 1 \\
+  -i {barcode_start_cycle} {barcodelen} {mismatches} \\
   -E 3 \\
-  -P 151 \\
+  -P {read1len} \\
   --filter_param 2 23 22 1 1 0.78 0.71""".format(
             run_dir=run_dir,
+            total_cycles=total_cycles,
             flowcell_id=flowcell_id,
             barcode_file=barcode_file,
-            json_flag_file=json_flag_file  # if using json_flag_file, need to write : `-j {json_flag_file}` 
-            output_dir=output_dir
-            # some other parameters could be parsed from the json file as well i.e. -C 322 stands for total number of cycles+2 (here 151+151+10+10), -P 151 stands for size of read1+1 (here 150+1), -i 303 20 1 stands for start cycle of 1st barcode+3 (here 151+151+1), then total size of barcode (here 10+10), then number of allowed mismatches, --Col and --Row are for last column and row on the flowcell
+            json_flag_file=json_flag_file,  # if using json_flag_file, need to write : `-j {json_flag_file}` 
+            output_dir=output_dir,
+            barcode_start_cycle=barcode_start_cycle,
+            barcodelen=barcodelen,
+            mismatches=mismatches,
+            read1len=read1len
+            # some other parameters could be parsed from the json file as well i.e.--Col and --Row are for last column and row on the flowcell
         )
     )
 

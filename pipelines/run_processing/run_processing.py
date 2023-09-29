@@ -773,7 +773,8 @@ class RunProcessing(common.MUGQICPipeline):
             # If demultiplexing is perform while basecalling
             if self.args.splitbarcode_demux:
                 # Add the barcodes in the JSON flag file
-                self.edit_mgi_t7_flag_file(lane)
+                # self.edit_mgi_t7_flag_file(lane)
+                self.create_barcode_file(lane)
 
                 basecall_outputs, postprocessing_jobs = self.generate_basecall_outputs(lane)
                 basecall_outputs.extend(
@@ -791,14 +792,15 @@ class RunProcessing(common.MUGQICPipeline):
                     concat_jobs(
                         [
                             bash.mkdir(basecall_dir),
-                            run_processing_tools.mgi_t7_basecall(
+                            run_processing_tools.splitbarcode(
                                 input,
                                 self.run_dir,
                                 self.flowcell_id,
                                 basecall_outputs,
                                 basecall_dir,
-                                self.json_flag_files[lane],
-                                lane_config_file
+                                self.json_flag_hash[lane],
+                                self.barcode_files[lane],
+                                self.number_of_mismatches
                             )
                         ],
                         name=f"basecall.{self.run_id}.{lane}",
@@ -3277,13 +3279,8 @@ class RunProcessing(common.MUGQICPipeline):
         """
         insert the barcode information in the flag file output from the sequencer
         This Flag file is used to call client_linux (i.e wrapper of splitBarcode and more)
-        ### TEST : at the same time, create the so-called barcode file used to call
-        ### splitBarcode directly --> could be useless in the end because it seems
-        ### splitBarcode could also use the flag file (still need to be tested)
         """
-
         json_flag_file = self.json_flag_files[lane]
-        barcode_file = self.barcode_files[lane]
 
         # get the barcode names & sequences to add in the JSON flag file
         all_indexes = {}
@@ -3291,8 +3288,6 @@ class RunProcessing(common.MUGQICPipeline):
             for index_dict in readset.index:
                 all_indexes[readset.index_name] = index_dict
         with open(json_flag_file, 'r') as json_fh:
-            json_flag_content = json.load(json_fh)
-        with open(barcode_file, 'w') as barcode_fh:
             json_flag_content = json.load(json_fh)
 
         if self.is_dual_index[lane]:
@@ -3304,10 +3299,31 @@ class RunProcessing(common.MUGQICPipeline):
 
         with open(json_flag_file, 'w') as out_json_fh:
             json.dump(json_flag_content, out_json_fh, indent=4)
-        with open(barcode_file, 'w') as barcode_fh:
-            barcode_fh.write(json_flag_content['speciesBarcodes']) # Untested... I may have been to quick there...
 
         log.info("BARCODES added in FLAG file : " + json_flag_file)
+
+    def create_barcode_file(self, lane):
+        """
+        create the so-called barcode file used to call MGI splitBarcode directly
+        --> could be useless in the end because it seems splitBarcode could also use the flag file (still need to be tested)
+        """
+
+        barcode_file = self.barcode_files[lane]
+
+        # get the barcode names & sequences to add in the JSON flag file
+        all_indexes = {}
+        for readset in self.readsets[lane]:
+            for index_dict in readset.index:
+                all_indexes[readset.index_name] = index_dict
+
+        if self.is_dual_index[lane]:
+            barcodes = dict([(index_name, index_dict['INDEX2']+index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
+        else:
+            barcodes = dict([(index_name, index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
+
+        with open(barcode_file, 'w') as barcode_fh:
+            barcode_fh.write(barcodes) # Untested... I may have been to quick there...
+
         log.info("BARCODE FILE created : " + barcode_file)
 
     def generate_lane_sample_sheet(self, lane):
