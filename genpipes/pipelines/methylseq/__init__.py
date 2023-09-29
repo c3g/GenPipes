@@ -1187,6 +1187,8 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
             )
         )
 
+        self.multiqc_inputs.append(ihec_multiqc_file)
+
         return jobs
 
     def bis_snp(self):
@@ -1325,6 +1327,29 @@ cat {metrics_all_file} | sed 's/%_/perc_/g' | sed 's/#_/num_/g' >> {ihec_multiqc
                 )
             )
         
+        return jobs
+
+    def gembs_format_cpg_report(self):
+        """
+        Reformat gemBS output to match bismark and dragen output, so following steps can be followed. 
+        """
+        
+        jobs = []
+
+        for sample in self.samples:
+            cpg_report_input = os.path.join(self.output_dirs["variants_directory"], sample.name, sample.name + "_cpg.bed.gz")
+            methyl_directory = os.path.join(self.output_dirs["methylation_call_directory"], sample.name)
+            cpg_output = os.path.join(methyl_directory, sample.name + ".readset_sorted.dedup.CpG_report.txt.gz")
+
+            job = tools.gembs_format_cpg_report(
+                        cpg_report_input,
+                        cpg_output
+                        )
+            job.name = "gembs_format_cpg_report." + sample.name
+            job.samples = [sample]
+
+            jobs.append(job)
+
         return jobs
 
     def filter_snp_cpg(self):
