@@ -19,18 +19,17 @@
 
 # Python Standard Modules
 import os
-import logging
 
 # MUGQIC Modules
 from core.config import *
 from core.job import *
 
-def paired(input1, input2, output_directory, output_directory_sample, sample, ini_section = "sortmerna"):
+def paired(input1, input2, output_directory, output_directory_sample, sample, ini_section="sortmerna"):
 	return Job(
 		input_files=[input1, input2],
 		output_files=[output_directory, output_directory_sample, os.path.join(output_directory_sample, sample + ".aligned.log")],
 		module_entries=[
-            ['ini_section', 'module_sortmerna']
+            [ini_section, 'module_sortmerna']
         ],
         command="""\
 sortmerna --threads {threads} \\
@@ -51,7 +50,7 @@ sortmerna --threads {threads} \\
     --idx-dir {output_directory}/idx-dir""".format(
 			input1=input1,
 			input2=input2,
-        	threads=config.param('threads', required=True), 
+        	threads=config.param(ini_section, 'threads', required=True), 
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
         	sample=sample,
@@ -64,7 +63,7 @@ def single(input1, output_directory, output_directory_sample, sample, ini_sectio
 		input_files=[input1],
 		output_files=[output_directory, output_directory_sample, os.path.join(output_directory_sample, sample + ".aligned.log")],
 		module_entries=[
-            ['ini_section', 'module_sortmerna'],
+            [ini_section, 'module_sortmerna'],
         ],
         command="""\
 sortmerna --threads {threads} \\
@@ -83,7 +82,7 @@ sortmerna --threads {threads} \\
     --readb {output_directory_sample}/readb \\
     --idx-dir {output_directory}/idx-dir""".format(
 			input1=input1,
-        	threads=config.param('threads', required=True), 
+        	threads=config.param(ini_section, 'threads', required=True), 
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
         	sample=sample,
