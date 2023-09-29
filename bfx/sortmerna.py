@@ -51,7 +51,7 @@ sortmerna --threads {threads} \\
     --idx-dir {output_directory}/idx-dir""".format(
 			input1=input1,
 			input2=input2,
-        	threads=config.param('ini_section', 'threads', required=True), 
+        	threads=config.param('threads', required=True), 
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
         	sample=sample,
@@ -83,7 +83,7 @@ sortmerna --threads {threads} \\
     --readb {output_directory_sample}/readb \\
     --idx-dir {output_directory}/idx-dir""".format(
 			input1=input1,
-        	threads=config.param('ini_section', 'threads', required=True), 
+        	threads=config.param('threads', required=True), 
         	output_directory=output_directory,
         	output_directory_sample=output_directory_sample,
         	sample=sample,
