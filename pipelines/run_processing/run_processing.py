@@ -400,6 +400,19 @@ class RunProcessing(common.MUGQICPipeline):
         return self._json_flag_files
 
     @property
+    def barcode_files(self):
+        if not hasattr(self, "_barcode_files"):
+            self._barcode_files = {}
+            for lane in self.lanes:
+                barcode_file = os.path.join(self.output_dir, f"barcodes.{lane}.txt")
+                if not os.path.exists(barcode_file):
+                    if not os.path.exists(os.path.dirname(barcode_file)):
+                        os.makedirs(os.path.dirname(barcode_file))
+                        self._barcode_files[lane] = barcode_file
+                        log.info(f"BARCODE file for lane {lane} : {barcode_file}")
+        return self._json_flag_files
+
+    @property
     def json_flag_hash(self):
         if not hasattr(self, "_json_flag_hash"):
             self._json_flag_hash = {}
@@ -3270,7 +3283,7 @@ class RunProcessing(common.MUGQICPipeline):
         """
 
         json_flag_file = self.json_flag_files[lane]
-        barcode_file = os.path.join(os.path.dirname(self.json_flag_files[lane]), "barcodes."+self.run_id+".txt")
+        barcode_file = self.barcode_files[lane]
 
         # get the barcode names & sequences to add in the JSON flag file
         all_indexes = {}

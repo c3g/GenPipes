@@ -402,7 +402,7 @@ def mgi_splitbarcode(
         ],
         command="""\
 splitBarcode \\
-  -F /nb/Research/MGISeq/T7/R1100600200054/upload/workspace/E200002940/L01/calFile \\
+  -F {run_dir}/L01/calFile \\
   -C 322 \\
   --Col 42 \\
   --Row 42 \\
@@ -414,6 +414,7 @@ splitBarcode \\
   -E 3 \\
   -P 151 \\
   --filter_param 2 23 22 1 1 0.78 0.71""".format(
+            run_dir=run_dir,
             flowcell_id=flowcell_id,
             barcode_file=barcode_file,
             json_flag_file=json_flag_file  # if using json_flag_file, need to write : `-j {json_flag_file}` 
