@@ -110,9 +110,9 @@ def collect_multiple_metrics(input, output, reference_sequence=None, library_typ
 
     if config.param('picard_collect_multiple_metrics', 'module_picard').split("/")[2] < "2":
         return picard.collect_multiple_metrics(input, output, reference_sequence, library_type)
-    
+
     else:
-        
+
         return Job(
             [input],
             outputs,
@@ -422,7 +422,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 # Reorder BAM/SAM files based on reference/dictionary
 def reorder_sam(input, output):
 
-    
+
     if config.param('reorder_sam', 'module_picard').split("/")[2] < "2":
         return picard.reorder_sam(input, output)
     else:
@@ -660,7 +660,7 @@ def bed2interval_list(
     bed,
     output
     ):
-    
+
     if config.param('picard_bed2interval_list', 'module_picard').split("/")[2] < "2":
         return picard.bed2interval_list(
             dictionary,
@@ -711,8 +711,6 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
 def scatterIntervalsByNs(reference,
                   output,
                   options= None):
-#                  exclude_intervals=None):
-
     return Job(
         [reference],
         [output],
@@ -730,7 +728,17 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PICARD_HOME
             java_other_options=config.param('picard_ScatterIntervalsByNs', 'java_other_options'),
             ram=config.param('picard_ScatterIntervalsByNs', 'ram'),
             reference=reference if reference else config.param('picard_ScatterIntervalsByNs', 'genome_fasta', param_type='filepath'),
-#            exclude_intervals=exclude_intervals if exclude_intervals else "".join(" \\\n  --excludeIntervals " + exclude_interval for exclude_interval in exclude_intervals),
             output=output
         )
     )
+
+def parse_aligned_reads_ratio_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export aligned_reads_ratio=`awk '{{if ($0 ~ /^PAIR/) {{print $7}}}}' {input_file}`"""
+        )

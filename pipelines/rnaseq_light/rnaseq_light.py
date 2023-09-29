@@ -36,12 +36,15 @@ from core.config import config, _raise, SanitycheckError
 from core.job import Job, concat_jobs
 import utils.utils
 
-from bfx import bash_cmd as bash
-from bfx import gq_seq_utils
-from bfx import kallisto
-from bfx import rmarkdown
-from bfx import differential_expression
-from bfx import tools
+from bfx import (
+    bash_cmd as bash,
+    differential_expression,
+    gq_seq_utils,
+    job2json_project_tracking,
+    kallisto,
+    rmarkdown,
+    tools
+    )
 
 from pipelines import common
 from pipelines.rnaseq import rnaseq
@@ -123,6 +126,30 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
 
             output_dir = os.path.join(self.output_dirs["kallisto_directory"], sample.name)
             parameters = " ".join([other_param, parameters]) if other_param else parameters
+            job_name = f"kallisto.{sample.name}"
+            job_project_tracking_metrics = []
+            if self.project_tracking_json:
+                job_project_tracking_metrics = concat_jobs(
+                    [
+                    kallisto.parse_mean_insert_size_metrics_pt(os.path.join(output_dir, "abundance.h5")),
+                    job2json_project_tracking.run(
+                        input_file=os.path.join(output_dir, "abundance.h5"),
+                        pipeline=self,
+                        samples=sample.name,
+                        readsets=",".join([readset.name for readset in sample.readsets]),
+                        job_name=job_name,
+                        metrics="mean_insert_size=$mean_insert_size"
+                        ),
+                    kallisto.parse_median_insert_size_metrics_pt(os.path.join(output_dir, "abundance.h5")),
+                    job2json_project_tracking.run(
+                        input_file=os.path.join(output_dir, "abundance.h5"),
+                        pipeline=self,
+                        samples=sample.name,
+                        readsets=",".join([readset.name for readset in sample.readsets]),
+                        job_name=job_name,
+                        metrics="median_insert_size=$median_insert_size"
+                        )
+                    ])
             jobs.append(
                 concat_jobs(
                     [
@@ -141,16 +168,19 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                             os.path.join(output_dir, "abundance_transcripts.tsv"),
                             os.path.join(output_dir, "abundance_genes.tsv"),
                             tx2genes_file
-                        )
+                        ),
+                        job_project_tracking_metrics
                     ],
                     input_dependency=input_fastqs,
                     output_dependency=[
                         os.path.join(output_dir, "abundance_transcripts.tsv"),
                         os.path.join(output_dir, "abundance_genes.tsv"),
+                        os.path.join(output_dir, "abundance.h5"),
                         os.path.join(output_dir, "kallisto_quant.log")
                     ],
-                    name="kallisto." + sample.name,
-                    samples=[sample]
+                    name=job_name,
+                    samples=[sample],
+                    readsets=sample.readsets
                 )
             )
 
@@ -158,7 +188,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
 
     def kallisto_count_matrix(self):
         """
-        Use the output from Kallisto to create a transcript count matrix. 
+        Use the output from Kallisto to create a transcript count matrix.
         """
 
         jobs=[]
@@ -168,26 +198,28 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
         input_abundance_files_transcripts = [os.path.join(self.output_dirs["kallisto_directory"], sample.name, "abundance_transcripts.tsv") for sample in self.samples]
         job_name_transcripts="kallisto_count_matrix.transcripts"
         data_type_transcripts="transcripts"
-        job=tools.r_create_kallisto_count_matrix(
+        job = tools.r_create_kallisto_count_matrix(
             input_abundance_files_transcripts,
             output_dir,
             data_type_transcripts,
             job_name_transcripts
         )
         job.samples = self.samples
+        job.readsets = self.readsets
         jobs.append(job)
 
         #per genes
         input_abundance_files_genes = [os.path.join(self.output_dirs["kallisto_directory"], sample.name, "abundance_genes.tsv") for sample in self.samples]
         job_name_genes="kallisto_count_matrix.genes"
         data_type_genes="genes"
-        job=tools.r_create_kallisto_count_matrix(
+        job = tools.r_create_kallisto_count_matrix(
             input_abundance_files_genes,
             output_dir,
             data_type_genes,
             job_name_genes
         )
         job.samples = self.samples
+        job.readsets = self.readsets
         jobs.append(job)
 
         report_dir = self.output_dirs["report_directory"]
@@ -206,7 +238,8 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                     os.path.join(output_dir, "all_readsets.abundance_transcripts.csv")
                 ],
                 name="report.copy_tx2genes_file",
-                samples=self.samples
+                samples=self.samples,
+                readsets=self.readsets
             )
         )
 
@@ -222,6 +255,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                 job_name="report.kallisto_count_matrix",
                 input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqLight.kallisto.Rmd"),
                 samples=self.samples,
+                readsets=self.readsets,
                 render_output_dir=self.output_dirs['report_directory'],
                 module_section='report',
                 prerun_r=f'report_dir="{self.output_dirs["report_directory"]}";'
@@ -244,50 +278,56 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
                 abundance_file,
                 config.param('gq_seq_utils_exploratory_analysis_rnaseq_light', 'genes', param_type='filepath'),
                 self.output_dirs['exploratory_directory']
+            )],
+            name="gq_seq_utils_exploratory_analysis_rnaseq_light",
+            samples=self.samples,
+            readsets=self.readsets
             )
-        ], name="gq_seq_utils_exploratory_analysis_rnaseq_light", samples=self.samples))
+        )
 
         jobs.append(
             rmarkdown.render(
-                job_input            = os.path.join(self.output_dirs['exploratory_directory'], "index.tsv"),
-                job_name             = "report.gq_seq_utils_exploratory_analysis_rnaseq",
-                input_rmarkdown_file = os.path.join(self.report_template_dir, "RnaSeqLight.gq_seq_utils_exploratory_analysis_rnaseq_light.Rmd"),
-                samples              = self.samples,
-                render_output_dir    = self.output_dirs['report_directory'],
-                module_section       = 'report',
-                prerun_r             = f'report_dir="{self.output_dirs["report_directory"]}";'
+                job_input=os.path.join(self.output_dirs['exploratory_directory'], "index.tsv"),
+                job_name="report.gq_seq_utils_exploratory_analysis_rnaseq",
+                input_rmarkdown_file=os.path.join(self.report_template_dir, "RnaSeqLight.gq_seq_utils_exploratory_analysis_rnaseq_light.Rmd"),
+                samples=self.samples,
+                readsets=self.readsets,
+                render_output_dir=self.output_dirs['report_directory'],
+                module_section='report',
+                prerun_r=f'report_dir="{self.output_dirs["report_directory"]}";'
             )
         )
 
         return jobs
-        
-    def sleuth_differential_expression(self): 
-            """
-            Performs differential gene expression analysis using [Sleuth](http://pachterlab.github.io/sleuth/). 
-            Analysis are performed both at a transcript and gene level, using two different tests: LRT and WT. 
-            """
 
-            # If --design <design file> option is missing, self.contrasts call will raise an Exception
+    def sleuth_differential_expression(self):
+        """
+        Performs differential gene expression analysis using [Sleuth](http://pachterlab.github.io/sleuth/).
+        Analysis are performed both at a transcript and gene level, using two different tests: LRT and WT.
+        """
 
-            if self.contrasts: 
-                design_file = os.path.relpath(self.args.design.name, self.output_dir)
-            output_directory = self.output_dirs["sleuth_directory"]
-            count_matrix = os.path.join(self.output_dirs["kallisto_directory"], "All_readsets", "all_readsets.abundance_genes.csv")
-            tx2gene = config.param('sleuth_differential_expression', 'tx2gene')
-            
-            sleuth_job = differential_expression.sleuth(design_file, count_matrix, tx2gene, output_directory)
-            sleuth_job.output_files = [os.path.join(output_directory, contrast.name, "results.wt.gene.csv") for contrast in self.contrasts]
-            sleuth_job.samples = self.samples
+        # If --design <design file> option is missing, self.contrasts call will raise an Exception
 
-            return [
-                concat_jobs(
-                    [
-                        bash.mkdir(output_directory),
-                        sleuth_job
-                    ],
-                    name="sleuth_differential_expression"
-                )
-            ]
+        if self.contrasts:
+            design_file = os.path.relpath(self.args.design.name, self.output_dir)
+        output_directory = self.output_dirs["sleuth_directory"]
+        count_matrix = os.path.join(self.output_dirs["kallisto_directory"], "All_readsets", "all_readsets.abundance_genes.csv")
+        tx2gene = config.param('sleuth_differential_expression', 'tx2gene')
+
+        sleuth_job = differential_expression.sleuth(design_file, count_matrix, tx2gene, output_directory)
+        sleuth_job.output_files = [os.path.join(output_directory, contrast.name, "results.wt.gene.csv") for contrast in self.contrasts]
+        sleuth_job.samples = self.samples
+        sleuth_job.readsets = self.readsets
+
+        return [
+            concat_jobs(
+                [
+                    bash.mkdir(output_directory),
+                    sleuth_job
+                ],
+                name="sleuth_differential_expression"
+            )
+        ]
 
 ############
 
@@ -309,4 +349,3 @@ if __name__ == '__main__':
         utils.utils.container_wrapper_argparse(argv)
     else:
         RnaSeqLight()
-

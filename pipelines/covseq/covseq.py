@@ -1424,7 +1424,7 @@ echo "Software Versions
 {modules_all}" > {software_version}""".format(
                             output_dir=self.output_dir,
                             run_name=config.param('prepare_report', 'run_name', required=True),
-                            genpipes_version=self.genpipes_version.strip(),
+                            genpipes_version=self.genpipes_version,
                             cluster_server=config.param('prepare_report', 'cluster_server'),
                             assembly_synonyms=config.param('prepare_report', 'assembly_synonyms'),
                             sequencing_technology=config.param('prepare_report', 'sequencing_technology'),

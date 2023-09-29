@@ -46,14 +46,16 @@ def run(
 
     purple_outputs = [
         os.path.join(output_dir, tumor_name + ".purple.purity.tsv"),
-        os.path.join(output_dir, tumor_name + ".purple.qc")
+        os.path.join(output_dir, tumor_name + ".purple.qc"),
+        os.path.join(output_dir, tumor_name + ".driver.catalog.somatic.tsv"),
+        os.path.join(output_dir, tumor_name + ".driver.catalog.germline.tsv")
     ]
 
     if structural_sv is not None and sv_recovery is not None:
         input_files.append(structural_sv)
         input_files.append(sv_recovery)
         purple_sv = os.path.join(output_dir, tumor_name + ".purple.sv.vcf.gz")
-        purple_outputs.append(purple_sv)    
+        purple_outputs.append(purple_sv)
 
     return Job(
         input_files,
@@ -101,7 +103,7 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $PURPLE_JAR 
             somatic_hotspots=" \\\n  -somatic_hotspots " + somatic_hotspots if somatic_hotspots else "",
             germline_hotspots=" \\\n  -germline_hotspots " + germline_hotspots if germline_hotspots else "",
             driver_gene_panel=" \\\n  -driver_gene_panel " + driver_gene_panel if driver_gene_panel else "",
-            circos="\\\n  -circos circos" if structural_sv else "", 
+            circos="\\\n  -circos circos" if structural_sv else "",
             output_dir=output_dir
         )
     )
@@ -127,3 +129,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -cp $PURPLE_JAR c
             output=output,
         )
     )
+
+def parse_purity_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export purity=`awk 'NR>1{{printf "%.0f", $1*100}}' {input_file}`"""
+        )

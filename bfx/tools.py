@@ -310,7 +310,7 @@ def bed2interval_list(
     bed,
     output
     ):
-    
+
     return Job(
         [bed],
         [output],

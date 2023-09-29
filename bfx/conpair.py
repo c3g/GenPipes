@@ -25,7 +25,8 @@ from core.config import *
 from core.job import *
 
 def pileup(input_bam, output):
-    
+    """
+    """
     return Job(
         [input_bam],
         [output],
@@ -55,7 +56,8 @@ python3 $CONPAIR_SCRIPTS/run_gatk_pileup_for_sample.py -t {tmp_dir} \\
     )
 
 def concordance(input_normal, input_tumor, output):
-
+    """
+    """
     return Job(
         [input_normal, input_tumor],
         [output],
@@ -79,7 +81,8 @@ python $CONPAIR_SCRIPTS/verify_concordance.py {options} \\
     )
 
 def contamination(input_normal, input_tumor, output):
-
+    """
+    """
     return Job(
         [input_normal, input_tumor],
         [output],
@@ -102,3 +105,35 @@ python3 $CONPAIR_SCRIPTS/estimate_tumor_normal_contamination.py {options} \\
         )
     )
 
+def parse_concordance_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export concordance=`awk '{{if ($0 ~ /^Concordance:/) {{match($0,/[0-9]+.[0-9]+/,value); print value[0]}}}}' {input_file}`"""
+        )
+
+def parse_contamination_normal_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export contamination=`awk '{{if ($0 ~ /^Normal/) {{match($0,/[0-9]+.[0-9]+/,value); print value[0]}}}}' {input_file}`"""
+    )
+
+def parse_contamination_tumor_metrics_pt(input_file):
+    """
+    """
+    return Job(
+        [input_file],
+        [],
+        [],
+        command=f"""\
+export contamination=`awk '{{if ($0 ~ /^Tumor/) {{match($0,/[0-9]+.[0-9]+/,value); print value[0]}}}}' {input_file}`"""
+    )

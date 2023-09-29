@@ -194,16 +194,21 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
         )
     )
 
-def genotype_gvcf(variants, output, options):
-    if config.param('gatk_genotype_gvcf', 'module_gatk').split("/")[2] >= "4":
+def genotype_gvcf(
+    variants,
+    output,
+    options,
+    ini_section='gatk_genotype_gvcf'
+    ):
+    if config.param(ini_section, 'module_gatk').split("/")[2] >= "4":
         return gatk4.genotype_gvcf(variants, output, options)
     else:
         return Job(
             variants,
             [output],
             [
-                ['gatk_genotype_gvcf', 'module_java'],
-                ['gatk_genotype_gvcf', 'module_gatk']
+                [ini_section, 'module_java'],
+                [ini_section, 'module_gatk']
             ],
             command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
@@ -211,11 +216,11 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
   --disable_auto_index_creation_and_locking_when_reading_rods \\
   --reference_sequence {reference_sequence}{variants} \\
   --out {output}""".format(
-                tmp_dir=config.param('gatk_genotype_gvcf', 'tmp_dir'),
-                java_other_options=config.param('gatk_genotype_gvcf', 'java_other_options'),
-                ram=config.param('gatk_genotype_gvcf', 'ram'),
+                tmp_dir=config.param(ini_section, 'tmp_dir'),
+                java_other_options=config.param(ini_section, 'java_other_options'),
+                ram=config.param(ini_section, 'ram'),
                 options=options,
-                reference_sequence=config.param('gatk_genotype_gvcf', 'genome_fasta', param_type='filepath'),
+                reference_sequence=config.param(ini_section, 'genome_fasta', param_type='filepath'),
                 variants="".join(" \\\n  --variant " + variant for variant in variants),
                 output=output
             )
@@ -546,8 +551,14 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $GATK_JAR \\
     )
 
 
-def variant_recalibrator(variants, other_options, recal_output,
-                         tranches_output, R_output, small_sample_check=False):
+def variant_recalibrator(
+    variants,
+    other_options,
+    recal_output,
+    tranches_output,
+    R_output,
+    small_sample_check=False
+    ):
     if config.param('gatk_variant_recalibrator', 'module_gatk').split("/")[2] >= "4":
         return gatk4.combine_gvcf(variants, other_options, recal_output, tranches_output, R_output)
     else:
