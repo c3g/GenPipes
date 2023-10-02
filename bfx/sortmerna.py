@@ -32,7 +32,7 @@ def paired(input1, input2, output_directory, output_directory_sample, sample, in
             [ini_section, 'module_sortmerna']
         ],
         command="""\
-sortmerna --threads {threads} \\
+sortmerna --threads {threads} {other_options} \\
 	--ref $SORTMERNA_DATA/rRNA_databases/rfam-5.8s-database-id98.fasta \\
 	--ref $SORTMERNA_DATA/rRNA_databases/rfam-5s-database-id98.fasta \\
 	--ref $SORTMERNA_DATA/rRNA_databases/silva-arc-16s-id95.fasta \\
@@ -43,7 +43,6 @@ sortmerna --threads {threads} \\
 	--ref $SORTMERNA_DATA/rRNA_databases/silva-euk-28s-id98.fasta \\
 	--reads {input1} \\
 	--reads {input2} \\
-	{other_options} \\
     --aligned {output_directory_sample}/{sample}.aligned \\
     --kvdb {output_directory_sample}/kvdb \\
     --readb {output_directory_sample}/readb \\
@@ -66,7 +65,7 @@ def single(input1, output_directory, output_directory_sample, sample, ini_sectio
             [ini_section, 'module_sortmerna'],
         ],
         command="""\
-sortmerna --threads {threads} \\
+sortmerna --threads {threads} {other_options} \\
 	--ref $SORTMERNA_DATA/rRNA_databases/rfam-5.8s-database-id98.fasta \\
 	--ref $SORTMERNA_DATA/rRNA_databases/rfam-5s-database-id98.fasta \\
 	--ref $SORTMERNA_DATA/rRNA_databases/silva-arc-16s-id95.fasta \\
