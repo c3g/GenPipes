@@ -75,7 +75,6 @@ sortmerna --threads {threads} {other_options} \\
 	--ref $SORTMERNA_DATA/rRNA_databases/silva-euk-18s-id95.fasta \\
 	--ref $SORTMERNA_DATA/rRNA_databases/silva-euk-28s-id98.fasta \\
 	--reads {input1} \\ 
-	{other_options} \\
     --aligned {output_directory_sample}/{sample}.aligned \\
     --kvdb {output_directory_sample}/kvdb \\
     --readb {output_directory_sample}/readb \\
