@@ -73,6 +73,7 @@ from bfx import (
     ucsc,
     vcfanno,
     vt,
+    sortmerna
     )
 
 #Metrics tools
