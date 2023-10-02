@@ -73,6 +73,7 @@ from bfx import (
     ucsc,
     vcfanno,
     vt,
+    sortmerna
     )
 
 #Metrics tools
@@ -135,7 +136,7 @@ class RnaSeqRaw(common.Illumina):
     def output_dirs(self):
         dirs = {
             'raw_reads_directory': os.path.relpath(os.path.join(self.output_dir, 'raw_reads'), self.output_dir),
-            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),
+            'trim_directory': os.path.relpath(os.path.join(self.output_dir, 'trim'), self.output_dir),            
             'alignment_1stPass_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment_1stPass'), self.output_dir),
             'alignment_directory': os.path.relpath(os.path.join(self.output_dir, 'alignment'), self.output_dir),
             'stringtie_directory': os.path.relpath(os.path.join(self.output_dir, 'stringtie'), self.output_dir),
@@ -296,6 +297,72 @@ class RnaSeqRaw(common.Illumina):
 
             self.multiqc_inputs.append(trim_file_prefix + "-trimmed.log")
         return jobs
+
+    def sortmerna(self):
+        """
+        Calculation of ribosomal RNA per read based on known ribosomal sequences from archea, bacteria and eukaryotes.
+        Using [sortmeRNA] (https://github.com/sortmerna/sortmerna)
+
+        Taking trimmed fastqs and reporting on each read, either paired-end or single end.
+        """
+
+        jobs = []
+        for readset in self.readsets:
+            output_dir = os.path.join(self.output_dirs["metrics_directory"], "sortmerna")
+            output_dir_sample = os.path.join(output_dir, readset.sample.name, readset.name)
+            link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
+
+            trim_fastq1 = ""
+            trim_fastq2 = ""
+
+            if readset.run_type == "PAIRED_END":
+                trim_fastq1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim." + "pair1.fastq.gz")
+                trim_fastq2 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim." + "pair2.fastq.gz")
+
+                sortmerna_job=sortmerna.paired(
+                            trim_fastq1,
+                            trim_fastq2,
+                            output_dir,
+                            output_dir_sample, 
+                            readset.name
+                        )
+                
+            elif readset.run_type == "SINGLE_END":
+                trim_fastq1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim." + "single.fastq.gz")
+                trim_fastq2 = None
+
+                sortmerna_job=sortmerna.single(
+                            trim_fastq1,
+                            output_dir,
+                            output_dir_sample,
+                            readset.name
+                        )
+                
+            else:
+                _raise(SanitycheckError("Error: run type \"" + readset.run_type +
+                "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END)!"))
+
+            jobs.append(
+                concat_jobs(
+                [
+                    bash.mkdir(output_dir_sample),
+                    bash.mkdir(link_directory),
+                    sortmerna_job, 
+                    bash.ln(
+                        os.path.relpath(os.path.join(output_dir_sample, readset.name + ".aligned.log"), link_directory),
+                        os.path.join(link_directory, readset.name + ".aligned.log"),
+                        os.path.join(output_dir_sample, readset.name + ".aligned.log")
+                    )
+                ],
+                name="sortmerna." + readset.name,
+                samples=[readset.sample]
+                )
+            )
+
+            self.multiqc_inputs.append(os.path.join(output_dir_sample, readset.name + ".aligned.log"))
+        
+        return jobs
+    
 
     def star(self):
         """
@@ -2582,6 +2649,7 @@ END
                 self.picard_sam_to_fastq,
                 self.trimmomatic,
                 self.merge_trimmomatic_stats,
+                self.sortmerna,
                 self.star,
                 self.picard_merge_sam_files,
                 self.picard_sort_sam,
@@ -2603,6 +2671,7 @@ END
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
+                self.sortmerna,
                 self.star,
                 self.picard_merge_sam_files,
                 self.mark_duplicates,
@@ -2629,6 +2698,7 @@ END
             [
                 self.picard_sam_to_fastq,
                 self.skewer_trimming,
+                self.sortmerna, 
                 self.star,
                 self.picard_merge_sam_files,
                 self.mark_duplicates,
