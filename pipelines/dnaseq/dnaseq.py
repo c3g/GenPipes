@@ -1296,7 +1296,7 @@ END
 
             coverage_bed = bvatools.resolve_readset_coverage_bed(sample.readsets[0])
             
-            interval_list = None
+            interval_list = ""
             if coverage_bed:
                 interval_list = os.path.join(interval_directory,
                                              os.path.basename(coverage_bed).replace('.bed',
@@ -1319,7 +1319,7 @@ END
                             gatk4.haplotype_caller(
                                 input_bam,
                                 os.path.join(haplotype_directory, sample.name + ".hc.g.vcf.gz"),
-                                interval_list
+                                interval_list[0]
                             )
                         ],
                         name="gatk_haplotype_caller." + sample.name,

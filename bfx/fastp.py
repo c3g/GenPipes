@@ -106,14 +106,14 @@ fastp -V \\
   {cpus} \\
   {json} \\
   {html}""".format(
-            options = "\\\n  "                  + paramters,
-            adapter = "\\\n  --adapter_fasta "  + adapter,
-            rds1 = "\\\n  --in1 "               + input1,
-            rds2 = "\\\n  --in2 "               + input2 if input2 else "",
-            out1 = "\\\n  --out1 "              + output1,
-            out2 = "\\\n  --out2 "              + output2 if output2 else "",
-            cpus = "\\\n  --thread "            + str(num_threads) if num_threads else "",
-            json = "\\\n  --json "              + output_json_path if output_json_path else "",
-            html = "\\\n  --html "              + output_html_path if output_html_path else "",
+            options = "  "                  + paramters,
+            adapter = "  --adapter_fasta "  + adapter,
+            rds1 = "  --in1 "               + input1,
+            rds2 = "  --in2 "               + input2 if input2 else "",
+            out1 = "  --out1 "              + output1,
+            out2 = "  --out2 "              + output2 if output2 else "",
+            cpus = "  --thread "            + str(num_threads) if num_threads else "",
+            json = "  --json "              + output_json_path if output_json_path else "",
+            html = "  --html "              + output_html_path if output_html_path else "",
         )
     )

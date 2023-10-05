@@ -148,12 +148,8 @@ bcftools mpileup {options} \\
          )
     )
 
-def sort(input, output_prefix, sort_by_name=False, ini_section='DEFAULT'):
-    if config.param(ini_section, 'compression') == "cram":
-        output = output_prefix + ".cram"
-    else:
-        output = output_prefix + ".bam"
-        
+def sort(input, output, sort_by_name=False, ini_section='DEFAULT'):
+    
     return Job(
         [input],
         [output],

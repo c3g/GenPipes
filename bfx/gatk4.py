@@ -485,14 +485,14 @@ def haplotype_caller(
     # Added this to check intervel_list (peak file) availability in the chip-seq pipeline
     inputs_list = inputs.copy()
     if not interval_list is None:
-       inputs_list.append(interval_list)
+       inputs_list.extend(interval_list)
 
     if config.param(ini_section, 'module_gatk').split("/")[2] < "4":
         return gatk.haplotype_caller(
             input,
             output,
-#            intervals=intervals,
-#            exclude_intervals=exclude_intervals,
+            #intervals=intervals,
+            #exclude_intervals=exclude_intervals,
             interval_list
         )
     else:
@@ -1666,7 +1666,7 @@ def sam_to_fastq(
     input,
     fastq,
     second_end_fastq=None,
-    ini_section='picard_sam_to_fastq'
+    ini_section='gatk_sam_to_fastq'
     ):
 
     return Job(
