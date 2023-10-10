@@ -310,6 +310,7 @@ class RnaSeqRaw(common.Illumina):
         for readset in self.readsets:
             output_dir = os.path.join(self.output_dirs["metrics_directory"], "sortmerna")
             output_dir_sample = os.path.join(output_dir, readset.sample.name, readset.name)
+            index_directory = os.path.join(output_dir, idx-dir)
             link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
             trim_fastq1 = ""
@@ -346,6 +347,7 @@ class RnaSeqRaw(common.Illumina):
                 concat_jobs(
                 [
                     bash.mkdir(output_dir_sample),
+                    bash.mkdir(index_directory),
                     bash.mkdir(link_directory),
                     sortmerna_job, 
                     bash.ln(
