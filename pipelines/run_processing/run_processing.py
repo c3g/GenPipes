@@ -408,9 +408,9 @@ class RunProcessing(common.MUGQICPipeline):
                 if not os.path.exists(barcode_file):
                     if not os.path.exists(os.path.dirname(barcode_file)):
                         os.makedirs(os.path.dirname(barcode_file))
-                        self._barcode_files[lane] = barcode_file
-                        log.info(f"BARCODE file for lane {lane} : {barcode_file}")
-        return self._json_flag_files
+                self._barcode_files[lane] = barcode_file
+                log.info(f"BARCODE file for lane {lane} : {barcode_file}")
+        return self._barcode_files
 
     @property
     def json_flag_hash(self):
@@ -773,7 +773,7 @@ class RunProcessing(common.MUGQICPipeline):
             # If demultiplexing is perform while basecalling
             if self.args.splitbarcode_demux:
                 # Add the barcodes in the JSON flag file
-                # self.edit_mgi_t7_flag_file(lane)
+                self.edit_mgi_t7_flag_file(lane)
                 self.create_barcode_file(lane)
 
                 basecall_outputs, postprocessing_jobs = self.generate_basecall_outputs(lane)
@@ -792,7 +792,7 @@ class RunProcessing(common.MUGQICPipeline):
                     concat_jobs(
                         [
                             bash.mkdir(basecall_dir),
-                            run_processing_tools.splitbarcode(
+                            run_processing_tools.mgi_splitbarcode(
                                 input,
                                 self.run_dir,
                                 self.flowcell_id,
@@ -3317,12 +3317,13 @@ class RunProcessing(common.MUGQICPipeline):
                 all_indexes[readset.index_name] = index_dict
 
         if self.is_dual_index[lane]:
-            barcodes = dict([(index_name, index_dict['INDEX2']+index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
+            barcodes = dict([(index_name, index_dict['INDEX2']+"\t"+index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
         else:
             barcodes = dict([(index_name, index_dict['INDEX1']) for index_name, index_dict in all_indexes.items()])
 
         with open(barcode_file, 'w') as barcode_fh:
-            barcode_fh.write(barcodes) # Untested... I may have been to quick there...
+            for barcode in barcodes.keys():
+                barcode_fh.write(barcode + "\t" + barcodes[barcode] + "\n")
 
         log.info("BARCODE FILE created : " + barcode_file)
 

@@ -405,7 +405,7 @@ def mgi_splitbarcode(
     barcode_start_cycle = read1len + read2len + 1
 
     return Job(
-        [input, json_flag_file],
+        [input, barcode_file],
         fastq_outputs,
         [
             [ini_section, 'module_basecall_t7'],
@@ -429,7 +429,6 @@ splitBarcode \\
             total_cycles=total_cycles,
             flowcell_id=flowcell_id,
             barcode_file=barcode_file,
-            json_flag_file=json_flag_file,  # if using json_flag_file, need to write : `-j {json_flag_file}` 
             output_dir=output_dir,
             barcode_start_cycle=barcode_start_cycle,
             barcodelen=barcodelen,
