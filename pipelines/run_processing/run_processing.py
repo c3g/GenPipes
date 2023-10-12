@@ -419,9 +419,12 @@ class RunProcessing(common.MUGQICPipeline):
             for lane in self.lanes:
                 with open(self.json_flag_files[lane], "r") as jff:
                     json_flag_content = json.load(jff)
+                # Turns the InfoVector into a dictionnary and concat it back to
+                # the flagfile json dict
                 keys = [item[0] for item in json_flag_content['experimentInfoVec']]
                 vals = [item[1] for item in json_flag_content['experimentInfoVec']]
-                self._json_flag_hash[lane] = dict(zip(keys, vals))
+                del json_flag_content['experimentInfoVec']
+                self._json_flag_hash[lane] = dict(zip(keys, vals)) | json_flag_content
         return self._json_flag_hash
 
     @property

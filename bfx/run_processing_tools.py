@@ -415,8 +415,8 @@ def mgi_splitbarcode(
 splitBarcode \\
   -F {run_dir}/L01/calFile \\
   -C {total_cycles} \\
-  --Col 42 \\
-  --Row 42 \\
+  --Col {fovcolumns} \\
+  --Row {fovrows} \\
   -N {flowcell_id} \\
   -B {barcode_file} \\
   -o {output_dir} \\
@@ -427,6 +427,8 @@ splitBarcode \\
   --filter_param 2 23 22 1 1 0.78 0.71""".format(
             run_dir=run_dir,
             total_cycles=total_cycles,
+            fovcolumns=json_flag_hash["fovMaxC"],
+            fovrows=json_flag_hash["fovMaxR"],
             flowcell_id=flowcell_id,
             barcode_file=barcode_file,
             output_dir=output_dir,
