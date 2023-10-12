@@ -360,7 +360,7 @@ class RnaSeqRaw(common.Illumina):
                     )
                 ],
                 name="sortmerna." + readset.name,
-                input_dependency = inputs
+                input_dependency = inputs,
                 samples=[readset.sample]
                 )
             )
