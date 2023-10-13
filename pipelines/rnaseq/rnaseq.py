@@ -310,6 +310,7 @@ class RnaSeqRaw(common.Illumina):
         for readset in self.readsets:
             output_dir = os.path.join(self.output_dirs["metrics_directory"], "sortmerna")
             output_dir_sample = os.path.join(output_dir, readset.sample.name, readset.name)
+            index_directory = os.path.join(output_dir, "idx-dir")
             link_directory = os.path.join(self.output_dirs["metrics_directory"], "multiqc_inputs")
 
             trim_fastq1 = ""
@@ -326,6 +327,7 @@ class RnaSeqRaw(common.Illumina):
                             output_dir_sample, 
                             readset.name
                         )
+                inputs = [trim_fastq1, trim_fastq2]
                 
             elif readset.run_type == "SINGLE_END":
                 trim_fastq1 = os.path.join(self.output_dirs["trim_directory"], readset.sample.name, readset.name + ".trim." + "single.fastq.gz")
@@ -337,6 +339,7 @@ class RnaSeqRaw(common.Illumina):
                             output_dir_sample,
                             readset.name
                         )
+                inputs = [trim_fastq1]
                 
             else:
                 _raise(SanitycheckError("Error: run type \"" + readset.run_type +
@@ -345,7 +348,9 @@ class RnaSeqRaw(common.Illumina):
             jobs.append(
                 concat_jobs(
                 [
+                    bash.rm(output_dir_sample),
                     bash.mkdir(output_dir_sample),
+                    bash.mkdir(index_directory),
                     bash.mkdir(link_directory),
                     sortmerna_job, 
                     bash.ln(
@@ -355,6 +360,7 @@ class RnaSeqRaw(common.Illumina):
                     )
                 ],
                 name="sortmerna." + readset.name,
+                input_dependency = inputs,
                 samples=[readset.sample]
                 )
             )
