@@ -99,22 +99,22 @@ java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME
         removable_files=[output]
     )
 
-def snpsift_dbnsfp(input, output):
+def snpsift_dbnsfp(input, output, ini_section='dbnsfp_annotation'):
     return Job(
         [input],
         [output],
         [
-            ['snpsift_dbnsfp', 'module_java'],
-            ['snpsift_dbnsfp', 'module_snpeff']
+            [ ini_section, 'module_java'],
+            [ ini_section, 'module_snpeff']
         ],
         command="""\
 java -Djava.io.tmpdir={tmp_dir} {java_other_options} -Xmx{ram} -jar $SNPEFF_HOME/SnpSift.jar dbnsfp \\
   -v -db {db_nsfp} \\
   {input}{output}""".format(
-        tmp_dir=config.param('snpsift_dbnsfp', 'tmp_dir'),
-        java_other_options=config.param('snpsift_dbnsfp', 'java_other_options'),
-        ram=config.param('snpsift_dbnsfp', 'ram'),
-        db_nsfp=config.param('snpsift_dbnsfp', 'dbnsfp', param_type='filepath'),
+        tmp_dir=config.param(ini_section, 'tmp_dir'),
+        java_other_options=config.param(ini_section, 'java_other_options'),
+        ram=config.param(ini_section, 'ram'),
+        db_nsfp=config.param(ini_section, 'dbnsfp', param_type='filepath'),
         input=input,
         output=" \\\n  > " + output if output else ""
         )
