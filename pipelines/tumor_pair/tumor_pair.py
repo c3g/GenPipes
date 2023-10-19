@@ -2838,7 +2838,8 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         sed_cmd,
                         strelka2.run(
                             somatic_dir,
-                            output_dep=output_dep
+                            output_dep=output_dep,
+                            ini_section='strelka2_paired_somatic'
                         )
                     ],
                     name="strelka2_paired_somatic.call." + tumor_pair.name,
@@ -2999,12 +3000,13 @@ sed -i s/"isEmail = isLocalSmtp()"/"isEmail = False"/g {input}""".format(
                         strelka2.germline_config(
                             [input_normal, input_tumor],
                             germline_dir,
-                            bed_file,
+                            bed_file
                         ),
                         sed_cmd,
                         strelka2.run(
                             germline_dir,
-                            output_dep=output_dep
+                            output_dep=output_dep,
+                            ini_section='strelka2_paired_germline'
                         )
                     ],
                     name="strelka2_paired_germline.call." + tumor_pair.name,
