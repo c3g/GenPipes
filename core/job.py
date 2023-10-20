@@ -18,11 +18,9 @@
 ################################################################################
 
 # Python Standard Modules
-from collections import OrderedDict
 import datetime
 import logging
 import os
-import sys
 
 # MUGQIC Modules
 from .config import config
@@ -55,7 +53,7 @@ class Job:
         self._removable_files = [_f for _f in removable_files if _f]
 
         # Retrieve modules from config, removing duplicates but keeping the order
-        self._modules = list(OrderedDict.fromkeys([config.param(section, option) for section, option in module_entries]))
+        self._modules = list(dict.fromkeys([config.param(section, option) for section, option in module_entries]))
 
         self._name = name
         self._command = command
@@ -269,9 +267,18 @@ def concat_jobs(
         metrics.extend([metric for metric in job_item.metrics if metric not in metrics])
 
     if input_dependency:
-        input_files=input_dependency
+        input_files = input_dependency
     if output_dependency:
-        output_files=output_dependency
+        output_files = output_dependency
+
+    # Remove duplicates if any, keeping the order
+    report_files = list(dict.fromkeys(report_files))
+    multiqc_files = list(dict.fromkeys(multiqc_files))
+    removable_files = list(dict.fromkeys(removable_files))
+    modules = list(dict.fromkeys(modules))
+    samples = list(dict.fromkeys(samples))
+    readsets = list(dict.fromkeys(readsets))
+    metrics = list(dict.fromkeys(metrics))
 
     job = Job(
         input_files,
@@ -323,19 +330,19 @@ def pipe_jobs(
         metrics.extend([metric for metric in job_item.metrics if metric not in metrics])
 
     # Remove duplicates if any, keeping the order
-    report_files = list(OrderedDict.fromkeys(set(report_files)))
+    report_files = list(dict.fromkeys(report_files))
     job.report_files = report_files
-    multiqc_files = list(OrderedDict.fromkeys(set(multiqc_files)))
+    multiqc_files = list(dict.fromkeys(multiqc_files))
     job.multiqc_files = multiqc_files
-    removable_files = list(OrderedDict.fromkeys(set(removable_files)))
+    removable_files = list(dict.fromkeys(removable_files))
     job.removable_files = removable_files
-    modules = list(OrderedDict.fromkeys(set(modules)))
+    modules = list(dict.fromkeys(modules))
     job.modules = modules
-    samples = list(OrderedDict.fromkeys(set(samples)))
+    samples = list(dict.fromkeys(samples))
     job.samples = samples
-    readsets = list(OrderedDict.fromkeys(set(readsets)))
+    readsets = list(dict.fromkeys(readsets))
     job.readsets = readsets
-    metrics = list(OrderedDict.fromkeys(set(metrics)))
+    metrics = list(dict.fromkeys(metrics))
     job.metrics = metrics
 
     if input_dependency:
