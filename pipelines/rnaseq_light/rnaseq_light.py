@@ -118,7 +118,7 @@ class RnaSeqLight(rnaseq.RnaSeqRaw):
 
                     fragment_length = config.param('kallisto', 'fragment_length', required=True)
                     fragment_length_sd = config.param('kallisto', 'fragment_length_sd', required=True)
-                    parameters = "--single -l "+ fragment_length +" -s " + fragment_length_sd
+                    parameters = "--single -l "+ fragment_length +" -s " + fragment_length_sd + " --bootstrap-samples=" + str(bootstraps)
 
                 else:
                     _raise(SanitycheckError("Error: run type \"" + readset.run_type +
