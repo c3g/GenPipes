@@ -48,11 +48,13 @@ def quant(
         command="""\
 kallisto quant \\
   {parameters} \\
+  -t {threads} \\
   -i {transcriptome} \\
   -o {output_dir} \\
   {infiles} \\
   > {output_dir}/kallisto_quant.log""".format(
             parameters=parameters,
+            threads=config.param('kallisto', 'threads'),
             transcriptome=transcriptome,
             output_dir=output_dir,
             infiles=" \\\n  ".join(inputs),
